@@ -21,8 +21,8 @@ obj = parse(data, D)
 ```
 
 ## Enums
-python
-```
+
+```python
 class E(Enum):
     one = 1
     hello = "hello"
