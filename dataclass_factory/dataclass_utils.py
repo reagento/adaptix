@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from collections import deque
-from enum import Enum
-
-from typing import ClassVar, Any, Collection, Optional, List, Set, Tuple, FrozenSet, Deque, Dict
 from dataclasses import is_dataclass, fields, Field
+from enum import Enum
+from typing import ClassVar, Any, Collection, Optional, List, Set, Tuple, FrozenSet, Deque, Dict, T, KT, VT
 
 
 def _hasargs(type_, *args):
@@ -30,7 +29,7 @@ def _issubclass_safe(cls, classinfo):
 def _is_collection(type_) -> bool:
     try:
         # __origin__ exists in 3.7 on user defined generics
-        return _issubclass_safe(type_.__origin__, Collection)
+        return _issubclass_safe(type_.__origin__, Collection) or _issubclass_safe(type_, Collection)
     except AttributeError:
         return False
 
@@ -47,6 +46,7 @@ def _is_union(type_: ClassVar) -> bool:
 
 
 def get_collection_factory(cls):
+    origin = cls.__origin__ or cls
     res = {
         List: list,
         list: list,
@@ -58,7 +58,7 @@ def get_collection_factory(cls):
         frozenset: frozenset,
         Deque: deque,
         deque: deque
-    }.get(cls.__origin__)
+    }.get(origin)
     if not res:
         raise NotImplementedError("Class %s not supported" % cls)
     return res
@@ -66,7 +66,8 @@ def get_collection_factory(cls):
 
 def _is_dict(cls):
     try:
-        return cls.__origin__ in (dict, Dict)
+        origin = cls.__origin__ or cls
+        return origin in (dict, Dict)
     except AttributeError:
         return False
 
@@ -94,8 +95,8 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
     if _is_optional(cls) and data is None:
         return None
     elif _is_dict(cls):
-        key_type_arg = cls.__args__[0]
-        value_type_arg = cls.__args__[1]
+        key_type_arg = cls.__args__[0] if cls.__args__ else Any
+        value_type_arg = cls.__args__[1] if cls.__args__ else Any
         return {
             parse(k, key_type_arg, trim_trailing_underscore=trim_trailing_underscore):
                 parse(v, value_type_arg, trim_trailing_underscore=trim_trailing_underscore)
@@ -104,7 +105,7 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
 
     elif _is_collection(cls) and not isinstance(data, str) and not isinstance(data, bytes):
         collection_factory = get_collection_factory(cls)
-        type_arg = cls.__args__[0]
+        type_arg = cls.__args__[0] if cls.__args__ else Any
         return collection_factory(
             parse(x, type_arg, trim_trailing_underscore=trim_trailing_underscore) for x in data
         )
@@ -118,7 +119,8 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
                 except TypeError:
                     pass  # ignore type error as it is union
         raise ValueError("Cannot parse `%s` as any of `%s`" % (data, cls.__args__))
-
+    elif cls in (Any, T, KT, VT):
+        return data
     elif _issubclass_safe(cls, Enum):
         return cls(data)
     elif _issubclass_safe(cls, str) and isinstance(data, str):
@@ -128,7 +130,7 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
     elif _issubclass_safe(cls, int) and isinstance(data, int):
         return data
     else:
-        raise ValueError("Unknown type `%s` or invalid data" % cls)
+        raise ValueError("Unknown type `%s` or invalid data: %s" % (cls, data))
 
 
 def _prepare_value(value):

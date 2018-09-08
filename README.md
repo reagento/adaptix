@@ -11,8 +11,16 @@ This module provides `parse` method for such task.
 * `List`, `Tuple`, `Set`, `FrozenSet`, `Dict` with specified type
 * `Optional` with specified type
 * `Union` parsed in order of given types
+* `Any` returned as is
 
 ## Usage
+
+Install:
+```bash
+pip install dataclass_factory 
+```
+
+Code:
 
 ```python
 @dataclass

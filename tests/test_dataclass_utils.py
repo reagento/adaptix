@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, List, Union, Tuple, Dict, FrozenSet, Set
+from typing import Optional, List, Union, Tuple, Dict, FrozenSet, Set, Any
 from unittest import TestCase
+
+from dataclasses import dataclass, field
 
 from dataclass_factory import parse
 
@@ -129,3 +130,11 @@ class Test1(TestCase):
 
         x = frozenset({1, 2})
         self.assertEqual(parse({x: {"q", "w"}}, Dict[FrozenSet[int], Set[str]]), {x: {"q", "w"}})
+
+    def test_any(self):
+        self.assertEqual(parse(1, Any), 1)
+        self.assertEqual(parse({1, 2}, Any), {1, 2})
+
+    def test_noargs(self):
+        self.assertEqual(parse([1, "q"], List), [1, "q"])
+        self.assertEqual(parse({1: "q", "w": 2}, Dict), {1: "q", "w": 2})
