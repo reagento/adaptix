@@ -115,6 +115,8 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
                     return parse(data, t, trim_trailing_underscore=trim_trailing_underscore)
                 except ValueError:
                     pass  # ignore value error as it is union
+                except TypeError:
+                    pass  # ignore type error as it is union
         raise ValueError("Cannot parse `%s` as any of `%s`" % (data, cls.__args__))
 
     elif _issubclass_safe(cls, Enum):

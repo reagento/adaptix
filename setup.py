@@ -6,7 +6,7 @@ setup(
     name='dataclass_factory',
     description='An utility class for creating instances of dataclasses',
     long_description='An utility class for creating instances of dataclasses previously converted using with asdict()',
-    version='0.2',
+    version='0.3',
     url='https://github.com/tishka17/dataclass_factory',
     author='A. Tikhonov',
     author_email='17@itishka.org',
