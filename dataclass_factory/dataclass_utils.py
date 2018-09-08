@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from collections import deque
 from enum import Enum
 
-from typing import ClassVar, Any, Collection, Optional
+from typing import ClassVar, Any, Collection, Optional, List, Set, Tuple, FrozenSet, Deque, Dict
 from dataclasses import is_dataclass, fields, Field
 
 
 def _hasargs(type_, *args):
     try:
+        if not type_.__args__:
+            return False
         res = all(arg in type_.__args__ for arg in args)
     except AttributeError:
         return False
@@ -43,6 +46,31 @@ def _is_union(type_: ClassVar) -> bool:
         return False
 
 
+def get_collection_factory(cls):
+    res = {
+        List: list,
+        list: list,
+        Set: set,
+        set: set,
+        Tuple: tuple,
+        tuple: tuple,
+        FrozenSet: frozenset,
+        frozenset: frozenset,
+        Deque: deque,
+        deque: deque
+    }.get(cls.__origin__)
+    if not res:
+        raise NotImplementedError("Class %s not supported" % cls)
+    return res
+
+
+def _is_dict(cls):
+    try:
+        return cls.__origin__ in (dict, Dict)
+    except AttributeError:
+        return False
+
+
 def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
     """
     * Создание класса данных из словаря
@@ -65,11 +93,21 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
 
     if _is_optional(cls) and data is None:
         return None
-    elif _is_collection(cls) and (isinstance(data, list) or isinstance(data, tuple)):
+    elif _is_dict(cls):
+        key_type_arg = cls.__args__[0]
+        value_type_arg = cls.__args__[1]
+        return {
+            parse(k, key_type_arg, trim_trailing_underscore=trim_trailing_underscore):
+                parse(v, value_type_arg, trim_trailing_underscore=trim_trailing_underscore)
+            for k, v in data.items()
+        }
+
+    elif _is_collection(cls) and not isinstance(data, str) and not isinstance(data, bytes):
+        collection_factory = get_collection_factory(cls)
         type_arg = cls.__args__[0]
-        return [
+        return collection_factory(
             parse(x, type_arg, trim_trailing_underscore=trim_trailing_underscore) for x in data
-        ]
+        )
     elif _is_union(cls):
         for t in cls.__args__:
             if t is not None:
@@ -110,8 +148,7 @@ def dict_factory(trim_trailing_underscore=True, skip_none=False, skip_internal=F
         return {
             (k.rstrip("_") if trim_trailing_underscore else k): _prepare_value(v)
             for k, v in data
-            if not (k.startswith("_") and skip_internal) and
-               (v is not None or not skip_none)
+            if not (k.startswith("_") and skip_internal) and (v is not None or not skip_none)
         }
 
     return impl

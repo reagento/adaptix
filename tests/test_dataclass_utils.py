@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Tuple, Dict, FrozenSet, Set
 from unittest import TestCase
 
 from dataclass_factory import parse
@@ -43,6 +43,7 @@ class Test1(TestCase):
     def test_enum(self):
         self.assertEqual(parse("hello", E), E.hello)
         self.assertEqual(parse(1, E), E.one)
+        self.assertEqual(parse(E.one, E), E.one)
 
     def test_simple_dataclass(self):
         data = {
@@ -117,3 +118,14 @@ class Test1(TestCase):
             "value": [1]
         }
         self.assertEqual(parse(data, DUnion), DUnion([E.one]))
+
+    def test_list(self):
+        self.assertEqual(parse(["q"], List[str]), ["q"])
+        self.assertEqual(parse(["q"], Tuple[str]), ("q",))
+        self.assertNotEqual(parse(["q"], List[str]), ("q",))
+
+    def test_dict(self):
+        self.assertEqual(parse({1: 2}, Dict[int, int]), {1: 2})
+
+        x = frozenset({1, 2})
+        self.assertEqual(parse({x: {"q", "w"}}, Dict[FrozenSet[int], Set[str]]), {x: {"q", "w"}})
