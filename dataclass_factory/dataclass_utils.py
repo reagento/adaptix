@@ -130,7 +130,7 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
     elif _issubclass_safe(cls, int) and isinstance(data, int):
         return data
     else:
-        raise ValueError("Unknown type `%s` or invalid data: %s" % (cls, data))
+        raise ValueError("Unknown type `%s` or invalid data: %s" % (cls, repr(data)))
 
 
 def _prepare_value(value):

@@ -138,3 +138,8 @@ class Test1(TestCase):
     def test_noargs(self):
         self.assertEqual(parse([1, "q"], List), [1, "q"])
         self.assertEqual(parse({1: "q", "w": 2}, Dict), {1: "q", "w": 2})
+
+    def test_tuple(self):
+        self.assertEqual(parse((True, "True"), Tuple[bool, str]), (True, "True"))
+        self.assertEqual(parse((True, "True", 1), Tuple[bool, str, int]), (True, "True", 1))
+        self.assertEqual(parse((True, False, True), Tuple[bool, ...]), (True, False, True))
