@@ -26,6 +26,14 @@ def _issubclass_safe(cls, classinfo):
         return result
 
 
+def _is_tuple(type_) -> bool:
+    try:
+        # __origin__ exists in 3.7 on user defined generics
+        return _issubclass_safe(type_.__origin__, Tuple) or _issubclass_safe(type_, Tuple)
+    except AttributeError:
+        return False
+
+
 def _is_collection(type_) -> bool:
     try:
         # __origin__ exists in 3.7 on user defined generics
@@ -102,13 +110,22 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
                 parse(v, value_type_arg, trim_trailing_underscore=trim_trailing_underscore)
             for k, v in data.items()
         }
-
     elif _is_collection(cls) and not isinstance(data, str) and not isinstance(data, bytes):
-        collection_factory = get_collection_factory(cls)
-        type_arg = cls.__args__[0] if cls.__args__ else Any
-        return collection_factory(
-            parse(x, type_arg, trim_trailing_underscore=trim_trailing_underscore) for x in data
-        )
+        if _is_tuple(cls):
+            if not _hasargs(cls):
+                return tuple(parse(x, Any) for x in data)
+            if len(cls.__args__) == 2 and cls.__args__[1] is Ellipsis:
+                return tuple(parse(x, cls.__args__[0]) for x in data)
+            elif len(cls.__args__) != len(data):
+                raise ValueError("Length of data (%s) != length of types (%s)" % (len(data), len(cls.__args__)))
+            else:
+                return tuple(parse(x, cls.__args__[i]) for i, x in enumerate(data))
+        else:
+            collection_factory = get_collection_factory(cls)
+            type_arg = cls.__args__[0] if cls.__args__ else Any
+            return collection_factory(
+                parse(x, type_arg, trim_trailing_underscore=trim_trailing_underscore) for x in data
+            )
     elif _is_union(cls):
         for t in cls.__args__:
             if t is not None:
@@ -130,7 +147,7 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
     elif _issubclass_safe(cls, int) and isinstance(data, int):
         return data
     else:
-        raise ValueError("Unknown type `%s` or invalid data: %s" % (cls, data))
+        raise ValueError("Unknown type `%s` or invalid data: %s" % (cls, repr(data)))
 
 
 def _prepare_value(value):
