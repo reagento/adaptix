@@ -8,7 +8,8 @@ This module provides `parse` method for such task.
 
 * `dataclass` from dict
 * `Enum` from value
-* `List`, `Tuple`, `Set`, `FrozenSet`, `Dict` with specified type
+* `List`, `Set`, `FrozenSet`, `Dict` with specified type
+* `Tuple` with specified types or ellipsis
 * `Optional` with specified type
 * `Union` parsed in order of given types
 * `Any` returned as is
