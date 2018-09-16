@@ -1,4 +1,8 @@
 # dataclass_factory
+
+[![PyPI version](https://badge.fury.io/py/dataclass-factory.svg)](https://badge.fury.io/py/dataclass-factory)
+[![Build Status](https://travis-ci.org/Tishka17/dataclass_factory.svg?branch=master)](https://travis-ci.org/Tishka17/dataclass_factory)
+
 ## Why
 
 You can convert dataclass to dict using `asdict` method, but cannot convert back.

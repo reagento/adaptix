@@ -1,0 +1,7 @@
+language: python
+python:
+  - "3.7"
+  - "3.6"
+script: nose2 -v
+install:
+  - pip3 install -r requirements.txt
