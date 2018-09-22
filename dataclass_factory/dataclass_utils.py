@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import inspect
 from collections import deque
 from dataclasses import is_dataclass, fields, Field
 from enum import Enum
@@ -136,7 +137,7 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
                 except TypeError:
                     pass  # ignore type error as it is union
         raise ValueError("Cannot parse `%s` as any of `%s`" % (data, cls.__args__))
-    elif cls in (Any, T, KT, VT):
+    elif cls in (Any, T, KT, VT, inspect._empty):
         return data
     elif _issubclass_safe(cls, Enum):
         return cls(data)
@@ -152,7 +153,15 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
             isinstance(data, float) or isinstance(data, int) or isinstance(data, complex)):
         return complex(data)
     else:
-        raise ValueError("Unknown type `%s` or invalid data: %s" % (cls, repr(data)))
+        try:
+            arguments = inspect.signature(cls.__init__).parameters
+            res = {}
+            for k, v in arguments.items():
+                if k != "self":
+                    res[k] = parse(data.get(k), v.annotation)
+            return cls(**res)
+        except AttributeError as e:
+            raise ValueError("Unknown type `%s` or invalid data: %s" % (cls, repr(data)))
 
 
 def _prepare_value(value):
