@@ -17,6 +17,7 @@ This module provides `parse` method for such task.
 * `Optional` with specified type
 * `Union` parsed in order of given types
 * `Any` returned as is
+* other classes based on their `__init__` method
 
 ## Usage
 
