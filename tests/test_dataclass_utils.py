@@ -38,6 +38,16 @@ class DUnion:
     value: Union[str, int, List[E]]
 
 
+class MyClass:
+    def __init__(self, x: int, y: E, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y and self.z == other.z
+
+
 class Test1(TestCase):
 
     def test_enum(self):
@@ -148,5 +158,14 @@ class Test1(TestCase):
         self.assertEqual(type(parse(1, int)), int)
         self.assertEqual(parse(1, float), 1)
         self.assertEqual(type(parse(1, float)), float)
-        self.assertEqual(parse(1+1j, complex), 1+1j)
+        self.assertEqual(parse(1 + 1j, complex), 1 + 1j)
         self.assertEqual(type(parse(1, complex)), complex)
+
+    def test_myclass(self):
+        data = {
+            "x": 1,
+            "y": "hello",
+            "z": "z"
+        }
+        expected = MyClass(1, E.hello, "z")
+        self.assertEqual(parse(data, MyClass), expected)
