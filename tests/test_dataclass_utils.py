@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, List, Union, Tuple, Dict, FrozenSet, Set, Any
 from unittest import TestCase
-
-from dataclasses import dataclass, field
 
 from dataclass_factory import parse
 
@@ -143,3 +142,11 @@ class Test1(TestCase):
         self.assertEqual(parse((True, "True"), Tuple[bool, str]), (True, "True"))
         self.assertEqual(parse((True, "True", 1), Tuple[bool, str, int]), (True, "True", 1))
         self.assertEqual(parse((True, False, True), Tuple[bool, ...]), (True, False, True))
+
+    def test_numbers(self):
+        self.assertEqual(parse(1, int), 1)
+        self.assertEqual(type(parse(1, int)), int)
+        self.assertEqual(parse(1, float), 1)
+        self.assertEqual(type(parse(1, float)), float)
+        self.assertEqual(parse(1+1j, complex), 1+1j)
+        self.assertEqual(type(parse(1, complex)), complex)

@@ -146,6 +146,11 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
         return data
     elif _issubclass_safe(cls, int) and isinstance(data, int):
         return data
+    elif _issubclass_safe(cls, float) and (isinstance(data, float) or isinstance(data, int)):
+        return float(data)
+    elif _issubclass_safe(cls, complex) and (
+            isinstance(data, float) or isinstance(data, int) or isinstance(data, complex)):
+        return complex(data)
     else:
         raise ValueError("Unknown type `%s` or invalid data: %s" % (cls, repr(data)))
 
