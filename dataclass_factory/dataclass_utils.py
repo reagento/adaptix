@@ -3,6 +3,7 @@
 import inspect
 from collections import deque
 from dataclasses import is_dataclass, fields, Field
+from decimal import Decimal
 from enum import Enum
 from typing import ClassVar, Any, Collection, Optional, List, Set, Tuple, FrozenSet, Deque, Dict, T, KT, VT
 
@@ -145,10 +146,16 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
         return data
     elif _issubclass_safe(cls, bool) and isinstance(data, bool):
         return data
+    elif _issubclass_safe(cls, bool) and isinstance(data, str):
+        return bool(data)
     elif _issubclass_safe(cls, int) and isinstance(data, int):
         return data
-    elif _issubclass_safe(cls, float) and (isinstance(data, float) or isinstance(data, int)):
+    elif _issubclass_safe(cls, int) and isinstance(data, str):
+        return int(data)
+    elif _issubclass_safe(cls, float) and (isinstance(data, float) or isinstance(data, int) or isinstance(data, str)):
         return float(data)
+    elif _issubclass_safe(cls, Decimal) and isinstance(data, str):
+        return Decimal(data)
     elif _issubclass_safe(cls, complex) and (
             isinstance(data, float) or isinstance(data, int) or isinstance(data, complex)):
         return complex(data)
