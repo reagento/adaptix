@@ -98,7 +98,10 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
                 name = field.name
             if field.init:
                 if name in data:
-                    parsed[field.name] = parse(data[name], field.type)
+                    try:
+                        parsed[field.name] = parse(data[name], field.type)
+                    except ValueError as exc:
+                        raise ValueError(*exc.args, name)
         return cls(**parsed)
 
     if _is_optional(cls) and data is None:
