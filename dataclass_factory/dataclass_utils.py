@@ -7,6 +7,19 @@ from enum import Enum
 from typing import ClassVar, Any, Collection, Optional, List, Set, Tuple, FrozenSet, Deque, Dict, T, KT, VT
 
 
+__all__ = (
+    'parse',
+    'InvalidFieldError',
+)
+
+
+class InvalidFieldError(ValueError):
+    def __init__(self, message: str, field_path: Tuple[str, ...]):
+        super().__init__(message, field_path)
+        self.message = message
+        self.field_path = field_path
+
+
 def _hasargs(type_, *args):
     try:
         if not type_.__args__:
@@ -100,8 +113,10 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
                 if name in data:
                     try:
                         parsed[field.name] = parse(data[name], field.type)
+                    except InvalidFieldError as field_error:
+                        raise InvalidFieldError(field_error.message, field_error.field_path + (name,))
                     except ValueError as exc:
-                        raise ValueError(*exc.args, name)
+                        raise InvalidFieldError(str(exc), (name,))
         return cls(**parsed)
 
     if _is_optional(cls) and data is None:
