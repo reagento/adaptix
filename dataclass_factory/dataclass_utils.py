@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import decimal
 import inspect
 from collections import deque
 from dataclasses import is_dataclass, fields, Field
@@ -145,10 +146,26 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
         return data
     elif _issubclass_safe(cls, bool) and isinstance(data, bool):
         return data
+    elif _issubclass_safe(cls, bool) and (isinstance(data, str) or isinstance(data, bytes)):
+        return bool(data)
     elif _issubclass_safe(cls, int) and isinstance(data, int):
         return data
-    elif _issubclass_safe(cls, float) and (isinstance(data, float) or isinstance(data, int)):
+    elif _issubclass_safe(cls, int) and isinstance(data, str):
+        return int(data)
+    elif _issubclass_safe(cls, int) and isinstance(data, bytes):
+        return int(data)
+    elif _issubclass_safe(cls, float) and (
+            isinstance(data, float) or
+            isinstance(data, int) or
+            isinstance(data, str) or
+            isinstance(data, bytes)
+    ):
         return float(data)
+    elif _issubclass_safe(cls, decimal.Decimal) and isinstance(data, str):
+        try:
+            return decimal.Decimal(data)
+        except decimal.InvalidOperation:
+            raise ValueError(f'Invalid decimal string representation {data}')
     elif _issubclass_safe(cls, complex) and (
             isinstance(data, float) or isinstance(data, int) or isinstance(data, complex)):
         return complex(data)
