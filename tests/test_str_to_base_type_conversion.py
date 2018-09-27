@@ -15,7 +15,7 @@ class Foo:
     e: Decimal = Decimal("0")
 
 
-class TestBaseTypeConversion(TestCase):
+class TestStrToBaseTypeConversion(TestCase):
 
     def test_should_convert_to_int_when_valid_parsing_valid_int(self):
         self.assertEqual(parse({"a": "10"}, Foo), Foo(a=10))
