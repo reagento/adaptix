@@ -33,7 +33,6 @@ class TestInvalidData(TestCase):
             parse({"a": "20x", "b": 20}, Foo)
             self.assertTrue(False, "ValueError exception expected")
         except InvalidFieldError as exc:
-            self.assertEqual("Unknown type `<class 'int'>` or invalid data: '20x'", exc.message)
             self.assertEqual(('a',), exc.field_path)
 
     def test_should_provide_failed_key_hierarchy_when_invalid_nested_data_parsed(self):
@@ -41,5 +40,4 @@ class TestInvalidData(TestCase):
             parse({"d": {"a": "20x", "b": 20}, "e": 1}, Bar)
             self.assertTrue(False, "ValueError exception expected")
         except InvalidFieldError as exc:
-            self.assertEqual("Unknown type `<class 'int'>` or invalid data: '20x'", exc.message)
             self.assertEqual(('a', 'd'), exc.field_path)
