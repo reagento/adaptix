@@ -18,6 +18,7 @@ This module provides `parse` method for such task.
 * `Union` parsed in order of given types
 * `Any` returned as is
 * other classes based on their `__init__` method
+* `int`/`float`/`decimal` also parsed from string
 
 ## Usage
 
