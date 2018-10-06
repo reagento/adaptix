@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from unittest import TestCase
+
+from dataclasses import dataclass
+
+from dataclass_factory import parse
+
+
+class Bar:
+    def __init__(self, data):
+        self.data = data
+
+    def __eq__(self, other):
+        return self.data == other.data
+
+
+@dataclass
+class Foo:
+    a: int
+    b: Bar
+
+
+def bar_factory(data):
+    return Bar(data * 10 + 3)
+
+
+def int_factory(data):
+    return len(data)
+
+
+class TestTypeFactories(TestCase):
+    def test_one(self):
+        data = {
+            "a": [1, 2, 3],
+            "b": 4
+        }
+        expected = Foo(a=3, b=Bar(43))
+        self.assertEqual(
+            parse(data, Foo, type_factories={int: int_factory, Bar: bar_factory}),
+            expected
+        )

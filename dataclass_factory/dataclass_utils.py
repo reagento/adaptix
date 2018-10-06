@@ -7,7 +7,6 @@ from dataclasses import is_dataclass, fields, Field
 from enum import Enum
 from typing import ClassVar, Any, Collection, Optional, List, Set, Tuple, FrozenSet, Deque, Dict, T, KT, VT
 
-
 __all__ = (
     'parse',
     'InvalidFieldError',
@@ -95,13 +94,16 @@ def _is_dict(cls):
         return False
 
 
-def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
+def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True, type_factories=None):
     """
     * Создание класса данных из словаря
     * Примитивы проверяются на соответствие типов
     * Из коллекций поддерживается list и tuple
     * При парсинге Union ищет первый подходящий тип
     """
+    if type_factories and cls in type_factories:
+        return type_factories[cls](data)
+
     if is_dataclass(cls):
         parsed: dict = {}
         field: Field
@@ -113,7 +115,10 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
             if field.init:
                 if name in data:
                     try:
-                        parsed[field.name] = parse(data[name], field.type)
+                        parsed[field.name] = parse(data[name],
+                                                   field.type,
+                                                   trim_trailing_underscore=trim_trailing_underscore,
+                                                   type_factories=type_factories)
                     except InvalidFieldError as field_error:
                         raise InvalidFieldError(field_error.message, field_error.field_path + (name,))
                     except ValueError as exc:
@@ -126,31 +131,38 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
         key_type_arg = cls.__args__[0] if cls.__args__ else Any
         value_type_arg = cls.__args__[1] if cls.__args__ else Any
         return {
-            parse(k, key_type_arg, trim_trailing_underscore=trim_trailing_underscore):
-                parse(v, value_type_arg, trim_trailing_underscore=trim_trailing_underscore)
+            parse(k, key_type_arg, trim_trailing_underscore=trim_trailing_underscore, type_factories=type_factories):
+                parse(v, value_type_arg, trim_trailing_underscore=trim_trailing_underscore,
+                      type_factories=type_factories)
             for k, v in data.items()
         }
     elif _is_collection(cls) and not isinstance(data, str) and not isinstance(data, bytes):
         if _is_tuple(cls):
             if not _hasargs(cls):
-                return tuple(parse(x, Any) for x in data)
+                return tuple(
+                    parse(x, Any, trim_trailing_underscore=trim_trailing_underscore, type_factories=type_factories) for
+                    x in data)
             if len(cls.__args__) == 2 and cls.__args__[1] is Ellipsis:
-                return tuple(parse(x, cls.__args__[0]) for x in data)
+                return tuple(parse(x, cls.__args__[0], trim_trailing_underscore=trim_trailing_underscore,
+                                   type_factories=type_factories) for x in data)
             elif len(cls.__args__) != len(data):
                 raise ValueError("Length of data (%s) != length of types (%s)" % (len(data), len(cls.__args__)))
             else:
-                return tuple(parse(x, cls.__args__[i]) for i, x in enumerate(data))
+                return tuple(parse(x, cls.__args__[i], trim_trailing_underscore=trim_trailing_underscore,
+                                   type_factories=type_factories) for i, x in enumerate(data))
         else:
             collection_factory = get_collection_factory(cls)
             type_arg = cls.__args__[0] if cls.__args__ else Any
             return collection_factory(
-                parse(x, type_arg, trim_trailing_underscore=trim_trailing_underscore) for x in data
+                parse(x, type_arg, trim_trailing_underscore=trim_trailing_underscore, type_factories=type_factories) for
+                x in data
             )
     elif _is_union(cls):
         for t in cls.__args__:
             if t is not None:
                 try:
-                    return parse(data, t, trim_trailing_underscore=trim_trailing_underscore)
+                    return parse(data, t, trim_trailing_underscore=trim_trailing_underscore,
+                                 type_factories=type_factories)
                 except ValueError:
                     pass  # ignore value error as it is union
                 except TypeError:
@@ -193,32 +205,8 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True):
             res = {}
             for k, v in arguments.items():
                 if k != "self":
-                    res[k] = parse(data.get(k), v.annotation)
+                    res[k] = parse(data.get(k), v.annotation, trim_trailing_underscore=trim_trailing_underscore,
+                                   type_factories=type_factories)
             return cls(**res)
         except AttributeError as e:
             raise ValueError("Unknown type `%s` or invalid data: %s" % (cls, repr(data)))
-
-
-def _prepare_value(value):
-    if isinstance(value, Enum):
-        return value.value
-    return value
-
-
-def dict_factory(trim_trailing_underscore=True, skip_none=False, skip_internal=False):
-    """
-    Формируем словарь с данными из dataclass со следующими ограничениями:
-      1. Пропускаем все элементы, которые назваются с первого символа `_` - это внутренние свойства
-      2. отрезаем конечный символ `_`, так как он используется только для исключения конфликта
-          с ключевыми словами и встроенными функциями python
-      3. Пропускаются None значения
-    """
-
-    def impl(data):
-        return {
-            (k.rstrip("_") if trim_trailing_underscore else k): _prepare_value(v)
-            for k, v in data
-            if not (k.startswith("_") and skip_internal) and (v is not None or not skip_none)
-        }
-
-    return impl
