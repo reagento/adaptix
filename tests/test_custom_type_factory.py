@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 from unittest import TestCase
 
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
-from dataclass_factory import parse
+from dataclass_factory import parse, dict_factory
 
 
 class Bar:
@@ -29,8 +29,12 @@ def int_factory(data):
     return len(data)
 
 
+def bar_serialize(bar: Bar):
+    return bar.data - 3 // 10
+
+
 class TestTypeFactories(TestCase):
-    def test_one(self):
+    def test_parse(self):
         data = {
             "a": [1, 2, 3],
             "b": 4
@@ -38,5 +42,16 @@ class TestTypeFactories(TestCase):
         expected = Foo(a=3, b=Bar(43))
         self.assertEqual(
             parse(data, Foo, type_factories={int: int_factory, Bar: bar_factory}),
+            expected
+        )
+
+    def test_serialize(self):
+        data = Foo(a=3, b=Bar(43))
+        expected = {
+            "a": 3,
+            "b": 4
+        }
+        self.assertTrue(
+            asdict(data, dict_factory=dict_factory(type_serializers={Bar: bar_serialize})),
             expected
         )

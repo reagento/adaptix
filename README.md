@@ -8,6 +8,8 @@
 You can convert dataclass to dict using `asdict` method, but cannot convert back.
 This module provides `parse` method for such task. 
 
+It is very useful in combination with json
+
 ## What's supported 
 
 * `dataclass` from dict
@@ -19,6 +21,7 @@ This module provides `parse` method for such task.
 * `Any` returned as is
 * other classes based on their `__init__` method
 * `int`/`float`/`decimal` also parsed from string
+* custom parser if specified
 
 ## Usage
 
@@ -76,4 +79,54 @@ expected = Store(
 
 assert expected == dataclass_factory.parse(data, Store)
 
+```
+
+### Custom parsers and dict factory
+
+You can provide your parsers for types that are not supported. For example, you can parse `datetime` from iso format.
+
+Also there is `dict_factory`, which can help you to serialize data in your dataclasses. 
+You can provide custom serializers as well
+
+
+```python
+from dataclass_factory import parse, dict_factory
+from datetime import datetime
+import dateutil.parser
+from dataclasses import dataclass, asdict
+
+
+@dataclass
+class Todo:
+    id_: int
+    title: str
+    deadline: datetime
+
+
+data = {
+    "id": 1,
+    "deadline": "2025-12-31T00:00:00",
+    "title": "Release 1.0"
+}
+
+todo = Todo(
+    id_=1,
+    title="Release 1.0",
+    deadline=datetime(2025, 12, 31, 0, 0, 0)
+)
+
+assert todo == parse(
+    data,
+    Todo,
+    trim_trailing_underscore=True,
+    type_factories={datetime: dateutil.parser.parse}
+)
+
+assert data == asdict(
+    todo,
+    dict_factory=dict_factory(
+        trim_trailing_underscore=True,
+        type_serializers={datetime: datetime.isoformat}
+    )
+)
 ```
