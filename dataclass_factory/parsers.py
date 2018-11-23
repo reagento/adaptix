@@ -60,11 +60,17 @@ def get_parser(cls):
             parsers = itertools.cycle([get_parser(cls.__args__[0])])
         else:
             parsers = tuple(get_parser(x) for x in cls.__args__)
-        return lambda data: parse_tuple(data, parsers)
+        return lambda data: tuple(
+            parser(x) for x, parser in zip(data, parsers)
+        )
     if is_collection(cls):
         collection_factory = get_collection_factory(cls)
-        type_arg = get_parser(cls.__args__[0] if cls.__args__ else Any)
-        return lambda data: parse_collection(data, collection_factory, type_arg)
+        item_parser = get_parser(cls.__args__[0] if cls.__args__ else Any)
+        return lambda data: collection_factory(
+            item_parser(x) for x in data
+        )
     if is_dataclass(cls):
         parsers = {field.name: get_parser(field.type) for field in fields(cls)}
-        return lambda data: parse_dataclass(data, cls, parsers)
+        return lambda data: cls(**{
+            field: parser(data[field]) for field, parser in parsers.items()
+        })
