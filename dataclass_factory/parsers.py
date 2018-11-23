@@ -48,29 +48,38 @@ def get_collection_factory(cls):
     return res
 
 
-def get_parser(cls):
-    if is_any(cls):
-        return parse_stub
-    if cls in (int, float, complex, bool, decimal.Decimal):
-        return cls
-    if is_tuple(cls):
-        if not hasargs(cls):
-            parsers = itertools.cycle([parse_stub])
-        elif len(cls.__args__) == 2 and cls.__args__[1] is Ellipsis:
-            parsers = itertools.cycle([get_parser(cls.__args__[0])])
-        else:
-            parsers = tuple(get_parser(x) for x in cls.__args__)
-        return lambda data: tuple(
-            parser(x) for x, parser in zip(data, parsers)
-        )
-    if is_collection(cls):
-        collection_factory = get_collection_factory(cls)
-        item_parser = get_parser(cls.__args__[0] if cls.__args__ else Any)
-        return lambda data: collection_factory(
-            item_parser(x) for x in data
-        )
-    if is_dataclass(cls):
-        parsers = {field.name: get_parser(field.type) for field in fields(cls)}
-        return lambda data: cls(**{
-            field: parser(data[field]) for field, parser in parsers.items()
-        })
+class ParserFactory:
+    def __init__(self):
+        self.cache = {}
+
+    def get_parser(self, cls):
+        if cls not in self.cache:
+            self.cache[cls] = self._new_parser(cls)
+        return self.cache[cls]
+
+    def _new_parser(self, cls):
+        if is_any(cls):
+            return parse_stub
+        if cls in (int, float, complex, bool, decimal.Decimal, str):
+            return cls
+        if is_tuple(cls):
+            if not hasargs(cls):
+                parsers = itertools.cycle([parse_stub])
+            elif len(cls.__args__) == 2 and cls.__args__[1] is Ellipsis:
+                parsers = itertools.cycle([self.get_parser(cls.__args__[0])])
+            else:
+                parsers = tuple(self.get_parser(x) for x in cls.__args__)
+            return lambda data: tuple(
+                parser(x) for x, parser in zip(data, parsers)
+            )
+        if is_collection(cls):
+            collection_factory = get_collection_factory(cls)
+            item_parser = self.get_parser(cls.__args__[0] if cls.__args__ else Any)
+            return lambda data: collection_factory(
+                item_parser(x) for x in data
+            )
+        if is_dataclass(cls):
+            parsers = {field.name: self.get_parser(field.type) for field in fields(cls)}
+            return lambda data: cls(**{
+                field: parser(data[field]) for field, parser in parsers.items()
+            })
