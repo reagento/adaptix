@@ -40,7 +40,7 @@ def get_collection_factory(cls):
     return res
 
 
-def _is_dict(cls):
+def is_dict(cls):
     try:
         origin = cls.__origin__ or cls
         return origin in (dict, Dict)
@@ -81,7 +81,7 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True, type_factorie
 
     if is_optional(cls) and data is None:
         return None
-    elif _is_dict(cls):
+    elif is_dict(cls):
         key_type_arg = cls.__args__[0] if cls.__args__ else Any
         value_type_arg = cls.__args__[1] if cls.__args__ else Any
         return {

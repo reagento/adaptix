@@ -1,5 +1,5 @@
 import inspect
-from typing import Collection, Tuple, Optional, ClassVar, Any, T, KT, VT
+from typing import Collection, Tuple, Optional, ClassVar, Any, T, KT, VT, Union
 
 
 def hasargs(type_, *args):
@@ -42,6 +42,10 @@ def is_optional(type_) -> bool:
     return issubclass_safe(type_, Optional) or hasargs(type_, type(None))
 
 
+def is_real_optional(type_) -> bool:
+    return issubclass_safe(type_, Optional)
+
+
 def is_union(type_: ClassVar) -> bool:
     try:
         return bool(type_.__args__)
@@ -51,3 +55,7 @@ def is_union(type_: ClassVar) -> bool:
 
 def is_any(type_: ClassVar) -> bool:
     return type_ in (Any, T, KT, VT, inspect._empty)
+
+
+def is_none(type_: ClassVar) -> bool:
+    return type_ is type(None)
