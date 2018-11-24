@@ -49,7 +49,7 @@ def get_tuple_parser(parsers: Collection[Callable]):
 
 def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable]):
     return lambda data: cls(**{
-        field: parser(data[field]) for field, parser in parsers.items()
+        field: parser(data[field]) for field, parser in parsers.items() if field in data
     })
 
 
@@ -94,7 +94,7 @@ class ParserFactory:
             return parse_none
         if is_real_optional(cls):
             return get_optional_parser(self.get_parser(cls.__args__[0]))
-        if cls in (int, float, complex, bool, decimal.Decimal, str):
+        if cls in (int, float, complex, bool, decimal.Decimal, str, bytearray, bytes):
             return cls
         if is_tuple(cls):
             if not hasargs(cls):
