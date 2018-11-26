@@ -70,6 +70,13 @@ def get_optional_parser(parser):
     return lambda data: parser(data) if data is not None else None
 
 
+def decimal_parse(data):
+    try:
+        return decimal.Decimal(data)
+    except (decimal.InvalidOperation, TypeError):
+        raise ValueError(f'Invalid decimal string representation {data}')
+
+
 def get_collection_factory(cls):
     origin = cls.__origin__ or cls
     res = {
@@ -116,8 +123,10 @@ class ParserFactory:
             return get_optional_parser(self.get_parser(cls.__args__[0]))
         if cls in (str, bytearray, bytes):
             return get_parser_with_check(cls)
-        if cls in (int, float, complex, bool, decimal.Decimal):
+        if cls in (int, float, complex, bool):
             return cls
+        if cls in (decimal.Decimal,):
+            return decimal_parse
         if is_enum(cls):
             return cls
         if is_tuple(cls):
@@ -144,7 +153,7 @@ class ParserFactory:
         try:
             arguments = inspect.signature(cls.__init__).parameters
             parsers = {
-                k: self.get_parser(v.annotation) for k,v in arguments.items()
+                k: self.get_parser(v.annotation) for k, v in arguments.items()
             }
             return get_class_parser(cls, parsers)
         except AttributeError:
