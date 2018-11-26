@@ -3,7 +3,7 @@ from collections import deque
 from dataclasses import fields, is_dataclass
 from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection
 
-from dataclass_factory.dataclass_utils import is_dict
+from dataclass_factory.dataclass_utils import is_dict, is_enum
 from .type_detection import is_tuple, is_collection, is_any, hasargs, is_real_optional, is_none, is_union
 
 
@@ -14,6 +14,15 @@ def parse_stub(data):
 def parse_none(data):
     if data is not None:
         raise ValueError("None expected")
+
+
+def get_parser_with_check(cls):
+    def parser(data):
+        if not isinstance(data, cls):
+            raise ValueError("data is not str")
+        return data
+
+    return parser
 
 
 def get_collection_parser(collection_factory: Callable, item_parser: Callable):
@@ -27,9 +36,9 @@ def get_union_parser(parsers: Collection[Callable]):
         for p in parsers:
             try:
                 return p(data)
-            except ValueError:
+            except (ValueError, TypeError):
                 continue
-        raise ValueError("No suitable parsers found for %s" % data)
+        raise ValueError("No suitable parsers in union found for `%s`" % data)
 
     return union_parser
 
@@ -47,9 +56,12 @@ def get_tuple_parser(parsers: Collection[Callable]):
     return tuple_parser
 
 
-def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable]):
+def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trailing_underscore: bool):
+    field_info = {
+        f: (f.rstrip("_") if trim_trailing_underscore else f, p) for f, p in parsers.items()
+    }
     return lambda data: cls(**{
-        field: parser(data[field]) for field, parser in parsers.items() if field in data
+        field: info[1](data[info[0]]) for field, info in field_info.items() if info[0] in data
     })
 
 
@@ -79,8 +91,9 @@ def get_dict_parser(key_parser, value_parser):
 
 
 class ParserFactory:
-    def __init__(self):
+    def __init__(self, trim_trailing_underscore=True):
         self.cache = {}
+        self.trim_trailing_underscore = trim_trailing_underscore
 
     def get_parser(self, cls):
         if cls not in self.cache:
@@ -94,7 +107,11 @@ class ParserFactory:
             return parse_none
         if is_real_optional(cls):
             return get_optional_parser(self.get_parser(cls.__args__[0]))
-        if cls in (int, float, complex, bool, decimal.Decimal, str, bytearray, bytes):
+        if cls in (str, bytearray, bytes):
+            return get_parser_with_check(cls)
+        if cls in (int, float, complex, bool, decimal.Decimal):
+            return cls
+        if is_enum(cls):
             return cls
         if is_tuple(cls):
             if not hasargs(cls):
@@ -116,4 +133,4 @@ class ParserFactory:
             return get_union_parser(tuple(self.get_parser(x) for x in cls.__args__))
         if is_dataclass(cls):
             parsers = {field.name: self.get_parser(field.type) for field in fields(cls)}
-            return get_dataclass_parser(cls, parsers)
+            return get_dataclass_parser(cls, parsers, self.trim_trailing_underscore)

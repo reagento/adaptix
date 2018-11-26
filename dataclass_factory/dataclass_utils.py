@@ -124,7 +124,7 @@ def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True, type_factorie
         raise ValueError("Cannot parse `%s` as any of `%s`" % (data, cls.__args__))
     elif is_any(cls):
         return data
-    elif issubclass_safe(cls, Enum):
+    elif is_enum(cls):
         return cls(data)
     elif issubclass_safe(cls, str) and isinstance(data, str):
         return data

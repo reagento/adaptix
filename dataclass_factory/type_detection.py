@@ -1,4 +1,5 @@
 import inspect
+from enum import Enum
 from typing import Collection, Tuple, Optional, ClassVar, Any, T, KT, VT, Union
 
 
@@ -59,3 +60,7 @@ def is_any(type_: ClassVar) -> bool:
 
 def is_none(type_: ClassVar) -> bool:
     return type_ is type(None)
+
+
+def is_enum(cls: ClassVar) -> bool:
+    return issubclass_safe(cls, Enum)
