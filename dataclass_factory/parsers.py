@@ -1,4 +1,5 @@
 import decimal
+import inspect
 from collections import deque
 from dataclasses import fields, is_dataclass
 from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection
@@ -90,6 +91,12 @@ def get_dict_parser(key_parser, value_parser):
     return lambda data: {key_parser(k): value_parser(v) for k, v in data.items()}
 
 
+def get_class_parser(cls, parsers: Dict[str, Callable]):
+    return lambda data: cls(**{
+        k: parser(data.get(k)) for k, parser in parsers.items() if k in data
+    })
+
+
 class ParserFactory:
     def __init__(self, trim_trailing_underscore=True):
         self.cache = {}
@@ -134,3 +141,11 @@ class ParserFactory:
         if is_dataclass(cls):
             parsers = {field.name: self.get_parser(field.type) for field in fields(cls)}
             return get_dataclass_parser(cls, parsers, self.trim_trailing_underscore)
+        try:
+            arguments = inspect.signature(cls.__init__).parameters
+            parsers = {
+                k: self.get_parser(v.annotation) for k,v in arguments.items()
+            }
+            return get_class_parser(cls, parsers)
+        except AttributeError:
+            raise ValueError("Cannot find parser for `%s`" % repr(cls))
