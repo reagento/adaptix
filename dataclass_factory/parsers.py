@@ -39,10 +39,15 @@ def get_parser_with_check(cls):
     return parser
 
 
-def get_collection_parser(collection_factory: Callable, item_parser: Callable):
-    return lambda data: collection_factory(
-        element_parser(item_parser, x, i) for i, x in enumerate(data)
-    )
+def get_collection_parser(collection_factory: Callable, item_parser: Callable, debug_path: bool):
+    if debug_path:
+        return lambda data: collection_factory(
+            element_parser(item_parser, x, i) for i, x in enumerate(data)
+        )
+    else:
+        return lambda data: collection_factory(
+            item_parser(x) for x in data
+        )
 
 
 def get_union_parser(parsers: Collection[Callable]):
@@ -61,22 +66,34 @@ def tuple_any_parser(data):
     return tuple(data)
 
 
-def get_tuple_parser(parsers: Collection[Callable]):
-    def tuple_parser(data):
-        if len(data) != len(parsers):
-            raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
-        return tuple(element_parser(parser, x, i) for x, parser, i in zip(data, parsers, itertools.count()))
-
+def get_tuple_parser(parsers: Collection[Callable], debug_path: bool):
+    if debug_path:
+        def tuple_parser(data):
+            if len(data) != len(parsers):
+                raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
+            return tuple(element_parser(parser, x, i) for x, parser, i in zip(data, parsers, itertools.count()))
+    else:
+        def tuple_parser(data):
+            if len(data) != len(parsers):
+                raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
+            return tuple(parser(x) for x, parser in zip(data, parsers))
     return tuple_parser
 
 
-def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trailing_underscore: bool):
+def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trailing_underscore: bool, debug_path: bool):
     field_info = {
         f: (f.rstrip("_") if trim_trailing_underscore else f, p) for f, p in parsers.items()
     }
-    return lambda data: cls(**{
-        field: element_parser(info[1], data[info[0]], field) for field, info in field_info.items() if info[0] in data
-    })
+    if debug_path:
+        return lambda data: cls(**{
+            field: element_parser(info[1], data[info[0]], field)
+            for field, info in field_info.items()
+            if info[0] in data
+        })
+    else:
+        return lambda data: cls(**{
+            field: info[1](data[info[0]]) for field, info in field_info.items() if info[0] in data
+        })
 
 
 def get_optional_parser(parser):
@@ -111,18 +128,27 @@ def get_dict_parser(key_parser, value_parser):
     return lambda data: {key_parser(k): value_parser(v) for k, v in data.items()}
 
 
-def get_class_parser(cls, parsers: Dict[str, Callable]):
-    return lambda data: cls(**{
-        k: element_parser(parser, data.get(k), k) for k, parser in parsers.items() if k in data
-    })
+def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool):
+    if debug_path:
+        return lambda data: cls(**{
+            k: element_parser(parser, data.get(k), k) for k, parser in parsers.items() if k in data
+        })
+    else:
+        return lambda data: cls(**{
+            k: parser(data.get(k)) for k, parser in parsers.items() if k in data
+        })
 
 
 class ParserFactory:
-    def __init__(self, trim_trailing_underscore: bool = True, type_factories: Dict[Any, Callable] = None):
+    def __init__(self,
+                 trim_trailing_underscore: bool = True,
+                 debug_path: bool = False,
+                 type_factories: Dict[Any, Callable] = None):
         self.cache = {}
         if type_factories:
             self.cache.update(type_factories)
         self.trim_trailing_underscore = trim_trailing_underscore
+        self.debug_path = debug_path
 
     def get_parser(self, cls):
         if cls not in self.cache:
@@ -149,9 +175,9 @@ class ParserFactory:
                 return tuple_any_parser
             elif len(cls.__args__) == 2 and cls.__args__[1] is Ellipsis:
                 item_parser = self.get_parser(cls.__args__[0])
-                return get_collection_parser(tuple, item_parser)
+                return get_collection_parser(tuple, item_parser, self.debug_path)
             else:
-                return get_tuple_parser(tuple(self.get_parser(x) for x in cls.__args__))
+                return get_tuple_parser(tuple(self.get_parser(x) for x in cls.__args__), self.debug_path)
         if is_dict(cls):
             key_type_arg = cls.__args__[0] if cls.__args__ else Any
             value_type_arg = cls.__args__[1] if cls.__args__ else Any
@@ -159,17 +185,17 @@ class ParserFactory:
         if is_collection(cls):
             collection_factory = get_collection_factory(cls)
             item_parser = self.get_parser(cls.__args__[0] if cls.__args__ else Any)
-            return get_collection_parser(collection_factory, item_parser)
+            return get_collection_parser(collection_factory, item_parser, self.debug_path)
         if is_union(cls):
             return get_union_parser(tuple(self.get_parser(x) for x in cls.__args__))
         if is_dataclass(cls):
             parsers = {field.name: self.get_parser(field.type) for field in fields(cls)}
-            return get_dataclass_parser(cls, parsers, self.trim_trailing_underscore)
+            return get_dataclass_parser(cls, parsers, self.trim_trailing_underscore, self.debug_path)
         try:
             arguments = inspect.signature(cls.__init__).parameters
             parsers = {
                 k: self.get_parser(v.annotation) for k, v in arguments.items()
             }
-            return get_class_parser(cls, parsers)
+            return get_class_parser(cls, parsers, self.debug_path)
         except AttributeError:
             raise ValueError("Cannot find parser for `%s`" % repr(cls))
