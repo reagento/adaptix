@@ -1,24 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import decimal
-import inspect
 from collections import deque
 from dataclasses import is_dataclass, fields, Field
-from enum import Enum
-from typing import Any, List, Set, FrozenSet, Deque, Dict, T, KT, VT
+from typing import List, Set, FrozenSet, Deque
+
+from dataclass_factory.exceptions import InvalidFieldError
 from .type_detection import *
 
 __all__ = (
     'parse',
-    'InvalidFieldError',
 )
-
-
-class InvalidFieldError(ValueError):
-    def __init__(self, message: str, field_path: Tuple[str, ...]):
-        super().__init__(message, field_path)
-        self.message = message
-        self.field_path = field_path
 
 
 def get_collection_factory(cls):
@@ -38,14 +30,6 @@ def get_collection_factory(cls):
     if not res:
         raise NotImplementedError("Class %s not supported" % cls)
     return res
-
-
-def is_dict(cls):
-    try:
-        origin = cls.__origin__ or cls
-        return origin in (dict, Dict)
-    except AttributeError:
-        return False
 
 
 def parse(data: Any, cls: ClassVar, trim_trailing_underscore=True, type_factories=None):

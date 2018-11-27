@@ -1,6 +1,6 @@
 import inspect
 from enum import Enum
-from typing import Collection, Tuple, Optional, ClassVar, Any, T, KT, VT, Union
+from typing import Collection, Tuple, Optional, ClassVar, Any, T, KT, VT, Union, Dict
 
 
 def hasargs(type_, *args):
@@ -64,3 +64,11 @@ def is_none(type_: ClassVar) -> bool:
 
 def is_enum(cls: ClassVar) -> bool:
     return issubclass_safe(cls, Enum)
+
+
+def is_dict(cls):
+    try:
+        origin = cls.__origin__ or cls
+        return origin in (dict, Dict)
+    except AttributeError:
+        return False

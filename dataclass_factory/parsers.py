@@ -1,11 +1,24 @@
 import decimal
 import inspect
+import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
 from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection
 
-from dataclass_factory.dataclass_utils import is_dict, is_enum
-from .type_detection import is_tuple, is_collection, is_any, hasargs, is_real_optional, is_none, is_union
+from .exceptions import InvalidFieldError
+from .type_detection import (
+    is_tuple, is_collection, is_any, hasargs, is_real_optional, is_none, is_union, is_dict, is_enum
+)
+
+
+def element_parser(parser: Callable, data: Any, key: Any):
+    try:
+        return parser(data)
+    except InvalidFieldError as e:
+        e._append_path(str(key))
+        raise
+    except ValueError as e:
+        raise InvalidFieldError(str(e), [str(key)])
 
 
 def parse_stub(data):
@@ -28,7 +41,7 @@ def get_parser_with_check(cls):
 
 def get_collection_parser(collection_factory: Callable, item_parser: Callable):
     return lambda data: collection_factory(
-        item_parser(x) for x in data
+        element_parser(item_parser, x, i) for i, x in enumerate(data)
     )
 
 
@@ -52,7 +65,7 @@ def get_tuple_parser(parsers: Collection[Callable]):
     def tuple_parser(data):
         if len(data) != len(parsers):
             raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
-        return tuple(parser(x) for x, parser in zip(data, parsers))
+        return tuple(element_parser(parser, x, i) for x, parser, i in zip(data, parsers, itertools.count()))
 
     return tuple_parser
 
@@ -62,7 +75,7 @@ def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trail
         f: (f.rstrip("_") if trim_trailing_underscore else f, p) for f, p in parsers.items()
     }
     return lambda data: cls(**{
-        field: info[1](data[info[0]]) for field, info in field_info.items() if info[0] in data
+        field: element_parser(info[1], data[info[0]], field) for field, info in field_info.items() if info[0] in data
     })
 
 
@@ -100,7 +113,7 @@ def get_dict_parser(key_parser, value_parser):
 
 def get_class_parser(cls, parsers: Dict[str, Callable]):
     return lambda data: cls(**{
-        k: parser(data.get(k)) for k, parser in parsers.items() if k in data
+        k: element_parser(parser, data.get(k), k) for k, parser in parsers.items() if k in data
     })
 
 
