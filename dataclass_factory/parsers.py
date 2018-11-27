@@ -105,8 +105,10 @@ def get_class_parser(cls, parsers: Dict[str, Callable]):
 
 
 class ParserFactory:
-    def __init__(self, trim_trailing_underscore=True):
+    def __init__(self, trim_trailing_underscore: bool = True, type_factories: Dict[Any, Callable] = None):
         self.cache = {}
+        if type_factories:
+            self.cache.update(type_factories)
         self.trim_trailing_underscore = trim_trailing_underscore
 
     def get_parser(self, cls):
