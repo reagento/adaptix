@@ -9,11 +9,10 @@ def parse(
         data,
         cls,
         trim_trailing_underscore: bool = True,
-        debug_path: bool = False,
         type_factories: Dict[Any, Callable] = None,
 ):
     return ParserFactory(
         trim_trailing_underscore=trim_trailing_underscore,
-        debug_path=debug_path,
+        debug_path=True,
         type_factories=type_factories,
     ).get_parser(cls)(data)

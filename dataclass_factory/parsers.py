@@ -10,6 +10,8 @@ from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_real_optional, is_none, is_union, is_dict, is_enum
 )
 
+Parser = Callable[[Any], Any]
+
 
 def element_parser(parser: Callable, data: Any, key: Any):
     try:
@@ -30,7 +32,7 @@ def parse_none(data):
         raise ValueError("None expected")
 
 
-def get_parser_with_check(cls):
+def get_parser_with_check(cls) -> Parser:
     def parser(data):
         if isinstance(data, cls):
             return data
@@ -39,7 +41,7 @@ def get_parser_with_check(cls):
     return parser
 
 
-def get_collection_parser(collection_factory: Callable, item_parser: Callable, debug_path: bool):
+def get_collection_parser(collection_factory: Callable, item_parser: Callable, debug_path: bool) -> Parser:
     if debug_path:
         return lambda data: collection_factory(
             element_parser(item_parser, x, i) for i, x in enumerate(data)
@@ -50,7 +52,7 @@ def get_collection_parser(collection_factory: Callable, item_parser: Callable, d
         )
 
 
-def get_union_parser(parsers: Collection[Callable]):
+def get_union_parser(parsers: Collection[Callable]) -> Parser:
     def union_parser(data):
         for p in parsers:
             try:
@@ -66,7 +68,7 @@ def tuple_any_parser(data):
     return tuple(data)
 
 
-def get_tuple_parser(parsers: Collection[Callable], debug_path: bool):
+def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser:
     if debug_path:
         def tuple_parser(data):
             if len(data) != len(parsers):
@@ -80,7 +82,8 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool):
     return tuple_parser
 
 
-def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trailing_underscore: bool, debug_path: bool):
+def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trailing_underscore: bool,
+                         debug_path: bool) -> Parser:
     field_info = {
         f: (f.rstrip("_") if trim_trailing_underscore else f, p) for f, p in parsers.items()
     }
@@ -96,7 +99,7 @@ def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trail
         })
 
 
-def get_optional_parser(parser):
+def get_optional_parser(parser) -> Parser:
     return lambda data: parser(data) if data is not None else None
 
 
@@ -124,11 +127,11 @@ def get_collection_factory(cls):
     return res
 
 
-def get_dict_parser(key_parser, value_parser):
+def get_dict_parser(key_parser, value_parser) -> Parser:
     return lambda data: {key_parser(k): value_parser(v) for k, v in data.items()}
 
 
-def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool):
+def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Parser:
     if debug_path:
         return lambda data: cls(**{
             k: element_parser(parser, data.get(k), k) for k, parser in parsers.items() if k in data
@@ -143,7 +146,7 @@ class ParserFactory:
     def __init__(self,
                  trim_trailing_underscore: bool = True,
                  debug_path: bool = False,
-                 type_factories: Dict[Any, Callable] = None):
+                 type_factories: Dict[Any, Parser] = None):
         """
 
         :param trim_trailing_underscore: allows to trim trailing unders score in dataclass field names when looking them in corresponding dictionary.
@@ -158,7 +161,7 @@ class ParserFactory:
         self.trim_trailing_underscore = trim_trailing_underscore
         self.debug_path = debug_path
 
-    def get_parser(self, cls):
+    def get_parser(self, cls: Any) -> Parser:
         if cls not in self.cache:
             self.cache[cls] = self._new_parser(cls)
         return self.cache[cls]
