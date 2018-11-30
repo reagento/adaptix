@@ -17,7 +17,7 @@ def element_parser(parser: Callable, data: Any, key: Any):
     except InvalidFieldError as e:
         e._append_path(str(key))
         raise
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         raise InvalidFieldError(str(e), [str(key)])
 
 
@@ -32,9 +32,9 @@ def parse_none(data):
 
 def get_parser_with_check(cls):
     def parser(data):
-        if not isinstance(data, cls):
-            raise ValueError("data is not str")
-        return data
+        if isinstance(data, cls):
+            return data
+        raise ValueError("data type is not " + cls)
 
     return parser
 
@@ -144,6 +144,14 @@ class ParserFactory:
                  trim_trailing_underscore: bool = True,
                  debug_path: bool = False,
                  type_factories: Dict[Any, Callable] = None):
+        """
+
+        :param trim_trailing_underscore: allows to trim trailing unders score in dataclass field names when looking them in corresponding dictionary.
+            For example field `id_` can be stored is `id`
+        :param debug_path: allows to see path to an elemetn, that cannot be parsed in raised Exception.
+            This causes some permfomance decrease
+        :param type_factories: dictionary with type as a key and functions that can be used to create intances of corresponding types as value
+        """
         self.cache = {}
         if type_factories:
             self.cache.update(type_factories)

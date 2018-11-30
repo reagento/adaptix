@@ -1,6 +1,6 @@
 import inspect
 from enum import Enum
-from typing import Collection, Tuple, Optional, ClassVar, Any, T, KT, VT, Union, Dict
+from typing import Collection, Tuple, Optional, ClassVar, Any, T, KT, VT, Dict
 
 
 def hasargs(type_, *args):

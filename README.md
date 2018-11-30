@@ -3,24 +3,24 @@
 [![PyPI version](https://badge.fury.io/py/dataclass-factory.svg)](https://badge.fury.io/py/dataclass-factory)
 [![Build Status](https://travis-ci.org/Tishka17/dataclass_factory.svg?branch=master)](https://travis-ci.org/Tishka17/dataclass_factory)
 
-## Why
+## Dataclass instance creation library
 
 You can convert dataclass to dict using `asdict` method, but cannot convert back.
-This module provides `parse` method for such task. 
+This module provides `ParserFactory` method for such task. 
 
 It is very useful in combination with json
 
 ## What's supported 
 
 * `dataclass` from dict
-* `Enum` from value
-* `List`, `Set`, `FrozenSet`, `Dict` with specified type
+* `Enum` from its value
+* `List`, `Set`, `FrozenSet`, `Dict`
 * `Tuple` with specified types or ellipsis
 * `Optional` with specified type
 * `Union` parsed in order of given types
 * `Any` returned as is
-* other classes based on their `__init__` method
 * `int`/`float`/`decimal` also parsed from string
+* other classes based on their `__init__` method
 * custom parser if specified
 
 ## Usage
@@ -43,43 +43,24 @@ data = {
     "title": "Fahrenheit 451"
 }
 
-obj = dataclass_factory.parse(data, Book)  # Same as Book(title="Fahrenheit 451")
+parserFactory = dataclass_factory.ParserFactory()
+obj = parserFactory.getParser(Book)(data)  # Same as Book(title="Fahrenheit 451")
 
 ```
 
+You need to create parserFactory only once at the startup of your app.
+It caches created parsers and it will be significantly quicker than creating parser each time.
 
-### More complex example
+### Extended usage
 
-```python
-@dataclass 
-class Disk:
-    title: str
-    artist: str
-    
-    
-@dataclass
-class Store:
-    items: List[Union[Disk, Book]]
-     
+Parser factory provides some useful options:
 
-
-data = {
-    "items": [
-        {"title": "Fahrenheit 451", "author": "Bradbury"},
-        {"title": "Dark Side of the Moon", "artist": "Pink Floyd"}
-    ]
-}
-
-expected = Store(
-    items=[
-        Book(title='Fahrenheit 451', author='Bradbury'),
-        Disk(title='Dark Side of the Moon', artist='Pink Floyd')
-    ]
-)
-
-assert expected == dataclass_factory.parse(data, Store)
-
-```
+* `trim_trailing_underscore` (enabled by default) - allows to trim trailing unders score in dataclass field names when looking them in corresponding dictionary.  
+    For example field `id_` can be stored is `id`
+* `debug_path` - allows to see path to an elemetn, that cannot be parsed in raised Exception.  
+    This causes some permfomance decrease
+* `type_factories` - dictionary with type as a key and functions that can be used to create intances of corresponding types as value.  
+    See [below](#custom-parsers-and-dict-factory).
 
 ### Custom parsers and dict factory
 
@@ -130,3 +111,10 @@ assert data == asdict(
     )
 )
 ```
+
+### Compatibility
+
+In versions below 1.0 there was a simple `parse` method. 
+
+It is still provided for compatibility, but is not recommended because it recreates ParserFactory each time it is called
+It can be removed in some future version
