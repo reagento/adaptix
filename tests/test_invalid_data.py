@@ -5,7 +5,7 @@ from enum import Enum
 from unittest import TestCase
 
 from dataclass_factory import parse
-from dataclass_factory.dataclass_utils import InvalidFieldError
+from dataclass_factory.exceptions import InvalidFieldError
 
 
 @dataclass
@@ -30,14 +30,14 @@ class TestInvalidData(TestCase):
 
     def test_should_raise_when_invalid_int_field_provided(self):
         try:
-            parse({"a": "20x", "b": 20}, Foo)
+            parse({"a": "20x", "b": 20}, Foo, debug_path=True)
             self.assertTrue(False, "ValueError exception expected")
         except InvalidFieldError as exc:
-            self.assertEqual(('a',), exc.field_path)
+            self.assertEqual(['a',], exc.field_path)
 
     def test_should_provide_failed_key_hierarchy_when_invalid_nested_data_parsed(self):
         try:
-            parse({"d": {"a": "20x", "b": 20}, "e": 1}, Bar)
+            parse({"d": {"a": "20x", "b": 20}, "e": 1}, Bar, debug_path=True)
             self.assertTrue(False, "ValueError exception expected")
         except InvalidFieldError as exc:
-            self.assertEqual(('a', 'd'), exc.field_path)
+            self.assertEqual(['a', 'd'], exc.field_path)

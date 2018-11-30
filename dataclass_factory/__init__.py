@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from .dataclass_utils import parse
-from dataclass_factory.dict_factory import dict_factory
+
+from .compat import parse
+from .dict_factory import dict_factory
+from .parsers import ParserFactory
 
 __all__ = [
     "parse",
-    "dict_factory"
+    "dict_factory",
+    "ParserFactory"
 ]
