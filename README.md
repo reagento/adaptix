@@ -44,7 +44,7 @@ data = {
 }
 
 parserFactory = dataclass_factory.ParserFactory()
-obj = parserFactory.getParser(Book)(data)  # Same as Book(title="Fahrenheit 451")
+obj = parserFactory.get_parser(Book)(data)  # Same as Book(title="Fahrenheit 451")
 
 ```
 
@@ -71,10 +71,13 @@ You can provide custom serializers as well
 
 
 ```python
-from dataclass_factory import parse, dict_factory
+from dataclass_factory import ParserFactory, dict_factory
 from datetime import datetime
 import dateutil.parser
 from dataclasses import dataclass, asdict
+
+
+parserFactory = ParserFactory()
 
 
 @dataclass
@@ -95,8 +98,7 @@ todo = Todo(
     title="Release 1.0",
     deadline=datetime(2025, 12, 31, 0, 0, 0)
 )
-
-assert todo == parse(
+assert todo == parserFactory.get_parser(Todo)(
     data,
     Todo,
     trim_trailing_underscore=True,
