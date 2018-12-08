@@ -77,7 +77,7 @@ import dateutil.parser
 from dataclasses import dataclass, asdict
 
 
-parserFactory = ParserFactory()
+parserFactory = ParserFactory(type_factories={datetime: dateutil.parser.parse})
 
 
 @dataclass
@@ -98,12 +98,7 @@ todo = Todo(
     title="Release 1.0",
     deadline=datetime(2025, 12, 31, 0, 0, 0)
 )
-assert todo == parserFactory.get_parser(Todo)(
-    data,
-    Todo,
-    trim_trailing_underscore=True,
-    type_factories={datetime: dateutil.parser.parse}
-)
+assert todo == parserFactory.get_parser(Todo)(data)
 
 assert data == asdict(
     todo,
