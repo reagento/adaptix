@@ -7,7 +7,7 @@ from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection
 
 from .exceptions import InvalidFieldError
 from .type_detection import (
-    is_tuple, is_collection, is_any, hasargs, is_real_optional, is_none, is_union, is_dict, is_enum
+    is_tuple, is_collection, is_any, hasargs, is_optional, is_none, is_union, is_dict, is_enum
 )
 
 Parser = Callable[[Any], Any]
@@ -171,7 +171,7 @@ class ParserFactory:
             return parse_stub
         if is_none(cls):
             return parse_none
-        if is_real_optional(cls):
+        if is_optional(cls):
             return get_optional_parser(self.get_parser(cls.__args__[0]))
         if cls in (str, bytearray, bytes):
             return get_parser_with_check(cls)

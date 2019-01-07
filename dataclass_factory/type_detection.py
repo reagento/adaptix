@@ -1,6 +1,7 @@
 import inspect
 from enum import Enum
-from typing import Collection, Tuple, Optional, ClassVar, Any, T, KT, VT, Dict
+
+from typing import Collection, Tuple, Optional, ClassVar, Any, T, KT, VT, Dict, Union
 
 
 def hasargs(type_, *args):
@@ -18,7 +19,7 @@ def issubclass_safe(cls, classinfo):
     try:
         result = issubclass(cls, classinfo)
     except Exception:
-        return False
+        return cls is classinfo
     else:
         return result
 
@@ -40,16 +41,12 @@ def is_collection(type_) -> bool:
 
 
 def is_optional(type_) -> bool:
-    return issubclass_safe(type_, Optional) or hasargs(type_, type(None))
-
-
-def is_real_optional(type_) -> bool:
     return issubclass_safe(type_, Optional)
 
 
 def is_union(type_: ClassVar) -> bool:
     try:
-        return bool(type_.__args__)
+        return issubclass_safe(type_.__origin__, Union)
     except:
         return False
 
