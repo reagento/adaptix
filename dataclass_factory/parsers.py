@@ -145,6 +145,7 @@ class ParserFactory:
     def __init__(self,
                  trim_trailing_underscore: bool = True,
                  debug_path: bool = False,
+                 safe_str: bool = False,
                  type_factories: Dict[Any, Parser] = None):
         """
 
@@ -159,6 +160,7 @@ class ParserFactory:
             self.cache.update(type_factories)
         self.trim_trailing_underscore = trim_trailing_underscore
         self.debug_path = debug_path
+        self.safe_str = safe_str
 
     def get_parser(self, cls: Any) -> Parser:
         if cls not in self.cache:
@@ -173,7 +175,7 @@ class ParserFactory:
         if is_optional(cls):
             return get_optional_parser(self.get_parser(cls.__args__[0]))
         if cls in (str, bytearray, bytes):
-            return get_parser_with_check(cls)
+            return get_parser_with_check(cls) if self.safe_str else cls
         if cls in (int, float, complex, bool):
             return cls
         if cls in (decimal.Decimal,):
