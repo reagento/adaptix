@@ -64,8 +64,7 @@ def get_union_parser(parsers: Collection[Callable]) -> Parser:
     return union_parser
 
 
-def tuple_any_parser(data):
-    return tuple(data)
+tuple_any_parser = tuple
 
 
 def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser:
@@ -84,18 +83,18 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser:
 
 def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trailing_underscore: bool,
                          debug_path: bool) -> Parser:
-    field_info = {
-        f: (f.rstrip("_") if trim_trailing_underscore else f, p) for f, p in parsers.items()
-    }
+    field_info = tuple(
+        (f, f.rstrip("_") if trim_trailing_underscore else f, p) for f, p in parsers.items()
+    )
     if debug_path:
         return lambda data: cls(**{
-            field: element_parser(info[1], data[info[0]], field)
-            for field, info in field_info.items()
-            if info[0] in data
+            field: element_parser(parser, data[name], field)
+            for field, name, parser in field_info
+            if name in data
         })
     else:
         return lambda data: cls(**{
-            field: info[1](data[info[0]]) for field, info in field_info.items() if info[0] in data
+            field: parser(data[name]) for field, name, parser in field_info if name in data
         })
 
 
