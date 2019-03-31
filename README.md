@@ -57,9 +57,9 @@ Parser factory provides some useful options:
 
 * `trim_trailing_underscore` (enabled by default) - allows to trim trailing unders score in dataclass field names when looking them in corresponding dictionary.  
     For example field `id_` can be stored is `id`
-* `debug_path` - allows to see path to an elemetn, that cannot be parsed in raised Exception.  
-    This causes some permfomance decrease
-* `type_factories` - dictionary with type as a key and functions that can be used to create intances of corresponding types as value.  
+* `debug_path` - allows to see path to an element, that cannot be parsed in raised Exception.  
+    This causes some performance decrease
+* `type_factories` - dictionary with type as a key and functions that can be used to create instances of corresponding types as value.  
     See [below](#custom-parsers-and-dict-factory).
 
 ### Custom parsers and dict factory
