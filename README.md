@@ -61,7 +61,6 @@ Parser factory provides some useful options:
     This causes some performance decrease
 * `type_factories` - dictionary with type as a key and functions that can be used to create instances of corresponding types as value.  
     See [below](#custom-parsers-and-dict-factory).
-* `safe_str` - check type of data for str/bytes/bytearray objects. Slightly affects performance
 
 ### Custom parsers and dict factory
 

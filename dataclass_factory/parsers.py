@@ -145,11 +145,8 @@ class ParserFactory:
     def __init__(self,
                  trim_trailing_underscore: bool = True,
                  debug_path: bool = False,
-                 safe_str: bool = False,
                  type_factories: Dict[Any, Parser] = None):
         """
-
-        :param safe_str: check type of data for str/bytes/bytearray objects. Slightly affects performance
         :param trim_trailing_underscore: allows to trim trailing underscore in dataclass field names when looking them in corresponding dictionary.
             For example field `id_` can be stored is `id`
         :param debug_path: allows to see path to an element, that cannot be parsed in raised Exception.
@@ -161,7 +158,6 @@ class ParserFactory:
             self.cache.update(type_factories)
         self.trim_trailing_underscore = trim_trailing_underscore
         self.debug_path = debug_path
-        self.safe_str = safe_str
 
     def get_parser(self, cls: Any) -> Parser:
         if cls not in self.cache:
@@ -176,7 +172,7 @@ class ParserFactory:
         if is_optional(cls):
             return get_optional_parser(self.get_parser(cls.__args__[0]))
         if cls in (str, bytearray, bytes):
-            return get_parser_with_check(cls) if self.safe_str else cls
+            return get_parser_with_check(cls)
         if cls in (int, float, complex, bool):
             return cls
         if cls in (decimal.Decimal,):
