@@ -47,7 +47,7 @@ def is_optional(type_) -> bool:
 def is_union(type_: ClassVar) -> bool:
     try:
         return issubclass_safe(type_.__origin__, Union)
-    except:
+    except AttributeError:
         return False
 
 

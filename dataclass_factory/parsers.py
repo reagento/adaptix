@@ -149,11 +149,12 @@ class ParserFactory:
                  type_factories: Dict[Any, Parser] = None):
         """
 
-        :param trim_trailing_underscore: allows to trim trailing unders score in dataclass field names when looking them in corresponding dictionary.
+        :param safe_str: check type of data for str/bytes/bytearray objects. Slightly affects performance
+        :param trim_trailing_underscore: allows to trim trailing underscore in dataclass field names when looking them in corresponding dictionary.
             For example field `id_` can be stored is `id`
-        :param debug_path: allows to see path to an elemetn, that cannot be parsed in raised Exception.
-            This causes some permfomance decrease
-        :param type_factories: dictionary with type as a key and functions that can be used to create intances of corresponding types as value
+        :param debug_path: allows to see path to an element, that cannot be parsed in raised Exception.
+            This causes some performance decrease
+        :param type_factories: dictionary with type as a key and functions that can be used to create instances of corresponding types as value
         """
         self.cache = {}
         if type_factories:
