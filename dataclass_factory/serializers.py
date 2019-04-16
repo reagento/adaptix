@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from typing import Callable, Any, Dict
+
+from dataclasses import is_dataclass, fields
+
+from dataclass_factory.type_detection import is_collection
+
+Serializer = Callable[[Any], Any]
+
+
+def get_dataclass_serializer(serializers) -> Serializer:
+    def serialize(data):
+        return {
+            k: v(getattr(data, k)) for k, v in serializers.items()
+        }
+    return serialize
+
+
+def get_collection_serializer(serializer) -> Serializer:
+    return lambda data: [serializer(x) for x in data]
+
+
+def stub_serializer(data):
+    return data
+
+
+class SerializerFactory:
+    def __init__(self,
+                 trim_trailing_underscore: bool = True,
+                 debug_path: bool = False,
+                 type_serializers: Dict[Any, Serializer] = None):
+        """
+        :param trim_trailing_underscore: allows to trim trailing underscore in dataclass field names when looking them in corresponding dictionary.
+            For example field `id_` can be stored is `id`
+        :param debug_path: allows to see path to an element, that cannot be parsed in raised Exception.
+            This causes some performance decrease
+        :param type_serializers: dictionary with type as a key and functions that can be used to serialize data of corresponding type
+        """
+        self.cache = {}
+        if type_serializers:
+            self.cache.update(type_serializers)
+        self.trim_trailing_underscore = trim_trailing_underscore
+        self.debug_path = debug_path
+
+    def get_serializer(self, cls: Any) -> Serializer:
+        if cls not in self.cache:
+            self.cache[cls] = self._new_serializer(cls)
+        return self.cache[cls]
+
+    def _new_serializer(self, class_) -> Serializer:
+        if is_dataclass(class_):
+            return get_dataclass_serializer({
+                field.name: self.get_serializer(field.type) for field in fields(class_)
+            })
+        elif is_collection(class_):
+            item_serializer = self.get_serializer(class_.__args__[0] if class_.__args__ else Any)
+            return get_collection_serializer(item_serializer)
+        else:
+            return stub_serializer

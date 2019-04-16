@@ -4,9 +4,11 @@
 from .compat import parse
 from .dict_factory import dict_factory
 from .parsers import ParserFactory
+from .serializers import SerializerFactory
 
 __all__ = [
     "parse",
     "dict_factory",
-    "ParserFactory"
+    "ParserFactory",
+    "SerializerFactory"
 ]
