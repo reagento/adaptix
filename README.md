@@ -61,6 +61,34 @@ Parser factory provides some useful options:
     This causes some performance decrease
 * `type_factories` - dictionary with type as a key and functions that can be used to create instances of corresponding types as value.  
     See [below](#custom-parsers-and-dict-factory).
+* `naming_policies` - names conversion policies
+
+### Naming Policies
+
+You can use different naming styles in python dataclasses and corresponding dict. Following styles are supported:
+* kebab-case
+* snake_case
+* camelCaseLower
+* CamelCase
+
+Note that field names in python code should use only(!) snake_case, but in style in dict can vary. Example:
+
+```python
+@dataclass
+class Data:
+    some_var: int
+    other: int
+    UnsupportedVar: int
+
+data = {
+    "some-var": 1,
+    "other": 2,
+    "UnsupportedVar": 3
+}
+parser = ParserFactory(naming_policies={Data: NamingPolicy.kebab}).get_parser(Data)
+assert parser(data) == Data(1, 2, 3)
+``` 
+ 
 
 ### Custom parsers and dict factory
 
