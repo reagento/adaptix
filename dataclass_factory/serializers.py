@@ -4,7 +4,7 @@ from typing import Callable, Any, Dict
 
 from dataclasses import is_dataclass, fields
 
-from dataclass_factory.type_detection import is_collection
+from dataclass_factory.type_detection import is_collection, is_tuple, hasargs
 
 Serializer = Callable[[Any], Any]
 
@@ -14,11 +14,20 @@ def get_dataclass_serializer(serializers) -> Serializer:
         return {
             k: v(getattr(data, k)) for k, v in serializers.items()
         }
+
     return serialize
 
 
 def get_collection_serializer(serializer) -> Serializer:
     return lambda data: [serializer(x) for x in data]
+
+
+def get_tuple_serializer(serializers) -> Serializer:
+    return lambda data: [serializer(x) for x, serializer in zip(data, serializers)]
+
+
+def get_collection_any_serializer() -> Serializer:
+    return lambda data: [x for x in data]
 
 
 def stub_serializer(data):
@@ -53,6 +62,14 @@ class SerializerFactory:
             return get_dataclass_serializer({
                 field.name: self.get_serializer(field.type) for field in fields(class_)
             })
+        if is_tuple(class_):
+            if not hasargs(class_):
+                return get_collection_any_serializer
+            elif len(class_.__args__) == 2 and class_.__args__[1] is Ellipsis:
+                item_serializer = self.get_serializer(class_.__args__[0])
+                return get_collection_serializer(item_serializer)
+            else:
+                return get_tuple_serializer(tuple(self.get_serializer(x) for x in class_.__args__))
         elif is_collection(class_):
             item_serializer = self.get_serializer(class_.__args__[0] if class_.__args__ else Any)
             return get_collection_serializer(item_serializer)
