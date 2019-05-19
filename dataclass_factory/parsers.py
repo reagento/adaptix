@@ -7,7 +7,7 @@ import itertools
 from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, ClassVar, Type
 
 from .exceptions import InvalidFieldError
-from .naming import NamingPolicy, convert_name
+from .naming import NameStyle, convert_name
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional, is_none, is_union, is_dict, is_enum
 )
@@ -87,9 +87,9 @@ def get_dataclass_parser(cls: Callable,
                          parsers: Dict[str, Callable],
                          trim_trailing_underscore: bool,
                          debug_path: bool,
-                         naming_policy: NamingPolicy) -> Parser:
+                         name_style: NameStyle) -> Parser:
     field_info = tuple(
-        (f, convert_name(f, trim_trailing_underscore, naming_policy), p) for f, p in parsers.items()
+        (f, convert_name(f, trim_trailing_underscore, name_style), p) for f, p in parsers.items()
     )
     if debug_path:
         return lambda data: cls(**{
@@ -151,7 +151,7 @@ class ParserFactory:
                  trim_trailing_underscore: bool = True,
                  debug_path: bool = False,
                  type_factories: Dict[Type, Parser] = None,
-                 naming_policies: Dict[Type, NamingPolicy] = None,
+                 name_styles: Dict[Type, NameStyle] = None,
                  ):
         """
         :param trim_trailing_underscore: allows to trim trailing underscore in dataclass field names when looking them in corresponding dictionary.
@@ -159,16 +159,16 @@ class ParserFactory:
         :param debug_path: allows to see path to an element, that cannot be parsed in raised Exception.
             This causes some performance decrease
         :param type_factories: dictionary with type as a key and functions that can be used to create instances of corresponding types as value
-        :param naming_policy: policy for names in dict (snake_case, CamelCase, etc.)
+        :param name_styles: style for names in dict which are parsed as dataclass (snake_case, CamelCase, etc.)
         """
         self.cache = {}
         if type_factories:
             self.cache.update(type_factories)
         self.trim_trailing_underscore = trim_trailing_underscore
         self.debug_path = debug_path
-        self.naming_policies = naming_policies
-        if self.naming_policies is None:
-            self.naming_policies = {}
+        if name_styles is None:
+            name_styles = {}
+        self.name_styles = name_styles
 
     def get_parser(self, cls: ClassVar) -> Parser:
         if cls not in self.cache:
@@ -215,7 +215,7 @@ class ParserFactory:
                 parsers,
                 self.trim_trailing_underscore,
                 self.debug_path,
-                self.naming_policies.get(cls),
+                self.name_styles.get(cls),
             )
         try:
             arguments = inspect.signature(cls.__init__).parameters

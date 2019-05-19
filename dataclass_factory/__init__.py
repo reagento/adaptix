@@ -3,12 +3,14 @@
 
 from .compat import parse
 from .dict_factory import dict_factory
+from .naming import NameStyle
 from .parsers import ParserFactory
-from .naming import NamingPolicy
+from .serializers import SerializerFactory
 
 __all__ = [
     "parse",
     "dict_factory",
     "ParserFactory",
-    "NamingPolicy"
+    "SerializerFactory",
+    "NameStyle",
 ]

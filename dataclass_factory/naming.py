@@ -35,7 +35,7 @@ def camel(name):
     return "".join(title(x) for x in split_name(name))
 
 
-class NamingPolicy(Enum):
+class NameStyle(Enum):
     snake = "snake_case"
     kebab = "kebab-case"
     camel_lower = "camelCaseLower"
@@ -43,16 +43,16 @@ class NamingPolicy(Enum):
 
 
 NAMING_FUNC = {
-    NamingPolicy.snake: snake,
-    NamingPolicy.kebab: kebab,
-    NamingPolicy.camel_lower: camel_lower,
-    NamingPolicy.camel: camel,
+    NameStyle.snake: snake,
+    NameStyle.kebab: kebab,
+    NameStyle.camel_lower: camel_lower,
+    NameStyle.camel: camel,
 }
 
 
-def convert_name(name: str, trim_trailing_underscore: bool = True, naming_policy: NamingPolicy = None) -> str:
-    if naming_policy:
-        name = NAMING_FUNC[naming_policy](name)
+def convert_name(name: str, trim_trailing_underscore: bool = True, naming_policy: NameStyle = None) -> str:
     if trim_trailing_underscore:
         name = name.rstrip("_")
+    if naming_policy:
+        name = NAMING_FUNC[naming_policy](name)
     return name
