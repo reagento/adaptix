@@ -1,11 +1,13 @@
 import decimal
 import inspect
-import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection
+
+import itertools
+from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, ClassVar, Type
 
 from .exceptions import InvalidFieldError
+from .naming import NamingPolicy, convert_name
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional, is_none, is_union, is_dict, is_enum
 )
@@ -81,10 +83,13 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser:
     return tuple_parser
 
 
-def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trailing_underscore: bool,
-                         debug_path: bool) -> Parser:
+def get_dataclass_parser(cls: Callable,
+                         parsers: Dict[str, Callable],
+                         trim_trailing_underscore: bool,
+                         debug_path: bool,
+                         naming_policy: NamingPolicy) -> Parser:
     field_info = tuple(
-        (f, f.rstrip("_") if trim_trailing_underscore else f, p) for f, p in parsers.items()
+        (f, convert_name(f, trim_trailing_underscore, naming_policy), p) for f, p in parsers.items()
     )
     if debug_path:
         return lambda data: cls(**{
@@ -93,7 +98,7 @@ def get_dataclass_parser(cls: Callable, parsers: Dict[str, Callable], trim_trail
             if name in data
         })
     else:
-        return lambda data: cls(**{
+        return lambda data: print(data) or cls(**{
             field: parser(data[name]) for field, name, parser in field_info if name in data
         })
 
@@ -145,21 +150,27 @@ class ParserFactory:
     def __init__(self,
                  trim_trailing_underscore: bool = True,
                  debug_path: bool = False,
-                 type_factories: Dict[Any, Parser] = None):
+                 type_factories: Dict[Type, Parser] = None,
+                 naming_policies: Dict[Type, NamingPolicy] = None,
+                 ):
         """
         :param trim_trailing_underscore: allows to trim trailing underscore in dataclass field names when looking them in corresponding dictionary.
             For example field `id_` can be stored is `id`
         :param debug_path: allows to see path to an element, that cannot be parsed in raised Exception.
             This causes some performance decrease
         :param type_factories: dictionary with type as a key and functions that can be used to create instances of corresponding types as value
+        :param naming_policy: policy for names in dict (snake_case, CamelCase, etc.)
         """
         self.cache = {}
         if type_factories:
             self.cache.update(type_factories)
         self.trim_trailing_underscore = trim_trailing_underscore
         self.debug_path = debug_path
+        self.naming_policies = naming_policies
+        if self.naming_policies is None:
+            self.naming_policies = {}
 
-    def get_parser(self, cls: Any) -> Parser:
+    def get_parser(self, cls: ClassVar) -> Parser:
         if cls not in self.cache:
             self.cache[cls] = self._new_parser(cls)
         return self.cache[cls]
@@ -199,7 +210,13 @@ class ParserFactory:
             return get_union_parser(tuple(self.get_parser(x) for x in cls.__args__))
         if is_dataclass(cls):
             parsers = {field.name: self.get_parser(field.type) for field in fields(cls)}
-            return get_dataclass_parser(cls, parsers, self.trim_trailing_underscore, self.debug_path)
+            return get_dataclass_parser(
+                cls,
+                parsers,
+                self.trim_trailing_underscore,
+                self.debug_path,
+                self.naming_policies.get(cls),
+            )
         try:
             arguments = inspect.signature(cls.__init__).parameters
             parsers = {
