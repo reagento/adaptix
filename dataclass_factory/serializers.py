@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from typing import Callable, Any, Dict
-
 from dataclasses import is_dataclass, fields
 
-from dataclass_factory.type_detection import is_collection, is_tuple, hasargs
+from typing import Callable, Any, Dict
+
+from .type_detection import is_collection, is_tuple, hasargs, is_dict
 
 Serializer = Callable[[Any], Any]
 
@@ -32,6 +32,12 @@ def get_collection_any_serializer() -> Serializer:
 
 def stub_serializer(data):
     return data
+
+
+def get_dict_serializer(serializer):
+    return lambda data: {
+        k: serializer(v) for k, v in data.items()
+    }
 
 
 class SerializerFactory:
@@ -62,6 +68,8 @@ class SerializerFactory:
             return get_dataclass_serializer({
                 field.name: self.get_serializer(field.type) for field in fields(class_)
             })
+        if class_ in (str, bytearray, bytes, int, float, complex, bool):
+            return class_
         if is_tuple(class_):
             if not hasargs(class_):
                 return get_collection_any_serializer
@@ -70,7 +78,13 @@ class SerializerFactory:
                 return get_collection_serializer(item_serializer)
             else:
                 return get_tuple_serializer(tuple(self.get_serializer(x) for x in class_.__args__))
-        elif is_collection(class_):
+        if is_dict(class_):
+            key_type_arg = class_.__args__[0] if class_.__args__ else Any
+            if key_type_arg != str:
+                raise TypeError("Cannot use <%s> as dict key in serializer" % key_type_arg.__name__)
+            value_type_arg = class_.__args__[1] if class_.__args__ else Any
+            return get_dict_serializer(self.get_serializer(value_type_arg))
+        if is_collection(class_):
             item_serializer = self.get_serializer(class_.__args__[0] if class_.__args__ else Any)
             return get_collection_serializer(item_serializer)
         else:
