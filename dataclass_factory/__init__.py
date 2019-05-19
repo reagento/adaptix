@@ -3,7 +3,7 @@
 
 from .compat import parse
 from .dict_factory import dict_factory
-from .naming import NamingPolicy
+from .naming import NameStyle
 from .parsers import ParserFactory
 from .serializers import SerializerFactory
 
@@ -12,5 +12,5 @@ __all__ = [
     "dict_factory",
     "ParserFactory",
     "SerializerFactory",
-    "NamingPolicy",
+    "NameStyle",
 ]

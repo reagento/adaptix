@@ -45,7 +45,6 @@ data = {
 
 parserFactory = dataclass_factory.ParserFactory()
 obj = parserFactory.get_parser(Book)(data)  # Same as Book(title="Fahrenheit 451")
-
 ```
 
 You need to create parserFactory only once at the startup of your app.
@@ -85,18 +84,40 @@ data = {
     "other": 2,
     "UnsupportedVar": 3
 }
-parser = ParserFactory(naming_policies={Data: NamingPolicy.kebab}).get_parser(Data)
+parser = ParserFactory(name_styles={Data: NameStyle.kebab}).get_parser(Data)
 assert parser(data) == Data(1, 2, 3)
 ``` 
  
+### Serializing
 
-### Custom parsers and dict factory
+`SerializerFactory` includes features same as parsers, but converts data back. 
+It is much faster (up to 10 times) than standard `asdict` function.
+
+
+```python
+@dataclass
+class Data:
+    some_var: int
+    other_: int
+    UnsupportedVar: int
+
+data = {
+    "some-var": 1,
+    "other_": 2,
+    "UnsupportedVar": 3
+}
+serializer = SerializerFactory(
+    trim_trailing_underscore=True, 
+    name_styles={Data: NameStyle.kebab}
+).get_serializer(Data)
+
+assert data == serializer(Data(1, 2, 3))
+``` 
+
+### Custom parsers
 
 You can provide your parsers for types that are not supported. For example, you can parse `datetime` from iso format.
-
-Also there is `dict_factory`, which can help you to serialize data in your dataclasses. 
-You can provide custom serializers as well
-
+Also you can pass `type_serializers` when creating `SerializerFactory`
 
 ```python
 from dataclass_factory import ParserFactory, dict_factory
@@ -143,3 +164,7 @@ In versions below 1.0 there was a simple `parse` method.
 
 It is still provided for compatibility, but is not recommended because it recreates ParserFactory each time it is called
 It can be removed in some future version
+
+
+In versions below 1.1 there was dict_factory, which was used with standard asdict method. 
+It is still provided for compatibility, but will be removed in future versions. Please, use SerializerFactory

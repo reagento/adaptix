@@ -2,17 +2,22 @@
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
 
-from typing import Callable, Any, Dict
+from typing import Callable, Any, Dict, Type
 
+from .naming import NameStyle, convert_name
 from .type_detection import is_collection, is_tuple, hasargs, is_dict
 
 Serializer = Callable[[Any], Any]
 
 
-def get_dataclass_serializer(serializers) -> Serializer:
+def get_dataclass_serializer(serializers, trim_trailing_underscore, name_style) -> Serializer:
+    field_info = tuple(
+        (f, convert_name(f, trim_trailing_underscore, name_style), s) for f, s in serializers.items()
+    )
+
     def serialize(data):
         return {
-            k: v(getattr(data, k)) for k, v in serializers.items()
+            n: v(getattr(data, k)) for k, n, v in field_info
         }
 
     return serialize
@@ -44,19 +49,25 @@ class SerializerFactory:
     def __init__(self,
                  trim_trailing_underscore: bool = True,
                  debug_path: bool = False,
-                 type_serializers: Dict[Any, Serializer] = None):
+                 type_serializers: Dict[Type, Serializer] = None,
+                 name_styles: Dict[Type, NameStyle] = None,
+                 ):
         """
         :param trim_trailing_underscore: allows to trim trailing underscore in dataclass field names when looking them in corresponding dictionary.
             For example field `id_` can be stored is `id`
         :param debug_path: allows to see path to an element, that cannot be parsed in raised Exception.
             This causes some performance decrease
         :param type_serializers: dictionary with type as a key and functions that can be used to serialize data of corresponding type
+        :param name_styles: policy for names in dict made from dataclasses (snake_case, CamelCase, etc.)
         """
         self.cache = {}
         if type_serializers:
             self.cache.update(type_serializers)
         self.trim_trailing_underscore = trim_trailing_underscore
         self.debug_path = debug_path
+        if name_styles is None:
+            name_styles = {}
+        self.name_styles = name_styles
 
     def get_serializer(self, cls: Any) -> Serializer:
         if cls not in self.cache:
@@ -65,9 +76,11 @@ class SerializerFactory:
 
     def _new_serializer(self, class_) -> Serializer:
         if is_dataclass(class_):
-            return get_dataclass_serializer({
-                field.name: self.get_serializer(field.type) for field in fields(class_)
-            })
+            return get_dataclass_serializer(
+                {field.name: self.get_serializer(field.type) for field in fields(class_)},
+                trim_trailing_underscore=self.trim_trailing_underscore,
+                name_style=self.name_styles.get(class_)
+            )
         if class_ in (str, bytearray, bytes, int, float, complex, bool):
             return class_
         if is_tuple(class_):
