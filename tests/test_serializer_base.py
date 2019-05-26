@@ -3,7 +3,7 @@
 import unittest
 from dataclasses import field, dataclass
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from dataclass_factory.serializers import SerializerFactory
 
@@ -79,4 +79,17 @@ class TestSerializer(unittest.TestCase):
         self.assertEqual(
             serializer(dlist),
             data,
+        )
+
+    def test_optional(self):
+        serializer = self.factory.get_serializer(Optional[D])
+        d1 = D(100, "hello")
+        data1 = {"a": 100, "b": 1, "c": "hello"},
+        self.assertEqual(
+            serializer(d1),
+            data1,
+        )
+        self.assertIs(
+            serializer(None),
+            None,
         )

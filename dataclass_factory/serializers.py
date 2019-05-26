@@ -5,7 +5,7 @@ from dataclasses import is_dataclass, fields
 from typing import Callable, Any, Dict, Type
 
 from .naming import NameStyle, convert_name
-from .type_detection import is_collection, is_tuple, hasargs, is_dict
+from .type_detection import is_collection, is_tuple, hasargs, is_dict, is_optional
 
 Serializer = Callable[[Any], Any]
 
@@ -83,6 +83,8 @@ class SerializerFactory:
             )
         if class_ in (str, bytearray, bytes, int, float, complex, bool):
             return class_
+        if is_optional(class_):
+            return self.get_serializer(class_.__origin__)
         if is_tuple(class_):
             if not hasargs(class_):
                 return get_collection_any_serializer
