@@ -5,7 +5,7 @@ from dataclasses import is_dataclass, fields
 from typing import Callable, Any, Dict, Type
 
 from .naming import NameStyle, convert_name
-from .type_detection import is_collection, is_tuple, hasargs, is_dict
+from .type_detection import is_collection, is_tuple, hasargs, is_dict, is_optional, is_union, is_any
 
 Serializer = Callable[[Any], Any]
 
@@ -45,6 +45,14 @@ def get_dict_serializer(serializer):
     }
 
 
+def lazy_serializer(factory):
+    return lambda data: factory.get_serializer(type(data))(data)
+
+
+def optional_serializer(serializer):
+    return lambda data: None if data is None else serializer(data)
+
+
 class SerializerFactory:
     def __init__(self,
                  trim_trailing_underscore: bool = True,
@@ -75,14 +83,27 @@ class SerializerFactory:
         return self.cache[cls]
 
     def _new_serializer(self, class_) -> Serializer:
+        print(class_)
         if is_dataclass(class_):
             return get_dataclass_serializer(
                 {field.name: self.get_serializer(field.type) for field in fields(class_)},
                 trim_trailing_underscore=self.trim_trailing_underscore,
                 name_style=self.name_styles.get(class_)
             )
+        if is_any(class_):
+            return lazy_serializer(self)
         if class_ in (str, bytearray, bytes, int, float, complex, bool):
             return class_
+        if is_optional(class_):
+            if class_.__args__:
+                return optional_serializer(class_.__args__[0])
+            else:
+                return lazy_serializer(self)
+        if is_union(class_):
+            # create serializers:
+            for type_ in class_.__args__:
+                self.get_serializer(type_)
+            return lazy_serializer(self)
         if is_tuple(class_):
             if not hasargs(class_):
                 return get_collection_any_serializer
