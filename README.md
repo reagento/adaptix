@@ -148,14 +148,6 @@ todo = Todo(
     deadline=datetime(2025, 12, 31, 0, 0, 0)
 )
 assert todo == parserFactory.get_parser(Todo)(data)
-
-assert data == asdict(
-    todo,
-    dict_factory=dict_factory(
-        trim_trailing_underscore=True,
-        type_serializers={datetime: datetime.isoformat}
-    )
-)
 ```
 
 ### Compatibility
