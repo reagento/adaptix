@@ -27,6 +27,7 @@ setup(
     ],
     packages=['dataclass_factory'],
     install_requires=[
-        'dataclasses',
+        'dataclasses;python_version<"3.7"',
     ],
+    python_requires=">=3.6",
 )
