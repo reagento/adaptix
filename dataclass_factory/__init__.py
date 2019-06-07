@@ -5,6 +5,7 @@ from .compat import parse
 from .dict_factory import dict_factory
 from .naming import NameStyle
 from .parsers import ParserFactory
+from .schema import Schema
 from .serializers import SerializerFactory
 
 __all__ = [
@@ -13,4 +14,5 @@ __all__ = [
     "ParserFactory",
     "SerializerFactory",
     "NameStyle",
+    "Schema",
 ]

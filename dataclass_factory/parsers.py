@@ -1,18 +1,17 @@
 import decimal
 import inspect
+import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-
-import itertools
 from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, ClassVar, Type
 
+from .common import Parser
 from .exceptions import InvalidFieldError
 from .naming import NameStyle, convert_name
+from .schema import Schema
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional, is_none, is_union, is_dict, is_enum
 )
-
-Parser = Callable[[Any], Any]
 
 
 def element_parser(parser: Callable, data: Any, key: Any):
@@ -152,6 +151,8 @@ class ParserFactory:
                  debug_path: bool = False,
                  type_factories: Dict[Type, Parser] = None,
                  name_styles: Dict[Type, NameStyle] = None,
+                 schemas: Dict[Type, Schema] = None,
+                 default_schema: Schema = None,
                  ):
         """
         :param trim_trailing_underscore: allows to trim trailing underscore in dataclass field names when looking them in corresponding dictionary.

@@ -103,7 +103,7 @@ class Data:
 
 data = {
     "some-var": 1,
-    "other_": 2,
+    "other": 2,
     "UnsupportedVar": 3
 }
 serializer = SerializerFactory(

@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
+from typing import Any, Dict, Type
 
-from typing import Callable, Any, Dict, Type
-
+from .common import Serializer
 from .naming import NameStyle, convert_name
 from .type_detection import is_collection, is_tuple, hasargs, is_dict, is_optional, is_union, is_any
-
-Serializer = Callable[[Any], Any]
 
 
 def get_dataclass_serializer(serializers, trim_trailing_underscore, name_style) -> Serializer:
