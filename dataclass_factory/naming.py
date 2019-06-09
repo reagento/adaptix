@@ -50,9 +50,9 @@ NAMING_FUNC = {
 }
 
 
-def convert_name(name: str, trim_trailing_underscore: bool = True, naming_policy: NameStyle = None) -> str:
+def convert_name(name: str, trim_trailing_underscore: bool = True, naming_style: NameStyle = None) -> str:
     if trim_trailing_underscore:
         name = name.rstrip("_")
-    if naming_policy:
-        name = NAMING_FUNC[naming_policy](name)
+    if naming_style:
+        name = NAMING_FUNC[naming_style](name)
     return name
