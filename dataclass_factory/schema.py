@@ -110,13 +110,13 @@ class Factory:
     def parser(self, class_: Type) -> Parser:
         schema = self.schema(class_)
         if not schema.parser:
-            schema.parser = self._create_parser(class_)
+            schema.parser = create_parser(schema, self.debug_path, class_)
         return schema.parser
 
     def serializer(self, class_: Type) -> Serializer:
         schema = self.schema(class_)
         if not schema.serializer:
-            schema.serializer = self._create_serializer(class_)
+            schema.serializer = create_serializer(schema, self.debug_path, class_)
         return schema.serializer
 
     def load(self, data: Any, class_: Type):
@@ -127,8 +127,10 @@ class Factory:
             class_ = type(data)
         return self.serializer(class_)(data)
 
-    def _create_parser(self, class_: Type) -> Parser:
-        pass
 
-    def _create_serializer(self, class_: Type) -> Serializer:
-        pass
+def create_parser(schema: Schema, debug_path: bool, class_: Type) -> Parser:
+    pass
+
+
+def create_serializer(schema: Schema, debug_path: bool, class_: Type) -> Serializer:
+    pass
