@@ -1,5 +1,6 @@
+from collections import defaultdict
+from copy import copy
 from dataclasses import dataclass, asdict, fields
-
 from typing import List, Dict, Callable, Tuple, Any, Type, Sequence
 
 from .common import Serializer, Parser
@@ -12,6 +13,20 @@ Validator = Callable[[Any], bool]
 
 @dataclass
 class Schema:
+    """
+    `only_mapped` - исключает из обработки все поля кроме указанных в `names_mapping`
+    `skip_internal` - исключить поля с префиксом _ (применяется если поле не указано в only и names_mapping)
+    `only` - включить только определенные поля. Более высокий приоритет чем names_mapping с укзаанным only_mapped и `skip_internal`
+    `exclude_fields` - исключить определенные поля. Более высоки приоритет чем `only`
+
+    `names_mapping` - сответствие между именами в датаклассе (ключи) и в получаемом словаре. В виде словаря или функции
+    `name_style` - конвертация стилей имен для полей, не укзазанных в names_mapping
+    `trim_trainling_underscore` - обрезка конечного _ для всех полей, кроме указанных в names_mapping
+
+    `serializer` - функция для преобрзаования ИЗ типа
+    `parser` - функция преобразования В тип
+    """
+
     only: List[str] = None
     exclude: List[str] = None
     name_mapping: Dict[str, str] = None
@@ -83,28 +98,37 @@ class Factory:
         self.default_schema = merge_schema(default_schema, DEFAULT_SCHEMA)
         self.schemas = schemas
         self.debug_path = debug_path
-        self.schemas = {
+        self.schemas = defaultdict(lambda: copy(self.default_schema))
+        self.schemas.update({
             type_: merge_schema(schema, self.default_schema)
             for type_, schema in schemas.items()
-        }
+        })
+
+    def schema(self, class_: Type) -> Schema:
+        return self.schemas.get(class_, self.default_schema)
 
     def parser(self, class_: Type) -> Parser:
-        pass
+        schema = self.schema(class_)
+        if not schema.parser:
+            schema.parser = self._create_parser(class_)
+        return schema.parser
 
     def serializer(self, class_: Type) -> Serializer:
+        schema = self.schema(class_)
+        if not schema.serializer:
+            schema.serializer = self._create_serializer(class_)
+        return schema.serializer
+
+    def load(self, data: Any, class_: Type):
+        return self.parser(class_)(data)
+
+    def dump(self, data: Any, class_: Type = None):
+        if class_ is None:
+            class_ = type(data)
+        return self.serializer(class_)(data)
+
+    def _create_parser(self, class_: Type) -> Parser:
         pass
 
-
-"""
-`only_mapped` - исключает из обработки все поля кроме указанных в `names_mapping`
-`skip_internal` - исключить поля с префиксом _ (применяется если поле не указано в only и names_mapping)
-`only` - включить только определенные поля. Более высокий приоритет чем names_mapping с укзаанным only_mapped и `skip_internal`
-`exclude_fields` - исключить определенные поля. Более высоки приоритет чем `only`
-
-`names_mapping` - сответствие между именами в датаклассе (ключи) и в получаемом словаре. В виде словаря или функции
-`name_style` - конвертация стилей имен для полей, не укзазанных в names_mapping
-`trim_trainling_underscore` - обрезка конечного _ для всех полей, кроме указанных в names_mapping
-
-`serializer` - функция для преобрзаования ИЗ типа
-`parser` - функция преобразования В тип
-"""
+    def _create_serializer(self, class_: Type) -> Serializer:
+        pass
