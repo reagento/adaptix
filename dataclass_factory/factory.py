@@ -43,7 +43,7 @@ class Factory:
     def serializer(self, class_: Type) -> Serializer:
         schema = self.schema(class_)
         if not schema.serializer:
-            schema.serializer = create_serializer(schema, self.debug_path, class_)
+            schema.serializer = create_serializer(self, schema, self.debug_path, class_)
         return schema.serializer
 
     def load(self, data: Any, class_: Type):
