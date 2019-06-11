@@ -57,7 +57,7 @@ def convert_name_ex(name, name_style: NameStyle, name_mapping: Dict[str, str], t
 
 def get_dataclass_fields(schema: Schema, class_: Type) -> Sequence[Tuple[str, str]]:
     all_fields = {
-        f.name: f
+        f.name
         for f in fields(class_)
         if (schema.only is None or f.name in schema.only) and
            (schema.exclude is None or f.name not in schema.exclude)
@@ -75,5 +75,5 @@ def get_dataclass_fields(schema: Schema, class_: Type) -> Sequence[Tuple[str, st
         for k in all_fields
         if (schema.name_mapping is not None and k in schema.name_mapping) or
         (schema.only is not None and k in schema.only) or
-        not (schema.skip_internal and k.endswith("_"))
+        not (schema.skip_internal and k.startswith("_"))
     )
