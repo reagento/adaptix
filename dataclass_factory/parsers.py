@@ -43,13 +43,16 @@ def get_parser_with_check(cls) -> Parser:
 
 def get_collection_parser(collection_factory: Callable, item_parser: Callable, debug_path: bool) -> Parser:
     if debug_path:
-        return lambda data: collection_factory(
-            element_parser(item_parser, x, i) for i, x in enumerate(data)
-        )
+        def collection_parser(data):
+            return collection_factory(
+                element_parser(item_parser, x, i) for i, x in enumerate(data)
+            )
     else:
-        return lambda data: collection_factory(
-            item_parser(x) for x in data
-        )
+        def collection_parser(data):
+            return collection_factory(
+                item_parser(x) for x in data
+            )
+    return collection_parser
 
 
 def get_union_parser(parsers: Collection[Callable]) -> Parser:
@@ -90,15 +93,18 @@ def get_dataclass_parser(class_: Callable,
         for name, item in get_dataclass_fields(schema, class_)
     )
     if debug_path:
-        return lambda data: class_(**{
-            field: element_parser(parser, data[name], field)
-            for field, name, parser in field_info
-            if name in data
-        })
+        def dataclass_parser(data):
+            return class_(**{
+                field: element_parser(parser, data[name], field)
+                for field, name, parser in field_info
+                if name in data
+            })
     else:
-        return lambda data: print(data) or class_(**{
-            field: parser(data[name]) for field, name, parser in field_info if name in data
-        })
+        def dataclass_parser(data):
+            return class_(**{
+                field: parser(data[name]) for field, name, parser in field_info if name in data
+            })
+    return dataclass_parser
 
 
 def get_optional_parser(parser) -> Parser:

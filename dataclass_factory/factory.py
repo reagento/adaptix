@@ -29,7 +29,10 @@ class Factory:
         })
 
     def schema(self, class_: Type) -> Schema:
-        return self.schemas.get(class_, self.default_schema)
+        schema = self.schemas.get(class_)
+        if not schema:
+            return copy(self.default_schema)
+        return schema
 
     def parser(self, class_: Type) -> Parser:
         schema = self.schema(class_)
