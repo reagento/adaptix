@@ -1,5 +1,3 @@
-from collections import defaultdict
-from copy import copy
 from dataclasses import dataclass, asdict, fields
 from typing import List, Dict, Callable, Tuple, Any, Type, Sequence
 
@@ -57,9 +55,7 @@ def convert_name_ex(name, name_style: NameStyle, name_mapping: Dict[str, str], t
     return convert_name(name, trim_trailing_underscore, name_style)
 
 
-def get_dataclass_fields(schema: Schema, default_schema: Schema, class_: Type) -> Sequence[Tuple[str, str]]:
-    schema = merge_schema(schema, default_schema)
-
+def get_dataclass_fields(schema: Schema, class_: Type) -> Sequence[Tuple[str, str]]:
     all_fields = {
         f.name: f
         for f in fields(class_)
@@ -81,56 +77,3 @@ def get_dataclass_fields(schema: Schema, default_schema: Schema, class_: Type) -
         (schema.only is not None and k in schema.only) or
         not (schema.skip_internal and k.endswith("_"))
     )
-
-
-DEFAULT_SCHEMA = Schema(
-    trim_trailing_underscore=True,
-    skip_internal=True,
-    only_mapped=False,
-)
-
-
-class Factory:
-    def __init__(self,
-                 default_schema: Schema = None,
-                 schemas: Dict[Type, Schema] = None,
-                 debug_path: bool = False):
-        self.default_schema = merge_schema(default_schema, DEFAULT_SCHEMA)
-        self.schemas = schemas
-        self.debug_path = debug_path
-        self.schemas = defaultdict(lambda: copy(self.default_schema))
-        self.schemas.update({
-            type_: merge_schema(schema, self.default_schema)
-            for type_, schema in schemas.items()
-        })
-
-    def schema(self, class_: Type) -> Schema:
-        return self.schemas.get(class_, self.default_schema)
-
-    def parser(self, class_: Type) -> Parser:
-        schema = self.schema(class_)
-        if not schema.parser:
-            schema.parser = create_parser(schema, self.debug_path, class_)
-        return schema.parser
-
-    def serializer(self, class_: Type) -> Serializer:
-        schema = self.schema(class_)
-        if not schema.serializer:
-            schema.serializer = create_serializer(schema, self.debug_path, class_)
-        return schema.serializer
-
-    def load(self, data: Any, class_: Type):
-        return self.parser(class_)(data)
-
-    def dump(self, data: Any, class_: Type = None):
-        if class_ is None:
-            class_ = type(data)
-        return self.serializer(class_)(data)
-
-
-def create_parser(schema: Schema, debug_path: bool, class_: Type) -> Parser:
-    pass
-
-
-def create_serializer(schema: Schema, debug_path: bool, class_: Type) -> Serializer:
-    pass

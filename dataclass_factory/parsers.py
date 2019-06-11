@@ -3,12 +3,11 @@ import inspect
 import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, ClassVar, Type
+from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection
 
 from .common import Parser
 from .exceptions import InvalidFieldError
-from .naming import NameStyle, convert_name
-from .schema import Schema
+from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional, is_none, is_union, is_dict, is_enum
 )
@@ -82,22 +81,22 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser:
     return tuple_parser
 
 
-def get_dataclass_parser(cls: Callable,
+def get_dataclass_parser(class_: Callable,
                          parsers: Dict[str, Callable],
-                         trim_trailing_underscore: bool,
-                         debug_path: bool,
-                         name_style: NameStyle) -> Parser:
+                         schema: Schema,
+                         debug_path: bool, ) -> Parser:
     field_info = tuple(
-        (f, convert_name(f, trim_trailing_underscore, name_style), p) for f, p in parsers.items()
+        (name, item, parsers[name])
+        for name, item in get_dataclass_fields(schema, class_)
     )
     if debug_path:
-        return lambda data: cls(**{
+        return lambda data: class_(**{
             field: element_parser(parser, data[name], field)
             for field, name, parser in field_info
             if name in data
         })
     else:
-        return lambda data: print(data) or cls(**{
+        return lambda data: print(data) or class_(**{
             field: parser(data[name]) for field, name, parser in field_info if name in data
         })
 
@@ -145,84 +144,52 @@ def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Par
         })
 
 
-class ParserFactory:
-    def __init__(self,
-                 trim_trailing_underscore: bool = True,
-                 debug_path: bool = False,
-                 type_factories: Dict[Type, Parser] = None,
-                 name_styles: Dict[Type, NameStyle] = None,
-                 schemas: Dict[Type, Schema] = None,
-                 default_schema: Schema = None,
-                 ):
-        """
-        :param trim_trailing_underscore: allows to trim trailing underscore in dataclass field names when looking them in corresponding dictionary.
-            For example field `id_` can be stored is `id`
-        :param debug_path: allows to see path to an element, that cannot be parsed in raised Exception.
-            This causes some performance decrease
-        :param type_factories: dictionary with type as a key and functions that can be used to create instances of corresponding types as value
-        :param name_styles: style for names in dict which are parsed as dataclass (snake_case, CamelCase, etc.)
-        """
-        self.cache = {}
-        if type_factories:
-            self.cache.update(type_factories)
-        self.trim_trailing_underscore = trim_trailing_underscore
-        self.debug_path = debug_path
-        if name_styles is None:
-            name_styles = {}
-        self.name_styles = name_styles
-
-    def get_parser(self, cls: ClassVar) -> Parser:
-        if cls not in self.cache:
-            self.cache[cls] = self._new_parser(cls)
-        return self.cache[cls]
-
-    def _new_parser(self, cls):
-        if is_any(cls):
-            return parse_stub
-        if is_none(cls):
-            return parse_none
-        if is_optional(cls):
-            return get_optional_parser(self.get_parser(cls.__args__[0]))
-        if cls in (str, bytearray, bytes):
-            return get_parser_with_check(cls)
-        if cls in (int, float, complex, bool):
-            return cls
-        if cls in (decimal.Decimal,):
-            return decimal_parse
-        if is_enum(cls):
-            return cls
-        if is_tuple(cls):
-            if not hasargs(cls):
-                return tuple_any_parser
-            elif len(cls.__args__) == 2 and cls.__args__[1] is Ellipsis:
-                item_parser = self.get_parser(cls.__args__[0])
-                return get_collection_parser(tuple, item_parser, self.debug_path)
-            else:
-                return get_tuple_parser(tuple(self.get_parser(x) for x in cls.__args__), self.debug_path)
-        if is_dict(cls):
-            key_type_arg = cls.__args__[0] if cls.__args__ else Any
-            value_type_arg = cls.__args__[1] if cls.__args__ else Any
-            return get_dict_parser(self.get_parser(key_type_arg), self.get_parser(value_type_arg))
-        if is_collection(cls):
-            collection_factory = get_collection_factory(cls)
-            item_parser = self.get_parser(cls.__args__[0] if cls.__args__ else Any)
-            return get_collection_parser(collection_factory, item_parser, self.debug_path)
-        if is_union(cls):
-            return get_union_parser(tuple(self.get_parser(x) for x in cls.__args__))
-        if is_dataclass(cls):
-            parsers = {field.name: self.get_parser(field.type) for field in fields(cls)}
-            return get_dataclass_parser(
-                cls,
-                parsers,
-                self.trim_trailing_underscore,
-                self.debug_path,
-                self.name_styles.get(cls),
-            )
-        try:
-            arguments = inspect.signature(cls.__init__).parameters
-            parsers = {
-                k: self.get_parser(v.annotation) for k, v in arguments.items()
-            }
-            return get_class_parser(cls, parsers, self.debug_path)
-        except AttributeError:
-            raise ValueError("Cannot find parser for `%s`" % repr(cls))
+def create_parser(factory, schema: Schema, debug_path: bool, cls):
+    if is_any(cls):
+        return parse_stub
+    if is_none(cls):
+        return parse_none
+    if is_optional(cls):
+        return get_optional_parser(factory.parser(cls.__args__[0]))
+    if cls in (str, bytearray, bytes):
+        return get_parser_with_check(cls)
+    if cls in (int, float, complex, bool):
+        return cls
+    if cls in (decimal.Decimal,):
+        return decimal_parse
+    if is_enum(cls):
+        return cls
+    if is_tuple(cls):
+        if not hasargs(cls):
+            return tuple_any_parser
+        elif len(cls.__args__) == 2 and cls.__args__[1] is Ellipsis:
+            item_parser = factory.parser(cls.__args__[0])
+            return get_collection_parser(tuple, item_parser, debug_path)
+        else:
+            return get_tuple_parser(tuple(factory.parser(x) for x in cls.__args__), debug_path)
+    if is_dict(cls):
+        key_type_arg = cls.__args__[0] if cls.__args__ else Any
+        value_type_arg = cls.__args__[1] if cls.__args__ else Any
+        return get_dict_parser(factory.parser(key_type_arg), factory.parser(value_type_arg))
+    if is_collection(cls):
+        collection_factory = get_collection_factory(cls)
+        item_parser = factory.parser(cls.__args__[0] if cls.__args__ else Any)
+        return get_collection_parser(collection_factory, item_parser, debug_path)
+    if is_union(cls):
+        return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
+    if is_dataclass(cls):
+        parsers = {field.name: factory.parser(field.type) for field in fields(cls)}
+        return get_dataclass_parser(
+            cls,
+            parsers,
+            schema,
+            debug_path,
+        )
+    try:
+        arguments = inspect.signature(cls.__init__).parameters
+        parsers = {
+            k: factory.parser(v.annotation) for k, v in arguments.items()
+        }
+        return get_class_parser(cls, parsers, factory.debug_path)
+    except AttributeError:
+        raise ValueError("Cannot find parser for `%s`" % repr(cls))

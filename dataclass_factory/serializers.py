@@ -6,6 +6,7 @@ from typing import Any, Dict, Type
 from .common import Serializer
 from .naming import NameStyle, convert_name
 from .type_detection import is_collection, is_tuple, hasargs, is_dict, is_optional, is_union, is_any
+from .schema import Schema
 
 
 def get_dataclass_serializer(serializers, trim_trailing_underscore, name_style) -> Serializer:
@@ -49,6 +50,10 @@ def lazy_serializer(factory):
 
 def optional_serializer(serializer):
     return lambda data: None if data is None else serializer(data)
+
+
+def create_serializer(schema: Schema, debug_path: bool, class_: Type) -> Serializer:
+    pass
 
 
 class SerializerFactory:
