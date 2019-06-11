@@ -50,7 +50,7 @@ def merge_schema(schema: Schema, default: Schema) -> Schema:
 
 
 def convert_name_ex(name, name_style: NameStyle, name_mapping: Dict[str, str], trim_trailing_underscore: bool):
-    if name in name_mapping:
+    if name_mapping and name in name_mapping:
         return name_mapping[name]
     return convert_name(name, trim_trailing_underscore, name_style)
 
@@ -59,8 +59,8 @@ def get_dataclass_fields(schema: Schema, class_: Type) -> Sequence[Tuple[str, st
     all_fields = {
         f.name: f
         for f in fields(class_)
-        if (f.name in schema.only or schema.only is None) and
-           (f.name not in schema.exclude or schema.exclude is None)
+        if (schema.only is None or f.name in schema.only) and
+           (schema.exclude is None or f.name not in schema.exclude)
     }
     if schema.only_mapped:
         if schema.name_mapping is None:
