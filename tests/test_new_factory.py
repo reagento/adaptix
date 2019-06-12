@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from datetime import datetime
 from unittest import TestCase
 
+from datetime import datetime
+
 from dataclass_factory import Factory, Schema, NameStyle
-from dataclass_factory.schema_helpers import isotime_schema
+from dataclass_factory.schema_helpers import unixtime_schema
 
 
 @dataclass
@@ -29,17 +30,17 @@ class TestFactory(TestCase):
         factory = Factory(
             schemas={
                 Book: book_schema,
-                datetime: isotime_schema,
+                datetime: unixtime_schema,
             }
         )
         book = Book(
-            Author("Petr", datetime(1999, 1, 2, 9, 45, 56)),
+            Author("Petr", datetime(1970, 1, 2, 3, 4, 56)),
             "Book1",
             100,
         )
         expected = {
             'Title': 'Book1',
-            'AuthorInfo': {'born_at': '1999-01-02T09:45:56', 'name': 'Petr'}
+            'AuthorInfo': {'born_at': 86696, 'name': 'Petr'}
         }
         serialized = factory.dump(book)
         self.assertEqual(expected, serialized)

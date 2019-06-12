@@ -11,6 +11,6 @@ except AttributeError:
     pass
 
 unixtime_schema = Schema(
-    parser=datetime.utcfromtimestamp,
+    parser=datetime.fromtimestamp,
     serializer=datetime.timestamp
 )
