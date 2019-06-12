@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
 
-from typing import Callable, Any, Dict, Type
+from typing import Any, Type
 
-from .naming import NameStyle, convert_name
+from .common import Serializer
+from .schema import Schema, get_dataclass_fields
 from .type_detection import is_collection, is_tuple, hasargs, is_dict, is_optional, is_union, is_any
 
-Serializer = Callable[[Any], Any]
 
-
-def get_dataclass_serializer(serializers, trim_trailing_underscore, name_style) -> Serializer:
+def get_dataclass_serializer(class_: Type, serializers, schema: Schema) -> Serializer:
     field_info = tuple(
-        (f, convert_name(f, trim_trailing_underscore, name_style), s) for f, s in serializers.items()
+        (name, item, serializers[name])
+        for name, item in get_dataclass_fields(schema, class_)
     )
 
     def serialize(data):
@@ -46,80 +46,50 @@ def get_dict_serializer(serializer):
 
 
 def lazy_serializer(factory):
-    return lambda data: factory.get_serializer(type(data))(data)
+    return lambda data: factory.serializer(type(data))(data)
 
 
 def optional_serializer(serializer):
     return lambda data: None if data is None else serializer(data)
 
 
-class SerializerFactory:
-    def __init__(self,
-                 trim_trailing_underscore: bool = True,
-                 debug_path: bool = False,
-                 type_serializers: Dict[Type, Serializer] = None,
-                 name_styles: Dict[Type, NameStyle] = None,
-                 ):
-        """
-        :param trim_trailing_underscore: allows to trim trailing underscore in dataclass field names when looking them in corresponding dictionary.
-            For example field `id_` can be stored is `id`
-        :param debug_path: allows to see path to an element, that cannot be parsed in raised Exception.
-            This causes some performance decrease
-        :param type_serializers: dictionary with type as a key and functions that can be used to serialize data of corresponding type
-        :param name_styles: policy for names in dict made from dataclasses (snake_case, CamelCase, etc.)
-        """
-        self.cache = {}
-        if type_serializers:
-            self.cache.update(type_serializers)
-        self.trim_trailing_underscore = trim_trailing_underscore
-        self.debug_path = debug_path
-        if name_styles is None:
-            name_styles = {}
-        self.name_styles = name_styles
-
-    def get_serializer(self, cls: Any) -> Serializer:
-        if cls not in self.cache:
-            self.cache[cls] = self._new_serializer(cls)
-        return self.cache[cls]
-
-    def _new_serializer(self, class_) -> Serializer:
-        print(class_)
-        if is_dataclass(class_):
-            return get_dataclass_serializer(
-                {field.name: self.get_serializer(field.type) for field in fields(class_)},
-                trim_trailing_underscore=self.trim_trailing_underscore,
-                name_style=self.name_styles.get(class_)
-            )
-        if is_any(class_):
-            return lazy_serializer(self)
-        if class_ in (str, bytearray, bytes, int, float, complex, bool):
-            return class_
-        if is_optional(class_):
-            if class_.__args__:
-                return optional_serializer(class_.__args__[0])
-            else:
-                return lazy_serializer(self)
-        if is_union(class_):
-            # create serializers:
-            for type_ in class_.__args__:
-                self.get_serializer(type_)
-            return lazy_serializer(self)
-        if is_tuple(class_):
-            if not hasargs(class_):
-                return get_collection_any_serializer
-            elif len(class_.__args__) == 2 and class_.__args__[1] is Ellipsis:
-                item_serializer = self.get_serializer(class_.__args__[0])
-                return get_collection_serializer(item_serializer)
-            else:
-                return get_tuple_serializer(tuple(self.get_serializer(x) for x in class_.__args__))
-        if is_dict(class_):
-            key_type_arg = class_.__args__[0] if class_.__args__ else Any
-            if key_type_arg != str:
-                raise TypeError("Cannot use <%s> as dict key in serializer" % key_type_arg.__name__)
-            value_type_arg = class_.__args__[1] if class_.__args__ else Any
-            return get_dict_serializer(self.get_serializer(value_type_arg))
-        if is_collection(class_):
-            item_serializer = self.get_serializer(class_.__args__[0] if class_.__args__ else Any)
+def create_serializer(factory, schema: Schema, debug_path: bool, class_) -> Serializer:
+    if is_dataclass(class_):
+        return get_dataclass_serializer(
+            class_,
+            {field.name: factory.serializer(field.type) for field in fields(class_)},
+            schema,
+        )
+    if is_any(class_):
+        return lazy_serializer(factory)
+    if class_ in (str, bytearray, bytes, int, float, complex, bool):
+        return class_
+    if is_optional(class_):
+        if class_.__args__:
+            return optional_serializer(class_.__args__[0])
+        else:
+            return lazy_serializer(factory)
+    if is_union(class_):
+        # create serializers:
+        for type_ in class_.__args__:
+            factory.serializer(type_)
+        return lazy_serializer(factory)
+    if is_tuple(class_):
+        if not hasargs(class_):
+            return get_collection_any_serializer()
+        elif len(class_.__args__) == 2 and class_.__args__[1] is Ellipsis:
+            item_serializer = factory.serializer(class_.__args__[0])
             return get_collection_serializer(item_serializer)
         else:
-            return stub_serializer
+            return get_tuple_serializer(tuple(factory.serializer(x) for x in class_.__args__))
+    if is_dict(class_):
+        key_type_arg = class_.__args__[0] if class_.__args__ else Any
+        if key_type_arg != str:
+            raise TypeError("Cannot use <%s> as dict key in serializer" % key_type_arg.__name__)
+        value_type_arg = class_.__args__[1] if class_.__args__ else Any
+        return get_dict_serializer(factory.serializer(value_type_arg))
+    if is_collection(class_):
+        item_serializer = factory.serializer(class_.__args__[0] if class_.__args__ else Any)
+        return get_collection_serializer(item_serializer)
+    else:
+        return stub_serializer

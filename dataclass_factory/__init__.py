@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .compat import parse
+from .compat import parse, ParserFactory, SerializerFactory
 from .dict_factory import dict_factory
+from .factory import Factory
 from .naming import NameStyle
-from .parsers import ParserFactory
-from .serializers import SerializerFactory
+from .schema import Schema
 
 __all__ = [
     "parse",
@@ -13,4 +13,6 @@ __all__ = [
     "ParserFactory",
     "SerializerFactory",
     "NameStyle",
+    "Schema",
+    "Factory",
 ]

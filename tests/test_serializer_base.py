@@ -5,7 +5,7 @@ from dataclasses import field, dataclass
 
 from typing import List, Dict, Optional, Any
 
-from dataclass_factory.serializers import SerializerFactory
+from dataclass_factory import SerializerFactory
 
 
 @dataclass
