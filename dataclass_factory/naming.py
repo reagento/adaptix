@@ -48,11 +48,3 @@ NAMING_FUNC = {
     NameStyle.camel_lower: camel_lower,
     NameStyle.camel: camel,
 }
-
-
-def convert_name(name: str, trim_trailing_underscore: bool = True, naming_style: NameStyle = None) -> str:
-    if trim_trailing_underscore:
-        name = name.rstrip("_")
-    if naming_style:
-        name = NAMING_FUNC[naming_style](name)
-    return name

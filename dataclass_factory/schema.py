@@ -1,8 +1,9 @@
 from dataclasses import dataclass, asdict, fields
+
 from typing import List, Dict, Callable, Tuple, Any, Type, Sequence
 
 from .common import Serializer, Parser
-from .naming import NameStyle, convert_name
+from .naming import NameStyle, NAMING_FUNC
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
@@ -49,10 +50,14 @@ def merge_schema(schema: Schema, default: Schema) -> Schema:
     })
 
 
-def convert_name_ex(name, name_style: NameStyle, name_mapping: Dict[str, str], trim_trailing_underscore: bool):
+def convert_name(name, name_style: NameStyle, name_mapping: Dict[str, str], trim_trailing_underscore: bool):
     if name_mapping and name in name_mapping:
         return name_mapping[name]
-    return convert_name(name, trim_trailing_underscore, name_style)
+    if trim_trailing_underscore:
+        name = name.rstrip("_")
+    if name_style:
+        name = NAMING_FUNC[name_style](name)
+    return name
 
 
 def get_dataclass_fields(schema: Schema, class_: Type) -> Sequence[Tuple[str, str]]:
@@ -71,7 +76,7 @@ def get_dataclass_fields(schema: Schema, class_: Type) -> Sequence[Tuple[str, st
             if k in all_fields
         )
     return tuple(
-        (k, convert_name_ex(k, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore))
+        (k, convert_name(k, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore))
         for k in all_fields
         if (schema.name_mapping is not None and k in schema.name_mapping) or
         (schema.only is not None and k in schema.only) or
