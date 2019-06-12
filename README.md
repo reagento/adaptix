@@ -205,13 +205,14 @@ Following name styles are supported:
 
 ### Updating from previous versions
 In versions 1.1+:
-    * separate `ParserFactory` and `SerializerFactory` should be refused in favor of `Factory`
-    * `trim_trailing_underscore` of factories parameter moved to `default_schema`
-    * `type_factories`, `name_styles` and `type_serializers` moved to `schemas` dict
+* separate `ParserFactory` and `SerializerFactory` should be refused in favor of `Factory`
+* `trim_trailing_underscore` of factories parameter moved to `default_schema`
+* `type_factories`, `name_styles` and `type_serializers` moved to `schemas` dict
     
 In versions <1.1:
-    * `dict_factory` used with `asdict` function must be replaced with `Factory`-based seralization as it is much faster
+* `dict_factory` used with `asdict` function must be replaced with `Factory`-based seralization as it is much faster
+
 In versions <1.0:
-    * `parse` method must be replaced with `Factory`-based parsing as it much faster
+* `parse` method must be replaced with `Factory`-based parsing as it much faster
     
 All old methods and classes are still avaiable but are deprecated ant will be removed in future versions
