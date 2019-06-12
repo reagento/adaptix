@@ -53,13 +53,14 @@ def convert_name(
 
 
 def get_dataclass_fields(schema: Schema, class_: Type) -> Sequence[Tuple[str, str]]:
+    only_mapped = schema.only_mapped and schema.only is None
     all_fields = {
         f.name
         for f in fields(class_)
         if (schema.only is None or f.name in schema.only) and
            (schema.exclude is None or f.name not in schema.exclude)
     }
-    if schema.only_mapped:
+    if only_mapped:
         if schema.name_mapping is None:
             raise ValueError("`name_mapping` is None, and `only_mapped` is True")
         return tuple(
