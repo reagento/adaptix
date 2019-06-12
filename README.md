@@ -56,7 +56,7 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 
 ### Parsers and serializers
 
-To parse dict create factory, get and use `parser`  or just call `load` method 
+To parse dict create `Factory`, get and use `parser`  or just call `load` method 
 
 ```python
 factory = Factory()  # create it only once
@@ -71,7 +71,7 @@ When parsing data of `Union` type parsing stops when no ValueError/TypeError det
 So the order of type arguments is important.
 
 
-Serialization is also very simple:
+Serialization is also very simple: use `serializer` or `load` methods
 ```python
 factory = Factory()  # create it only once
 serializer = factory.serializer(Book)  # you can reuse ot

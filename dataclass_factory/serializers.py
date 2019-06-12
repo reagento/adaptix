@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
-from typing import Any, Callable
+
+from typing import Any, Type
 
 from .common import Serializer
 from .schema import Schema, get_dataclass_fields
 from .type_detection import is_collection, is_tuple, hasargs, is_dict, is_optional, is_union, is_any
 
 
-def get_dataclass_serializer(class_: Callable, serializers, schema: Schema) -> Serializer:
+def get_dataclass_serializer(class_: Type, serializers, schema: Schema) -> Serializer:
     field_info = tuple(
         (name, item, serializers[name])
         for name, item in get_dataclass_fields(schema, class_)
@@ -75,7 +76,7 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_) -> Seri
         return lazy_serializer(factory)
     if is_tuple(class_):
         if not hasargs(class_):
-            return get_collection_any_serializer
+            return get_collection_any_serializer()
         elif len(class_.__args__) == 2 and class_.__args__[1] is Ellipsis:
             item_serializer = factory.serializer(class_.__args__[0])
             return get_collection_serializer(item_serializer)

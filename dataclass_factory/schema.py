@@ -1,6 +1,7 @@
+from copy import copy
 from dataclasses import dataclass, asdict, fields
 
-from typing import List, Dict, Callable, Tuple, Any, Type, Sequence
+from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional
 
 from .common import Serializer, Parser
 from .naming import NameStyle, NAMING_FUNC
@@ -11,22 +12,24 @@ SimpleFieldMapping = Dict[str, str]
 
 @dataclass
 class Schema:
-    only: List[str] = None
-    exclude: List[str] = None
-    name_mapping: Dict[str, str] = None
-    only_mapped: bool = None
+    only: Optional[List[str]] = None
+    exclude: Optional[List[str]] = None
+    name_mapping: Optional[Dict[str, str]] = None
+    only_mapped: Optional[bool] = None
 
-    name_style: NameStyle = None
-    trim_trailing_underscore: bool = None
-    skip_internal: bool = None
+    name_style: Optional[NameStyle] = None
+    trim_trailing_underscore: Optional[bool] = None
+    skip_internal: Optional[bool] = None
 
-    serializer: Serializer = None
-    parser: Parser = None
+    serializer: Optional[Serializer] = None
+    parser: Optional[Parser] = None
 
 
-def merge_schema(schema: Schema, default: Schema) -> Schema:
+def merge_schema(schema: Optional[Schema], default: Optional[Schema]) -> Schema:
     if schema is None:
-        return default
+        return default or Schema()
+    if default is None:
+        return copy(schema)
     default_dict = asdict(default)
     return Schema(**{
         k: default_dict[k] if v is None else v
@@ -34,7 +37,12 @@ def merge_schema(schema: Schema, default: Schema) -> Schema:
     })
 
 
-def convert_name(name, name_style: NameStyle, name_mapping: Dict[str, str], trim_trailing_underscore: bool):
+def convert_name(
+        name: str,
+        name_style: Optional[NameStyle],
+        name_mapping: Optional[Dict[str, str]],
+        trim_trailing_underscore: Optional[bool]
+):
     if name_mapping and name in name_mapping:
         return name_mapping[name]
     if trim_trailing_underscore:

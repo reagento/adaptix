@@ -1,9 +1,10 @@
 import decimal
 import inspect
-import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection
+
+import itertools
+from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, Type
 
 from .common import Parser
 from .exceptions import InvalidFieldError
@@ -84,7 +85,7 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser:
     return tuple_parser
 
 
-def get_dataclass_parser(class_: Callable,
+def get_dataclass_parser(class_: Type,
                          parsers: Dict[str, Callable],
                          schema: Schema,
                          debug_path: bool, ) -> Parser:

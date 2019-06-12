@@ -8,8 +8,7 @@ from typing import List
 def title(name: str) -> str:
     if len(name) < 2:
         return name.upper()
-    return name[0].upper() + name[1:
-                             ]
+    return name[0].upper() + name[1:]
 
 
 def split_name(name: str) -> List[str]:

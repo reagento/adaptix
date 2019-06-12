@@ -3,9 +3,9 @@
 
 from .compat import parse, ParserFactory, SerializerFactory
 from .dict_factory import dict_factory
+from .factory import Factory
 from .naming import NameStyle
 from .schema import Schema
-from .factory import Factory
 
 __all__ = [
     "parse",

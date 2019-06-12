@@ -1,6 +1,7 @@
 from collections import defaultdict
 from copy import copy
-from typing import Dict, Type, Any
+
+from typing import Dict, Type, Any, Optional
 
 from .common import Serializer, Parser
 from .parsers import create_parser
@@ -16,13 +17,12 @@ DEFAULT_SCHEMA = Schema(
 
 class Factory:
     def __init__(self,
-                 default_schema: Schema = None,
-                 schemas: Dict[Type, Schema] = None,
+                 default_schema: Optional[Schema] = None,
+                 schemas: Optional[Dict[Type, Schema]] = None,
                  debug_path: bool = False):
         self.default_schema = merge_schema(default_schema, DEFAULT_SCHEMA)
-        self.schemas = schemas
         self.debug_path = debug_path
-        self.schemas = defaultdict(lambda: copy(self.default_schema))
+        self.schemas: Dict[Type, Schema] = defaultdict(lambda: copy(self.default_schema))
         if schemas:
             self.schemas.update({
                 type_: merge_schema(schema, self.default_schema)
