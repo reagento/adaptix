@@ -49,7 +49,8 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 * Speed. It is up to 10 times faster than `marshmallow` and `dataclasses.asdict` (see [benchmarks](benchmarks))
 * Automatic name style conversion (e.g. `snake_case` to `CamelCase`)
 * Automatic skipping of "internal use" fields (with leading underscore)
-* Enums, typed dicts and lists are supported from the box
+* Enums, typed dicts, tuples and lists are supported from the box
+* Unions and Optionals are supported without need to define them in schema
 
 ## Usage
 
@@ -58,7 +59,7 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 To parse dict create factory, get and use `parser`  or just call `load` method 
 
 ```python
-factory = dataclass_factory.Factory()  # create it only once
+factory = Factory()  # create it only once
 parser = factory.parser(Book)  # save it to reuse multiple times
 book = parser(data)
 # or 
@@ -72,7 +73,7 @@ So the order of type arguments is important.
 
 Serialization is also very simple:
 ```python
-factory = dataclass_factory.Factory()  # create it only once
+factory = Factory()  # create it only once
 serializer = factory.serializer(Book)  # you can reuse ot
 data = serializer(book)
 # or 
@@ -127,6 +128,29 @@ Schema consists of:
 
 Currently only `serializer` and `parser` are supported for non-dataclass types
 
+Example, 
+```python
+@dataclass
+class Person:
+    _first_name: str
+    last_name_: str
+
+
+factory = Factory(schemas={
+    Person: Schema(
+        trim_trailing_underscore=True,
+        skip_internal=False
+    )}
+)
+
+person = Person("ivan", "petrov")
+serial_person = {
+    "_first_name": "ivan",
+    "last_name": "petrov"
+}
+
+assert factory.dump(person) == serial_person
+```
 #### Common schemas
 
 `schema_helpers` module contains several commonly used schemas:
@@ -136,7 +160,7 @@ Currently only `serializer` and `parser` are supported for non-dataclass types
 
 Example:
 ```python
-factory = dataclass_factory.Factory(
+factory = Factory(
     schemas={
         UUID: schema_helpers.uuid_schema,
         datetime: schema_helpers.isotime_schema,
@@ -178,3 +202,16 @@ Following name styles are supported:
 * `upper` (UPPERCASE)
 * `upper_snake` (UPPER_SNAKE_CASE)
 * `camel_snake` (Camel_Snake)
+
+### Updating from previous versions
+In versions 1.1+:
+    * separate `ParserFactory` and `SerializerFactory` should be refused in favor of `Factory`
+    * `trim_trailing_underscore` of factories parameter moved to `default_schema`
+    * `type_factories`, `name_styles` and `type_serializers` moved to `schemas` dict
+    
+In versions <1.1:
+    * `dict_factory` used with `asdict` function must be replaced with `Factory`-based seralization as it is much faster
+In versions <1.0:
+    * `parse` method must be replaced with `Factory`-based parsing as it much faster
+    
+All old methods and classes are still avaiable but are deprecated ant will be removed in future versions
