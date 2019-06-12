@@ -23,10 +23,11 @@ class Factory:
         self.schemas = schemas
         self.debug_path = debug_path
         self.schemas = defaultdict(lambda: copy(self.default_schema))
-        self.schemas.update({
-            type_: merge_schema(schema, self.default_schema)
-            for type_, schema in schemas.items()
-        })
+        if schemas:
+            self.schemas.update({
+                type_: merge_schema(schema, self.default_schema)
+                for type_, schema in schemas.items()
+            })
 
     def schema(self, class_: Type) -> Schema:
         schema = self.schemas.get(class_)
