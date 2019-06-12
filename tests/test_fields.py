@@ -9,6 +9,7 @@ class Data:
     a: str = ""
     b: str = ""
     c: str = ""
+    _d: str = ""
 
 
 class TestFactory(TestCase):
@@ -66,4 +67,18 @@ class TestFactory(TestCase):
         serial = {"d": "BB"}
         self.assertEqual(factory.dump(data), serial)
         data2 = Data(b="BB")
+        self.assertEqual(factory.load(serial, Data), data2)
+
+    def test_skip_internal(self):
+        factory = Factory(
+            schemas={
+                Data: Schema(
+                    skip_internal=True
+                ),
+            }
+        )
+        data = Data("AA", "BB", "CC", "DD")
+        serial = {"a": "AA", "c": "CC", "b": "BB"}
+        self.assertEqual(factory.dump(data), serial)
+        data2 = Data("AA", "BB", "CC")
         self.assertEqual(factory.load(serial, Data), data2)
