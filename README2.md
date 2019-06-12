@@ -95,7 +95,7 @@ Factory(debug_path: bool, default_schema: Schema, schemas: Dict[Type, Schema])
 
 #### More verbose errors
 
-`debug_path` parameter of Factory is used to enable verbose error mode. 
+`debug_path` parameter is used to enable verbose error mode. 
 
 It this mode `InvalidFieldError` is thrown when some dataclass field cannot be parsed. 
 It contains `field_path` which is path to the field in provided data (key and indexes).
@@ -112,12 +112,12 @@ If it is also not set, library default will be used
 
 Schema consists of:
 * `names_mapping` - specifies mapping between dataclass field name (key in mapping) and key in serialized form.
-* `only_mapped` - if True, all fields which are not specified in `names_mapping` are skipped. 
+* `only_mapped` (*by default, False*) - if True, all fields which are not specified in `names_mapping` are skipped. 
 * `only` - list of fields which are used during parsing and serialization. Has higher priority than `only_mapped` and `skip_internal` params
 * `exclude_fields` - list of fields that are NOT used during parsing and serialization. Has higher priority than `only`
-* `skip_internal` - exclude fields with leading underscore (_). Affects fields, that are not specified in `only` and `names_mapping`
-* `trim_trainling_underscore` - if True, trailing underscore (_) will be removed for all fields except specified in `names_mapping`
-* `name_style` - target field name style. Applied for fields not specified in `names_mapping`
+* `skip_internal` (*by default, True*) - exclude fields with leading underscore (_). Affects fields, that are not specified in `only` and `names_mapping`. 
+* `trim_trainling_underscore` (*by default, True*) - if True, trailing underscore (_) will be removed for all fields except specified in `names_mapping`.
+* `name_style` (*by default, snake_case*) - target field name style. Applied for fields not specified in `names_mapping`.
 * `serializer` - custom function which is used to dump data of type assigned with schema.  
     Normally it should not be used in default schema  
     It is also returned from `factory.serializer`
