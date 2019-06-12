@@ -7,7 +7,6 @@ from .naming import NameStyle, NAMING_FUNC
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
-Validator = Callable[[Any], bool]
 
 
 @dataclass
@@ -37,7 +36,6 @@ class Schema:
 
     serializer: Serializer = None
     parser: Parser = None
-    validator: Validator = None
 
 
 def merge_schema(schema: Schema, default: Schema) -> Schema:
