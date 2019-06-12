@@ -11,20 +11,6 @@ SimpleFieldMapping = Dict[str, str]
 
 @dataclass
 class Schema:
-    """
-    `only_mapped` - исключает из обработки все поля кроме указанных в `names_mapping`
-    `skip_internal` - исключить поля с префиксом _ (применяется если поле не указано в only и names_mapping)
-    `only` - включить только определенные поля. Более высокий приоритет чем names_mapping с укзаанным only_mapped и `skip_internal`
-    `exclude_fields` - исключить определенные поля. Более высоки приоритет чем `only`
-
-    `names_mapping` - сответствие между именами в датаклассе (ключи) и в получаемом словаре. В виде словаря или функции
-    `name_style` - конвертация стилей имен для полей, не укзазанных в names_mapping
-    `trim_trainling_underscore` - обрезка конечного _ для всех полей, кроме указанных в names_mapping
-
-    `serializer` - функция для преобрзаования ИЗ типа
-    `parser` - функция преобразования В тип
-    """
-
     only: List[str] = None
     exclude: List[str] = None
     name_mapping: Dict[str, str] = None

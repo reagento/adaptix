@@ -58,7 +58,7 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 To parse dict create factory, get and use `parser`  or just call `load` method 
 
 ```python
-factory = dataclass_factory.Factory()
+factory = dataclass_factory.Factory()  # create it only once
 parser = factory.parser(Book)  # save it to reuse multiple times
 book = parser(data)
 # or 
@@ -72,8 +72,8 @@ So the order of type arguments is important.
 
 Serialization is also very simple:
 ```python
-factory = dataclass_factory.Factory()
-serializer = factory.serializer(Book)  # save it to reuse multiple times
+factory = dataclass_factory.Factory()  # create it only once
+serializer = factory.serializer(Book)  # you can reuse ot
 data = serializer(book)
 # or 
 data = factory.dump(book, Book) 
@@ -111,4 +111,70 @@ If some setting is not set for schema (or set to `None`), setting from `default_
 If it is also not set, library default will be used
 
 Schema consists of:
-* 
+* `names_mapping` - specifies mapping between dataclass field name (key in mapping) and key in serialized form.
+* `only_mapped` - if True, all fields which are not specified in `names_mapping` are skipped. 
+* `only` - list of fields which are used during parsing and serialization. Has higher priority than `only_mapped` and `skip_internal` params
+* `exclude_fields` - list of fields that are NOT used during parsing and serialization. Has higher priority than `only`
+* `skip_internal` - exclude fields with leading underscore (_). Affects fields, that are not specified in `only` and `names_mapping`
+* `trim_trainling_underscore` - if True, trailing underscore (_) will be removed for all fields except specified in `names_mapping`
+* `name_style` - target field name style. Applied for fields not specified in `names_mapping`
+* `serializer` - custom function which is used to dump data of type assigned with schema.  
+    Normally it should not be used in default schema  
+    It is also returned from `factory.serializer`
+* `parser` - custom function which is used to load  data of type assigned with schema.  
+    Normally it should not be used in default schema  
+    It is also returned from `factory.parser` 
+
+Currently only `serializer` and `parser` are supported for non-dataclass types
+
+#### Common schemas
+
+`schema_helpers` module contains several commonly used schemas:
+* `unixtime_schema` - converts datetime to unixtime and vice versa
+* `isotime_schema` - converts datetime to string containing ISO 8081. Supported only on Python 3.7+
+* `uuid_schema` - converts UUID to string
+
+Example:
+```python
+factory = dataclass_factory.Factory(
+    schemas={
+        UUID: schema_helpers.uuid_schema,
+        datetime: schema_helpers.isotime_schema,
+    }
+)
+```
+
+#### Name styles
+
+You have to follow PEP8 convention for fields names (snake_case) or style conversion wil not work appropriately
+
+```python
+factory = Factory(default_schema=Schema(
+    name_style=NameStyle.camel
+))
+
+
+@dataclass
+class Person:
+    first_name: str
+    last_name: str
+
+
+person = Person("ivan", "petrov")
+serial_person = {
+    "FirstName": "ivan",
+    "LastName": "petrov"
+}
+
+assert factory.dump(person) == serial_person
+```
+
+Following name styles are supported:
+* `snake` (snake_case)
+* `kebab` (kebab-case)
+* `camel_lower` (camelCaseLower)
+* `camel` (CamelCase)
+* `lower` (lowercase)
+* `upper` (UPPERCASE)
+* `upper_snake` (UPPER_SNAKE_CASE)
+* `camel_snake` (Camel_Snake)
