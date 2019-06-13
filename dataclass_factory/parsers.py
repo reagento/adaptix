@@ -10,8 +10,8 @@ from .common import Parser
 from .exceptions import InvalidFieldError
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
-    is_tuple, is_collection, is_any, hasargs, is_optional, is_none, is_union, is_dict, is_enum
-)
+    is_tuple, is_collection, is_any, hasargs, is_optional, is_none, is_union, is_dict, is_enum,
+    is_generic)
 
 
 def element_parser(parser: Callable, data: Any, key: Any):
@@ -153,6 +153,7 @@ def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Par
             })
     return class_parser
 
+
 def create_parser(factory, schema: Schema, debug_path: bool, cls):
     if is_any(cls):
         return parse_stub
@@ -190,6 +191,18 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls):
         parsers = {field.name: factory.parser(field.type) for field in fields(cls)}
         return get_dataclass_parser(
             cls,
+            parsers,
+            schema,
+            debug_path,
+        )
+    if is_generic(cls) and is_dataclass(cls.__origin__):
+        args = dict(zip(cls.__origin__.__parameters__, cls.__args__))
+        parsers = {
+            field.name: factory.parser(args.get(field.type, field.type))
+            for field in fields(cls.__origin__)
+        }
+        return get_dataclass_parser(
+            cls.__origin__,
             parsers,
             schema,
             debug_path,

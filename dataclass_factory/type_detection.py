@@ -55,6 +55,10 @@ def is_any(type_: Type) -> bool:
     return type_ in (Any, T, KT, VT, inspect._empty)
 
 
+def is_generic(type_: Type) -> bool:
+    return hasattr(type_, "__origin__")
+
+
 def is_none(type_: Type) -> bool:
     return type_ is type(None)
 
