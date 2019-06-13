@@ -142,14 +142,16 @@ def get_dict_parser(key_parser, value_parser) -> Parser:
 
 def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Parser:
     if debug_path:
-        return lambda data: cls(**{
-            k: element_parser(parser, data.get(k), k) for k, parser in parsers.items() if k in data
-        })
+        def class_parser(data):
+            return cls(**{
+                k: element_parser(parser, data.get(k), k) for k, parser in parsers.items() if k in data
+            })
     else:
-        return lambda data: cls(**{
-            k: parser(data.get(k)) for k, parser in parsers.items() if k in data
-        })
-
+        def class_parser(data):
+            return cls(**{
+                k: parser(data.get(k)) for k, parser in parsers.items() if k in data
+            })
+    return class_parser
 
 def create_parser(factory, schema: Schema, debug_path: bool, cls):
     if is_any(cls):
