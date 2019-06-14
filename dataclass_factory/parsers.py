@@ -1,10 +1,9 @@
 import decimal
 import inspect
+import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-
-import itertools
-from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, Type
+from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, Type, get_type_hints
 
 from .common import Parser
 from .exceptions import InvalidFieldError
@@ -154,6 +153,13 @@ def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Par
     return class_parser
 
 
+def get_lazy_parser(factory, class_):
+    def lazy_parser(data):
+        return factory.load(data, class_)
+
+    return lazy_parser
+
+
 def create_parser(factory, schema: Schema, debug_path: bool, cls):
     if is_any(cls):
         return parse_stub
@@ -188,7 +194,8 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls):
     if is_union(cls):
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
     if is_dataclass(cls):
-        parsers = {field.name: factory.parser(field.type) for field in fields(cls)}
+        resolved_hints = get_type_hints(cls)
+        parsers = {field.name: factory.parser(resolved_hints[field.name]) for field in fields(cls)}
         return get_dataclass_parser(
             cls,
             parsers,

@@ -1,10 +1,9 @@
 from collections import defaultdict
 from copy import copy
-
 from typing import Dict, Type, Any, Optional
 
 from .common import Serializer, Parser
-from .parsers import create_parser
+from .parsers import create_parser, get_lazy_parser
 from .schema import Schema, merge_schema
 from .serializers import create_serializer
 
@@ -13,6 +12,21 @@ DEFAULT_SCHEMA = Schema(
     skip_internal=True,
     only_mapped=False,
 )
+
+
+class StackedFactory:
+    def __init__(self, factory):
+        self.stack = []
+        self.factory = factory
+
+    def parser(self, class_: Type):
+        if class_ in self.stack:
+            return get_lazy_parser(self.factory, class_)
+        self.stack.append(class_)
+        try:
+            return self.factory._parser_with_stack(class_, self)
+        finally:
+            self.stack.pop()
 
 
 class Factory:
@@ -37,9 +51,12 @@ class Factory:
         return schema
 
     def parser(self, class_: Type) -> Parser:
+        return self._parser_with_stack(class_, StackedFactory(self))
+
+    def _parser_with_stack(self, class_: Type, stacked_factory: StackedFactory) -> Parser:
         schema = self.schema(class_)
         if not schema.parser:
-            schema.parser = create_parser(self, schema, self.debug_path, class_)
+            schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
         return schema.parser
 
     def serializer(self, class_: Type) -> Serializer:
