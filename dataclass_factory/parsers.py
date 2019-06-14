@@ -219,6 +219,6 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls):
         parsers = {
             k: factory.parser(v.annotation) for k, v in arguments.items()
         }
-        return get_class_parser(cls, parsers, factory.debug_path)
+        return get_class_parser(cls, parsers, debug_path)
     except AttributeError:
         raise ValueError("Cannot find parser for `%s`" % repr(cls))
