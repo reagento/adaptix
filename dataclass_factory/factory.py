@@ -5,7 +5,7 @@ from typing import Dict, Type, Any, Optional
 from .common import Serializer, Parser
 from .parsers import create_parser, get_lazy_parser
 from .schema import Schema, merge_schema
-from .serializers import create_serializer
+from .serializers import create_serializer, lazy_serializer
 
 DEFAULT_SCHEMA = Schema(
     trim_trailing_underscore=True,
@@ -25,6 +25,15 @@ class StackedFactory:
         self.stack.append(class_)
         try:
             return self.factory._parser_with_stack(class_, self)
+        finally:
+            self.stack.pop()
+
+    def serializer(self, class_: Type):
+        if class_ in self.stack:
+            return lazy_serializer(self.factory)
+        self.stack.append(class_)
+        try:
+            return self.factory._serializer_with_stack(class_, self)
         finally:
             self.stack.pop()
 
@@ -60,9 +69,12 @@ class Factory:
         return schema.parser
 
     def serializer(self, class_: Type) -> Serializer:
+        return self._serializer_with_stack(class_, StackedFactory(self))
+
+    def _serializer_with_stack(self, class_: Type, stacked_factory: StackedFactory) -> Serializer:
         schema = self.schema(class_)
         if not schema.serializer:
-            schema.serializer = create_serializer(self, schema, self.debug_path, class_)
+            schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
         return schema.serializer
 
     def load(self, data: Any, class_: Type):

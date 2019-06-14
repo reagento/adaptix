@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
-
-from typing import Any, Type
+from typing import Any, Type, get_type_hints
 
 from .common import Serializer
 from .schema import Schema, get_dataclass_fields
@@ -55,9 +54,10 @@ def optional_serializer(serializer):
 
 def create_serializer(factory, schema: Schema, debug_path: bool, class_) -> Serializer:
     if is_dataclass(class_):
+        resolved_hints = get_type_hints(class_)
         return get_dataclass_serializer(
             class_,
-            {field.name: factory.serializer(field.type) for field in fields(class_)},
+            {field.name: factory.serializer(resolved_hints[field.name]) for field in fields(class_)},
             schema,
         )
     if is_any(class_):
