@@ -199,15 +199,6 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls):
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
-    if is_dataclass(cls):
-        resolved_hints = get_type_hints(cls)
-        parsers = {field.name: factory.parser(resolved_hints[field.name]) for field in fields(cls)}
-        return get_dataclass_parser(
-            cls,
-            parsers,
-            schema,
-            debug_path,
-        )
     if is_generic(cls) and is_dataclass(cls.__origin__):
         args = dict(zip(cls.__origin__.__parameters__, cls.__args__))
         parsers = {
@@ -216,6 +207,15 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls):
         }
         return get_dataclass_parser(
             cls.__origin__,
+            parsers,
+            schema,
+            debug_path,
+        )
+    if is_dataclass(cls):
+        resolved_hints = get_type_hints(cls)
+        parsers = {field.name: factory.parser(resolved_hints[field.name]) for field in fields(cls)}
+        return get_dataclass_parser(
+            cls,
             parsers,
             schema,
             debug_path,

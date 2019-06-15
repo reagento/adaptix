@@ -229,11 +229,11 @@ Following name styles are supported:
 * `Enum` is converted using its value
 * `Optional`
 * `Any`, using this type no conversion is done during parsing. But serialization is based on real data type
-* `Generic` dataclasses 
 * `Union`
 * `dataclass` 
+* `Generic` dataclasses 
 * `datetime` and `UUID` can be converted using predefind schemas
-* custom classes can be parsed automatically using info from their `__init__` method.  
+* Custom classes can be parsed automatically using info from their `__init__` method.  
     Or you can provide custom praser/serializer
 
 ## Updating from previous versions
