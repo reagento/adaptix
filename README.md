@@ -41,7 +41,7 @@ serialized = factory.dump(book)
 * [Usage](#usage)
     * [Parsers and serializers](#parsers-and-serializers)
     * [Configuring](#configuring)
-        * [More verbose errors](#more verbose errors)
+        * [More verbose errors](#more-verbose-errors)
         * [Schemas](#Schemas)
         * [Common schemas](#common-schemas)
         * [Name styles](#name-styles)
@@ -64,7 +64,8 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 * Automatic skipping of "internal use" fields (with leading underscore)
 * Enums, typed dicts, tuples and lists are supported from the box
 * Unions and Optionals are supported without need to define them in schema
-* Generic dataclasses can be parsed as well
+* Generic dataclasses can be automatically parsed as well
+* Cyclic-referensed structures (such as linked-lists or trees) also can be converted
 
 ## Usage
 
