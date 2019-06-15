@@ -1,8 +1,9 @@
 import decimal
 import inspect
-import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
+
+import itertools
 from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, Type, get_type_hints
 
 from .common import Parser
@@ -36,7 +37,7 @@ def get_parser_with_check(cls) -> Parser:
     def parser(data):
         if isinstance(data, cls):
             return data
-        raise ValueError("data type is not " + cls)
+        raise ValueError("data type is not %s" % cls)
 
     return parser
 
