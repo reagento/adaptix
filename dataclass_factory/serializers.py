@@ -6,7 +6,10 @@ from typing import Any, Type, get_type_hints
 
 from .common import Serializer
 from .schema import Schema, get_dataclass_fields
-from .type_detection import is_collection, is_tuple, hasargs, is_dict, is_optional, is_union, is_any, is_generic
+from .type_detection import (
+    is_collection, is_tuple, hasargs, is_dict, is_optional,
+    is_union, is_any, is_generic, is_type_var,
+)
 
 
 def get_dataclass_serializer(class_: Type, serializers, schema: Schema) -> Serializer:
@@ -54,6 +57,8 @@ def optional_serializer(serializer):
 
 
 def create_serializer(factory, schema: Schema, debug_path: bool, class_) -> Serializer:
+    if is_type_var(class_):
+        return lazy_serializer(factory)
     if is_dataclass(class_):
         resolved_hints = get_type_hints(class_)
         return get_dataclass_serializer(

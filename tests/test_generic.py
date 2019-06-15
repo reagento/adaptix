@@ -66,4 +66,5 @@ class TestGeneric(TestCase):
         baz = Foo(FooBaz(Foo(1)))
         baz_serial = {"value": {"foo": {"value": 1}}}
         self.assertEqual(self.factory.load(baz_serial, Foo[FooBaz[int]]), baz)
+        self.assertEqual(self.factory.dump(baz, Foo[FooBaz[int]]), baz_serial)
         self.assertEqual(self.factory.dump(baz), baz_serial)

@@ -1,7 +1,7 @@
 import inspect
 from enum import Enum
 
-from typing import Collection, Tuple, Optional, Any, T, KT, VT, Dict, Union, Type
+from typing import Collection, Tuple, Optional, Any, T, KT, VT, Dict, Union, Type, TypeVar
 
 
 def hasargs(type_, *args):
@@ -73,6 +73,10 @@ def is_dict(cls):
         return origin in (dict, Dict)
     except AttributeError:
         return False
+
+
+def is_type_var(type_: Type):
+    return isinstance(type_, TypeVar)
 
 
 def fill_type_args(args, type_):
