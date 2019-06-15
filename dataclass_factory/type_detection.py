@@ -73,3 +73,13 @@ def is_dict(cls):
         return origin in (dict, Dict)
     except AttributeError:
         return False
+
+
+def fill_type_args(args, type_):
+    type_ = args.get(type_, type_)
+    if is_generic(type_):
+        type_args = tuple(
+            args.get(a, a) for a in type_.__args__
+        )
+        type_ = type_.__origin__[type_args]
+    return type_

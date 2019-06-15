@@ -4,14 +4,19 @@ from collections import deque
 from dataclasses import fields, is_dataclass
 
 import itertools
-from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, Type, get_type_hints
+from typing import (
+    List, Set, FrozenSet, Deque, Any, Callable,
+    Dict, Collection, Type, get_type_hints,
+)
 
 from .common import Parser
 from .exceptions import InvalidFieldError
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
-    is_tuple, is_collection, is_any, hasargs, is_optional, is_none, is_union, is_dict, is_enum,
-    is_generic)
+    is_tuple, is_collection, is_any, hasargs, is_optional,
+    is_none, is_union, is_dict, is_enum,
+    is_generic, fill_type_args
+)
 
 
 def element_parser(parser: Callable, data: Any, key: Any):
@@ -206,7 +211,7 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls):
     if is_generic(cls) and is_dataclass(cls.__origin__):
         args = dict(zip(cls.__origin__.__parameters__, cls.__args__))
         parsers = {
-            field.name: factory.parser(args.get(field.type, field.type))
+            field.name: factory.parser(fill_type_args(args, field.type))
             for field in fields(cls.__origin__)
         }
         return get_dataclass_parser(

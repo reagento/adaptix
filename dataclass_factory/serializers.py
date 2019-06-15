@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
+
 from typing import Any, Type, get_type_hints
 
 from .common import Serializer
@@ -93,13 +94,13 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_) -> Seri
         return get_collection_serializer(item_serializer)
     if is_generic(class_) and is_dataclass(class_.__origin__):
         args = dict(zip(class_.__origin__.__parameters__, class_.__args__))
-        parsers = {
-            field.name: factory.parser(args.get(field.type, field.type))
+        serializers = {
+            field.name: factory.serializer(args.get(field.type, field.type))
             for field in fields(class_.__origin__)
         }
         return get_dataclass_serializer(
             class_.__origin__,
-            parsers,
+            serializers,
             schema,
         )
     else:

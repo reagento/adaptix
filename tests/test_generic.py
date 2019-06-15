@@ -23,6 +23,11 @@ class FooBar(Generic[T, V]):
     value3: T
 
 
+@dataclass
+class FooBaz(Generic[T]):
+    foo: Foo[T]
+
+
 class TestGeneric(TestCase):
     def setUp(self) -> None:
         self.factory = Factory()
@@ -50,3 +55,15 @@ class TestGeneric(TestCase):
         foo_serial = {"value": 1, "value2": "str", "value3": 3}
         self.assertEqual(self.factory.load(foo_serial, FooBar[int, str]), foo)
         self.assertEqual(self.factory.dump(foo), foo_serial)
+
+    def test_inner(self):
+        baz = FooBaz(Foo(1))
+        baz_serial = {"foo": {"value": 1}}
+        self.assertEqual(self.factory.load(baz_serial, FooBaz[int]), baz)
+        self.assertEqual(self.factory.dump(baz), baz_serial)
+
+    def test_inner2(self):
+        baz = Foo(FooBaz(Foo(1)))
+        baz_serial = {"value": {"foo": {"value": 1}}}
+        self.assertEqual(self.factory.load(baz_serial, Foo[FooBaz[int]]), baz)
+        self.assertEqual(self.factory.dump(baz), baz_serial)
