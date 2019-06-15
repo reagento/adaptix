@@ -35,6 +35,19 @@ book: Book = factory.load(data, Book)  # Same as Book(title="Fahrenheit 451", pr
 serialized = factory.dump(book) 
 ``` 
 
+* [Navigation](#navigation)
+* [Requirements](#requirements)
+* [Advantages](#advantages)
+* [Usage](#usage)
+    * [Parsers and serializers](#parsers-and-serializers)
+    * [Configuring](#configuring)
+        * [More verbose errors](#more verbose errors)
+        * [Schemas](#Schemas)
+        * [Common schemas](#common-schemas)
+        * [Name styles](#name-styles)
+* [Supported types](#supported-types)
+* [Updating from previous versions](#updating-from-previous-versions)
+
 ## Requirements
 
 * python >= 3.6
@@ -51,6 +64,7 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 * Automatic skipping of "internal use" fields (with leading underscore)
 * Enums, typed dicts, tuples and lists are supported from the box
 * Unions and Optionals are supported without need to define them in schema
+* Generic dataclasses can be parsed as well
 
 ## Usage
 
@@ -203,7 +217,25 @@ Following name styles are supported:
 * `upper_snake` (UPPER_SNAKE_CASE)
 * `camel_snake` (Camel_Snake)
 
-### Updating from previous versions
+## Supported types
+
+* numeric types (`int`, `float`, `Decimal`)
+* `bool`
+* `str`, `bytearray`
+* `List`
+* `Tuple`, including something like `Tuple[int, ...]` or `Tuple[int, str, int]`
+* `Dict`
+* `Enum` is converted using its value
+* `Optional`
+* `Any`, using this type no conversion is done during parsing. But serialization is based on real data type
+* `Generic` dataclasses 
+* `Union`
+* `dataclass` 
+* `datetime` and `UUID` can be converted using predefind schemas
+* custom classes can be parsed automatically using info from their `__init__` method.  
+    Or you can provide custom praser/serializer
+
+## Updating from previous versions
 In versions 1.1+:
 * separate `ParserFactory` and `SerializerFactory` should be refused in favor of `Factory`
 * `trim_trailing_underscore` of factories parameter moved to `default_schema`
