@@ -2,11 +2,14 @@
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
 
-from typing import Any, Type
+from typing import Any, Type, get_type_hints
 
 from .common import Serializer
 from .schema import Schema, get_dataclass_fields
-from .type_detection import is_collection, is_tuple, hasargs, is_dict, is_optional, is_union, is_any
+from .type_detection import (
+    is_collection, is_tuple, hasargs, is_dict, is_optional,
+    is_union, is_any, is_generic, is_type_var,
+)
 
 
 def get_dataclass_serializer(class_: Type, serializers, schema: Schema) -> Serializer:
@@ -54,10 +57,13 @@ def optional_serializer(serializer):
 
 
 def create_serializer(factory, schema: Schema, debug_path: bool, class_) -> Serializer:
+    if is_type_var(class_):
+        return lazy_serializer(factory)
     if is_dataclass(class_):
+        resolved_hints = get_type_hints(class_)
         return get_dataclass_serializer(
             class_,
-            {field.name: factory.serializer(field.type) for field in fields(class_)},
+            {field.name: factory.serializer(resolved_hints[field.name]) for field in fields(class_)},
             schema,
         )
     if is_any(class_):
@@ -91,5 +97,16 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_) -> Seri
     if is_collection(class_):
         item_serializer = factory.serializer(class_.__args__[0] if class_.__args__ else Any)
         return get_collection_serializer(item_serializer)
+    if is_generic(class_) and is_dataclass(class_.__origin__):
+        args = dict(zip(class_.__origin__.__parameters__, class_.__args__))
+        serializers = {
+            field.name: factory.serializer(args.get(field.type, field.type))
+            for field in fields(class_.__origin__)
+        }
+        return get_dataclass_serializer(
+            class_.__origin__,
+            serializers,
+            schema,
+        )
     else:
         return stub_serializer

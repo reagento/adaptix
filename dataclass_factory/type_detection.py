@@ -1,7 +1,7 @@
 import inspect
 from enum import Enum
 
-from typing import Collection, Tuple, Optional, Any, T, KT, VT, Dict, Union, Type
+from typing import Collection, Tuple, Optional, Any, T, KT, VT, Dict, Union, Type, TypeVar
 
 
 def hasargs(type_, *args):
@@ -55,6 +55,10 @@ def is_any(type_: Type) -> bool:
     return type_ in (Any, T, KT, VT, inspect._empty)
 
 
+def is_generic(type_: Type) -> bool:
+    return hasattr(type_, "__origin__")
+
+
 def is_none(type_: Type) -> bool:
     return type_ is type(None)
 
@@ -69,3 +73,17 @@ def is_dict(cls):
         return origin in (dict, Dict)
     except AttributeError:
         return False
+
+
+def is_type_var(type_: Type):
+    return isinstance(type_, TypeVar)
+
+
+def fill_type_args(args, type_):
+    type_ = args.get(type_, type_)
+    if is_generic(type_):
+        type_args = tuple(
+            args.get(a, a) for a in type_.__args__
+        )
+        type_ = type_.__origin__[type_args]
+    return type_

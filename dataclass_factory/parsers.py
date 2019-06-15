@@ -4,13 +4,18 @@ from collections import deque
 from dataclasses import fields, is_dataclass
 
 import itertools
-from typing import List, Set, FrozenSet, Deque, Any, Callable, Dict, Collection, Type
+from typing import (
+    List, Set, FrozenSet, Deque, Any, Callable,
+    Dict, Collection, Type, get_type_hints,
+)
 
 from .common import Parser
 from .exceptions import InvalidFieldError
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
-    is_tuple, is_collection, is_any, hasargs, is_optional, is_none, is_union, is_dict, is_enum
+    is_tuple, is_collection, is_any, hasargs, is_optional,
+    is_none, is_union, is_dict, is_enum,
+    is_generic, fill_type_args
 )
 
 
@@ -37,7 +42,7 @@ def get_parser_with_check(cls) -> Parser:
     def parser(data):
         if isinstance(data, cls):
             return data
-        raise ValueError("data type is not " + cls)
+        raise ValueError("data type is not %s" % cls)
 
     return parser
 
@@ -142,13 +147,23 @@ def get_dict_parser(key_parser, value_parser) -> Parser:
 
 def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Parser:
     if debug_path:
-        return lambda data: cls(**{
-            k: element_parser(parser, data.get(k), k) for k, parser in parsers.items() if k in data
-        })
+        def class_parser(data):
+            return cls(**{
+                k: element_parser(parser, data.get(k), k) for k, parser in parsers.items() if k in data
+            })
     else:
-        return lambda data: cls(**{
-            k: parser(data.get(k)) for k, parser in parsers.items() if k in data
-        })
+        def class_parser(data):
+            return cls(**{
+                k: parser(data.get(k)) for k, parser in parsers.items() if k in data
+            })
+    return class_parser
+
+
+def get_lazy_parser(factory, class_):
+    def lazy_parser(data):
+        return factory.load(data, class_)
+
+    return lazy_parser
 
 
 def create_parser(factory, schema: Schema, debug_path: bool, cls):
@@ -184,8 +199,21 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls):
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
+    if is_generic(cls) and is_dataclass(cls.__origin__):
+        args = dict(zip(cls.__origin__.__parameters__, cls.__args__))
+        parsers = {
+            field.name: factory.parser(fill_type_args(args, field.type))
+            for field in fields(cls.__origin__)
+        }
+        return get_dataclass_parser(
+            cls.__origin__,
+            parsers,
+            schema,
+            debug_path,
+        )
     if is_dataclass(cls):
-        parsers = {field.name: factory.parser(field.type) for field in fields(cls)}
+        resolved_hints = get_type_hints(cls)
+        parsers = {field.name: factory.parser(resolved_hints[field.name]) for field in fields(cls)}
         return get_dataclass_parser(
             cls,
             parsers,
@@ -197,6 +225,6 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls):
         parsers = {
             k: factory.parser(v.annotation) for k, v in arguments.items()
         }
-        return get_class_parser(cls, parsers, factory.debug_path)
+        return get_class_parser(cls, parsers, debug_path)
     except AttributeError:
         raise ValueError("Cannot find parser for `%s`" % repr(cls))
