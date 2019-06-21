@@ -217,6 +217,7 @@ Following name styles are supported:
 * `upper` (UPPERCASE)
 * `upper_snake` (UPPER_SNAKE_CASE)
 * `camel_snake` (Camel_Snake)
+* `dot` (dot.case)
 
 ## Supported types
 

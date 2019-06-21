@@ -50,6 +50,10 @@ def camel_snake(name):
     return "_".join(title(x) for x in split_name(name))
 
 
+def dot(name):
+    return ".".join(split_name(name))
+
+
 class NameStyle(Enum):
     snake = "snake_case"
     kebab = "kebab-case"
@@ -59,6 +63,7 @@ class NameStyle(Enum):
     upper = "UPPERCASE"
     upper_snake = "UPPER_SNAKE_CASE"
     camel_snake = "Camel_Snake"
+    dot = "dot.case"
 
 
 NAMING_FUNC = {
@@ -70,4 +75,5 @@ NAMING_FUNC = {
     NameStyle.upper: upper,
     NameStyle.upper_snake: upper_snake,
     NameStyle.camel_snake: camel_snake,
+    NameStyle.dot: dot,
 }
