@@ -1,7 +1,6 @@
 from copy import copy
 from dataclasses import dataclass, asdict, fields
-
-from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional
+from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, TypeVar, Generic
 
 from .common import Serializer, Parser
 from .naming import NameStyle, NAMING_FUNC
@@ -9,9 +8,11 @@ from .naming import NameStyle, NAMING_FUNC
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
 
+T = TypeVar("T")
+
 
 @dataclass
-class Schema:
+class Schema(Generic[T]):
     only: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     name_mapping: Optional[Dict[str, str]] = None
@@ -21,8 +22,8 @@ class Schema:
     trim_trailing_underscore: Optional[bool] = None
     skip_internal: Optional[bool] = None
 
-    serializer: Optional[Serializer] = None
-    parser: Optional[Parser] = None
+    serializer: Optional[Serializer[T]] = None
+    parser: Optional[Parser[T]] = None
 
 
 def merge_schema(schema: Optional[Schema], default: Optional[Schema]) -> Schema:
@@ -52,7 +53,7 @@ def convert_name(
     return name
 
 
-def get_dataclass_fields(schema: Schema, class_: Type) -> Sequence[Tuple[str, str]]:
+def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[str, str]]:
     only_mapped = schema.only_mapped and schema.only is None
     all_fields = {
         f.name
