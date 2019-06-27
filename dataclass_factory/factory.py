@@ -1,5 +1,4 @@
-from collections import defaultdict
-from copy import copy
+from dataclasses import astuple
 from typing import Dict, Type, Any, Optional, TypeVar
 
 from .common import Serializer, Parser
@@ -50,7 +49,7 @@ class Factory:
                  debug_path: bool = False):
         self.default_schema = merge_schema(default_schema, DEFAULT_SCHEMA)
         self.debug_path = debug_path
-        self.schemas: Dict[Type, Schema] = defaultdict(lambda: copy(self.default_schema))
+        self.schemas: Dict[Type, Schema] = {}
         if schemas:
             self.schemas.update({
                 type_: merge_schema(schema, self.default_schema)
@@ -60,7 +59,9 @@ class Factory:
     def schema(self, class_: Type[T]) -> Schema:
         schema = self.schemas.get(class_)
         if not schema:
-            schema = copy(self.default_schema)
+            schema = Schema[class_](
+                *astuple(self.default_schema)
+            )
             self.schemas[class_] = schema
         return schema
 
