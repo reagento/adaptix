@@ -52,7 +52,7 @@ def is_union(type_: Type) -> bool:
 
 
 def is_any(type_: Type) -> bool:
-    return type_ in (Any, inspect._empty)
+    return type_ in (Any, inspect.Parameter.empty)
 
 
 def is_generic(type_: Type) -> bool:
