@@ -1,9 +1,8 @@
 import decimal
 import inspect
+import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-
-import itertools
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
@@ -15,7 +14,7 @@ from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,
-    is_generic, fill_type_args
+    is_generic, fill_type_args, args_unspecified,
 )
 
 
@@ -190,12 +189,20 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls):
         else:
             return get_tuple_parser(tuple(factory.parser(x) for x in cls.__args__), debug_path)
     if is_dict(cls):
-        key_type_arg = cls.__args__[0] if cls.__args__ else Any
-        value_type_arg = cls.__args__[1] if cls.__args__ else Any
+        if args_unspecified(cls):
+            key_type_arg = Any
+            value_type_arg = Any
+        else:
+            key_type_arg = cls.__args__[0]
+            value_type_arg = cls.__args__[1]
         return get_dict_parser(factory.parser(key_type_arg), factory.parser(value_type_arg))
     if is_collection(cls):
+        if args_unspecified(cls):
+            value_type_arg = Any
+        else:
+            value_type_arg = cls.__args__[0]
         collection_factory = get_collection_factory(cls)
-        item_parser = factory.parser(cls.__args__[0] if cls.__args__ else Any)
+        item_parser = factory.parser(value_type_arg)
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
