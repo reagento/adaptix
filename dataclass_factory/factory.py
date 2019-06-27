@@ -82,10 +82,10 @@ class Factory:
             schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
         return schema.serializer
 
-    def load(self, data: Any, class_: Type[T]):
+    def load(self, data: Any, class_: Type[T]) -> T:
         return self.parser(class_)(data)
 
-    def dump(self, data: Any, class_: Type[T] = None):
+    def dump(self, data: T, class_: Type[T] = None) -> Any:
         if class_ is None:
             class_ = type(data)
         return self.serializer(class_)(data)

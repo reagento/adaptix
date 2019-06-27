@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar
 
 
-def hasargs(type_, *args):
+def hasargs(type_, *args) -> bool:
     try:
         if not type_.__args__:
             return False
@@ -15,7 +15,7 @@ def hasargs(type_, *args):
         return res
 
 
-def issubclass_safe(cls, classinfo):
+def issubclass_safe(cls, classinfo) -> bool:
     try:
         result = issubclass(cls, classinfo)
     except Exception:
@@ -74,7 +74,7 @@ def args_unspecified(cls: Type) -> bool:
     )
 
 
-def is_dict(cls):
+def is_dict(cls) -> bool:
     try:
         origin = cls.__origin__ or cls
         return origin in (dict, Dict)
@@ -82,11 +82,11 @@ def is_dict(cls):
         return False
 
 
-def is_type_var(type_: Type):
+def is_type_var(type_: Type) -> bool:
     return isinstance(type_, TypeVar)
 
 
-def fill_type_args(args, type_):
+def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
     type_ = args.get(type_, type_)
     if is_generic(type_):
         type_args = tuple(
