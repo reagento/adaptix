@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
+from typing import Any, Type, get_type_hints, List, Dict
 
-from typing import Any, Type, get_type_hints
-
-from .common import Serializer
+from .common import Serializer, T
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
@@ -12,7 +11,7 @@ from .type_detection import (
 )
 
 
-def get_dataclass_serializer(class_: Type, serializers, schema: Schema) -> Serializer:
+def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) -> Serializer[T]:
     field_info = tuple(
         (name, item, serializers[name])
         for name, item in get_dataclass_fields(schema, class_)
@@ -26,37 +25,37 @@ def get_dataclass_serializer(class_: Type, serializers, schema: Schema) -> Seria
     return serialize
 
 
-def get_collection_serializer(serializer) -> Serializer:
+def get_collection_serializer(serializer) -> Serializer[List]:
     return lambda data: [serializer(x) for x in data]
 
 
-def get_tuple_serializer(serializers) -> Serializer:
+def get_tuple_serializer(serializers) -> Serializer[List]:
     return lambda data: [serializer(x) for x, serializer in zip(data, serializers)]
 
 
-def get_collection_any_serializer() -> Serializer:
+def get_collection_any_serializer() -> Serializer[List]:
     return lambda data: [x for x in data]
 
 
-def stub_serializer(data):
+def stub_serializer(data: T) -> T:
     return data
 
 
-def get_dict_serializer(serializer):
+def get_dict_serializer(serializer: Any) -> Serializer[Dict]:
     return lambda data: {
         k: serializer(v) for k, v in data.items()
     }
 
 
-def lazy_serializer(factory):
+def lazy_serializer(factory) -> Serializer:
     return lambda data: factory.serializer(type(data))(data)
 
 
-def optional_serializer(serializer):
+def optional_serializer(serializer) -> Serializer:
     return lambda data: None if data is None else serializer(data)
 
 
-def create_serializer(factory, schema: Schema, debug_path: bool, class_) -> Serializer:
+def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
     if is_type_var(class_):
         return lazy_serializer(factory)
     if is_dataclass(class_):

@@ -7,7 +7,7 @@ from functools import partial
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
-)
+    Optional, Tuple)
 
 from .common import Parser, T
 from .exceptions import InvalidFieldError
@@ -19,7 +19,7 @@ from .type_detection import (
 )
 
 
-def element_parser(parser: Callable, data: Any, key: Any):
+def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
     try:
         return parser(data)
     except InvalidFieldError as e:
@@ -29,16 +29,16 @@ def element_parser(parser: Callable, data: Any, key: Any):
         raise InvalidFieldError(str(e), [str(key)])
 
 
-def parse_stub(data):
+def parse_stub(data: T) -> T:
     return data
 
 
-def parse_none(data):
+def parse_none(data: Any) -> None:
     if data is not None:
         raise ValueError("None expected")
 
 
-def get_parser_with_check(cls) -> Parser:
+def get_parser_with_check(cls: Type[T]) -> Parser[T]:
     def parser(data):
         if isinstance(data, cls):
             return data
@@ -47,7 +47,11 @@ def get_parser_with_check(cls) -> Parser:
     return parser
 
 
-def get_collection_parser(collection_factory: Callable, item_parser: Callable, debug_path: bool) -> Parser:
+def get_collection_parser(
+        collection_factory: Callable,
+        item_parser: Parser[T],
+        debug_path: bool
+) -> Parser[Collection[T]]:
     if debug_path:
         def collection_parser(data):
             return collection_factory(
@@ -76,7 +80,7 @@ def get_union_parser(parsers: Collection[Callable]) -> Parser:
 tuple_any_parser = tuple
 
 
-def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser:
+def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser[Tuple]:
     if debug_path:
         def tuple_parser(data):
             if len(data) != len(parsers):
@@ -115,18 +119,18 @@ def get_dataclass_parser(class_: Type[T],
     return dataclass_parser
 
 
-def get_optional_parser(parser) -> Parser:
+def get_optional_parser(parser: Parser[T]) -> Parser[Optional[T]]:
     return lambda data: parser(data) if data is not None else None
 
 
-def decimal_parse(data):
+def decimal_parse(data) -> decimal.Decimal:
     try:
         return decimal.Decimal(data)
     except (decimal.InvalidOperation, TypeError):
         raise ValueError(f'Invalid decimal string representation {data}')
 
 
-def get_collection_factory(cls):
+def get_collection_factory(cls) -> Type:
     origin = cls.__origin__ or cls
     res = {
         List: list,
@@ -161,7 +165,7 @@ def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Par
     return class_parser
 
 
-def get_lazy_parser(factory, class_):
+def get_lazy_parser(factory, class_: Type) -> Parser:
     # return partial(factory.load, class_=class_)
     def lazy_parser(data):
         return factory.load(data, class_)
@@ -169,7 +173,7 @@ def get_lazy_parser(factory, class_):
     return lazy_parser
 
 
-def create_parser(factory, schema: Schema, debug_path: bool, cls):
+def create_parser(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:
     if is_any(cls):
         return parse_stub
     if is_none(cls):
