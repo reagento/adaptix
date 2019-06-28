@@ -14,6 +14,8 @@ DEFAULT_SCHEMA = Schema[Any](
 
 
 class StackedFactory:
+    __slots__ = ("stack", "factory")
+    
     def __init__(self, factory):
         self.stack = []
         self.factory = factory
@@ -59,7 +61,7 @@ class Factory:
     def schema(self, class_: Type[T]) -> Schema:
         schema = self.schemas.get(class_)
         if not schema:
-            schema = Schema[class_](
+            schema = Schema(
                 *astuple(self.default_schema)
             )
             self.schemas[class_] = schema

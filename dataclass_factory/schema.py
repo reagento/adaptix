@@ -2,13 +2,11 @@ from copy import copy
 from dataclasses import dataclass, asdict, fields
 from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, TypeVar, Generic
 
-from .common import Serializer, Parser
+from .common import Serializer, Parser, T
 from .naming import NameStyle, NAMING_FUNC
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
-
-T = TypeVar("T")
 
 
 @dataclass

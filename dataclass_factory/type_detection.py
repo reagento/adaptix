@@ -83,7 +83,7 @@ def is_dict(cls) -> bool:
 
 
 def is_type_var(type_: Type) -> bool:
-    return isinstance(type_, TypeVar)
+    return type(type_) is TypeVar
 
 
 def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:

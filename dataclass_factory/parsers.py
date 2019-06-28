@@ -3,12 +3,13 @@ import inspect
 import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
+from functools import partial
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
 )
 
-from .common import Parser
+from .common import Parser, T
 from .exceptions import InvalidFieldError
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
@@ -89,10 +90,10 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser:
     return tuple_parser
 
 
-def get_dataclass_parser(class_: Type,
-                         parsers: Dict[str, Callable],
-                         schema: Schema,
-                         debug_path: bool, ) -> Parser:
+def get_dataclass_parser(class_: Type[T],
+                         parsers: Dict[str, Parser],
+                         schema: Schema[T],
+                         debug_path: bool, ) -> Parser[T]:
     field_info = tuple(
         (name, item, parsers[name])
         for name, item in get_dataclass_fields(schema, class_)
@@ -107,7 +108,9 @@ def get_dataclass_parser(class_: Type,
     else:
         def dataclass_parser(data):
             return class_(**{
-                field: parser(data[name]) for field, name, parser in field_info if name in data
+                field: parser(data[name])
+                for field, name, parser in field_info
+                if name in data
             })
     return dataclass_parser
 
@@ -159,6 +162,7 @@ def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Par
 
 
 def get_lazy_parser(factory, class_):
+    # return partial(factory.load, class_=class_)
     def lazy_parser(data):
         return factory.load(data, class_)
 
