@@ -2,7 +2,7 @@ language: python
 python:
   - "3.7-dev"
   - "3.6"
-script: nose2 -v && mypy -v tests dataclass_factory
+script: nose2 -v && mypy tests dataclass_factory
 install:
   - pip3 install -r requirements.txt
   - pip3 install nose2 mypy
