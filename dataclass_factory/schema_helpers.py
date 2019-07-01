@@ -5,7 +5,7 @@ from .schema import Schema
 
 try:
     isotime_schema = Schema(
-        parser=datetime.fromisoformat,
+        parser=datetime.fromisoformat, # type: ignore
         serializer=datetime.isoformat
     )
 except AttributeError:

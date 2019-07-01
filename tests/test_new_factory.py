@@ -20,7 +20,7 @@ class Book:
     _price: int = 0
 
 
-book_schema = Schema(
+book_schema = Schema[Book](
     name_style=NameStyle.camel
 )
 
