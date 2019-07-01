@@ -4,7 +4,7 @@ from typing import Dict, Type, Any, Optional, TypeVar
 from .common import Serializer, Parser
 from .parsers import create_parser, get_lazy_parser
 from .schema import Schema, merge_schema
-from .serializers import create_serializer, lazy_serializer
+from .serializers import create_serializer, get_lazy_serializer
 
 DEFAULT_SCHEMA = Schema[Any](
     trim_trailing_underscore=True,
@@ -15,7 +15,7 @@ DEFAULT_SCHEMA = Schema[Any](
 
 class StackedFactory:
     __slots__ = ("stack", "factory")
-    
+
     def __init__(self, factory):
         self.stack = []
         self.factory = factory
@@ -31,7 +31,7 @@ class StackedFactory:
 
     def serializer(self, class_: Type):
         if class_ in self.stack:
-            return lazy_serializer(self.factory)
+            return get_lazy_serializer(self.factory)
         self.stack.append(class_)
         try:
             return self.factory._serializer_with_stack(class_, self)
@@ -58,7 +58,7 @@ class Factory:
                 for type_, schema in schemas.items()
             })
 
-    def schema(self, class_: Type[T]) -> Schema:
+    def schema(self, class_: Type[T]) -> Schema[T]:
         schema = self.schemas.get(class_)
         if not schema:
             schema = Schema(
@@ -70,7 +70,7 @@ class Factory:
     def parser(self, class_: Type[T]) -> Parser[T]:
         return self._parser_with_stack(class_, StackedFactory(self))
 
-    def _parser_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser:
+    def _parser_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser[T]:
         schema = self.schema(class_)
         if not schema.parser:
             schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
@@ -79,7 +79,7 @@ class Factory:
     def serializer(self, class_: Type[T]) -> Serializer[T]:
         return self._serializer_with_stack(class_, StackedFactory(self))
 
-    def _serializer_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Serializer:
+    def _serializer_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Serializer[T]:
         schema = self.schema(class_)
         if not schema.serializer:
             schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)

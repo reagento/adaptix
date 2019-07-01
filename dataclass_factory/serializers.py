@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
-from typing import Any, Type, get_type_hints, List, Dict
+from typing import Any, Type, get_type_hints, List, Dict, Optional
 
 from .common import Serializer, T
 from .schema import Schema, get_dataclass_fields
@@ -25,7 +25,7 @@ def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) ->
     return serialize
 
 
-def get_collection_serializer(serializer) -> Serializer[List]:
+def get_collection_serializer(serializer: Serializer[T]) -> Serializer[List[T]]:
     return lambda data: [serializer(x) for x in data]
 
 
@@ -33,7 +33,7 @@ def get_tuple_serializer(serializers) -> Serializer[List]:
     return lambda data: [serializer(x) for x, serializer in zip(data, serializers)]
 
 
-def get_collection_any_serializer() -> Serializer[List]:
+def get_collection_any_serializer() -> Serializer[List[Any]]:
     return lambda data: [x for x in data]
 
 
@@ -41,23 +41,32 @@ def stub_serializer(data: T) -> T:
     return data
 
 
-def get_dict_serializer(serializer: Any) -> Serializer[Dict]:
+def get_dict_serializer(serializer: Serializer[T]) -> Serializer[Dict[Any, T]]:
     return lambda data: {
         k: serializer(v) for k, v in data.items()
     }
 
 
-def lazy_serializer(factory) -> Serializer:
-    return lambda data: factory.serializer(type(data))(data)
+def get_lazy_serializer(factory) -> Serializer:
+    def lazy_serializer(data):
+        return factory.serializer(type(data))(data)
+
+    return lazy_serializer
 
 
-def optional_serializer(serializer) -> Serializer:
-    return lambda data: None if data is None else serializer(data)
+def get_optional_serializer(serializer: Serializer[T]) -> Serializer[Optional[T]]:
+    def optional_serializer(data):
+        if data is None:
+            return None
+        else:
+            return serializer(data)
+
+    return optional_serializer
 
 
 def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
     if is_type_var(class_):
-        return lazy_serializer(factory)
+        return get_lazy_serializer(factory)
     if is_dataclass(class_):
         resolved_hints = get_type_hints(class_)
         return get_dataclass_serializer(
@@ -66,19 +75,19 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
             schema,
         )
     if is_any(class_):
-        return lazy_serializer(factory)
+        return get_lazy_serializer(factory)
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return class_
     if is_optional(class_):
         if class_.__args__:
-            return optional_serializer(class_.__args__[0])
+            return get_optional_serializer(class_.__args__[0])
         else:
-            return lazy_serializer(factory)
+            return get_lazy_serializer(factory)
     if is_union(class_):
         # create serializers:
         for type_ in class_.__args__:
             factory.serializer(type_)
-        return lazy_serializer(factory)
+        return get_lazy_serializer(factory)
     if is_tuple(class_):
         if not hasargs(class_):
             return get_collection_any_serializer()
