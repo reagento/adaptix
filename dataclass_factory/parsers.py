@@ -1,9 +1,8 @@
 import decimal
 import inspect
+import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-
-import itertools
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
@@ -90,12 +89,26 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser:
     return tuple_parser
 
 
+def get_path_parser(parser, path):
+    def path_parser(data):
+        if data is None:
+            return parser(data)
+        for x in path:
+            data = data[x]
+            if data is None:
+                return parser(data)
+        return parser(data)
+    print(path, parser)
+    return path_parser
+
+
 def get_dataclass_parser(class_: Type,
                          parsers: Dict[str, Callable],
                          schema: Schema,
                          debug_path: bool, ) -> Parser:
     field_info = tuple(
-        (name, item, parsers[name])
+        (name, item[0], get_path_parser(parsers[name], item[1:])) if isinstance(item, tuple)
+        else (name, item, parsers[name])
         for name, item in get_dataclass_fields(schema, class_)
     )
     if debug_path:

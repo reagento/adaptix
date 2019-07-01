@@ -1,7 +1,6 @@
 from copy import copy
 from dataclasses import dataclass, asdict, fields
-
-from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional
+from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Union
 
 from .common import Serializer, Parser
 from .naming import NameStyle, NAMING_FUNC
@@ -14,7 +13,7 @@ SimpleFieldMapping = Dict[str, str]
 class Schema:
     only: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
-    name_mapping: Optional[Dict[str, str]] = None
+    name_mapping: Optional[Dict[str, Union[str, Tuple[str, ...]]]] = None
     only_mapped: Optional[bool] = None
 
     name_style: Optional[NameStyle] = None
