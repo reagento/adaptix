@@ -1,4 +1,5 @@
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar
 
-Serializer = Callable[[Any], Any]
-Parser = Callable[[Any], Any]
+T = TypeVar("T")
+Serializer = Callable[[T], Any]
+Parser = Callable[[Any], T]

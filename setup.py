@@ -29,5 +29,8 @@ setup(
     install_requires=[
         'dataclasses;python_version<"3.7"',
     ],
+    package_data={
+        'dataclass_factory': ['py.typed'],
+    },
     python_requires=">=3.6",
 )

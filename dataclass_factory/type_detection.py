@@ -1,10 +1,10 @@
 import inspect
 from enum import Enum
 
-from typing import Collection, Tuple, Optional, Any, T, KT, VT, Dict, Union, Type, TypeVar
+from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar
 
 
-def hasargs(type_, *args):
+def hasargs(type_, *args) -> bool:
     try:
         if not type_.__args__:
             return False
@@ -15,7 +15,7 @@ def hasargs(type_, *args):
         return res
 
 
-def issubclass_safe(cls, classinfo):
+def issubclass_safe(cls, classinfo) -> bool:
     try:
         result = issubclass(cls, classinfo)
     except Exception:
@@ -52,7 +52,7 @@ def is_union(type_: Type) -> bool:
 
 
 def is_any(type_: Type) -> bool:
-    return type_ in (Any, T, KT, VT, inspect._empty)
+    return type_ in (Any, inspect.Parameter.empty)
 
 
 def is_generic(type_: Type) -> bool:
@@ -67,7 +67,14 @@ def is_enum(cls: Type) -> bool:
     return issubclass_safe(cls, Enum)
 
 
-def is_dict(cls):
+def args_unspecified(cls: Type) -> bool:
+    return (
+            (not cls.__args__ and cls.__parameters__) or
+            (cls.__args__ == cls.__parameters__)
+    )
+
+
+def is_dict(cls) -> bool:
     try:
         origin = cls.__origin__ or cls
         return origin in (dict, Dict)
@@ -75,11 +82,11 @@ def is_dict(cls):
         return False
 
 
-def is_type_var(type_: Type):
-    return isinstance(type_, TypeVar)
+def is_type_var(type_: Type) -> bool:
+    return type(type_) is TypeVar
 
 
-def fill_type_args(args, type_):
+def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
     type_ = args.get(type_, type_)
     if is_generic(type_):
         type_args = tuple(
