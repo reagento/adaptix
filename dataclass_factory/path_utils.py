@@ -24,6 +24,7 @@ def make_container(key: Key) -> Container:
 
 def init_structure(paths: Iterable[Path]) -> Container:
     root: Container = [None]
+    field_containers = []
     for path in paths:
         current: Container = root
         prev_key: Key = 0
@@ -43,4 +44,5 @@ def init_structure(paths: Iterable[Path]) -> Container:
                 extend_container(current[prev_key], next_key)
             current = current[prev_key]
             prev_key = next_key
-    return root[0]
+        field_containers.append((current, prev_key))
+    return root[0], field_containers

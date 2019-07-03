@@ -22,19 +22,16 @@ def to_tuple(key: Union[Key, Tuple[Key]]) -> Tuple[Key]:
 def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) -> Serializer[T]:
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
         field_info = tuple(
-            (name, to_tuple(path), serializers[name])
-            for name, path in get_dataclass_fields(schema, class_)
+            (i, name, to_tuple(path), serializers[name])
+            for i, (name, path) in enumerate(get_dataclass_fields(schema, class_))
         )
-        empty_container = init_structure((path for _, path, _ in field_info))
+        empty_container = init_structure((path for _, _, path, _ in field_info))
 
         def serialize(data):
-            container = deepcopy(empty_container)
-            for name, path, serializer in field_info:
-                value = serializer(getattr(data, name))
-                current = container
-                for key in path[:-1]:
-                    current = current[key]
-                current[path[-1]] = value
+            container, field_containers = deepcopy(empty_container)
+            for i, name, path, serializer in field_info:
+                c, x = field_containers[i]
+                c[x] = serializer(getattr(data, name))
             return container
     else:
         field_info = tuple(
