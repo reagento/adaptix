@@ -9,7 +9,7 @@ def extend_container(root: Container, key: Key) -> None:
     if isinstance(root, list):
         if not isinstance(key, int):
             raise ValueError("Expected int, but got `%s` in field path" % key)
-        if len(root) < key:
+        if len(root) < key + 1:
             root.extend([None] * (key - len(root) + 1))
     elif isinstance(key, int):
         raise ValueError("Expected str, but got `%s` in field path" % key)
@@ -37,7 +37,6 @@ def init_structure(paths: Iterable[Path]) -> Container:
                 not_exist = True
             else:
                 not_exist = False
-
             if not_exist:
                 current[prev_key] = make_container(next_key)
             else:
@@ -46,3 +45,4 @@ def init_structure(paths: Iterable[Path]) -> Container:
             prev_key = next_key
         field_containers.append((current, prev_key))
     return root[0], field_containers
+

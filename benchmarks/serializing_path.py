@@ -1,7 +1,8 @@
+import json
+from copy import deepcopy
 from dataclasses import dataclass, asdict
 from timeit import timeit
 
-from marshmallow import Schema, fields, post_load
 from typing import List
 
 from dataclass_factory import Factory, Schema as DSchema
@@ -17,7 +18,11 @@ class Todo:
 # my
 factory = Factory(schemas={
     Todo: DSchema(
-        name_mapping={"desc": ("description", "qwerty", 0)}
+        name_mapping={
+            "desc": ("description", "qwerty", 0, 5, 6),
+            "title": ("smth", "qwerty", 0, 5, 6),
+            "id": ("smth", "qwerty", 1),
+        }
     )
 })
 serializer = factory.serializer(List[Todo])
@@ -34,4 +39,5 @@ def do1():
     return serializer(todos)
 
 
+# print(json.dumps(do1()[0], indent=2))
 print("my    ", timeit("do()", globals={"do": do1}, number=100000))

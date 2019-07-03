@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from copy import deepcopy
 from dataclasses import is_dataclass, fields
+from marshal import loads, dumps
 from typing import Any, Type, get_type_hints, List, Dict, Optional, Tuple, Union
 
-from .path_utils import Key, init_structure
 from .common import Serializer, T
+from .path_utils import Key, init_structure
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
     is_union, is_any, is_generic, is_type_var,
 )
-from marshal import loads, dumps
 
 
 def to_tuple(key: Union[Key, Tuple[Key]]) -> Tuple[Key]:
