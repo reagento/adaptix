@@ -18,7 +18,7 @@ schema = Schema(
 
 
 class Test1(TestCase):
-    def test_path(self):
+    def test_load(self):
         factory = Factory(
             schemas={
                 A: schema
@@ -30,3 +30,16 @@ class Test1(TestCase):
         }
         expected = A("hello", "world")
         self.assertEqual(expected, factory.load(data, A))
+
+    def test_dump(self):
+        factory = Factory(
+            schemas={
+                A: schema
+            }
+        )
+        expected = {
+            "a": {"b": ["hello"]},
+            "y": "world"
+        }
+        data = A("hello", "world")
+        self.assertEqual(expected, factory.dump(data, A))

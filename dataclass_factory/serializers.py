@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from copy import deepcopy
 from dataclasses import is_dataclass, fields
-from typing import Any, Type, get_type_hints, List, Dict, Optional
+from typing import Any, Type, get_type_hints, List, Dict, Optional, Tuple, Union
 
+from .path_utils import Key, init_structure
 from .common import Serializer, T
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
@@ -11,17 +13,39 @@ from .type_detection import (
 )
 
 
+def to_tuple(key: Union[Key, Tuple[Key]]) -> Tuple[Key]:
+    if isinstance(key, tuple):
+        return key
+    return key,
+
+
 def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) -> Serializer[T]:
-    field_info = tuple(
-        (name, item, serializers[name])
-        for name, item in get_dataclass_fields(schema, class_)
-    )
+    if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
+        field_info = tuple(
+            (name, to_tuple(path), serializers[name])
+            for name, path in get_dataclass_fields(schema, class_)
+        )
+        empty_container = init_structure((path for _, path, _ in field_info))
 
-    def serialize(data):
-        return {
-            n: v(getattr(data, k)) for k, n, v in field_info
-        }
+        def serialize(data):
+            container = deepcopy(empty_container)
+            for name, path, serializer in field_info:
+                value = serializer(getattr(data, name))
+                current = container
+                for key in path[:-1]:
+                    current = current[key]
+                current[path[-1]] = value
+            return container
+    else:
+        field_info = tuple(
+            (name, item, serializers[name])
+            for name, item in get_dataclass_fields(schema, class_)
+        )
 
+        def serialize(data):
+            return {
+                n: v(getattr(data, k)) for k, n, v in field_info
+            }
     return serialize
 
 

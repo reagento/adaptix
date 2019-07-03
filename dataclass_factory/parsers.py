@@ -6,7 +6,7 @@ from dataclasses import fields, is_dataclass
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
-    Optional, Tuple)
+    Optional, Tuple, Union)
 
 from .common import Parser, T
 from .exceptions import InvalidFieldError
@@ -93,7 +93,7 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser[
     return tuple_parser
 
 
-def get_path_parser(parser, path):
+def get_path_parser(parser: Parser[T], path: Tuple[Union[str, int]]) -> Parser[T]:
     def path_parser(data):
         if data is None:
             return parser(data)
@@ -103,8 +103,16 @@ def get_path_parser(parser, path):
                 return parser(data)
         return parser(data)
 
-    print(path, parser)
     return path_parser
+
+
+def get_field_parser(item: Union[str, int, Tuple[str, int]], parser: Parser[T]) -> Tuple[Union[str, int], Parser[T]]:
+    if isinstance(item, tuple):
+        if len(item) == 1:
+            return item[0], parser
+        return item[0], get_path_parser(parser, item[1:])
+    else:
+        return item, parser
 
 
 def get_dataclass_parser(class_: Type[T],
@@ -112,8 +120,7 @@ def get_dataclass_parser(class_: Type[T],
                          schema: Schema[T],
                          debug_path: bool, ) -> Parser[T]:
     field_info = tuple(
-        (name, item[0], get_path_parser(parsers[name], item[1:])) if isinstance(item, tuple)
-        else (name, item, parsers[name])
+        (name, *get_field_parser(item, parsers[name]))
         for name, item in get_dataclass_fields(schema, class_)
     )
     if debug_path:
