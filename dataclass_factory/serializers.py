@@ -11,6 +11,7 @@ from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
     is_union, is_any, is_generic, is_type_var,
 )
+from marshal import loads, dumps
 
 
 def to_tuple(key: Union[Key, Tuple[Key]]) -> Tuple[Key]:
@@ -25,10 +26,10 @@ def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) ->
             (i, name, to_tuple(path), serializers[name])
             for i, (name, path) in enumerate(get_dataclass_fields(schema, class_))
         )
-        empty_container = init_structure((path for _, _, path, _ in field_info))
+        pickled = dumps(init_structure((path for _, _, path, _ in field_info)))
 
         def serialize(data):
-            container, field_containers = deepcopy(empty_container)
+            container, field_containers = loads(pickled)
             for i, name, path, serializer in field_info:
                 c, x = field_containers[i]
                 c[x] = serializer(getattr(data, name))
