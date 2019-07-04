@@ -10,6 +10,7 @@ from typing import (
 
 from .common import Parser, T
 from .exceptions import InvalidFieldError
+from .path_utils import Path
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
@@ -93,7 +94,7 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser[
     return tuple_parser
 
 
-def get_path_parser(parser: Parser[T], path: Tuple[Union[str, int]]) -> Parser[T]:
+def get_path_parser(parser: Parser[T], path: Path) -> Parser[T]:
     def path_parser(data):
         if data is None:
             return parser(data)
@@ -106,7 +107,7 @@ def get_path_parser(parser: Parser[T], path: Tuple[Union[str, int]]) -> Parser[T
     return path_parser
 
 
-def get_field_parser(item: Union[str, int, Tuple[str, int]], parser: Parser[T]) -> Tuple[Union[str, int], Parser[T]]:
+def get_field_parser(item: Union[str, int, Path], parser: Parser[T]) -> Tuple[Union[str, int], Parser[T]]:
     if isinstance(item, tuple):
         if len(item) == 1:
             return item[0], parser

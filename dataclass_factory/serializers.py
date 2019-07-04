@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
 from marshal import loads, dumps
-from typing import Any, Type, get_type_hints, List, Dict, Optional, Tuple, Union
+from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
 from .common import Serializer, T
-from .path_utils import Key, init_structure
+from .path_utils import init_structure, Path
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
@@ -13,7 +13,7 @@ from .type_detection import (
 )
 
 
-def to_tuple(key: Union[Key, Tuple[Key]]) -> Tuple[Key]:
+def to_tuple(key: Union[str, Path]) -> Path:
     if isinstance(key, tuple):
         return key
     return key,
@@ -21,11 +21,11 @@ def to_tuple(key: Union[Key, Tuple[Key]]) -> Tuple[Key]:
 
 def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) -> Serializer[T]:
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
-        field_info = tuple(
+        field_info_ex = tuple(
             (i, name, to_tuple(path), serializers[name])
             for i, (name, path) in enumerate(get_dataclass_fields(schema, class_))
         )
-        pickled = dumps(init_structure((path for _, _, path, _ in field_info)))
+        pickled = dumps(init_structure((path for _, _, path, _ in field_info_ex)))
 
         def serialize(data):
             container, field_containers = loads(pickled)

@@ -1,10 +1,10 @@
 from copy import copy
-from dataclasses import dataclass, asdict, fields, field
+from dataclasses import dataclass, asdict, fields
 from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union
 
-from .path_utils import Path, Key
 from .common import Serializer, Parser, T
 from .naming import NameStyle, NAMING_FUNC
+from .path_utils import Path
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]

@@ -10,7 +10,7 @@ class A:
     y: str
 
 
-schema = Schema(
+schema = Schema[A](
     name_mapping={
         "x": ("a", "b", 0),
     }
