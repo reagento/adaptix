@@ -1,9 +1,10 @@
 from copy import copy
 from dataclasses import dataclass, asdict, fields
-from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, TypeVar, Generic
+from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union
 
 from .common import Serializer, Parser, T
 from .naming import NameStyle, NAMING_FUNC
+from .path_utils import Path
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
@@ -13,7 +14,7 @@ SimpleFieldMapping = Dict[str, str]
 class Schema(Generic[T]):
     only: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
-    name_mapping: Optional[Dict[str, str]] = None
+    name_mapping: Optional[Dict[str, Union[str, Path]]] = None
     only_mapped: Optional[bool] = None
 
     name_style: Optional[NameStyle] = None
@@ -39,9 +40,9 @@ def merge_schema(schema: Optional[Schema], default: Optional[Schema]) -> Schema:
 def convert_name(
         name: str,
         name_style: Optional[NameStyle],
-        name_mapping: Optional[Dict[str, str]],
+        name_mapping: Optional[Dict[str, Union[str, Path]]],
         trim_trailing_underscore: Optional[bool]
-):
+) -> Union[str, Path]:
     if name_mapping and name in name_mapping:
         return name_mapping[name]
     if trim_trailing_underscore:
@@ -51,7 +52,7 @@ def convert_name(
     return name
 
 
-def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[str, str]]:
+def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[str, Union[str, Path]]]:
     only_mapped = schema.only_mapped and schema.only is None
     all_fields = {
         f.name

@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
-from typing import Any, Type, get_type_hints, List, Dict, Optional
+from marshal import loads, dumps
+from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
 from .common import Serializer, T
+from .path_utils import init_structure, Path
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
@@ -11,17 +13,36 @@ from .type_detection import (
 )
 
 
+def to_tuple(key: Union[str, Path]) -> Path:
+    if isinstance(key, tuple):
+        return key
+    return key,
+
+
 def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) -> Serializer[T]:
-    field_info = tuple(
-        (name, item, serializers[name])
-        for name, item in get_dataclass_fields(schema, class_)
-    )
+    if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
+        field_info_ex = tuple(
+            (i, name, to_tuple(path), serializers[name])
+            for i, (name, path) in enumerate(get_dataclass_fields(schema, class_))
+        )
+        pickled = dumps(init_structure((path for _, _, path, _ in field_info_ex)))
 
-    def serialize(data):
-        return {
-            n: v(getattr(data, k)) for k, n, v in field_info
-        }
+        def serialize(data):
+            container, field_containers = loads(pickled)
+            for i, name, path, serializer in field_info_ex:
+                c, x = field_containers[i]
+                c[x] = serializer(getattr(data, name))
+            return container
+    else:
+        field_info = tuple(
+            (name, item, serializers[name])
+            for name, item in get_dataclass_fields(schema, class_)
+        )
 
+        def serialize(data):
+            return {
+                n: v(getattr(data, k)) for k, n, v in field_info
+            }
     return serialize
 
 
