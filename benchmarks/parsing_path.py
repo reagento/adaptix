@@ -1,48 +1,45 @@
 from dataclasses import dataclass
 from timeit import timeit
-
-from marshmallow import Schema, fields, post_load
 from typing import List
 
-from dataclass_factory import Factory, Schema as DSchema
+from dataclass_factory import Factory, Schema
 
 
 @dataclass
-class Todo:
+class SimpleTodo:
     id: int
     title: str
     desc: str
 
+
+@dataclass
+class Qwerty:
+    qwerty: List[str]
+
+
+@dataclass
+class ComplexTodo:
+    id: int
+    title: str
+    description: Qwerty
+
+
 # my
 factory = Factory(schemas={
-    Todo: DSchema(
+    SimpleTodo: Schema(
         name_mapping={
-            "desc": ("description", "qwerty", 0, 5, 6),
+            "desc": ("description", "qwerty", 0),
         }
     )
-})
-parser = factory.parser(List[Todo])
+}, debug_path=True)
+simple_parser = factory.parser(List[SimpleTodo])
+complex_parser = factory.parser(List[ComplexTodo])
 
 # test
 todos = [{
     "description": {
         "qwerty": [
-            [
-                None,
-                None,
-                None,
-                None,
-                None,
-                [
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    "5some long description %s %s %s" % (i, i * 10, i)
-                ]
-            ]
+            "5some long description %s %s %s" % (i, i * 10, i)
         ],
     },
     "id": i,
@@ -50,8 +47,13 @@ todos = [{
 } for i in range(10)]
 
 
-def do1():
-    return parser(todos)
+def do_simple():
+    return simple_parser(todos)
 
 
-print("my   ", timeit("do()", globals={"do": do1}, number=100000))  # 1.1471970899983717
+def do_complex():
+    return complex_parser(todos)
+
+
+print("simple ", timeit("do()", globals={"do": do_simple}, number=100000))  # 2.015210837998893
+print("complex", timeit("do()", globals={"do": do_complex}, number=100000))  # 3.569017971982248

@@ -29,7 +29,7 @@ def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) ->
 
         def serialize(data):
             container, field_containers = loads(pickled)
-            for i, name, path, serializer in field_info:
+            for i, name, path, serializer in field_info_ex:
                 c, x = field_containers[i]
                 c[x] = serializer(getattr(data, name))
             return container
