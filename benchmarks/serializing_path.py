@@ -39,5 +39,5 @@ def do1():
     return serializer(todos)
 
 
-# print(json.dumps(do1()[0], indent=2))
-print("my    ", timeit("do()", globals={"do": do1}, number=100000))
+print(json.dumps(do1()[0], indent=2))
+# print("my    ", timeit("do()", globals={"do": do1}, number=100000))
