@@ -28,7 +28,7 @@ class ParserFactory:
                 name_style=name_styles.get(c)
             )
 
-        default_schema = Schema(
+        default_schema = Schema[Any](
             trim_trailing_underscore=trim_trailing_underscore,
         )
         self.factory = Factory(
@@ -60,7 +60,7 @@ class SerializerFactory:
                 name_style=name_styles.get(c)
             )
 
-        default_schema = Schema(
+        default_schema = Schema[Any](
             trim_trailing_underscore=trim_trailing_underscore,
         )
         self.factory = Factory(
