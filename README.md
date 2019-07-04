@@ -45,6 +45,7 @@ serialized = factory.dump(book)
         * [Schemas](#Schemas)
         * [Common schemas](#common-schemas)
         * [Name styles](#name-styles)
+        * [Structure flattening](#structure-flattening)
 * [Supported types](#supported-types)
 * [Updating from previous versions](#updating-from-previous-versions)
 
@@ -218,6 +219,45 @@ Following name styles are supported:
 * `upper_snake` (UPPER_SNAKE_CASE)
 * `camel_snake` (Camel_Snake)
 * `dot` (dot.case)
+
+#### Structure flattening
+
+Since version 2.2 you can flatten hierarchy of data when parsing.
+Also it is possible to serialize flat dataclass to complex structure.
+
+To enable configure thi behavior just use tuples instead of strings in field mapping.
+Provide numbers to create lists and strings to create dicts.
+
+For example if you have simple dataclass:
+```python
+@dataclass
+class A:
+    x: str
+    y: str
+```
+
+And you want to parse following structure getting `A("hello", "world")` as a result:
+```json
+{
+  "a": {
+    "b": ["hello"]
+  },
+  "y": "world"
+}
+```
+
+The only thing you need is to create such a schema and use `Factory`:
+```python
+schema = Schema[A](
+    name_mapping={
+        "x": ("a", "b", 0),
+    }
+)
+factory = Factory(schemas={A: schema})
+parsed_a = factory.load(data, A)
+```
+
+**Important:** When serializing to list all list items with no fields to place will be filled with None.
 
 ## Supported types
 

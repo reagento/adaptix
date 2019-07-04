@@ -3,14 +3,14 @@ import inspect
 import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-from functools import partial
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
-    Optional, Tuple)
+    Optional, Tuple, Union)
 
 from .common import Parser, T
 from .exceptions import InvalidFieldError
+from .path_utils import Path
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
@@ -94,12 +94,34 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser[
     return tuple_parser
 
 
+def get_path_parser(parser: Parser[T], path: Path) -> Parser[T]:
+    def path_parser(data):
+        if data is None:
+            return parser(data)
+        for x in path:
+            data = data[x]
+            if data is None:
+                return parser(data)
+        return parser(data)
+
+    return path_parser
+
+
+def get_field_parser(item: Union[str, int, Path], parser: Parser[T]) -> Tuple[Union[str, int], Parser[T]]:
+    if isinstance(item, tuple):
+        if len(item) == 1:
+            return item[0], parser
+        return item[0], get_path_parser(parser, item[1:])
+    else:
+        return item, parser
+
+
 def get_dataclass_parser(class_: Type[T],
                          parsers: Dict[str, Parser],
                          schema: Schema[T],
                          debug_path: bool, ) -> Parser[T]:
     field_info = tuple(
-        (name, item, parsers[name])
+        (name, *get_field_parser(item, parsers[name]))
         for name, item in get_dataclass_fields(schema, class_)
     )
     if debug_path:
