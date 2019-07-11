@@ -23,6 +23,10 @@ class Schema(Generic[T]):
 
     serializer: Optional[Serializer[T]] = None
     parser: Optional[Parser[T]] = None
+    pre_parse: Optional[Callable] = None
+    post_parse: Optional[Callable] = None
+    pre_serialize: Optional[Callable] = None
+    post_serialize: Optional[Callable] = None
 
 
 def merge_schema(schema: Optional[Schema], default: Optional[Schema]) -> Schema:

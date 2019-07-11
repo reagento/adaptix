@@ -86,6 +86,23 @@ def get_optional_serializer(serializer: Serializer[T]) -> Serializer[Optional[T]
 
 
 def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
+    serializer = create_serializer_impl(factory, schema, debug_path, class_)
+    pre = schema.pre_serialize
+    post = schema.post_serialize
+    if pre or post:
+        def serializer_with_steps(data):
+            if pre:
+                data = pre(data)
+            data = serializer(data)
+            if post:
+                return post(data)
+            return data
+
+        return serializer_with_steps
+    return serializer
+
+
+def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
     if is_type_var(class_):
         return get_lazy_serializer(factory)
     if is_dataclass(class_):
