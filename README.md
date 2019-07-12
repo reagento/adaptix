@@ -168,6 +168,7 @@ serial_person = {
 
 assert factory.dump(person) == serial_person
 ```
+
 #### Common schemas
 
 `schema_helpers` module contains several commonly used schemas:
@@ -307,7 +308,31 @@ except ValueError as e:
 
 ```  
 
-**Important**: Data, passed to `pre_serialize` is not a copy. Be careful modifying it.  
+**Important**: Data, passed to `pre_serialize` is not a copy. Be careful modifying it.
+
+#### Schema inheritance  
+
+In some case it is useful not to create instance of Schema, but child class.
+
+```python
+class DataSchema(Schema[Any]):
+    skip_internal = True
+
+    def post_parse(self, data):
+        print("parsing done")
+        return data
+
+
+factory = Factory(default_schema=DataSchema(trim_trailing_underscore=False))
+
+factory.load(1, int)  # prints: parsing done
+```
+
+**Important**:
+1. Factory creates a copy of schema for each type filling missed args. If you need to get access to some data in schema, 
+    get a working instance of schema with `Factory.schema` method
+2. Single schema instance can be used multiple time simultaneously because of multithreading or recursive structures. 
+    Be careful modifying data in schema
 
 ## Supported types
 

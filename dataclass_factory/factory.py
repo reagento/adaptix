@@ -61,9 +61,7 @@ class Factory:
     def schema(self, class_: Type[T]) -> Schema[T]:
         schema = self.schemas.get(class_)
         if not schema:
-            schema = Schema(
-                *astuple(self.default_schema)
-            )
+            schema = merge_schema(None, self.default_schema)
             self.schemas[class_] = schema
         return schema
 
