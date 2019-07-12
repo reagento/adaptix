@@ -35,7 +35,6 @@ book: Book = factory.load(data, Book)  # Same as Book(title="Fahrenheit 451", pr
 serialized = factory.dump(book) 
 ``` 
 
-* [Navigation](#navigation)
 * [Requirements](#requirements)
 * [Advantages](#advantages)
 * [Usage](#usage)
@@ -45,6 +44,8 @@ serialized = factory.dump(book)
         * [Schemas](#Schemas)
         * [Common schemas](#common-schemas)
         * [Name styles](#name-styles)
+        * [Structure flattening](#structure-flattening)
+        * [Additional steps](#additional-steps)
 * [Supported types](#supported-types)
 * [Updating from previous versions](#updating-from-previous-versions)
 
@@ -140,6 +141,7 @@ Schema consists of:
 * `parser` - custom function which is used to load  data of type assigned with schema.  
     Normally it should not be used in default schema  
     It is also returned from `factory.parser` 
+* `pre_parse`, `post_parse`, `pre_serialize`, `post_serialize` - callables that will be used as additional parsing/serializing steps.
 
 Currently only `serializer` and `parser` are supported for non-dataclass types
 
@@ -166,6 +168,7 @@ serial_person = {
 
 assert factory.dump(person) == serial_person
 ```
+
 #### Common schemas
 
 `schema_helpers` module contains several commonly used schemas:
@@ -217,6 +220,119 @@ Following name styles are supported:
 * `upper` (UPPERCASE)
 * `upper_snake` (UPPER_SNAKE_CASE)
 * `camel_snake` (Camel_Snake)
+* `dot` (dot.case)
+
+#### Structure flattening
+
+Since version 2.2 you can flatten hierarchy of data when parsing.
+Also it is possible to serialize flat dataclass to complex structure.
+
+To enable configure thi behavior just use tuples instead of strings in field mapping.
+Provide numbers to create lists and strings to create dicts.
+
+For example if you have simple dataclass:
+```python
+@dataclass
+class A:
+    x: str
+    y: str
+```
+
+And you want to parse following structure getting `A("hello", "world")` as a result:
+```json
+{
+  "a": {
+    "b": ["hello"]
+  },
+  "y": "world"
+}
+```
+
+The only thing you need is to create such a schema and use `Factory`:
+```python
+schema = Schema[A](
+    name_mapping={
+        "x": ("a", "b", 0),
+    }
+)
+factory = Factory(schemas={A: schema})
+parsed_a = factory.load(data, A)
+```
+
+**Important:** When serializing to list all list items with no fields to place will be filled with None.
+
+#### Additional steps
+
+You can set `pre_parse`, `post_parse`, `pre_serialize` and `post_serialize` schema attributes to provide additional parsing/serializing steps.
+
+For example, if you want to store some field as string containing json data and check value of other field you can write code like
+
+```python
+@dataclass
+class Data:
+    items: List[str]
+    name: str
+
+
+def post_serialize(data):
+    data["items"] = json.dumps(data["items"])
+    return data
+
+
+def pre_parse(data):
+    data["items"] = json.loads(data["items"])
+    return data
+
+
+def post_parse(data: Data) -> Data:
+    if not data.name:
+        raise ValueError("Name must not be empty")
+    return data
+
+
+data_schema = Schema[Data](
+    post_serialize=post_serialize,
+    pre_parse=pre_parse,
+    post_parse=post_parse,
+)
+
+factory = Factory(schemas={Data: data_schema})
+data = Data(['a', 'b'], 'My Name')
+serialized = {'items': '["a", "b"]', 'name': 'My Name'}
+assert factory.dump(data) == serialized
+assert factory.load(serialized, Data) == data
+try:
+    factory.load({'items': '[]', 'name': ''}, Data)
+except ValueError as e:
+    print("Error detected:", e)  # Error detected: Name must not be empty
+
+```  
+
+**Important**: Data, passed to `pre_serialize` is not a copy. Be careful modifying it.
+
+#### Schema inheritance  
+
+In some case it is useful not to create instance of Schema, but child class.
+
+```python
+class DataSchema(Schema[Any]):
+    skip_internal = True
+
+    def post_parse(self, data):
+        print("parsing done")
+        return data
+
+
+factory = Factory(default_schema=DataSchema(trim_trailing_underscore=False))
+
+factory.load(1, int)  # prints: parsing done
+```
+
+**Important**:
+1. Factory creates a copy of schema for each type filling missed args. If you need to get access to some data in schema, 
+    get a working instance of schema with `Factory.schema` method
+2. Single schema instance can be used multiple time simultaneously because of multithreading or recursive structures. 
+    Be careful modifying data in schema
 
 ## Supported types
 
