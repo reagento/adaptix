@@ -2,7 +2,7 @@ from copy import copy
 from dataclasses import dataclass, asdict, fields
 from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union
 
-from .common import Serializer, Parser, T
+from .common import Serializer, Parser, T, InnerConverter
 from .naming import NameStyle, NAMING_FUNC
 from .path_utils import Path
 
@@ -24,8 +24,8 @@ class Schema(Generic[T]):
     serializer: Optional[Serializer[T]] = None
     parser: Optional[Parser[T]] = None
     pre_parse: Optional[Callable] = None
-    post_parse: Optional[Callable] = None
-    pre_serialize: Optional[Callable] = None
+    post_parse: Optional[InnerConverter[T]] = None
+    pre_serialize: Optional[InnerConverter[T]] = None
     post_serialize: Optional[Callable] = None
 
 
