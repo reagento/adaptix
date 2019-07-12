@@ -21,7 +21,7 @@ def pre_parse(data):
     return data
 
 
-schema = Schema(
+schema = Schema[Data](
     post_serialize=post_serialize,
     pre_parse=pre_parse,
 )
