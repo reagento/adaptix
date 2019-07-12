@@ -196,6 +196,23 @@ def get_lazy_parser(factory, class_: Type) -> Parser:
 
 
 def create_parser(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:
+    parser = create_parser_impl(factory, schema, debug_path, cls)
+    pre = schema.pre_parse
+    post = schema.post_parse
+    if pre or post:
+        def parser_with_steps(data):
+            if pre:
+                data = pre(data)
+            data = parser(data)
+            if post:
+                return post(data)
+            return data
+
+        return parser_with_steps
+    return parser
+
+
+def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:
     if is_any(cls):
         return parse_stub
     if is_none(cls):
