@@ -46,6 +46,7 @@ serialized = factory.dump(book)
         * [Name styles](#name-styles)
         * [Structure flattening](#structure-flattening)
         * [Additional steps](#additional-steps)
+        * [Schema inheritance](#schema-inheritance)
 * [Supported types](#supported-types)
 * [Updating from previous versions](#updating-from-previous-versions)
 
