@@ -5,7 +5,7 @@ from unittest import TestCase
 
 from typing import TypeVar, Generic
 
-from dataclass_factory import Factory
+from dataclass_factory import Factory, Schema
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -68,3 +68,20 @@ class TestGeneric(TestCase):
         self.assertEqual(self.factory.load(baz_serial, Foo[FooBaz[int]]), baz)
         self.assertEqual(self.factory.dump(baz, Foo[FooBaz[int]]), baz_serial)
         self.assertEqual(self.factory.dump(baz), baz_serial)
+
+    def test_schema_load(self):
+        factory = Factory(schemas={
+            Foo[str]: Schema(name_mapping={"value": "s"}),
+            Foo[int]: Schema(name_mapping={"value": "i"}),
+        })
+        data = {"s": "hello", "i": 42}
+        self.assertEqual(factory.load(data, Foo[str]), Foo("hello"))
+        self.assertEqual(factory.load(data, Foo[int]), Foo(42))
+
+    def test_schema_dump(self):
+        factory = Factory(schemas={
+            Foo[str]: Schema(name_mapping={"value": "s"}),
+            Foo[int]: Schema(name_mapping={"value": "i"}),
+        })
+        self.assertEqual(factory.dump(Foo(42)), {"i": 42})
+        self.assertEqual(factory.dump(Foo("hello")), {"s": "hello"})
