@@ -5,7 +5,7 @@ from unittest import TestCase
 
 from typing import TypeVar, Generic
 
-from dataclass_factory import Factory
+from dataclass_factory import Factory, Schema
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -14,6 +14,11 @@ V = TypeVar('V')
 @dataclass
 class Foo(Generic[T]):
     value: T
+
+
+@dataclass
+class FakeFoo(Generic[T]):
+    value: str
 
 
 @dataclass
@@ -68,3 +73,27 @@ class TestGeneric(TestCase):
         self.assertEqual(self.factory.load(baz_serial, Foo[FooBaz[int]]), baz)
         self.assertEqual(self.factory.dump(baz, Foo[FooBaz[int]]), baz_serial)
         self.assertEqual(self.factory.dump(baz), baz_serial)
+
+    def test_schema_load(self):
+        factory = Factory(schemas={
+            FakeFoo[str]: Schema(name_mapping={"value": "s"}),
+            FakeFoo: Schema(name_mapping={"value": "v"}),
+        })
+        data = {"v": "hello", "i": 42, "s": "SSS"}
+        self.assertEqual(factory.load(data, FakeFoo[str]), FakeFoo("SSS"))
+        self.assertEqual(factory.load(data, FakeFoo[int]), FakeFoo("hello"))
+
+    def test_schema_dump(self):
+        factory = Factory(schemas={
+            FakeFoo[str]: Schema(name_mapping={"value": "s"}),
+            FakeFoo: Schema(name_mapping={"value": "v"}),
+        })
+        # self.assertEqual(factory.dump(FakeFoo("hello"), FakeFoo[str]), {"s": "hello"})
+        self.assertEqual(factory.dump(FakeFoo("hello")), {"v": "hello"})
+
+    def test_schema_dump_inner(self):
+        factory = Factory(schemas={
+            FooBaz[int]: Schema(name_mapping={"foo": "bar"}),
+            Foo[int]: Schema(name_mapping={"value": "v"})
+        })
+        self.assertEqual(factory.dump(FooBaz(Foo(1)), FooBaz[int]), {"bar": {"v": 1}})

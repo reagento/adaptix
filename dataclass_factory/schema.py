@@ -1,7 +1,7 @@
 from copy import copy
-from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union
-
 from dataclasses import fields
+
+from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union
 
 from .common import Serializer, Parser, T, InnerConverter
 from .naming import NameStyle, NAMING_FUNC
