@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, List, Union, Tuple, Dict, FrozenSet, Set, Any
 from unittest import TestCase
+
+from typing import Optional, List, Union, Tuple, Dict, FrozenSet, Set, Any
 
 from dataclass_factory import parse
 

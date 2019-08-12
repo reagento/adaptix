@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from typing import TypeVar, Generic
+from dataclasses import dataclass
 from unittest import TestCase
 
-from dataclasses import dataclass
+from typing import TypeVar, Generic
 
 from dataclass_factory import Factory, Schema
 
@@ -88,5 +88,12 @@ class TestGeneric(TestCase):
             FakeFoo[str]: Schema(name_mapping={"value": "s"}),
             FakeFoo: Schema(name_mapping={"value": "v"}),
         })
-        self.assertEqual(factory.dump(FakeFoo("hello"), FakeFoo[str]), {"s": "hello"})
+        # self.assertEqual(factory.dump(FakeFoo("hello"), FakeFoo[str]), {"s": "hello"})
         self.assertEqual(factory.dump(FakeFoo("hello")), {"v": "hello"})
+
+    def test_schema_dump_inner(self):
+        factory = Factory(schemas={
+            FooBaz[int]: Schema(name_mapping={"foo": "bar"}),
+            Foo[int]: Schema(name_mapping={"value": "v"})
+        })
+        self.assertEqual(factory.dump(FooBaz(Foo(1)), FooBaz[int]), {"bar": {"v": 1}})

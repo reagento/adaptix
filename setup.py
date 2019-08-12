@@ -19,7 +19,6 @@ setup(
     author_email='17@itishka.org',
     license='Apache2',
     classifiers=[
-        'Development Status :: 3 - Alpha',
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',

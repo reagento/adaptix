@@ -4,7 +4,7 @@ from .common import Serializer, Parser
 from .parsers import create_parser, get_lazy_parser
 from .schema import Schema, merge_schema
 from .serializers import create_serializer, get_lazy_serializer
-from .type_detection import is_generic
+from .type_detection import is_generic_concrete
 
 DEFAULT_SCHEMA = Schema[Any](
     trim_trailing_underscore=True,
@@ -59,8 +59,8 @@ class Factory:
             })
 
     def schema(self, class_: Type[T]) -> Schema[T]:
-        if is_generic(class_):
-            base_class = class_.__origin__
+        if is_generic_concrete(class_):
+            base_class = class_.__origin__ # type: ignore
         else:
             base_class = None
 

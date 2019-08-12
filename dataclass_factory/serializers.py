@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from dataclasses import is_dataclass, fields
 from marshal import loads, dumps
+
 from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
 from .common import Serializer, T
@@ -9,7 +10,8 @@ from .path_utils import init_structure, Path
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
-    is_union, is_any, is_generic, is_type_var,
+    is_union, is_any, is_generic_concrete, is_type_var,
+    fill_type_args,
 )
 
 
@@ -143,10 +145,10 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
     if is_collection(class_):
         item_serializer = factory.serializer(class_.__args__[0] if class_.__args__ else Any)
         return get_collection_serializer(item_serializer)
-    if is_generic(class_) and is_dataclass(class_.__origin__):
+    if is_generic_concrete(class_) and is_dataclass(class_.__origin__):
         args = dict(zip(class_.__origin__.__parameters__, class_.__args__))
         serializers = {
-            field.name: factory.serializer(args.get(field.type, field.type))
+            field.name: factory.serializer(fill_type_args(args, field.type))
             for field in fields(class_.__origin__)
         }
         return get_dataclass_serializer(

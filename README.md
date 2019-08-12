@@ -44,6 +44,7 @@ serialized = factory.dump(book)
         * [Schemas](#Schemas)
         * [Common schemas](#common-schemas)
         * [Name styles](#name-styles)
+        * [Generic classes](#generic-classes)
         * [Structure flattening](#structure-flattening)
         * [Additional steps](#additional-steps)
         * [Schema inheritance](#schema-inheritance)
@@ -222,6 +223,32 @@ Following name styles are supported:
 * `upper_snake` (UPPER_SNAKE_CASE)
 * `camel_snake` (Camel_Snake)
 * `dot` (dot.case)
+
+#### Generic classes
+
+It is possible to dump and load instances of generic dataclasses with. 
+You can set schema for generic or concrete types with one limitation:
+It is not possible to detect concrete type of dataclass when dumping. So if you need to have different schemas for different concrete types you should exclipitly set them when dumping your data.
+
+```python
+T = TypeVar("T")
+
+
+@dataclass
+class FakeFoo(Generic[T]):
+    value: T
+
+
+factory = Factory(schemas={
+    FakeFoo[str]: Schema(name_mapping={"value": "s"}),
+    FakeFoo: Schema(name_mapping={"value": "i"}),
+})
+data = {"i": 42, "s": "Hello"}
+assert factory.load(data, FakeFoo[str]) == FakeFoo("Hello")
+assert factory.load(data, FakeFoo[int]) == FakeFoo(42)
+assert factory.dump(FakeFoo("hello"), FakeFoo[str]) == {"s": "hello"}  # concrete type is set explicitly
+assert factory.dump(FakeFoo("hello")) == {"i": "hello"}  # generic type is detected automatically
+```
 
 #### Structure flattening
 
