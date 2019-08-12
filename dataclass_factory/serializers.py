@@ -107,6 +107,17 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
 def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
     if is_type_var(class_):
         return get_lazy_serializer(factory)
+    if is_generic_concrete(class_) and is_dataclass(class_.__origin__):
+        args = dict(zip(class_.__origin__.__parameters__, class_.__args__))
+        serializers = {
+            field.name: factory.serializer(fill_type_args(args, field.type))
+            for field in fields(class_.__origin__)
+        }
+        return get_dataclass_serializer(
+            class_.__origin__,
+            serializers,
+            schema,
+        )
     if is_dataclass(class_):
         resolved_hints = get_type_hints(class_)
         return get_dataclass_serializer(
@@ -145,16 +156,5 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
     if is_collection(class_):
         item_serializer = factory.serializer(class_.__args__[0] if class_.__args__ else Any)
         return get_collection_serializer(item_serializer)
-    if is_generic_concrete(class_) and is_dataclass(class_.__origin__):
-        args = dict(zip(class_.__origin__.__parameters__, class_.__args__))
-        serializers = {
-            field.name: factory.serializer(fill_type_args(args, field.type))
-            for field in fields(class_.__origin__)
-        }
-        return get_dataclass_serializer(
-            class_.__origin__,
-            serializers,
-            schema,
-        )
     else:
         return stub_serializer
