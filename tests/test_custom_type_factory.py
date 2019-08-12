@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from unittest import TestCase
-
 from dataclasses import dataclass, asdict
+from unittest import TestCase
 
 from dataclass_factory import parse, dict_factory
 

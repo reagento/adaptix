@@ -1,7 +1,7 @@
-from typing import List, Any
+from dataclasses import dataclass
 from unittest import TestCase
 
-from dataclasses import dataclass
+from typing import List
 
 from dataclass_factory import Factory, Schema
 

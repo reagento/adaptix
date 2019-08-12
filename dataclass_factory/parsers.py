@@ -1,8 +1,9 @@
 import decimal
 import inspect
-import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
+
+import itertools
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
@@ -15,7 +16,7 @@ from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,
-    is_generic, fill_type_args, args_unspecified,
+    is_generic_concrete, fill_type_args, args_unspecified,
 )
 
 
@@ -253,7 +254,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
-    if is_generic(cls) and is_dataclass(cls.__origin__):
+    if is_generic_concrete(cls) and is_dataclass(cls.__origin__):
         args = dict(zip(cls.__origin__.__parameters__, cls.__args__))
         parsers = {
             field.name: factory.parser(fill_type_args(args, field.type))
