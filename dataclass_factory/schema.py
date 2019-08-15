@@ -100,7 +100,9 @@ def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[s
     return tuple(
         (k, convert_name(k, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore))
         for k in all_fields
-        if (schema.name_mapping is not None and k in schema.name_mapping) or
-        (schema.only is not None and k in schema.only) or
-        not (schema.skip_internal and k.startswith("_"))
+        if (
+                (schema.name_mapping is not None and k in schema.name_mapping) or
+                (schema.only is not None and k in schema.only) or
+                not (schema.skip_internal and k.startswith("_"))
+        )
     )
