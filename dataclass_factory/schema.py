@@ -1,7 +1,7 @@
 from copy import copy
-from dataclasses import fields
-
 from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union
+
+from dataclasses import fields
 
 from .common import Serializer, Parser, T, InnerConverter
 from .naming import NameStyle, NAMING_FUNC
@@ -30,34 +30,9 @@ class Schema(Generic[T]):
             pre_serialize: Optional[InnerConverter[T]] = None,
             post_serialize: Optional[Callable] = None,
     ):
-        if only is not None or not hasattr(self, "only"):
-            self.only = only
-        if exclude is not None or not hasattr(self, "exclude"):
-            self.exclude = exclude
-        if name_mapping is not None or not hasattr(self, "name_mapping"):
-            self.name_mapping = name_mapping
-        if only_mapped is not None or not hasattr(self, "only_mapped"):
-            self.only_mapped = only_mapped
-
-        if name_style is not None or not hasattr(self, "name_style"):
-            self.name_style = name_style
-        if trim_trailing_underscore is not None or not hasattr(self, "trim_trailing_underscore"):
-            self.trim_trailing_underscore = trim_trailing_underscore
-        if skip_internal is not None or not hasattr(self, "skip_internal"):
-            self.skip_internal = skip_internal
-
-        if serializer is not None or not hasattr(self, "serializer"):
-            self.serializer = serializer
-        if parser is not None or not hasattr(self, "parser"):
-            self.parser = parser
-        if pre_parse is not None or not hasattr(self, "pre_parse"):
-            self.pre_parse = pre_parse
-        if post_parse is not None or not hasattr(self, "post_parse"):
-            self.post_parse = post_parse
-        if pre_serialize is not None or not hasattr(self, "pre_serialize"):
-            self.pre_serialize = pre_serialize
-        if post_serialize is not None or not hasattr(self, "post_serialize"):
-            self.post_serialize = post_serialize
+        for arg, value in locals().items():
+            if value is not None or not hasattr(self, arg):
+                setattr(self, arg, value)
 
 
 SCHEMA_FIELDS = [
