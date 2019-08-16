@@ -153,7 +153,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
         return get_dict_serializer(factory.serializer(key_type_arg), factory.serializer(value_type_arg))
     if is_dict(class_):
         return get_dict_serializer(get_lazy_serializer(factory), get_lazy_serializer(factory))
-    if is_generic_concrete(class_) and is_generic_concrete(class_.__origin__):
+    if is_generic_concrete(class_) and is_dict(class_.__origin__):
         item_serializer = factory.serializer(class_.__args__[0] if class_.__args__ else Any)
         return get_collection_serializer(item_serializer)
     if is_collection(class_):
