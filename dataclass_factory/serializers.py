@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from dataclasses import is_dataclass, fields
 from marshal import loads, dumps
-
 from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
-from .common import Serializer, T
+from dataclasses import is_dataclass, fields
+
+from .common import Serializer, T, K
 from .path_utils import init_structure, Path
 from .schema import Schema, get_dataclass_fields
 from .type_detection import (
@@ -64,9 +64,9 @@ def stub_serializer(data: T) -> T:
     return data
 
 
-def get_dict_serializer(serializer: Serializer[T]) -> Serializer[Dict[Any, T]]:
+def get_dict_serializer(key_serializer: Serializer[K], serializer: Serializer[T]) -> Serializer[Dict[Any, Any]]:
     return lambda data: {
-        k: serializer(v) for k, v in data.items()
+        key_serializer(k): serializer(v) for k, v in data.items()
     }
 
 
@@ -147,14 +147,17 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
             return get_collection_serializer(item_serializer)
         else:
             return get_tuple_serializer(tuple(factory.serializer(x) for x in class_.__args__))
-    if is_dict(class_):
+    if is_generic_concrete(class_) and is_dict(class_.__origin__):
         key_type_arg = class_.__args__[0] if class_.__args__ else Any
-        if key_type_arg != str:
-            raise TypeError("Cannot use <%s> as dict key in serializer" % key_type_arg.__name__)
         value_type_arg = class_.__args__[1] if class_.__args__ else Any
-        return get_dict_serializer(factory.serializer(value_type_arg))
-    if is_collection(class_):
+        return get_dict_serializer(factory.serializer(key_type_arg), factory.serializer(value_type_arg))
+    if is_dict(class_):
+        return get_dict_serializer(get_lazy_serializer(factory), get_lazy_serializer(factory))
+    if is_generic_concrete(class_) and is_generic_concrete(class_.__origin__):
         item_serializer = factory.serializer(class_.__args__[0] if class_.__args__ else Any)
+        return get_collection_serializer(item_serializer)
+    if is_collection(class_):
+        item_serializer = get_lazy_serializer(factory)
         return get_collection_serializer(item_serializer)
     else:
         return stub_serializer

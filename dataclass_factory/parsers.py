@@ -71,7 +71,7 @@ def get_union_parser(parsers: Collection[Callable]) -> Parser:
         for p in parsers:
             try:
                 return p(data)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as e:
                 continue
         raise ValueError("No suitable parsers in union found for `%s`" % data)
 

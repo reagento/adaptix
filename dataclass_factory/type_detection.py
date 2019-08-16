@@ -35,7 +35,7 @@ def is_tuple(type_) -> bool:
 def is_collection(type_) -> bool:
     try:
         # __origin__ exists in 3.7 on user defined generics
-        return issubclass_safe(type_.__origin__, Collection) or issubclass_safe(type_, Collection)
+        return issubclass_safe(type_, Collection) or issubclass_safe(type_.__origin__, Collection)
     except AttributeError:
         return False
 
@@ -80,8 +80,8 @@ def args_unspecified(cls: Type) -> bool:
 
 def is_dict(cls) -> bool:
     try:
-        origin = cls.__origin__ or cls
-        return origin in (dict, Dict)
+        dicts = (dict, Dict)
+        return cls in dicts or cls.__origin__ in dicts
     except AttributeError:
         return False
 
