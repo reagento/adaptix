@@ -47,6 +47,7 @@ serialized = factory.dump(book)
         * [Generic classes](#generic-classes)
         * [Structure flattening](#structure-flattening)
         * [Additional steps](#additional-steps)
+        * [Polymorphic parsing](#polymorphic-parsing)
         * [Schema inheritance](#schema-inheritance)
 * [Supported types](#supported-types)
 * [Updating from previous versions](#updating-from-previous-versions)
@@ -337,6 +338,46 @@ except ValueError as e:
 ```  
 
 **Important**: Data, passed to `pre_serialize` is not a copy. Be careful modifying it.
+
+#### Polymorphic parsing
+
+Very common case is to select class based on information in data.
+
+If required fields differ between classes, no configuration required. But sometimes you want to make a selection more explicitly.
+For example, if data field "type" equals to "item" data should be parsed as Item, if it is "group" then Group class should be used.
+
+For such case you can use `type_checker` from `schema_helpers` module. It creates a function, which should be used on pre_parse step.
+
+```python
+from dataclass_factory import Factory, Schema
+from dataclass_factory.schema_helpers import type_checker
+
+@dataclass
+class Item:
+    name: str
+    type: str
+
+
+@dataclass
+class Group:
+    name: str
+    type: str
+
+Something = Union[Item, Group]
+
+
+factory = Factory(schemas={
+    Item: Schema(pre_parse=type_checker("item", field="type")),
+    Group: Schema(pre_parse=type_checker("group")),  # `type` is default name for checked field
+})
+
+assert factory.load({"name": "some name", "type": "group"}, Something) == Group("some name")
+```
+
+If you need you own pre_parse function, you can set it as parameter for `type_checker` factory.
+
+For more complex cases you can do any work on parse steps.
+Just raise `ValueError` if you detected that current class is not acceptable for provided data, and parser will go to the next one
 
 #### Schema inheritance  
 
