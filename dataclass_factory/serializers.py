@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from marshal import loads, dumps
+from operator import attrgetter
 from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
 from dataclasses import is_dataclass, fields
@@ -11,7 +12,7 @@ from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
     is_union, is_any, is_generic_concrete, is_type_var,
-    fill_type_args,
+    fill_type_args, is_enum,
 )
 
 
@@ -134,6 +135,8 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
             return get_optional_serializer(class_.__args__[0])
         else:
             return get_lazy_serializer(factory)
+    if is_enum(class_):
+        return attrgetter("value")
     if is_union(class_):
         # create serializers:
         for type_ in class_.__args__:
