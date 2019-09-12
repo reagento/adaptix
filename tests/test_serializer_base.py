@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import unittest
-from dataclasses import field, dataclass
-
+from enum import Enum
 from typing import List, Dict, Optional, Any
 
-from dataclass_factory import SerializerFactory
+from dataclasses import field, dataclass
+
+from dataclass_factory import Factory
+
+
+class State(Enum):
+    one = "1"
+    two = "two"
 
 
 @dataclass
@@ -29,10 +35,10 @@ class DictD:
 
 class TestSerializer(unittest.TestCase):
     def setUp(self) -> None:
-        self.factory = SerializerFactory()
+        self.factory = Factory()
 
     def test_plain(self):
-        serializer = self.factory.get_serializer(D)
+        serializer = self.factory.serializer(D)
         d = D(100, "hello")
         self.assertEqual(
             serializer(d),
@@ -40,7 +46,7 @@ class TestSerializer(unittest.TestCase):
         )
 
     def test_list(self):
-        serializer = self.factory.get_serializer(ListD)
+        serializer = self.factory.serializer(ListD)
         d1 = D(100, "hello")
         d2 = D(200, "hello2")
 
@@ -61,7 +67,7 @@ class TestSerializer(unittest.TestCase):
         )
 
     def test_dict(self):
-        serializer = self.factory.get_serializer(DictD)
+        serializer = self.factory.serializer(DictD)
         d1 = D(100, "hello")
         d2 = D(200, "hello2")
 
@@ -82,7 +88,7 @@ class TestSerializer(unittest.TestCase):
         )
 
     def test_optional(self):
-        serializer = self.factory.get_serializer(Optional[D])
+        serializer = self.factory.serializer(Optional[D])
         d1 = D(100, "hello")
         data1 = {"a": 100, "b": 1, "c": "hello"}
         self.assertEqual(
@@ -95,7 +101,7 @@ class TestSerializer(unittest.TestCase):
         )
 
     def test_any(self):
-        serializer = self.factory.get_serializer(Any)
+        serializer = self.factory.serializer(Any)
         d1 = D(100, "hello")
         data1 = {"a": 100, "b": 1, "c": "hello"}
         self.assertEqual(
@@ -106,3 +112,7 @@ class TestSerializer(unittest.TestCase):
             serializer(None),
             None,
         )
+
+    def test_enum(self):
+        self.assertEqual(self.factory.dump(State.one), "1")
+        self.assertEqual(self.factory.dump(State.two, State), "two")
