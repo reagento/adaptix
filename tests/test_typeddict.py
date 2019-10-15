@@ -1,5 +1,5 @@
 try:
-    from typing import TypedDict
+    from typing import TypedDict  # mypy: ignore
 except ImportError:
     try:
         from mypy_extensions import TypedDict

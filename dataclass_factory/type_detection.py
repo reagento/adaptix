@@ -4,10 +4,10 @@ from enum import Enum
 from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic
 
 try:
-    from typing import _TypedDictMeta
+    from typing import _TypedDictMeta  # mypy: ignore
 except ImportError:
     try:
-        from mypy_extensions import _TypedDictMeta
+        from mypy_extensions import _TypedDictMeta  # mypy: ignore
     except ImportError:
         _TypedDictMeta = None
 
