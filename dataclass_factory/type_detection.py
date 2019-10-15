@@ -3,7 +3,10 @@ from enum import Enum
 
 from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic
 
-import typing
+try:
+    from typing import _TypedDictMeta
+except ImportError:
+    from mypy_extensions import _TypedDictMeta
 
 
 def hasargs(type_, *args) -> bool:
@@ -44,7 +47,7 @@ def is_collection(type_) -> bool:
 
 def is_typeddict(type_) -> bool:
     try:
-        return issubclass_safe(type_.__class__, typing._TypedDictMeta)
+        return issubclass_safe(type_.__class__, _TypedDictMeta)
     except AttributeError:
         return False
 
