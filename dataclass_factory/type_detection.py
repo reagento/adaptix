@@ -6,7 +6,10 @@ from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar,
 try:
     from typing import _TypedDictMeta
 except ImportError:
-    from mypy_extensions import _TypedDictMeta
+    try:
+        from mypy_extensions import _TypedDictMeta
+    except ImportError:
+        _TypedDictMeta = None
 
 
 def hasargs(type_, *args) -> bool:
@@ -47,7 +50,7 @@ def is_collection(type_) -> bool:
 
 def is_typeddict(type_) -> bool:
     try:
-        return issubclass_safe(type_.__class__, _TypedDictMeta)
+        return issubclass_safe(type_.__class__, _TypedDictMeta) and type_.__class__ is not None
     except AttributeError:
         return False
 
