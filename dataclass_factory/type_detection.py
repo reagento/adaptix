@@ -1,7 +1,7 @@
 import inspect
 from enum import Enum
 
-from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic, TypedDict
+from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic
 
 import typing
 
