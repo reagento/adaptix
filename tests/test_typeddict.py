@@ -46,12 +46,3 @@ class TestTypedDict(TestCase):
         }
         expected = Author2(name="nobody", book=Book(name="hello", year=1))
         self.assertEqual(expected, factory.load(data, Author2))
-
-    def test_dump(self):
-        factory = Factory()
-        expected = {
-            "name": "hello",
-            "year": 1
-        }
-        data = Book(name="hello", year=1)
-        self.assertEqual(expected, factory.dump(data, Book))
