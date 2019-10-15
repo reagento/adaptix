@@ -1,7 +1,9 @@
 import inspect
 from enum import Enum
 
-from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic
+from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic, TypedDict
+
+import typing
 
 
 def hasargs(type_, *args) -> bool:
@@ -36,6 +38,13 @@ def is_collection(type_) -> bool:
     try:
         # __origin__ exists in 3.7 on user defined generics
         return issubclass_safe(type_, Collection) or issubclass_safe(type_.__origin__, Collection)
+    except AttributeError:
+        return False
+
+
+def is_typeddict(type_) -> bool:
+    try:
+        return issubclass_safe(type_.__class__, typing._TypedDictMeta)
     except AttributeError:
         return False
 
