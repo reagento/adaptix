@@ -1,6 +1,7 @@
 import decimal
 import inspect
 import itertools
+import sys
 from collections import deque
 from dataclasses import fields, is_dataclass
 from typing import (
@@ -17,6 +18,10 @@ from .type_detection import (
     is_none, is_union, is_dict, is_enum,
     is_generic_concrete, fill_type_args, args_unspecified,
     is_typeddict)
+
+
+def is_typeddict_supported():
+    return sys.version[0] == 3 and sys.version[1] >= 8
 
 
 def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
@@ -149,6 +154,7 @@ def get_typeddict_parser(class_: Type[T], parsers: Dict[str, Parser], schema: Sc
                 field_parser = parsers[name]
                 d[name] = field_parser(data[name])
         return class_(**d)
+
     return parser
 
 
@@ -254,7 +260,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             key_type_arg = cls.__args__[0]
             value_type_arg = cls.__args__[1]
         return get_dict_parser(factory.parser(key_type_arg), factory.parser(value_type_arg))
-    if is_typeddict(cls):
+    if is_typeddict_supported() and is_typeddict(cls):
         resolved_hints = get_type_hints(cls)
         parsers = {field: factory.parser(resolved_hints[field]) for field in cls.__annotations__}
         return get_typeddict_parser(
