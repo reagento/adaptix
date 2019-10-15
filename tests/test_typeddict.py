@@ -1,30 +1,57 @@
 from typing import TypedDict
 from unittest import TestCase
 
-from dataclass_factory import Schema, Factory
+from dataclass_factory import Factory
 
 
-class A(TypedDict):
-    a: str
-    b: int
+class Book(TypedDict):
+    name: str
+    year: int
 
+
+class Author(TypedDict):
+    author_name: str
+    book: Book
+
+
+class Author2(TypedDict):
+    name: str
+    book: Book
 
 
 class TestTypedDict(TestCase):
     def test_load(self):
         factory = Factory()
         data = {
-            "a": "hello",
-            "b": 1
+            "name": "hello",
+            "year": 1
         }
-        expected = A(a="hello", b=1)
-        self.assertEqual(expected, factory.load(data, A))
+        expected = Book(name="hello", year=1)
+        self.assertEqual(expected, factory.load(data, Book))
+
+    def test_load2(self):
+        factory = Factory()
+        data = {
+            "author_name": "nobody",
+            "book": {"name": "hello", "year": 1},
+        }
+        expected = Author(author_name="nobody", book=Book(name="hello", year=1))
+        self.assertEqual(expected, factory.load(data, Author))
+
+    def test_load3(self):
+        factory = Factory()
+        data = {
+            "name": "nobody",
+            "book": {"name": "hello", "year": 1},
+        }
+        expected = Author2(name="nobody", book=Book(name="hello", year=1))
+        self.assertEqual(expected, factory.load(data, Author2))
 
     def test_dump(self):
         factory = Factory()
         expected = {
-            "a": "hello",
-            "b": 1
+            "name": "hello",
+            "year": 1
         }
-        data = A(a="hello", b=1)
-        self.assertEqual(expected, factory.dump(data, A))
+        data = Book(name="hello", year=1)
+        self.assertEqual(expected, factory.dump(data, Book))

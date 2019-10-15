@@ -1,9 +1,8 @@
 import decimal
 import inspect
+import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-
-import itertools
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
@@ -17,7 +16,7 @@ from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,
     is_generic_concrete, fill_type_args, args_unspecified,
-)
+    is_typeddict)
 
 
 def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
@@ -142,6 +141,17 @@ def get_dataclass_parser(class_: Type[T],
     return dataclass_parser
 
 
+def get_typeddict_parser(class_: Type[T], parsers: Dict[str, Parser], schema: Schema[T]):
+    def parser(data):
+        d = {}
+        for name in class_.__annotations__:
+            if name in data:
+                field_parser = parsers[name]
+                d[name] = field_parser(data[name])
+        return class_(**d)
+    return parser
+
+
 def get_optional_parser(parser: Parser[T]) -> Parser[Optional[T]]:
     return lambda data: parser(data) if data is not None else None
 
@@ -244,6 +254,14 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             key_type_arg = cls.__args__[0]
             value_type_arg = cls.__args__[1]
         return get_dict_parser(factory.parser(key_type_arg), factory.parser(value_type_arg))
+    if is_typeddict(cls):
+        resolved_hints = get_type_hints(cls)
+        parsers = {field: factory.parser(resolved_hints[field]) for field in cls.__annotations__}
+        return get_typeddict_parser(
+            cls,
+            parsers,
+            schema,
+        )
     if is_collection(cls):
         if args_unspecified(cls):
             value_type_arg = Any
