@@ -4,7 +4,7 @@ except ImportError:
     try:
         from mypy_extensions import TypedDict
     except ImportError:
-        TypedDict = None
+        TypedDict = object
 
 from unittest import TestCase
 
@@ -28,7 +28,7 @@ class Author2(TypedDict):
 
 class TestTypedDict(TestCase):
     def test_load(self):
-        if TypedDict is not None:
+        if TypedDict is not object:
             factory = Factory()
             data = {
                 "name": "hello",
@@ -40,7 +40,7 @@ class TestTypedDict(TestCase):
             self.skipTest("TypedDict is unsupported")
 
     def test_load2(self):
-        if TypedDict is not None:
+        if TypedDict is not object:
             factory = Factory()
             data = {
                 "author_name": "nobody",
@@ -52,7 +52,7 @@ class TestTypedDict(TestCase):
             self.skipTest("TypedDict is unsupported")
 
     def test_load3(self):
-        if TypedDict is not None:
+        if TypedDict is not object:
             factory = Factory()
             data = {
                 "name": "nobody",
