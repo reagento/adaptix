@@ -5,7 +5,6 @@ python:
   - "3.7"
   - "3.6"
 script:
-  nose2 -v
-  mypy tests dataclass_factory
+  nose2 -v && mypy tests dataclass_factory
 install:
   - pip3 install -r requirements.txt
