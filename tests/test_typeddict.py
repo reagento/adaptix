@@ -1,8 +1,8 @@
 try:
-    from typing import TypedDict  # mypy: ignore
+    from typing import TypedDict  # type: ignore
 except ImportError:
     try:
-        from mypy_extensions import TypedDict
+        from mypy_extensions import TypedDict  # type: ignore
     except ImportError:
         TypedDict = object
 
