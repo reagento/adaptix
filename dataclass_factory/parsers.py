@@ -1,13 +1,13 @@
 import decimal
 import inspect
-from collections import deque
-from dataclasses import fields, is_dataclass
-
 import itertools
+from collections import deque
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
     Optional, Tuple, Union)
+
+from dataclasses import fields, is_dataclass
 
 from .common import Parser, T
 from .exceptions import InvalidFieldError
@@ -256,8 +256,9 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
     if is_generic_concrete(cls) and is_dataclass(cls.__origin__):
         args = dict(zip(cls.__origin__.__parameters__, cls.__args__))
+        resolved_hints = get_type_hints(cls.__origin__)
         parsers = {
-            field.name: factory.parser(fill_type_args(args, field.type))
+            field.name: factory.parser(fill_type_args(args, resolved_hints[field.name]))
             for field in fields(cls.__origin__)
         }
         return get_dataclass_parser(
@@ -268,7 +269,10 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         )
     if is_dataclass(cls):
         resolved_hints = get_type_hints(cls)
-        parsers = {field.name: factory.parser(resolved_hints[field.name]) for field in fields(cls)}
+        parsers = {
+            field.name: factory.parser(resolved_hints[field.name])
+            for field in fields(cls)
+        }
         return get_dataclass_parser(
             cls,
             parsers,
