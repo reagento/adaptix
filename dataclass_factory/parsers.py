@@ -19,6 +19,8 @@ from .type_detection import (
     is_generic_concrete, fill_type_args, args_unspecified,
 )
 
+PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
+
 
 def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
     try:
@@ -26,7 +28,7 @@ def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
     except InvalidFieldError as e:
         e._append_path(str(key))
         raise
-    except (ValueError, TypeError) as e:
+    except PARSER_EXCEPTIONS as e:
         raise InvalidFieldError(str(e), [str(key)])
 
 
@@ -71,7 +73,7 @@ def get_union_parser(parsers: Collection[Callable]) -> Parser:
         for p in parsers:
             try:
                 return p(data)
-            except (ValueError, TypeError) as e:
+            except PARSER_EXCEPTIONS as e:
                 continue
         raise ValueError("No suitable parsers in union found for `%s`" % data)
 
@@ -143,13 +145,16 @@ def get_dataclass_parser(class_: Type[T],
 
 
 def get_optional_parser(parser: Parser[T]) -> Parser[Optional[T]]:
-    return lambda data: parser(data) if data is not None else None
+    def optional_parser(data):
+        return parser(data) if data is not None else None
+
+    return optional_parser
 
 
 def decimal_parse(data) -> decimal.Decimal:
     try:
         return decimal.Decimal(data)
-    except (decimal.InvalidOperation, TypeError):
+    except (decimal.InvalidOperation, TypeError, ValueError):
         raise ValueError(f'Invalid decimal string representation {data}')
 
 
@@ -285,5 +290,5 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             k: factory.parser(v.annotation) for k, v in arguments.items()
         }
         return get_class_parser(cls, parsers, debug_path)
-    except AttributeError:
+    except PARSER_EXCEPTIONS:
         raise ValueError("Cannot find parser for `%s`" % repr(cls))
