@@ -19,6 +19,8 @@ from .type_detection import (
     is_generic_concrete, fill_type_args, args_unspecified,
 )
 
+PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
+
 
 def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
     try:
@@ -26,7 +28,7 @@ def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
     except InvalidFieldError as e:
         e._append_path(str(key))
         raise
-    except (ValueError, TypeError) as e:
+    except PARSER_EXCEPTIONS as e:
         raise InvalidFieldError(str(e), [str(key)])
 
 
@@ -71,7 +73,7 @@ def get_union_parser(parsers: Collection[Callable]) -> Parser:
         for p in parsers:
             try:
                 return p(data)
-            except (ValueError, TypeError) as e:
+            except PARSER_EXCEPTIONS as e:
                 continue
         raise ValueError("No suitable parsers in union found for `%s`" % data)
 
@@ -125,31 +127,41 @@ def get_dataclass_parser(class_: Type[T],
         (name, *get_field_parser(item, parsers[name]))
         for name, item in get_dataclass_fields(schema, class_)
     )
+    if any(isinstance(name, int) for _, name, _ in field_info):
+        list_mode = True
+    else:
+        list_mode = False
+
     if debug_path:
         def dataclass_parser(data):
+            count = len(data) if list_mode else 0
             return class_(**{
                 field: element_parser(parser, data[name], field)
                 for field, name, parser in field_info
-                if name in data
+                if (name < count if list_mode else name in data)
             })
     else:
         def dataclass_parser(data):
+            count = len(data) if list_mode else 0
             return class_(**{
                 field: parser(data[name])
                 for field, name, parser in field_info
-                if name in data
+                if (name < count if list_mode else name in data)
             })
     return dataclass_parser
 
 
 def get_optional_parser(parser: Parser[T]) -> Parser[Optional[T]]:
-    return lambda data: parser(data) if data is not None else None
+    def optional_parser(data):
+        return parser(data) if data is not None else None
+
+    return optional_parser
 
 
 def decimal_parse(data) -> decimal.Decimal:
     try:
         return decimal.Decimal(data)
-    except (decimal.InvalidOperation, TypeError):
+    except (decimal.InvalidOperation, TypeError, ValueError):
         raise ValueError(f'Invalid decimal string representation {data}')
 
 
@@ -256,8 +268,9 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
     if is_generic_concrete(cls) and is_dataclass(cls.__origin__):
         args = dict(zip(cls.__origin__.__parameters__, cls.__args__))
+        resolved_hints = get_type_hints(cls.__origin__)
         parsers = {
-            field.name: factory.parser(fill_type_args(args, field.type))
+            field.name: factory.parser(fill_type_args(args, resolved_hints[field.name]))
             for field in fields(cls.__origin__)
         }
         return get_dataclass_parser(
@@ -268,7 +281,10 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         )
     if is_dataclass(cls):
         resolved_hints = get_type_hints(cls)
-        parsers = {field.name: factory.parser(resolved_hints[field.name]) for field in fields(cls)}
+        parsers = {
+            field.name: factory.parser(resolved_hints[field.name])
+            for field in fields(cls)
+        }
         return get_dataclass_parser(
             cls,
             parsers,
@@ -281,5 +297,5 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             k: factory.parser(v.annotation) for k, v in arguments.items()
         }
         return get_class_parser(cls, parsers, debug_path)
-    except AttributeError:
+    except PARSER_EXCEPTIONS:
         raise ValueError("Cannot find parser for `%s`" % repr(cls))
