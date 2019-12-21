@@ -114,12 +114,13 @@ def convert_name(
 def get_default(field: Field, schema: Schema[T]) -> Any:
     if not schema.omit_default:
         return MISSING
-    if field.default_factory != MISSING:
-        return field.default_factory()
+    # type ignore because of https://github.com/python/mypy/issues/6910
+    if field.default_factory != MISSING:  # type: ignore
+        return field.default_factory()  # type: ignore
     return field.default
 
 
-def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[str, Union[str, Path]]]:
+def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[str, Union[str, Path], Any]]:
     only_mapped = schema.only_mapped and schema.only is None
     all_fields = {
         f.name
