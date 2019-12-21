@@ -44,7 +44,7 @@ def do1():
 
 
 def do2():
-    return todo_schema.dump(todos)[0]
+    return todo_schema.dump(todos)
 
 
 def do3():
@@ -53,6 +53,6 @@ def do3():
 
 assert do1() == do2()
 
-print("my    ", timeit("do()", globals={"do": do1}, number=100000))  # 0.7867898929980583
-print("marsh ", timeit("do()", globals={"do": do2}, number=100000))  # 10.595438176002062
-print("asdict", timeit("do()", globals={"do": do3}, number=100000))  # 5.484035702000256
+print("my    ", timeit("do()", globals={"do": do1}, number=100000))  # 2.026152505999562
+print("marsh ", timeit("do()", globals={"do": do2}, number=100000))  # 6.001530854000521
+print("asdict", timeit("do()", globals={"do": do3}, number=100000))  # 6.57121034499869

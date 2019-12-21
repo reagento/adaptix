@@ -33,7 +33,7 @@ class TodoSchema(Schema):
     description = fields.Str(attribute="desc")
 
     @post_load
-    def post(self, data):
+    def post(self, data, **kwargs):
         return Todo(**data)
 
 
@@ -60,7 +60,7 @@ def do1():
 
 
 def do2():
-    return todo_schema.load(todos)[0]
+    return todo_schema.load(todos)
 
 
 def do3():
@@ -69,6 +69,6 @@ def do3():
 
 assert do1() == do2()
 
-print("my   ", timeit("do()", globals={"do": do1}, number=100000))  # 1.1471970899983717
-print("marsh", timeit("do()", globals={"do": do2}, number=100000))  # 9.297098876999371
-print("pydan", timeit("do()", globals={"do": do3}, number=100000))  # 5.090179265000188
+print("my   ", timeit("do()", globals={"do": do1}, number=100000))  # 1.2380811969997012
+print("marsh", timeit("do()", globals={"do": do2}, number=100000))  # 13.807345212000655
+print("pydan", timeit("do()", globals={"do": do3}, number=100000))  # 5.355430837998938
