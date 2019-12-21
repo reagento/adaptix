@@ -47,11 +47,11 @@ def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) ->
         has_default = any(f[3] != MISSING for f in field_info)
         if has_default:
             def serialize(data):
-                res = [
-                    (n, v(getattr(data, k)), default) for k, n, v, default in field_info
-                ]
                 return {
-                    k: v for k, v, default in res if v != default
+                    n: value
+                    for k, n, v, default in field_info
+                    for value in (v(getattr(data, k)),)
+                    if value != default
                 }
         else:
             # optimized version
