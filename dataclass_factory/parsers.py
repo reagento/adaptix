@@ -125,7 +125,7 @@ def get_dataclass_parser(class_: Type[T],
                          debug_path: bool, ) -> Parser[T]:
     field_info = tuple(
         (name, *get_field_parser(item, parsers[name]))
-        for name, item in get_dataclass_fields(schema, class_)
+        for name, item, default in get_dataclass_fields(schema, class_)
     )
     if any(isinstance(name, int) for _, name, _ in field_info):
         list_mode = True

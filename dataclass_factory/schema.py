@@ -1,7 +1,7 @@
 from copy import copy
-from dataclasses import fields
+from dataclasses import Field, MISSING, fields
 
-from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union
+from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union, Any
 
 from .common import Serializer, Parser, T, InnerConverter
 from .naming import NameStyle, NAMING_FUNC
@@ -29,6 +29,8 @@ class Schema(Generic[T]):
             post_parse: Optional[InnerConverter[T]] = None,
             pre_serialize: Optional[InnerConverter[T]] = None,
             post_serialize: Optional[Callable] = None,
+
+            omit_default: Optional[bool] = None,
     ):
         if only is not None or not hasattr(self, "only"):
             self.only = only
@@ -58,6 +60,9 @@ class Schema(Generic[T]):
             self.pre_serialize = pre_serialize
         if post_serialize is not None or not hasattr(self, "post_serialize"):
             self.post_serialize = post_serialize
+
+        if omit_default is not None or not hasattr(self, "omit_default"):
+            self.omit_default = omit_default
 
 
 SCHEMA_FIELDS = [
@@ -106,6 +111,14 @@ def convert_name(
     return name
 
 
+def get_default(field: Field, schema: Schema[T]) -> Any:
+    if not schema.omit_default:
+        return MISSING
+    if field.default_factory != MISSING:
+        return field.default_factory()
+    return field.default
+
+
 def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[str, Union[str, Path]]]:
     only_mapped = schema.only_mapped and schema.only is None
     all_fields = {
@@ -114,16 +127,21 @@ def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[s
         if (schema.only is None or f.name in schema.only) and
            (schema.exclude is None or f.name not in schema.exclude)
     }
+    fields_dict = {f.name: f for f in fields(class_)}
     if only_mapped:
         if schema.name_mapping is None:
             raise ValueError("`name_mapping` is None, and `only_mapped` is True")
         return tuple(
-            (k, v)
+            (k, v, get_default(fields_dict[k], schema))
             for k, v in schema.name_mapping.items()
             if k in all_fields
         )
     return tuple(
-        (k, convert_name(k, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore))
+        (
+            k,
+            convert_name(k, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore),
+            get_default(fields_dict[k], schema)
+        )
         for k in all_fields
         if (schema.name_mapping is not None and k in schema.name_mapping) or
         (schema.only is not None and k in schema.only) or

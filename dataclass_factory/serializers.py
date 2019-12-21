@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from dataclasses import is_dataclass, fields
 from marshal import loads, dumps
 from operator import attrgetter
-from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
-from dataclasses import is_dataclass, fields
+from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
 from .common import Serializer, T, K
 from .path_utils import init_structure, Path
@@ -26,7 +26,7 @@ def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) ->
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
         field_info_ex = tuple(
             (i, name, to_tuple(path), serializers[name])
-            for i, (name, path) in enumerate(get_dataclass_fields(schema, class_))
+            for i, (name, path, default) in enumerate(get_dataclass_fields(schema, class_))
         )
         pickled = dumps(init_structure((path for _, _, path, _ in field_info_ex)))
 
@@ -38,13 +38,16 @@ def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) ->
             return container
     else:
         field_info = tuple(
-            (name, item, serializers[name])
-            for name, item in get_dataclass_fields(schema, class_)
+            (name, item, serializers[name], default)
+            for name, item, default in get_dataclass_fields(schema, class_)
         )
 
         def serialize(data):
+            res = [
+                (n, v(getattr(data, k)), default) for k, n, v, default in field_info
+            ]
             return {
-                n: v(getattr(data, k)) for k, n, v in field_info
+                k: v for k, v, default in res if v != default
             }
     return serialize
 
