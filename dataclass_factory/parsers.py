@@ -1,13 +1,13 @@
 import decimal
 import inspect
-import itertools
 from collections import deque
+from dataclasses import fields, is_dataclass
+
+import itertools
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
     Optional, Tuple, Union)
-
-from dataclasses import fields, is_dataclass
 
 from .common import Parser, T
 from .exceptions import InvalidFieldError
@@ -127,19 +127,26 @@ def get_dataclass_parser(class_: Type[T],
         (name, *get_field_parser(item, parsers[name]))
         for name, item in get_dataclass_fields(schema, class_)
     )
+    if any(isinstance(name, int) for _, name, _ in field_info):
+        list_mode = True
+    else:
+        list_mode = False
+
     if debug_path:
         def dataclass_parser(data):
+            count = len(data) if list_mode else 0
             return class_(**{
                 field: element_parser(parser, data[name], field)
                 for field, name, parser in field_info
-                if name in data
+                if (name < count if list_mode else name in data)
             })
     else:
         def dataclass_parser(data):
+            count = len(data) if list_mode else 0
             return class_(**{
                 field: parser(data[name])
                 for field, name, parser in field_info
-                if name in data
+                if (name < count if list_mode else name in data)
             })
     return dataclass_parser
 

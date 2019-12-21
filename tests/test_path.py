@@ -16,6 +16,13 @@ schema = Schema[A](
     }
 )
 
+schema_list = Schema[A](
+    name_mapping={
+        "x": (0, 0),
+        "y": (0, 1)
+    }
+)
+
 
 class Test1(TestCase):
     def test_load(self):
@@ -62,3 +69,23 @@ class Test1(TestCase):
         data2 = A("hello2", "world2")
         self.assertEqual(expected, factory.dump(data, A))
         self.assertEqual(expected2, factory.dump(data2, A))
+
+    def test_load_list(self):
+        factory = Factory(
+            schemas={
+                A: schema_list
+            }
+        )
+        data = [["hello", "world"]]
+        expected = A("hello", "world")
+        self.assertEqual(expected, factory.load(data, A))
+
+    def test_dump_list(self):
+        factory = Factory(
+            schemas={
+                A: schema_list
+            }
+        )
+        expected = [["hello", "world"]]
+        data = A("hello", "world")
+        self.assertEqual(expected, factory.dump(data, A))
