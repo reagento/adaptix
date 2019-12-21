@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from dataclasses import is_dataclass, fields
+from dataclasses import is_dataclass, fields, MISSING
 from marshal import loads, dumps
 from operator import attrgetter
 
@@ -25,14 +25,17 @@ def to_tuple(key: Union[str, Path]) -> Path:
 def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) -> Serializer[T]:
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
         field_info_ex = tuple(
-            (i, name, to_tuple(path), serializers[name])
+            (i, name, to_tuple(path), serializers[name], default)
             for i, (name, path, default) in enumerate(get_dataclass_fields(schema, class_))
         )
-        pickled = dumps(init_structure((path for _, _, path, _ in field_info_ex)))
+        pickled = dumps(init_structure((path for _, _, path, _, _ in field_info_ex)))
+        has_default = any(f[4] != MISSING for f in field_info_ex)
+        if has_default:
+            raise ValueError("Cannot use `omit_default` option with flattening schema")
 
         def serialize(data):
             container, field_containers = loads(pickled)
-            for i, name, path, serializer in field_info_ex:
+            for i, name, path, serializer, default in field_info_ex:
                 c, x = field_containers[i]
                 c[x] = serializer(getattr(data, name))
             return container
@@ -41,14 +44,21 @@ def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) ->
             (name, item, serializers[name], default)
             for name, item, default in get_dataclass_fields(schema, class_)
         )
-
-        def serialize(data):
-            res = [
-                (n, v(getattr(data, k)), default) for k, n, v, default in field_info
-            ]
-            return {
-                k: v for k, v, default in res if v != default
-            }
+        has_default = any(f[3] != MISSING for f in field_info)
+        if has_default:
+            def serialize(data):
+                res = [
+                    (n, v(getattr(data, k)), default) for k, n, v, default in field_info
+                ]
+                return {
+                    k: v for k, v, default in res if v != default
+                }
+        else:
+            # optimized version
+            def serialize(data):
+                return {
+                    n: v(getattr(data, k)) for k, n, v, default in field_info
+                }
     return serialize
 
 
