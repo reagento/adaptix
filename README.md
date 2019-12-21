@@ -45,6 +45,7 @@ serialized = factory.dump(book)
         * [Common schemas](#common-schemas)
         * [Name styles](#name-styles)
         * [Generic classes](#generic-classes)
+        * [Omit default](#omit-default)
         * [Structure flattening](#structure-flattening)
         * [Additional steps](#additional-steps)
         * [Schema inheritance](#schema-inheritance)
@@ -134,6 +135,7 @@ Schema consists of:
 * `only_mapped` (*by default, False*) - if True, all fields which are not specified in `names_mapping` are skipped. 
 * `only` - list of fields which are used during parsing and serialization. Has higher priority than `only_mapped` and `skip_internal` params
 * `exclude_fields` - list of fields that are NOT used during parsing and serialization. Has higher priority than `only`
+* `omit_default` - allows to omit default values when serializing
 * `skip_internal` (*by default, True*) - exclude fields with leading underscore (_). Affects fields, that are not specified in `only` and `names_mapping`. 
 * `trim_trainling_underscore` (*by default, True*) - if True, trailing underscore (_) will be removed for all fields except specified in `names_mapping`.
 * `name_style` (*by default, snake_case*) - target field name style. Applied for fields not specified in `names_mapping`.
@@ -248,6 +250,28 @@ assert factory.load(data, FakeFoo[str]) == FakeFoo("Hello")
 assert factory.load(data, FakeFoo[int]) == FakeFoo(42)
 assert factory.dump(FakeFoo("hello"), FakeFoo[str]) == {"s": "hello"}  # concrete type is set explicitly
 assert factory.dump(FakeFoo("hello")) == {"i": "hello"}  # generic type is detected automatically
+```
+
+#### Omit default
+
+Many serializers allow to omit `None` values (it may be called `omit-empty` or something similar), but is not always correct. 
+In some cases you have default value for field different from `None`, so parsing of produced dict will not reassemble original structure.
+
+Opposite to that, we have `omit_default` option. It just skips values which are equals to default. 
+If your default values are `None` it works just the same way as mentioned above `omit-empty`
+
+```python
+@dataclass
+class Data:
+    x: int = 1
+    y: List = field(default_factory=list)
+    z: str = field(default="test")
+
+factory = Factory(default_schema = Schema(omit_default=True))
+
+assert factory.dump(Data()) == {}
+assert factory.dump(Data(x=1, y=[], z="hello")) == {"z": "hello"}
+
 ```
 
 #### Structure flattening
