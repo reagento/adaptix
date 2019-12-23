@@ -1,5 +1,6 @@
-from dataclasses import dataclass
 from unittest import TestCase
+
+from dataclasses import dataclass
 
 from dataclass_factory import Schema, Factory
 
@@ -20,6 +21,13 @@ schema_list = Schema[A](
     name_mapping={
         "x": (0, 0),
         "y": (0, 1)
+    }
+)
+
+schema_tuple = Schema[A](
+    name_mapping={
+        "x": (0, ),
+        "y": (1, ),
     }
 )
 
@@ -89,3 +97,23 @@ class Test1(TestCase):
         expected = [["hello", "world"]]
         data = A("hello", "world")
         self.assertEqual(expected, factory.dump(data, A))
+
+    def test_load_plain_list(self):
+        factory = Factory(
+            schemas={
+                A: schema_tuple
+            }
+        )
+        data = ["hello", "world"]
+        expected = A("hello", "world")
+        self.assertEqual(expected, factory.load(data, A))
+
+    def test_dump_plain_list(self):
+        factory = Factory(
+            schemas={
+                A: schema_tuple
+            }
+        )
+        data = ["hello", "world"]
+        expected = A("hello", "world")
+        self.assertEqual(expected, factory.load(data, A))
