@@ -203,10 +203,12 @@ def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Par
 def get_literal_parser(factory, values: Sequence[Any]) -> Parser:
     def literal_parser(data: Any):
         for v in values:
-            if v == data:
+            if (type(v), v) == (type(data), data):
                 return data
         raise ValueError("Invalid literal data")
+
     return literal_parser
+
 
 def get_lazy_parser(factory, class_: Type) -> Parser:
     # return partial(factory.load, class_=class_)

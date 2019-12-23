@@ -15,6 +15,8 @@ class TestLiteral(TestCase):
     def test_literal_fail(self):
         with self.assertRaises(ValueError):
             self.factory.load("d", ABC)
+        with self.assertRaises(ValueError):
+            self.factory.load(1.0, One)
 
     def test_literal(self):
         self.assertEqual(self.factory.load("a", ABC), "a")
