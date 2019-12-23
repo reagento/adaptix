@@ -74,7 +74,7 @@ def do4():
 
 assert do1() == do2()
 
-print("my    ", timeit("do()", globals={"do": do1}, number=100000))  # 1.9073010239990253
+print("my    ", timeit("do()", globals={"do": do1}, number=100000))  # 0.7900586039977497
 print("mashum", timeit("do()", globals={"do": do4}, number=100000))  # 0.5299071890003688
 print("marsh ", timeit("do()", globals={"do": do2}, number=100000))  # 5.793430982997961
 print("asdict", timeit("do()", globals={"do": do3}, number=100000))  # 6.109174378001626
