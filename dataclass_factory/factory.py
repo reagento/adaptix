@@ -60,7 +60,7 @@ class Factory:
 
     def schema(self, class_: Type[T]) -> Schema[T]:
         if is_generic_concrete(class_):
-            base_class = class_.__origin__ # type: ignore
+            base_class = class_.__origin__  # type: ignore
         else:
             base_class = None
 
