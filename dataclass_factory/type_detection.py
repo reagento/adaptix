@@ -3,6 +3,21 @@ from enum import Enum
 
 from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic
 
+LITERAL_TYPES = []
+try:
+    from typing import Literal
+
+    LITERAL_TYPES.append(Literal)
+except ImportError:
+    pass
+
+try:
+    from typing_extensions import Literal
+
+    LITERAL_TYPES.append(Literal)
+except ImportError:
+    pass
+
 
 def hasargs(type_, *args) -> bool:
     try:
@@ -76,6 +91,10 @@ def args_unspecified(cls: Type) -> bool:
             (not cls.__args__ and cls.__parameters__) or
             (cls.__args__ == cls.__parameters__)
     )
+
+
+def is_literal(cls) -> bool:
+    return is_generic_concrete(cls) and cls.__origin__ in LITERAL_TYPES
 
 
 def is_dict(cls) -> bool:
