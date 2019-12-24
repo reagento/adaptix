@@ -135,7 +135,7 @@ Schema consists of:
 * `only_mapped` (*by default, False*) - if True, all fields which are not specified in `names_mapping` are skipped. 
 * `only` - list of fields which are used during parsing and serialization. Has higher priority than `only_mapped` and `skip_internal` params
 * `exclude_fields` - list of fields that are NOT used during parsing and serialization. Has higher priority than `only`
-* `omit_default` - allows to omit default values when serializing
+* `omit_default` (*by default, False*)  - allows to omit default values when serializing
 * `skip_internal` (*by default, True*) - exclude fields with leading underscore (_). Affects fields, that are not specified in `only` and `names_mapping`. 
 * `trim_trainling_underscore` (*by default, True*) - if True, trailing underscore (_) will be removed for all fields except specified in `names_mapping`.
 * `name_style` (*by default, snake_case*) - target field name style. Applied for fields not specified in `names_mapping`.

@@ -1,9 +1,10 @@
-from dataclasses import dataclass
 from timeit import timeit
-
-from marshmallow import Schema, fields, post_load
-from pydantic import BaseModel, Field
 from typing import List
+
+from dataclasses import dataclass
+from marshmallow import Schema, fields, post_load
+from mashumaro import DataClassDictMixin
+from pydantic import BaseModel, Field
 
 from dataclass_factory import Factory, Schema as DSchema
 
@@ -19,7 +20,7 @@ class Todo:
 class PydanticTodo(BaseModel):
     id: int
     title: str
-    desc: str= Field(None, alias='description')
+    desc: str = Field(None, alias='description')
 
 
 class TodoList(BaseModel):
@@ -47,6 +48,23 @@ factory = Factory(schemas={
 })
 parser = factory.parser(List[Todo])
 
+
+# pydantic
+class PydTodo(BaseModel):
+    id: int
+    title: str
+    description: str
+
+
+# mashumaro
+
+@dataclass
+class MashumaroTodo(DataClassDictMixin):
+    id: int
+    title: str
+    description: str
+
+
 # test
 todos = [{
     "id": i,
@@ -67,8 +85,13 @@ def do3():
     return TodoList.parse_obj(todos)
 
 
+def do4():
+    return [MashumaroTodo.from_dict(x) for x in todos]
+
+
 assert do1() == do2()
 
-print("my   ", timeit("do()", globals={"do": do1}, number=100000))  # 1.2380811969997012
-print("marsh", timeit("do()", globals={"do": do2}, number=100000))  # 13.807345212000655
-print("pydan", timeit("do()", globals={"do": do3}, number=100000))  # 5.355430837998938
+print("my       ", timeit("do()", globals={"do": do1}, number=100000))  # 1.6099195899987535
+print("mashumaro", timeit("do()", globals={"do": do4}, number=100000))  # 1.3904066249997413
+print("marsh    ", timeit("do()", globals={"do": do2}, number=100000))  # 18.798911712001427
+print("mpydantic", timeit("do()", globals={"do": do3}, number=100000))  # 6.867118302001472

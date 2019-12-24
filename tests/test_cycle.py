@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar, Generic
+from typing import Optional, TypeVar, Generic, List
 from unittest import TestCase
 
 from dataclasses import dataclass
