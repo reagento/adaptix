@@ -177,7 +177,7 @@ assert factory.dump(person) == serial_person
 
 `schema_helpers` module contains several commonly used schemas:
 * `unixtime_schema` - converts datetime to unixtime and vice versa
-* `isotime_schema` - converts datetime to string containing ISO 8081. Supported only on Python 3.7+
+* `isotime_schema` - converts datetime to string containing ISO 8601. Supported only on Python 3.7+
 * `uuid_schema` - converts UUID to string
 
 Example:
