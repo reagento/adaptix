@@ -247,9 +247,9 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return parse_none
     if is_optional(cls):
         return get_optional_parser(factory.parser(cls.__args__[0]))
-    if cls in (str, bytearray, bytes):
+    if cls in (str, bytearray, bytes, bool):
         return get_parser_with_check(cls)
-    if cls in (int, float, complex, bool):
+    if cls in (int, float, complex):
         return cls
     if cls in (decimal.Decimal,):
         return decimal_parse
