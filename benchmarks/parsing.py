@@ -1,8 +1,10 @@
-from dataclasses import dataclass
 from timeit import timeit
-
-from marshmallow import Schema, fields, post_load
 from typing import List
+
+from dataclasses import dataclass
+from marshmallow import Schema, fields, post_load
+from mashumaro import DataClassDictMixin
+from pydantic import BaseModel, Field
 
 from dataclass_factory import Factory, Schema as DSchema
 
@@ -14,6 +16,17 @@ class Todo:
     desc: str
 
 
+# pydantic
+class PydanticTodo(BaseModel):
+    id: int
+    title: str
+    desc: str = Field(None, alias='description')
+
+
+class TodoList(BaseModel):
+    __root__: List[PydanticTodo]
+
+
 # marshmallow
 class TodoSchema(Schema):
     id = fields.Integer()
@@ -21,7 +34,7 @@ class TodoSchema(Schema):
     description = fields.Str(attribute="desc")
 
     @post_load
-    def post(self, data):
+    def post(self, data, **kwargs):
         return Todo(**data)
 
 
@@ -34,6 +47,23 @@ factory = Factory(schemas={
     )
 })
 parser = factory.parser(List[Todo])
+
+
+# pydantic
+class PydTodo(BaseModel):
+    id: int
+    title: str
+    description: str
+
+
+# mashumaro
+
+@dataclass
+class MashumaroTodo(DataClassDictMixin):
+    id: int
+    title: str
+    description: str
+
 
 # test
 todos = [{
@@ -48,10 +78,20 @@ def do1():
 
 
 def do2():
-    return todo_schema.load(todos)[0]
+    return todo_schema.load(todos)
+
+
+def do3():
+    return TodoList.parse_obj(todos)
+
+
+def do4():
+    return [MashumaroTodo.from_dict(x) for x in todos]
 
 
 assert do1() == do2()
 
-print("my   ", timeit("do()", globals={"do": do1}, number=100000))  # 1.1471970899983717
-print("marsh", timeit("do()", globals={"do": do2}, number=100000))  # 9.297098876999371
+print("my       ", timeit("do()", globals={"do": do1}, number=100000))  # 1.6099195899987535
+print("mashumaro", timeit("do()", globals={"do": do4}, number=100000))  # 1.3904066249997413
+print("marsh    ", timeit("do()", globals={"do": do2}, number=100000))  # 18.798911712001427
+print("mpydantic", timeit("do()", globals={"do": do3}, number=100000))  # 6.867118302001472

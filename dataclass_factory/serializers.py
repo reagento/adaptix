@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from dataclasses import is_dataclass, fields, MISSING
 from marshal import loads, dumps
-from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
+from operator import attrgetter
 
-from dataclasses import is_dataclass, fields
+from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
 from .common import Serializer, T, K
 from .path_utils import init_structure, Path
@@ -11,7 +12,7 @@ from .schema import Schema, get_dataclass_fields
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
     is_union, is_any, is_generic_concrete, is_type_var,
-    fill_type_args,
+    fill_type_args, is_enum,
 )
 
 
@@ -24,27 +25,40 @@ def to_tuple(key: Union[str, Path]) -> Path:
 def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) -> Serializer[T]:
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
         field_info_ex = tuple(
-            (i, name, to_tuple(path), serializers[name])
-            for i, (name, path) in enumerate(get_dataclass_fields(schema, class_))
+            (i, name, to_tuple(path), serializers[name], default)
+            for i, (name, path, default) in enumerate(get_dataclass_fields(schema, class_))
         )
-        pickled = dumps(init_structure((path for _, _, path, _ in field_info_ex)))
+        pickled = dumps(init_structure((path for _, _, path, _, _ in field_info_ex)))
+        has_default = any(f[4] != MISSING for f in field_info_ex)
+        if has_default:
+            raise ValueError("Cannot use `omit_default` option with flattening schema")
 
         def serialize(data):
             container, field_containers = loads(pickled)
-            for i, name, path, serializer in field_info_ex:
+            for i, name, path, serializer, default in field_info_ex:
                 c, x = field_containers[i]
                 c[x] = serializer(getattr(data, name))
             return container
     else:
         field_info = tuple(
-            (name, item, serializers[name])
-            for name, item in get_dataclass_fields(schema, class_)
+            (name, item, serializers[name], default)
+            for name, item, default in get_dataclass_fields(schema, class_)
         )
-
-        def serialize(data):
-            return {
-                n: v(getattr(data, k)) for k, n, v in field_info
-            }
+        has_default = any(f[3] != MISSING for f in field_info)
+        if has_default:
+            def serialize(data):
+                return {
+                    n: value
+                    for k, n, v, default in field_info
+                    for value in (v(getattr(data, k)),)
+                    if value != default
+                }
+        else:
+            # optimized version
+            def serialize(data):
+                return {
+                    n: v(getattr(data, k)) for k, n, v, default in field_info
+                }
     return serialize
 
 
@@ -134,6 +148,8 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
             return get_optional_serializer(class_.__args__[0])
         else:
             return get_lazy_serializer(factory)
+    if is_enum(class_):
+        return attrgetter("value")
     if is_union(class_):
         # create serializers:
         for type_ in class_.__args__:
@@ -153,7 +169,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
         return get_dict_serializer(factory.serializer(key_type_arg), factory.serializer(value_type_arg))
     if is_dict(class_):
         return get_dict_serializer(get_lazy_serializer(factory), get_lazy_serializer(factory))
-    if is_generic_concrete(class_) and is_dict(class_.__origin__):
+    if is_generic_concrete(class_) and is_collection(class_.__origin__):
         item_serializer = factory.serializer(class_.__args__[0] if class_.__args__ else Any)
         return get_collection_serializer(item_serializer)
     if is_collection(class_):

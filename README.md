@@ -45,6 +45,7 @@ serialized = factory.dump(book)
         * [Common schemas](#common-schemas)
         * [Name styles](#name-styles)
         * [Generic classes](#generic-classes)
+        * [Omit default](#omit-default)
         * [Structure flattening](#structure-flattening)
         * [Additional steps](#additional-steps)
         * [Polymorphic parsing](#polymorphic-parsing)
@@ -69,7 +70,7 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 * Enums, typed dicts, tuples and lists are supported from the box
 * Unions and Optionals are supported without need to define them in schema
 * Generic dataclasses can be automatically parsed as well
-* Cyclic-referensed structures (such as linked-lists or trees) also can be converted
+* Cyclic-referenced structures (such as linked-lists or trees) also can be converted
 
 ## Usage
 
@@ -135,6 +136,7 @@ Schema consists of:
 * `only_mapped` (*by default, False*) - if True, all fields which are not specified in `names_mapping` are skipped. 
 * `only` - list of fields which are used during parsing and serialization. Has higher priority than `only_mapped` and `skip_internal` params
 * `exclude_fields` - list of fields that are NOT used during parsing and serialization. Has higher priority than `only`
+* `omit_default` (*by default, False*)  - allows to omit default values when serializing
 * `skip_internal` (*by default, True*) - exclude fields with leading underscore (_). Affects fields, that are not specified in `only` and `names_mapping`. 
 * `trim_trainling_underscore` (*by default, True*) - if True, trailing underscore (_) will be removed for all fields except specified in `names_mapping`.
 * `name_style` (*by default, snake_case*) - target field name style. Applied for fields not specified in `names_mapping`.
@@ -176,7 +178,7 @@ assert factory.dump(person) == serial_person
 
 `schema_helpers` module contains several commonly used schemas:
 * `unixtime_schema` - converts datetime to unixtime and vice versa
-* `isotime_schema` - converts datetime to string containing ISO 8081. Supported only on Python 3.7+
+* `isotime_schema` - converts datetime to string containing ISO 8601. Supported only on Python 3.7+
 * `uuid_schema` - converts UUID to string
 
 Example:
@@ -229,7 +231,8 @@ Following name styles are supported:
 
 It is possible to dump and load instances of generic dataclasses with. 
 You can set schema for generic or concrete types with one limitation:
-It is not possible to detect concrete type of dataclass when dumping. So if you need to have different schemas for different concrete types you should exclipitly set them when dumping your data.
+It is not possible to detect concrete type of dataclass when dumping.
+So if you need to have different schemas for different concrete types you should explicitly set them when dumping your data.
 
 ```python
 T = TypeVar("T")
@@ -249,6 +252,28 @@ assert factory.load(data, FakeFoo[str]) == FakeFoo("Hello")
 assert factory.load(data, FakeFoo[int]) == FakeFoo(42)
 assert factory.dump(FakeFoo("hello"), FakeFoo[str]) == {"s": "hello"}  # concrete type is set explicitly
 assert factory.dump(FakeFoo("hello")) == {"i": "hello"}  # generic type is detected automatically
+```
+
+#### Omit default
+
+Many serializers allow to omit `None` values (it may be called `omit-empty` or something similar), but is not always correct. 
+In some cases you have default value for field different from `None`, so parsing of produced dict will not reassemble original structure.
+
+Opposite to that, we have `omit_default` option. It just skips values which are equals to default. 
+If your default values are `None` it works just the same way as mentioned above `omit-empty`
+
+```python
+@dataclass
+class Data:
+    x: int = 1
+    y: List = field(default_factory=list)
+    z: str = field(default="test")
+
+factory = Factory(default_schema = Schema(omit_default=True))
+
+assert factory.dump(Data()) == {}
+assert factory.dump(Data(x=1, y=[], z="hello")) == {"z": "hello"}
+
 ```
 
 #### Structure flattening
@@ -405,9 +430,9 @@ factory.load(1, int)  # prints: parsing done
 
 ## Supported types
 
-* numeric types (`int`, `float`, `Decimal`)
+* numeric types (`int`, `float`, `Decimal`, `complex`)
 * `bool`
-* `str`, `bytearray`
+* `str`, `bytearray`, `bytes`
 * `List`
 * `Tuple`, including something like `Tuple[int, ...]` or `Tuple[int, str, int]`
 * `Dict`
@@ -417,9 +442,9 @@ factory.load(1, int)  # prints: parsing done
 * `Union`
 * `dataclass` 
 * `Generic` dataclasses 
-* `datetime` and `UUID` can be converted using predefind schemas
+* `datetime` and `UUID` can be converted using predefined schemas
 * Custom classes can be parsed automatically using info from their `__init__` method.  
-    Or you can provide custom praser/serializer
+    Or you can provide custom parser/serializer
 
 ## Updating from previous versions
 In versions 1.1+:
@@ -428,9 +453,9 @@ In versions 1.1+:
 * `type_factories`, `name_styles` and `type_serializers` moved to `schemas` dict
     
 In versions <1.1:
-* `dict_factory` used with `asdict` function must be replaced with `Factory`-based seralization as it is much faster
+* `dict_factory` used with `asdict` function must be replaced with `Factory`-based serialization as it is much faster
 
 In versions <1.0:
 * `parse` method must be replaced with `Factory`-based parsing as it much faster
     
-All old methods and classes are still avaiable but are deprecated ant will be removed in future versions
+All old methods and classes are still available but are deprecated and will be removed in future versions
