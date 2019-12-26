@@ -124,30 +124,45 @@ def get_dataclass_parser(class_: Type[T],
                          schema: Schema[T],
                          debug_path: bool, ) -> Parser[T]:
     field_info = tuple(
-        (name, *get_field_parser(item, parsers[name]))
-        for name, item, default in get_dataclass_fields(schema, class_)
+        (field_name, *get_field_parser(item, parsers[field_name]))
+        for field_name, item, default in get_dataclass_fields(schema, class_)
     )
-    if any(isinstance(name, int) for _, name, _ in field_info):
-        list_mode = True
-    else:
-        list_mode = False
+
+    list_mode = any(isinstance(name, int) for _, name, _ in field_info)
 
     if debug_path:
-        def dataclass_parser(data):
-            count = len(data) if list_mode else 0
-            return class_(**{
-                field: element_parser(parser, data[name], field)
-                for field, name, parser in field_info
-                if (name < count if list_mode else name in data)
-            })
+        if list_mode:
+            def dataclass_parser(data):
+                count = len(data)
+                return class_(**{
+                    field_name: element_parser(parser, data[item_idx], field_name)
+                    for field_name, item_idx, parser in field_info
+                    if item_idx < count
+                })
+        else:
+            def dataclass_parser(data):
+                return class_(**{
+                    field_name: element_parser(parser, data[name], field_name)
+                    for field_name, name, parser in field_info
+                    if name in data
+                })
     else:
-        def dataclass_parser(data):
-            count = len(data) if list_mode else 0
-            return class_(**{
-                field: parser(data[name])
-                for field, name, parser in field_info
-                if (name < count if list_mode else name in data)
-            })
+        if list_mode:
+            def dataclass_parser(data):
+                count = len(data)
+                return class_(**{
+                    field_name: parser(data[item_idx])
+                    for field_name, item_idx, parser in field_info
+                    if item_idx < count
+                })
+        else:
+            def dataclass_parser(data):
+                return class_(**{
+                    field_name: parser(data[item_name])
+                    for field_name, item_name, parser in field_info
+                    if item_name in data
+                })
+
     return dataclass_parser
 
 
