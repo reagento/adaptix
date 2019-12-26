@@ -9,10 +9,11 @@ from dataclass_factory import Factory
 @dataclass
 class Data:
     x: Optional[Dict[str, None]]
+    y: Optional[bool]
 
 
 class TestOptional(TestCase):
     def test_optional(self):
         factory = Factory()
-        y = factory.load({"x": None}, Data)
-        self.assertEqual(y, Data(None))
+        y = factory.load({"x": None, "y": None}, Data)
+        self.assertEqual(y, Data(None, None))
