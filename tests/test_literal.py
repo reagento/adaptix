@@ -1,26 +1,35 @@
 import sys
 from unittest import TestCase
 
+from nose2.tools import params
+from typing_extensions import Literal as CompatLiteral
+
 from dataclass_factory import Factory
 
+LITERALS = [CompatLiteral]
 if sys.version_info >= (3, 8):
-    from typing import Literal
+    from typing import Literal as PyLiteral
 
-    ABC = Literal["a", "b", "c"]
-    One = Literal[1]
+    LITERALS.append(PyLiteral)
 
 
-    class TestLiteral(TestCase):
-        def setUp(self) -> None:
-            self.factory = Factory()
+class TestLiteral(TestCase):
+    def setUp(self) -> None:
+        self.factory = Factory()
 
-        def test_literal_fail(self):
-            with self.assertRaises(ValueError):
-                self.factory.load("d", ABC)
-            with self.assertRaises(ValueError):
-                self.factory.load(1.0, One)
+    @params(*LITERALS)
+    def test_literal_fail(self, literal):
+        abc = literal["a", "b", "c"]
+        one = literal[1]
+        with self.assertRaises(ValueError):
+            self.factory.load("d", abc)
+        with self.assertRaises(ValueError):
+            self.factory.load(1.0, one)
 
-        def test_literal(self):
-            self.assertEqual(self.factory.load("a", ABC), "a")
-            self.assertEqual(self.factory.load("b", ABC), "b")
-            self.assertEqual(self.factory.load(1, One), 1)
+    @params(*LITERALS)
+    def test_literal(self, literal):
+        abc = literal["a", "b", "c"]
+        one = literal[1]
+        self.assertEqual(self.factory.load("a", abc), "a")
+        self.assertEqual(self.factory.load("b", abc), "b")
+        self.assertEqual(self.factory.load(1, one), 1)
