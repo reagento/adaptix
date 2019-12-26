@@ -5,16 +5,16 @@ from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar,
 
 LITERAL_TYPES = []
 try:
-    from typing import Literal
+    from typing import Literal as PyLiteral
 
-    LITERAL_TYPES.append(Literal)
+    LITERAL_TYPES.append(PyLiteral)
 except ImportError:
     pass
 
 try:
-    from typing_extensions import Literal
+    from typing_extensions import Literal as CompatLiteral
 
-    LITERAL_TYPES.append(Literal)
+    LITERAL_TYPES.append(CompatLiteral)
 except ImportError:
     pass
 
