@@ -25,7 +25,9 @@ class C:
     b: int = 2
 
 
-Some = Union[A, B, C]
+@dataclass
+class Container:
+    some: Union[A, B, C]
 
 
 def pre_parse(data):
@@ -42,9 +44,9 @@ class MyTestCase(unittest.TestCase):
             B: Schema(pre_parse=type_checker("B", field="x")),
             C: Schema(pre_parse=type_checker("C", field="x")),
         })
-        self.assertEqual(factory.load({"a": "hello", "x": "A"}, Some), A("hello"))
-        self.assertEqual(factory.load({"a": "hello", "x": "B"}, Some), B("hello"))
-        self.assertEqual(factory.load({"a": "hello", "x": "C"}, Some), C("hello"))
+        self.assertEqual(factory.load({"some": {"a": "hello", "x": "A"}}, Container), Container(A("hello")))
+        self.assertEqual(factory.load({"some": {"a": "hello", "x": "B"}}, Container), Container(B("hello")))
+        self.assertEqual(factory.load({"some": {"a": "hello", "x": "C"}}, Container), Container(C("hello")))
 
     def test_nothing(self):
         factory = Factory(schemas={
@@ -53,9 +55,9 @@ class MyTestCase(unittest.TestCase):
             C: Schema(pre_parse=type_checker("C", field="x")),
         })
         self.assertRaises((ValueError, KeyError, TypeError, AttributeError),
-                          factory.load, {"a": "hello", "x": "XXX"}, Some)
+                          factory.load, {"some": {"a": "hello", "x": "XXX"}}, Container)
         self.assertRaises((ValueError, KeyError, TypeError, AttributeError),
-                          factory.load, {"a": "hello"}, Some)
+                          factory.load, {"some": {"a": "hello"}}, Container)
 
     def test_pre_parse(self):
         factory = Factory(schemas={
@@ -63,4 +65,4 @@ class MyTestCase(unittest.TestCase):
             B: Schema(pre_parse=type_checker("B", field="x", pre_parse=pre_parse)),
             C: Schema(pre_parse=type_checker("C", field="x", pre_parse=pre_parse)),
         })
-        self.assertEqual(factory.load({"a": "hello", "x": "B"}, Some), B("hello*"))
+        self.assertEqual(factory.load({"some": {"a": "hello", "x": "B"}}, Container), Container(B("hello*")))
