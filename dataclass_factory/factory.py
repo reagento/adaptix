@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Dict, Type, Any, Optional, TypeVar
 
 from .common import Serializer, Parser
@@ -57,6 +58,16 @@ class Factory:
                 type_: merge_schema(schema, self.default_schema)
                 for type_, schema in schemas.items()
             })
+
+        for type_, schema in self.schemas.items():
+            if schema.get_parser is not None:
+                if schema.parser is not None:
+                    raise TypeError("Schema can not have parser and get_parser at same time")
+                else:
+                    new_schema = copy(schema)
+                    new_schema.parser = schema.get_parser(type_, debug_path)
+                    new_schema.get_parser = None
+                    self.schemas[type_] = new_schema
 
     def schema(self, class_: Type[T]) -> Schema[T]:
         if is_generic_concrete(class_):
