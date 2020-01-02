@@ -1,7 +1,7 @@
 import sys
 from unittest import TestCase
 
-from nose2.tools import params
+from nose2.tools import params  # type: ignore
 from typing_extensions import Literal as CompatLiteral
 
 from dataclass_factory import Factory

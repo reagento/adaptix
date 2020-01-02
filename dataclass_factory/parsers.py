@@ -17,7 +17,8 @@ from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,
     is_generic_concrete, fill_type_args, args_unspecified,
-    is_literal)
+    is_literal, is_literal36,
+)
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
 
@@ -242,6 +243,8 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return parse_none
     if is_literal(cls):
         return get_literal_parser(factory, cls.__args__)
+    if is_literal36(cls):
+        return get_literal_parser(factory, cls.__values__)
     if is_optional(cls):
         return get_optional_parser(factory.parser(cls.__args__[0]))
     if cls in (str, bytearray, bytes):

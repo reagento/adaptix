@@ -1,22 +1,23 @@
 import inspect
 from enum import Enum
 
-from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic
+from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic, List
 
-LITERAL_TYPES = []
+LITERAL_TYPES: List[Any] = []
 try:
-    from typing import Literal as PyLiteral
+    from typing import Literal as PyLiteral  # type: ignore
 
     LITERAL_TYPES.append(PyLiteral)
 except ImportError:
     pass
 
 try:
-    from typing_extensions import Literal as CompatLiteral
+    CompatLiteral: Any
+    from typing_extensions import Literal as CompatLiteral  # type: ignore
 
     LITERAL_TYPES.append(CompatLiteral)
 except ImportError:
-    pass
+    CompatLiteral = None
 
 
 def hasargs(type_, *args) -> bool:
@@ -95,6 +96,15 @@ def args_unspecified(cls: Type) -> bool:
 
 def is_literal(cls) -> bool:
     return is_generic_concrete(cls) and cls.__origin__ in LITERAL_TYPES
+
+
+def is_literal36(cls) -> bool:
+    if not CompatLiteral:
+        return False
+    try:
+        return cls == CompatLiteral[cls.__values__]
+    except AttributeError:
+        return False
 
 
 def is_dict(cls) -> bool:
