@@ -6,7 +6,7 @@ from typing_extensions import Literal as CompatLiteral
 
 from dataclass_factory import Factory
 
-LITERALS = [CompatLiteral]
+LITERALS: Any = [CompatLiteral]
 if sys.version_info >= (3, 8):
     from typing import Literal as PyLiteral
 
