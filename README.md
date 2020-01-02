@@ -48,6 +48,7 @@ serialized = factory.dump(book)
         * [Omit default](#omit-default)
         * [Structure flattening](#structure-flattening)
         * [Additional steps](#additional-steps)
+        * [Polymorphic parsing](#polymorphic-parsing)
         * [Schema inheritance](#schema-inheritance)
 * [Supported types](#supported-types)
 * [Updating from previous versions](#updating-from-previous-versions)
@@ -69,7 +70,7 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 * Enums, typed dicts, tuples and lists are supported from the box
 * Unions and Optionals are supported without need to define them in schema
 * Generic dataclasses can be automatically parsed as well
-* Cyclic-referensed structures (such as linked-lists or trees) also can be converted
+* Cyclic-referenced structures (such as linked-lists or trees) also can be converted
 
 ## Usage
 
@@ -135,7 +136,7 @@ Schema consists of:
 * `only_mapped` (*by default, False*) - if True, all fields which are not specified in `names_mapping` are skipped. 
 * `only` - list of fields which are used during parsing and serialization. Has higher priority than `only_mapped` and `skip_internal` params
 * `exclude_fields` - list of fields that are NOT used during parsing and serialization. Has higher priority than `only`
-* `omit_default` - allows to omit default values when serializing
+* `omit_default` (*by default, False*)  - allows to omit default values when serializing
 * `skip_internal` (*by default, True*) - exclude fields with leading underscore (_). Affects fields, that are not specified in `only` and `names_mapping`. 
 * `trim_trainling_underscore` (*by default, True*) - if True, trailing underscore (_) will be removed for all fields except specified in `names_mapping`.
 * `name_style` (*by default, snake_case*) - target field name style. Applied for fields not specified in `names_mapping`.
@@ -177,7 +178,7 @@ assert factory.dump(person) == serial_person
 
 `schema_helpers` module contains several commonly used schemas:
 * `unixtime_schema` - converts datetime to unixtime and vice versa
-* `isotime_schema` - converts datetime to string containing ISO 8081. Supported only on Python 3.7+
+* `isotime_schema` - converts datetime to string containing ISO 8601. Supported only on Python 3.7+
 * `uuid_schema` - converts UUID to string
 
 Example:
@@ -230,7 +231,8 @@ Following name styles are supported:
 
 It is possible to dump and load instances of generic dataclasses with. 
 You can set schema for generic or concrete types with one limitation:
-It is not possible to detect concrete type of dataclass when dumping. So if you need to have different schemas for different concrete types you should exclipitly set them when dumping your data.
+It is not possible to detect concrete type of dataclass when dumping.
+So if you need to have different schemas for different concrete types you should explicitly set them when dumping your data.
 
 ```python
 T = TypeVar("T")
@@ -362,6 +364,46 @@ except ValueError as e:
 
 **Important**: Data, passed to `pre_serialize` is not a copy. Be careful modifying it.
 
+#### Polymorphic parsing
+
+Very common case is to select class based on information in data.
+
+If required fields differ between classes, no configuration required. But sometimes you want to make a selection more explicitly.
+For example, if data field "type" equals to "item" data should be parsed as Item, if it is "group" then Group class should be used.
+
+For such case you can use `type_checker` from `schema_helpers` module. It creates a function, which should be used on pre_parse step.
+
+```python
+from dataclass_factory import Factory, Schema
+from dataclass_factory.schema_helpers import type_checker
+
+@dataclass
+class Item:
+    name: str
+    type: str
+
+
+@dataclass
+class Group:
+    name: str
+    type: str
+
+Something = Union[Item, Group]
+
+
+factory = Factory(schemas={
+    Item: Schema(pre_parse=type_checker("item", field="type")),
+    Group: Schema(pre_parse=type_checker("group")),  # `type` is default name for checked field
+})
+
+assert factory.load({"name": "some name", "type": "group"}, Something) == Group("some name")
+```
+
+If you need you own pre_parse function, you can set it as parameter for `type_checker` factory.
+
+For more complex cases you can do any work on parse steps.
+Just raise `ValueError` if you detected that current class is not acceptable for provided data, and parser will go to the next one
+
 #### Schema inheritance  
 
 In some case it is useful not to create instance of Schema, but child class.
@@ -388,9 +430,9 @@ factory.load(1, int)  # prints: parsing done
 
 ## Supported types
 
-* numeric types (`int`, `float`, `Decimal`)
+* numeric types (`int`, `float`, `Decimal`, `complex`)
 * `bool`
-* `str`, `bytearray`
+* `str`, `bytearray`, `bytes`
 * `List`
 * `Tuple`, including something like `Tuple[int, ...]` or `Tuple[int, str, int]`
 * `Dict`
@@ -398,11 +440,12 @@ factory.load(1, int)  # prints: parsing done
 * `Optional`
 * `Any`, using this type no conversion is done during parsing. But serialization is based on real data type
 * `Union`
+* `Literal` types, including variant from `typing_exstensions`
 * `dataclass` 
 * `Generic` dataclasses 
-* `datetime` and `UUID` can be converted using predefind schemas
+* `datetime` and `UUID` can be converted using predefined schemas
 * Custom classes can be parsed automatically using info from their `__init__` method.  
-    Or you can provide custom praser/serializer
+    Or you can provide custom parser/serializer
 
 ## Updating from previous versions
 In versions 1.1+:
@@ -411,9 +454,9 @@ In versions 1.1+:
 * `type_factories`, `name_styles` and `type_serializers` moved to `schemas` dict
     
 In versions <1.1:
-* `dict_factory` used with `asdict` function must be replaced with `Factory`-based seralization as it is much faster
+* `dict_factory` used with `asdict` function must be replaced with `Factory`-based serialization as it is much faster
 
 In versions <1.0:
 * `parse` method must be replaced with `Factory`-based parsing as it much faster
     
-All old methods and classes are still avaiable but are deprecated ant will be removed in future versions
+All old methods and classes are still available but are deprecated and will be removed in future versions
