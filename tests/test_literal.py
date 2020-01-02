@@ -1,4 +1,5 @@
 import sys
+from typing import Any
 from unittest import TestCase
 
 from nose2.tools import params  # type: ignore
