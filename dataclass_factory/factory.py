@@ -14,7 +14,15 @@ DEFAULT_SCHEMA = Schema[Any](
 )
 
 
-class StackedFactory:
+class AbstractFactory:
+    def parser(self, class_: Type):
+        raise NotImplementedError
+
+    def serializer(self, class_: Type):
+        raise NotImplementedError
+
+
+class StackedFactory(AbstractFactory):
     __slots__ = ("stack", "factory")
 
     def __init__(self, factory):
@@ -43,7 +51,7 @@ class StackedFactory:
 T = TypeVar("T")
 
 
-class Factory:
+class Factory(AbstractFactory):
     __slots__ = ("default_schema", "debug_path", "schemas")
 
     def __init__(self,
