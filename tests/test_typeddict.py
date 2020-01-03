@@ -39,7 +39,7 @@ class TestTypedDict(TestCase):
         data = {
             "name": "hello"
         }
-        self.assertRaises(ValueError, factory.load, data, Book)
+        self.assertRaises((ValueError, KeyError), factory.load, data, Book)
 
     @params(*TYPED_DICTS)
     def test_not_total(self, typed_dict):

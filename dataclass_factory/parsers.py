@@ -167,15 +167,21 @@ def get_dataclass_parser(class_: Type[T],
     return dataclass_parser
 
 
-def get_typeddict_parser(class_: Type[T], parsers: Dict[str, Parser], schema: Schema[T]):
-    def parser(data):
-        d = {}
-        for name in class_.__annotations__:
-            if name in data:
-                field_parser = parsers[name]
-                d[name] = field_parser(data[name])
-        return class_(**d)
-
+def get_typed_dict_parser(class_: Type[T], parsers: Dict[str, Parser], schema: Schema[T]):
+    parsers_list = tuple(parsers.items())
+    if class_.__total__:
+        def parser(data):
+            return {
+                name: field_parser(data[name])
+                for name, field_parser in parsers_list
+            }
+    else:
+        def parser(data):
+            return {
+                name: field_parser(data[name])
+                for name, field_parser in parsers_list
+                if name in data
+            }
     return parser
 
 
@@ -300,8 +306,8 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_dict_parser(factory.parser(key_type_arg), factory.parser(value_type_arg))
     if is_typeddict(cls):
         resolved_hints = get_type_hints(cls)
-        parsers = {field: factory.parser(resolved_hints[field]) for field in cls.__annotations__}
-        return get_typeddict_parser(
+        parsers = {field: factory.parser(type_) for field, type_ in resolved_hints.items()}
+        return get_typed_dict_parser(
             cls,
             parsers,
             schema,
