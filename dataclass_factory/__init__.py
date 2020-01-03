@@ -3,7 +3,7 @@
 
 from .compat import parse, ParserFactory, SerializerFactory
 from .dict_factory import dict_factory
-from .factory import Factory
+from .factory import Factory, AbstractFactory
 from .naming import NameStyle
 from .schema import Schema
 
@@ -15,4 +15,5 @@ __all__ = [
     "NameStyle",
     "Schema",
     "Factory",
+    "AbstractFactory",
 ]
