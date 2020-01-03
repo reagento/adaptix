@@ -140,12 +140,20 @@ Schema consists of:
 * `skip_internal` (*by default, True*) - exclude fields with leading underscore (_). Affects fields, that are not specified in `only` and `names_mapping`. 
 * `trim_trainling_underscore` (*by default, True*) - if True, trailing underscore (_) will be removed for all fields except specified in `names_mapping`.
 * `name_style` (*by default, snake_case*) - target field name style. Applied for fields not specified in `names_mapping`.
-* `serializer` - custom function which is used to dump data of type assigned with schema.  
-    Normally it should not be used in default schema  
+* `serializer` - custom function which is used to dump data of type assigned with schema.
+    Normally it should not be used in default schema
     It is also returned from `factory.serializer`
-* `parser` - custom function which is used to load  data of type assigned with schema.  
-    Normally it should not be used in default schema  
-    It is also returned from `factory.parser` 
+* `get_serializer` - custom function which is used to create callable which is used to dump data of type assigned with schema.
+    Function signature: `get_serializer(cls: type, factory: AbstractFactory, debug_path: bool) -> Callable[[T], Any]`.
+    You should remember the diff between `list` and `List` at `cls` arg.
+    Schema can not have `serializer` and `get_serializer` at same time (checked when Factory generate serializer).
+* `parser` - custom function which is used to load data of type assigned with schema.  
+    Normally it should not be used in default schema
+    It is also returned from `factory.parser`
+* `get_parser` - custom function which is used to create callable which is used to load data of type assigned with schema.
+    Function signature: `get_parser(cls_: type, factory: AbstractFactory, debug_path: bool) -> Callable[[Any], T]`.
+    You should remember the diff between `list` and `List` at `cls` arg.
+    Schema can not have `parser` and `get_parser` at same time (checked when Factory generate parser).
 * `pre_parse`, `post_parse`, `pre_serialize`, `post_serialize` - callables that will be used as additional parsing/serializing steps.
 
 Currently only `serializer` and `parser` are supported for non-dataclass types
