@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from .common import AbstractFactory
 from .compat import parse, ParserFactory, SerializerFactory
 from .dict_factory import dict_factory
-from .factory import Factory, AbstractFactory
+from .factory import Factory
 from .naming import NameStyle
 from .schema import Schema
 
