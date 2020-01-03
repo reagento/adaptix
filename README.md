@@ -449,6 +449,7 @@ factory.load(1, int)  # prints: parsing done
 * `Any`, using this type no conversion is done during parsing. But serialization is based on real data type
 * `Union`
 * `Literal` types, including variant from `typing_exstensions`
+* `TypedDict` types with checking of `total`, including variant from `typing_exstensions`
 * `dataclass` 
 * `Generic` dataclasses 
 * `datetime` and `UUID` can be converted using predefined schemas
