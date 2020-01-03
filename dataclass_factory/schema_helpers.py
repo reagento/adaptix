@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from uuid import UUID
 
+from .factory import StackedFactory
 from .common import T
 from .schema import Schema
 
@@ -47,25 +48,13 @@ stub_schema = Schema(
 )
 
 
-def get_cls_check_parser(cls: type, debug_path: bool):
-    def cls_check_parser(data):
-        if isinstance(data, cls):
-            return data
-        raise TypeError(f'Argument must be {cls.__name__}')
+class ClsCheckSchema(Schema[T]):
+    serializer = _stub
 
-    return cls_check_parser
+    def get_parser(self, cls, stacked_factory: StackedFactory, debug_path: bool):
+        def cls_check_parser(data):
+            if isinstance(data, cls):
+                return data
+            raise TypeError(f'Argument must be {cls.__name__}')
 
-
-cls_check_schema = Schema(
-    serializer=_stub,
-    get_parser=get_cls_check_parser,
-)
-
-
-def cls_as_dict_pre_parse(data: Any) -> Dict[str, Any]:
-    return data.__dict__
-
-
-cls_as_dict_schema = Schema(
-    pre_parse=cls_as_dict_pre_parse
-)
+        return cls_check_parser
