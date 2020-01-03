@@ -24,14 +24,14 @@ class Schema(Generic[T]):
             skip_internal: Optional[bool] = None,
 
             serializer: Optional[Serializer[T]] = None,
-            get_serializer: Optional[SerializerGetter] = None,
+            get_serializer: Optional[SerializerGetter[T]] = None,
 
             parser: Optional[Parser[T]] = None,
-            get_parser: Optional[ParserGetter] = None,
+            get_parser: Optional[ParserGetter[T]] = None,
 
             pre_parse: Optional[Callable] = None,
-            post_parse: Optional[InnerConverter] = None,
-            pre_serialize: Optional[InnerConverter] = None,
+            post_parse: Optional[InnerConverter[T]] = None,
+            pre_serialize: Optional[InnerConverter[T]] = None,
             post_serialize: Optional[Callable] = None,
 
             omit_default: Optional[bool] = None,
