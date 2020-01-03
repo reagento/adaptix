@@ -1,7 +1,7 @@
 from copy import copy
 from typing import Dict, Type, Any, Optional, TypeVar
 
-from .common import Serializer, Parser
+from .common import Serializer, Parser, AbstractFactory
 from .parsers import create_parser, get_lazy_parser
 from .schema import Schema, merge_schema
 from .serializers import create_serializer, get_lazy_serializer
@@ -12,14 +12,6 @@ DEFAULT_SCHEMA = Schema[Any](
     skip_internal=True,
     only_mapped=False,
 )
-
-
-class AbstractFactory:
-    def parser(self, class_: Type):
-        raise NotImplementedError
-
-    def serializer(self, class_: Type):
-        raise NotImplementedError
 
 
 class StackedFactory(AbstractFactory):
