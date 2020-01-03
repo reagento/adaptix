@@ -83,7 +83,7 @@ class Factory(AbstractFactory):
             if schema.parser is not None:
                 raise TypeError("Schema can not have parser and get_parser at same time")
             else:
-                schema = copy(schema)
+                schema = copy(schema)  # mypy: ignore
                 schema.parser = schema.get_parser(class_, stacked_factory, self.debug_path)
                 schema.get_parser = None
                 self.schemas[class_] = schema
@@ -102,7 +102,7 @@ class Factory(AbstractFactory):
             if schema.serializer is not None:
                 raise TypeError("Schema can not have serializer and get_serializer at same time")
             else:
-                schema = copy(schema)
+                schema = copy(schema)  # mypy: ignore
                 schema.serializer = schema.get_serializer(class_, stacked_factory, self.debug_path)
                 schema.get_serializer = None
                 self.schemas[class_] = schema
