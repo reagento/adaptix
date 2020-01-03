@@ -7,7 +7,7 @@ from typing import (
 )
 
 LITERAL_TYPES: List[Any] = []
-TYPED_DICT_METAS: Sequence[Any] = []
+TYPED_DICT_METAS_TMP: List[Any] = []
 try:
     from typing import Literal as PyLiteral  # type: ignore
 
@@ -26,18 +26,19 @@ except ImportError:
 try:
     from typing import TypedDict as PyTypedDict  # type: ignore
 
-    TYPED_DICT_METAS.append(type(PyTypedDict))
+    TYPED_DICT_METAS_TMP.append(type(PyTypedDict))
 except ImportError:
     pass
 
 try:
     from typing_extensions import TypedDict as CompatTypedDict  # type: ignore
 
-    TYPED_DICT_METAS.append(type(CompatTypedDict))
+    TYPED_DICT_METAS_TMP.append(type(CompatTypedDict))
 except ImportError:
     pass
 
-TYPED_DICT_METAS = tuple(TYPED_DICT_METAS)
+TYPED_DICT_METAS = tuple(TYPED_DICT_METAS_TMP)
+del TYPED_DICT_METAS_TMP
 
 
 def hasargs(type_, *args) -> bool:
