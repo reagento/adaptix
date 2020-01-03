@@ -1,6 +1,4 @@
 from datetime import datetime
-from typing import Any
-from typing import Dict
 from uuid import UUID
 
 from .factory import StackedFactory
@@ -51,7 +49,7 @@ stub_schema = Schema(
 class ClsCheckSchema(Schema[T]):
     serializer = _stub
 
-    def get_parser(self, cls, stacked_factory: StackedFactory, debug_path: bool):  # mypy: ignore
+    def get_parser(self, cls, stacked_factory: StackedFactory, debug_path: bool):  # type: ignore
         def cls_check_parser(data):
             if isinstance(data, cls):
                 return data
