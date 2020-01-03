@@ -1,7 +1,23 @@
 import inspect
 from enum import Enum
 
-from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic
+from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic, List
+
+LITERAL_TYPES: List[Any] = []
+try:
+    from typing import Literal as PyLiteral  # type: ignore
+
+    LITERAL_TYPES.append(PyLiteral)
+except ImportError:
+    pass
+
+try:
+    CompatLiteral: Any
+    from typing_extensions import Literal as CompatLiteral  # type: ignore
+
+    LITERAL_TYPES.append(CompatLiteral)
+except ImportError:
+    CompatLiteral = None
 
 try:
     from typing import _TypedDictMeta  # type: ignore
@@ -91,6 +107,19 @@ def args_unspecified(cls: Type) -> bool:
             (not cls.__args__ and cls.__parameters__) or
             (cls.__args__ == cls.__parameters__)
     )
+
+
+def is_literal(cls) -> bool:
+    return is_generic_concrete(cls) and cls.__origin__ in LITERAL_TYPES
+
+
+def is_literal36(cls) -> bool:
+    if not CompatLiteral:
+        return False
+    try:
+        return cls == CompatLiteral[cls.__values__]
+    except AttributeError:
+        return False
 
 
 def is_dict(cls) -> bool:

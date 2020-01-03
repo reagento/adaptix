@@ -1,9 +1,9 @@
 from copy import copy
-from dataclasses import fields
+from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union, Any
 
-from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generic, Union
+from dataclasses import Field, MISSING, fields
 
-from .common import Serializer, Parser, T, InnerConverter
+from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle, NAMING_FUNC
 from .path_utils import Path
 
@@ -24,12 +24,19 @@ class Schema(Generic[T]):
             skip_internal: Optional[bool] = None,
 
             serializer: Optional[Serializer[T]] = None,
+            get_serializer: Optional[SerializerGetter[T]] = None,
+
             parser: Optional[Parser[T]] = None,
+            get_parser: Optional[ParserGetter[T]] = None,
+
             pre_parse: Optional[Callable] = None,
             post_parse: Optional[InnerConverter[T]] = None,
             pre_serialize: Optional[InnerConverter[T]] = None,
             post_serialize: Optional[Callable] = None,
+
+            omit_default: Optional[bool] = None,
     ):
+
         if only is not None or not hasattr(self, "only"):
             self.only = only
         if exclude is not None or not hasattr(self, "exclude"):
@@ -48,8 +55,14 @@ class Schema(Generic[T]):
 
         if serializer is not None or not hasattr(self, "serializer"):
             self.serializer = serializer
+        if get_serializer is not None or not hasattr(self, "get_serializer"):
+            self.get_serializer = get_serializer
+
         if parser is not None or not hasattr(self, "parser"):
             self.parser = parser
+        if get_parser is not None or not hasattr(self, "get_parser"):
+            self.get_parser = get_parser
+
         if pre_parse is not None or not hasattr(self, "pre_parse"):
             self.pre_parse = pre_parse
         if post_parse is not None or not hasattr(self, "post_parse"):
@@ -58,6 +71,9 @@ class Schema(Generic[T]):
             self.pre_serialize = pre_serialize
         if post_serialize is not None or not hasattr(self, "post_serialize"):
             self.post_serialize = post_serialize
+
+        if omit_default is not None or not hasattr(self, "omit_default"):
+            self.omit_default = omit_default
 
 
 SCHEMA_FIELDS = [
@@ -69,7 +85,9 @@ SCHEMA_FIELDS = [
     "trim_trailing_underscore",
     "skip_internal",
     "serializer",
+    "get_serializer",
     "parser",
+    "get_parser",
     "pre_parse",
     "post_parse",
     "pre_serialize",
@@ -106,7 +124,16 @@ def convert_name(
     return name
 
 
-def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[str, Union[str, Path]]]:
+def get_default(field: Field, schema: Schema[T]) -> Any:
+    if not schema.omit_default:
+        return MISSING
+    # type ignore because of https://github.com/python/mypy/issues/6910
+    if field.default_factory != MISSING:  # type: ignore
+        return field.default_factory()  # type: ignore
+    return field.default
+
+
+def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[str, Union[str, Path], Any]]:
     only_mapped = schema.only_mapped and schema.only is None
     all_fields = {
         f.name
@@ -114,16 +141,21 @@ def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[s
         if (schema.only is None or f.name in schema.only) and
            (schema.exclude is None or f.name not in schema.exclude)
     }
+    fields_dict = {f.name: f for f in fields(class_)}
     if only_mapped:
         if schema.name_mapping is None:
             raise ValueError("`name_mapping` is None, and `only_mapped` is True")
         return tuple(
-            (k, v)
+            (k, v, get_default(fields_dict[k], schema))
             for k, v in schema.name_mapping.items()
             if k in all_fields
         )
     return tuple(
-        (k, convert_name(k, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore))
+        (
+            k,
+            convert_name(k, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore),
+            get_default(fields_dict[k], schema)
+        )
         for k in all_fields
         if (schema.name_mapping is not None and k in schema.name_mapping) or
         (schema.only is not None and k in schema.only) or
