@@ -167,7 +167,7 @@ def get_dataclass_parser(class_: Type[T],
     return dataclass_parser
 
 
-def get_typed_dict_parser(class_: Type[T], parsers: Dict[str, Parser], schema: Schema[T]):
+def get_typed_dict_parser(class_: Any, parsers: Dict[str, Parser], schema: Schema[T]):
     parsers_list = tuple(parsers.items())
     if class_.__total__:
         def parser(data):
