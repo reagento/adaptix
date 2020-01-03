@@ -143,14 +143,16 @@ Schema consists of:
     Normally it should not be used in default schema
     It is also returned from `factory.serializer`
 * `get_serializer` - custom function which is used to create callable which is used to dump data of type assigned with schema.
-    Function signature: `get_serializer(cls: type, debug_path: bool) -> Callable[[T], Any]`.
-    Schema can not have `serializer` and `get_serializer` at same time (checked when Factory is creating).
+    Function signature: `get_serializer(cls: type, factory: AbstractFactory, debug_path: bool) -> Callable[[T], Any]`.
+    You should remember the diff between `list` and `List` at `cls` arg.
+    Schema can not have `serializer` and `get_serializer` at same time (checked when Factory generate serializer).
 * `parser` - custom function which is used to load data of type assigned with schema.  
     Normally it should not be used in default schema
     It is also returned from `factory.parser`
 * `get_parser` - custom function which is used to create callable which is used to load data of type assigned with schema.
-    Function signature: `get_parser(cls: type, debug_path: bool) -> Callable[[Any], T]`.
-    Schema can not have `parser` and `get_parser` at same time (checked when Factory is creating).
+    Function signature: `get_parser(cls_: type, factory: AbstractFactory, debug_path: bool) -> Callable[[Any], T]`.
+    You should remember the diff between `list` and `List` at `cls` arg.
+    Schema can not have `parser` and `get_parser` at same time (checked when Factory generate parser).
 * `pre_parse`, `post_parse`, `pre_serialize`, `post_serialize` - callables that will be used as additional parsing/serializing steps.
 
 Currently only `serializer` and `parser` are supported for non-dataclass types
