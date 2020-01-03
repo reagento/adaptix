@@ -1,9 +1,13 @@
 import inspect
 from enum import Enum
 
-from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic, List
+from typing import (
+    Collection, Tuple, Optional, Any, Dict, Union, Type,
+    TypeVar, Generic, List, Sequence,
+)
 
 LITERAL_TYPES: List[Any] = []
+TYPED_DICT_METAS: Sequence[Any] = []
 try:
     from typing import Literal as PyLiteral  # type: ignore
 
@@ -20,12 +24,20 @@ except ImportError:
     CompatLiteral = None
 
 try:
-    from typing import _TypedDictMeta  # type: ignore
+    from typing import TypedDict as PyTypedDict  # type: ignore
+
+    TYPED_DICT_METAS.append(type(PyTypedDict))
 except ImportError:
-    try:
-        from mypy_extensions import _TypedDictMeta  # type: ignore
-    except ImportError:
-        _TypedDictMeta = None
+    pass
+
+try:
+    from typing_extensions import TypedDict as CompatTypedDict  # type: ignore
+
+    TYPED_DICT_METAS.append(type(CompatTypedDict))
+except ImportError:
+    pass
+
+TYPED_DICT_METAS = tuple(TYPED_DICT_METAS)
 
 
 def hasargs(type_, *args) -> bool:
@@ -65,10 +77,9 @@ def is_collection(type_) -> bool:
 
 
 def is_typeddict(type_) -> bool:
-    try:
-        return issubclass_safe(type_.__class__, _TypedDictMeta) and type_.__class__ is not None
-    except AttributeError:
+    if not TYPED_DICT_METAS:
         return False
+    return isinstance(type_, TYPED_DICT_METAS)
 
 
 def is_optional(type_) -> bool:

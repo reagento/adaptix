@@ -17,7 +17,7 @@ from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,
     is_generic_concrete, fill_type_args, args_unspecified,
-    is_literal, is_literal36, is_typeddict
+    is_literal, is_literal36, is_typeddict,
 )
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
