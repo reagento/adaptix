@@ -59,16 +59,6 @@ class Factory:
                 for type_, schema in schemas.items()
             })
 
-        for type_, schema in self.schemas.items():
-            if schema.get_parser is not None:
-                if schema.parser is not None:
-                    raise TypeError("Schema can not have parser and get_parser at same time")
-                else:
-                    new_schema = copy(schema)
-                    new_schema.parser = schema.get_parser(type_, debug_path)
-                    new_schema.get_parser = None
-                    self.schemas[type_] = new_schema
-
     def schema(self, class_: Type[T]) -> Schema[T]:
         if is_generic_concrete(class_):
             base_class = class_.__origin__  # type: ignore
@@ -88,6 +78,16 @@ class Factory:
 
     def _parser_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser[T]:
         schema = self.schema(class_)
+
+        if schema.get_parser is not None:
+            if schema.parser is not None:
+                raise TypeError("Schema can not have parser and get_parser at same time")
+            else:
+                schema = copy(schema)
+                schema.parser = schema.get_parser(class_, stacked_factory, self.debug_path)
+                schema.get_parser = None
+                self.schemas[class_] = schema
+
         if not schema.parser:
             schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
         return schema.parser
@@ -97,8 +97,19 @@ class Factory:
 
     def _serializer_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Serializer[T]:
         schema = self.schema(class_)
+
+        if schema.get_serializer is not None:
+            if schema.serializer is not None:
+                raise TypeError("Schema can not have serializer and get_serializer at same time")
+            else:
+                schema = copy(schema)
+                schema.serializer = schema.get_serializer(class_, stacked_factory, self.debug_path)
+                schema.get_serializer = None
+                self.schemas[class_] = schema
+
         if not schema.serializer:
             schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
+
         return schema.serializer
 
     def load(self, data: Any, class_: Type[T]) -> T:

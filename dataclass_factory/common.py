@@ -1,12 +1,18 @@
 from typing import Any, Callable, TypeVar, Type
+from .factory import StackedFactory
 
 T = TypeVar("T")
 K = TypeVar("K")
 
 Serializer = Callable[[T], Any]
-SerializerCreate = Callable[[Type[T], bool], Serializer]
+SerializerGetter = Callable[
+    [Type[T], StackedFactory, bool],
+    Serializer
+]
 
 Parser = Callable[[Any], T]
-ParserCreate = Callable[[Type[T], bool], Parser]
-
+ParserGetter = Callable[
+    [Type[T], StackedFactory, bool],
+    Parser
+]
 InnerConverter = Callable[[T], T]

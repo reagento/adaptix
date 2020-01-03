@@ -3,7 +3,7 @@ from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generi
 
 from dataclasses import Field, MISSING, fields
 
-from .common import Serializer, Parser, T, InnerConverter, ParserCreate, SerializerCreate
+from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle, NAMING_FUNC
 from .path_utils import Path
 
@@ -23,11 +23,11 @@ class Schema(Generic[T]):
             trim_trailing_underscore: Optional[bool] = None,
             skip_internal: Optional[bool] = None,
 
-            serializer: Optional[Serializer] = None,
-            get_serializer: Optional[SerializerCreate] = None,
+            serializer: Optional[Serializer[T]] = None,
+            get_serializer: Optional[SerializerGetter] = None,
 
-            parser: Optional[Parser] = None,
-            get_parser: Optional[ParserCreate] = None,
+            parser: Optional[Parser[T]] = None,
+            get_parser: Optional[ParserGetter] = None,
 
             pre_parse: Optional[Callable] = None,
             post_parse: Optional[InnerConverter] = None,
