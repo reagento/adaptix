@@ -4,7 +4,6 @@ python:
   - "3.8"
   - "3.7"
   - "3.6"
-  - "pypy3"
 script:
   nose2 -v && mypy tests dataclass_factory
 install:
