@@ -1,9 +1,10 @@
-dist: xenial
+dist: bionic
 language: python
 python:
-  - "3.8-dev"
+  - "3.8"
   - "3.7"
   - "3.6"
-script: nose2 -v && mypy tests dataclass_factory
+script:
+  nose2 -v && mypy tests dataclass_factory
 install:
   - pip3 install -r requirements.txt

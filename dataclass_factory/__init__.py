@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from .common import AbstractFactory
 from .compat import parse, ParserFactory, SerializerFactory
 from .dict_factory import dict_factory
 from .factory import Factory
@@ -15,4 +16,5 @@ __all__ = [
     "NameStyle",
     "Schema",
     "Factory",
+    "AbstractFactory",
 ]
