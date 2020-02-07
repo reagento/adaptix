@@ -225,6 +225,8 @@ Following name styles are supported:
 * `upper_snake` (UPPER_SNAKE_CASE)
 * `camel_snake` (Camel_Snake)
 * `dot` (dot.case)
+* `camel_dot` (Camel.Dot)
+* `upper_dot` (UPPER.DOT)
 
 #### Generic classes
 
