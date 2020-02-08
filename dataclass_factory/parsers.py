@@ -2,17 +2,19 @@ import decimal
 import inspect
 import itertools
 from collections import deque
-from dataclasses import fields, is_dataclass
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
     Optional, Tuple, Union, Sequence
 )
 
+from dataclasses import fields, is_dataclass
+
 from .common import Parser, T
+from .complex_types.fields import get_dataclass_fields
 from .exceptions import InvalidFieldError
 from .path_utils import Path
-from .schema import Schema, get_dataclass_fields
+from .schema import Schema
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,

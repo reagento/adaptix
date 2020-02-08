@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from dataclasses import is_dataclass, fields, MISSING
 from marshal import loads, dumps
 from operator import attrgetter
-
 from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
+from dataclasses import is_dataclass, fields, MISSING
+
 from .common import Serializer, T, K
+from .complex_types.fields import get_dataclass_fields
 from .path_utils import init_structure, Path
-from .schema import Schema, get_dataclass_fields
+from .schema import Schema
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
     is_union, is_any, is_generic_concrete, is_type_var,
