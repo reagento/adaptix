@@ -1,5 +1,4 @@
 import decimal
-import itertools
 from collections import deque
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
@@ -21,6 +20,19 @@ from .type_detection import (
     is_generic_concrete)
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
+
+
+def get_element_parser(parser: Parser[T], key: Any) -> T:
+    def element_parser(data: Any) -> T:
+        try:
+            return parser(data)
+        except InvalidFieldError as e:
+            e._append_path(str(key))
+            raise
+        except PARSER_EXCEPTIONS as e:
+            raise InvalidFieldError(str(e), [str(key)])
+
+    return element_parser
 
 
 def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
@@ -86,15 +98,13 @@ tuple_any_parser = tuple
 
 def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser[Tuple]:
     if debug_path:
-        def tuple_parser(data):
-            if len(data) != len(parsers):
-                raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
-            return tuple(element_parser(parser, x, i) for x, parser, i in zip(data, parsers, itertools.count()))
-    else:
-        def tuple_parser(data):
-            if len(data) != len(parsers):
-                raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
-            return tuple(parser(x) for x, parser in zip(data, parsers))
+        parsers = [get_element_parser(parser, i) for i, parser in enumerate(parsers)]
+
+    def tuple_parser(data):
+        if len(data) != len(parsers):
+            raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
+        return tuple(parser(x) for x, parser in zip(data, parsers))
+
     return tuple_parser
 
 
@@ -130,41 +140,33 @@ def get_complex_parser(class_: Type[T],
     )
 
     list_mode = any(isinstance(name, int) for _, name, _ in field_info)
-
+    field_info = tuple(
+        (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
+        for f in fields
+    )
     if debug_path:
-        if list_mode:
-            def dataclass_parser(data):
-                count = len(data)
-                return class_(**{
-                    field_name: element_parser(parser, data[item_idx], field_name)
-                    for field_name, item_idx, parser in field_info
-                    if item_idx < count
-                })
-        else:
-            def dataclass_parser(data):
-                return class_(**{
-                    field_name: element_parser(parser, data[name], field_name)
-                    for field_name, name, parser in field_info
-                    if name in data
-                })
-    else:
-        if list_mode:
-            def dataclass_parser(data):
-                count = len(data)
-                return class_(**{
-                    field_name: parser(data[item_idx])
-                    for field_name, item_idx, parser in field_info
-                    if item_idx < count
-                })
-        else:
-            def dataclass_parser(data):
-                return class_(**{
-                    field_name: parser(data[item_name])
-                    for field_name, item_name, parser in field_info
-                    if item_name in data
-                })
+        field_info = tuple(
+            (field_name, data_name, get_element_parser(parser, field_name))
+            for field_name, data_name, parser in field_info
+        )
 
-    return dataclass_parser
+    if list_mode:
+        def complex_parser(data):
+            count = len(data)
+            return class_(**{
+                field_name: parser(data[item_idx])
+                for field_name, item_idx, parser in field_info
+                if item_idx < count
+            })
+    else:
+        def complex_parser(data):
+            return class_(**{
+                field_name: parser(data[item_name])
+                for field_name, item_name, parser in field_info
+                if item_name in data
+            })
+
+    return complex_parser
 
 
 def get_typed_dict_parser(class_: Type,

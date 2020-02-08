@@ -48,6 +48,14 @@ factory = Factory(schemas={
 })
 parser = factory.parser(List[Todo])
 
+# my debug
+factory_debug = Factory(schemas={
+    Todo: DSchema(
+        name_mapping={"desc": "description"}
+    )
+}, debug_path=True)
+parser_debug = factory_debug.parser(List[Todo])
+
 
 # pydantic
 class PydTodo(BaseModel):
@@ -77,6 +85,10 @@ def do1():
     return parser(todos)
 
 
+def do1_debug():
+    return parser_debug(todos)
+
+
 def do2():
     return todo_schema.load(todos)
 
@@ -91,7 +103,8 @@ def do4():
 
 assert do1() == do2()
 
-print("my       ", timeit("do()", globals={"do": do1}, number=100000))  # 1.6099195899987535
-print("mashumaro", timeit("do()", globals={"do": do4}, number=100000))  # 1.3904066249997413
-print("marsh    ", timeit("do()", globals={"do": do2}, number=100000))  # 18.798911712001427
-print("mpydantic", timeit("do()", globals={"do": do3}, number=100000))  # 6.867118302001472
+print("my       ", timeit("do()", globals={"do": do1}, number=100000))  # 1.5959172130096704
+print("my debug ", timeit("do()", globals={"do": do1_debug}, number=100000))  # 2.087571810989175
+print("mashumaro", timeit("do()", globals={"do": do4}, number=100000))  # 1.459100882988423
+print("marsh    ", timeit("do()", globals={"do": do2}, number=100000))  # 21.77947078004945
+print("mpydantic", timeit("do()", globals={"do": do3}, number=100000))  # 7.471431287995074
