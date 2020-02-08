@@ -27,6 +27,10 @@ class TestParser(TestCase):
         self.assertFalse(is_snake_case('A_1_'))
         self.assertFalse(is_snake_case('Aa_1_'))
 
+        self.assertTrue(is_snake_case('_1_'))
+        self.assertTrue(is_snake_case('_1_'))
+        self.assertTrue(is_snake_case('_1_2'))
+
     def assert_convert(self, name_style: NameStyle, snake_name: str, result_name: str):
         self.assertEqual(result_name, convert_name(snake_name, name_style, None, True))
 

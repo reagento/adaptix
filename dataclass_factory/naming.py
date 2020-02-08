@@ -10,7 +10,7 @@ def split_by_underscore(s: str) -> List[str]:
 
 
 def is_snake_case(name: str) -> bool:
-    return name.islower()
+    return name.lower() == name
 
 
 def snake(snake_name):
