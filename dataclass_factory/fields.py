@@ -7,6 +7,7 @@ from dataclasses import Field, MISSING, fields, dataclass
 from .generics import resolve_hints, resolve_init_hints
 from .schema import Schema, convert_name, Path
 from .type_detection import is_generic_concrete
+
 T = TypeVar("T")
 
 
@@ -128,6 +129,14 @@ def get_fields(
     )
 
 
-#
+# wrappers
 def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
     return get_fields(all_dataclass_fields, schema, class_)
+
+
+def get_typeddict_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
+    return get_fields(all_typeddict_fields, schema, class_)
+
+
+def get_class_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
+    return get_fields(all_class_fields, schema, class_)
