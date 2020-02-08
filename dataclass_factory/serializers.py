@@ -13,8 +13,9 @@ from .schema import Schema
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
     is_union, is_any, is_generic_concrete, is_type_var,
-    fill_type_args, is_enum,
+    is_enum,
 )
+from .generics import fill_type_args
 
 
 def to_tuple(key: Union[str, Path]) -> Path:
@@ -42,8 +43,8 @@ def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) ->
             return container
     else:
         field_info = tuple(
-            (name, item, serializers[name], default)
-            for name, item, default in get_dataclass_fields(schema, class_)
+            (f.field_name, f.data_name, serializers[f.field_name], f.default)
+            for f in get_dataclass_fields(schema, class_)
         )
         has_default = any(f[3] != MISSING for f in field_info)
         if has_default:

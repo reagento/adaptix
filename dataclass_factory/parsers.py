@@ -8,17 +8,17 @@ from typing import (
     Optional, Tuple, Union, Sequence
 )
 
-from dataclasses import fields, is_dataclass
+from dataclasses import is_dataclass
 
-from .common import Parser, T
 from dataclass_factory.fields import get_dataclass_fields
+from .common import Parser, T, AbstractFactory
 from .exceptions import InvalidFieldError
 from .path_utils import Path
 from .schema import Schema
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,
-    is_generic_concrete, fill_type_args, args_unspecified,
+    args_unspecified,
     is_literal, is_literal36, is_typeddict,
 )
 
@@ -123,12 +123,13 @@ def get_field_parser(item: Union[str, int, Path], parser: Parser[T]) -> Tuple[Un
 
 
 def get_dataclass_parser(class_: Type[T],
-                         parsers: Dict[str, Parser],
+                         factory: AbstractFactory,
                          schema: Schema[T],
                          debug_path: bool, ) -> Parser[T]:
+    fields = get_dataclass_fields(schema, class_)
     field_info = tuple(
-        (field_name, *get_field_parser(item, parsers[field_name]))
-        for field_name, item, default in get_dataclass_fields(schema, class_)
+        (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
+        for f in get_dataclass_fields(schema, class_)
     )
 
     list_mode = any(isinstance(name, int) for _, name, _ in field_info)
@@ -324,28 +325,10 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
-    if is_generic_concrete(cls) and is_dataclass(cls.__origin__):
-        args = dict(zip(cls.__origin__.__parameters__, cls.__args__))
-        resolved_hints = get_type_hints(cls.__origin__)
-        parsers = {
-            field.name: factory.parser(fill_type_args(args, resolved_hints[field.name]))
-            for field in fields(cls.__origin__)
-        }
-        return get_dataclass_parser(
-            cls.__origin__,
-            parsers,
-            schema,
-            debug_path,
-        )
     if is_dataclass(cls):
-        resolved_hints = get_type_hints(cls)
-        parsers = {
-            field.name: factory.parser(resolved_hints[field.name])
-            for field in fields(cls)
-        }
         return get_dataclass_parser(
             cls,
-            parsers,
+            factory,
             schema,
             debug_path,
         )

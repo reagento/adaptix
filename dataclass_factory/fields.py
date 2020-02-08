@@ -1,8 +1,8 @@
 import inspect
 from functools import partial
-from typing import Sequence, Any, Type, TypeVar, NamedTuple, Callable, List, Dict
+from typing import Sequence, Any, Type, TypeVar, Callable, List, Dict
 
-from dataclasses import Field, MISSING, fields
+from dataclasses import Field, MISSING, fields, dataclass
 
 from .generics import resolve_hints, resolve_init_hints
 from .schema import Schema, convert_name
@@ -10,12 +10,14 @@ from .schema import Schema, convert_name
 T = TypeVar("T")
 
 
-class BaseFieldInfo(NamedTuple):
+@dataclass
+class BaseFieldInfo:
     field_name: str
     type: Any
     default: Any
 
 
+@dataclass
 class FieldInfo(BaseFieldInfo):
     data_name: str
 
@@ -112,13 +114,13 @@ def get_fields(
     whitelisted_fields = set(schema.only or []) | set(schema.name_mapping or [])
     return tuple(
         FieldInfo(
-            field_name=field_name,
-            data_name=convert_name(field_name, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore),
-            type=type,
-            default=default,
+            field_name=f.field_name,
+            data_name=convert_name(f.field_name, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore),
+            type=f.type,
+            default=f.default,
         )
-        for field_name, type, default in all_fields
-        if (not schema.skip_internal) or (field_name in whitelisted_fields) or (not field_name.startswith("_"))
+        for f in all_fields
+        if (not schema.skip_internal) or (f.field_name in whitelisted_fields) or (not f.field_name.startswith("_"))
     )
 
 
