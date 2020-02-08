@@ -98,7 +98,7 @@ def is_any(type_: Type) -> bool:
 
 
 def is_generic_concrete(type_: Type) -> bool:
-    return hasattr(type_, "__origin__")
+    return getattr(type_, "__origin__", None) is not None
 
 
 def is_generic(type_: Type) -> bool:
