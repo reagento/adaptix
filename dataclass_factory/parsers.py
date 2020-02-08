@@ -11,7 +11,7 @@ from typing import (
 from dataclasses import fields, is_dataclass
 
 from .common import Parser, T
-from .complex_types.fields import get_dataclass_fields
+from dataclass_factory.fields import get_dataclass_fields
 from .exceptions import InvalidFieldError
 from .path_utils import Path
 from .schema import Schema

@@ -144,13 +144,3 @@ def is_dict(cls) -> bool:
 
 def is_type_var(type_: Type) -> bool:
     return type(type_) is TypeVar
-
-
-def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
-    type_ = args.get(type_, type_)
-    if is_generic_concrete(type_):
-        type_args = tuple(
-            args.get(a, a) for a in type_.__args__
-        )
-        type_ = type_.__origin__[type_args]
-    return type_

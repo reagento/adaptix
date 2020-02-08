@@ -1,19 +1,26 @@
 import inspect
 from functools import partial
-from typing import Sequence, Tuple, Union, Any, Type, TypeVar, NamedTuple, Callable, List, get_type_hints
+from typing import Sequence, Any, Type, TypeVar, NamedTuple, Callable, List, Dict
 
 from dataclasses import Field, MISSING, fields
 
-from ..schema import Schema, Path, convert_name
+from .generics import resolve_hints
+from .schema import Schema, convert_name
 
 T = TypeVar("T")
 
 
-class FieldInfo(NamedTuple):
+class BaseFieldInfo(NamedTuple):
     field_name: str
-    data_name: str
+    type: Any
     default: Any
 
+
+class FieldInfo(BaseFieldInfo):
+    data_name: str
+
+
+# defaults
 
 def get_dataclass_default(field: Field, omit_default: bool) -> Any:
     if not omit_default:
@@ -37,29 +44,31 @@ def get_func_default(paramter: inspect.Parameter, omit_default: bool) -> Any:
 FilterFunc = Callable[[str], bool]
 
 
-def all_dataclass_fields(cls, omit_default: bool, filter_func: FilterFunc = None) -> List[Tuple[str, Any]]:
+def all_dataclass_fields(cls, omit_default: bool, filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
     all_fields = fields(cls)
+    hints = resolve_hints(cls)
     return [
-        (f.name, get_dataclass_default(f, omit_default))
+        BaseFieldInfo(field_name=f.name, type=hints[f.name], default=get_dataclass_default(f, omit_default))
         for f in all_fields
         if not filter_func or filter_func(f.name)
     ]
 
 
-def all_class_fields(cls, omit_default: bool, filter_func: FilterFunc = None) -> List[Tuple[str, Any]]:
+def all_class_fields(cls, omit_default: bool, filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
     all_fields = inspect.signature(cls.__init__).parameters
+    hints = resolve_hints(cls.__init__)
     return [
-        (f.name, get_func_default(f, omit_default))
-        for f in all_fields
+        BaseFieldInfo(field_name=f.name, type=hints.get(f.name, Any), default=get_func_default(f, omit_default))
+        for f in all_fields.values()
         if not filter_func or filter_func(f.name)
     ]
 
 
-def all_typeddict_fields(cls, omit_default: bool, filter_func: FilterFunc = None) -> List[Tuple[str, Any]]:
-    all_fields = get_type_hints(cls)
+def all_typeddict_fields(cls, omit_default: bool, filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
+    all_fields = resolve_hints(cls)
     return [
-        (f, MISSING)
-        for f in all_fields
+        BaseFieldInfo(field_name=f, type=t, default=MISSING)
+        for f, t in all_fields.items()
         if not filter_func or filter_func(f)
     ]
 
@@ -74,29 +83,30 @@ def filter_func(schema: Schema, name: str):
             (schema.exclude is None or name not in schema.exclude))
 
 
-AllFieldsGetter = Callable[[Any, bool, FilterFunc], List[Tuple[str, Any]]]
+AllFieldsGetter = Callable[[Any, bool, FilterFunc], List[BaseFieldInfo]]
 
 
 def get_fields(
         all_fields_getter: AllFieldsGetter,
         schema: Schema[T],
         class_: Type[T]
-) -> Sequence[Tuple[str, Union[str, Path], Any]]:
+) -> Sequence[FieldInfo]:
     partial_filter_func: FilterFunc = partial(filter_func, schema)  # type: ignore
     all_fields = all_fields_getter(class_, schema.omit_default, partial_filter_func)
     only_mapped = schema.only_mapped and schema.only is None
     if only_mapped:
         if schema.name_mapping is None:
             raise ValueError("`name_mapping` is None, and `only_mapped` is True")
-        defaults = dict(all_fields)
+        fields: Dict[str, BaseFieldInfo] = {f.field_name: f for f in all_fields}
         return tuple(
             FieldInfo(
                 field_name=field_name,
                 data_name=data_name,
-                default=defaults[field_name]
+                type=fields[field_name].type,
+                default=fields[field_name].default,
             )
             for field_name, data_name in schema.name_mapping.items()
-            if field_name in defaults
+            if field_name in fields
         )
 
     whitelisted_fields = set(schema.only or []) | set(schema.name_mapping or [])
@@ -104,13 +114,14 @@ def get_fields(
         FieldInfo(
             field_name=field_name,
             data_name=convert_name(field_name, schema.name_style, schema.name_mapping, schema.trim_trailing_underscore),
-            default=default
+            type=type,
+            default=default,
         )
-        for field_name, default in all_fields
+        for field_name, type, default in all_fields
         if (not schema.skip_internal) or (field_name in whitelisted_fields) or (not field_name.startswith("_"))
     )
 
 
 #
-def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[Tuple[str, Union[str, Path], Any]]:
+def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
     return get_fields(all_dataclass_fields, schema, class_)

@@ -7,7 +7,7 @@ from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 from dataclasses import is_dataclass, fields, MISSING
 
 from .common import Serializer, T, K
-from .complex_types.fields import get_dataclass_fields
+from dataclass_factory.fields import get_dataclass_fields
 from .path_utils import init_structure, Path
 from .schema import Schema
 from .type_detection import (
