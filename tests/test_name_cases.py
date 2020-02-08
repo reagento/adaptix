@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from unittest import TestCase
 
 from dataclass_factory import ParserFactory, NameStyle, SerializerFactory
-from dataclass_factory.naming import convert_name
+from dataclass_factory.naming import convert_name, is_snake_case
 
 
 @dataclass
@@ -14,7 +14,20 @@ class Data:
 
 
 class TestParser(TestCase):
-    def do_test_convert(self, name_style: NameStyle, snake_name: str, result_name: str):
+    def test_snake_check(self):
+        self.assertTrue(is_snake_case('a_x'))
+        self.assertTrue(is_snake_case('a_'))
+        self.assertTrue(is_snake_case('a_x_'))
+        self.assertTrue(is_snake_case('a_1'))
+        self.assertTrue(is_snake_case('a_1_'))
+
+        self.assertTrue(is_snake_case('3_1'))
+        self.assertTrue(is_snake_case('3_1_'))
+
+        self.assertFalse(is_snake_case('A_1_'))
+        self.assertFalse(is_snake_case('Aa_1_'))
+
+    def assert_convert(self, name_style: NameStyle, snake_name: str, result_name: str):
         self.assertEqual(result_name, convert_name(snake_name, name_style, None, True))
 
     def do_case_test(self, name_style: NameStyle, *, styled_name: str, trailed: str):
@@ -23,8 +36,8 @@ class TestParser(TestCase):
             trailed: 2,
         }
 
-        self.do_test_convert(name_style, 'styled_name', styled_name)
-        self.do_test_convert(name_style, 'trailed_name_', trailed)
+        self.assert_convert(name_style, 'styled_name', styled_name)
+        self.assert_convert(name_style, 'trailed_name_', trailed)
 
         with self.assertRaises(ValueError):
             convert_name('BadSnakeName', name_style, None, True)
