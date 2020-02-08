@@ -1,13 +1,13 @@
 import decimal
 import inspect
+import itertools
 from collections import deque
 from dataclasses import fields, is_dataclass
-
-import itertools
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Dict, Collection, Type, get_type_hints,
-    Optional, Tuple, Union)
+    Optional, Tuple, Union, Sequence
+)
 
 from .common import Parser, T
 from .exceptions import InvalidFieldError
@@ -17,6 +17,7 @@ from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,
     is_generic_concrete, fill_type_args, args_unspecified,
+    is_literal, is_literal36, is_typeddict,
 )
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
@@ -166,6 +167,24 @@ def get_dataclass_parser(class_: Type[T],
     return dataclass_parser
 
 
+def get_typed_dict_parser(class_: Any, parsers: Dict[str, Parser], schema: Schema[T]):
+    parsers_list = tuple(parsers.items())
+    if class_.__total__:
+        def parser(data):
+            return {
+                name: field_parser(data[name])
+                for name, field_parser in parsers_list
+            }
+    else:
+        def parser(data):
+            return {
+                name: field_parser(data[name])
+                for name, field_parser in parsers_list
+                if name in data
+            }
+    return parser
+
+
 def get_optional_parser(parser: Parser[T]) -> Parser[Optional[T]]:
     def optional_parser(data):
         return parser(data) if data is not None else None
@@ -215,6 +234,16 @@ def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Par
     return class_parser
 
 
+def get_literal_parser(factory, values: Sequence[Any]) -> Parser:
+    def literal_parser(data: Any):
+        for v in values:
+            if (type(v), v) == (type(data), data):
+                return data
+        raise ValueError("Invalid literal data")
+
+    return literal_parser
+
+
 def get_lazy_parser(factory, class_: Type) -> Parser:
     # return partial(factory.load, class_=class_)
     def lazy_parser(data):
@@ -245,6 +274,10 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return parse_stub
     if is_none(cls):
         return parse_none
+    if is_literal(cls):
+        return get_literal_parser(factory, cls.__args__)
+    if is_literal36(cls):
+        return get_literal_parser(factory, cls.__values__)
     if is_optional(cls):
         return get_optional_parser(factory.parser(cls.__args__[0]))
     if cls in (str, bytearray, bytes):
@@ -271,6 +304,14 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             key_type_arg = cls.__args__[0]
             value_type_arg = cls.__args__[1]
         return get_dict_parser(factory.parser(key_type_arg), factory.parser(value_type_arg))
+    if is_typeddict(cls):
+        resolved_hints = get_type_hints(cls)
+        parsers = {field: factory.parser(type_) for field, type_ in resolved_hints.items()}
+        return get_typed_dict_parser(
+            cls,
+            parsers,
+            schema,
+        )
     if is_collection(cls):
         if args_unspecified(cls):
             value_type_arg = Any

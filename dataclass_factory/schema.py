@@ -3,7 +3,7 @@ from typing import List, Dict, Callable, Tuple, Type, Sequence, Optional, Generi
 
 from dataclasses import Field, MISSING, fields
 
-from .common import Serializer, Parser, T, InnerConverter
+from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle, convert_name
 from .path_utils import Path
 
@@ -24,7 +24,11 @@ class Schema(Generic[T]):
             skip_internal: Optional[bool] = None,
 
             serializer: Optional[Serializer[T]] = None,
+            get_serializer: Optional[SerializerGetter[T]] = None,
+
             parser: Optional[Parser[T]] = None,
+            get_parser: Optional[ParserGetter[T]] = None,
+
             pre_parse: Optional[Callable] = None,
             post_parse: Optional[InnerConverter[T]] = None,
             pre_serialize: Optional[InnerConverter[T]] = None,
@@ -32,6 +36,7 @@ class Schema(Generic[T]):
 
             omit_default: Optional[bool] = None,
     ):
+
         if only is not None or not hasattr(self, "only"):
             self.only = only
         if exclude is not None or not hasattr(self, "exclude"):
@@ -50,8 +55,14 @@ class Schema(Generic[T]):
 
         if serializer is not None or not hasattr(self, "serializer"):
             self.serializer = serializer
+        if get_serializer is not None or not hasattr(self, "get_serializer"):
+            self.get_serializer = get_serializer
+
         if parser is not None or not hasattr(self, "parser"):
             self.parser = parser
+        if get_parser is not None or not hasattr(self, "get_parser"):
+            self.get_parser = get_parser
+
         if pre_parse is not None or not hasattr(self, "pre_parse"):
             self.pre_parse = pre_parse
         if post_parse is not None or not hasattr(self, "post_parse"):
@@ -74,7 +85,9 @@ SCHEMA_FIELDS = [
     "trim_trailing_underscore",
     "skip_internal",
     "serializer",
+    "get_serializer",
     "parser",
+    "get_parser",
     "pre_parse",
     "post_parse",
     "pre_serialize",

@@ -1,7 +1,44 @@
 import inspect
 from enum import Enum
 
-from typing import Collection, Tuple, Optional, Any, Dict, Union, Type, TypeVar, Generic
+from typing import (
+    Collection, Tuple, Optional, Any, Dict, Union, Type,
+    TypeVar, Generic, List, Sequence,
+)
+
+LITERAL_TYPES: List[Any] = []
+TYPED_DICT_METAS_TMP: List[Any] = []
+try:
+    from typing import Literal as PyLiteral  # type: ignore
+
+    LITERAL_TYPES.append(PyLiteral)
+except ImportError:
+    pass
+
+try:
+    CompatLiteral: Any
+    from typing_extensions import Literal as CompatLiteral  # type: ignore
+
+    LITERAL_TYPES.append(CompatLiteral)
+except ImportError:
+    CompatLiteral = None
+
+try:
+    from typing import TypedDict as PyTypedDict  # type: ignore
+
+    TYPED_DICT_METAS_TMP.append(type(PyTypedDict))
+except ImportError:
+    pass
+
+try:
+    from typing_extensions import TypedDict as CompatTypedDict  # type: ignore
+
+    TYPED_DICT_METAS_TMP.append(type(CompatTypedDict))
+except ImportError:
+    pass
+
+TYPED_DICT_METAS = tuple(TYPED_DICT_METAS_TMP)
+del TYPED_DICT_METAS_TMP
 
 
 def hasargs(type_, *args) -> bool:
@@ -40,6 +77,12 @@ def is_collection(type_) -> bool:
         return False
 
 
+def is_typeddict(type_) -> bool:
+    if not TYPED_DICT_METAS:
+        return False
+    return isinstance(type_, TYPED_DICT_METAS)
+
+
 def is_optional(type_) -> bool:
     return issubclass_safe(type_, Optional)
 
@@ -76,6 +119,19 @@ def args_unspecified(cls: Type) -> bool:
             (not cls.__args__ and cls.__parameters__) or
             (cls.__args__ == cls.__parameters__)
     )
+
+
+def is_literal(cls) -> bool:
+    return is_generic_concrete(cls) and cls.__origin__ in LITERAL_TYPES
+
+
+def is_literal36(cls) -> bool:
+    if not CompatLiteral:
+        return False
+    try:
+        return cls == CompatLiteral[cls.__values__]
+    except AttributeError:
+        return False
 
 
 def is_dict(cls) -> bool:
