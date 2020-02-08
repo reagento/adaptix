@@ -22,7 +22,7 @@ from .type_detection import (
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
 
 
-def get_element_parser(parser: Parser[T], key: Any) -> T:
+def get_element_parser(parser: Parser[T], key: Any) -> Parser[T]:
     def element_parser(data: Any) -> T:
         try:
             return parser(data)
