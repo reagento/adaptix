@@ -2,7 +2,7 @@ from copy import copy
 from typing import List, Dict, Callable, Tuple, Optional, Generic, Union
 
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
-from .naming import NameStyle, NAMING_FUNC
+from .naming import NameStyle
 from .path_utils import Path
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
@@ -105,18 +105,3 @@ def merge_schema(schema: Optional[Schema], default: Optional[Schema]) -> Schema:
         if getattr(schema, k) is None:
             setattr(schema, k, getattr(default, k))
     return schema
-
-
-def convert_name(
-        name: str,
-        name_style: Optional[NameStyle],
-        name_mapping: Optional[Dict[str, Union[str, Path]]],
-        trim_trailing_underscore: Optional[bool]
-) -> Union[str, Path]:
-    if name_mapping and name in name_mapping:
-        return name_mapping[name]
-    if trim_trailing_underscore:
-        name = name.rstrip("_")
-    if name_style:
-        name = NAMING_FUNC[name_style](name)
-    return name

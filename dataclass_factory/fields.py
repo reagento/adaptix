@@ -5,7 +5,8 @@ from typing import Sequence, Any, Type, TypeVar, Callable, List, Dict, Union, Op
 from dataclasses import Field, MISSING, fields, dataclass
 
 from .generics import resolve_hints, resolve_init_hints
-from .schema import Schema, convert_name, Path
+from .schema import Schema, Path
+from .naming import convert_name
 from .type_detection import is_generic_concrete
 
 T = TypeVar("T")

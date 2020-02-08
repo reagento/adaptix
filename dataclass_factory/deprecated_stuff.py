@@ -1,11 +1,42 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from typing import Dict, Any, Callable, Type
+import warnings
+from enum import Enum
+from typing import Dict, Callable, Type, Any
 
 from .common import Parser, Serializer
-from .factory import Factory
 from .naming import NameStyle
 from .schema import Schema
+from .factory import Factory
+
+
+def dict_factory(trim_trailing_underscore=True, skip_none=False, skip_internal=False,
+                 type_serializers: Dict[type, Callable] = None):
+    """
+    Формируем словарь с данными из dataclass со следующими ограничениями:
+      1. Пропускаем все элементы, которые назваются с первого символа `_` - это внутренние свойства
+      2. отрезаем конечный символ `_`, так как он используется только для исключения конфликта
+          с ключевыми словами и встроенными функциями python
+      3. Пропускаются None значения
+    """
+    warnings.warn("this function is deprecated",
+                  DeprecationWarning,
+                  stacklevel=2)
+
+    def impl(data):
+        return {
+            (k.rstrip("_") if trim_trailing_underscore else k): _prepare_value(v, type_serializers=type_serializers)
+            for k, v in data
+            if not (k.startswith("_") and skip_internal) and (v is not None or not skip_none)
+        }
+
+    return impl
+
+
+def _prepare_value(value, type_serializers: Dict[type, Callable] = None):
+    if type_serializers and (type(value)) in type_serializers:
+        return type_serializers[type(value)](value)
+    if isinstance(value, Enum):
+        return value.value
+    return value
 
 
 class ParserFactory:
@@ -16,6 +47,10 @@ class ParserFactory:
             type_factories: Dict[Type, Parser] = None,
             name_styles: Dict[Type, NameStyle] = None,
     ):
+        warnings.warn("this class is deprecated",
+                      DeprecationWarning,
+                      stacklevel=2)
+
         if type_factories is None:
             type_factories = {}
         if name_styles is None:
@@ -48,6 +83,10 @@ class SerializerFactory:
                  type_serializers: Dict[Type, Serializer] = None,
                  name_styles: Dict[Type, NameStyle] = None,
                  ):
+        warnings.warn("this class is deprecated",
+                      DeprecationWarning,
+                      stacklevel=2)
+
         if type_serializers is None:
             type_serializers = {}
         if name_styles is None:
@@ -79,6 +118,10 @@ def parse(
         trim_trailing_underscore: bool = True,
         type_factories: Dict[Any, Callable] = None,
 ):
+    warnings.warn("this function is deprecated",
+                  DeprecationWarning,
+                  stacklevel=2)
+
     return ParserFactory(
         trim_trailing_underscore=trim_trailing_underscore,
         debug_path=True,
