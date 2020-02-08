@@ -167,10 +167,10 @@ def get_complex_parser(class_: Type[T],
     return dataclass_parser
 
 
-def get_typed_dict_parser(class_: Type[T],
+def get_typed_dict_parser(class_: Type,
                           factory: AbstractFactory,
                           fields: Sequence[FieldInfo],
-                          debug_path: bool, ) -> Parser[T]:
+                          debug_path: bool, ) -> Parser:
     complex_parser = get_complex_parser(class_, factory, fields, debug_path)
     requires_fieds = set(f.field_name for f in fields)
     if class_.__total__:
