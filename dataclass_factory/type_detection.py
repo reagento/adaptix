@@ -3,8 +3,7 @@ from enum import Enum
 
 from typing import (
     Collection, Tuple, Optional, Any, Dict, Union, Type,
-    TypeVar, Generic, List, Sequence,
-)
+    TypeVar, Generic, List, )
 
 LITERAL_TYPES: List[Any] = []
 TYPED_DICT_METAS_TMP: List[Any] = []

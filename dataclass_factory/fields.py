@@ -4,7 +4,7 @@ from typing import Sequence, Any, Type, TypeVar, NamedTuple, Callable, List, Dic
 
 from dataclasses import Field, MISSING, fields
 
-from .generics import resolve_hints
+from .generics import resolve_hints, resolve_init_hints
 from .schema import Schema, convert_name
 
 T = TypeVar("T")
@@ -56,7 +56,7 @@ def all_dataclass_fields(cls, omit_default: bool, filter_func: FilterFunc = None
 
 def all_class_fields(cls, omit_default: bool, filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
     all_fields = inspect.signature(cls.__init__).parameters
-    hints = resolve_hints(cls.__init__)
+    hints = resolve_init_hints(cls)
     return [
         BaseFieldInfo(field_name=f.name, type=hints.get(f.name, Any), default=get_func_default(f, omit_default))
         for f in all_fields.values()
