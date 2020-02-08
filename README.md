@@ -192,7 +192,7 @@ factory = Factory(
 
 #### Name styles
 
-You have to follow PEP8 convention for fields names (snake_case) or style conversion wil not work appropriately
+You have to follow PEP8 convention for fields names (snake_case) or style conversion will not work (`ValueError`)
 
 ```python
 factory = Factory(default_schema=Schema(

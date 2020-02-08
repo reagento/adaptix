@@ -5,12 +5,20 @@ from typing import List, Optional, Dict, Union
 from .path_utils import Path
 
 
-def split_by_underscore(name: str) -> List[str]:
-    return name.split("_")
+def split_by_underscore(s: str) -> List[str]:
+    return s.split("_")
+
+
+def is_snake_case(name: str) -> bool:
+    return all(not x or x.islower() for x in split_by_underscore(name))
 
 
 def snake(snake_name):
     return snake_name
+
+
+def upper_snake(snake_name):
+    return snake_name.upper()
 
 
 def kebab(snake_name):
@@ -23,10 +31,6 @@ def lower(snake_name: str):
 
 def upper(snake_name):
     return snake_name.replace("_", "").upper()
-
-
-def upper_snake(snake_name):
-    return snake_name.upper()
 
 
 def camel_lower(snake_name):
@@ -43,7 +47,7 @@ def camel_snake(snake_name):
 
 
 def dot(snake_name):
-    return ".".join(split_by_underscore(snake_name))
+    return ".".join(split_by_underscore(snake_name)).lower()
 
 
 def camel_dot(snake_name):
@@ -68,7 +72,7 @@ class NameStyle(Enum):
     upper_dot = "UPPER.DOT"
 
 
-NAMING_FUNC = {
+CONVERTING_FUNC = {
     NameStyle.snake: snake,
     NameStyle.kebab: kebab,
     NameStyle.camel_lower: camel_lower,
@@ -91,8 +95,10 @@ def convert_name(
 ) -> Union[str, Path]:
     if name_mapping and name in name_mapping:
         return name_mapping[name]
+    if not is_snake_case(name):
+        raise ValueError("can not convert python name that not follow snake_case")
     if trim_trailing_underscore:
         name = name.rstrip("_")
     if name_style:
-        name = NAMING_FUNC[name_style](name)
+        name = CONVERTING_FUNC[name_style](name)
     return name
