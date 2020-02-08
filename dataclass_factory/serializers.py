@@ -6,8 +6,9 @@ from typing import Any, Type, get_type_hints, List, Dict, Optional, Union
 
 from dataclasses import is_dataclass, fields, MISSING
 
-from .common import Serializer, T, K
 from dataclass_factory.fields import get_dataclass_fields
+from .common import Serializer, T, K
+from .generics import fill_type_args
 from .path_utils import init_structure, Path
 from .schema import Schema
 from .type_detection import (
@@ -15,7 +16,6 @@ from .type_detection import (
     is_union, is_any, is_generic_concrete, is_type_var,
     is_enum,
 )
-from .generics import fill_type_args
 
 
 def to_tuple(key: Union[str, Path]) -> Path:
@@ -27,8 +27,8 @@ def to_tuple(key: Union[str, Path]) -> Path:
 def get_dataclass_serializer(class_: Type[T], serializers, schema: Schema[T]) -> Serializer[T]:
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
         field_info_ex = tuple(
-            (i, name, to_tuple(path), serializers[name], default)
-            for i, (name, path, default) in enumerate(get_dataclass_fields(schema, class_))
+            (i, f.field_name, to_tuple(f.data_name), serializers[f.field_name], f.default)
+            for i, f in enumerate(get_dataclass_fields(schema, class_))
         )
         pickled = dumps(init_structure((path for _, _, path, _, _ in field_info_ex)))
         has_default = any(f[4] != MISSING for f in field_info_ex)

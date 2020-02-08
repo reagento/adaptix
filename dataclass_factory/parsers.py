@@ -10,7 +10,7 @@ from typing import (
 
 from dataclasses import is_dataclass
 
-from dataclass_factory.fields import get_dataclass_fields
+from .fields import FieldInfo, get_dataclass_fields
 from .common import Parser, T, AbstractFactory
 from .exceptions import InvalidFieldError
 from .path_utils import Path
@@ -20,7 +20,7 @@ from .type_detection import (
     is_none, is_union, is_dict, is_enum,
     args_unspecified,
     is_literal, is_literal36, is_typeddict,
-)
+    is_generic_concrete)
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
 
@@ -124,12 +124,11 @@ def get_field_parser(item: Union[str, int, Path], parser: Parser[T]) -> Tuple[Un
 
 def get_dataclass_parser(class_: Type[T],
                          factory: AbstractFactory,
-                         schema: Schema[T],
+                         fields: Sequence[FieldInfo],
                          debug_path: bool, ) -> Parser[T]:
-    fields = get_dataclass_fields(schema, class_)
     field_info = tuple(
         (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
-        for f in get_dataclass_fields(schema, class_)
+        for f in fields
     )
 
     list_mode = any(isinstance(name, int) for _, name, _ in field_info)
@@ -325,11 +324,11 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
-    if is_dataclass(cls):
+    if is_dataclass(cls) or (is_generic_concrete(cls) and is_dataclass(cls.__origin__)):
         return get_dataclass_parser(
             cls,
             factory,
-            schema,
+            get_dataclass_fields(schema, cls),
             debug_path,
         )
     try:
