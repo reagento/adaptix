@@ -1,26 +1,38 @@
 import decimal
-import inspect
-import itertools
 from collections import deque
-from dataclasses import fields, is_dataclass
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
-    Dict, Collection, Type, get_type_hints,
-    Optional, Tuple, Union, Sequence
+    Collection, Type, Optional, Tuple, Union, Sequence
 )
 
-from .common import Parser, T
+from dataclasses import is_dataclass
+
+from .common import Parser, T, AbstractFactory
 from .exceptions import InvalidFieldError
+from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields, get_class_fields
 from .path_utils import Path
-from .schema import Schema, get_dataclass_fields
+from .schema import Schema
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,
-    is_generic_concrete, fill_type_args, args_unspecified,
+    args_unspecified,
     is_literal, is_literal36, is_typeddict,
-)
+    is_generic_concrete)
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
+
+
+def get_element_parser(parser: Parser[T], key: Any) -> Parser[T]:
+    def element_parser(data: Any) -> T:
+        try:
+            return parser(data)
+        except InvalidFieldError as e:
+            e._append_path(str(key))
+            raise
+        except PARSER_EXCEPTIONS as e:
+            raise InvalidFieldError(str(e), [str(key)])
+
+    return element_parser
 
 
 def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
@@ -86,15 +98,13 @@ tuple_any_parser = tuple
 
 def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser[Tuple]:
     if debug_path:
-        def tuple_parser(data):
-            if len(data) != len(parsers):
-                raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
-            return tuple(element_parser(parser, x, i) for x, parser, i in zip(data, parsers, itertools.count()))
-    else:
-        def tuple_parser(data):
-            if len(data) != len(parsers):
-                raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
-            return tuple(parser(x) for x, parser in zip(data, parsers))
+        parsers = [get_element_parser(parser, i) for i, parser in enumerate(parsers)]
+
+    def tuple_parser(data):
+        if len(data) != len(parsers):
+            raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
+        return tuple(parser(x) for x, parser in zip(data, parsers))
+
     return tuple_parser
 
 
@@ -120,69 +130,60 @@ def get_field_parser(item: Union[str, int, Path], parser: Parser[T]) -> Tuple[Un
         return item, parser
 
 
-def get_dataclass_parser(class_: Type[T],
-                         parsers: Dict[str, Parser],
-                         schema: Schema[T],
-                         debug_path: bool, ) -> Parser[T]:
+def get_complex_parser(class_: Type[T],
+                       factory: AbstractFactory,
+                       fields: Sequence[FieldInfo],
+                       debug_path: bool, ) -> Parser[T]:
     field_info = tuple(
-        (field_name, *get_field_parser(item, parsers[field_name]))
-        for field_name, item, default in get_dataclass_fields(schema, class_)
+        (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
+        for f in fields
     )
 
     list_mode = any(isinstance(name, int) for _, name, _ in field_info)
-
+    field_info = tuple(
+        (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
+        for f in fields
+    )
     if debug_path:
-        if list_mode:
-            def dataclass_parser(data):
-                count = len(data)
-                return class_(**{
-                    field_name: element_parser(parser, data[item_idx], field_name)
-                    for field_name, item_idx, parser in field_info
-                    if item_idx < count
-                })
-        else:
-            def dataclass_parser(data):
-                return class_(**{
-                    field_name: element_parser(parser, data[name], field_name)
-                    for field_name, name, parser in field_info
-                    if name in data
-                })
+        field_info = tuple(
+            (field_name, data_name, get_element_parser(parser, field_name))
+            for field_name, data_name, parser in field_info
+        )
+
+    if list_mode:
+        def complex_parser(data):
+            count = len(data)
+            return class_(**{
+                field_name: parser(data[item_idx])
+                for field_name, item_idx, parser in field_info
+                if item_idx < count
+            })
     else:
-        if list_mode:
-            def dataclass_parser(data):
-                count = len(data)
-                return class_(**{
-                    field_name: parser(data[item_idx])
-                    for field_name, item_idx, parser in field_info
-                    if item_idx < count
-                })
-        else:
-            def dataclass_parser(data):
-                return class_(**{
-                    field_name: parser(data[item_name])
-                    for field_name, item_name, parser in field_info
-                    if item_name in data
-                })
+        def complex_parser(data):
+            return class_(**{
+                field_name: parser(data[item_name])
+                for field_name, item_name, parser in field_info
+                if item_name in data
+            })
 
-    return dataclass_parser
+    return complex_parser
 
 
-def get_typed_dict_parser(class_: Any, parsers: Dict[str, Parser], schema: Schema[T]):
-    parsers_list = tuple(parsers.items())
+def get_typed_dict_parser(class_: Type,
+                          factory: AbstractFactory,
+                          fields: Sequence[FieldInfo],
+                          debug_path: bool, ) -> Parser:
+    complex_parser = get_complex_parser(class_, factory, fields, debug_path)
+    requires_fieds = set(f.field_name for f in fields)
     if class_.__total__:
-        def parser(data):
-            return {
-                name: field_parser(data[name])
-                for name, field_parser in parsers_list
-            }
-    else:
-        def parser(data):
-            return {
-                name: field_parser(data[name])
-                for name, field_parser in parsers_list
-                if name in data
-            }
-    return parser
+        def total_parser(data):
+            res = complex_parser(data)
+            if not set(res) == requires_fieds:
+                raise ValueError("Not all fields provided for %s" % (class_))
+            return res
+
+        return total_parser
+    return complex_parser
 
 
 def get_optional_parser(parser: Parser[T]) -> Parser[Optional[T]]:
@@ -218,20 +219,6 @@ def get_collection_factory(cls) -> Type:
 
 def get_dict_parser(key_parser, value_parser) -> Parser:
     return lambda data: {key_parser(k): value_parser(v) for k, v in data.items()}
-
-
-def get_class_parser(cls, parsers: Dict[str, Callable], debug_path: bool) -> Parser:
-    if debug_path:
-        def class_parser(data):
-            return cls(**{
-                k: element_parser(parser, data.get(k), k) for k, parser in parsers.items() if k in data
-            })
-    else:
-        def class_parser(data):
-            return cls(**{
-                k: parser(data.get(k)) for k, parser in parsers.items() if k in data
-            })
-    return class_parser
 
 
 def get_literal_parser(factory, values: Sequence[Any]) -> Parser:
@@ -304,13 +291,12 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             key_type_arg = cls.__args__[0]
             value_type_arg = cls.__args__[1]
         return get_dict_parser(factory.parser(key_type_arg), factory.parser(value_type_arg))
-    if is_typeddict(cls):
-        resolved_hints = get_type_hints(cls)
-        parsers = {field: factory.parser(type_) for field, type_ in resolved_hints.items()}
+    if is_typeddict(cls) or (is_generic_concrete(cls) and is_typeddict(cls.__origin__)):
         return get_typed_dict_parser(
             cls,
-            parsers,
-            schema,
+            factory,
+            get_typeddict_fields(schema, cls),
+            debug_path,
         )
     if is_collection(cls):
         if args_unspecified(cls):
@@ -322,36 +308,19 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
         return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
-    if is_generic_concrete(cls) and is_dataclass(cls.__origin__):
-        args = dict(zip(cls.__origin__.__parameters__, cls.__args__))
-        resolved_hints = get_type_hints(cls.__origin__)
-        parsers = {
-            field.name: factory.parser(fill_type_args(args, resolved_hints[field.name]))
-            for field in fields(cls.__origin__)
-        }
-        return get_dataclass_parser(
-            cls.__origin__,
-            parsers,
-            schema,
-            debug_path,
-        )
-    if is_dataclass(cls):
-        resolved_hints = get_type_hints(cls)
-        parsers = {
-            field.name: factory.parser(resolved_hints[field.name])
-            for field in fields(cls)
-        }
-        return get_dataclass_parser(
+    if is_dataclass(cls) or (is_generic_concrete(cls) and is_dataclass(cls.__origin__)):
+        return get_complex_parser(
             cls,
-            parsers,
-            schema,
+            factory,
+            get_dataclass_fields(schema, cls),
             debug_path,
         )
     try:
-        arguments = inspect.signature(cls.__init__).parameters
-        parsers = {
-            k: factory.parser(v.annotation) for k, v in arguments.items()
-        }
-        return get_class_parser(cls, parsers, debug_path)
+        return get_complex_parser(
+            cls,
+            factory,
+            get_class_fields(schema, cls),
+            debug_path,
+        )
     except PARSER_EXCEPTIONS:
         raise ValueError("Cannot find parser for `%s`" % repr(cls))
