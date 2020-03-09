@@ -131,11 +131,13 @@ class Test1(TestCase):
         self.assertEqual(parse(data, DUnion), DUnion([E.one]))
 
     def test_list(self):
+        self.assertEqual(parse(["q"], list), ["q"])
         self.assertEqual(parse(["q"], List[str]), ["q"])
         self.assertEqual(parse(["q"], Tuple[str]), ("q",))
         self.assertNotEqual(parse(["q"], List[str]), ("q",))
 
     def test_dict(self):
+        self.assertEqual(parse({1: 2}, dict), {1: 2})
         self.assertEqual(parse({1: 2}, Dict[int, int]), {1: 2})
 
         x = frozenset({1, 2})
@@ -150,6 +152,7 @@ class Test1(TestCase):
         self.assertEqual(parse({1: "q", "w": 2}, Dict), {1: "q", "w": 2})
 
     def test_tuple(self):
+        self.assertEqual(parse((True, "True"), tuple), (True, "True"))
         self.assertEqual(parse((True, "True"), Tuple[bool, str]), (True, "True"))
         self.assertEqual(parse((True, "True", 1), Tuple[bool, str, int]), (True, "True", 1))
         self.assertEqual(parse((True, False, True), Tuple[bool, ...]), (True, False, True))

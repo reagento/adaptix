@@ -115,6 +115,8 @@ def is_enum(cls: Type) -> bool:
 
 def args_unspecified(cls: Type) -> bool:
     return (
+            not hasattr(cls, '__args__') or
+            not hasattr(cls, '__parameters__') or
             (not cls.__args__ and cls.__parameters__) or
             (cls.__args__ == cls.__parameters__)
     )

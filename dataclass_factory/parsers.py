@@ -201,6 +201,8 @@ def decimal_parse(data) -> decimal.Decimal:
 
 
 def get_collection_factory(cls) -> Type:
+    if not is_generic_concrete(cls):
+        return cls
     origin = cls.__origin__ or cls
     res = {
         List: list,
