@@ -63,7 +63,11 @@ def issubclass_safe(cls, classinfo) -> bool:
 def is_tuple(type_) -> bool:
     try:
         # __origin__ exists in 3.7 on user defined generics
-        return issubclass_safe(type_.__origin__, Tuple) or issubclass_safe(type_, Tuple)
+        return (
+                issubclass_safe(type_, tuple) or
+                issubclass_safe(type_.__origin__, Tuple) or
+                issubclass_safe(type_, Tuple)
+        )
     except AttributeError:
         return False
 
