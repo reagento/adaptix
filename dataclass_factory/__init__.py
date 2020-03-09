@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from .common import AbstractFactory
-from .compat import parse, ParserFactory, SerializerFactory
-from .dict_factory import dict_factory
+from .deprecated_stuff import dict_factory, parse, ParserFactory, SerializerFactory
 from .factory import Factory
 from .naming import NameStyle
 from .schema import Schema

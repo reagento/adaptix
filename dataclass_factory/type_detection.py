@@ -3,8 +3,7 @@ from enum import Enum
 
 from typing import (
     Collection, Tuple, Optional, Any, Dict, Union, Type,
-    TypeVar, Generic, List, Sequence,
-)
+    TypeVar, Generic, List, )
 
 LITERAL_TYPES: List[Any] = []
 TYPED_DICT_METAS_TMP: List[Any] = []
@@ -99,7 +98,7 @@ def is_any(type_: Type) -> bool:
 
 
 def is_generic_concrete(type_: Type) -> bool:
-    return hasattr(type_, "__origin__")
+    return getattr(type_, "__origin__", None) is not None
 
 
 def is_generic(type_: Type) -> bool:
@@ -116,6 +115,8 @@ def is_enum(cls: Type) -> bool:
 
 def args_unspecified(cls: Type) -> bool:
     return (
+            not hasattr(cls, '__args__') or
+            not hasattr(cls, '__parameters__') or
             (not cls.__args__ and cls.__parameters__) or
             (cls.__args__ == cls.__parameters__)
     )
@@ -144,13 +145,3 @@ def is_dict(cls) -> bool:
 
 def is_type_var(type_: Type) -> bool:
     return type(type_) is TypeVar
-
-
-def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
-    type_ = args.get(type_, type_)
-    if is_generic_concrete(type_):
-        type_args = tuple(
-            args.get(a, a) for a in type_.__args__
-        )
-        type_ = type_.__origin__[type_args]
-    return type_

@@ -201,7 +201,7 @@ factory = Factory(
 
 #### Name styles
 
-You have to follow PEP8 convention for fields names (snake_case) or style conversion wil not work appropriately
+You have to follow PEP8 convention for fields names (snake_case) or style conversion will not work (`ValueError`)
 
 ```python
 factory = Factory(default_schema=Schema(
@@ -234,6 +234,8 @@ Following name styles are supported:
 * `upper_snake` (UPPER_SNAKE_CASE)
 * `camel_snake` (Camel_Snake)
 * `dot` (dot.case)
+* `camel_dot` (Camel.Dot)
+* `upper_dot` (UPPER.DOT)
 
 #### Generic classes
 
