@@ -56,7 +56,7 @@ def get_complex_serializer(factory: AbstractFactory,
             # optimized version
             def serialize(data):
                 return {
-                    data_name: serializer(getattr(data, field_name))
+                    data_name: serializer(getter(data, field_name))
                     for field_name, serializer, data_name, default in field_info
                 }
     return serialize
