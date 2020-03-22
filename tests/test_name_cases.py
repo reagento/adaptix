@@ -13,6 +13,17 @@ class Data:
     trailed_name_: int
 
 
+class TestConvertLogic(TestCase):
+    def assert_value_error(self, name_style: NameStyle):
+        for trailing in (None, False, True):
+            with self.assertRaises(ValueError):
+                convert_name('NonSnakeCase', name_style, None, trailing)
+
+    def test_value_error(self):
+        self.assert_value_error(NameStyle.dot)
+        self.assert_value_error(NameStyle.snake)
+
+
 class TestParser(TestCase):
     def test_snake_check(self):
         self.assertTrue(is_snake_case('a_x'))
