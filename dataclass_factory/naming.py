@@ -95,10 +95,10 @@ def convert_name(
 ) -> Union[str, Path]:
     if name_mapping and name in name_mapping:
         return name_mapping[name]
-    if not is_snake_case(name):
-        raise ValueError("can not convert python name that not follow snake_case")
     if trim_trailing_underscore:
         name = name.rstrip("_")
     if name_style:
+        if not is_snake_case(name):
+            raise ValueError("can not convert python name that not follow snake_case")
         name = CONVERTING_FUNC[name_style](name)
     return name
