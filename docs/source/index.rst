@@ -12,6 +12,7 @@ dataclass-factory
 
    overview
    quickstart
+   extended
 
 
 Indices and tables

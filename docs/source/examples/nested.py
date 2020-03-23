@@ -24,5 +24,7 @@ data = {
 }
 
 factory = dataclass_factory.Factory()
-book: Book = factory.load(data, Book)  # Same as Book(title="Fahrenheit 451", price=100, author=Person("Ray Bradbury"))
+
+# Book(title="Fahrenheit 451", price=100, author=Person("Ray Bradbury"))
+book: Book = factory.load(data, Book)
 serialized = factory.dump(book)
