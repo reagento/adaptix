@@ -59,6 +59,7 @@ def upper_dot(snake_name):
 
 
 class NameStyle(Enum):
+    ignore = "ignore"
     snake = "snake_case"
     kebab = "kebab-case"
     camel_lower = "camelCaseLower"
@@ -89,7 +90,7 @@ CONVERTING_FUNC = {
 
 def convert_name(
         name: str,
-        name_style: Optional[NameStyle],
+        name_style: NameStyle,
         name_mapping: Optional[Dict[str, Union[str, Path]]],
         trim_trailing_underscore: Optional[bool]
 ) -> Union[str, Path]:
@@ -97,8 +98,8 @@ def convert_name(
         return name_mapping[name]
     if trim_trailing_underscore:
         name = name.rstrip("_")
-    if name_style:
+    if name_style is not NameStyle.ignore:
         if not is_snake_case(name):
-            raise ValueError("can not convert python name that not follow snake_case")
+            raise ValueError("cannot convert python name that not follow snake_case")
         name = CONVERTING_FUNC[name_style](name)
     return name
