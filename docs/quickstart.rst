@@ -2,6 +2,11 @@
 Quickstart
 ***********
 
+Dataclass factory analyzes your type hints and generates corresponding parsers based on retrieved information.
+For dataclasses it checks what fields are declared and then calls normal constructor. For others types behavior can differ.
+
+Also you can configure it using miscellaneous schemas (see :ref:`extended_usage`).
+
 Installation
 =============
 
@@ -28,6 +33,9 @@ Nested objects
 ====================
 
 Nested objects are supported out of the box. It is surprising, but you do not have to do anything except defining your dataclasses.
+For example, your expect that author of Book is instance of Person, but in serialzied form it is dictionary.
+
+Declare your dataclasses as usual and then just parse your data.
 
 .. literalinclude:: examples/nested.py
 
@@ -39,7 +47,7 @@ Want to parse collection of dataclasses? No changes required, just specify corre
 
 .. literalinclude:: examples/collection.py
 
-Fields also can containt any supported collections.
+Fields also can contain any supported collections.
 
 Validation
 ===================
