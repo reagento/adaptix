@@ -90,10 +90,14 @@ CONVERTING_FUNC = {
 
 def convert_name(
         name: str,
-        name_style: NameStyle,
+        name_style: Optional[NameStyle],
         name_mapping: Optional[Dict[str, Union[str, Path]]],
         trim_trailing_underscore: Optional[bool]
 ) -> Union[str, Path]:
+
+    if name_style is None:
+        name_style = NameStyle.ignore
+
     if name_mapping and name in name_mapping:
         return name_mapping[name]
     if trim_trailing_underscore:
