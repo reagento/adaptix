@@ -3,7 +3,7 @@ Quickstart
 ***********
 
 Installation
-==============
+=============
 
 Just use pip to install the library::
 

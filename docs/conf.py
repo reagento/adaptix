@@ -20,7 +20,7 @@
 project = 'dataclass-factory'
 copyright = '2020, Tishka17'
 author = 'Tishka17'
-
+master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
 
