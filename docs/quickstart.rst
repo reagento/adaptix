@@ -24,7 +24,9 @@ Then call ``load`` or ``dump`` methods with corresponding type and everything is
 
 .. literalinclude:: examples/tldr.py
 
-All typing information is retrieved from you annotations, so it is not required from you to provide any schema or even change your dataclass decorators or class bases
+All typing information is retrieved from you annotations, so it is not required from you to provide any schema or even change your dataclass decorators or class bases.
+
+In provided example ``book.author == "Unknown author"`` because normal dataclass constructor is called.
 
 It is better to create factory only once, because all parsers are cached inside it after first usage.
 Otherwise, the structure of your classes will be analysed again and again for every new instance of Factory.
