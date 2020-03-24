@@ -31,6 +31,23 @@ Simplest way to fix it is to set custom name mapping. You can call fields as you
 
 Fields absent in mapping are not translated and used with their original names (meaning original is dataclass specification).
 
+
+Stripping underscore
+============================
+
+It is not often necessary to fill name mapping. One of the most common case is dictionary keys which are python keywords.
+For example, you cannot use string ``from`` as a field name, but it very likely to sse in APIs. Usually it is solved by adding trailing underscore (e.g. ``from_``).
+
+Dataclass factory will trim trailing underscores so you won't really meet this case.
+
+.. literalinclude:: examples/trailing_.py
+
+Sometimes this behavior is unwanted, so you can disable this feature by setting ``trim_trailing_underscore=False`` in Schema (in default schema of concrete one).
+Also you can reenable it for certain types
+
+.. literalinclude:: examples/trailing_keep.py
+
+
 Name styles
 ========================
 
