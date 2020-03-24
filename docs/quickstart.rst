@@ -49,6 +49,15 @@ Want to parse collection of dataclasses? No changes required, just specify corre
 
 Fields also can contain any supported collections.
 
+Error handling
+==================
+
+Currently parser doesn't throw any specific exception in case of parser failes. Errors are the same as thrown by corresponding constructors.
+In normal cases all suitable exceptions are described in ``dataclass_factory.PARSER_EXCEPTIONS``
+
+.. literalinclude:: examples/errors.py
+
+
 Validation
 ===================
 
