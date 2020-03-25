@@ -84,23 +84,39 @@ Following name styles are supported:
 Selecting and skipping fields
 ==================================
 
-You have several ways to skip processing of some fields. Be careful using this feature: skipped fields must not be required in class constructor.
+You have several ways to skip processing of some fields.
+
+**Important**: Skipped fields MUST NOT be required in class constructor, otherwise parsing will fail
 
 Only and exclude
 *******************
 
 If you know exactly what fields must be parsed/serialized and want to ignore all others just set them as ``only`` parameter of schema.
-Also you can provide a list with excluded names via ``exclude``
+Also you can provide a list with excluded names via ``exclude``.
+
+It affects both parsing and serializing
 
 .. literalinclude:: examples/only_exc.py
 
 Skip Internal
 ****************
 
+More simplified case is to skip so called *internal use* fields, those fields which name starts with underscore.
+You can skip them from parsing and serialization using ``skip_internal`` option of schema
+
+It is disabled by default. It affects both parsing and serializing
+
+.. literalinclude:: examples/skip_internal.py
 
 Omit default
 ****************
 
+If you have defaults for some fields, it is not really necessary to store them it serialized representation. For example this may be ``None``, empty list or something else.
+You can omit them when serializing using ``omit_default`` option. Thos values thar are **equal** to default, will be stripped from resulting dict.
+
+It is disabled by default. It affect only serialising.
+
+.. literalinclude:: examples/omit_default.py
 
 Custom parsers and serializers
 ================================
