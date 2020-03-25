@@ -86,7 +86,7 @@ Selecting and skipping fields
 
 You have several ways to skip processing of some fields.
 
-**Important**: Skipped fields MUST NOT be required in class constructor, otherwise parsing will fail
+.. note::  Skipped fields MUST NOT be required in class constructor, otherwise parsing will fail
 
 Only and exclude
 *******************
@@ -117,7 +117,7 @@ Omit default
 ****************
 
 If you have defaults for some fields, it is not really necessary to store them it serialized representation. For example this may be ``None``, empty list or something else.
-You can omit them when serializing using ``omit_default`` option. Thos values thar are **equal** to default, will be stripped from resulting dict.
+You can omit them when serializing using ``omit_default`` option. Those values that are **equal** to default, will be stripped from resulting dict.
 
 It is disabled by default. It affect only serialising.
 
@@ -170,3 +170,9 @@ Another case is to change representation of some fields: serialize json to strin
 Schema inheritance
 ========================
 
+In some case it is useful to subclass Schema instead of just creating instances normally.
+
+.. literalinclude:: examples/subclass.py
+
+.. note::  Factory creates a copy of schema for each type filling missed args. If you need to get access to some data in schema, get a working instance of schema with ``Factory.schema`` method
+.. note::  Single schema instance can be used multiple time simultaneously because of multithreading or recursive structures. Be careful modifying data in schema
