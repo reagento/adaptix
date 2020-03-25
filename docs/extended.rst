@@ -43,13 +43,39 @@ Dataclass factory will trim trailing underscores so you won't really meet this c
 .. literalinclude:: examples/trailing_.py
 
 Sometimes this behavior is unwanted, so you can disable this feature by setting ``trim_trailing_underscore=False`` in Schema (in default schema of concrete one).
-Also you can reenable it for certain types
+Also you can re-enable it for certain types
 
 .. literalinclude:: examples/trailing_keep.py
 
 
 Name styles
 ========================
+
+Sometimes json keys are quite normal, but ugly. For example they are named using CamelCase, but PEP8 recommends you to use snake_case.
+Of cause, you can prepare name mapping, but it is too much to write for such stupid thing.
+
+Dataclass factory can translate such names automatically. You need to declare fields as recommended by PEP8 (e.g. *field_name*) and set corresponding ``name_style``.
+As usual, if no style is set for certain type, it will be taken from default schema.
+
+By the way, you cannot convert names that do not follow snake_case style. In this case the only valid style is ``ignore``
+
+
+.. literalinclude:: examples/name_style.py
+
+Following name styles are supported:
+
+* ``snake`` (snake_case)
+* ``kebab`` (kebab-case)
+* ``camel_lower`` (camelCaseLower)
+* ``camel`` (CamelCase)
+* ``lower`` (lowercase)
+* ``upper`` (UPPERCASE)
+* ``upper_snake`` (UPPER_SNAKE_CASE)
+* ``camel_snake`` (Camel_Snake)
+* ``dot`` (dot.case)
+* ``camel_dot`` (Camel.Dot)
+* ``upper_dot`` (UPPER.DOT)
+* ``ignore`` (not real style, but just does no conversion)
 
 Custom parsers and serializers
 ================================
