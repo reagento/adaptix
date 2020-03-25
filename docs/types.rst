@@ -36,17 +36,14 @@ If you meet unsupported type you can provide your own parser and serializer:
 Common schemas
 ==================
 
-Init-based parsing
-========================
+We have subpackage called ``dataclass_factory.schema_helpers`` with some common schemas:
+
+* ``unixtime_schema`` - converts ``datetime`` to unixtime and vice versa
+* ``isotime_schema`` - converts ``datetime`` to string containing ISO 8601. Supported only on Python 3.7+
+* ``uuid_schema`` - converts ``UUID`` objects to string
 
 Generic classes
 ========================
-
-Typed dict
-=============
-
-Dataclasses
-===============
 
 Polymorphic parsing
 ========================
