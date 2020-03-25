@@ -98,6 +98,11 @@ It affects both parsing and serializing
 
 .. literalinclude:: examples/only_exc.py
 
+Only mapped
+*************
+
+Already have ``name_mapping`` and do not want to repeat all names in ``only`` paramter? Just set ``only_mapped=True``. It will ignore all fields which are not descrbed
+
 Skip Internal
 ****************
 
@@ -131,11 +136,35 @@ For example, you have an author of book with only field - name (see :ref:`nested
 
 .. literalinclude:: examples/flatten.py
 
-Custom parsers and serializers
-================================
-
 Additional steps
 ========================
+
+Most of the work is done automatically, but may want to do some additional work.
+
+Real parsing process has following flow::
+
+   /------\    +-----------+    +--------+    +------------+    /--------\
+   | data |--->+ pre_parse +--->+ parser +--->+ post_parse +--->| result |
+   \------/    +-----------+    +--------+    +------------+    \--------/
+
+The same is for serializing::
+
+   /------\    +---------------+    +------------+    +----------------+    /--------\
+   | data |--->+ pre_serialize +--->+ serializer +--->+ post_serialize +--->| result |
+   \------/    +---------------+    +------------+    +----------------+    \--------/
+
+So the return value of ``pre_parse`` is passed to ``parser``, and return value of ``post_parse`` is used as total result of parsing process.
+You can add you logic at any step, but mind the main diffrence:
+
+* ``pre_parse`` and ``post_serialize`` work with serialized representation of data (e.g. dict for dataclasses)
+* ``post_parse`` and ``pre_serialize`` work with instances of your classes.
+
+So if you want to do some validation - it is better to do at ``post_parse`` step.
+And if you want to do *polymorphic parsing* - check if type is suitable before parsing is started at ``pre_parse``.
+
+Another case is to change representation of some fields: serialize json to string, split values and so on.
+
+.. literalinclude:: examples/pre_post.py
 
 
 Schema inheritance

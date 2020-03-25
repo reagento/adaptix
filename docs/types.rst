@@ -2,6 +2,9 @@
 Specific types behavior
 ***************************
 
+Custom parsers and serializers
+================================
+
 Common schemas
 ==================
 

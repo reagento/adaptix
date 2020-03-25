@@ -62,6 +62,7 @@ In normal cases all suitable exceptions are described in ``dataclass_factory.PAR
 
 .. literalinclude:: examples/errors.py
 
+.. _validation:
 
 Validation
 ===================
