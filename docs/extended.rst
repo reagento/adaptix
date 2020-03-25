@@ -101,7 +101,7 @@ It affects both parsing and serializing
 Only mapped
 *************
 
-Already have ``name_mapping`` and do not want to repeat all names in ``only`` paramter? Just set ``only_mapped=True``. It will ignore all fields which are not descrbed
+Already have ``name_mapping`` and do not want to repeat all names in ``only`` parameter? Just set ``only_mapped=True``. It will ignore all fields which are not descrbed in name mapping
 
 Skip Internal
 ****************
