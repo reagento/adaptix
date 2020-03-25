@@ -8,6 +8,7 @@ dataclass-factory
    overview
    quickstart
    extended
+   types
 
 
 Indices and tables

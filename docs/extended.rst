@@ -118,26 +118,19 @@ It is disabled by default. It affect only serialising.
 
 .. literalinclude:: examples/omit_default.py
 
+Structure flattening
+========================
+
+Another case of ugly API is too complex hierarchy of data. Yo can fix it using already known ``name_mapping``.
+Earlier you used it to rename fields, but also you can c
+
 Custom parsers and serializers
 ================================
 
-Additinal steps
+Additional steps
 ========================
 
-Polymorphic parsing
-========================
 
 Schema inheritance
 ========================
 
-Generic classes
-========================
-
-Omit default
-========================
-
-Structure flattening
-========================
-
-Init-based parsing
-========================
