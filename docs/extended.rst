@@ -143,15 +143,15 @@ Most of the work is done automatically, but may want to do some additional work.
 
 Real parsing process has following flow::
 
-   /------\    +-----------+    +--------+    +------------+    /--------\
-   | data |--->+ pre_parse +--->+ parser +--->+ post_parse +--->| result |
-   \------/    +-----------+    +--------+    +------------+    \--------/
+   ╔══════╗      ┌───────────┐      ┌────────┐      ┌────────────┐      ╔════════╗
+   ║ data ║ ---> │ pre_parse │ ---> │ parser │ ---> │ post_parse │ ---> ║ result ║
+   ╚══════╝      └───────────┘      └────────┘      └────────────┘      ╚════════╝
 
 The same is for serializing::
 
-   /------\    +---------------+    +------------+    +----------------+    /--------\
-   | data |--->+ pre_serialize +--->+ serializer +--->+ post_serialize +--->| result |
-   \------/    +---------------+    +------------+    +----------------+    \--------/
+   ╔══════╗      ┌───────────────┐      ┌────────────┐      ┌────────────────┐      ╔════════╗
+   ║ data ║ ---> │ pre_serialize │ ---> │ serializer │ ---> │ post_serialize │ ---> ║ result ║
+   ╚══════╝      └───────────────┘      └────────────┘      └────────────────┘      ╚════════╝
 
 So the return value of ``pre_parse`` is passed to ``parser``, and return value of ``post_parse`` is used as total result of parsing process.
 You can add you logic at any step, but mind the main diffrence:
