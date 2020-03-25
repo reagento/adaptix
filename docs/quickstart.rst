@@ -31,6 +31,9 @@ In provided example ``book.author == "Unknown author"`` because normal dataclass
 It is better to create factory only once, because all parsers are cached inside it after first usage.
 Otherwise, the structure of your classes will be analysed again and again for every new instance of Factory.
 
+
+.. _nested:
+
 Nested objects
 ====================
 

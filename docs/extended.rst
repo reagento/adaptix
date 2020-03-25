@@ -122,7 +122,14 @@ Structure flattening
 ========================
 
 Another case of ugly API is too complex hierarchy of data. Yo can fix it using already known ``name_mapping``.
-Earlier you used it to rename fields, but also you can c
+Earlier you used it to rename fields, but also you can use ot just simple name but event some path as a value.
+
+Integers in path are treated as list indices, strings - as dict keys.
+It affects parsing and serializing
+
+For example, you have an author of book with only field - name (see :ref:`nested`). You can expand this dict and store author name directly in your Book class
+
+.. literalinclude:: examples/flatten.py
 
 Custom parsers and serializers
 ================================
