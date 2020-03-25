@@ -12,7 +12,7 @@ Most of configuration is done via Schemas. You can set default schema or one per
 
 
 More verbose errors
-========================
+=======================
 
 Currently errors are not very verbose. But you can make them a bit better using ``debug_path`` of factory.
 It is disabled by default because affects perfomance.
@@ -21,8 +21,11 @@ It this mode ``InvalidFieldError`` is thrown when some dataclass field cannot be
 It contains ``field_path`` which is path to the field in provided data (key and indexes).
 
 
+Working with field names
+==========================
+
 Name mapping
-========================
+**********************
 
 In some cases you have json with keys which are called not very good. For example, they contain spaces or just have unclear meaning.
 Simplest way to fix it is to set custom name mapping. You can call fields as you want and factory will translate them using your mappind
@@ -33,7 +36,7 @@ Fields absent in mapping are not translated and used with their original names (
 
 
 Stripping underscore
-============================
+**********************
 
 It is not often necessary to fill name mapping. One of the most common case is dictionary keys which are python keywords.
 For example, you cannot use string ``from`` as a field name, but it very likely to sse in APIs. Usually it is solved by adding trailing underscore (e.g. ``from_``).
@@ -49,7 +52,7 @@ Also you can re-enable it for certain types
 
 
 Name styles
-========================
+**********************
 
 Sometimes json keys are quite normal, but ugly. For example they are named using CamelCase, but PEP8 recommends you to use snake_case.
 Of cause, you can prepare name mapping, but it is too much to write for such stupid thing.
@@ -76,6 +79,18 @@ Following name styles are supported:
 * ``camel_dot`` (Camel.Dot)
 * ``upper_dot`` (UPPER.DOT)
 * ``ignore`` (not real style, but just does no conversion)
+
+
+Selecting and skipping fields
+==================================
+
+Skip Internal
+****************
+
+
+Omit default
+****************
+
 
 Custom parsers and serializers
 ================================
