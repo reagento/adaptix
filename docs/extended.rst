@@ -84,6 +84,16 @@ Following name styles are supported:
 Selecting and skipping fields
 ==================================
 
+You have several ways to skip processing of some fields. Be careful using this feature: skipped fields must not be required in class constructor.
+
+Only and exclude
+*******************
+
+If you know exactly what fields must be parsed/serialized and want to ignore all others just set them as ``only`` parameter of schema.
+Also you can provide a list with excluded names via ``exclude``
+
+.. literalinclude:: examples/only_exc.py
+
 Skip Internal
 ****************
 
