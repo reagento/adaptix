@@ -2,3 +2,5 @@ dataclasses;python_version<"3.7"
 nose2
 mypy
 typing_extensions
+sphinx
+sphinx_rtd_theme

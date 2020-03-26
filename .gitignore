@@ -49,3 +49,5 @@ coverage.xml
 .dmypy.json
 dmypy.json
 
+
+/docs/build
