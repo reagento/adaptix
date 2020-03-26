@@ -57,7 +57,7 @@ def all_dataclass_fields(cls, omit_default: Optional[bool], filter_func: FilterF
     return [
         BaseFieldInfo(field_name=f.name, type=hints[f.name], default=get_dataclass_default(f, omit_default))
         for f in all_fields
-        if not filter_func or filter_func(f.name)
+        if not filter_func or filter_func(f.name) and f.init
     ]
 
 
