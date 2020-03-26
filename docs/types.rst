@@ -45,5 +45,13 @@ We have subpackage called ``dataclass_factory.schema_helpers`` with some common 
 Generic classes
 ========================
 
+Generic classes supported out of the box. The difference is that if no schema found for concrete class, it will be taken for generic.
+
+.. literalinclude:: examples/generic.py
+
+.. note::
+    Always pass concrete type as as second argument of ``dump`` method.
+    Otherwise it will be treated as generic due to type erasure.
+
 Polymorphic parsing
 ========================

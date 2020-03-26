@@ -86,7 +86,8 @@ Selecting and skipping fields
 
 You have several ways to skip processing of some fields.
 
-.. note::  Skipped fields MUST NOT be required in class constructor, otherwise parsing will fail
+.. note::
+    Skipped fields MUST NOT be required in class constructor, otherwise parsing will fail
 
 Only and exclude
 *******************
@@ -174,5 +175,10 @@ In some case it is useful to subclass Schema instead of just creating instances 
 
 .. literalinclude:: examples/subclass.py
 
-.. note::  Factory creates a copy of schema for each type filling missed args. If you need to get access to some data in schema, get a working instance of schema with ``Factory.schema`` method
-.. note::  Single schema instance can be used multiple time simultaneously because of multithreading or recursive structures. Be careful modifying data in schema
+.. note::
+    Factory creates a copy of schema for each type filling missed args.
+    If you need to get access to some data in schema, get a working instance of schema with ``Factory.schema`` method
+
+.. note::
+    Single schema instance can be used multiple time simultaneously because of multithreading or recursive structures.
+    Be careful modifying data in schema

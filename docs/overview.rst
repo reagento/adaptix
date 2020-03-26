@@ -16,7 +16,7 @@ Advantages
 =============
 
 * No schemas or configuration needed for simple cases. Just create ``Factory`` and call ``load``/``dump`` methods
-* Speed. It is up to 10 times faster than ``marshmallow`` and ``dataclasses.asdict`` (see [benchmarks](benchmarks))
+* Speed. It is up to 10 times faster than ``marshmallow`` and ``dataclasses.asdict``
 * Automatic name style conversion (e.g. ``snake_case`` to ``CamelCase``)
 * Automatic skipping of "internal use" fields (with leading underscore)
 * Enums, typed dicts, tuples and lists are supported from the box
@@ -49,4 +49,4 @@ Supported types
 * ``Generic`` dataclasses
 * ``datetime`` and ``UUID`` can be converted using predefined schemas
 * Custom classes can be parsed automatically using info from their ``__init__`` method.
-    Or you can provide custom parser/serializer
+* Or you can provide custom parser/serializer
