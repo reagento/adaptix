@@ -55,3 +55,18 @@ Generic classes supported out of the box. The difference is that if no schema fo
 
 Polymorphic parsing
 ========================
+
+Very common case is to select class based on information in data.
+
+If required fields differ between classes, no configuration required. But sometimes you want to make a selection more explicitly.
+For example, if data field "type" equals to "item" data should be parsed as Item, if it is "group" then Group class should be used.
+
+For such case you can use ``type_checker`` from ``schema_helpers`` module. It creates a function, which should be used on ``pre_parse`` step.
+By default it checks ``type`` field of data, but you can change it
+
+.. literalinclude:: examples/polymorphic.py
+
+If you need you own pre_parse function, you can set it as parameter for ``type_checker`` factory.
+
+For more complex cases you can write your own function.
+Just raise ``ValueError`` if you detected that current class is not acceptable for provided data, and parser will go to the next one in ``Union``
