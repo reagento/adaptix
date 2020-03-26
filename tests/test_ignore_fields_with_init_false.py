@@ -10,8 +10,8 @@ class Data:
     b: str
 
 
-class TestIgnoreFields(TestCase):
-    def test_ignore_fields(self):
+class TestIgnoreFieldsWithInitFalse(TestCase):
+    def test_ignore_fields_with_init_false(self):
         serial = {"a": "A", "b": "B", }
         factory = Factory()
         self.assertTrue(factory.load(serial, Data))
