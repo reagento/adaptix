@@ -3,10 +3,11 @@
 
 from .common import AbstractFactory
 from .deprecated_stuff import dict_factory, parse, ParserFactory, SerializerFactory
+from .exceptions import InvalidFieldError
 from .factory import Factory
 from .naming import NameStyle
-from .schema import Schema
 from .parsers import PARSER_EXCEPTIONS
+from .schema import Schema
 
 __all__ = [
     "parse",
@@ -17,5 +18,6 @@ __all__ = [
     "Schema",
     "Factory",
     "AbstractFactory",
-    "PARSER_EXCEPTIONS"
+    "PARSER_EXCEPTIONS",
+    "InvalidFieldError",
 ]

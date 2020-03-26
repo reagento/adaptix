@@ -42,7 +42,7 @@ class TestSerializer(unittest.TestCase):
         d = D(100, "hello")
         self.assertEqual(
             serializer(d),
-            {"a": 100, "b": 1, "c": "hello"},
+            {"a": 100, "c": "hello"},
         )
 
     def test_list(self):
@@ -56,8 +56,8 @@ class TestSerializer(unittest.TestCase):
         )
         data = {
             "data": [
-                {"a": 100, "b": 1, "c": "hello"},
-                {"a": 200, "b": 1, "c": "hello2"},
+                {"a": 100, "c": "hello"},
+                {"a": 200, "c": "hello2"},
             ],
             "ints": [123, 456, 789],
         }
@@ -77,8 +77,8 @@ class TestSerializer(unittest.TestCase):
         )
         data = {
             "data": {
-                "1": {"a": 100, "b": 1, "c": "hello"},
-                "two": {"a": 200, "b": 1, "c": "hello2"},
+                "1": {"a": 100, "c": "hello"},
+                "two": {"a": 200, "c": "hello2"},
             },
             "strs": {"hello": "world", "foo": "bar"}
         }
@@ -90,7 +90,7 @@ class TestSerializer(unittest.TestCase):
     def test_optional(self):
         serializer = self.factory.serializer(Optional[D])
         d1 = D(100, "hello")
-        data1 = {"a": 100, "b": 1, "c": "hello"}
+        data1 = {"a": 100, "c": "hello"}
         self.assertEqual(
             serializer(d1),
             data1,
@@ -103,7 +103,7 @@ class TestSerializer(unittest.TestCase):
     def test_any(self):
         serializer = self.factory.serializer(Any)
         d1 = D(100, "hello")
-        data1 = {"a": 100, "b": 1, "c": "hello"}
+        data1 = {"a": 100, "c": "hello"}
         self.assertEqual(
             serializer(d1),
             data1,
