@@ -26,8 +26,16 @@ schema_list = Schema[A](
 
 schema_tuple = Schema[A](
     name_mapping={
-        "x": (0, ),
-        "y": (1, ),
+        "x": (0,),
+        "y": (1,),
+    }
+)
+
+path_with_ellipsis = ("sub", ...)
+schema_ellipsis = Schema[A](
+    name_mapping={
+        "x": path_with_ellipsis,
+        "y": path_with_ellipsis,
     }
 )
 
@@ -55,6 +63,21 @@ class Test1(TestCase):
         expected = {
             "a": {"b": ["hello"]},
             "y": "world"
+        }
+        data = A("hello", "world")
+        self.assertEqual(expected, factory.dump(data, A))
+
+    def test_dump_ellipsis(self):
+        factory = Factory(
+            schemas={
+                A: schema_ellipsis
+            }
+        )
+        expected = {
+            "sub": {
+                "x": "hello",
+                "y": "world",
+            }
         }
         data = A("hello", "world")
         self.assertEqual(expected, factory.dump(data, A))

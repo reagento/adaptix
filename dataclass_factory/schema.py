@@ -3,7 +3,7 @@ from typing import List, Dict, Callable, Tuple, Optional, Generic, Union
 
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle
-from .path_utils import Path
+from .path_utils import NameMapping, fix_name_mapping_ellipsis
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
@@ -14,7 +14,7 @@ class Schema(Generic[T]):
             self,
             only: Optional[List[str]] = None,
             exclude: Optional[List[str]] = None,
-            name_mapping: Optional[Dict[str, Union[str, Path]]] = None,
+            name_mapping: NameMapping = None,
             only_mapped: Optional[bool] = None,
 
             name_style: Optional[NameStyle] = None,
@@ -104,4 +104,5 @@ def merge_schema(schema: Optional[Schema], default: Optional[Schema]) -> Schema:
     for k in SCHEMA_FIELDS:
         if getattr(schema, k) is None:
             setattr(schema, k, getattr(default, k))
+    schema.name_mapping = fix_name_mapping_ellipsis(schema.name_mapping)
     return schema
