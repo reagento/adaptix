@@ -102,12 +102,9 @@ def get_fields(
     partial_filter_func: FilterFunc = partial(filter_func, schema)  # type: ignore
     all_fields = all_fields_getter(class_, schema.omit_default, partial_filter_func)
     only_mapped = schema.only_mapped and schema.only is None
-    has_ellipsis = schema.name_mapping and (... in schema.name_mapping)
     if only_mapped:
         if schema.name_mapping is None:
             raise ValueError("`name_mapping` is None, and `only_mapped` is True")
-        if has_ellipsis:
-            raise ValueError("`name_mapping` contains `...`, and `only_mapped` is True")
         fields: Dict[str, BaseFieldInfo] = {f.field_name: f for f in all_fields}
         fields_info: List[FieldInfo] = []
         for field_name, data_name in schema.name_mapping.items():

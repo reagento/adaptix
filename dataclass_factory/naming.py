@@ -99,9 +99,9 @@ def convert_name(
     if name_mapping:
         if name in name_mapping:
             return replace_ellipsis(name, name_mapping[name])
-        if ... in name_mapping:
+        if Ellipsis in name_mapping:  # `...` used as dict key
             name = convert_name(name, name_style, None, trim_trailing_underscore)
-            return replace_ellipsis(name, name_mapping[...])
+            return replace_ellipsis(name, name_mapping[Ellipsis])
     if trim_trailing_underscore:
         name = name.rstrip("_")
     if name_style is not NameStyle.ignore:
