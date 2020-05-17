@@ -39,9 +39,19 @@ schema_ellipsis = Schema[A](
         "y": path_with_ellipsis,
     }
 )
+schema_auto_ellipsis = Schema[A](
+    name_mapping={
+        "x": "z",
+        ...: path_with_ellipsis,
+    }
+)
 
 
 class TestTyping(TestCase):
+    """
+    Some "tests" which are used only to test code with mypy
+    """
+
     def test_mapping(self):
         _: NameMapping = {
             "a": "a",
@@ -95,6 +105,23 @@ class Test1(TestCase):
         }
         data = A("hello", "world")
         self.assertEqual(expected, factory.dump(data, A))
+        self.assertEqual(data, factory.load(expected, A))
+
+    def test_dump_auto_ellipsis(self):
+        factory = Factory(
+            schemas={
+                A: schema_auto_ellipsis
+            }
+        )
+        expected = {
+            "z": "hello",
+            "sub": {
+                "y": "world",
+            }
+        }
+        data = A("hello", "world")
+        self.assertEqual(expected, factory.dump(data, A))
+        self.assertEqual(data, factory.load(expected, A))
 
     def test_dump_two(self):
         factory = Factory(
