@@ -1,9 +1,9 @@
 from copy import copy
-from typing import List, Dict, Callable, Tuple, Optional, Generic, Union
+from typing import List, Dict, Callable, Tuple, Optional, Generic
 
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle
-from .path_utils import Path
+from .path_utils import NameMapping
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
@@ -14,7 +14,7 @@ class Schema(Generic[T]):
             self,
             only: Optional[List[str]] = None,
             exclude: Optional[List[str]] = None,
-            name_mapping: Optional[Dict[str, Union[str, Path]]] = None,
+            name_mapping: NameMapping = None,
             only_mapped: Optional[bool] = None,
 
             name_style: Optional[NameStyle] = None,

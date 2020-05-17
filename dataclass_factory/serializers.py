@@ -8,7 +8,7 @@ from dataclasses import is_dataclass, MISSING
 
 from .common import Serializer, T, K, AbstractFactory
 from .fields import get_dataclass_fields, FieldInfo, get_typeddict_fields
-from .path_utils import init_structure, Path
+from .path_utils import init_structure, CleanPath, CleanKey
 from .schema import Schema
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
@@ -17,7 +17,7 @@ from .type_detection import (
     is_typeddict)
 
 
-def to_tuple(key: Union[str, Path]) -> Path:
+def to_path(key: Union[CleanKey, CleanPath]) -> CleanPath:
     if isinstance(key, tuple):
         return key
     return key,
@@ -33,7 +33,7 @@ def get_complex_serializer(factory: AbstractFactory,
         for f in fields
     )
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
-        paths = tuple(to_tuple(f.data_name) for f in fields)
+        paths = tuple(to_path(f.data_name) for f in fields)
         pickled = dumps(init_structure(paths))
         if has_default:
             raise ValueError("Cannot use `omit_default` option with flattening schema")

@@ -1,8 +1,7 @@
 from enum import Enum
+from typing import List, Optional, Union
 
-from typing import List, Optional, Dict, Union
-
-from .path_utils import Path
+from .path_utils import NameMapping, replace_ellipsis, CleanPath, CleanKey
 
 
 def split_by_underscore(s: str) -> List[str]:
@@ -88,18 +87,13 @@ CONVERTING_FUNC = {
 }
 
 
-def convert_name(
+def convert_name_simple(
         name: str,
         name_style: Optional[NameStyle],
-        name_mapping: Optional[Dict[str, Union[str, Path]]],
         trim_trailing_underscore: Optional[bool]
-) -> Union[str, Path]:
-
+) -> str:
     if name_style is None:
         name_style = NameStyle.ignore
-
-    if name_mapping and name in name_mapping:
-        return name_mapping[name]
     if trim_trailing_underscore:
         name = name.rstrip("_")
     if name_style is not NameStyle.ignore:
@@ -107,3 +101,18 @@ def convert_name(
             raise ValueError("cannot convert python name that not follow snake_case")
         name = CONVERTING_FUNC[name_style](name)
     return name
+
+
+def convert_name(
+        name: str,
+        name_style: Optional[NameStyle],
+        name_mapping: NameMapping,
+        trim_trailing_underscore: Optional[bool]
+) -> Union[CleanKey, CleanPath]:
+    if name_mapping:
+        if name in name_mapping:
+            return replace_ellipsis(name, name_mapping[name])
+        if Ellipsis in name_mapping:  # `...` used as dict key
+            new_name = convert_name_simple(name, name_style, trim_trailing_underscore)
+            return replace_ellipsis(new_name, name_mapping[Ellipsis])
+    return convert_name_simple(name, name_style, trim_trailing_underscore)
