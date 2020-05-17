@@ -6,12 +6,37 @@ if TYPE_CHECKING:
 else:
     ellipsis = type(Ellipsis)
 
-Key = Union[str, int, ellipsis]
-FieldOrAuto = Union[str, ellipsis]
+# normal value in field mapping
+# str means key in dictionary
+# int  means position in list
+CleanKey = Union[str, int]
+# sequence of kes means path in complect Dict/List structure
+CleanPath = Tuple[CleanKey, ...]  # normal value
+
+# same as CleanKey/CleanPath, but ellipsis allowed.
+# all `...` are replaced for each field in every certain type with its name.
+Key = Union[CleanKey, ellipsis]
 Path = Tuple[Key, ...]
+# real field name or `...` if this mapping can be applied to any field
+FieldOrAuto = Union[str, ellipsis]
+
 NameMapping = Optional[Dict[FieldOrAuto, Union[Key, Path]]]
 
 Container = Union[None, List, Dict[Key, Any]]
+
+
+def replace_ellipsis(name: str, path: Union[Path, Key]) -> Union[CleanPath, CleanKey]:
+    """
+    Fixes all `...` in path replacing then with name.
+    """
+    if isinstance(path, ellipsis):
+        return name
+    if isinstance(path, (str, int)):
+        return path
+    return tuple(
+        (name if isinstance(x, ellipsis) else x)
+        for x in path
+    )
 
 
 def extend_container(root: Container, key: Key) -> None:
@@ -31,21 +56,11 @@ def make_container(key: Key) -> Container:
         return {}
 
 
-def replace_ellipsis(name: FieldOrAuto, path: Union[Path, Key]) -> Union[Path, Key]:
-    """
-    Fixes all `...` in path replacing then with name.
-    """
-    if isinstance(path, ellipsis):
-        return name
-    if isinstance(path, (str, int)):
-        return path
-    return tuple(
-        (name if x is Ellipsis else x)
-        for x in path
-    )
-
-
 def init_structure(paths: Iterable[Path]) -> Tuple[Container, Sequence[Tuple[Container, Key]]]:
+    """
+    Create empty structure that can be filled by described path
+    Returns whole container itself and separate subcontainers for each path
+    """
     root: List[Container] = [None]
     field_containers: List[Tuple[Container, Key]] = []
     for path in paths:

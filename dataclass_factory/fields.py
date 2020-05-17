@@ -1,12 +1,12 @@
 import inspect
 from functools import partial
-from typing import Sequence, Any, Type, TypeVar, Callable, List, Dict, Union, Optional, cast
+from typing import Sequence, Any, Type, TypeVar, Callable, List, Dict, Union, Optional, cast, Tuple
 
 from dataclasses import Field, MISSING, fields, dataclass
 
 from .generics import resolve_hints, resolve_init_hints
 from .naming import convert_name
-from .path_utils import Path, Key, ellipsis, replace_ellipsis
+from .path_utils import CleanPath, CleanKey, ellipsis, replace_ellipsis
 from .schema import Schema
 from .type_detection import is_generic_concrete
 
@@ -22,7 +22,7 @@ class BaseFieldInfo:
 
 @dataclass
 class FieldInfo(BaseFieldInfo):
-    data_name: Union[Key, Path]
+    data_name: Union[CleanKey, CleanPath]
 
 
 # defaults

@@ -8,7 +8,7 @@ from dataclasses import is_dataclass, MISSING
 
 from .common import Serializer, T, K, AbstractFactory
 from .fields import get_dataclass_fields, FieldInfo, get_typeddict_fields
-from .path_utils import init_structure, Path, Key
+from .path_utils import init_structure, CleanPath, CleanKey
 from .schema import Schema
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
@@ -17,7 +17,7 @@ from .type_detection import (
     is_typeddict)
 
 
-def to_path(key: Union[Key, Path]) -> Path:
+def to_path(key: Union[CleanKey, CleanPath]) -> CleanPath:
     if isinstance(key, tuple):
         return key
     return key,
