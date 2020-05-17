@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from dataclasses import dataclass
 
-from dataclass_factory import Schema, Factory
+from dataclass_factory import Schema, Factory, NameStyle
 from dataclass_factory.path_utils import NameMapping
 
 
@@ -45,6 +45,12 @@ schema_auto_ellipsis = Schema[A](
         ...: path_with_ellipsis,
     }
 )
+schema_auto_style_ellipsis = Schema[A](
+    name_style=NameStyle.upper,
+    name_mapping={
+        ...: path_with_ellipsis,
+    }
+)
 
 
 class TestTyping(TestCase):
@@ -59,7 +65,8 @@ class TestTyping(TestCase):
             "c": ...,
             "d": ("a",),
             "e": ("b", 1),
-            "f": ("a", ..., "b")
+            "f": ("a", ..., "b"),
+            ...: (1,)
         }
         assert _
 
@@ -101,6 +108,22 @@ class Test1(TestCase):
             "sub": {
                 "x": "hello",
                 "y": "world",
+            }
+        }
+        data = A("hello", "world")
+        self.assertEqual(expected, factory.dump(data, A))
+        self.assertEqual(data, factory.load(expected, A))
+
+    def test_dump_auto_style_ellipsis(self):
+        factory = Factory(
+            schemas={
+                A: schema_auto_style_ellipsis
+            }
+        )
+        expected = {
+            "sub": {
+                "X": "hello",
+                "Y": "world",
             }
         }
         data = A("hello", "world")

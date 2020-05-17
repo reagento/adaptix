@@ -100,6 +100,7 @@ def convert_name(
         if name in name_mapping:
             return name_mapping[name]
         if ... in name_mapping:
+            name = convert_name(name, name_style, None, trim_trailing_underscore)
             return fix_ellipsis(name, name_mapping[...])
     if trim_trailing_underscore:
         name = name.rstrip("_")

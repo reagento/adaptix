@@ -137,6 +137,23 @@ For example, you have an author of book with only field - name (see :ref:`nested
 
 .. literalinclude:: examples/flatten.py
 
+We can modify example above to store author as a list with name
+
+.. literalinclude:: examples/flatten_list.py
+
+Automatic naming during flattening
+=============================
+
+If names somewhere in "complex" structure are the same, as in your class you can simplify your schema using ellipsis (``...``).
+There are two simple rules:
+* ellipsis (``...``) as as a key in ``name_mapping`` means `Any` field. Path will be applied to every field that is not declare explicitly in mapping
+* ellipsis (``...``) inside path in ``name_mapping`` means that original name (converted according to provided style) of field will be reused
+
+Examples:
+
+.. literalinclude:: examples/flatten_auto.py
+
+
 Additional steps
 ========================
 
