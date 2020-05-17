@@ -2,7 +2,7 @@ from enum import Enum
 
 from typing import List, Optional, Dict, Union
 
-from .path_utils import Path
+from .path_utils import Path, NameMapping, Key
 
 
 def split_by_underscore(s: str) -> List[str]:
@@ -91,9 +91,9 @@ CONVERTING_FUNC = {
 def convert_name(
         name: str,
         name_style: Optional[NameStyle],
-        name_mapping: Optional[Dict[str, Union[str, Path]]],
+        name_mapping: NameMapping,
         trim_trailing_underscore: Optional[bool]
-) -> Union[str, Path]:
+) -> Union[Key, Path]:
 
     if name_style is None:
         name_style = NameStyle.ignore

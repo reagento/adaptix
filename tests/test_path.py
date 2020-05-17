@@ -3,6 +3,7 @@ from unittest import TestCase
 from dataclasses import dataclass
 
 from dataclass_factory import Schema, Factory
+from dataclass_factory.path_utils import NameMapping
 
 
 @dataclass
@@ -38,6 +39,19 @@ schema_ellipsis = Schema[A](
         "y": path_with_ellipsis,
     }
 )
+
+
+class TestTyping(TestCase):
+    def test_mapping(self):
+        _: NameMapping = {
+            "a": "a",
+            "b": 1,
+            "c": ...,
+            "d": ("a",),
+            "e": ("b", 1),
+            "f": ("a", ..., "b")
+        }
+        assert _
 
 
 class Test1(TestCase):

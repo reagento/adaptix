@@ -6,7 +6,7 @@ from dataclasses import Field, MISSING, fields, dataclass
 
 from .generics import resolve_hints, resolve_init_hints
 from .schema import Schema
-from .path_utils import Path
+from .path_utils import Path, Key
 from .naming import convert_name
 from .type_detection import is_generic_concrete
 
@@ -22,7 +22,7 @@ class BaseFieldInfo:
 
 @dataclass
 class FieldInfo(BaseFieldInfo):
-    data_name: Union[str, Path]
+    data_name: Union[Key, Path]
 
 
 # defaults

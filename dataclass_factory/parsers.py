@@ -10,7 +10,7 @@ from dataclasses import is_dataclass
 from .common import Parser, T, AbstractFactory
 from .exceptions import InvalidFieldError
 from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields, get_class_fields
-from .path_utils import Path
+from .path_utils import Path, Key
 from .schema import Schema
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
@@ -121,7 +121,7 @@ def get_path_parser(parser: Parser[T], path: Path) -> Parser[T]:
     return path_parser
 
 
-def get_field_parser(item: Union[str, int, Path], parser: Parser[T]) -> Tuple[Union[str, int], Parser[T]]:
+def get_field_parser(item: Union[Key, Path], parser: Parser[T]) -> Tuple[Key, Parser[T]]:
     if isinstance(item, tuple):
         if len(item) == 1:
             return item[0], parser

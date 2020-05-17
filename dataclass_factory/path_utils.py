@@ -1,22 +1,14 @@
 from typing import Dict, List, Union, Iterable, Tuple, Sequence, Any, Optional, TYPE_CHECKING
 
 # https://github.com/python/typing/issues/684#issuecomment-548203158
-if TYPE_CHECKING:
-    from enum import Enum
+if not TYPE_CHECKING:
+    ellipsis = type(Ellipsis)
 
-
-    class EllipsisType(Enum):
-        Ellipsis = "..."
-
-
-    Ellipsis = EllipsisType.Ellipsis
-else:
-    EllipsisType = type(Ellipsis)
-
-Key = Union[str, int, EllipsisType]
-Container = Union[None, List, Dict[Key, Any]]
+Key = Union[str, int, ellipsis]
 Path = Tuple[Key, ...]
 NameMapping = Optional[Dict[str, Union[Key, Path]]]
+
+Container = Union[None, List, Dict[Key, Any]]
 
 
 def extend_container(root: Container, key: Key) -> None:
@@ -46,7 +38,7 @@ def fix_name_mapping_ellipsis(name_mapping: NameMapping) -> NameMapping:
 
 
 def fix_ellipsis(name: str, path: Union[Path, Key]) -> Union[Path, Key]:
-    if path is Ellipsis:
+    if isinstance(path, ellipsis):
         return name
     if isinstance(path, str):
         return path
