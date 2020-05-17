@@ -31,7 +31,7 @@ def make_container(key: Key) -> Container:
         return {}
 
 
-def fix_ellipsis(name: FieldOrAuto, path: Union[Path, Key]) -> Union[Path, Key]:
+def replace_ellipsis(name: FieldOrAuto, path: Union[Path, Key]) -> Union[Path, Key]:
     """
     Fixes all `...` in path replacing then with name.
     """

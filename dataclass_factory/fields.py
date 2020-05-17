@@ -6,7 +6,7 @@ from dataclasses import Field, MISSING, fields, dataclass
 
 from .generics import resolve_hints, resolve_init_hints
 from .naming import convert_name
-from .path_utils import Path, Key, ellipsis, fix_ellipsis
+from .path_utils import Path, Key, ellipsis, replace_ellipsis
 from .schema import Schema
 from .type_detection import is_generic_concrete
 
@@ -117,7 +117,7 @@ def get_fields(
                 continue
             fields_info.append(FieldInfo(
                 field_name=cast(str, field_name),
-                data_name=fix_ellipsis(field_name, data_name),
+                data_name=replace_ellipsis(field_name, data_name),
                 type=fields[field_name].type,
                 default=fields[field_name].default,
             ))

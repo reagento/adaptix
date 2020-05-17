@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional, Union
 
-from .path_utils import Path, NameMapping, Key, fix_ellipsis
+from .path_utils import Path, NameMapping, Key, replace_ellipsis
 
 
 def split_by_underscore(s: str) -> List[str]:
@@ -98,10 +98,10 @@ def convert_name(
 
     if name_mapping:
         if name in name_mapping:
-            return fix_ellipsis(name, name_mapping[name])
+            return replace_ellipsis(name, name_mapping[name])
         if ... in name_mapping:
             name = convert_name(name, name_style, None, trim_trailing_underscore)
-            return fix_ellipsis(name, name_mapping[...])
+            return replace_ellipsis(name, name_mapping[...])
     if trim_trailing_underscore:
         name = name.rstrip("_")
     if name_style is not NameStyle.ignore:
