@@ -87,21 +87,13 @@ CONVERTING_FUNC = {
 }
 
 
-def convert_name(
+def convert_name_simple(
         name: str,
         name_style: Optional[NameStyle],
-        name_mapping: NameMapping,
         trim_trailing_underscore: Optional[bool]
-) -> Union[Key, Path]:
+) -> str:
     if name_style is None:
         name_style = NameStyle.ignore
-
-    if name_mapping:
-        if name in name_mapping:
-            return replace_ellipsis(name, name_mapping[name])
-        if Ellipsis in name_mapping:  # `...` used as dict key
-            name = convert_name(name, name_style, None, trim_trailing_underscore)
-            return replace_ellipsis(name, name_mapping[Ellipsis])
     if trim_trailing_underscore:
         name = name.rstrip("_")
     if name_style is not NameStyle.ignore:
@@ -109,3 +101,18 @@ def convert_name(
             raise ValueError("cannot convert python name that not follow snake_case")
         name = CONVERTING_FUNC[name_style](name)
     return name
+
+
+def convert_name(
+        name: str,
+        name_style: Optional[NameStyle],
+        name_mapping: NameMapping,
+        trim_trailing_underscore: Optional[bool]
+) -> Union[Key, Path]:
+    if name_mapping:
+        if name in name_mapping:
+            return replace_ellipsis(name, name_mapping[name])
+        if Ellipsis in name_mapping:  # `...` used as dict key
+            new_name = convert_name_simple(name, name_style, trim_trailing_underscore)
+            return replace_ellipsis(new_name, name_mapping[Ellipsis])
+    return convert_name_simple(name, name_style, trim_trailing_underscore)
