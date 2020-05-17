@@ -37,9 +37,7 @@ def replace_ellipsis(name: FieldOrAuto, path: Union[Path, Key]) -> Union[Path, K
     """
     if isinstance(path, ellipsis):
         return name
-    if isinstance(path, str):
-        return path
-    if isinstance(path, int):
+    if isinstance(path, (str, int)):
         return path
     return tuple(
         (name if x is Ellipsis else x)
