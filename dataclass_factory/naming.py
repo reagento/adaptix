@@ -98,7 +98,7 @@ def convert_name(
 
     if name_mapping:
         if name in name_mapping:
-            return name_mapping[name]
+            return fix_ellipsis(name, name_mapping[name])
         if ... in name_mapping:
             name = convert_name(name, name_style, None, trim_trailing_underscore)
             return fix_ellipsis(name, name_mapping[...])

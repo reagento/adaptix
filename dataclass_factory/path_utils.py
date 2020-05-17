@@ -31,16 +31,10 @@ def make_container(key: Key) -> Container:
         return {}
 
 
-def fix_name_mapping_ellipsis(name_mapping: NameMapping) -> NameMapping:
-    if not name_mapping:
-        return name_mapping
-    return {
-        name: fix_ellipsis(name, path)
-        for name, path in name_mapping.items()
-    }
-
-
 def fix_ellipsis(name: FieldOrAuto, path: Union[Path, Key]) -> Union[Path, Key]:
+    """
+    Fixes all `...` in path replacing then with name.
+    """
     if isinstance(path, ellipsis):
         return name
     if isinstance(path, str):
@@ -48,7 +42,7 @@ def fix_ellipsis(name: FieldOrAuto, path: Union[Path, Key]) -> Union[Path, Key]:
     if isinstance(path, int):
         return path
     return tuple(
-        name if x is Ellipsis else x
+        (name if x is Ellipsis else x)
         for x in path
     )
 

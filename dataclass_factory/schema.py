@@ -1,9 +1,9 @@
 from copy import copy
-from typing import List, Dict, Callable, Tuple, Optional, Generic, Union
+from typing import List, Dict, Callable, Tuple, Optional, Generic
 
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle
-from .path_utils import NameMapping, fix_name_mapping_ellipsis
+from .path_utils import NameMapping
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
@@ -104,5 +104,4 @@ def merge_schema(schema: Optional[Schema], default: Optional[Schema]) -> Schema:
     for k in SCHEMA_FIELDS:
         if getattr(schema, k) is None:
             setattr(schema, k, getattr(default, k))
-    schema.name_mapping = fix_name_mapping_ellipsis(schema.name_mapping)
     return schema
