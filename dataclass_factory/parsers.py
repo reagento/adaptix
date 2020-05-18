@@ -165,19 +165,25 @@ def get_complex_parser(class_: Type[T],
     else:
         forbid_unknown = False
         store_unknown = False
+        include_unknown = False
         if unknown is Unknown.FORBID:
             forbid_unknown = True
+        elif unknown is Unknown.INCLUDE:
+            include_unknown = True
         elif isinstance(unknown, str):
             store_unknown = True
         known_fields = {f.field_name for f in fields}
 
         def complex_parser(data):
-            unknown_fields = {}
             if forbid_unknown and not known_fields.issuperset(data):
                 unknown_fields = set(data) - known_fields
                 raise ValueError("Extra field forbidden for type `%s`, found `%s`", class_, unknown_fields)
             elif store_unknown:
-                unknown_fields[unknown] = {k: v for k, v in data.items() if k not in known_fields}
+                unknown_fields = {unknown: {k: v for k, v in data.items() if k not in known_fields}}
+            elif include_unknown:
+                unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
+            else:
+                unknown_fields = {}
             return class_(
                 **{
                     field_name: parser(data[item_name])

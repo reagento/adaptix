@@ -13,6 +13,7 @@ SimpleFieldMapping = Dict[str, str]
 class Unknown(Enum):
     SKIP = 'skip'
     FORBID = 'forbid'
+    INCLUDE = 'include'
 
 
 RuleForUnknown = Union[Unknown, str, None]
