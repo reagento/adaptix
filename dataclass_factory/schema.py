@@ -1,4 +1,5 @@
 from copy import copy
+from enum import Enum
 from typing import List, Dict, Callable, Tuple, Optional, Generic, Union
 
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
@@ -9,9 +10,12 @@ FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
 
 
-class Unknown:
+class Unknown(Enum):
     SKIP = 'skip'
     FORBID = 'forbid'
+
+
+RuleForUnknown = Union[Unknown, str, None]
 
 
 class Schema(Generic[T]):
@@ -38,7 +42,7 @@ class Schema(Generic[T]):
             post_serialize: Optional[Callable] = None,
 
             omit_default: Optional[bool] = None,
-            unknown: Union[Unknown, str, None] = None,
+            unknown: RuleForUnknown = None,
     ):
 
         if only is not None or not hasattr(self, "only"):

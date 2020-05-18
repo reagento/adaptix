@@ -3,7 +3,8 @@ from unittest import TestCase
 
 from dataclasses import dataclass
 
-from dataclass_factory import Factory, Schema, Unknown
+from dataclass_factory import Factory, Schema, RuleForUnknown
+from dataclass_factory.schema import Unknown
 
 
 @dataclass
