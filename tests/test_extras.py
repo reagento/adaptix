@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from dataclasses import dataclass
 
-from dataclass_factory import Factory, Schema, RuleForUnknown
+from dataclass_factory import Factory, Schema
 from dataclass_factory.schema import Unknown
 
 
@@ -16,11 +16,9 @@ class Data:
 class TestFactory(TestCase):
     def test_skip(self):
         factory = Factory(
-            schemas={
-                Data: Schema(
-                    unknown=Unknown.SKIP,
-                ),
-            }
+            default_schema=Schema(
+                unknown=Unknown.SKIP,
+            ),
         )
         data = Data("AA")
         serialized = {"a": "AA", "b": "b"}
@@ -28,11 +26,9 @@ class TestFactory(TestCase):
 
     def test_include(self):
         factory = Factory(
-            schemas={
-                Data: Schema(
-                    unknown="unknown",
-                ),
-            }
+            default_schema=Schema(
+                unknown="unknown",
+            ),
         )
         data = Data("AA", {"b": "b"})
         serialized = {"a": "AA", "b": "b"}
@@ -40,11 +36,9 @@ class TestFactory(TestCase):
 
     def test_forbid(self):
         factory = Factory(
-            schemas={
-                Data: Schema(
-                    unknown=Unknown.FORBID,
-                ),
-            }
+            default_schema=Schema(
+                unknown=Unknown.FORBID,
+            ),
         )
         serialized = {"a": "AA", "b": "b"}
         with self.assertRaises(ValueError):
