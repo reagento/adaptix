@@ -1,5 +1,5 @@
 from copy import copy
-from typing import List, Dict, Callable, Tuple, Optional, Generic
+from typing import List, Dict, Callable, Tuple, Optional, Generic, Union
 
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle
@@ -7,6 +7,11 @@ from .path_utils import NameMapping
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
+
+
+class Unknown:
+    SKIP = 'skip'
+    FORBID = 'forbid'
 
 
 class Schema(Generic[T]):
@@ -33,6 +38,7 @@ class Schema(Generic[T]):
             post_serialize: Optional[Callable] = None,
 
             omit_default: Optional[bool] = None,
+            unknown: Union[Unknown, str, None] = None,
     ):
 
         if only is not None or not hasattr(self, "only"):
@@ -72,6 +78,8 @@ class Schema(Generic[T]):
 
         if omit_default is not None or not hasattr(self, "omit_default"):
             self.omit_default = omit_default
+        if unknown is not None or not hasattr(self, "unknown"):
+            self.unknown = unknown
 
 
 SCHEMA_FIELDS = [
@@ -90,6 +98,7 @@ SCHEMA_FIELDS = [
     "post_parse",
     "pre_serialize",
     "post_serialize",
+    "unknown",
 ]
 
 
