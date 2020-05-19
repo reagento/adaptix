@@ -13,10 +13,10 @@ SimpleFieldMapping = Dict[str, str]
 class Unknown(Enum):
     SKIP = 'skip'
     FORBID = 'forbid'
-    INCLUDE = 'include'
+    STORE = 'include'
 
 
-RuleForUnknown = Union[Unknown, str, None]
+RuleForUnknown = Union[Unknown, str, List[str], None]
 
 
 class Schema(Generic[T]):

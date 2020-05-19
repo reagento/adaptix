@@ -152,7 +152,7 @@ def get_complex_parser(class_: Type[T],
             for field_name, data_name, parser in field_info
         )
     if list_mode:
-        if unknown not in (Unknown.SKIP, None):
+        if unknown != Unknown.SKIP:
             raise ValueError("Cannot use unknown=`%s` when parsing list", unknown)
 
         def complex_parser(data):
@@ -164,23 +164,32 @@ def get_complex_parser(class_: Type[T],
             })
     else:
         forbid_unknown = False
+        store_unknown_separate = False
         store_unknown = False
-        include_unknown = False
         if unknown is Unknown.FORBID:
             forbid_unknown = True
-        elif unknown is Unknown.INCLUDE:
-            include_unknown = True
-        elif isinstance(unknown, str):
+        elif unknown is Unknown.STORE:
             store_unknown = True
+        elif unknown is Unknown.SKIP:
+            pass
+        elif isinstance(unknown, str):
+            store_unknown_separate = True
+            unknown = [unknown]
+        else:  # list of string
+            store_unknown_separate = True
+
         known_fields = {f.field_name for f in fields}
 
         def complex_parser(data):
             if forbid_unknown and not known_fields.issuperset(data):
-                unknown_fields = set(data) - known_fields
-                raise ValueError("Extra field forbidden for type `%s`, found `%s`", class_, unknown_fields)
+                unknown_field_names = set(data) - known_fields
+                raise ValueError("Extra field forbidden for type `%s`, found `%s`", class_, unknown_field_names)
+            elif store_unknown_separate:
+                extras = {k: v for k, v in data.items() if k not in known_fields}
+                for field in unknown:
+                    data[field] = extras
+                unknown_fields = {}
             elif store_unknown:
-                unknown_fields = {unknown: {k: v for k, v in data.items() if k not in known_fields}}
-            elif include_unknown:
                 unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
             else:
                 unknown_fields = {}

@@ -8,9 +8,15 @@ from dataclass_factory.schema import Unknown
 
 
 @dataclass
+class Sub:
+    b: str
+
+
+@dataclass
 class Data:
     a: str
     unknown: Optional[Dict] = None
+    sub: Optional[Sub] = None
 
 
 class DataWtihExtras:
@@ -40,6 +46,16 @@ class TestFactory(TestCase):
         serialized = {"a": "AA", "b": "b"}
         self.assertEqual(data, factory.load(serialized, Data))
 
+    def test_store_separate_multiple(self):
+        factory = Factory(
+            default_schema=Schema(
+                unknown=["unknown", "sub"],
+            ),
+        )
+        data = Data("AA", {"b": "b"}, Sub("b"))
+        serialized = {"a": "AA", "b": "b"}
+        self.assertEqual(data, factory.load(serialized, Data))
+
     def test_forbid(self):
         factory = Factory(
             default_schema=Schema(
@@ -53,7 +69,7 @@ class TestFactory(TestCase):
     def test_include(self):
         factory = Factory(
             default_schema=Schema(
-                unknown=Unknown.INCLUDE,
+                unknown=Unknown.STORE,
             ),
         )
         serialized = {"a": "AA", "b": "b"}
