@@ -19,7 +19,12 @@ class Data:
     sub: Optional[Sub] = None
 
 
-class DataWtihExtras:
+@dataclass
+class DataAllUnknown:
+    sub: Optional[Sub] = None
+
+
+class DataWithExtras:
     def __init__(self, a: str, **kwargs):
         self.a = a
         self.extras = kwargs
@@ -45,6 +50,7 @@ class TestFactory(TestCase):
         data = Data("AA", {"b": "b"})
         serialized = {"a": "AA", "b": "b"}
         self.assertEqual(data, factory.load(serialized, Data))
+        self.assertEqual({"a": "AA", "b": "b", "sub": None}, factory.dump(data))
 
     def test_store_separate_multiple(self):
         factory = Factory(
@@ -55,6 +61,18 @@ class TestFactory(TestCase):
         data = Data("AA", {"b": "b"}, Sub("b"))
         serialized = {"a": "AA", "b": "b"}
         self.assertEqual(data, factory.load(serialized, Data))
+        self.assertEqual({"a": "AA", "b": "b"}, factory.dump(data))
+
+    def test_store_separate_parse(self):
+        factory = Factory(
+            default_schema=Schema(
+                unknown=["unknown", "sub"],
+            ),
+        )
+        data = DataAllUnknown(Sub("b"))
+        serialized = {"a": "AA", "b": "b"}
+        self.assertEqual(data, factory.load(serialized, DataAllUnknown))
+        self.assertEqual({"b": "b"}, factory.dump(data))
 
     def test_forbid(self):
         factory = Factory(
@@ -73,6 +91,6 @@ class TestFactory(TestCase):
             ),
         )
         serialized = {"a": "AA", "b": "b"}
-        data = factory.load(serialized, DataWtihExtras)
+        data = factory.load(serialized, DataWithExtras)
         self.assertEqual(data.a, "AA")
         self.assertEqual(data.extras, {"b": "b"})

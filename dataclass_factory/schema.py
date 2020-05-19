@@ -1,6 +1,6 @@
 from copy import copy
 from enum import Enum
-from typing import List, Dict, Callable, Tuple, Optional, Generic, Union
+from typing import List, Dict, Callable, Tuple, Optional, Generic, Union, Sequence
 
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle
@@ -16,7 +16,7 @@ class Unknown(Enum):
     STORE = 'include'
 
 
-RuleForUnknown = Union[Unknown, str, List[str], None]
+RuleForUnknown = Union[Unknown, str, Sequence[str], None]
 
 
 class Schema(Generic[T]):

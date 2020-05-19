@@ -175,7 +175,7 @@ def get_complex_parser(class_: Type[T],
         elif isinstance(unknown, str):
             store_unknown_separate = True
             unknown = [unknown]
-        else:  # list of string
+        else:  # sequence of string
             store_unknown_separate = True
 
         known_fields = {f.field_name for f in fields}
