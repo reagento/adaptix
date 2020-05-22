@@ -154,6 +154,25 @@ Examples:
 
 .. literalinclude:: examples/flatten_auto.py
 
+Parsing unknown fields
+===========================
+
+By default all extra fields that absent in target structure are ignored. But this behavior is not necessary.
+For now you can select from several variants setting ``unknown`` attribute of Schema
+
+* ``Unknown.SKIP`` - default behavior. All unknown fields are ignored (skipped)
+* ``Unknown.FORBID`` - ``UnknownFieldsError`` is raised in case of any unknown field is found
+* ``Unknown.STORE`` - all unknown fields passed unparsed to the constructor of class.
+  Your ``__init__`` must be ready for this
+* Field name (``str``). Specified field is filled with all unknowns and parser of corresponding type is called.
+  For simple cases you can annotate that field with ``Dict`` type.
+  In case of serialization, this field is also serialized and result is merged up with current result.
+* Several field names (sequence of ``str``). The behavior is very similar to the cae with one field name.
+  All unknowns are collected to single dict and it is passed to parsers of each provided field (be careful modifying data at ``pre_parse`` step).
+  Also their dump results are merged when serializing
+
+
+.. literalinclude:: examples/unknown_fields.py
 
 Additional steps
 ========================

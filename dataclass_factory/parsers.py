@@ -8,7 +8,7 @@ from typing import (
 from dataclasses import is_dataclass
 
 from .common import Parser, T, AbstractFactory
-from .exceptions import InvalidFieldError
+from .exceptions import InvalidFieldError, UnknownFieldsError
 from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields, get_class_fields
 from .path_utils import CleanKey, CleanPath
 from .schema import Schema, RuleForUnknown, Unknown
@@ -183,7 +183,7 @@ def get_complex_parser(class_: Type[T],
         def complex_parser(data):
             if forbid_unknown and not known_fields.issuperset(data):
                 unknown_field_names = set(data) - known_fields
-                raise ValueError("Extra field forbidden for type `%s`, found `%s`", class_, unknown_field_names)
+                raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
             elif store_unknown_separate:
                 extras = {k: v for k, v in data.items() if k not in known_fields}
                 for field in unknown:
