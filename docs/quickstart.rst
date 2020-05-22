@@ -54,6 +54,7 @@ Want to parse collection of dataclasses? No changes required, just specify corre
 
 Fields also can contain any supported collections.
 
+
 Error handling
 ==================
 
