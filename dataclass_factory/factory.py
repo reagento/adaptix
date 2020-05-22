@@ -3,7 +3,7 @@ from typing import Dict, Type, Any, Optional, TypeVar
 
 from .common import Serializer, Parser, AbstractFactory
 from .parsers import create_parser, get_lazy_parser
-from .schema import Schema, merge_schema
+from .schema import Schema, merge_schema, Unknown
 from .serializers import create_serializer, get_lazy_serializer
 from .type_detection import is_generic_concrete
 from .naming import NameStyle
@@ -13,6 +13,7 @@ DEFAULT_SCHEMA = Schema[Any](
     skip_internal=True,
     only_mapped=False,
     name_style=NameStyle.ignore,
+    unknown=Unknown.SKIP
 )
 
 
