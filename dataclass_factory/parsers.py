@@ -2,7 +2,8 @@ import decimal
 from collections import deque
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
-    Collection, Type, Optional, Tuple, Union, Sequence
+    Collection, Type, Optional, Tuple, Union, Sequence,
+    Dict,
 )
 
 from dataclasses import is_dataclass
@@ -280,8 +281,8 @@ def get_lazy_parser(factory, class_: Type) -> Parser:
     return lazy_parser
 
 
-def create_parser(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:
-    parser = create_parser_impl(factory, schema, debug_path, cls)
+def create_parser(factory, schema: Schema, debug_path: bool, cls: Type, localns: Dict) -> Parser:
+    parser = create_parser_impl(factory, schema, debug_path, cls, localns)
     pre = schema.pre_parse
     post = schema.post_parse
     if pre or post:
@@ -297,7 +298,7 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls: Type) -> Parse
     return parser
 
 
-def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:
+def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type, localns: Dict) -> Parser:
     if is_any(cls):
         return parse_stub
     if is_none(cls):
@@ -336,7 +337,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_typed_dict_parser(
             cls,
             factory,
-            get_typeddict_fields(schema, cls),
+            get_typeddict_fields(schema, cls, localns),
             debug_path,
             unknown=schema.unknown,
         )
@@ -354,7 +355,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_complex_parser(
             cls,
             factory,
-            get_dataclass_fields(schema, cls),
+            get_dataclass_fields(schema, cls, localns),
             debug_path,
             unknown=schema.unknown,
         )
@@ -362,7 +363,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_complex_parser(
             cls,
             factory,
-            get_class_fields(schema, cls),
+            get_class_fields(schema, cls, localns),
             debug_path,
             unknown=schema.unknown,
         )

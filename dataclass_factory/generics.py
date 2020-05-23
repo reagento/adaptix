@@ -13,21 +13,21 @@ def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
     return type_
 
 
-def resolve_hints(type_: Any):
+def resolve_hints(type_: Any, localns: Dict):
     if not is_generic_concrete(type_):
-        return get_type_hints(type_)
-    hints = get_type_hints(type_.__origin__)
+        return get_type_hints(type_, localns=localns)
+    hints = get_type_hints(type_.__origin__, localns=localns)
     args = dict(zip(type_.__origin__.__parameters__, type_.__args__))
     return {
-        name: fill_type_args(args, type)
-        for name, type in hints.items()
+        name: fill_type_args(args, fieldtype)
+        for name, fieldtype in hints.items()
     }
 
 
-def resolve_init_hints(type_: Any):
+def resolve_init_hints(type_: Any, localns: Dict):
     if not is_generic_concrete(type_):
-        return get_type_hints(type_.__init__)
-    hints = get_type_hints(type_.__origin__.__init__)
+        return get_type_hints(type_.__init__, localns=localns)
+    hints = get_type_hints(type_.__origin__.__init__, localns=localns)
     args = dict(zip(type_.__self__.__origin__.__parameters__, type_.__self__.__args__))
     return {
         name: fill_type_args(args, type)

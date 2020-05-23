@@ -2,11 +2,11 @@ from copy import copy
 from typing import Dict, Type, Any, Optional, TypeVar
 
 from .common import Serializer, Parser, AbstractFactory
+from .naming import NameStyle
 from .parsers import create_parser, get_lazy_parser
 from .schema import Schema, merge_schema, Unknown
 from .serializers import create_serializer, get_lazy_serializer
 from .type_detection import is_generic_concrete
-from .naming import NameStyle
 
 DEFAULT_SCHEMA = Schema[Any](
     trim_trailing_underscore=True,
@@ -52,10 +52,12 @@ class Factory(AbstractFactory):
     def __init__(self,
                  default_schema: Optional[Schema] = None,
                  schemas: Optional[Dict[Type, Schema]] = None,
-                 debug_path: bool = False):
+                 debug_path: bool = False,
+                 refs: Dict[str, Type] = None):
         self.default_schema = merge_schema(default_schema, DEFAULT_SCHEMA)
         self.debug_path = debug_path
         self.schemas: Dict[Type, Schema] = {}
+        self.refs = refs or {}
         if schemas:
             self.schemas.update({
                 type_: merge_schema(schema, self.default_schema)
@@ -77,6 +79,7 @@ class Factory(AbstractFactory):
         return schema
 
     def parser(self, class_: Type[T]) -> Parser[T]:
+        class_ = self.refs.get(class_, class_)
         return self._parser_with_stack(class_, StackedFactory(self))
 
     def _parser_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser[T]:
@@ -93,10 +96,11 @@ class Factory(AbstractFactory):
                 schema = new_schema
 
         if not schema.parser:
-            schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
+            schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_, self.refs)
         return schema.parser
 
     def serializer(self, class_: Type[T]) -> Serializer[T]:
+        class_ = self.refs.get(class_, class_)
         return self._serializer_with_stack(class_, StackedFactory(self))
 
     def _serializer_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Serializer[T]:

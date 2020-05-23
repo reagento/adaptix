@@ -1,6 +1,6 @@
 import inspect
 from functools import partial
-from typing import Sequence, Any, Type, TypeVar, Callable, List, Dict, Union, Optional, cast, Tuple
+from typing import Sequence, Any, Type, TypeVar, Callable, List, Dict, Union, Optional, cast
 
 from dataclasses import Field, MISSING, fields, dataclass
 
@@ -49,12 +49,15 @@ def get_func_default(paramter: inspect.Parameter, omit_default: Optional[bool]) 
 FilterFunc = Callable[[str], bool]
 
 
-def all_dataclass_fields(cls, omit_default: Optional[bool], filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
+def all_dataclass_fields(cls,
+                         omit_default: Optional[bool],
+                         localns: Dict,
+                         filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
     if is_generic_concrete(cls):
         all_fields = fields(cls.__origin__)
     else:
         all_fields = fields(cls)
-    hints = resolve_hints(cls)
+    hints = resolve_hints(cls, localns=localns)
     return [
         BaseFieldInfo(field_name=f.name, type=hints[f.name], default=get_dataclass_default(f, omit_default))
         for f in all_fields
@@ -62,9 +65,12 @@ def all_dataclass_fields(cls, omit_default: Optional[bool], filter_func: FilterF
     ]
 
 
-def all_class_fields(cls, omit_default: Optional[bool], filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
+def all_class_fields(cls,
+                     omit_default: Optional[bool],
+                     localns: Dict,
+                     filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
     all_fields = inspect.signature(cls.__init__).parameters
-    hints = resolve_init_hints(cls)
+    hints = resolve_init_hints(cls, localns=localns)
     return [
         BaseFieldInfo(field_name=f.name, type=hints.get(f.name, Any), default=get_func_default(f, omit_default))
         for f in all_fields.values()
@@ -72,8 +78,11 @@ def all_class_fields(cls, omit_default: Optional[bool], filter_func: FilterFunc 
     ]
 
 
-def all_typeddict_fields(cls, omit_default: Optional[bool], filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
-    all_fields = resolve_hints(cls)
+def all_typeddict_fields(cls,
+                         omit_default: Optional[bool],
+                         localns: Dict,
+                         filter_func: FilterFunc = None) -> List[BaseFieldInfo]:
+    all_fields = resolve_hints(cls, localns=localns)
     return [
         BaseFieldInfo(field_name=f, type=t, default=MISSING)
         for f, t in all_fields.items()
@@ -91,16 +100,17 @@ def filter_func(schema: Schema, name: str):
             (schema.exclude is None or name not in schema.exclude))
 
 
-AllFieldsGetter = Callable[[Any, Optional[bool], FilterFunc], List[BaseFieldInfo]]
+AllFieldsGetter = Callable[[Any, Optional[bool], Dict, FilterFunc], List[BaseFieldInfo]]
 
 
 def get_fields(
         all_fields_getter: AllFieldsGetter,
         schema: Schema[T],
-        class_: Type[T]
+        class_: Type[T],
+        localns: Dict,
 ) -> Sequence[FieldInfo]:
     partial_filter_func: FilterFunc = partial(filter_func, schema)  # type: ignore
-    all_fields = all_fields_getter(class_, schema.omit_default, partial_filter_func)
+    all_fields = all_fields_getter(class_, schema.omit_default, localns, partial_filter_func)
     only_mapped = schema.only_mapped and schema.only is None
     if only_mapped:
         if schema.name_mapping is None:
@@ -134,13 +144,13 @@ def get_fields(
 
 
 # wrappers
-def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
-    return get_fields(all_dataclass_fields, schema, class_)
+def get_dataclass_fields(schema: Schema[T], class_: Type[T], localns: Dict) -> Sequence[FieldInfo]:
+    return get_fields(all_dataclass_fields, schema, class_, localns)
 
 
-def get_typeddict_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
-    return get_fields(all_typeddict_fields, schema, class_)
+def get_typeddict_fields(schema: Schema[T], class_: Type[T], localns: Dict) -> Sequence[FieldInfo]:
+    return get_fields(all_typeddict_fields, schema, class_, localns)
 
 
-def get_class_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
-    return get_fields(all_class_fields, schema, class_)
+def get_class_fields(schema: Schema[T], class_: Type[T], localns: Dict) -> Sequence[FieldInfo]:
+    return get_fields(all_class_fields, schema, class_, localns)
