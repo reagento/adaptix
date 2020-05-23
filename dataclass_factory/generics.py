@@ -15,8 +15,8 @@ def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
 
 def resolve_hints(type_: Any, localns: Dict):
     if not is_generic_concrete(type_):
-        return get_type_hints(type_, localns=localns)
-    hints = get_type_hints(type_.__origin__, localns=localns)
+        return get_type_hints(type_, None, localns)
+    hints = get_type_hints(type_.__origin__, None, localns)
     args = dict(zip(type_.__origin__.__parameters__, type_.__args__))
     return {
         name: fill_type_args(args, fieldtype)
