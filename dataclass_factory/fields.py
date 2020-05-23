@@ -107,10 +107,9 @@ def get_fields(
         all_fields_getter: AllFieldsGetter,
         schema: Schema[T],
         class_: Type[T],
-        localns: Dict,
 ) -> Sequence[FieldInfo]:
     partial_filter_func: FilterFunc = partial(filter_func, schema)  # type: ignore
-    all_fields = all_fields_getter(class_, schema.omit_default, localns, partial_filter_func)
+    all_fields = all_fields_getter(class_, schema.omit_default, schema.refs, partial_filter_func)
     only_mapped = schema.only_mapped and schema.only is None
     if only_mapped:
         if schema.name_mapping is None:
@@ -144,13 +143,13 @@ def get_fields(
 
 
 # wrappers
-def get_dataclass_fields(schema: Schema[T], class_: Type[T], localns: Dict) -> Sequence[FieldInfo]:
-    return get_fields(all_dataclass_fields, schema, class_, localns)
+def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
+    return get_fields(all_dataclass_fields, schema, class_)
 
 
-def get_typeddict_fields(schema: Schema[T], class_: Type[T], localns: Dict) -> Sequence[FieldInfo]:
-    return get_fields(all_typeddict_fields, schema, class_, localns)
+def get_typeddict_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
+    return get_fields(all_typeddict_fields, schema, class_)
 
 
-def get_class_fields(schema: Schema[T], class_: Type[T], localns: Dict) -> Sequence[FieldInfo]:
-    return get_fields(all_class_fields, schema, class_, localns)
+def get_class_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
+    return get_fields(all_class_fields, schema, class_)

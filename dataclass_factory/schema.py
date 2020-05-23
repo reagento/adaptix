@@ -44,6 +44,7 @@ class Schema(Generic[T]):
 
             omit_default: Optional[bool] = None,
             unknown: RuleForUnknown = None,
+            refs: Optional[Dict] = None,
     ):
 
         if only is not None or not hasattr(self, "only"):
@@ -85,6 +86,8 @@ class Schema(Generic[T]):
             self.omit_default = omit_default
         if unknown is not None or not hasattr(self, "unknown"):
             self.unknown = unknown
+        if refs is not None or not hasattr(self, "refs"):
+            self.refs = refs
 
 
 SCHEMA_FIELDS = [
@@ -104,6 +107,7 @@ SCHEMA_FIELDS = [
     "pre_serialize",
     "post_serialize",
     "unknown",
+    "refs",
 ]
 
 

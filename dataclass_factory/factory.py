@@ -96,7 +96,7 @@ class Factory(AbstractFactory):
                 schema = new_schema
 
         if not schema.parser:
-            schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_, self.refs)
+            schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
         return schema.parser
 
     def serializer(self, class_: Type[T]) -> Serializer[T]:
@@ -117,7 +117,7 @@ class Factory(AbstractFactory):
                 schema = new_schema
 
         if not schema.serializer:
-            schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_, self.refs)
+            schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
 
         return schema.serializer
 
