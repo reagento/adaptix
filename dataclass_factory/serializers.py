@@ -123,8 +123,8 @@ def get_optional_serializer(serializer: Serializer[T]) -> Serializer[Optional[T]
     return optional_serializer
 
 
-def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
-    serializer = create_serializer_impl(factory, schema, debug_path, class_)
+def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type, localns: Dict) -> Serializer:
+    serializer = create_serializer_impl(factory, schema, debug_path, class_, localns)
     pre = schema.pre_serialize
     post = schema.post_serialize
     if pre or post:
@@ -140,14 +140,14 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
     return serializer
 
 
-def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
+def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type, localns: Dict) -> Serializer:
     if is_type_var(class_):
         return get_lazy_serializer(factory)
     if is_dataclass(class_) or (is_generic_concrete(class_) and is_dataclass(class_.__origin__)):
         return get_complex_serializer(
             factory,
             schema,
-            get_dataclass_fields(schema, class_),
+            get_dataclass_fields(schema, class_, localns),
             getattr,
             schema.unknown,
         )
@@ -155,7 +155,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
         return get_complex_serializer(
             factory,
             schema,
-            get_typeddict_fields(schema, class_),
+            get_typeddict_fields(schema, class_, localns),
             getitem,
             schema.unknown,
         )

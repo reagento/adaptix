@@ -117,7 +117,7 @@ class Factory(AbstractFactory):
                 schema = new_schema
 
         if not schema.serializer:
-            schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
+            schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_, self.refs)
 
         return schema.serializer
 
