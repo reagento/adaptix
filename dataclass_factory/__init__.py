@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from .common import AbstractFactory
 from .deprecated_stuff import dict_factory, parse, ParserFactory, SerializerFactory
 from .exceptions import InvalidFieldError, UnknownFieldsError
