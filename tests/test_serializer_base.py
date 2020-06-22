@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import unittest
 from enum import Enum
 from typing import List, Dict, Optional, Any
