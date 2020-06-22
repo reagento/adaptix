@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 from marshal import loads, dumps
 from operator import attrgetter, getitem
 from typing import Any, Type, List, Dict, Optional, Union, Sequence, Callable
