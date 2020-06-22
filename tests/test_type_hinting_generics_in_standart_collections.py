@@ -1,5 +1,7 @@
-from dataclasses import dataclass
+import sys
+import unittest
 from unittest import TestCase
+from dataclasses import dataclass
 
 from dataclass_factory import Factory
 
@@ -14,6 +16,7 @@ class Model:
 factory = Factory()
 
 
+@unittest.skipUnless(sys.version_info[:2] >= (3, 9), "requires Python 3.9+")
 class TestTypeHintingGenericsInStandartCollections(TestCase):
     def test_dict(self):
         data = {
