@@ -126,5 +126,5 @@ class SchemaProxy():
         return setattr(self._schemas[0], key, value)
 
 
-def merge_schema(*schemas: Schema) -> Schema:
+def merge_schema(*schemas: Optional[Schema]) -> Schema:
     return cast(Schema, SchemaProxy(*schemas))
