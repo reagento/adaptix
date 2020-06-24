@@ -109,7 +109,7 @@ SCHEMA_FIELDS = [
 
 class SchemaProxy():
     def __init__(self, *schemas: Schema):
-        self._schemas = [s for s in schemas if s]
+        self._schemas = schemas
 
     def __getattr__(self, item):
         for schema in self._schemas:
@@ -127,4 +127,4 @@ class SchemaProxy():
 
 
 def merge_schema(*schemas: Optional[Schema]) -> Schema:
-    return cast(Schema, SchemaProxy(*schemas))
+    return cast(Schema, SchemaProxy(*[s for s in schemas if s]))
