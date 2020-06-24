@@ -6,37 +6,22 @@ from typing import (
 
 from dataclasses import is_dataclass, MISSING
 
+from .common import AbstractFactory
 from .fields import get_dataclass_fields, get_typeddict_fields
+from .schema import Schema
 from .type_detection import (
     is_tuple, is_collection, hasargs, is_none, is_union, is_dict, is_enum,
     is_typeddict,
     is_generic_concrete,
 )
 
-definitions = {}
-definitions_rev = {}
-schemas = {}
 
-
-def get_ref(cls, factory):
-    schemas[cls] = factory.jsonschema(cls)
-    return get_ref_only(cls)
-
-
-def get_ref_only(cls):
+def need_ref(cls) -> bool:
     if cls in (int, str, bool, float, decimal.Decimal):
-        return
+        return False
     if is_none(cls):
-        return
-    if cls in definitions:
-        return definitions[cls]
-    name = getattr(cls, "__qualname__", "") or getattr(cls, "__name__", "") or str(cls)
-    if name in definitions_rev:
-        raise ValueError(
-            f"Already found type with name `{name}`: {definitions_rev[name]}. Please, specify another name for {cls}")
-    definitions_rev[name] = cls
-    definitions[cls] = name
-    return name
+        return False
+    return True
 
 
 def get_type(cls) -> Optional[str]:
@@ -59,20 +44,20 @@ def get_type(cls) -> Optional[str]:
     return "object"
 
 
-def type_or_ref(cls, factory):
-    ref = get_ref(cls, factory)
-    if ref:
+def type_or_ref(class_, factory: AbstractFactory):
+    if need_ref(class_):
+        ref = factory.json_schema_ref_name(class_)
         return {"$ref": f"#/definitions/{ref}"}
-    return {"type": get_type(cls)}
+    return {"type": get_type(class_)}
 
 
-def create_schema(factory, schema, cls: Type) -> Dict:
-    # TODO fields flattening and unknown
-    if cls in schemas:
-        return schemas[cls]
+def create_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict:
     res = {}
-    if hasattr(cls, "__name__"):
-        res["title"] = cls.__name__
+    if schema.name:
+        res["title"] = schema.name
+    if schema.description:
+        res["description"] = schema.description
+
     type = get_type(cls)
     if type:
         res["type"] = type

@@ -11,6 +11,12 @@ class AbstractFactory:
     def serializer(self, class_: Type):
         raise NotImplementedError
 
+    def json_schema(self, class_: Type):
+        raise NotImplementedError
+
+    def json_schema_ref_name(self, class_: Type):
+        raise NotImplementedError
+
 
 Serializer = Callable[[T], Any]
 SerializerGetter = Callable[

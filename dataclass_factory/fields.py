@@ -27,18 +27,14 @@ class FieldInfo(BaseFieldInfo):
 
 # defaults
 
-def get_dataclass_default(field: Field, omit_default: Optional[bool]) -> Any:
-    if not omit_default:
-        return MISSING
+def get_dataclass_default(field: Field) -> Any:
     # type ignore because of https://github.com/python/mypy/issues/6910
     if field.default_factory != MISSING:  # type: ignore
         return field.default_factory()  # type: ignore
     return field.default
 
 
-def get_func_default(paramter: inspect.Parameter, omit_default: Optional[bool]) -> Any:
-    if not omit_default:
-        return MISSING
+def get_func_default(paramter: inspect.Parameter) -> Any:
     # type ignore because of https://github.com/python/mypy/issues/6910
     if paramter.default is inspect.Parameter.empty:
         return MISSING
@@ -56,7 +52,7 @@ def all_dataclass_fields(cls, omit_default: Optional[bool], filter_func: FilterF
         all_fields = fields(cls)
     hints = resolve_hints(cls)
     return [
-        BaseFieldInfo(field_name=f.name, type=hints[f.name], default=get_dataclass_default(f, omit_default))
+        BaseFieldInfo(field_name=f.name, type=hints[f.name], default=get_dataclass_default(f))
         for f in all_fields
         if not filter_func or filter_func(f.name) and f.init
     ]
@@ -66,7 +62,7 @@ def all_class_fields(cls, omit_default: Optional[bool], filter_func: FilterFunc 
     all_fields = inspect.signature(cls.__init__).parameters
     hints = resolve_init_hints(cls)
     return [
-        BaseFieldInfo(field_name=f.name, type=hints.get(f.name, Any), default=get_func_default(f, omit_default))
+        BaseFieldInfo(field_name=f.name, type=hints.get(f.name, Any), default=get_func_default(f))
         for f in all_fields.values()
         if not filter_func or filter_func(f.name)
     ]

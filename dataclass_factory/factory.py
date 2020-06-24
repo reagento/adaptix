@@ -2,12 +2,12 @@ from copy import copy
 from typing import Dict, Type, Any, Optional, TypeVar
 
 from .common import Serializer, Parser, AbstractFactory
+from .jsonschema import create_schema
+from .naming import NameStyle
 from .parsers import create_parser, get_lazy_parser
 from .schema import Schema, merge_schema, Unknown
 from .serializers import create_serializer, get_lazy_serializer
 from .type_detection import is_generic_concrete
-from .naming import NameStyle
-from .jsonschema import get_ref_only, create_schema
 
 DEFAULT_SCHEMA = Schema[Any](
     trim_trailing_underscore=True,
@@ -25,12 +25,15 @@ class StackedFactory(AbstractFactory):
         self.stack = []
         self.factory = factory
 
-    def jsonschema(self, class_: Type):
+    def json_schema_ref_name(self, class_: Type):
+        return self.factory._json_schema_ref_name_with_stack(class_, self)
+
+    def json_schema(self, class_: Type):
         if class_ in self.stack:
-            return get_ref_only(class_)
+            return
         self.stack.append(class_)
         try:
-            return self.factory._jsonschema_with_stack(class_, self)
+            return self.factory._json_schema_with_stack(class_, self)
         finally:
             self.stack.pop()
 
@@ -71,6 +74,8 @@ class Factory(AbstractFactory):
                 type_: merge_schema(schema, self.default_schema)
                 for type_, schema in schemas.items()
             })
+        self.json_schemas: Dict[str, Dict] = {}
+        self.json_schema_names: Dict[str, Type] = {}
 
     def schema(self, class_: Type[T]) -> Schema[T]:
         if is_generic_concrete(class_):
@@ -106,12 +111,48 @@ class Factory(AbstractFactory):
             schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
         return schema.parser
 
-    def jsonschema(self, class_: Type[T]) -> Parser[T]:
-        return self._jsonschema_with_stack(class_, StackedFactory(self))
+    def json_schema_ref_name(self, class_: Type[T]):
+        return self._json_schema_ref_name_with_stack(class_, StackedFactory(self))
 
-    def _jsonschema_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser[T]:
+    def _json_schema_ref_name_with_stack(self, class_: Type[T], stacked_factory: StackedFactory):
         schema = self.schema(class_)
-        return create_schema(stacked_factory, schema, class_)
+        if schema.name is not None:
+            if schema.name not in self.json_schema_names:
+                return schema.name
+            if self.json_schema_names[schema.name] != class_:
+                raise ValueError(f"Already found type with name `{schema.name}`: "
+                                 f"{self.json_schema_names[schema.name]}. "
+                                 f"Please, specify another name for {class_}")
+            return schema.name
+        name = getattr(class_, "__qualname__", "") or getattr(class_, "__name__", "") or str(class_)
+        if name in self.json_schema_names:
+            raise ValueError(f"Already found type with name `{name}`: "
+                             f"{self.json_schema_names[name]}. "
+                             f"Please, specify another name for {class_} "
+                             f"in schema or rename class itself")
+        schema.name = name
+        stacked_factory.json_schema(class_)
+        return name
+
+    def json_schema(self, class_: Type[T]) -> Parser[T]:
+        return self._json_schema_with_stack(class_, StackedFactory(self))
+
+    def json_schema_definitions(self) -> Parser[T]:
+        return {
+            "definitions": {
+                k: v
+                for k, v in self.json_schemas.items()
+            }
+        }
+
+    def _json_schema_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser[T]:
+        schema = self.schema(class_)
+        name = self._json_schema_ref_name_with_stack(class_, stacked_factory)
+        if name in self.json_schemas:
+            return self.json_schemas[name]
+        json_schema = create_schema(stacked_factory, schema, class_)
+        self.json_schemas[name] = json_schema
+        return json_schema
 
     def serializer(self, class_: Type[T]) -> Serializer[T]:
         return self._serializer_with_stack(class_, StackedFactory(self))
