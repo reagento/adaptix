@@ -7,6 +7,7 @@ from .schema import Schema, merge_schema, Unknown
 from .serializers import create_serializer, get_lazy_serializer
 from .type_detection import is_generic_concrete
 from .naming import NameStyle
+from .jsonschema import get_ref_only, create_schema
 
 DEFAULT_SCHEMA = Schema[Any](
     trim_trailing_underscore=True,
@@ -23,6 +24,15 @@ class StackedFactory(AbstractFactory):
     def __init__(self, factory):
         self.stack = []
         self.factory = factory
+
+    def jsonschema(self, class_: Type):
+        if class_ in self.stack:
+            return get_ref_only(class_)
+        self.stack.append(class_)
+        try:
+            return self.factory._jsonschema_with_stack(class_, self)
+        finally:
+            self.stack.pop()
 
     def parser(self, class_: Type):
         if class_ in self.stack:
@@ -95,6 +105,13 @@ class Factory(AbstractFactory):
         if not schema.parser:
             schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
         return schema.parser
+
+    def jsonschema(self, class_: Type[T]) -> Parser[T]:
+        return self._jsonschema_with_stack(class_, StackedFactory(self))
+
+    def _jsonschema_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser[T]:
+        schema = self.schema(class_)
+        return create_schema(stacked_factory, schema, class_)
 
     def serializer(self, class_: Type[T]) -> Serializer[T]:
         return self._serializer_with_stack(class_, StackedFactory(self))
