@@ -6,9 +6,9 @@ from typing import (
 
 from dataclasses import is_dataclass, MISSING
 
-from .common import AbstractFactory
+from .common import AbstractFactory, T
 from .fields import get_dataclass_fields, get_typeddict_fields
-from .schema import Schema
+from .schema import Schema, Unknown
 from .type_detection import (
     is_tuple, is_collection, hasargs, is_none, is_union, is_dict, is_enum,
     is_typeddict,
@@ -51,7 +51,52 @@ def type_or_ref(class_, factory: AbstractFactory):
     return {"type": get_type(class_)}
 
 
-def create_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict:
+def unknown(factory: AbstractFactory, schema: Schema, cls: Type[T]) -> Dict:
+    res = {}
+    if schema.unknown == Unknown.FORBID:
+        res["additionalProperties"] = False
+    elif schema.unknown in (Unknown.SKIP, Unknown.STORE):
+        res["additionalProperties"] = True
+    else:
+        raise NotImplementedError("Cannot generate schema with unknown=%s" % schema.unknown)
+    return res
+
+
+def typed_dict_schema(factory: AbstractFactory, schema: Schema, cls: Type[T]):
+    res = {}
+    fields = get_typeddict_fields(schema, cls)
+    if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
+        raise NotImplementedError("Schema flattening is not yet supported")
+    res["properties"] = {}
+    res.update(unknown(factory, schema, cls))
+    for f in fields:
+        res["properties"][f.data_name] = type_or_ref(f.type, factory)
+        if f.default is not MISSING:
+            res["properties"][f.data_name]["default"] = f.default
+    if cls.__total__:
+        res["required"] = [
+            f.data_name for f in fields
+        ]
+    return res
+
+def dataclass_schema(factory: AbstractFactory, schema: Schema, cls: Type[T]):
+    res = {}
+    fields = get_dataclass_fields(schema, cls)
+    if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
+        raise NotImplementedError("Schema flattening is not yet supported")
+    res["properties"] = {}
+    res.update(unknown(factory, schema, cls))
+    for f in fields:
+        res["properties"][f.data_name] = type_or_ref(f.type, factory)
+        if f.default is not MISSING and f.type:
+            res["properties"][f.data_name]["default"] = f.default
+    res["required"] = [
+        f.data_name for f in fields if f.default is MISSING
+    ]
+    return res
+
+
+def create_schema(factory: AbstractFactory, schema: Schema, cls: Type[T]) -> Dict:
     res = {}
     if schema.name:
         res["title"] = schema.name
@@ -74,28 +119,11 @@ def create_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict:
         else:
             res["items"] = [type_or_ref(x, factory) for x in cls.__args__]
     elif is_typeddict(cls) or (is_generic_concrete(cls) and is_typeddict(cls.__origin__)):
-        fields = get_typeddict_fields(schema, cls)
-        res["properties"] = {}
-        for f in fields:
-            res["properties"][f.data_name] = type_or_ref(f.type, factory)
-            if f.default is not MISSING:
-                res["properties"][f.data_name]["default"] = f.default
-        if cls.__total__:
-            res["required"] = [
-                f.data_name for f in fields
-            ]
+        res.update(typed_dict_schema(factory, schema, cls))
     elif is_collection(cls):
         res["items"] = type_or_ref(cls.__args__[0], factory)
     elif is_union(cls):
         res["anyOf"] = [type_or_ref(x, factory) for x in cls.__args__]
     elif is_dataclass(cls) or (is_generic_concrete(cls) and is_dataclass(cls.__origin__)):
-        fields = get_dataclass_fields(schema, cls)
-        res["properties"] = {}
-        for f in fields:
-            res["properties"][f.data_name] = type_or_ref(f.type, factory)
-            if f.default is not MISSING:
-                res["properties"][f.data_name]["default"] = f.default
-        res["required"] = [
-            f.data_name for f in fields if f.default is MISSING
-        ]
+        res.update(dataclass_schema(factory, schema, cls))
     return res
