@@ -90,7 +90,7 @@ def dataclass_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dic
     for f in fields:
         res["properties"][f.data_name] = type_or_ref(f.type, factory)
         if f.default is not MISSING and f.type:
-            res["properties"][f.data_name]["default"] = f.default
+            res["properties"][f.data_name]["default"] = factory.serializer(f.type)(f.default)
     res["required"] = [
         f.data_name for f in fields if f.default is MISSING
     ]
@@ -98,12 +98,14 @@ def dataclass_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dic
 
 
 def create_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict[str, Any]:
+    if cls is Any:
+        return {}
+
     res: Dict[str, Any] = {}
     if schema.name:
         res["title"] = schema.name
     if schema.description:
         res["description"] = schema.description
-
     type = get_type(cls)
     if type:
         res["type"] = type
