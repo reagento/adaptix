@@ -66,12 +66,12 @@ class Factory(AbstractFactory):
                  default_schema: Optional[Schema] = None,
                  schemas: Optional[Dict[Type, Schema]] = None,
                  debug_path: bool = False):
-        self.default_schema = merge_schema(default_schema, DEFAULT_SCHEMA)
         self.debug_path = debug_path
+        self.default_schema = default_schema
         self.schemas: Dict[Type, Schema] = {}
         if schemas:
             self.schemas.update({
-                type_: merge_schema(schema, self.default_schema)
+                type_: merge_schema(schema, self.default_schema, DEFAULT_SCHEMA)
                 for type_, schema in schemas.items()
             })
         self.json_schemas: Dict[str, Dict] = {}
@@ -87,7 +87,9 @@ class Factory(AbstractFactory):
         if not schema:
             if base_class:
                 schema = self.schemas.get(base_class)
-            schema = merge_schema(schema, self.default_schema)
+            if not schema:
+                schema = Schema()
+            schema = merge_schema(schema, self.default_schema, DEFAULT_SCHEMA)
             self.schemas[class_] = schema
         return schema
 
