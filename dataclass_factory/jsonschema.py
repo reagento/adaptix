@@ -1,12 +1,12 @@
 import decimal
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from typing import (
     Type
 )
 
 from dataclasses import is_dataclass, MISSING
 
-from .common import AbstractFactory, T
+from .common import AbstractFactory
 from .fields import get_dataclass_fields, get_typeddict_fields
 from .schema import Schema, Unknown
 from .type_detection import (
@@ -40,19 +40,19 @@ def get_type(cls) -> Optional[str]:
     elif is_tuple(cls) or is_collection(cls):
         return "array"
     elif is_union(cls) or is_enum(cls):
-        return
+        return None
     return "object"
 
 
-def type_or_ref(class_, factory: AbstractFactory):
+def type_or_ref(class_, factory: AbstractFactory) -> Dict[str, Any]:
     if need_ref(class_):
         ref = factory.json_schema_ref_name(class_)
         return {"$ref": f"#/definitions/{ref}"}
     return {"type": get_type(class_)}
 
 
-def unknown(factory: AbstractFactory, schema: Schema, cls: Type[T]) -> Dict:
-    res = {}
+def unknown(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict[str, Any]:
+    res: Dict[str, Any] = {}
     if schema.unknown == Unknown.FORBID:
         res["additionalProperties"] = False
     elif schema.unknown in (Unknown.SKIP, Unknown.STORE):
@@ -62,8 +62,8 @@ def unknown(factory: AbstractFactory, schema: Schema, cls: Type[T]) -> Dict:
     return res
 
 
-def typed_dict_schema(factory: AbstractFactory, schema: Schema, cls: Type[T]):
-    res = {}
+def typed_dict_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict[str, Any]:
+    res: Dict[str, Any] = {}
     fields = get_typeddict_fields(schema, cls)
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
         raise NotImplementedError("Schema flattening is not yet supported")
@@ -79,8 +79,9 @@ def typed_dict_schema(factory: AbstractFactory, schema: Schema, cls: Type[T]):
         ]
     return res
 
-def dataclass_schema(factory: AbstractFactory, schema: Schema, cls: Type[T]):
-    res = {}
+
+def dataclass_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict[str, Any]:
+    res: Dict[str, Any] = {}
     fields = get_dataclass_fields(schema, cls)
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
         raise NotImplementedError("Schema flattening is not yet supported")
@@ -96,8 +97,8 @@ def dataclass_schema(factory: AbstractFactory, schema: Schema, cls: Type[T]):
     return res
 
 
-def create_schema(factory: AbstractFactory, schema: Schema, cls: Type[T]) -> Dict:
-    res = {}
+def create_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict[str, Any]:
+    res: Dict[str, Any] = {}
     if schema.name:
         res["title"] = schema.name
     if schema.description:

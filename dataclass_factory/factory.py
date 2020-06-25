@@ -136,10 +136,10 @@ class Factory(AbstractFactory):
         stacked_factory.json_schema(class_)
         return name
 
-    def json_schema(self, class_: Type[T]) -> Parser[T]:
+    def json_schema(self, class_: Type[T]) -> Dict[str, Any]:
         return self._json_schema_with_stack(class_, StackedFactory(self))
 
-    def json_schema_definitions(self) -> Parser[T]:
+    def json_schema_definitions(self) -> Dict[str, Any]:
         return {
             "definitions": {
                 k: v
@@ -147,7 +147,7 @@ class Factory(AbstractFactory):
             }
         }
 
-    def _json_schema_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser[T]:
+    def _json_schema_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Dict[str, Any]:
         schema = self.schema(class_)
         name = self._json_schema_ref_name_with_stack(class_, stacked_factory)
         if name in self.json_schemas:
