@@ -43,6 +43,8 @@ class Schema(Generic[T]):
 
             omit_default: Optional[bool] = None,
             unknown: RuleForUnknown = None,
+            name: Optional[str] = None,
+            description: Optional[str] = None,
     ):
 
         if only is not None or not hasattr(self, "only"):
@@ -85,6 +87,11 @@ class Schema(Generic[T]):
         if unknown is not None or not hasattr(self, "unknown"):
             self.unknown = unknown
 
+        if name is not None or not hasattr(self, "name"):
+            self.name = name
+        if description is not None or not hasattr(self, "description"):
+            self.description = description
+
 
 SCHEMA_FIELDS = [
     "only",
@@ -104,6 +111,8 @@ SCHEMA_FIELDS = [
     "post_serialize",
     "omit_default",
     "unknown",
+    "name",
+    "description",
 ]
 
 

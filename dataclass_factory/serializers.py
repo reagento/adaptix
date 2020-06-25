@@ -31,7 +31,7 @@ def get_complex_serializer(factory: AbstractFactory,
                            fields: Sequence[FieldInfo],
                            getter: Callable[[Any, Any], Any],
                            unknown: RuleForUnknown) -> Serializer[T]:
-    has_default = any(f.default != MISSING for f in fields)
+    has_default = schema.omit_default and any(f.default != MISSING for f in fields)
     field_info = tuple(
         (f.field_name, factory.serializer(f.type), f.data_name, f.default)
         for f in fields
