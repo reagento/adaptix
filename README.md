@@ -55,7 +55,7 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 * Speed. It is up to 10 times faster than `marshmallow` and `dataclasses.asdict` (see [benchmarks](benchmarks))
 * Automatic name style conversion (e.g. `snake_case` to `CamelCase`)
 * Automatic skipping of "internal use" fields (with leading underscore)
-* Enums, typed dicts, tuples and lists are supported from the box
+* Enums, typed dicts, tuples and lists are supported out of the box
 * Unions and Optionals are supported without need to define them in schema
 * Generic dataclasses can be automatically parsed as well
 * Cyclic-referenced structures (such as linked-lists or trees) also can be converted
