@@ -8,7 +8,7 @@ from typing import (
 from dataclasses import is_dataclass
 
 from .common import Parser, T, AbstractFactory
-from .exceptions import InvalidFieldError, UnknownFieldsError
+from .exceptions import InvalidFieldError, UnknownFieldsError, UnionParseError
 from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields, get_class_fields
 from .path_utils import CleanKey, CleanPath
 from .schema import Schema, RuleForUnknown, Unknown
@@ -83,12 +83,14 @@ def get_collection_parser(
 
 def get_union_parser(parsers: Collection[Callable]) -> Parser:
     def union_parser(data):
+        errors = []
         for p in parsers:
             try:
                 return p(data)
             except PARSER_EXCEPTIONS as e:
+                errors.append((p.__qualname__, e))
                 continue
-        raise ValueError("No suitable parsers in union found for `%s`" % data)
+        raise UnionParseError("No suitable parsers in union found for `%s`" % data, errors)
 
     return union_parser
 
@@ -349,7 +351,17 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         item_parser = factory.parser(value_type_arg)
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
-        return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
+        # also check if Union can be converted to Optional[...] or Optionl[Union[...]]
+        parsers = tuple(factory.parser(x) for x in cls.__args__ if not is_none(x))
+        if len(parsers) == 0:
+            return parse_none
+        if len(parsers) == 1:
+            parser = parsers[0]
+        else:
+            parser = get_union_parser(parsers)
+        if len(parsers) < len(cls.__args__):
+            return get_optional_parser(parser)
+        return parser
     if is_dataclass(cls) or (is_generic_concrete(cls) and is_dataclass(cls.__origin__)):
         return get_complex_parser(
             cls,
