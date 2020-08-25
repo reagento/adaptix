@@ -213,9 +213,32 @@ In some case it is useful to subclass Schema instead of just creating instances 
 .. literalinclude:: examples/subclass.py
 
 .. note::
-    Factory creates a copy of schema for each type filling missed args.
+    In versions <2.9: Factory created a copy of schema for each type filling missed args.
     If you need to get access to some data in schema, get a working instance of schema with ``Factory.schema`` method
 
 .. note::
     Single schema instance can be used multiple time simultaneously because of multithreading or recursive structures.
     Be careful modifying data in schema
+
+
+Json-schema
+==========================
+
+You can generate json schema for your classes.
+
+Note that factory does it lazily and caches result. So if you need definitions for all your classes, create schema for each top-level class using ``json_schema`` method
+and then collect all definitions using ``json_schema_definitions``
+
+.. literalinclude:: examples/jsonschema.py
+
+Result of ``json_schema`` call is
+
+.. literalinclude:: examples/jsonschema_res.json
+
+Result of ``json_schema_definitions`` call is
+
+.. literalinclude:: examples/jsonschema_defs.json
+
+.. note::
+    Not all features of dataclass factory are suppoerted currently. You cannot generate json-schema if you use structure-flattening, additional parsing of unknown fields or init-based parsing.
+    Also, if you have custom parsers or pre-parse step, schema might be incorrect.

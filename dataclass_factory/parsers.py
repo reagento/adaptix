@@ -142,12 +142,8 @@ def get_complex_parser(class_: Type[T],
         (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
         for f in fields
     )
-
     list_mode = any(isinstance(name, int) for _, name, _ in field_info)
-    field_info = tuple(
-        (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
-        for f in fields
-    )
+
     if debug_path:
         field_info = tuple(
             (field_name, data_name, get_element_parser(parser, field_name))
