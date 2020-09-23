@@ -4,3 +4,8 @@ mypy
 typing_extensions
 sphinx
 sphinx_rtd_theme
+isort
+vulture
+flake8
+flake8-docstrings
+autopep8
