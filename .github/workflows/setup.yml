@@ -10,7 +10,7 @@ on:
     branches: [develop]
 
 jobs:
-  build:
+  cpython:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -38,12 +38,40 @@ jobs:
 
       - name: Run vulture
         run: |
-          python -m vulture dataclass_factory
+          python -m vulture dataclass_factory tests
 
       - name: Run Mypy
         run: |
-          python -m mypy dataclass_factory
+          python -m mypy dataclass_factory tests
 
       - name: Run tests
         run: |
           python -m nose2 -B -C tests
+          
+  pypy:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        pypy-version: ['pypy3']
+
+    steps:
+    - uses: actions/checkout@develop
+    - name: Install Pypy
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.pypy-version }}
+
+    - name: Install dependencies
+      run: |
+          pypy -m ensurepip
+          pypy -mpip install -U pip
+          pypy -mpip install nose2
+
+    - name: Run tests
+      run: |
+          nose2 -B -C tests
+    
