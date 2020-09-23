@@ -32,23 +32,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: autopep8
-        id: autopep8
-        uses: peter-evans/autopep8@v1
-        with:
-          args: -r dataclass_factory tests
-
-      - name: Run Isort
-        run: |
-          python -m isort dataclass_factory tests
-
       - name: Run flake8
         run: |
           python -m flake8 dataclass_factory tests --count --exit-zero --statistics --show-source
 
       - name: Run vulture
         run: |
-          poetry run vulture dataclass_factory
+          python -m vulture dataclass_factory
 
       - name: Run Mypy
         run: |
