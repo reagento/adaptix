@@ -1,5 +1,6 @@
-# IntelliJ project files
+# IDE
 .idea
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -51,3 +52,5 @@ dmypy.json
 
 
 /docs/build
+
+.venv/
