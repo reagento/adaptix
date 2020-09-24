@@ -77,6 +77,7 @@ In first case you can use ``@validate`` decorator to check the data. Here are de
 * validator CAN be applied to multiple fields. Just provide multiple names
 * validator CAN be applied to any field separately. Just do not set any field name
 * validator MUST return data if checks are succeeded. Data can be same as passed to it or anything else. Validator CAN change data
+* field validators CANNOT be set in default schema
 
 .. literalinclude:: examples/validators.py
 
