@@ -106,21 +106,20 @@ def create_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict[s
         res["title"] = schema.name
     if schema.description:
         res["description"] = schema.description
-    type = get_type(cls)
-    if type:
-        res["type"] = type
+    type_ = get_type(cls)
+    if type_:
+        res["type"] = type_
 
     if is_enum(cls):
         res["enum"] = [x.value for x in cls]
     elif is_dict(cls):
         res["additionalProperties"] = type_or_ref(cls.__args__[1], factory)
     elif is_tuple(cls):
-        if not hasargs(cls):
-            pass
-        elif len(cls.__args__) == 2 and cls.__args__[1] is Ellipsis:
-            res["items"] = type_or_ref(cls.__args__[0], factory)
-        else:
-            res["items"] = [type_or_ref(x, factory) for x in cls.__args__]
+        if hasargs(cls):
+            if len(cls.__args__) == 2 and cls.__args__[1] is Ellipsis:
+                res["items"] = type_or_ref(cls.__args__[0], factory)
+            else:
+                res["items"] = [type_or_ref(x, factory) for x in cls.__args__]
     elif is_typeddict(cls) or (is_generic_concrete(cls) and is_typeddict(cls.__origin__)):
         res.update(typed_dict_schema(factory, schema, cls))
     elif is_collection(cls):

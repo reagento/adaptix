@@ -5,7 +5,7 @@
 [![downloads](https://img.shields.io/pypi/dm/dataclass_factory.svg)](https://pypistats.org/packages/dataclass_factory)
 [![license](https://img.shields.io/github/license/Tishka17/dataclass_factory.svg)](https://github.com/Tishka17/dataclass_factory/blob/master/LICENSE)
 
-**dataclass_factory** is modern way to convert dataclasses or other objects to and from more common types like dicts
+**dataclass_factory** is a modern way to convert dataclasses or other objects to and from more common types like dicts
 
 ## Help
 

@@ -19,8 +19,8 @@ def resolve_hints(type_: Any):
     hints = get_type_hints(type_.__origin__)
     args = dict(zip(type_.__origin__.__parameters__, type_.__args__))
     return {
-        name: fill_type_args(args, type)
-        for name, type in hints.items()
+        name: fill_type_args(args, type_)
+        for name, type_ in hints.items()
     }
 
 
@@ -30,6 +30,6 @@ def resolve_init_hints(type_: Any):
     hints = get_type_hints(type_.__origin__.__init__)
     args = dict(zip(type_.__self__.__origin__.__parameters__, type_.__self__.__args__))
     return {
-        name: fill_type_args(args, type)
-        for name, type in hints.items()
+        name: fill_type_args(args, type_)
+        for name, type_ in hints.items()
     }

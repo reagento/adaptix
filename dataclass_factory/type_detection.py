@@ -26,7 +26,8 @@ try:
     from typing import TypedDict as PyTypedDict  # type: ignore
 
 
-    class RealPyTypedDict(PyTypedDict): pass  # create real class, because PyTypedDict can be helper function
+    class RealPyTypedDict(PyTypedDict):
+        pass  # create real class, because PyTypedDict can be helper function
 
     TYPED_DICT_METAS_TMP.append(type(RealPyTypedDict))
 except ImportError:
