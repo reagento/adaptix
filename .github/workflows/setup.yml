@@ -67,7 +67,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install nose2
+          pip install -r requirements_pypy.txt
 
       - name: Run tests
         run: |
