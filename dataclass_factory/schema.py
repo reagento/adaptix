@@ -4,6 +4,7 @@ from typing import List, Dict, Callable, Tuple, Optional, Generic, Union, Sequen
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle
 from .path_utils import NameMapping
+from .validators import prepare_validators
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
@@ -19,34 +20,37 @@ RuleForUnknown = Union[Unknown, str, Sequence[str], None]
 
 
 class Schema(Generic[T]):
+    pre_validators: Dict[Optional[str], List[Parser]]
+    post_validators: Dict[Optional[str], List[Parser]]
+
     def __init__(
-            self,
-            only: Optional[List[str]] = None,
-            exclude: Optional[List[str]] = None,
-            name_mapping: NameMapping = None,
-            only_mapped: Optional[bool] = None,
+        self,
+        only: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        name_mapping: NameMapping = None,
+        only_mapped: Optional[bool] = None,
 
-            name_style: Optional[NameStyle] = None,
-            trim_trailing_underscore: Optional[bool] = None,
-            skip_internal: Optional[bool] = None,
+        name_style: Optional[NameStyle] = None,
+        trim_trailing_underscore: Optional[bool] = None,
+        skip_internal: Optional[bool] = None,
 
-            serializer: Optional[Serializer[T]] = None,
-            get_serializer: Optional[SerializerGetter[T]] = None,
+        serializer: Optional[Serializer[T]] = None,
+        get_serializer: Optional[SerializerGetter[T]] = None,
 
-            parser: Optional[Parser[T]] = None,
-            get_parser: Optional[ParserGetter[T]] = None,
+        parser: Optional[Parser[T]] = None,
+        get_parser: Optional[ParserGetter[T]] = None,
 
-            pre_parse: Optional[Callable] = None,
-            post_parse: Optional[InnerConverter[T]] = None,
-            pre_serialize: Optional[InnerConverter[T]] = None,
-            post_serialize: Optional[Callable] = None,
+        pre_parse: Optional[Callable] = None,
+        post_parse: Optional[InnerConverter[T]] = None,
+        pre_serialize: Optional[InnerConverter[T]] = None,
+        post_serialize: Optional[Callable] = None,
 
-            omit_default: Optional[bool] = None,
-            unknown: RuleForUnknown = None,
-            name: Optional[str] = None,
-            description: Optional[str] = None,
+        omit_default: Optional[bool] = None,
+        unknown: RuleForUnknown = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
-
+        self.pre_validators, self.post_validators = prepare_validators(self)
         if only is not None or not hasattr(self, "only"):
             self.only = only
         if exclude is not None or not hasattr(self, "exclude"):
@@ -113,6 +117,8 @@ SCHEMA_FIELDS = [
     "unknown",
     "name",
     "description",
+    "pre_validators",
+    "post_validators",
 ]
 
 

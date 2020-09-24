@@ -44,7 +44,7 @@ def get_func_default(parameter: inspect.Parameter) -> Any:
 FieldsFilter = Callable[[str], bool]
 
 
-def all_dataclass_fields(cls, omit_default: Optional[bool], fields_filter: FieldsFilter = None) -> List[BaseFieldInfo]:
+def all_dataclass_fields(cls, fields_filter: FieldsFilter = None) -> List[BaseFieldInfo]:
     if is_generic_concrete(cls):
         all_fields = fields(cls.__origin__)
     else:
@@ -57,7 +57,7 @@ def all_dataclass_fields(cls, omit_default: Optional[bool], fields_filter: Field
     ]
 
 
-def all_class_fields(cls, omit_default: Optional[bool], fields_filter: FieldsFilter = None) -> List[BaseFieldInfo]:
+def all_class_fields(cls, fields_filter: FieldsFilter = None) -> List[BaseFieldInfo]:
     all_fields = inspect.signature(cls.__init__).parameters
     hints = resolve_init_hints(cls)
     return [
@@ -67,7 +67,7 @@ def all_class_fields(cls, omit_default: Optional[bool], fields_filter: FieldsFil
     ]
 
 
-def all_typeddict_fields(cls, omit_default: Optional[bool], fields_filter: FieldsFilter = None) -> List[BaseFieldInfo]:
+def all_typeddict_fields(cls, fields_filter: FieldsFilter = None) -> List[BaseFieldInfo]:
     all_fields = resolve_hints(cls)
     return [
         BaseFieldInfo(field_name=f, type=t, default=MISSING)
@@ -89,7 +89,7 @@ def schema_fields_filter(schema: Schema, name: str):
     )
 
 
-AllFieldsGetter = Callable[[Any, Optional[bool], FieldsFilter], List[BaseFieldInfo]]
+AllFieldsGetter = Callable[[Any, FieldsFilter], List[BaseFieldInfo]]
 
 
 def get_fields(
@@ -97,8 +97,8 @@ def get_fields(
     schema: Schema[T],
     class_: Type[T]
 ) -> Sequence[FieldInfo]:
-    partial_fields_filter: FieldsFilter = partial(schema_fields_filter, schema)  # type: ignore
-    all_fields = all_fields_getter(class_, schema.omit_default, partial_fields_filter)
+    partial_filter_func: FieldsFilter = partial(schema_fields_filter, schema)  # type: ignore
+    all_fields = all_fields_getter(class_, partial_filter_func)
     only_mapped = schema.only_mapped and schema.only is None
     if only_mapped:
         if schema.name_mapping is None:

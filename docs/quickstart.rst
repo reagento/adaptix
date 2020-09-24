@@ -68,8 +68,30 @@ In normal cases all suitable exceptions are described in ``dataclass_factory.PAR
 Validation
 ===================
 
-No validation patterns are provided currently. But anyway you can do any check in ``pre_parse`` or ``post_parse`` step.
+Validation of data can be done in two cases:
 
-``post_parse`` function is set for each type and does any additional work after parsing is done. It receives parsed data (instance of corresponding type). The result of ``post_parse`` function is used as a parsing result.
+* per-field validations
+* whole structure validation
 
-.. literalinclude:: examples/validation.py
+In first case you can use ``@validate`` decorator with field name to check the data.
+
+Here are details:
+
+* validator CAN be called before parsing field data (set ``pre=True``) or after it.
+* field validators are applied after all name transformations. So use field name as it is called in your dataclass/etc
+* validator CAN be applied to multiple fields. Just provide multiple names
+* validator CAN be applied to any field separately. Just do not set any field name
+* validator MUST return data if checks are succeeded. Data can be same as passed to it or anything else. Validator CAN change data
+* field validators CANNOT be set in default schema
+* use different method names to prevent overwriting
+
+.. literalinclude:: examples/validators.py
+
+
+If you want to check whole structure, your can any check in ``pre_parse`` or ``post_parse`` step.
+Idea is the same:
+
+* ``pre_parse`` is called before structure parsing is done (but even before data is flattened and names are processed).
+* ``post_parse`` is called after successful parsing
+
+.. literalinclude:: examples/total_validation.py
