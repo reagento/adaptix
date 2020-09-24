@@ -23,6 +23,7 @@ Advantages
 * Unions and Optionals are supported without need to define them in schema
 * Generic dataclasses can be automatically parsed as well
 * Cyclic-referenced structures (such as linked-lists or trees) also can be converted
+* Per-field validators
 
 Example
 =============

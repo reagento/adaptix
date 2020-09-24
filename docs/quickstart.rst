@@ -73,7 +73,9 @@ Validation of data can be done in two cases:
 * per-field validations
 * whole structure validation
 
-In first case you can use ``@validate`` decorator to check the data. Here are details:
+In first case you can use ``@validate`` decorator with field name to check the data.
+
+Here are details:
 
 * validator CAN be called before parsing field data (set ``pre=True``) or after it.
 * field validators are applied after all name transformations. So use field name as it is called in your dataclass/etc
@@ -81,6 +83,7 @@ In first case you can use ``@validate`` decorator to check the data. Here are de
 * validator CAN be applied to any field separately. Just do not set any field name
 * validator MUST return data if checks are succeeded. Data can be same as passed to it or anything else. Validator CAN change data
 * field validators CANNOT be set in default schema
+* use different method names to prevent overwriting
 
 .. literalinclude:: examples/validators.py
 
