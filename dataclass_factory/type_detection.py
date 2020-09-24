@@ -25,7 +25,10 @@ except ImportError:
 try:
     from typing import TypedDict as PyTypedDict  # type: ignore
 
-    TYPED_DICT_METAS_TMP.append(type(PyTypedDict))
+
+    class RealPyTypedDict(PyTypedDict): pass  # create real class, because PyTypedDict can be helper function
+
+    TYPED_DICT_METAS_TMP.append(type(RealPyTypedDict))
 except ImportError:
     pass
 
@@ -102,7 +105,10 @@ def is_any(type_: Type) -> bool:
 
 
 def is_generic_concrete(type_: Type) -> bool:
-    return getattr(type_, "__origin__", None) is not None
+    return (
+        getattr(type_, "__origin__", None) is not None and
+        getattr(type_, "__args__", None) is not None
+    )
 
 
 def is_generic(type_: Type) -> bool:

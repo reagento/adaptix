@@ -1,12 +1,13 @@
 import inspect
 from functools import partial
-from typing import Sequence, Any, Type, TypeVar, Callable, List, Dict, Union, Optional
+from typing import Sequence, Any, Type, TypeVar, Callable, List, Dict, Union, Optional, cast, Tuple
 
 from dataclasses import Field, MISSING, fields, dataclass
 
 from .generics import resolve_hints, resolve_init_hints
-from .schema import Schema, Path
 from .naming import convert_name
+from .path_utils import CleanPath, CleanKey, ellipsis, replace_ellipsis
+from .schema import Schema
 from .type_detection import is_generic_concrete
 
 T = TypeVar("T")
@@ -21,23 +22,19 @@ class BaseFieldInfo:
 
 @dataclass
 class FieldInfo(BaseFieldInfo):
-    data_name: Union[str, Path]
+    data_name: Union[CleanKey, CleanPath]
 
 
 # defaults
 
-def get_dataclass_default(field: Field, omit_default: Optional[bool]) -> Any:
-    if not omit_default:
-        return MISSING
+def get_dataclass_default(field: Field) -> Any:
     # type ignore because of https://github.com/python/mypy/issues/6910
     if field.default_factory != MISSING:  # type: ignore
         return field.default_factory()  # type: ignore
     return field.default
 
 
-def get_func_default(paramter: inspect.Parameter, omit_default: Optional[bool]) -> Any:
-    if not omit_default:
-        return MISSING
+def get_func_default(paramter: inspect.Parameter) -> Any:
     # type ignore because of https://github.com/python/mypy/issues/6910
     if paramter.default is inspect.Parameter.empty:
         return MISSING
@@ -55,7 +52,7 @@ def all_dataclass_fields(cls, omit_default: Optional[bool], filter_func: FilterF
         all_fields = fields(cls)
     hints = resolve_hints(cls)
     return [
-        BaseFieldInfo(field_name=f.name, type=hints[f.name], default=get_dataclass_default(f, omit_default))
+        BaseFieldInfo(field_name=f.name, type=hints[f.name], default=get_dataclass_default(f))
         for f in all_fields
         if not filter_func or filter_func(f.name) and f.init
     ]
@@ -65,7 +62,7 @@ def all_class_fields(cls, omit_default: Optional[bool], filter_func: FilterFunc 
     all_fields = inspect.signature(cls.__init__).parameters
     hints = resolve_init_hints(cls)
     return [
-        BaseFieldInfo(field_name=f.name, type=hints.get(f.name, Any), default=get_func_default(f, omit_default))
+        BaseFieldInfo(field_name=f.name, type=hints.get(f.name, Any), default=get_func_default(f))
         for f in all_fields.values()
         if not filter_func or filter_func(f.name)
     ]
@@ -105,17 +102,19 @@ def get_fields(
         if schema.name_mapping is None:
             raise ValueError("`name_mapping` is None, and `only_mapped` is True")
         fields: Dict[str, BaseFieldInfo] = {f.field_name: f for f in all_fields}
-        return tuple(
-            FieldInfo(
-                field_name=field_name,
-                data_name=data_name,
+        fields_info: List[FieldInfo] = []
+        for field_name, data_name in schema.name_mapping.items():
+            if isinstance(field_name, ellipsis):
+                raise ValueError("`name_mapping` contains `...`, and `only_mapped` is True")
+            if field_name not in fields:
+                continue
+            fields_info.append(FieldInfo(
+                field_name=cast(str, field_name),
+                data_name=replace_ellipsis(field_name, data_name),
                 type=fields[field_name].type,
                 default=fields[field_name].default,
-            )
-            for field_name, data_name in schema.name_mapping.items()
-            if field_name in fields
-        )
-
+            ))
+        return tuple(fields_info)
     whitelisted_fields = set(schema.only or []) | set(schema.name_mapping or [])
     return tuple(
         FieldInfo(

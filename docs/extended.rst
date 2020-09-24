@@ -137,6 +137,43 @@ For example, you have an author of book with only field - name (see :ref:`nested
 
 .. literalinclude:: examples/flatten.py
 
+We can modify example above to store author as a list with name
+
+.. literalinclude:: examples/flatten_list.py
+
+Automatic naming during flattening
+***************************************
+
+If names somewhere in "complex" structure are the same, as in your class you can simplify your schema using ellipsis (``...``).
+There are two simple rules:
+
+* ``...`` as as a key in ``name_mapping`` means `Any` field. Path will be applied to every field that is not declared explicitly in mapping
+* ``...`` inside path in ``name_mapping`` means that original name of field will be reused. If name style or other rules are provided the will be applied to the name.
+
+Examples:
+
+.. literalinclude:: examples/flatten_auto.py
+
+Parsing unknown fields
+===========================
+
+By default all extra fields that absent in target structure are ignored. But this behavior is not necessary.
+For now you can select from several variants setting ``unknown`` attribute of Schema
+
+* ``Unknown.SKIP`` - default behavior. All unknown fields are ignored (skipped)
+* ``Unknown.FORBID`` - ``UnknownFieldsError`` is raised in case of any unknown field is found
+* ``Unknown.STORE`` - all unknown fields passed unparsed to the constructor of class.
+  Your ``__init__`` must be ready for this
+* Field name (``str``). Specified field is filled with all unknowns and parser of corresponding type is called.
+  For simple cases you can annotate that field with ``Dict`` type.
+  In case of serialization, this field is also serialized and result is merged up with current result.
+* Several field names (sequence of ``str``). The behavior is very similar to the cae with one field name.
+  All unknowns are collected to single dict and it is passed to parsers of each provided field (be careful modifying data at ``pre_parse`` step).
+  Also their dump results are merged when serializing
+
+
+.. literalinclude:: examples/unknown_fields.py
+
 Additional steps
 ========================
 
@@ -176,9 +213,32 @@ In some case it is useful to subclass Schema instead of just creating instances 
 .. literalinclude:: examples/subclass.py
 
 .. note::
-    Factory creates a copy of schema for each type filling missed args.
+    In versions <2.9: Factory created a copy of schema for each type filling missed args.
     If you need to get access to some data in schema, get a working instance of schema with ``Factory.schema`` method
 
 .. note::
     Single schema instance can be used multiple time simultaneously because of multithreading or recursive structures.
     Be careful modifying data in schema
+
+
+Json-schema
+==========================
+
+You can generate json schema for your classes.
+
+Note that factory does it lazily and caches result. So if you need definitions for all your classes, create schema for each top-level class using ``json_schema`` method
+and then collect all definitions using ``json_schema_definitions``
+
+.. literalinclude:: examples/jsonschema.py
+
+Result of ``json_schema`` call is
+
+.. literalinclude:: examples/jsonschema_res.json
+
+Result of ``json_schema_definitions`` call is
+
+.. literalinclude:: examples/jsonschema_defs.json
+
+.. note::
+    Not all features of dataclass factory are suppoerted currently. You cannot generate json-schema if you use structure-flattening, additional parsing of unknown fields or init-based parsing.
+    Also, if you have custom parsers or pre-parse step, schema might be incorrect.

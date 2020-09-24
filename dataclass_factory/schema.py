@@ -1,12 +1,21 @@
-from copy import copy
-from typing import List, Dict, Callable, Tuple, Optional, Generic, Union
+from enum import Enum
+from typing import List, Dict, Callable, Tuple, Optional, Generic, Union, Sequence, cast
 
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle
-from .path_utils import Path
+from .path_utils import NameMapping
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
+
+
+class Unknown(Enum):
+    SKIP = 'skip'
+    FORBID = 'forbid'
+    STORE = 'include'
+
+
+RuleForUnknown = Union[Unknown, str, Sequence[str], None]
 
 
 class Schema(Generic[T]):
@@ -14,7 +23,7 @@ class Schema(Generic[T]):
             self,
             only: Optional[List[str]] = None,
             exclude: Optional[List[str]] = None,
-            name_mapping: Optional[Dict[str, Union[str, Path]]] = None,
+            name_mapping: NameMapping = None,
             only_mapped: Optional[bool] = None,
 
             name_style: Optional[NameStyle] = None,
@@ -33,6 +42,9 @@ class Schema(Generic[T]):
             post_serialize: Optional[Callable] = None,
 
             omit_default: Optional[bool] = None,
+            unknown: RuleForUnknown = None,
+            name: Optional[str] = None,
+            description: Optional[str] = None,
     ):
 
         if only is not None or not hasattr(self, "only"):
@@ -72,6 +84,13 @@ class Schema(Generic[T]):
 
         if omit_default is not None or not hasattr(self, "omit_default"):
             self.omit_default = omit_default
+        if unknown is not None or not hasattr(self, "unknown"):
+            self.unknown = unknown
+
+        if name is not None or not hasattr(self, "name"):
+            self.name = name
+        if description is not None or not hasattr(self, "description"):
+            self.description = description
 
 
 SCHEMA_FIELDS = [
@@ -90,18 +109,31 @@ SCHEMA_FIELDS = [
     "post_parse",
     "pre_serialize",
     "post_serialize",
+    "omit_default",
+    "unknown",
+    "name",
+    "description",
 ]
 
 
-def merge_schema(schema: Optional[Schema], default: Optional[Schema]) -> Schema:
-    if schema is None:
-        if default:
-            return copy(default)
-        return Schema()
-    if default is None:
-        return copy(schema)
-    schema = copy(schema)
-    for k in SCHEMA_FIELDS:
-        if getattr(schema, k) is None:
-            setattr(schema, k, getattr(default, k))
-    return schema
+class SchemaProxy():
+    def __init__(self, *schemas: Schema):
+        self._schemas = schemas
+
+    def __getattr__(self, item):
+        for schema in self._schemas:
+            res = getattr(schema, item, None)
+            if res is not None:
+                return res
+        if item in SCHEMA_FIELDS:
+            return None
+        raise AttributeError(f"Field `{item}` is not defined for Schema")
+
+    def __setattr__(self, key, value):
+        if key == "_schemas":
+            return super().__setattr__(key, value)
+        return setattr(self._schemas[0], key, value)
+
+
+def merge_schema(*schemas: Optional[Schema]) -> Schema:
+    return cast(Schema, SchemaProxy(*[s for s in schemas if s]))

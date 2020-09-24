@@ -22,7 +22,7 @@ Out of the box dataclass factory supports three types of structures:
 +-------------------+-----------+-----------+----------------------+
 | Skip internal     | x         | x         |                      |
 +-------------------+-----------+-----------+----------------------+
-| Serializing       | x         | x         |                      |
+| Serializing       | x         | x         | x                    |
 +-------------------+-----------+-----------+----------------------+
 
 Custom parsers and serializers
@@ -41,6 +41,14 @@ We have subpackage called ``dataclass_factory.schema_helpers`` with some common 
 * ``unixtime_schema`` - converts ``datetime`` to unixtime and vice versa
 * ``isotime_schema`` - converts ``datetime`` to string containing ISO 8601. Supported only on Python 3.7+
 * ``uuid_schema`` - converts ``UUID`` objects to string
+
+
+Self referenced types
+=======================
+
+Just place correct annotations and use factory.
+
+.. literalinclude:: examples/self_referenced.py
 
 Generic classes
 ========================

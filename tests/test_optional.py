@@ -16,3 +16,7 @@ class TestOptional(TestCase):
         factory = Factory()
         y = factory.load({"x": None}, Data)
         self.assertEqual(y, Data(None))
+
+    def test_optional_bool(self):
+        factory = Factory()
+        self.assertEqual(factory.load(None, Optional[bool]), None)

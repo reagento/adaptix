@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 from marshal import loads, dumps
 from operator import attrgetter, getitem
 from typing import Any, Type, List, Dict, Optional, Union, Sequence, Callable
@@ -8,8 +6,8 @@ from dataclasses import is_dataclass, MISSING
 
 from .common import Serializer, T, K, AbstractFactory
 from .fields import get_dataclass_fields, FieldInfo, get_typeddict_fields
-from .path_utils import init_structure, Path
-from .schema import Schema
+from .path_utils import init_structure, CleanPath, CleanKey
+from .schema import Schema, RuleForUnknown, Unknown
 from .type_detection import (
     is_collection, is_tuple, hasargs, is_dict, is_optional,
     is_union, is_any, is_generic_concrete, is_type_var,
@@ -17,23 +15,37 @@ from .type_detection import (
     is_typeddict)
 
 
-def to_tuple(key: Union[str, Path]) -> Path:
+def to_path(key: Union[CleanKey, CleanPath]) -> CleanPath:
     if isinstance(key, tuple):
         return key
     return key,
 
 
+def unpack_fields(dest, fields):
+    for f in fields:
+        dest.update(dest.pop(f, {}))
+
+
 def get_complex_serializer(factory: AbstractFactory,
                            schema: Schema[T],
                            fields: Sequence[FieldInfo],
-                           getter: Callable[[Any, Any], Any]) -> Serializer[T]:
-    has_default = any(f.default != MISSING for f in fields)
+                           getter: Callable[[Any, Any], Any],
+                           unknown: RuleForUnknown) -> Serializer[T]:
+    has_default = schema.omit_default and any(f.default != MISSING for f in fields)
     field_info = tuple(
         (f.field_name, factory.serializer(f.type), f.data_name, f.default)
         for f in fields
     )
+    if isinstance(unknown, Unknown):
+        unpack_unknown = False
+    elif isinstance(unknown, str):
+        unpack_unknown = True
+        unknown = [unknown]
+    else:  # sequence of strings
+        unpack_unknown = True
+
     if schema.name_mapping and any(isinstance(key, tuple) for key in schema.name_mapping.values()):
-        paths = tuple(to_tuple(f.data_name) for f in fields)
+        paths = tuple(to_path(f.data_name) for f in fields)
         pickled = dumps(init_structure(paths))
         if has_default:
             raise ValueError("Cannot use `omit_default` option with flattening schema")
@@ -42,23 +54,31 @@ def get_complex_serializer(factory: AbstractFactory,
             container, field_containers = loads(pickled)
             for (inner_container, data_name), (field_name, serializer, *_) in zip(field_containers, field_info):
                 inner_container[data_name] = serializer(getter(data, field_name))
+            if unpack_unknown:
+                unpack_fields(container, unknown)
             return container
     else:
         if has_default:
             def serialize(data):
-                return {
+                container = {
                     field_name: value
                     for field_name, serializer, data_name, default in field_info
                     for value in (serializer(getter(data, field_name)),)
                     if value != default
                 }
+                if unpack_unknown:
+                    unpack_fields(container, unknown)
+                return container
         else:
             # optimized version
             def serialize(data):
-                return {
+                container = {
                     data_name: serializer(getter(data, field_name))
                     for field_name, serializer, data_name, default in field_info
                 }
+                if unpack_unknown:
+                    unpack_fields(container, unknown)
+                return container
     return serialize
 
 
@@ -72,6 +92,20 @@ def get_tuple_serializer(serializers) -> Serializer[List]:
 
 def get_collection_any_serializer() -> Serializer[List[Any]]:
     return lambda data: [x for x in data]
+
+
+def get_vars_serializer(factory) -> Serializer:
+    field_serializer = get_lazy_serializer(factory)
+
+    def vars_serializer(data: Any):
+        if data is None:
+            return None
+        return {
+            k: field_serializer(v)
+            for k, v in vars(data).items()
+        }
+
+    return vars_serializer
 
 
 def stub_serializer(data: T) -> T:
@@ -119,6 +153,8 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
 
 
 def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
+    if class_ in (str, bytearray, bytes, int, float, complex, bool):
+        return stub_serializer
     if is_type_var(class_):
         return get_lazy_serializer(factory)
     if is_dataclass(class_) or (is_generic_concrete(class_) and is_dataclass(class_.__origin__)):
@@ -127,6 +163,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
             schema,
             get_dataclass_fields(schema, class_),
             getattr,
+            schema.unknown,
         )
     if is_typeddict(class_) or (is_generic_concrete(class_) and is_typeddict(class_.__origin__)):
         return get_complex_serializer(
@@ -134,6 +171,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
             schema,
             get_typeddict_fields(schema, class_),
             getitem,
+            schema.unknown,
         )
     if is_any(class_):
         return get_lazy_serializer(factory)
@@ -172,4 +210,4 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
         item_serializer = get_lazy_serializer(factory)
         return get_collection_serializer(item_serializer)
     else:
-        return stub_serializer
+        return get_vars_serializer(factory)

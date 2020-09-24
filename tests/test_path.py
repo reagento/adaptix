@@ -2,7 +2,8 @@ from unittest import TestCase
 
 from dataclasses import dataclass
 
-from dataclass_factory import Schema, Factory
+from dataclass_factory import Schema, Factory, NameStyle
+from dataclass_factory.path_utils import NameMapping
 
 
 @dataclass
@@ -26,10 +27,48 @@ schema_list = Schema[A](
 
 schema_tuple = Schema[A](
     name_mapping={
-        "x": (0, ),
-        "y": (1, ),
+        "x": (0,),
+        "y": (1,),
     }
 )
+
+path_with_ellipsis = ("sub", ...)
+schema_ellipsis = Schema[A](
+    name_mapping={
+        "x": path_with_ellipsis,
+        "y": path_with_ellipsis,
+    }
+)
+schema_auto_ellipsis = Schema[A](
+    name_mapping={
+        "x": "z",
+        ...: path_with_ellipsis,
+    }
+)
+schema_auto_style_ellipsis = Schema[A](
+    name_style=NameStyle.upper,
+    name_mapping={
+        ...: path_with_ellipsis,
+    }
+)
+
+
+class TestTyping(TestCase):
+    """
+    Some "tests" which are used only to test code with mypy
+    """
+
+    def test_mapping(self):
+        _: NameMapping = {
+            "a": "a",
+            "b": 1,
+            "c": ...,
+            "d": ("a",),
+            "e": ("b", 1),
+            "f": ("a", ..., "b"),
+            ...: (1,)
+        }
+        assert _
 
 
 class Test1(TestCase):
@@ -58,6 +97,54 @@ class Test1(TestCase):
         }
         data = A("hello", "world")
         self.assertEqual(expected, factory.dump(data, A))
+
+    def test_dump_ellipsis(self):
+        factory = Factory(
+            schemas={
+                A: schema_ellipsis
+            }
+        )
+        expected = {
+            "sub": {
+                "x": "hello",
+                "y": "world",
+            }
+        }
+        data = A("hello", "world")
+        self.assertEqual(expected, factory.dump(data, A))
+        self.assertEqual(data, factory.load(expected, A))
+
+    def test_dump_auto_style_ellipsis(self):
+        factory = Factory(
+            schemas={
+                A: schema_auto_style_ellipsis
+            }
+        )
+        expected = {
+            "sub": {
+                "X": "hello",
+                "Y": "world",
+            }
+        }
+        data = A("hello", "world")
+        self.assertEqual(expected, factory.dump(data, A))
+        self.assertEqual(data, factory.load(expected, A))
+
+    def test_dump_auto_ellipsis(self):
+        factory = Factory(
+            schemas={
+                A: schema_auto_ellipsis
+            }
+        )
+        expected = {
+            "z": "hello",
+            "sub": {
+                "y": "world",
+            }
+        }
+        data = A("hello", "world")
+        self.assertEqual(expected, factory.dump(data, A))
+        self.assertEqual(data, factory.load(expected, A))
 
     def test_dump_two(self):
         factory = Factory(

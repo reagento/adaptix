@@ -8,10 +8,10 @@ from typing import (
 from dataclasses import is_dataclass
 
 from .common import Parser, T, AbstractFactory
-from .exceptions import InvalidFieldError
+from .exceptions import InvalidFieldError, UnknownFieldsError, UnionParseError
 from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields, get_class_fields
-from .path_utils import Path
-from .schema import Schema
+from .path_utils import CleanKey, CleanPath
+from .schema import Schema, RuleForUnknown, Unknown
 from .type_detection import (
     is_tuple, is_collection, is_any, hasargs, is_optional,
     is_none, is_union, is_dict, is_enum,
@@ -83,12 +83,14 @@ def get_collection_parser(
 
 def get_union_parser(parsers: Collection[Callable]) -> Parser:
     def union_parser(data):
+        errors = []
         for p in parsers:
             try:
                 return p(data)
             except PARSER_EXCEPTIONS as e:
+                errors.append((p.__qualname__, e))
                 continue
-        raise ValueError("No suitable parsers in union found for `%s`" % data)
+        raise UnionParseError("No suitable parsers in union found for `%s`" % data, errors)
 
     return union_parser
 
@@ -108,7 +110,7 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser[
     return tuple_parser
 
 
-def get_path_parser(parser: Parser[T], path: Path) -> Parser[T]:
+def get_path_parser(parser: Parser[T], path: CleanPath) -> Parser[T]:
     def path_parser(data):
         if data is None:
             return parser(data)
@@ -121,7 +123,7 @@ def get_path_parser(parser: Parser[T], path: Path) -> Parser[T]:
     return path_parser
 
 
-def get_field_parser(item: Union[str, int, Path], parser: Parser[T]) -> Tuple[Union[str, int], Parser[T]]:
+def get_field_parser(item: Union[CleanKey, CleanPath], parser: Parser[T]) -> Tuple[CleanKey, Parser[T]]:
     if isinstance(item, tuple):
         if len(item) == 1:
             return item[0], parser
@@ -133,24 +135,24 @@ def get_field_parser(item: Union[str, int, Path], parser: Parser[T]) -> Tuple[Un
 def get_complex_parser(class_: Type[T],
                        factory: AbstractFactory,
                        fields: Sequence[FieldInfo],
-                       debug_path: bool, ) -> Parser[T]:
+                       debug_path: bool,
+                       unknown: RuleForUnknown,
+                       ) -> Parser[T]:
     field_info = tuple(
         (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
         for f in fields
     )
-
     list_mode = any(isinstance(name, int) for _, name, _ in field_info)
-    field_info = tuple(
-        (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
-        for f in fields
-    )
+
     if debug_path:
         field_info = tuple(
             (field_name, data_name, get_element_parser(parser, field_name))
             for field_name, data_name, parser in field_info
         )
-
     if list_mode:
+        if unknown != Unknown.SKIP:
+            raise ValueError("Cannot use unknown=`%s` when parsing list", unknown)
+
         def complex_parser(data):
             count = len(data)
             return class_(**{
@@ -159,12 +161,44 @@ def get_complex_parser(class_: Type[T],
                 if item_idx < count
             })
     else:
+        forbid_unknown = False
+        store_unknown_separate = False
+        store_unknown = False
+        if unknown is Unknown.FORBID:
+            forbid_unknown = True
+        elif unknown is Unknown.STORE:
+            store_unknown = True
+        elif unknown is Unknown.SKIP:
+            pass
+        elif isinstance(unknown, str):
+            store_unknown_separate = True
+            unknown = [unknown]
+        else:  # sequence of string
+            store_unknown_separate = True
+
+        known_fields = {f.field_name for f in fields}
+
         def complex_parser(data):
-            return class_(**{
-                field_name: parser(data[item_name])
-                for field_name, item_name, parser in field_info
-                if item_name in data
-            })
+            if forbid_unknown and not known_fields.issuperset(data):
+                unknown_field_names = set(data) - known_fields
+                raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
+            elif store_unknown_separate:
+                extras = {k: v for k, v in data.items() if k not in known_fields}
+                for field in unknown:
+                    data[field] = extras
+                unknown_fields = {}
+            elif store_unknown:
+                unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
+            else:
+                unknown_fields = {}
+            return class_(
+                **{
+                    field_name: parser(data[item_name])
+                    for field_name, item_name, parser in field_info
+                    if item_name in data
+                },
+                **unknown_fields
+            )
 
     return complex_parser
 
@@ -172,8 +206,10 @@ def get_complex_parser(class_: Type[T],
 def get_typed_dict_parser(class_: Type,
                           factory: AbstractFactory,
                           fields: Sequence[FieldInfo],
-                          debug_path: bool, ) -> Parser:
-    complex_parser = get_complex_parser(class_, factory, fields, debug_path)
+                          debug_path: bool,
+                          unknown: Union[str, RuleForUnknown],
+                          ) -> Parser:
+    complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown)
     requires_fieds = set(f.field_name for f in fields)
     if class_.__total__:
         def total_parser(data):
@@ -300,6 +336,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             factory,
             get_typeddict_fields(schema, cls),
             debug_path,
+            unknown=schema.unknown,
         )
     if is_collection(cls):
         if args_unspecified(cls):
@@ -310,13 +347,24 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         item_parser = factory.parser(value_type_arg)
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
-        return get_union_parser(tuple(factory.parser(x) for x in cls.__args__))
+        # also check if Union can be converted to Optional[...] or Optionl[Union[...]]
+        parsers = tuple(factory.parser(x) for x in cls.__args__ if not is_none(x))
+        if len(parsers) == 0:
+            return parse_none
+        if len(parsers) == 1:
+            parser = parsers[0]
+        else:
+            parser = get_union_parser(parsers)
+        if len(parsers) < len(cls.__args__):
+            return get_optional_parser(parser)
+        return parser
     if is_dataclass(cls) or (is_generic_concrete(cls) and is_dataclass(cls.__origin__)):
         return get_complex_parser(
             cls,
             factory,
             get_dataclass_fields(schema, cls),
             debug_path,
+            unknown=schema.unknown,
         )
     try:
         return get_complex_parser(
@@ -324,6 +372,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             factory,
             get_class_fields(schema, cls),
             debug_path,
+            unknown=schema.unknown,
         )
     except PARSER_EXCEPTIONS:
         raise ValueError("Cannot find parser for `%s`" % repr(cls))
