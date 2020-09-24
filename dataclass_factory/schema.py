@@ -122,23 +122,6 @@ SCHEMA_FIELDS = [
 ]
 
 
-class DictProxy():
-    def __init__(self, *dicts: Dict):
-        self.dicts = dicts
-
-    def __getitem__(self, item):
-        for d in self.dicts:
-            if item in d:
-                return d[item]
-        raise KeyError
-
-    def get(self, item, default):
-        try:
-            return self[item]
-        except KeyError:
-            return default
-
-
 class SchemaProxy():
     def __init__(self, *schemas: Schema):
         self._schemas = schemas
