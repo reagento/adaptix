@@ -22,7 +22,7 @@ Out of the box dataclass factory supports three types of structures:
 +-------------------+-----------+-----------+----------------------+
 | Skip internal     | x         | x         |                      |
 +-------------------+-----------+-----------+----------------------+
-| Serializing       | x         | x         |                      |
+| Serializing       | x         | x         | x                    |
 +-------------------+-----------+-----------+----------------------+
 
 Custom parsers and serializers
