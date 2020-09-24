@@ -43,7 +43,7 @@ def validate(*fields: Optional[str], pre: bool = False):
         return func
 
     if not fields:
-        fields = [None]
+        fields = (None, )
     return dec
 
 

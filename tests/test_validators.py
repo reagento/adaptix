@@ -19,7 +19,7 @@ class MySchema(Schema):
     def validate_other(self, data):
         return data + 1
 
-    @validate()
+    @validate(pre=True)
     def validate_any(self, data):
         if data == 666:
             raise ValueError
@@ -51,4 +51,4 @@ class ValidationTestCase(TestCase):
     def test_any(self):
         factory = Factory(schemas={My: MySchema()})
         with self.assertRaises(ValueError):
-            factory.load({"field_name": 0, "other_field": 666}, My)
+            factory.load({"field_name": 1, "other_field": 666}, My)

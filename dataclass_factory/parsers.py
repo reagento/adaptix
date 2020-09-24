@@ -152,8 +152,8 @@ def get_complex_parser(class_: Type[T],
             *get_field_parser(
                 item=f.data_name,
                 parser=factory.parser(f.type),
-                pre_validators=pre_validators.get(f.field_name, []),
-                post_validators=post_validators.get(f.field_name, [])
+                pre_validators=pre_validators.get(f.field_name, []) + pre_validators.get(None, []),
+                post_validators=post_validators.get(f.field_name, []) + post_validators.get(None, [])
             )
         )
         for f in fields

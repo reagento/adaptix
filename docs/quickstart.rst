@@ -69,11 +69,14 @@ Validation
 ===================
 
 Validation of data can be done in two cases:
+
 * per-field validations
 * whole structure validation
 
 In first case you can use ``@validate`` decorator to check the data. Here are details:
+
 * validator CAN be called before parsing field data (set ``pre=True``) or after it.
+* field validators are applied after all name transformations. So use field name as it is called in your dataclass/etc
 * validator CAN be applied to multiple fields. Just provide multiple names
 * validator CAN be applied to any field separately. Just do not set any field name
 * validator MUST return data if checks are succeeded. Data can be same as passed to it or anything else. Validator CAN change data
@@ -83,6 +86,9 @@ In first case you can use ``@validate`` decorator to check the data. Here are de
 
 
 If you want to check whole structure, your can any check in ``pre_parse`` or ``post_parse`` step.
-Idea is the same: ``pre_parse`` is called before structure parsing is done (but even before data is flattened and names are processed). ``post_parse`` is called after successfull parsing
+Idea is the same:
+
+* ``pre_parse`` is called before structure parsing is done (but even before data is flattened and names are processed).
+* ``post_parse`` is called after successful parsing
 
 .. literalinclude:: examples/total_validation.py
