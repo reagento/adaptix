@@ -21,7 +21,7 @@ jobs:
         python-version: [3.6, 3.7, 3.8]
 
     steps:
-      - uses: actions/checkout@develop
+      - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }} on ${{ matrix.os }}
         uses: actions/setup-python@v2
         with:
@@ -42,11 +42,11 @@ jobs:
 
       - name: Run vulture
         run: |
-          python -m vulture dataclass_factory tests
+          python -m vulture dataclass_factory --min-confidence 70
 
       - name: Run Mypy
         run: |
-          python -m mypy dataclass_factory tests
+          python -m mypy  --pretty dataclass_factory tests 
           
   pypy:
     runs-on: ${{ matrix.os }}
