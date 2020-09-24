@@ -94,6 +94,20 @@ def get_collection_any_serializer() -> Serializer[List[Any]]:
     return lambda data: [x for x in data]
 
 
+def get_vars_serializer(factory) -> Serializer:
+    field_serializer = get_lazy_serializer(factory)
+
+    def vars_serializer(data: Any):
+        if data is None:
+            return None
+        return {
+            k: field_serializer(v)
+            for k, v in vars(data).items()
+        }
+
+    return vars_serializer
+
+
 def stub_serializer(data: T) -> T:
     return data
 
@@ -139,6 +153,8 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
 
 
 def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
+    if class_ in (str, bytearray, bytes, int, float, complex, bool):
+        return stub_serializer
     if is_type_var(class_):
         return get_lazy_serializer(factory)
     if is_dataclass(class_) or (is_generic_concrete(class_) and is_dataclass(class_.__origin__)):
@@ -194,4 +210,4 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
         item_serializer = get_lazy_serializer(factory)
         return get_collection_serializer(item_serializer)
     else:
-        return stub_serializer
+        return get_vars_serializer(factory)
