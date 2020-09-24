@@ -67,9 +67,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pypy -m ensurepip
-          pypy -m pip install -U pip
-          pypy -m pip install nose2
+          python -m pip install nose2
 
       - name: Run tests
         run: |
