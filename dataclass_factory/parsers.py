@@ -143,8 +143,8 @@ def get_complex_parser(class_: Type[T],
                        fields: Sequence[FieldInfo],
                        debug_path: bool,
                        unknown: RuleForUnknown,
-                       pre_validators: Dict[str, List[Parser]],
-                       post_validators: Dict[str, List[Parser]],
+                       pre_validators: Dict[Optional[str], List[Parser]],
+                       post_validators: Dict[Optional[str], List[Parser]],
                        ) -> Parser[T]:
     field_info = tuple(
         (
@@ -225,8 +225,8 @@ def get_typed_dict_parser(
     fields: Sequence[FieldInfo],
     debug_path: bool,
     unknown: Union[str, RuleForUnknown],
-    pre_validators: Dict[str, List[Parser]],
-    post_validators: Dict[str, List[Parser]],
+    pre_validators: Dict[Optional[str], List[Parser]],
+    post_validators: Dict[Optional[str], List[Parser]],
 ) -> Parser:
     complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown, pre_validators, post_validators)
     requires_fieds = set(f.field_name for f in fields)

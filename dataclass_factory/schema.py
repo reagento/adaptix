@@ -20,8 +20,8 @@ RuleForUnknown = Union[Unknown, str, Sequence[str], None]
 
 
 class Schema(Generic[T]):
-    pre_validators: Dict[str, List[Parser]]
-    post_validators: Dict[str, List[Parser]]
+    pre_validators: Dict[Optional[str], List[Parser]]
+    post_validators: Dict[Optional[str], List[Parser]]
 
     def __init__(
         self,
