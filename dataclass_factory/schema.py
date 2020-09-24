@@ -20,35 +20,37 @@ RuleForUnknown = Union[Unknown, str, Sequence[str], None]
 
 
 class Schema(Generic[T]):
+    pre_validators: Dict[str, List[Parser]]
+    post_validators: Dict[str, List[Parser]]
+
     def __init__(
-            self,
-            only: Optional[List[str]] = None,
-            exclude: Optional[List[str]] = None,
-            name_mapping: NameMapping = None,
-            only_mapped: Optional[bool] = None,
+        self,
+        only: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None,
+        name_mapping: NameMapping = None,
+        only_mapped: Optional[bool] = None,
 
-            name_style: Optional[NameStyle] = None,
-            trim_trailing_underscore: Optional[bool] = None,
-            skip_internal: Optional[bool] = None,
+        name_style: Optional[NameStyle] = None,
+        trim_trailing_underscore: Optional[bool] = None,
+        skip_internal: Optional[bool] = None,
 
-            serializer: Optional[Serializer[T]] = None,
-            get_serializer: Optional[SerializerGetter[T]] = None,
+        serializer: Optional[Serializer[T]] = None,
+        get_serializer: Optional[SerializerGetter[T]] = None,
 
-            parser: Optional[Parser[T]] = None,
-            get_parser: Optional[ParserGetter[T]] = None,
+        parser: Optional[Parser[T]] = None,
+        get_parser: Optional[ParserGetter[T]] = None,
 
-            pre_parse: Optional[Callable] = None,
-            post_parse: Optional[InnerConverter[T]] = None,
-            pre_serialize: Optional[InnerConverter[T]] = None,
-            post_serialize: Optional[Callable] = None,
+        pre_parse: Optional[Callable] = None,
+        post_parse: Optional[InnerConverter[T]] = None,
+        pre_serialize: Optional[InnerConverter[T]] = None,
+        post_serialize: Optional[Callable] = None,
 
-            omit_default: Optional[bool] = None,
-            unknown: RuleForUnknown = None,
-            name: Optional[str] = None,
-            description: Optional[str] = None,
+        omit_default: Optional[bool] = None,
+        unknown: RuleForUnknown = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
-        self.validate_pre, self.validate_post = prepare_validators(self.__class__)
-
+        self.pre_validators, self.post_validators = prepare_validators(self.__class__)
         if only is not None or not hasattr(self, "only"):
             self.only = only
         if exclude is not None or not hasattr(self, "exclude"):
@@ -118,9 +120,28 @@ SCHEMA_FIELDS = [
 ]
 
 
+class DictProxy():
+    def __init__(self, *dicts: Dict):
+        self.dicts = dicts
+
+    def __getitem__(self, item):
+        for d in self.dicts:
+            if item in d:
+                return d[item]
+        raise KeyError
+
+    def get(self, item, default):
+        try:
+            return self[item]
+        except KeyError:
+            return default
+
+
 class SchemaProxy():
     def __init__(self, *schemas: Schema):
         self._schemas = schemas
+        self.pre_validators = DictProxy(*(s.pre_validators for s in schemas))
+        self.post_validators = DictProxy(*(s.post_validators for s in schemas))
 
     def __getattr__(self, item):
         for schema in self._schemas:
