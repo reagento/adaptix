@@ -50,7 +50,7 @@ class Schema(Generic[T]):
         name: Optional[str] = None,
         description: Optional[str] = None,
     ):
-        self.pre_validators, self.post_validators = prepare_validators(self.__class__)
+        self.pre_validators, self.post_validators = prepare_validators(self)
         if only is not None or not hasattr(self, "only"):
             self.only = only
         if exclude is not None or not hasattr(self, "exclude"):

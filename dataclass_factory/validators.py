@@ -55,12 +55,12 @@ def fill_validators(func, infos: List[ValidatorInfo], pre, post):
             post.setdefault(info.field, []).append(func)
 
 
-def prepare_validators(class_):
+def prepare_validators(object):
     pre = {}
     post = {}
 
-    for x in dir(class_):
-        atr = getattr(class_, x)
+    for x in dir(object):
+        atr = getattr(object, x)
         try:
             fill_validators(atr, atr.dataclass_factory_validate_info, pre, post)
         except AttributeError:
