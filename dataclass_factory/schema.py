@@ -117,6 +117,8 @@ SCHEMA_FIELDS = [
     "unknown",
     "name",
     "description",
+    "pre_validators",
+    "post_validators",
 ]
 
 
@@ -140,8 +142,6 @@ class DictProxy():
 class SchemaProxy():
     def __init__(self, *schemas: Schema):
         self._schemas = schemas
-        self.pre_validators = DictProxy(*(s.pre_validators for s in schemas))
-        self.post_validators = DictProxy(*(s.post_validators for s in schemas))
 
     def __getattr__(self, item):
         for schema in self._schemas:
