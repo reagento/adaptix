@@ -46,7 +46,7 @@ jobs:
 
       - name: Run Mypy
         run: |
-          python -m mypy  --pretty -v dataclass_factory tests 
+          python -m mypy  --pretty dataclass_factory tests 
           
   pypy:
     runs-on: ${{ matrix.os }}
