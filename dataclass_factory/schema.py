@@ -4,6 +4,7 @@ from typing import List, Dict, Callable, Tuple, Optional, Generic, Union, Sequen
 from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
 from .naming import NameStyle
 from .path_utils import NameMapping
+from .validators import prepare_validators
 
 FieldMapper = Callable[[str], Tuple[str, bool]]
 SimpleFieldMapping = Dict[str, str]
@@ -46,6 +47,7 @@ class Schema(Generic[T]):
             name: Optional[str] = None,
             description: Optional[str] = None,
     ):
+        self.validate_pre, self.validate_post = prepare_validators(self.__class__)
 
         if only is not None or not hasattr(self, "only"):
             self.only = only
