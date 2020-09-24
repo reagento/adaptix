@@ -1,9 +1,11 @@
 dataclasses;python_version<"3.7"
+typing_extensions
+
 nose2
 mypy
-typing_extensions
-sphinx
-sphinx_rtd_theme
 vulture
 flake8
 flake8-docstrings
+
+sphinx
+sphinx_rtd_theme

@@ -10,13 +10,6 @@ from .factory import Factory
 
 def dict_factory(trim_trailing_underscore=True, skip_none=False, skip_internal=False,
                  type_serializers: Dict[type, Callable] = None):
-    """
-    Формируем словарь с данными из dataclass со следующими ограничениями:
-      1. Пропускаем все элементы, которые назваются с первого символа `_` - это внутренние свойства
-      2. отрезаем конечный символ `_`, так как он используется только для исключения конфликта
-          с ключевыми словами и встроенными функциями python
-      3. Пропускаются None значения
-    """
     warnings.warn("this function is deprecated",
                   DeprecationWarning,
                   stacklevel=2)
