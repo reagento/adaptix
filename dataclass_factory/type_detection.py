@@ -118,6 +118,11 @@ def is_enum(cls: Type) -> bool:
 
 
 def args_unspecified(cls: Type) -> bool:
+    if hasattr(cls, "_naparams"):
+        return (
+            not hasattr(cls, '__args__') or
+            len(cls.__args__) < cls._nparams
+        )
     return (
             not hasattr(cls, '__args__') or
             not hasattr(cls, '__parameters__') or
