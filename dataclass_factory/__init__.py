@@ -4,7 +4,8 @@ from .exceptions import InvalidFieldError, UnknownFieldsError
 from .factory import Factory
 from .naming import NameStyle
 from .parsers import PARSER_EXCEPTIONS
-from .schema import Schema, RuleForUnknown
+from .schema import Schema, RuleForUnknown, Unknown
+from .validators import validate
 
 __all__ = [
     "parse",
@@ -19,4 +20,6 @@ __all__ = [
     "InvalidFieldError",
     "RuleForUnknown",
     "UnknownFieldsError",
+    "Unknown",
+    "validate"
 ]

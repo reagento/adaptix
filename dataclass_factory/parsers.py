@@ -1,11 +1,10 @@
 import decimal
 from collections import deque
+from dataclasses import is_dataclass
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
-    Collection, Type, Optional, Tuple, Union, Sequence
-)
-
-from dataclasses import is_dataclass
+    Collection, Type, Optional, Tuple, Union, Sequence,
+    Dict)
 
 from .common import Parser, T, AbstractFactory
 from .exceptions import InvalidFieldError, UnknownFieldsError, UnionParseError
@@ -18,6 +17,7 @@ from .type_detection import (
     args_unspecified,
     is_literal, is_literal36, is_typeddict,
     is_generic_concrete)
+from .validators import combine_parser_validators
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
 
@@ -64,9 +64,9 @@ def get_parser_with_check(cls: Type[T]) -> Parser[T]:
 
 
 def get_collection_parser(
-        collection_factory: Callable,
-        item_parser: Parser[T],
-        debug_path: bool
+    collection_factory: Callable,
+    item_parser: Parser[T],
+    debug_path: bool
 ) -> Parser[Collection[T]]:
     if debug_path:
         def collection_parser(data):
@@ -123,7 +123,13 @@ def get_path_parser(parser: Parser[T], path: CleanPath) -> Parser[T]:
     return path_parser
 
 
-def get_field_parser(item: Union[CleanKey, CleanPath], parser: Parser[T]) -> Tuple[CleanKey, Parser[T]]:
+def get_field_parser(
+    item: Union[CleanKey, CleanPath],
+    parser: Parser[T],
+    pre_validators: List[Parser],
+    post_validators: List[Parser[T]],
+) -> Tuple[CleanKey, Parser[T]]:
+    parser = combine_parser_validators(pre_validators, parser, post_validators)
     if isinstance(item, tuple):
         if len(item) == 1:
             return item[0], parser
@@ -137,9 +143,19 @@ def get_complex_parser(class_: Type[T],
                        fields: Sequence[FieldInfo],
                        debug_path: bool,
                        unknown: RuleForUnknown,
+                       pre_validators: Dict[Optional[str], List[Parser]],
+                       post_validators: Dict[Optional[str], List[Parser]],
                        ) -> Parser[T]:
     field_info = tuple(
-        (f.field_name, *get_field_parser(f.data_name, factory.parser(f.type)))
+        (
+            f.field_name,
+            *get_field_parser(
+                item=f.data_name,
+                parser=factory.parser(f.type),
+                pre_validators=pre_validators.get(f.field_name, []) + pre_validators.get(None, []),
+                post_validators=post_validators.get(f.field_name, []) + post_validators.get(None, [])
+            )
+        )
         for f in fields
     )
     list_mode = any(isinstance(name, int) for _, name, _ in field_info)
@@ -203,19 +219,22 @@ def get_complex_parser(class_: Type[T],
     return complex_parser
 
 
-def get_typed_dict_parser(class_: Type,
-                          factory: AbstractFactory,
-                          fields: Sequence[FieldInfo],
-                          debug_path: bool,
-                          unknown: Union[str, RuleForUnknown],
-                          ) -> Parser:
-    complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown)
+def get_typed_dict_parser(
+    class_: Type,
+    factory: AbstractFactory,
+    fields: Sequence[FieldInfo],
+    debug_path: bool,
+    unknown: Union[str, RuleForUnknown],
+    pre_validators: Dict[Optional[str], List[Parser]],
+    post_validators: Dict[Optional[str], List[Parser]],
+) -> Parser:
+    complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown, pre_validators, post_validators)
     requires_fieds = set(f.field_name for f in fields)
     if class_.__total__:
         def total_parser(data):
             res = complex_parser(data)
             if not set(res) == requires_fieds:
-                raise ValueError("Not all fields provided for %s" % (class_))
+                raise ValueError("Not all fields provided for %s" % (class_, ))
             return res
 
         return total_parser
@@ -337,6 +356,8 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             get_typeddict_fields(schema, cls),
             debug_path,
             unknown=schema.unknown,
+            pre_validators=schema.pre_validators,
+            post_validators=schema.post_validators,
         )
     if is_collection(cls):
         if args_unspecified(cls):
@@ -360,19 +381,23 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return parser
     if is_dataclass(cls) or (is_generic_concrete(cls) and is_dataclass(cls.__origin__)):
         return get_complex_parser(
-            cls,
-            factory,
-            get_dataclass_fields(schema, cls),
-            debug_path,
+            class_=cls,
+            factory=factory,
+            fields=get_dataclass_fields(schema, cls),
+            debug_path=debug_path,
             unknown=schema.unknown,
+            pre_validators=schema.pre_validators,
+            post_validators=schema.post_validators,
         )
     try:
         return get_complex_parser(
-            cls,
-            factory,
-            get_class_fields(schema, cls),
-            debug_path,
+            class_=cls,
+            factory=factory,
+            fields=get_class_fields(schema, cls),
+            debug_path=debug_path,
             unknown=schema.unknown,
+            pre_validators=schema.pre_validators,
+            post_validators=schema.post_validators,
         )
     except PARSER_EXCEPTIONS:
         raise ValueError("Cannot find parser for `%s`" % repr(cls))
