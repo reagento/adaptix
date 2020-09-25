@@ -234,7 +234,7 @@ def get_typed_dict_parser(
         def total_parser(data):
             res = complex_parser(data)
             if not set(res) == requires_fieds:
-                raise ValueError("Not all fields provided for %s" % (class_))
+                raise ValueError("Not all fields provided for %s" % (class_, ))
             return res
 
         return total_parser

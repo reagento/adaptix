@@ -77,12 +77,14 @@ In first case you can use ``@validate`` decorator with field name to check the d
 
 Here are details:
 
-* validator CAN be called before parsing field data (set ``pre=True``) or after it.
-* field validators are applied after all name transformations. So use field name as it is called in your dataclass/etc
-* validator CAN be applied to multiple fields. Just provide multiple names
-* validator CAN be applied to any field separately. Just do not set any field name
-* validator MUST return data if checks are succeeded. Data can be same as passed to it or anything else. Validator CAN change data
-* field validators CANNOT be set in default schema
+* validator can be called before parsing field data (set ``pre=True``) or after it.
+* field validators are applied after all name transformations (name styles, structure flattening). So use field name as it is called in your class
+* validator can be applied to multiple fields. Just provide multiple names
+* validator can be applied to any field separately. Just do not set any field name
+* validator must return data if checks are succeeded. Data can be same as passed to it or anything else. Validator CAN change data
+* field validators cannot be set in default schema
+* multiple decorators can be used on single method
+* multiple validators can be applied to single field
 * use different method names to prevent overwriting
 
 .. literalinclude:: examples/validators.py
@@ -93,5 +95,6 @@ Idea is the same:
 
 * ``pre_parse`` is called before structure parsing is done (but even before data is flattened and names are processed).
 * ``post_parse`` is called after successful parsing
+* only one ``pre_parse`` and one ``post_parse`` methods can be in class.
 
 .. literalinclude:: examples/total_validation.py

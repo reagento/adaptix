@@ -26,6 +26,27 @@ class MySchema(Schema):
         return data
 
 
+class My2decSchema(Schema):
+    @validate("field_name")
+    @validate("other_field")
+    def v1(self, data):
+        return data + 1
+
+
+class My2valSchema(Schema):
+    @validate("field_name")
+    def v1(self, data):
+        if data > 100:
+            raise ValueError
+        return data
+
+    @validate("field_name")
+    def v2(self, data):
+        if data < 0:
+            raise ValueError
+        return data + 1
+
+
 @dataclass
 class My:
     field_name: int
@@ -52,3 +73,15 @@ class ValidationTestCase(TestCase):
         factory = Factory(schemas={My: MySchema()})
         with self.assertRaises(ValueError):
             factory.load({"field_name": 1, "other_field": 666}, My)
+
+    def test_2dec(self):
+        factory = Factory(schemas={My: My2decSchema()})
+        res = factory.load({"field_name": 100, "other_field": 10}, My)
+        self.assertEqual(res, My(101, 11))
+
+    def test_2val(self):
+        factory = Factory(schemas={My: My2valSchema()})
+        with self.assertRaises(ValueError):
+            factory.load({"field_name": 100000, "other_field": 666}, My)
+        with self.assertRaises(ValueError):
+            factory.load({"field_name": -10000, "other_field": 666}, My)
