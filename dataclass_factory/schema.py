@@ -122,7 +122,7 @@ SCHEMA_FIELDS = [
 ]
 
 
-class SchemaProxy():
+class SchemaProxy:
     def __init__(self, *schemas: Schema):
         self._schemas = schemas
 

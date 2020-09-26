@@ -10,7 +10,7 @@ else:
 # str means key in dictionary
 # int  means position in list
 CleanKey = Union[str, int]
-# sequence of kes means path in complect Dict/List structure
+# sequence of kes means path in complete Dict/List structure
 CleanPath = Tuple[CleanKey, ...]  # normal value
 
 # same as CleanKey/CleanPath, but ellipsis allowed.
@@ -27,7 +27,7 @@ Container = Union[None, List, Dict[Key, Any]]
 
 def replace_ellipsis(name: str, path: Union[Path, Key]) -> Union[CleanPath, CleanKey]:
     """
-    Fixes all `...` in path replacing then with name.
+    Fixes all `...` in the path replacing then with the name.
     """
     if isinstance(path, ellipsis):
         return name

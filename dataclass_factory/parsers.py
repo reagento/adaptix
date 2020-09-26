@@ -4,7 +4,8 @@ from dataclasses import is_dataclass
 from typing import (
     List, Set, FrozenSet, Deque, Any, Callable,
     Collection, Type, Optional, Tuple, Union, Sequence,
-    Dict)
+    Dict
+)
 
 from .common import Parser, T, AbstractFactory
 from .exceptions import InvalidFieldError, UnknownFieldsError, UnionParseError
@@ -35,7 +36,7 @@ def get_element_parser(parser: Parser[T], key: Any) -> Parser[T]:
     return element_parser
 
 
-def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
+def dyn_element_parser(parser: Parser[T], data: Any, key: Any) -> T:
     try:
         return parser(data)
     except InvalidFieldError as e:
@@ -71,7 +72,7 @@ def get_collection_parser(
     if debug_path:
         def collection_parser(data):
             return collection_factory(
-                element_parser(item_parser, x, i) for i, x in enumerate(data)
+                dyn_element_parser(item_parser, x, i) for i, x in enumerate(data)
             )
     else:
         def collection_parser(data):
@@ -229,12 +230,14 @@ def get_typed_dict_parser(
     post_validators: Dict[Optional[str], List[Parser]],
 ) -> Parser:
     complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown, pre_validators, post_validators)
-    requires_fieds = set(f.field_name for f in fields)
+    requires_fields = set(f.field_name for f in fields)
     if class_.__total__:
         def total_parser(data):
             res = complex_parser(data)
-            if not set(res) == requires_fieds:
-                raise ValueError("Not all fields provided for %s" % (class_, ))
+            
+            if not set(res) == requires_fields:
+                raise ValueError("Not all fields provided for %s" % class_)
+            
             return res
 
         return total_parser
@@ -368,7 +371,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         item_parser = factory.parser(value_type_arg)
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
-        # also check if Union can be converted to Optional[...] or Optionl[Union[...]]
+        # also, check if Union can be converted to Optional[...] or Optional[Union[...]]
         parsers = tuple(factory.parser(x) for x in cls.__args__ if not is_none(x))
         if len(parsers) == 0:
             return parse_none
