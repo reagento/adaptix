@@ -59,3 +59,5 @@ On python 3.7 it has no external dependencies outside of the Python standard lib
 * Unions and Optionals are supported without need to define them in schema
 * Generic dataclasses can be automatically parsed as well
 * Cyclic-referenced structures (such as linked-lists or trees) also can be converted
+* Validators, custom parser steps are supported.
+* Multiple schemas for single type can be provided to support different ways of parsing of the same type

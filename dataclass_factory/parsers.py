@@ -234,8 +234,10 @@ def get_typed_dict_parser(
     if class_.__total__:
         def total_parser(data):
             res = complex_parser(data)
+            
             if not set(res) == requires_fields:
                 raise ValueError("Not all fields provided for %s" % class_)
+            
             return res
 
         return total_parser
