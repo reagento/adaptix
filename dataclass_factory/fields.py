@@ -93,9 +93,8 @@ def get_fields(
         if schema_fields_filter(schema, field.field_name)
     ]
 
-    if schema.only_mapped:
-        if schema.only is not None:
-            raise ValueError('`only_mapped` is True, and `only` is not None')
+    # `only` has more priority than only_mapped
+    if schema.only_mapped and schema.only is None:
         if schema.name_mapping is None:
             raise ValueError("`name_mapping` is None, and `only_mapped` is True")
         if ... in schema.name_mapping:
