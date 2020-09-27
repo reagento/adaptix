@@ -101,7 +101,7 @@ def get_fields(
             raise ValueError("`name_mapping` contains `...`, and `only_mapped` is True")
 
         return get_only_mapped_fields(
-            schema.name_mapping,  # noqa
+            schema.name_mapping, # type: ignore
             all_fields
         )
 
