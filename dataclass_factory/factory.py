@@ -1,11 +1,11 @@
 from copy import copy
-from typing import Dict, Type, Any, Optional, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar
 
-from .common import Serializer, Parser, AbstractFactory
+from .common import AbstractFactory, Parser, Serializer
 from .jsonschema import create_schema
 from .naming import NameStyle
 from .parsers import create_parser, get_lazy_parser
-from .schema import Schema, merge_schema, Unknown
+from .schema import merge_schema, Schema, Unknown
 from .serializers import create_serializer, get_lazy_serializer
 from .type_detection import is_generic_concrete
 
@@ -14,7 +14,7 @@ DEFAULT_SCHEMA = Schema[Any](
     skip_internal=True,
     only_mapped=False,
     name_style=NameStyle.ignore,
-    unknown=Unknown.SKIP
+    unknown=Unknown.SKIP,
 )
 
 
@@ -144,7 +144,7 @@ class Factory(AbstractFactory):
             "definitions": {
                 k: v
                 for k, v in self.json_schemas.items()
-            }
+            },
         }
 
     def _json_schema_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Dict[str, Any]:

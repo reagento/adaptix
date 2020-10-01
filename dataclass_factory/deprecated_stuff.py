@@ -1,11 +1,11 @@
-import warnings
 from enum import Enum
-from typing import Dict, Callable, Type, Any
+from typing import Any, Callable, Dict, Type
+import warnings
 
 from .common import Parser, Serializer
+from .factory import Factory
 from .naming import NameStyle
 from .schema import Schema
-from .factory import Factory
 
 
 def dict_factory(trim_trailing_underscore=True, skip_none=False, skip_internal=False,
@@ -53,7 +53,7 @@ class ParserFactory:
         for c in (set(type_factories) | set(name_styles)):
             schemas[c] = Schema(
                 parser=type_factories.get(c),
-                name_style=name_styles.get(c)
+                name_style=name_styles.get(c),
             )
 
         default_schema = Schema[Any](
@@ -62,7 +62,7 @@ class ParserFactory:
         self.factory = Factory(
             default_schema=default_schema,
             debug_path=debug_path,
-            schemas=schemas
+            schemas=schemas,
         )
 
     def get_parser(self, cls: Type) -> Parser:
@@ -89,7 +89,7 @@ class SerializerFactory:
         for c in (set(type_serializers) | set(name_styles)):
             schemas[c] = Schema(
                 serializer=type_serializers.get(c),
-                name_style=name_styles.get(c)
+                name_style=name_styles.get(c),
             )
 
         default_schema = Schema[Any](
@@ -98,7 +98,7 @@ class SerializerFactory:
         self.factory = Factory(
             default_schema=default_schema,
             debug_path=debug_path,
-            schemas=schemas
+            schemas=schemas,
         )
 
     def get_serializer(self, cls: Type) -> Parser:

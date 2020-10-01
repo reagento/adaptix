@@ -1,23 +1,21 @@
-import decimal
 from collections import deque
 from dataclasses import is_dataclass
+import decimal
 from typing import (
-    List, Set, FrozenSet, Deque, Any, Callable,
-    Collection, Type, Optional, Tuple, Union, Sequence,
-    Dict
+    Any, Callable, Collection, Deque, Dict, FrozenSet,
+    List, Optional, Sequence, Set, Tuple, Type, Union,
 )
 
-from .common import Parser, T, AbstractFactory
-from .exceptions import InvalidFieldError, UnknownFieldsError, UnionParseError
-from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields, get_class_fields
+from .common import AbstractFactory, Parser, T
+from .exceptions import InvalidFieldError, UnionParseError, UnknownFieldsError
+from .fields import FieldInfo, get_class_fields, get_dataclass_fields, get_typeddict_fields
 from .path_utils import CleanKey, CleanPath
-from .schema import Schema, RuleForUnknown, Unknown
+from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
-    is_tuple, is_collection, is_any, hasargs, is_optional,
-    is_none, is_union, is_dict, is_enum,
-    args_unspecified,
-    is_literal, is_literal36, is_typeddict,
-    is_generic_concrete)
+    args_unspecified, hasargs, is_any, is_collection, is_dict,
+    is_enum, is_generic_concrete, is_literal, is_literal36,
+    is_none, is_optional, is_tuple, is_typeddict, is_union,
+)
 from .validators import combine_parser_validators
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
@@ -67,7 +65,7 @@ def get_parser_with_check(cls: Type[T]) -> Parser[T]:
 def get_collection_parser(
     collection_factory: Callable,
     item_parser: Parser[T],
-    debug_path: bool
+    debug_path: bool,
 ) -> Parser[Collection[T]]:
     if debug_path:
         def collection_parser(data):
@@ -139,7 +137,7 @@ def get_field_parser(
         return item, parser
 
 
-def get_complex_parser(class_: Type[T],
+def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                        factory: AbstractFactory,
                        fields: Sequence[FieldInfo],
                        debug_path: bool,
@@ -154,8 +152,8 @@ def get_complex_parser(class_: Type[T],
                 item=f.data_name,
                 parser=factory.parser(f.type),
                 pre_validators=pre_validators.get(f.field_name, []) + pre_validators.get(None, []),
-                post_validators=post_validators.get(f.field_name, []) + post_validators.get(None, [])
-            )
+                post_validators=post_validators.get(f.field_name, []) + post_validators.get(None, []),
+            ),
         )
         for f in fields
     )
@@ -214,7 +212,7 @@ def get_complex_parser(class_: Type[T],
                     for field_name, item_name, parser in field_info
                     if item_name in data
                 },
-                **unknown_fields
+                **unknown_fields,
             )
 
     return complex_parser
@@ -230,14 +228,14 @@ def get_typed_dict_parser(
     post_validators: Dict[Optional[str], List[Parser]],
 ) -> Parser:
     complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown, pre_validators, post_validators)
-    requires_fields = set(f.field_name for f in fields)
+    requires_fields = {f.field_name for f in fields}
     if class_.__total__:
         def total_parser(data):
             res = complex_parser(data)
-            
+
             if not set(res) == requires_fields:
                 raise ValueError("Not all fields provided for %s" % class_)
-            
+
             return res
 
         return total_parser
@@ -293,7 +291,6 @@ def get_literal_parser(factory, values: Sequence[Any]) -> Parser:
 
 
 def get_lazy_parser(factory, class_: Type) -> Parser:
-    # return partial(factory.load, class_=class_)
     def lazy_parser(data):
         return factory.load(data, class_)
 
@@ -317,7 +314,7 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls: Type) -> Parse
     return parser
 
 
-def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:
+def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:  # noqa C901, CCR001
     if is_any(cls):
         return parse_stub
     if is_none(cls):

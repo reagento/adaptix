@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import List, Dict, Callable, Tuple, Optional, Generic, Union, Sequence, cast
+from typing import Callable, cast, Dict, Generic, List, Optional, Sequence, Tuple, Union
 
-from .common import Serializer, Parser, T, InnerConverter, ParserGetter, SerializerGetter
+from .common import InnerConverter, Parser, ParserGetter, Serializer, SerializerGetter, T
 from .naming import NameStyle
 from .path_utils import NameMapping
 from .validators import prepare_validators
@@ -23,7 +23,7 @@ class Schema(Generic[T]):
     pre_validators: Dict[Optional[str], List[Parser]]
     post_validators: Dict[Optional[str], List[Parser]]
 
-    def __init__(
+    def __init__(  # noqa C901,CCR001
         self,
         only: Optional[List[str]] = None,
         exclude: Optional[List[str]] = None,

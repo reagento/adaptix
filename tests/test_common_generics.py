@@ -1,6 +1,5 @@
-from unittest import TestCase
-
 from dataclasses import dataclass
+from unittest import TestCase
 
 from dataclass_factory import Factory
 

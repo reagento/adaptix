@@ -17,7 +17,7 @@ class TestUnderscore(TestCase):
             default_schema=Schema(
                 trim_trailing_underscore=False,
                 skip_internal=False,
-            )
+            ),
         )
         data = Data("1", "2", "3")
         serial = {
@@ -33,7 +33,7 @@ class TestUnderscore(TestCase):
             default_schema=Schema(
                 trim_trailing_underscore=True,
                 skip_internal=False,
-            )
+            ),
         )
         data = Data("1", "2", "3")
         serial = {
@@ -49,7 +49,7 @@ class TestUnderscore(TestCase):
             default_schema=Schema(
                 trim_trailing_underscore=True,
                 skip_internal=True,
-            )
+            ),
         )
         data = Data("1", "2", "3")
         serial = {

@@ -1,4 +1,5 @@
-from typing import Any, Callable, TypeVar, Type
+from typing import Any, Callable, Type, TypeVar
+
 
 T = TypeVar("T")
 K = TypeVar("K")
@@ -21,12 +22,12 @@ class AbstractFactory:
 Serializer = Callable[[T], Any]
 SerializerGetter = Callable[
     [Type[T], AbstractFactory, bool],
-    Serializer
+    Serializer,
 ]
 
 Parser = Callable[[Any], T]
 ParserGetter = Callable[
     [Type[T], AbstractFactory, bool],
-    Parser
+    Parser,
 ]
 InnerConverter = Callable[[T], T]

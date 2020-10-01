@@ -1,7 +1,7 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from unittest import TestCase
 
-from dataclass_factory import parse, dict_factory
+from dataclass_factory import dict_factory, parse
 
 
 class Bar:
@@ -34,21 +34,21 @@ class TestTypeFactories(TestCase):
     def test_parse(self):
         data = {
             "a": [1, 2, 3],
-            "b": 4
+            "b": 4,
         }
         expected = Foo(a=3, b=Bar(43))
         self.assertEqual(
             parse(data, Foo, type_factories={int: int_factory, Bar: bar_factory}),
-            expected
+            expected,
         )
 
     def test_serialize(self):
         data = Foo(a=3, b=Bar(43))
         expected = {
             "a": 3,
-            "b": 4
+            "b": 4,
         }
         self.assertTrue(
             asdict(data, dict_factory=dict_factory(type_serializers={Bar: bar_serialize})),
-            expected
+            expected,
         )

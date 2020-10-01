@@ -21,7 +21,7 @@ class TestFactory(TestCase):
                     name_mapping={"a": "A"},
                     only_mapped=True,
                 ),
-            }
+            },
         )
         data = Data("AA", "BB", "CC")
         serial = {"b": "BB"}
@@ -34,10 +34,10 @@ class TestFactory(TestCase):
         factory = Factory(
             schemas={
                 Data: Schema(
-                    only=("a", "b",),
-                    exclude=("a",)
+                    only=("a", "b"),
+                    exclude=("a",),
                 ),
-            }
+            },
         )
         data = Data("AA", "BB", "CC")
         serial = {"b": "BB"}
@@ -53,7 +53,7 @@ class TestFactory(TestCase):
                     name_mapping={"c_": "c_"},
                     trim_trailing_underscore=True,
                 ),
-            }
+            },
         )
         data = Data("AA", "BB", "CC")
         serial = {"a": "AA", "b": "BB", "c_": "CC"}
@@ -67,7 +67,7 @@ class TestFactory(TestCase):
                     only=("_d",),
                     skip_internal=True,
                 ),
-            }
+            },
         )
         data = Data("AA", "BB", "CC", "DD")
         serial = {"_d": "DD"}
@@ -83,7 +83,7 @@ class TestFactory(TestCase):
                     name_mapping={"_d": "_d"},
                     skip_internal=True,
                 ),
-            }
+            },
         )
         data = Data("AA", "BB", "CC", "DD")
         serial = {"a": "AA", "b": "BB", "c": "CC", "_d": "DD"}

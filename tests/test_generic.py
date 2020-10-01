@@ -1,7 +1,6 @@
 from dataclasses import dataclass
+from typing import Generic, TypeVar
 from unittest import TestCase
-
-from typing import TypeVar, Generic
 
 from dataclass_factory import Factory, Schema
 
@@ -92,6 +91,6 @@ class TestGeneric(TestCase):
     def test_schema_dump_inner(self):
         factory = Factory(schemas={
             FooBaz[int]: Schema(name_mapping={"foo": "bar"}),
-            Foo[int]: Schema(name_mapping={"value": "v"})
+            Foo[int]: Schema(name_mapping={"value": "v"}),
         })
         self.assertEqual(factory.dump(FooBaz(Foo(1)), FooBaz[int]), {"bar": {"v": 1}})

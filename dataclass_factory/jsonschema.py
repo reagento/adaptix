@@ -1,18 +1,13 @@
-import decimal
-from typing import Dict, Optional, Any
-from typing import (
-    Type
-)
-
 from dataclasses import is_dataclass, MISSING
+import decimal
+from typing import Any, Dict, Optional, Type
 
 from .common import AbstractFactory
 from .fields import get_dataclass_fields, get_typeddict_fields
 from .schema import Schema, Unknown
 from .type_detection import (
-    is_tuple, is_collection, hasargs, is_none, is_union, is_dict, is_enum,
-    is_typeddict,
-    is_generic_concrete,
+    hasargs, is_collection, is_dict, is_enum, is_generic_concrete,
+    is_none, is_tuple, is_typeddict, is_union,
 )
 
 
@@ -97,7 +92,7 @@ def dataclass_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dic
     return res
 
 
-def create_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict[str, Any]:
+def create_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict[str, Any]:  # noqa C901,CCR001
     if cls is Any:
         return {}
 

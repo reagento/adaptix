@@ -1,7 +1,6 @@
-import unittest
-from typing import Union
-
 from dataclasses import dataclass
+from typing import Union
+import unittest
 
 from dataclass_factory import Factory, Schema
 from dataclass_factory.schema_helpers import type_checker
@@ -33,7 +32,7 @@ class Container:
 def pre_parse(data):
     return {
         "x": data["x"],
-        "a": data["a"] + "*"
+        "a": data["a"] + "*",
     }
 
 

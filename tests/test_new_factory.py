@@ -1,9 +1,8 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from unittest import TestCase
 
-from datetime import datetime, timezone
-
-from dataclass_factory import Factory, Schema, NameStyle
+from dataclass_factory import Factory, NameStyle, Schema
 from dataclass_factory.schema_helpers import unixtime_schema
 
 
@@ -21,7 +20,7 @@ class Book:
 
 
 book_schema = Schema[Book](
-    name_style=NameStyle.camel
+    name_style=NameStyle.camel,
 )
 
 
@@ -31,7 +30,7 @@ class TestFactory(TestCase):
             schemas={
                 Book: book_schema,
                 datetime: unixtime_schema,
-            }
+            },
         )
         book = Book(
             Author("Petr", datetime(1970, 1, 2, 3, 4, 56, tzinfo=timezone.utc)),
@@ -40,7 +39,7 @@ class TestFactory(TestCase):
         )
         expected = {
             'Title': 'Book1',
-            'AuthorInfo': {'born_at': 97496, 'name': 'Petr'}
+            'AuthorInfo': {'born_at': 97496, 'name': 'Petr'},
         }
         serialized = factory.dump(book)
         self.assertEqual(expected, serialized)
