@@ -33,6 +33,5 @@ ignore=
 max-cognitive-complexity=10
 max-complexity=10
 per-file-ignores=
-    setup.py:D100
     tests/**:D1,E800,A003
     **/__init__.py:F401
