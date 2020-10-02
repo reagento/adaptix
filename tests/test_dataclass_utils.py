@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple, Union
 from unittest import TestCase
-
-from typing import Optional, List, Union, Tuple, Dict, FrozenSet, Set, Any
 
 from dataclass_factory import parse
 
@@ -46,7 +45,7 @@ class Test1(TestCase):
 
     def test_simple_dataclass(self):
         data = {
-            "a": 1
+            "a": 1,
         }
         self.assertEqual(parse(data, D), D(a=1))
 
@@ -62,59 +61,59 @@ class Test1(TestCase):
                 "a": 1,
                 "c": "value",
             },
-            "e": "hello"
+            "e": "hello",
         }
         self.assertEqual(parse(data, D2), D2(d=D(a=1, c="value"), e=E.hello))
 
     def test_configs(self):
         data = {
             "id": 1,
-            "none": None
+            "none": None,
         }
         self.assertEqual(
             parse(data, D3, trim_trailing_underscore=True),
-            D3(id_=1, none=None)
+            D3(id_=1, none=None),
         )
 
     def test_typing(self):
         data = {
             "id": 1,
-            "none": "hello"
+            "none": "hello",
         }
         self.assertEqual(
             parse(data, D3),
-            D3(id_=1, none="hello")
+            D3(id_=1, none="hello"),
         )
 
         data = {
             "id": 1,
-            "lst": None
+            "lst": None,
         }
         self.assertEqual(
             parse(data, D3),
-            D3(id_=1, lst=None)
+            D3(id_=1, lst=None),
         )
 
         data = {
             "id": 1,
-            "lst": [1, "hello"]
+            "lst": [1, "hello"],
         }
         self.assertEqual(
             parse(data, D3),
-            D3(id_=1, lst=[E.one, E.hello])
+            D3(id_=1, lst=[E.one, E.hello]),
         )
 
     def test_union(self):
         data = {
-            "value": "hello"
+            "value": "hello",
         }
         self.assertEqual(parse(data, DUnion), DUnion("hello"))
         data = {
-            "value": 1
+            "value": 1,
         }
         self.assertEqual(parse(data, DUnion), DUnion(1))
         data = {
-            "value": [1]
+            "value": [1],
         }
         self.assertEqual(parse(data, DUnion), DUnion([E.one]))
 

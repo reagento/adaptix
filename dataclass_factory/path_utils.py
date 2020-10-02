@@ -1,8 +1,9 @@
-from typing import Dict, List, Union, Iterable, Tuple, Sequence, Any, Optional, TYPE_CHECKING
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, TYPE_CHECKING, Union
+
 
 # https://github.com/python/typing/issues/684#issuecomment-548203158
 if TYPE_CHECKING:
-    ellipsis = ellipsis
+    ellipsis = ellipsis  # noqa F821
 else:
     ellipsis = type(Ellipsis)
 
@@ -26,9 +27,7 @@ Container = Union[None, List, Dict[Key, Any]]
 
 
 def replace_ellipsis(name: str, path: Union[Path, Key]) -> Union[CleanPath, CleanKey]:
-    """
-    Fixes all `...` in the path replacing then with the name.
-    """
+    """Fix all `...` in the path replacing then with the name."""
     if isinstance(path, ellipsis):
         return name
     if isinstance(path, (str, int)):
@@ -56,7 +55,7 @@ def make_container(key: Key) -> Container:
         return {}
 
 
-def init_structure(paths: Iterable[Path]) -> Tuple[Container, Sequence[Tuple[Container, Key]]]:
+def init_structure(paths: Iterable[Path]) -> Tuple[Container, Sequence[Tuple[Container, Key]]]:  # noqa C901,CCR001
     """
     Create empty structure that can be filled by described path
     Returns whole container itself and separate subcontainers for each path

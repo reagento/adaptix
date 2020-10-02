@@ -1,10 +1,10 @@
+from dataclasses import dataclass, Field, fields, MISSING
 import inspect
-from dataclasses import Field, MISSING, fields, dataclass
-from typing import Sequence, Any, Type, TypeVar, Callable, List, Dict, Union, cast
+from typing import Any, Callable, cast, Dict, List, Sequence, Type, TypeVar, Union
 
 from .generics import resolve_hints, resolve_init_hints
 from .naming import convert_name
-from .path_utils import CleanPath, CleanKey, replace_ellipsis, Key, Path
+from .path_utils import CleanKey, CleanPath, Key, Path, replace_ellipsis
 from .schema import Schema
 from .type_detection import is_generic_concrete
 
@@ -14,7 +14,7 @@ T = TypeVar("T")
 @dataclass
 class BaseFieldInfo:
     field_name: str
-    type: Any
+    type: Any  # noqa A003
     default: Any
 
 
@@ -68,14 +68,13 @@ def all_typeddict_fields(cls) -> List[BaseFieldInfo]:
 
 
 def schema_fields_filter(schema: Schema, name: str):
-    """
-    Checks if field is allowed by a schema:
+    """Check if field is allowed by a schema.
+
     * field is in `only` list (if provided some)
     * field is not excluded
     """
     return (
-        (schema.only is None or name in schema.only)
-        and
+        (schema.only is None or name in schema.only) and
         (schema.exclude is None or name not in schema.exclude)
     )
 
@@ -86,7 +85,7 @@ AllFieldsGetter = Callable[[Any], List[BaseFieldInfo]]
 def get_fields(
     all_fields_getter: AllFieldsGetter,
     schema: Schema[T],
-    class_: Type[T]
+    class_: Type[T],
 ) -> Sequence[FieldInfo]:
     all_fields = [
         field for field in all_fields_getter(class_)
@@ -101,8 +100,8 @@ def get_fields(
             raise ValueError("`name_mapping` contains `...`, and `only_mapped` is True")
 
         return get_only_mapped_fields(
-            schema.name_mapping, # type: ignore
-            all_fields
+            schema.name_mapping,  # type: ignore
+            all_fields,
         )
 
     whitelisted_fields = set(schema.only or []) | set(schema.name_mapping or [])
@@ -111,7 +110,7 @@ def get_fields(
             field_name=f.field_name,
             data_name=convert_name(
                 f.field_name, schema.name_style,
-                schema.name_mapping, schema.trim_trailing_underscore
+                schema.name_mapping, schema.trim_trailing_underscore,
             ),
             type=f.type,
             default=f.default,
@@ -125,7 +124,7 @@ def get_fields(
 
 def get_only_mapped_fields(
     name_mapping: Dict[str, Union[Key, Path]],
-    all_fields: List[BaseFieldInfo]
+    all_fields: List[BaseFieldInfo],
 ):
     fields_dict: Dict[str, BaseFieldInfo] = {f.field_name: f for f in all_fields}
 

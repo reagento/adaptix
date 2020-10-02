@@ -1,24 +1,22 @@
-from marshal import loads, dumps
-from operator import attrgetter, getitem
-from typing import Any, Type, List, Dict, Optional, Union, Sequence, Callable
-
 from dataclasses import is_dataclass, MISSING
+from marshal import dumps, loads
+from operator import attrgetter, getitem
+from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
 
-from .common import Serializer, T, K, AbstractFactory
-from .fields import get_dataclass_fields, FieldInfo, get_typeddict_fields
-from .path_utils import init_structure, CleanPath, CleanKey
-from .schema import Schema, RuleForUnknown, Unknown
+from .common import AbstractFactory, K, Serializer, T
+from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields
+from .path_utils import CleanKey, CleanPath, init_structure
+from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
-    is_collection, is_tuple, hasargs, is_dict, is_optional,
-    is_union, is_any, is_generic_concrete, is_type_var,
-    is_enum,
-    is_typeddict)
+    hasargs, is_any, is_collection, is_dict, is_enum, is_generic_concrete,
+    is_optional, is_tuple, is_type_var, is_typeddict, is_union,
+)
 
 
 def to_path(key: Union[CleanKey, CleanPath]) -> CleanPath:
     if isinstance(key, tuple):
         return key
-    return key,
+    return (key,)
 
 
 def unpack_fields(dest, fields):
@@ -26,7 +24,7 @@ def unpack_fields(dest, fields):
         dest.update(dest.pop(f, {}))
 
 
-def get_complex_serializer(factory: AbstractFactory,
+def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
                            schema: Schema[T],
                            fields: Sequence[FieldInfo],
                            getter: Callable[[Any, Any], Any],
@@ -91,7 +89,7 @@ def get_tuple_serializer(serializers) -> Serializer[List]:
 
 
 def get_collection_any_serializer() -> Serializer[List[Any]]:
-    return lambda data: [x for x in data]
+    return lambda data: list(data)
 
 
 def get_vars_serializer(factory) -> Serializer:
@@ -152,7 +150,7 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
     return serializer
 
 
-def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:
+def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:  # noqa C901,CCR001
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
     if is_type_var(class_):

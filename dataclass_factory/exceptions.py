@@ -1,4 +1,4 @@
-from typing import List, Set, Tuple, Any
+from typing import Any, List, Set, Tuple
 
 
 class ParseError(ValueError):

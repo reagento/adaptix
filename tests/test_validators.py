@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from unittest import TestCase
 
-from dataclass_factory import validate, Factory, Schema, NameStyle
+from dataclass_factory import Factory, NameStyle, Schema, validate
 
 
 class MySchema(Schema):

@@ -1,4 +1,4 @@
-from typing import Type, Dict, Any, get_type_hints
+from typing import Any, Dict, get_type_hints, Type
 
 from .type_detection import is_generic_concrete
 

@@ -2,7 +2,7 @@
 #
 #
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import List, Optional
 
 from .common import Parser, T
 
@@ -10,7 +10,7 @@ from .common import Parser, T
 def combine_parser_validators(
     pre_validators: List[Parser],
     parser: Parser[T],
-    post_validators: List[Parser[T]]
+    post_validators: List[Parser[T]],
 ):
     if not post_validators and not pre_validators:
         return parser

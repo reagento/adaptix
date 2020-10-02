@@ -1,9 +1,9 @@
-import inspect
 from enum import Enum
-
+import inspect
 from typing import (
-    Collection, Tuple, Optional, Any, Dict, Union, Type,
-    TypeVar, Generic, List, )
+    Any, Collection, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union,
+)
+
 
 LITERAL_TYPES: List[Any] = []
 TYPED_DICT_METAS_TMP: List[Any] = []
@@ -24,7 +24,6 @@ except ImportError:
 
 try:
     from typing import TypedDict as PyTypedDict  # type: ignore
-
 
     class RealPyTypedDict(PyTypedDict):
         pass  # create real class, because PyTypedDict can be helper function
@@ -68,9 +67,9 @@ def is_tuple(type_) -> bool:
     try:
         # __origin__ exists in 3.7 on user defined generics
         return (
-                issubclass_safe(type_, tuple) or
-                issubclass_safe(type_.__origin__, Tuple) or
-                issubclass_safe(type_, Tuple)
+            issubclass_safe(type_, tuple) or
+            issubclass_safe(type_.__origin__, Tuple) or
+            issubclass_safe(type_, Tuple)
         )
     except AttributeError:
         return False
@@ -117,7 +116,7 @@ def is_generic(type_: Type) -> bool:
 
 
 def is_none(type_: Type) -> bool:
-    return type_ is type(None)
+    return type_ is type(None)  # noqa E721 because of https://github.com/python/mypy/issues/3060
 
 
 def is_enum(cls: Type) -> bool:
@@ -126,10 +125,10 @@ def is_enum(cls: Type) -> bool:
 
 def args_unspecified(cls: Type) -> bool:
     return (
-            not hasattr(cls, '__args__') or
-            not hasattr(cls, '__parameters__') or
-            (not cls.__args__ and cls.__parameters__) or
-            (cls.__args__ == cls.__parameters__)
+        not hasattr(cls, '__args__') or
+        not hasattr(cls, '__parameters__') or
+        (not cls.__args__ and cls.__parameters__) or
+        (cls.__args__ == cls.__parameters__)
     )
 
 
