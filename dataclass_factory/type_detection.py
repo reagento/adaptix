@@ -1,9 +1,8 @@
 from enum import Enum
 import inspect
 from typing import (
-    Any, Collection, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union,
+    Any, Collection, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union, get_type_hints,
 )
-
 
 LITERAL_TYPES: List[Any] = []
 TYPED_DICT_METAS_TMP: List[Any] = []
@@ -25,8 +24,10 @@ except ImportError:
 try:
     from typing import TypedDict as PyTypedDict  # type: ignore
 
+
     class RealPyTypedDict(PyTypedDict):
         pass  # create real class, because PyTypedDict can be helper function
+
 
     TYPED_DICT_METAS_TMP.append(type(RealPyTypedDict))
 except ImportError:
@@ -41,6 +42,19 @@ except ImportError:
 
 TYPED_DICT_METAS = tuple(TYPED_DICT_METAS_TMP)
 del TYPED_DICT_METAS_TMP
+
+
+def get_self_type_hints(cls: Type) -> Dict[str, Type]:
+    """
+    Returns type hints declared in current class without inherited once
+    """
+    # use __dict__ to fix if __annotations__ is inherited
+    annotations = cls.__dict__.get("__annotations__", {})
+    return {
+        field: type_
+        for field, type_ in get_type_hints(cls).items()
+        if field in annotations
+    }
 
 
 def hasargs(type_, *args) -> bool:
