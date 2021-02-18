@@ -19,6 +19,7 @@ from .type_detection import (
 from .validators import combine_parser_validators
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
+MISSED = object()
 
 
 def get_element_parser(parser: Parser[T], key: Any) -> Parser[T]:
@@ -113,10 +114,13 @@ def get_path_parser(parser: Parser[T], path: CleanPath) -> Parser[T]:
     def path_parser(data):
         if data is None:
             return parser(data)
-        for x in path:
-            data = data[x]
-            if data is None:
-                return parser(data)
+        try:
+            for x in path:
+                data = data[x]
+                if data is None:
+                    break
+        except (KeyError, IndexError):
+            return MISSED  # not found, should use default
         return parser(data)
 
     return path_parser
@@ -208,9 +212,13 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                 unknown_fields = {}
             return class_(
                 **{
-                    field_name: parser(data[item_name])
-                    for field_name, item_name, parser in field_info
-                    if item_name in data
+                    field_name: result
+                    for field_name, result in (
+                        (field_name, parser(data[item_name]))
+                        for field_name, item_name, parser in field_info
+                        if item_name in data
+                    )
+                    if result is not MISSED
                 },
                 **unknown_fields,
             )
