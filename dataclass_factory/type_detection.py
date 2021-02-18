@@ -35,8 +35,11 @@ except ImportError:
 
 try:
     from typing_extensions import TypedDict as CompatTypedDict  # type: ignore
-
-    TYPED_DICT_METAS_TMP.append(type(CompatTypedDict))
+    # This is a hack. It exists because typing_extensions.TypedDict
+    # is not guaranteed to be a type, it can also be a function (which it is in 3.9)
+    _Foo = CompatTypedDict("_Foo", {})
+    TYPED_DICT_METAS_TMP.append(type(_Foo))
+    del _Foo
 except ImportError:
     pass
 
