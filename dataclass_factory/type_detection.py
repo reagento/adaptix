@@ -80,6 +80,10 @@ def issubclass_safe(cls, classinfo) -> bool:
         return result
 
 
+def is_newtype(type_) -> bool:
+    return hasattr(type_, "__supertype__") and hasattr(type_, "__name__")
+
+
 def is_tuple(type_) -> bool:
     try:
         # __origin__ exists in 3.7 on user defined generics
