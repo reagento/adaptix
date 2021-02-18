@@ -153,6 +153,8 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
 def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:  # noqa C901,CCR001
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
+    if is_newtype(class_):
+        return create_serializer_impl(factory, schema, debug_path, class_.__supertype__)
     if is_type_var(class_):
         return get_lazy_serializer(factory)
     if is_dataclass(class_) or (is_generic_concrete(class_) and is_dataclass(class_.__origin__)):
@@ -207,7 +209,5 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
     if is_collection(class_):
         item_serializer = get_lazy_serializer(factory)
         return get_collection_serializer(item_serializer)
-    if is_newtype(class_):
-        return create_serializer_impl(factory, schema, debug_path, class_.__supertype__)
     else:
         return get_vars_serializer(factory)

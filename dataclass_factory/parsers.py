@@ -331,6 +331,8 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return cls
     if cls in (decimal.Decimal,):
         return decimal_parse
+    if is_newtype(cls):
+        return create_parser_impl(factory, schema, debug_path, cls.__supertype__)
     if is_enum(cls):
         return cls
     if is_tuple(cls):
@@ -389,8 +391,6 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             pre_validators=schema.pre_validators,
             post_validators=schema.post_validators,
         )
-    if is_newtype(cls):
-        return create_parser_impl(factory, schema, debug_path, cls.__supertype__)
     try:
         return get_complex_parser(
             class_=cls,
