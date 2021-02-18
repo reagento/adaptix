@@ -7,8 +7,8 @@ from dataclass_factory.path_utils import NameMapping
 
 @dataclass
 class A:
-    x: str
-    y: str
+    x: str = "x0"
+    y: str = "y0"
 
 
 schema = Schema[A](
@@ -200,4 +200,18 @@ class Test1(TestCase):
         )
         data = ["hello", "world"]
         expected = A("hello", "world")
+        self.assertEqual(expected, factory.load(data, A))
+
+    def test_parse_missed(self):
+        factory = Factory(
+            schemas={
+                A: schema,
+            },
+        )
+        expected = A(y="test")
+        data = {"y": "test"}
+        self.assertEqual(expected, factory.load(data, A))
+        data = {"y": "test", "a": {}}
+        self.assertEqual(expected, factory.load(data, A))
+        data = {"y": "test", "a": {"b": []}}
         self.assertEqual(expected, factory.load(data, A))
