@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from unittest import TestCase
 
-from dataclass_factory import ParserFactory, NameStyle, SerializerFactory, Factory, Schema
+from dataclass_factory import Factory, NameStyle, Schema
 from dataclass_factory.naming import convert_name, is_snake_case
 
 
@@ -29,7 +29,7 @@ class TestConvertLogic(TestCase):
         for trailing in TRAILING_VARIANTS:
             self.assertEqual(
                 convert_name('BadSnakeName', NameStyle.ignore, None, trailing),
-                'BadSnakeName'
+                'BadSnakeName',
             )
 
     def test_mapping(self):
@@ -37,7 +37,7 @@ class TestConvertLogic(TestCase):
             for trailing in TRAILING_VARIANTS:
                 self.assertEqual(
                     convert_name('BadSnakeName', ns, {'BadSnakeName': 'MappedName'}, trailing),
-                    'MappedName'
+                    'MappedName',
                 )
 
 
@@ -74,8 +74,8 @@ class TestParser(TestCase):
         parser = Factory(
             default_schema=Schema(
                 name_style=name_style,
-                name_mapping={'NameToMap': 'MappedName'}
-            )
+                name_mapping={'NameToMap': 'MappedName'},
+            ),
         ).parser(Data)
         self.assertEqual(parser(data), Data(1, 2, 3))
 
@@ -178,7 +178,7 @@ class TestSerializer(TestCase):
         data = {
             "styled_name": 1,
             "trailed_name": 2,
-            "NameToMap": 3
+            "NameToMap": 3,
         }
         d = Data(1, 2, 3)
 

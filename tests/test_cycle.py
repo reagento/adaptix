@@ -1,7 +1,6 @@
-from typing import Optional, TypeVar, Generic, List
-from unittest import TestCase
-
 from dataclasses import dataclass
+from typing import Generic, Optional, TypeVar
+from unittest import TestCase
 
 from dataclass_factory import Factory
 

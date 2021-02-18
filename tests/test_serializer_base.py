@@ -1,8 +1,7 @@
-import unittest
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Dict, Optional, Any
-
-from dataclasses import field, dataclass
+from typing import Any, Dict, List, Optional
+import unittest
 
 from dataclass_factory import Factory
 
@@ -71,14 +70,14 @@ class TestSerializer(unittest.TestCase):
 
         dlist = DictD(
             {"1": d1, "two": d2},
-            {"hello": "world", "foo": "bar"}
+            {"hello": "world", "foo": "bar"},
         )
         data = {
             "data": {
                 "1": {"a": 100, "c": "hello"},
                 "two": {"a": 200, "c": "hello2"},
             },
-            "strs": {"hello": "world", "foo": "bar"}
+            "strs": {"hello": "world", "foo": "bar"},
         }
         self.assertEqual(
             serializer(dlist),

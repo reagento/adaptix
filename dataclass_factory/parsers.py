@@ -2,24 +2,24 @@ import decimal
 from collections import deque
 from dataclasses import is_dataclass
 from typing import (
-    List, Set, FrozenSet, Deque, Any, Callable,
-    Collection, Type, Optional, Tuple, Union, Sequence,
-    Dict)
+    Any, Callable, Collection, Deque, Dict, FrozenSet,
+    List, Optional, Sequence, Set, Tuple, Type, Union,
+)
 
-from .common import Parser, T, AbstractFactory
-from .exceptions import InvalidFieldError, UnknownFieldsError, UnionParseError
-from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields, get_class_fields
+from .common import AbstractFactory, Parser, T
+from .exceptions import InvalidFieldError, UnionParseError, UnknownFieldsError
+from .fields import FieldInfo, get_class_fields, get_dataclass_fields, get_typeddict_fields
 from .path_utils import CleanKey, CleanPath
-from .schema import Schema, RuleForUnknown, Unknown
+from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
-    is_tuple, is_collection, is_any, hasargs, is_optional,
-    is_none, is_union, is_dict, is_enum,
-    args_unspecified,
-    is_literal, is_literal36, is_typeddict,
-    is_generic_concrete)
+    args_unspecified, hasargs, is_any, is_collection, is_dict,
+    is_enum, is_generic_concrete, is_literal, is_literal36, is_newtype,
+    is_none, is_optional, is_tuple, is_typeddict, is_union,
+)
 from .validators import combine_parser_validators
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
+MISSED = object()  # field is missed in parsed data
 
 
 def get_element_parser(parser: Parser[T], key: Any) -> Parser[T]:
@@ -35,7 +35,7 @@ def get_element_parser(parser: Parser[T], key: Any) -> Parser[T]:
     return element_parser
 
 
-def element_parser(parser: Parser[T], data: Any, key: Any) -> T:
+def dyn_element_parser(parser: Parser[T], data: Any, key: Any) -> T:
     try:
         return parser(data)
     except InvalidFieldError as e:
@@ -66,12 +66,12 @@ def get_parser_with_check(cls: Type[T]) -> Parser[T]:
 def get_collection_parser(
     collection_factory: Callable,
     item_parser: Parser[T],
-    debug_path: bool
+    debug_path: bool,
 ) -> Parser[Collection[T]]:
     if debug_path:
         def collection_parser(data):
             return collection_factory(
-                element_parser(item_parser, x, i) for i, x in enumerate(data)
+                dyn_element_parser(item_parser, x, i) for i, x in enumerate(data)
             )
     else:
         def collection_parser(data):
@@ -114,10 +114,13 @@ def get_path_parser(parser: Parser[T], path: CleanPath) -> Parser[T]:
     def path_parser(data):
         if data is None:
             return parser(data)
-        for x in path:
-            data = data[x]
-            if data is None:
-                return parser(data)
+        try:
+            for x in path:
+                data = data[x]
+                if data is None:
+                    break
+        except (KeyError, IndexError):
+            return MISSED  # not found, should use default
         return parser(data)
 
     return path_parser
@@ -138,7 +141,7 @@ def get_field_parser(
         return item, parser
 
 
-def get_complex_parser(class_: Type[T],
+def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                        factory: AbstractFactory,
                        fields: Sequence[FieldInfo],
                        debug_path: bool,
@@ -153,8 +156,8 @@ def get_complex_parser(class_: Type[T],
                 item=f.data_name,
                 parser=factory.parser(f.type),
                 pre_validators=pre_validators.get(f.field_name, []) + pre_validators.get(None, []),
-                post_validators=post_validators.get(f.field_name, []) + post_validators.get(None, [])
-            )
+                post_validators=post_validators.get(f.field_name, []) + post_validators.get(None, []),
+            ),
         )
         for f in fields
     )
@@ -207,13 +210,16 @@ def get_complex_parser(class_: Type[T],
                 unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
             else:
                 unknown_fields = {}
+
+            fields = {}
+            for field_name, item_name, parser in field_info:
+                if item_name in data:
+                    result = parser(data[item_name])
+                    if result is not MISSED:
+                        fields[field_name] = result
             return class_(
-                **{
-                    field_name: parser(data[item_name])
-                    for field_name, item_name, parser in field_info
-                    if item_name in data
-                },
-                **unknown_fields
+                **fields,
+                **unknown_fields,
             )
 
     return complex_parser
@@ -229,12 +235,14 @@ def get_typed_dict_parser(
     post_validators: Dict[Optional[str], List[Parser]],
 ) -> Parser:
     complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown, pre_validators, post_validators)
-    requires_fieds = set(f.field_name for f in fields)
+    requires_fields = {f.field_name for f in fields}
     if class_.__total__:
         def total_parser(data):
             res = complex_parser(data)
-            if not set(res) == requires_fieds:
-                raise ValueError("Not all fields provided for %s" % (class_, ))
+
+            if not set(res) == requires_fields:
+                raise ValueError("Not all fields provided for %s" % class_)
+
             return res
 
         return total_parser
@@ -290,7 +298,6 @@ def get_literal_parser(factory, values: Sequence[Any]) -> Parser:
 
 
 def get_lazy_parser(factory, class_: Type) -> Parser:
-    # return partial(factory.load, class_=class_)
     def lazy_parser(data):
         return factory.load(data, class_)
 
@@ -314,7 +321,7 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls: Type) -> Parse
     return parser
 
 
-def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:
+def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:  # noqa C901, CCR001
     if is_any(cls):
         return parse_stub
     if is_none(cls):
@@ -331,6 +338,8 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return cls
     if cls in (decimal.Decimal,):
         return decimal_parse
+    if is_newtype(cls):
+        return create_parser_impl(factory, schema, debug_path, cls.__supertype__)
     if is_enum(cls):
         return cls
     if is_tuple(cls):
@@ -368,7 +377,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         item_parser = factory.parser(value_type_arg)
         return get_collection_parser(collection_factory, item_parser, debug_path)
     if is_union(cls):
-        # also check if Union can be converted to Optional[...] or Optionl[Union[...]]
+        # also, check if Union can be converted to Optional[...] or Optional[Union[...]]
         parsers = tuple(factory.parser(x) for x in cls.__args__ if not is_none(x))
         if len(parsers) == 0:
             return parse_none

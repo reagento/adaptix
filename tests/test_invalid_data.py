@@ -1,7 +1,6 @@
+from dataclasses import dataclass, field
 from enum import Enum
 from unittest import TestCase
-
-from dataclasses import dataclass, field
 
 from dataclass_factory import Factory, InvalidFieldError
 
@@ -31,7 +30,7 @@ class TestInvalidData(TestCase):
             Factory(debug_path=True).parser(Foo)({"a": "20x", "b": 20})
             self.assertTrue(False, "ValueError exception expected")
         except InvalidFieldError as exc:
-            self.assertEqual(['a', ], exc.field_path)
+            self.assertEqual(['a'], exc.field_path)
 
     def test_should_provide_failed_key_hierarchy_when_invalid_nested_data_parsed(self):
         try:

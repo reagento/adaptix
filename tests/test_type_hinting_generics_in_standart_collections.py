@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 import sys
 import unittest
 from unittest import TestCase
-from dataclasses import dataclass
 
 from dataclass_factory import Factory
 
@@ -37,5 +37,5 @@ class TestTypeHintingGenericsInStandartCollections(TestCase):
                 "name": "name2",
             },
         ]
-        expected =[Model("name1"),  Model("name2")]
+        expected = [Model("name1"), Model("name2")]
         self.assertEqual(expected, factory.load(data, list[Model]))

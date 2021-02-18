@@ -1,6 +1,5 @@
-from typing import TypeVar, Generic
-
 from dataclasses import dataclass
+from typing import TypeVar, Generic
 
 from dataclass_factory import Factory, Schema
 

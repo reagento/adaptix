@@ -1,14 +1,14 @@
 from datetime import datetime
 from uuid import UUID
 
-from .factory import StackedFactory
 from .common import T
+from .factory import StackedFactory
 from .schema import Schema
 
 try:
     isotime_schema = Schema(
         parser=datetime.fromisoformat,  # type: ignore
-        serializer=datetime.isoformat
+        serializer=datetime.isoformat,
     )
 except AttributeError:
     pass
@@ -27,12 +27,12 @@ def type_checker(value, field="type", pre_parse=None):
 
 unixtime_schema = Schema(
     parser=datetime.fromtimestamp,
-    serializer=datetime.timestamp
+    serializer=datetime.timestamp,
 )
 
 uuid_schema = Schema(
     serializer=UUID.__str__,
-    parser=UUID
+    parser=UUID,
 )
 
 

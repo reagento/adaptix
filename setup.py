@@ -22,7 +22,7 @@ setup(
         'Operating System :: OS Independent',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 3'
+        'Programming Language :: Python :: 3',
     ],
     packages=['dataclass_factory'],
     install_requires=[

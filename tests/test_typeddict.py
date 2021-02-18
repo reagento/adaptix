@@ -5,7 +5,7 @@ from unittest import TestCase
 from nose2.tools import params  # type: ignore
 from typing_extensions import TypedDict as CompatTypedDict
 
-from dataclass_factory import Factory, Schema, NameStyle
+from dataclass_factory import Factory, NameStyle, Schema
 
 TYPED_DICTS: Any = [CompatTypedDict]
 if sys.version_info >= (3, 8):
@@ -24,7 +24,7 @@ class TestTypedDict(TestCase):
         factory = Factory()
         data = {
             "name": "hello",
-            "year": 1
+            "year": 1,
         }
         expected = dict(name="hello", year=1)
         self.assertEqual(expected, factory.load(data, Book))
@@ -37,7 +37,7 @@ class TestTypedDict(TestCase):
 
         factory = Factory()
         data = {
-            "name": "hello"
+            "name": "hello",
         }
         self.assertRaises((ValueError, KeyError), factory.load, data, Book)
 
@@ -49,7 +49,7 @@ class TestTypedDict(TestCase):
 
         factory = Factory()
         data = {
-            "name": "hello"
+            "name": "hello",
         }
         expected = dict(name="hello")
         self.assertEqual(expected, factory.load(data, Book))
@@ -62,12 +62,12 @@ class TestTypedDict(TestCase):
 
         factory = Factory(default_schema=Schema(
             name_style=NameStyle.dot,
-            name_mapping={"other": ("inner", "field")}
+            name_mapping={"other": ("inner", "field")},
         ))
         data = {
             "python.name": "hello",
             "inner": {
-                "field": "world"
+                "field": "world",
             },
         }
         mydict: MyDict = dict(python_name="hello", other="world")

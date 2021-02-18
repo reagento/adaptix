@@ -27,7 +27,7 @@ class TestInit(TestCase):
         data = {
             "x": 1,
             "y": "hello",
-            "z": "z"
+            "z": "z",
         }
         expected = MyClass(1, E.hello, "z")
         self.assertEqual(self.factory.load(data, MyClass), expected)
@@ -36,7 +36,7 @@ class TestInit(TestCase):
         expected = {
             "x": 1,
             "y": "hello",
-            "z": "z"
+            "z": "z",
         }
         data = MyClass(1, E.hello, "z")
         self.assertEqual(self.factory.dump(data, MyClass), expected)

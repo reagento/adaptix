@@ -1,7 +1,6 @@
+from dataclasses import dataclass
 from typing import Dict, Optional
 from unittest import TestCase
-
-from dataclasses import dataclass
 
 from dataclass_factory import Factory, Schema
 from dataclass_factory.schema import Unknown

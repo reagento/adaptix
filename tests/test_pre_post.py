@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from unittest import TestCase
-
 from typing import List
+from unittest import TestCase
 
 from dataclass_factory import Factory, Schema
 
