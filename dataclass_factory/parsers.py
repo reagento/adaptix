@@ -269,6 +269,7 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
         code = textwrap.dedent(inspect.getsource(complex_parser))
         tree = ast.parse(code)
         tree = Unparser(locals()).visit(tree)
+        print(ast.unparse(tree))
         exec(compile(tree, '<unknown>', 'exec'))
 
     return complex_parser
