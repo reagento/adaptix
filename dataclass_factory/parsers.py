@@ -5,6 +5,7 @@ from typing import (
     Any, Callable, Collection, Deque, Dict, FrozenSet,
     List, Optional, Sequence, Set, Tuple, Type, Union,
 )
+import ast, inspect
 
 from .common import AbstractFactory, Parser, T
 from .exceptions import InvalidFieldError, UnionParseError, UnknownFieldsError
@@ -20,6 +21,47 @@ from .validators import combine_parser_validators
 
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
 MISSED = object()  # field is missed in parsed data
+
+class Unparser(ast.NodeTransformer):
+    def __init__(self, locals: Dict[str, Any]):
+         self.locals = locals
+         self.find = False
+    def visit_If(self, node):
+        if not self.find:
+            return self.shadow_visit_If(node)
+        else:
+            return self.generic_visit(node)
+
+    def shadow_visit_If(self, node):
+        print(node.__dict__)
+        if hasattr(node, 'test'):
+            test: dict = node.test
+            print("TESTESTES", test.__dict__)
+            exp = parsexp(test, self.locals)
+            print(exp)
+            if exp:
+                return node.body
+            else:
+                return self.shadow_visit_If(node.orelse[0])
+        return node.value
+
+def parsexp(test, locals: dict):
+    if isinstance(test, ast.Name):
+        return locals[test.id]
+    if isinstance(test, ast.Constant):
+        return test.value
+    if isinstance(test, ast.UnaryOp):
+        operand = parsexp(test.operand, locals)
+        if isinstance(test.op, ast.Not):
+            return not operand
+    if hasattr(test, 'op'):
+        if isinstance(test.op, ast.And):
+            return all(parsexp(val, locals) for val in test.values)
+    if isinstance(test, ast.Call):
+        return parsexp(test.func, locals)(*(parsexp(i, locals) for i in test.args))
+    if isinstance(test, ast.Attribute):
+        return getattr(parsexp(test.value, locals), test.attr)
+
 
 
 def get_element_parser(parser: Parser[T], key: Any) -> Parser[T]:
@@ -221,6 +263,10 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                 **fields,
                 **unknown_fields,
             )
+        code = inspect.getsource(complex_parser)
+        tree = ast.parse(code)
+        tree = Unparser(locals()).visit(tree)
+        exec(compile(tree, '<unknown>', 'exec'))
 
     return complex_parser
 
