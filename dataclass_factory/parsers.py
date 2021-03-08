@@ -5,7 +5,7 @@ from typing import (
     Any, Callable, Collection, Deque, Dict, FrozenSet,
     List, Optional, Sequence, Set, Tuple, Type, Union,
 )
-import ast, inspect
+import ast, inspect, textwrap
 
 from .common import AbstractFactory, Parser, T
 from .exceptions import InvalidFieldError, UnionParseError, UnknownFieldsError
@@ -39,14 +39,14 @@ class Unparser(ast.NodeTransformer):
         print(node.__dict__)
         if hasattr(node, 'test'):
             test: dict = node.test
-            print("TESTESTES", test.__dict__)
             exp = parsexp(test, self.locals)
-            print(exp)
             if exp:
+                self.find = True
                 return node.body
             else:
                 return self.shadow_visit_If(node.orelse[0])
-        return node.value
+        self.find = True
+        return node.value # else
 
 def parsexp(test, locals: dict):
     if isinstance(test, ast.Name):
@@ -242,30 +242,31 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
 
         known_fields = {f.field_name for f in fields}
 
-        code = '''def complex_parser(data):
-    if forbid_unknown and not known_fields.issuperset(data):
-        unknown_field_names = set(data) - known_fields
-        raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
-    elif store_unknown_separate:
-        extras = {k: v for k, v in data.items() if k not in known_fields}
-        for field in unknown:
-            data[field] = extras
-        unknown_fields = {}
-    elif store_unknown:
-        unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
-    else:
-        unknown_fields = {}
+        def complex_parser(data):
+            if forbid_unknown and not known_fields.issuperset(data):
+                unknown_field_names = set(data) - known_fields
+                raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
+            elif store_unknown_separate:
+                extras = {k: v for k, v in data.items() if k not in known_fields}
+                for field in unknown:
+                    data[field] = extras
+                unknown_fields = {}
+            elif store_unknown:
+                unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
+            else:
+                unknown_fields = {}
 
-    fields = {}
-    for field_name, item_name, parser in field_info:
-        if item_name in data:
-            result = parser(data[item_name])
-            if result is not MISSED:
-                fields[field_name] = result
-    return class_(
-        **fields,
-        **unknown_fields,
-    )'''
+            fields = {}
+            for field_name, item_name, parser in field_info:
+                if item_name in data:
+                    result = parser(data[item_name])
+                    if result is not MISSED:
+                        fields[field_name] = result
+            return class_(
+                **fields,
+                **unknown_fields,
+            )
+        code = textwrap.dedent(inspect.getsource())
         tree = ast.parse(code)
         tree = Unparser(locals()).visit(tree)
         exec(compile(tree, '<unknown>', 'exec'))
