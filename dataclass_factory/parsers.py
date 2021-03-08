@@ -19,8 +19,11 @@ from .type_detection import (
 )
 from .validators import combine_parser_validators
 
+
+
 PARSER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
 MISSED = object()  # field is missed in parsed data
+
 
 class Unparser(ast.NodeTransformer):
     def __init__(self, locals: Dict[str, Any]):
@@ -264,6 +267,9 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                 **unknown_fields,
             )
         code = inspect.getsource(complex_parser)
+        print(code)
+        print(repr(code))
+        for i in code.split('\n'): print(i)
         tree = ast.parse(code)
         tree = Unparser(locals()).visit(tree)
         exec(compile(tree, '<unknown>', 'exec'))
