@@ -36,7 +36,6 @@ class Unparser(ast.NodeTransformer):
             return self.generic_visit(node)
 
     def shadow_visit_If(self, node):
-        print(node.__dict__)
         if hasattr(node, 'test'):
             test: dict = node.test
             exp = parsexp(test, self.locals)
