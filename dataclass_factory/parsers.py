@@ -242,34 +242,30 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
 
         known_fields = {f.field_name for f in fields}
 
-        def complex_parser(data):
-            if forbid_unknown and not known_fields.issuperset(data):
-                unknown_field_names = set(data) - known_fields
-                raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
-            elif store_unknown_separate:
-                extras = {k: v for k, v in data.items() if k not in known_fields}
-                for field in unknown:
-                    data[field] = extras
-                unknown_fields = {}
-            elif store_unknown:
-                unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
-            else:
-                unknown_fields = {}
+        code = '''def complex_parser(data):
+    if forbid_unknown and not known_fields.issuperset(data):
+        unknown_field_names = set(data) - known_fields
+        raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
+    elif store_unknown_separate:
+        extras = {k: v for k, v in data.items() if k not in known_fields}
+        for field in unknown:
+            data[field] = extras
+        unknown_fields = {}
+    elif store_unknown:
+        unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
+    else:
+        unknown_fields = {}
 
-            fields = {}
-            for field_name, item_name, parser in field_info:
-                if item_name in data:
-                    result = parser(data[item_name])
-                    if result is not MISSED:
-                        fields[field_name] = result
-            return class_(
-                **fields,
-                **unknown_fields,
-            )
-        code = inspect.getsource(complex_parser)
-        print(code)
-        print(repr(code))
-        for i in code.split('\n'): print(i)
+    fields = {}
+    for field_name, item_name, parser in field_info:
+        if item_name in data:
+            result = parser(data[item_name])
+            if result is not MISSED:
+                fields[field_name] = result
+    return class_(
+        **fields,
+        **unknown_fields,
+    )'''
         tree = ast.parse(code)
         tree = Unparser(locals()).visit(tree)
         exec(compile(tree, '<unknown>', 'exec'))
