@@ -1,3 +1,4 @@
+import collections.abc
 import decimal
 from collections import deque
 from dataclasses import is_dataclass
@@ -183,38 +184,26 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                 if item_idx < count
             })
     else:
-        forbid_unknown = False
-        store_unknown_separate = False
-        store_unknown = False
-        if unknown is Unknown.FORBID:
-            forbid_unknown = True
-        elif unknown is Unknown.STORE:
-            store_unknown = True
-        elif unknown is Unknown.SKIP:
-            pass
-        elif isinstance(unknown, str):
-            store_unknown_separate = True
+        if isinstance(unknown, str):
             unknown = [unknown]
-        else:  # sequence of string
-            store_unknown_separate = True
-
         known_fields = {f.field_name for f in fields}
 
         def complex_parser(data):
-            if not (store_unknown_separate or store_unknown):
+            if unknown is Unknown.SKIP:
                 unknown_fields = {}
-
-            if forbid_unknown:
+            if unknown is Unknown.FORBID:
                 if not known_fields.issuperset(data):
                     unknown_field_names = set(data) - known_fields
                     raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
-            if store_unknown_separate:
+                else:
+                    unknown_fields = {}
+            if unknown is Unknown.STORE:
+                unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
+            if isinstance(unknown, collections.abc.Sequence):
                 extras = {k: v for k, v in data.items() if k not in known_fields}
                 for field in unknown:
                     data[field] = extras
                 unknown_fields = {}
-            if store_unknown:
-                unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
 
             fields = {}
             for field_name, item_name, parser in field_info:
@@ -227,7 +216,7 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                 **unknown_fields,
             )
 
-    return cut_if(**locals(), **globals())(complex_parser)
+    return cut_if(locals(), globals())(complex_parser)
 
 
 def get_typed_dict_parser(
