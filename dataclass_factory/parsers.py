@@ -227,7 +227,7 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                 **unknown_fields,
             )
 
-    return cut_if(**locals())(complex_parser)
+    return cut_if(**locals(), **globals())(complex_parser)
 
 
 def get_typed_dict_parser(
