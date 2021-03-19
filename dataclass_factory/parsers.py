@@ -9,6 +9,7 @@ from typing import (
 from .common import AbstractFactory, Parser, T
 from .exceptions import InvalidFieldError, UnionParseError, UnknownFieldsError
 from .fields import FieldInfo, get_class_fields, get_dataclass_fields, get_typeddict_fields
+from .optimize import cut_if
 from .path_utils import CleanKey, CleanPath
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
@@ -104,7 +105,8 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser[
 
     def tuple_parser(data):
         if len(data) != len(parsers):
-            raise ValueError("Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
+            raise ValueError(
+                "Incorrect length of data, expected %s, got %s" % (len(parsers), len(data)))
         return tuple(parser(x) for x, parser in zip(data, parsers))
 
     return tuple_parser
@@ -156,7 +158,8 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                 item=f.data_name,
                 parser=factory.parser(f.type),
                 pre_validators=pre_validators.get(f.field_name, []) + pre_validators.get(None, []),
-                post_validators=post_validators.get(f.field_name, []) + post_validators.get(None, []),
+                post_validators=post_validators.get(f.field_name, []) + post_validators.get(None,
+                                                                                            []),
             ),
         )
         for f in fields
@@ -198,18 +201,20 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
         known_fields = {f.field_name for f in fields}
 
         def complex_parser(data):
-            if forbid_unknown and not known_fields.issuperset(data):
-                unknown_field_names = set(data) - known_fields
-                raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
-            elif store_unknown_separate:
+            if not (store_unknown_separate or store_unknown):
+                unknown_fields = {}
+
+            if forbid_unknown:
+                if not known_fields.issuperset(data):
+                    unknown_field_names = set(data) - known_fields
+                    raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
+            if store_unknown_separate:
                 extras = {k: v for k, v in data.items() if k not in known_fields}
                 for field in unknown:
                     data[field] = extras
                 unknown_fields = {}
-            elif store_unknown:
+            if store_unknown:
                 unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
-            else:
-                unknown_fields = {}
 
             fields = {}
             for field_name, item_name, parser in field_info:
@@ -222,7 +227,7 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                 **unknown_fields,
             )
 
-    return complex_parser
+    return cut_if(**locals())(complex_parser)
 
 
 def get_typed_dict_parser(
