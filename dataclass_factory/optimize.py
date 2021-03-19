@@ -4,17 +4,6 @@ import textwrap
 from copy import copy
 
 
-def clean_text(text):
-    return textwrap.dedent(text)
-    indent_len = len(text[:text.find('def')])
-    strings = text.split('\n')
-    new_strings = []
-    for string in strings:
-        new_string = string[indent_len:]
-        new_strings.append(new_string)
-    return '\n'.join(new_strings)
-
-
 class RewriteName(ast.NodeTransformer):
     def __init__(self, kwargs):
         self.kwargs = kwargs
@@ -49,7 +38,7 @@ def cut_if(**kwargs):
         known_vars = {k: v for k, v in kwargs.items() if k in freevars}
 
         text = inspect.getsource(func)
-        text = clean_text(text)
+        text = textwrap.dedent(text)
         tree = ast.parse(text)
 
         new_tree = ast.fix_missing_locations(RewriteName(known_vars).visit(tree))
