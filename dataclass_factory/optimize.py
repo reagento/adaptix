@@ -41,11 +41,11 @@ def cut_if(locals, globals):
         known_vars.update(globals)
 
         text = inspect.getsource(func)
-        text = textwrap.dedent(text)
+        text = "\n" * (func.__code__.co_firstlineno-1) + textwrap.dedent(text)
         tree = ast.parse(text)
 
-        new_tree = ast.fix_missing_locations(RewriteName(known_vars).visit(tree))
-        code = compile(new_tree, filename='blah', mode='exec')
+        new_tree = RewriteName(known_vars).visit(tree)
+        code = compile(new_tree, filename=inspect.getfile(func), mode='exec')
         namespace = copy(known_vars)
         exec(code, namespace)
         return namespace[func.__name__]
