@@ -71,5 +71,5 @@ jobs:
 
       - name: Run tests
         run: |
-          nose2 -B -C tests
+          nose2 -B tests
 
