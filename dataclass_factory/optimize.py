@@ -2,6 +2,7 @@ import ast
 import inspect
 import textwrap
 from copy import copy, deepcopy
+from operator import getitem
 from typing import Any
 
 VAR_NAME = "______"
@@ -16,6 +17,33 @@ class RewriteName(ast.NodeTransformer):
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
         node.decorator_list = []  # remove decorators because they will be applied later
+        self.generic_visit(node)
+        return node
+
+    def visit_Call(self, node: ast.Call) -> Any:
+        try:
+            func = self.eval(node.func)
+            if func is getattr and len(node.args) == 2:
+                args = self.visit_copy(node.args)
+                if isinstance(args[1], ast.Constant):
+                    return ast.Attribute(
+                        value=args[0],
+                        attr=args[1].value,
+                        ctx=ast.Load(),
+                        lineno=node.lineno,
+                        col_offset=node.col_offset,
+                    )
+            elif func is getitem:
+                args = self.visit_copy(node.args)
+                return ast.Subscript(
+                    value=args[0],
+                    slice=ast.Index(value=args[1]),
+                    ctx=ast.Load(),
+                    lineno=node.lineno,
+                    col_offset=node.col_offset,
+                )
+        except Exception as e:
+            pass
         self.generic_visit(node)
         return node
 
