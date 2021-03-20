@@ -34,7 +34,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m nose2 -B  tests
+          python -m nose2 -B -C tests
 
       - name: Run flake8
         run: |
@@ -71,5 +71,5 @@ jobs:
 
       - name: Run tests
         run: |
-          nose2 -B tests
+          nose2 -B -C tests
 
