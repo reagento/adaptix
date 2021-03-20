@@ -10,7 +10,7 @@ from typing import (
 from .common import AbstractFactory, Parser, T
 from .exceptions import InvalidFieldError, UnionParseError, UnknownFieldsError
 from .fields import FieldInfo, get_class_fields, get_dataclass_fields, get_typeddict_fields
-from .optimize import cut_if
+from .optimize import optimize
 from .path_utils import CleanKey, CleanPath
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
@@ -188,7 +188,7 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
             unknown = [unknown]
         known_fields = {f.field_name for f in fields}
 
-        @cut_if(locals(), globals())
+        @optimize(locals(), globals())
         def complex_parser(data):
             if unknown is Unknown.SKIP:
                 unknown_fields = {}

@@ -1,48 +1,112 @@
 import ast
 import inspect
 import textwrap
-from copy import copy
+from copy import copy, deepcopy
 from typing import Any
 
 VAR_NAME = "______"
+FOR_NAME_TMPL = "_{}__{}__{}"
 
 
 class RewriteName(ast.NodeTransformer):
     def __init__(self, kwargs):
         self.kwargs = kwargs
+        self.replaces = []
+        self.for_number = -1
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
         node.decorator_list = []  # remove decorators because they will be applied later
         self.generic_visit(node)
         return node
 
+    def visit_Name(self, node: ast.Name) -> Any:
+        for mapping in self.replaces[::-1]:
+            if node.id in mapping:
+                node.id = mapping[node.id]
+                return node
+        return node
+
+    def visit_For(self, node: ast.For) -> Any:
+        self.for_number += 1
+        try:
+            names = self.get_names(node.target)
+            iterable = self.eval(node.iter)
+            result = []
+            for n, elem in enumerate(iterable):
+                unpacked = dict(self.unpack(n, names, elem))
+                self.replaces.append(dict(self.name_mapping(names, n)))
+                self.kwargs.update(unpacked)
+                body = deepcopy(node.body)
+                for body_item in body:
+                    body_item = self.visit(body_item)
+                    if body_item:
+                        result.extend(body_item)
+                self.replaces.pop()
+            return result
+        except Exception:
+            self.generic_visit(node)
+            return node
+
+    def name_mapping(self, names, n):
+        if isinstance(names, str):
+            yield names, FOR_NAME_TMPL.format(names, self.for_number, n)
+        else:
+            for name in names:
+                yield from self.name_mapping(name, n)
+
+    def get_names(self, node):
+        if isinstance(node, ast.Name):
+            return node.id
+        elif isinstance(node, (ast.Tuple, ast.List)):
+            return [self.get_names(n) for n in node.elts]
+        else:
+            raise TypeError(f"Cannot get names from {node}")
+
+    def unpack(self, n, names, container):
+        if isinstance(names, str):
+            yield FOR_NAME_TMPL.format(names, self.for_number, n), container
+        if isinstance(names, list):
+            if len(names) != len(container):
+                raise ValueError(f"Cannot unpack {len(container)} items to {len(names)} variables")
+            for name, element in zip(names, container):
+                yield from self.unpack(n, name, element)
+
+    def eval(self, expr):
+        m = ast.Module(
+            body=[ast.Assign(
+                targets=[
+                    ast.Name(VAR_NAME, ctx=ast.Store(), lineno=1, col_offset=0)
+                ],
+                value=expr,
+                lineno=1, col_offset=0
+            )],
+            type_ignores=[],
+        )
+        m = self.visit(m)
+        m = ast.fix_missing_locations(m)
+        code = compile(m, filename='dataclass_factory/stub.py', mode='exec')
+        namespace = copy(self.kwargs)
+        exec(code, namespace)
+        return namespace[VAR_NAME]
+
     def visit_If(self, node):
         try:
-            m = ast.Module(
-                body=[ast.Assign(
-                    targets=[
-                        ast.Name(VAR_NAME, ctx=ast.Store(), lineno=1, col_offset=0)
-                    ],
-                    value=node.test,
-                    lineno=1, col_offset=0
-                )],
-                type_ignores=[],
-            )
-            code = compile(m, filename='dataclass_factory/stub.py', mode='exec')
-            namespace = copy(self.kwargs)
-            exec(code, namespace)
-            res = namespace[VAR_NAME]
-            if not res:
-                return None
+            res = self.eval(node.test)
+            if res:
+                body = []
+                for b in node.body:
+                    b = self.visit(b)
+                    if b:
+                        body.append(b)
+                return body
             else:
-                self.generic_visit(node.body)
-                return node.body
+                return None
         except Exception as e:
             self.generic_visit(node)
             return node
 
 
-def cut_if(locals, globals):
+def optimize(locals, globals):
     def dec(func):
         freevars = func.__code__.co_freevars
         known_vars = {k: v for k, v in locals.items() if k in freevars}
