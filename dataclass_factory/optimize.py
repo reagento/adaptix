@@ -12,13 +12,7 @@ class RewriteName(ast.NodeTransformer):
         self.kwargs = kwargs
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
-        decorators = []
-        for d in node.decorator_list:
-            if isinstance(d, ast.Call):
-                if d.func.id in ("cut_if"):
-                    continue
-            decorators.append(d)
-        node.decorator_list = decorators
+        node.decorator_list = []  # remove decorators because they will be applied later
         return node
 
     def visit_If(self, node):
