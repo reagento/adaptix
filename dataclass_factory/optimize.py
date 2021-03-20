@@ -46,19 +46,22 @@ class RewriteName(ast.NodeTransformer):
                 unpacked = dict(self.unpack(n, names, elem))
                 self.replaces.append(dict(self.name_mapping(names, n)))
                 self.kwargs.update(unpacked)
-                body = deepcopy(node.body)
-                for body_item in body:
-                    body_item = self.visit(body_item)
-                    if isinstance(body_item, (list, tuple)):
-                        result.extend(body_item)
-                    elif body_item:
-                        result.append(body_item)
+                result.extend(self.visit_copy(node.body))
                 self.replaces.pop()
             return result
         except Exception as e:
             self.generic_visit(node)
             return node
 
+    def visit_copy(self, body):
+        result = []
+        for body_item in deepcopy(body):
+            body_item = self.visit(body_item)
+            if isinstance(body_item, (list, tuple)):
+                result.extend(body_item)
+            elif body_item:
+                result.append(body_item)
+        return result
     def name_mapping(self, names, n):
         if isinstance(names, str):
             yield names, FOR_NAME_TMPL.format(names, self.for_number, n)
@@ -105,12 +108,7 @@ class RewriteName(ast.NodeTransformer):
         try:
             res = self.eval(node.test)
             if res:
-                body = []
-                for b in node.body:
-                    b = self.visit(b)
-                    if b:
-                        body.append(b)
-                return body
+                return self.visit_copy(node.body)
             else:
                 return None
         except Exception as e:
@@ -121,8 +119,11 @@ class RewriteName(ast.NodeTransformer):
 def optimize(locals, globals):
     def dec(func):
         freevars = func.__code__.co_freevars
-        known_vars = {k: v for k, v in locals.items() if k in freevars}
+        known_vars = {}
         known_vars.update(globals)
+        for k, v in locals.items():
+            if k in freevars:
+                known_vars[k] = v
 
         text = inspect.getsource(func)
         text = "\n" * (func.__code__.co_firstlineno - 1) + textwrap.dedent(text)
