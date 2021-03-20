@@ -39,11 +39,13 @@ class RewriteName(ast.NodeTransformer):
                 body = deepcopy(node.body)
                 for body_item in body:
                     body_item = self.visit(body_item)
-                    if body_item:
+                    if isinstance(body_item, (list, tuple)):
                         result.extend(body_item)
+                    elif body_item:
+                        result.append(body_item)
                 self.replaces.pop()
             return result
-        except Exception:
+        except Exception as e:
             self.generic_visit(node)
             return node
 
