@@ -186,7 +186,8 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
     else:
         if isinstance(unknown, str):
             unknown = [unknown]
-        known_fields = {f.field_name for f in fields}
+        known_fields = {f.data_name for f in fields}
+
 
         @optimize(locals(), globals())
         def complex_parser(data):

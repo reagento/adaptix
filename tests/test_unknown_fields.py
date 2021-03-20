@@ -83,6 +83,16 @@ class TestFactory(TestCase):
         with self.assertRaises(ValueError):
             factory.load(serialized, Data)
 
+    def test_forbid_mapping(self):
+        factory = Factory(
+            default_schema=Schema(
+                unknown=Unknown.FORBID,
+                name_mapping={"a": "a_mapped"}
+            ),
+        )
+        serialized = {"a_mapped": "AA"}
+        factory.load(serialized, Data)
+
     def test_include(self):
         factory = Factory(
             default_schema=Schema(
