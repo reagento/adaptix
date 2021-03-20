@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from .common import Parser, T
+from .optimize import optimize
 
 
 def combine_parser_validators(
@@ -15,6 +16,7 @@ def combine_parser_validators(
     if not post_validators and not pre_validators:
         return parser
     else:
+        @optimize(locals(), globals())
         def pre_post_validating_parser(data):
             for v in pre_validators:
                 data = v(data)
