@@ -304,6 +304,7 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls: Type) -> Parse
     pre = schema.pre_parse
     post = schema.post_parse
     if pre or post:
+        @optimize(locals(), globals())
         def parser_with_steps(data):
             if pre:
                 data = pre(data)

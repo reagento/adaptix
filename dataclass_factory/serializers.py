@@ -133,6 +133,7 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
     pre = schema.pre_serialize
     post = schema.post_serialize
     if pre or post:
+        @optimize(locals(), globals())
         def serializer_with_steps(data):
             if pre:
                 data = pre(data)
