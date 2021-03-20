@@ -188,6 +188,7 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
             unknown = [unknown]
         known_fields = {f.field_name for f in fields}
 
+        @cut_if(locals(), globals())
         def complex_parser(data):
             if unknown is Unknown.SKIP:
                 unknown_fields = {}
@@ -216,7 +217,7 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
                 **unknown_fields,
             )
 
-    return cut_if(locals(), globals())(complex_parser)
+    return complex_parser
 
 
 def get_typed_dict_parser(

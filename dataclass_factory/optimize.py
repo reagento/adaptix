@@ -2,6 +2,7 @@ import ast
 import inspect
 import textwrap
 from copy import copy
+from typing import Any
 
 VAR_NAME = "______"
 
@@ -9,6 +10,16 @@ VAR_NAME = "______"
 class RewriteName(ast.NodeTransformer):
     def __init__(self, kwargs):
         self.kwargs = kwargs
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
+        decorators = []
+        for d in node.decorator_list:
+            if isinstance(d, ast.Call):
+                if d.func.id in ("cut_if"):
+                    continue
+            decorators.append(d)
+        node.decorator_list = decorators
+        return node
 
     def visit_If(self, node):
         try:
@@ -22,7 +33,7 @@ class RewriteName(ast.NodeTransformer):
                 )],
                 type_ignores=[],
             )
-            code = compile(m, filename='blah', mode='exec')
+            code = compile(m, filename='dataclass_factory/stub.py', mode='exec')
             namespace = copy(self.kwargs)
             exec(code, namespace)
             res = namespace[VAR_NAME]
@@ -41,7 +52,7 @@ def cut_if(locals, globals):
         known_vars.update(globals)
 
         text = inspect.getsource(func)
-        text = "\n" * (func.__code__.co_firstlineno-1) + textwrap.dedent(text)
+        text = "\n" * (func.__code__.co_firstlineno - 1) + textwrap.dedent(text)
         tree = ast.parse(text)
 
         new_tree = RewriteName(known_vars).visit(tree)
