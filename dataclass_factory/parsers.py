@@ -1,4 +1,3 @@
-import collections.abc
 import decimal
 from collections import deque
 from dataclasses import is_dataclass
@@ -192,15 +191,15 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
         def complex_parser(data):
             if unknown is Unknown.SKIP:
                 unknown_fields = {}
-            if unknown is Unknown.FORBID:
+            elif unknown is Unknown.FORBID:
                 if not known_fields.issuperset(data):
                     unknown_field_names = set(data) - known_fields
                     raise UnknownFieldsError(f"Cannot parse {class_}", unknown_field_names)
                 else:
                     unknown_fields = {}
-            if unknown is Unknown.STORE:
+            elif unknown is Unknown.STORE:
                 unknown_fields = {k: v for k, v in data.items() if k not in known_fields}
-            if isinstance(unknown, collections.abc.Sequence):
+            else:
                 extras = {k: v for k, v in data.items() if k not in known_fields}
                 for field in unknown:
                     data[field] = extras
@@ -229,7 +228,8 @@ def get_typed_dict_parser(
     pre_validators: Dict[Optional[str], List[Parser]],
     post_validators: Dict[Optional[str], List[Parser]],
 ) -> Parser:
-    complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown, pre_validators, post_validators)
+    complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown,
+                                        pre_validators, post_validators)
     requires_fields = {f.field_name for f in fields}
     if class_.__total__:
         def total_parser(data):
@@ -316,7 +316,8 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls: Type) -> Parse
     return parser
 
 
-def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:  # noqa C901, CCR001
+def create_parser_impl(factory, schema: Schema, debug_path: bool,
+                       cls: Type) -> Parser:  # noqa C901, CCR001
     if is_any(cls):
         return parse_stub
     if is_none(cls):

@@ -66,7 +66,7 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
                 if has_default:
                     if value != default:
                         container[data_name] = value
-                if not has_default:
+                else:
                     container[data_name] = value
 
             if unpack_unknown:

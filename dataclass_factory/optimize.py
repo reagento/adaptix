@@ -62,6 +62,7 @@ class RewriteName(ast.NodeTransformer):
             elif body_item:
                 result.append(body_item)
         return result
+
     def name_mapping(self, names, n):
         if isinstance(names, str):
             yield names, FOR_NAME_TMPL.format(names, self.for_number, n)
@@ -110,7 +111,7 @@ class RewriteName(ast.NodeTransformer):
             if res:
                 return self.visit_copy(node.body)
             else:
-                return None
+                return self.visit_copy(node.orelse)
         except Exception as e:
             self.generic_visit(node)
             return node
