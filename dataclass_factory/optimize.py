@@ -13,6 +13,7 @@ class RewriteName(ast.NodeTransformer):
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
         node.decorator_list = []  # remove decorators because they will be applied later
+        self.generic_visit(node)
         return node
 
     def visit_If(self, node):
@@ -34,8 +35,10 @@ class RewriteName(ast.NodeTransformer):
             if not res:
                 return None
             else:
+                self.generic_visit(node.body)
                 return node.body
         except Exception as e:
+            self.generic_visit(node)
             return node
 
 
