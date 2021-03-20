@@ -23,7 +23,17 @@ class RewriteName(ast.NodeTransformer):
         for mapping in self.replaces[::-1]:
             if node.id in mapping:
                 node.id = mapping[node.id]
-                return node
+                break
+
+        if node.id in self.kwargs:
+            value = self.kwargs[node.id]
+            if isinstance(value, (str, int)):
+                return ast.Constant(
+                    value=value,
+                    lineno=node.lineno,
+                    kind=None,
+                    col_offset=node.col_offset
+                )
         return node
 
     def visit_For(self, node: ast.For) -> Any:
