@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
 
 from .common import AbstractFactory, K, Serializer, T
 from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields
+from .optimize import optimize
 from .path_utils import CleanKey, CleanPath, init_structure
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
@@ -48,6 +49,7 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
         if has_default:
             raise ValueError("Cannot use `omit_default` option with flattening schema")
 
+        @optimize(locals(), globals())
         def serialize(data):
             container, field_containers = loads(pickled)
             for (inner_container, data_name), (field_name, serializer, *_) in zip(field_containers, field_info):
@@ -56,27 +58,20 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
                 unpack_fields(container, unknown)
             return container
     else:
-        if has_default:
-            def serialize(data):
-                container = {
-                    field_name: value
-                    for field_name, serializer, data_name, default in field_info
-                    for value in (serializer(getter(data, field_name)),)
-                    if value != default
-                }
-                if unpack_unknown:
-                    unpack_fields(container, unknown)
-                return container
-        else:
-            # optimized version
-            def serialize(data):
-                container = {
-                    data_name: serializer(getter(data, field_name))
-                    for field_name, serializer, data_name, default in field_info
-                }
-                if unpack_unknown:
-                    unpack_fields(container, unknown)
-                return container
+        @optimize(locals(), globals())
+        def serialize(data):
+            container = {}
+            for field_name, serializer, data_name, default in field_info:
+                value = serializer(getter(data, field_name))
+                if has_default:
+                    if value != default:
+                        container[data_name] = value
+                if not has_default:
+                    container[data_name] = value
+
+            if unpack_unknown:
+                unpack_fields(container, unknown)
+            return container
     return serialize
 
 
@@ -150,7 +145,8 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
     return serializer
 
 
-def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:  # noqa C901,CCR001
+def create_serializer_impl(factory, schema: Schema, debug_path: bool,
+                           class_: Type) -> Serializer:  # noqa C901,CCR001
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
     if is_newtype(class_):
@@ -200,7 +196,8 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
     if is_generic_concrete(class_) and is_dict(class_.__origin__):
         key_type_arg = class_.__args__[0] if class_.__args__ else Any
         value_type_arg = class_.__args__[1] if class_.__args__ else Any
-        return get_dict_serializer(factory.serializer(key_type_arg), factory.serializer(value_type_arg))
+        return get_dict_serializer(factory.serializer(key_type_arg),
+                                   factory.serializer(value_type_arg))
     if is_dict(class_):
         return get_dict_serializer(get_lazy_serializer(factory), get_lazy_serializer(factory))
     if is_generic_concrete(class_) and is_collection(class_.__origin__):

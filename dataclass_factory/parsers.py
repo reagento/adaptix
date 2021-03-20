@@ -188,7 +188,6 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
             unknown = [unknown]
         known_fields = {f.data_name for f in fields}
 
-
         @optimize(locals(), globals())
         def complex_parser(data):
             if unknown is Unknown.SKIP:
