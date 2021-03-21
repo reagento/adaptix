@@ -9,7 +9,7 @@ from typing import (
 from .common import AbstractFactory, Parser, T
 from .exceptions import InvalidFieldError, UnionParseError, UnknownFieldsError
 from .fields import FieldInfo, get_class_fields, get_dataclass_fields, get_typeddict_fields
-from .optimize import optimize
+from .optimize import optimize, inline
 from .path_utils import CleanKey, CleanPath
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
@@ -56,10 +56,11 @@ def parse_none(data: Any) -> None:
 
 
 def get_parser_with_check(cls: Type[T]) -> Parser[T]:
+    @inline
     def parser(data):
-        if isinstance(data, cls):
-            return data
-        raise ValueError("data type is not %s" % cls)
+        if not isinstance(data, cls):
+            raise ValueError("data type is not %s" % cls)
+        return data
 
     return parser
 

@@ -14,10 +14,44 @@ class RewriteName(ast.NodeTransformer):
         self.kwargs = kwargs
         self.replaces = []
         self.for_number = -1
+        self.inline_return = None
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
         node.decorator_list = []  # remove decorators because they will be applied later
         self.generic_visit(node)
+        return node
+
+    def visit_Assign(self, node: ast.Assign) -> Any:
+        if isinstance(node.value, ast.Call):
+            self.inline_return = node
+            value = self.visit(node.value)
+            self.inline_return = None
+            if isinstance(value, list):
+                return value
+            node.value = value
+        else:
+            self.generic_visit(node)
+        return node
+
+    def visit_Expr(self, node: ast.Expr) -> Any:
+        if isinstance(node.value, ast.Call):
+            res = self.visit(node.value)
+            if isinstance(res, list):
+                return res
+            node.value = res
+            return node
+        else:
+            self.generic_visit(node)
+            return node
+
+    def visit_Return(self, node: ast.Return) -> Any:
+        self.generic_visit(node)
+        if self.inline_return:
+            inline_return = deepcopy(self.inline_return)
+            inline_return.value = node.value
+            inline_return.lineno = node.lineno
+            inline_return.col_offset = node.col_offset
+            return inline_return
         return node
 
     def visit_Call(self, node: ast.Call) -> Any:
@@ -42,8 +76,43 @@ class RewriteName(ast.NodeTransformer):
                     lineno=node.lineno,
                     col_offset=node.col_offset,
                 )
+            elif getattr(func, "_inline", False) and hasattr(func, "_ast"):
+                subtree = func._ast
+                self.for_number += 1
+                result = []
+                args = inspect.getfullargspec(func).args
+                ##
+                clusure_mapping = dict(self.name_mapping(func.__code__.co_freevars, 0))
+                for k, v in zip(func.__code__.co_freevars, func.__closure__):
+                    self.kwargs[clusure_mapping[k]] = v.cell_contents
+                    print(k, v)
+
+                ##
+                name_mapping = dict(self.name_mapping(args, 1))
+                unpacked = dict(self.unpack(1, args, self.visit_copy(node.args)))
+                # self.inline_return = node.
+
+                for name, value in unpacked.items():
+                    # value = self.visit_copy(value)
+                    result.append(ast.Assign(
+                        targets=[
+                            ast.Name(
+                                name, ctx=ast.Store(),
+                                lineno=node.lineno, col_offset=node.col_offset
+                            )
+                        ],
+                        value=value,
+                        lineno=node.lineno, col_offset=node.col_offset,
+                    ))
+                self.replaces.append(name_mapping)
+                self.replaces.append(clusure_mapping)
+                result.extend(self.visit_copy(subtree))
+                self.replaces.pop()
+                self.replaces.pop()
+                return result
         except Exception as e:
             pass
+            # print("Oops, ", type(e), e)
         self.generic_visit(node)
         return node
 
@@ -143,6 +212,28 @@ class RewriteName(ast.NodeTransformer):
         except Exception as e:
             self.generic_visit(node)
             return node
+
+
+class FuncSearch(ast.NodeVisitor):
+    def __init__(self):
+        self.body = None
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
+        self.body = node.body
+        return node
+
+
+def inline(func):
+    text = inspect.getsource(func)
+    text = "\n" * (func.__code__.co_firstlineno - 1) + textwrap.dedent(text)
+    tree = ast.parse(text)
+    searcher = FuncSearch()
+    searcher.visit(tree)
+
+    func._inline = True
+    func._ast = searcher.body
+
+    return func
 
 
 def optimize(locals, globals):
