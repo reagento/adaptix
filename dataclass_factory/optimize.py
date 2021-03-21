@@ -24,7 +24,7 @@ class RewriteName(ast.NodeTransformer):
     def visit_Assign(self, node: ast.Assign) -> Any:
         if isinstance(node.value, ast.Call):
             self.inline_return = node
-            value = self.visit(node.value)
+            value = self.visit_InlineCall(node.value)
             self.inline_return = None
             if isinstance(value, list):
                 return value
@@ -35,7 +35,7 @@ class RewriteName(ast.NodeTransformer):
 
     def visit_Expr(self, node: ast.Expr) -> Any:
         if isinstance(node.value, ast.Call):
-            res = self.visit(node.value)
+            res = self.visit_InlineCall(node.value)
             if isinstance(res, list):
                 return res
             node.value = res
@@ -54,29 +54,10 @@ class RewriteName(ast.NodeTransformer):
             return inline_return
         return node
 
-    def visit_Call(self, node: ast.Call) -> Any:
+    def visit_InlineCall(self, node: ast.Call) -> Any:
         try:
             func = self.eval(node.func)
-            if func is getattr and len(node.args) == 2:
-                args = self.visit_copy(node.args)
-                if isinstance(args[1], ast.Constant):
-                    return ast.Attribute(
-                        value=args[0],
-                        attr=args[1].value,
-                        ctx=ast.Load(),
-                        lineno=node.lineno,
-                        col_offset=node.col_offset,
-                    )
-            elif func is getitem:
-                args = self.visit_copy(node.args)
-                return ast.Subscript(
-                    value=args[0],
-                    slice=ast.Index(value=args[1]),
-                    ctx=ast.Load(),
-                    lineno=node.lineno,
-                    col_offset=node.col_offset,
-                )
-            elif getattr(func, "_inline", False) and hasattr(func, "_ast"):
+            if getattr(func, "_inline", False) and hasattr(func, "_ast"):
                 subtree = func._ast
                 self.for_number += 1
                 result = []
@@ -85,7 +66,6 @@ class RewriteName(ast.NodeTransformer):
                 clusure_mapping = dict(self.name_mapping(func.__code__.co_freevars, 0))
                 for k, v in zip(func.__code__.co_freevars, func.__closure__):
                     self.kwargs[clusure_mapping[k]] = v.cell_contents
-                    print(k, v)
 
                 ##
                 name_mapping = dict(self.name_mapping(args, 1))
@@ -110,6 +90,34 @@ class RewriteName(ast.NodeTransformer):
                 self.replaces.pop()
                 self.replaces.pop()
                 return result
+        except Exception as e:
+            # print("Inline oops,", e)
+            pass
+        self.generic_visit(node)
+        return node
+
+    def visit_Call(self, node: ast.Call) -> Any:
+        try:
+            func = self.eval(node.func)
+            if func is getattr and len(node.args) == 2:
+                args = self.visit_copy(node.args)
+                if isinstance(args[1], ast.Constant):
+                    return ast.Attribute(
+                        value=args[0],
+                        attr=args[1].value,
+                        ctx=ast.Load(),
+                        lineno=node.lineno,
+                        col_offset=node.col_offset,
+                    )
+            elif func is getitem:
+                args = self.visit_copy(node.args)
+                return ast.Subscript(
+                    value=args[0],
+                    slice=ast.Index(value=args[1]),
+                    ctx=ast.Load(),
+                    lineno=node.lineno,
+                    col_offset=node.col_offset,
+                )
         except Exception as e:
             pass
             # print("Oops, ", type(e), e)

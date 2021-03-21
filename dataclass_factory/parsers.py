@@ -46,13 +46,16 @@ def dyn_element_parser(parser: Parser[T], data: Any, key: Any) -> T:
         raise InvalidFieldError(str(e), [str(key)])
 
 
+@inline
 def parse_stub(data: T) -> T:
     return data
 
 
+@inline
 def parse_none(data: Any) -> None:
     if data is not None:
         raise ValueError("None expected")
+    return None
 
 
 def get_parser_with_check(cls: Type[T]) -> Parser[T]:
@@ -71,11 +74,13 @@ def get_collection_parser(
     debug_path: bool,
 ) -> Parser[Collection[T]]:
     if debug_path:
+        @inline
         def collection_parser(data):
             return collection_factory(
                 dyn_element_parser(item_parser, x, i) for i, x in enumerate(data)
             )
     else:
+        @inline
         def collection_parser(data):
             return collection_factory(
                 item_parser(x) for x in data
@@ -84,6 +89,7 @@ def get_collection_parser(
 
 
 def get_union_parser(parsers: Collection[Callable]) -> Parser:
+    @optimize(locals(), globals())
     def union_parser(data):
         errors = []
         for p in parsers:
@@ -91,7 +97,7 @@ def get_union_parser(parsers: Collection[Callable]) -> Parser:
                 return p(data)
             except PARSER_EXCEPTIONS as e:
                 errors.append((p.__qualname__, e))
-                continue
+                pass
         raise UnionParseError("No suitable parsers in union found for `%s`" % data, errors)
 
     return union_parser
@@ -104,6 +110,7 @@ def get_tuple_parser(parsers: Collection[Callable], debug_path: bool) -> Parser[
     if debug_path:
         parsers = [get_element_parser(parser, i) for i, parser in enumerate(parsers)]
 
+    @inline
     def tuple_parser(data):
         if len(data) != len(parsers):
             raise ValueError(
