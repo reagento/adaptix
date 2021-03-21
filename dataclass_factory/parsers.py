@@ -128,7 +128,7 @@ def get_path_parser(parser: Parser[T], path: CleanPath) -> Parser[T]:
             for x in path:
                 data = data[x]
                 if data is None:
-                    break
+                    return parser(data)
         except (KeyError, IndexError):
             return MISSED  # not found, should use default
         return parser(data)

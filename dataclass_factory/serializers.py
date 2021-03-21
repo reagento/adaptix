@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
 
 from .common import AbstractFactory, K, Serializer, T
 from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields
-from .optimize import optimize
+from .optimize import optimize, inline
 from .path_utils import CleanKey, CleanPath, init_structure
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
@@ -52,7 +52,8 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
         @optimize(locals(), globals())
         def serialize(data):
             container, field_containers = loads(pickled)
-            for (inner_container, data_name), (field_name, serializer, *_) in zip(field_containers, field_info):
+            for (inner_container, data_name), (field_name, serializer, *_) in zip(field_containers,
+                                                                                  field_info):
                 inner_container[data_name] = serializer(getter(data, field_name))
             if unpack_unknown:
                 unpack_fields(container, unknown)
@@ -76,15 +77,27 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
 
 
 def get_collection_serializer(serializer: Serializer[T]) -> Serializer[List[T]]:
-    return lambda data: [serializer(x) for x in data]
+    @inline
+    def collection_serializer(data):
+        return [serializer(x) for x in data]
+
+    return collection_serializer
 
 
 def get_tuple_serializer(serializers) -> Serializer[List]:
-    return lambda data: [serializer(x) for x, serializer in zip(data, serializers)]
+    @inline
+    def tuple_serializer(data):
+        return [serializer(x) for x, serializer in zip(data, serializers)]
+
+    return tuple_serializer
 
 
 def get_collection_any_serializer() -> Serializer[List[Any]]:
-    return lambda data: list(data)
+    @inline
+    def collection_any_serializer(data):
+        return list(data)
+
+    return collection_any_serializer
 
 
 def get_vars_serializer(factory) -> Serializer:
@@ -101,14 +114,20 @@ def get_vars_serializer(factory) -> Serializer:
     return vars_serializer
 
 
+@inline
 def stub_serializer(data: T) -> T:
     return data
 
 
-def get_dict_serializer(key_serializer: Serializer[K], serializer: Serializer[T]) -> Serializer[Dict[Any, Any]]:
-    return lambda data: {
-        key_serializer(k): serializer(v) for k, v in data.items()
-    }
+def get_dict_serializer(key_serializer: Serializer[K], serializer: Serializer[T]
+                        ) -> Serializer[Dict[Any, Any]]:
+    @inline
+    def dict_serializer(data):
+        return {
+            key_serializer(k): serializer(v) for k, v in data.items()
+        }
+
+    return dict_serializer
 
 
 def get_lazy_serializer(factory) -> Serializer:
@@ -119,11 +138,9 @@ def get_lazy_serializer(factory) -> Serializer:
 
 
 def get_optional_serializer(serializer: Serializer[T]) -> Serializer[Optional[T]]:
+    @inline
     def optional_serializer(data):
-        if data is None:
-            return None
-        else:
-            return serializer(data)
+        return None if data is None else serializer(data)
 
     return optional_serializer
 
