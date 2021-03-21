@@ -68,12 +68,10 @@ class RewriteName(ast.NodeTransformer):
                     self.kwargs[clusure_mapping[k]] = v.cell_contents
 
                 ##
-                name_mapping = dict(self.name_mapping(args, 1))
+                name_mapping = dict(self.name_mapping(func.__code__.co_varnames, 1))
                 unpacked = dict(self.unpack(1, args, self.visit_copy(node.args)))
-                # self.inline_return = node.
 
                 for name, value in unpacked.items():
-                    # value = self.visit_copy(value)
                     result.append(ast.Assign(
                         targets=[
                             ast.Name(
