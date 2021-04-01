@@ -1,5 +1,6 @@
-from dataclasses import dataclass, Field, fields, MISSING
 import inspect
+from dataclasses import dataclass, Field, fields, MISSING
+from functools import partial
 from typing import Any, Callable, cast, Dict, List, Sequence, Type, TypeVar, Union
 
 from .generics import resolve_hints, resolve_init_hints
@@ -104,21 +105,26 @@ def get_fields(
             all_fields,
         )
 
-    whitelisted_fields = set(schema.only or []) | set(schema.name_mapping or [])
+    if schema.skip_internal:  # remove "internal fields"
+        whitelisted_fields = set(schema.only or []) | set(schema.name_mapping or [])
+        all_fields = [
+            f for f in all_fields
+            if f.field_name in whitelisted_fields or not f.field_name.startswith("_")
+        ]
+    convert_name_func = partial(
+        convert_name,
+        name_style=schema.name_style,
+        name_mapping=schema.name_mapping,
+        trim_trailing_underscore=schema.trim_trailing_underscore,
+    )
     return tuple(
         FieldInfo(
             field_name=f.field_name,
-            data_name=convert_name(
-                f.field_name, schema.name_style,
-                schema.name_mapping, schema.trim_trailing_underscore,
-            ),
+            data_name=convert_name_func(f.field_name),
             type=f.type,
             default=f.default,
         )
         for f in all_fields
-        if (not schema.skip_internal) or
-        (f.field_name in whitelisted_fields) or
-        (not f.field_name.startswith("_"))
     )
 
 

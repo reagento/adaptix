@@ -50,7 +50,9 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
 
         def serialize(data):
             container, field_containers = loads(pickled)
-            for (inner_container, data_name), (field_name, serializer, *_) in zip(field_containers, field_info):
+            for (
+                (inner_container, data_name), (field_name, serializer, *_)
+            ) in zip(field_containers, field_info):
                 inner_container[data_name] = serializer(getter(data, field_name))
             if unpack_unknown:
                 unpack_fields(container, unknown)
@@ -81,11 +83,17 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
 
 
 def get_collection_serializer(serializer: Serializer[T]) -> Serializer[List[T]]:
-    return lambda data: [serializer(x) for x in data]
+    def collection_serializer(data):
+        return [serializer(x) for x in data]
+
+    return collection_serializer
 
 
 def get_tuple_serializer(serializers) -> Serializer[List]:
-    return lambda data: [serializer(x) for x, serializer in zip(data, serializers)]
+    def tuple_serializer(data):
+        return [serializer(x) for x, serializer in zip(data, serializers)]
+
+    return tuple_serializer
 
 
 def get_collection_any_serializer() -> Serializer[List[Any]]:
@@ -110,7 +118,9 @@ def stub_serializer(data: T) -> T:
     return data
 
 
-def get_dict_serializer(key_serializer: Serializer[K], serializer: Serializer[T]) -> Serializer[Dict[Any, Any]]:
+def get_dict_serializer(
+    key_serializer: Serializer[K], serializer: Serializer[T]
+) -> Serializer[Dict[Any, Any]]:
     return lambda data: {
         key_serializer(k): serializer(v) for k, v in data.items()
     }
@@ -150,7 +160,8 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
     return serializer
 
 
-def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Type) -> Serializer:  # noqa C901,CCR001
+def create_serializer_impl(factory, schema: Schema, debug_path: bool,
+                           class_: Type) -> Serializer:  # noqa C901,CCR001
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
     if is_newtype(class_):
@@ -200,7 +211,8 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool, class_: Ty
     if is_generic_concrete(class_) and is_dict(class_.__origin__):
         key_type_arg = class_.__args__[0] if class_.__args__ else Any
         value_type_arg = class_.__args__[1] if class_.__args__ else Any
-        return get_dict_serializer(factory.serializer(key_type_arg), factory.serializer(value_type_arg))
+        return get_dict_serializer(factory.serializer(key_type_arg),
+                                   factory.serializer(value_type_arg))
     if is_dict(class_):
         return get_dict_serializer(get_lazy_serializer(factory), get_lazy_serializer(factory))
     if is_generic_concrete(class_) and is_collection(class_.__origin__):
