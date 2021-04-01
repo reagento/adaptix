@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Any
 from unittest import TestCase
 
 from dataclass_factory import Factory, Schema
@@ -12,10 +12,19 @@ class Data:
     z: str = field(default="test")
 
 
-schema = Schema[Data](omit_default=True)
+@dataclass
+class DataUnderscore:
+    from_: int = 1
+
+
+schema = Schema[Any](omit_default=True, trim_trailing_underscore=True)
 
 
 class TestDefault(TestCase):
+    def test_underscore(self):
+        factory = Factory(default_schema=schema)
+        self.assertEqual(factory.dump(DataUnderscore(100)), {"from": 100})
+
     def test_optional(self):
         factory = Factory(default_schema=schema)
         self.assertEqual(factory.dump(Data()), {})
