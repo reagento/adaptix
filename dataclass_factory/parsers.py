@@ -195,7 +195,7 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
         else:  # sequence of string
             store_unknown_separate = True
 
-        known_fields = {f.field_name for f in fields}
+        known_fields = {f.data_name for f in fields}
 
         def complex_parser(data):
             if forbid_unknown and not known_fields.issuperset(data):

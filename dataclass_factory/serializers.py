@@ -61,7 +61,7 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
         if has_default:
             def serialize(data):
                 container = {
-                    field_name: value
+                    data_name: value
                     for field_name, serializer, data_name, default in field_info
                     for value in (serializer(getter(data, field_name)),)
                     if value != default
