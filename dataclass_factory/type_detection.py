@@ -176,3 +176,14 @@ def is_dict(cls) -> bool:
 
 def is_type_var(type_: Type) -> bool:
     return type(type_) is TypeVar
+
+
+def instance_wont_have_dict(cls) -> bool:
+    try:
+        dict_offset_sign = cls.__dictoffset__ == 0
+    except AttributeError:
+        dict_offset_sign = False
+
+    slots_sign = hasattr(cls, '__slots__') and '__dict__' not in cls.__slots__
+
+    return dict_offset_sign or slots_sign

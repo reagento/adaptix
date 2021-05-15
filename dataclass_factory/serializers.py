@@ -9,7 +9,7 @@ from .path_utils import CleanKey, CleanPath, init_structure
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
     hasargs, is_any, is_collection, is_dict, is_enum, is_generic_concrete, is_newtype,
-    is_optional, is_tuple, is_type_var, is_typeddict, is_union,
+    is_optional, is_tuple, is_type_var, is_typeddict, is_union, instance_wont_have_dict,
 )
 
 
@@ -221,5 +221,15 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
     if is_collection(class_):
         item_serializer = get_lazy_serializer(factory)
         return get_collection_serializer(item_serializer)
-    else:
-        return get_vars_serializer(factory)
+
+    if isinstance(class_, type):
+        if instance_wont_have_dict(class_):
+            raise ValueError(f"Can not create serializer for {class_}")
+
+        if hasattr(class_, '__slots__') and '__dict__' in class_.__slots__:
+            raise ValueError(
+                f"Can not create serializer for {class_}"
+                f" that has __dict__ inside __slots__"
+            )
+
+    return get_vars_serializer(factory)
