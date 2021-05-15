@@ -7,7 +7,7 @@ from types import FunctionType, LambdaType, CodeType, MappingProxyType, SimpleNa
 from unittest import TestCase
 from uuid import UUID
 
-from type_detection import instance_wont_have_dict
+from dataclass_factory.type_detection import instance_wont_have_dict
 
 
 class EmptyClass:
