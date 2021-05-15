@@ -1,3 +1,5 @@
+import sys
+import unittest
 from collections import namedtuple
 from dataclasses import dataclass
 from decimal import Decimal
@@ -10,7 +12,6 @@ from types import (
     BuiltinMethodType, ModuleType
 )
 from unittest import TestCase
-from uuid import UUID
 
 from dataclass_factory.type_detection import instance_wont_have_dict
 
@@ -45,7 +46,8 @@ class SlotsWithDict:
 
 
 class TestDictAtInstanceCheck(TestCase):
-    def test_no_dict(self):
+    @unittest.skipUnless(sys.implementation.name == 'cpython', "requires CPython")
+    def test_builtins(self):
         self.assertTrue(instance_wont_have_dict(int))
         self.assertTrue(instance_wont_have_dict(bool))
 
@@ -60,9 +62,7 @@ class TestDictAtInstanceCheck(TestCase):
 
         self.assertTrue(instance_wont_have_dict(object))
 
-        self.assertTrue(instance_wont_have_dict(namedtuple('test', 'x y z')))
-        self.assertTrue(instance_wont_have_dict(Decimal))
-        self.assertTrue(instance_wont_have_dict(UUID))
+        self.assertFalse(instance_wont_have_dict(type))
 
         self.assertTrue(instance_wont_have_dict(CodeType))
         self.assertTrue(instance_wont_have_dict(MappingProxyType))
@@ -74,17 +74,18 @@ class TestDictAtInstanceCheck(TestCase):
         self.assertTrue(instance_wont_have_dict(BuiltinFunctionType))
         self.assertTrue(instance_wont_have_dict(BuiltinMethodType))
 
-        self.assertTrue(instance_wont_have_dict(SlotsClass))
-
-    def test_has_dict(self):
-        self.assertFalse(instance_wont_have_dict(type))
-
         self.assertFalse(instance_wont_have_dict(FunctionType))
         self.assertFalse(instance_wont_have_dict(LambdaType))
         self.assertFalse(instance_wont_have_dict(SimpleNamespace))
         self.assertFalse(instance_wont_have_dict(ModuleType))
 
+    def test_any_implementation(self):
+        self.assertTrue(instance_wont_have_dict(SlotsClass))
+        self.assertTrue(instance_wont_have_dict(namedtuple('test', 'x y z')))
+
         self.assertFalse(instance_wont_have_dict(EmptyClass))
         self.assertFalse(instance_wont_have_dict(Dataclass))
         self.assertFalse(instance_wont_have_dict(FrozenDataclass))
         self.assertFalse(instance_wont_have_dict(SlotsWithDict))
+
+        self.assertTrue(instance_wont_have_dict(Decimal))
