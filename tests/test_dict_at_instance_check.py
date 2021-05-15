@@ -1,9 +1,14 @@
 from collections import namedtuple
 from dataclasses import dataclass
 from decimal import Decimal
-from types import FunctionType, LambdaType, CodeType, MappingProxyType, SimpleNamespace, GeneratorType, \
-    CoroutineType, AsyncGeneratorType, MethodType, BuiltinFunctionType, BuiltinMethodType, WrapperDescriptorType, \
-    MethodWrapperType, MethodDescriptorType, ClassMethodDescriptorType, ModuleType
+from types import (
+    FunctionType, LambdaType,
+    CodeType, MappingProxyType,
+    SimpleNamespace, GeneratorType,
+    CoroutineType, AsyncGeneratorType,
+    MethodType, BuiltinFunctionType,
+    BuiltinMethodType, ModuleType
+)
 from unittest import TestCase
 from uuid import UUID
 
@@ -68,10 +73,6 @@ class TestDictAtInstanceCheck(TestCase):
         self.assertTrue(instance_wont_have_dict(MethodType))
         self.assertTrue(instance_wont_have_dict(BuiltinFunctionType))
         self.assertTrue(instance_wont_have_dict(BuiltinMethodType))
-        self.assertTrue(instance_wont_have_dict(WrapperDescriptorType))
-        self.assertTrue(instance_wont_have_dict(MethodWrapperType))
-        self.assertTrue(instance_wont_have_dict(MethodDescriptorType))
-        self.assertTrue(instance_wont_have_dict(ClassMethodDescriptorType))
 
         self.assertTrue(instance_wont_have_dict(SlotsClass))
 
