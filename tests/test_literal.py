@@ -33,4 +33,13 @@ class TestLiteral(TestCase):
         one = literal[1]
         self.assertEqual(self.factory.load("a", abc), "a")
         self.assertEqual(self.factory.load("b", abc), "b")
+        self.assertEqual(self.factory.load("c", abc), "c")
         self.assertEqual(self.factory.load(1, one), 1)
+
+        self.assertEqual(self.factory.dump("a", abc), "a")
+        self.assertEqual(self.factory.dump("b", abc), "b")
+        self.assertEqual(self.factory.dump("c", abc), "c")
+
+        self.assertEqual(self.factory.dump("Z", abc), "Z")
+
+        self.assertEqual(self.factory.dump(1, one), 1)
