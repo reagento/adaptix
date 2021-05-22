@@ -13,6 +13,7 @@ from types import (
 )
 from unittest import TestCase
 
+from dataclass_factory import Factory
 from dataclass_factory.type_detection import instance_wont_have_dict
 
 
@@ -89,3 +90,11 @@ class TestDictAtInstanceCheck(TestCase):
         self.assertFalse(instance_wont_have_dict(SlotsWithDict))
 
         self.assertTrue(instance_wont_have_dict(Decimal))
+
+
+class TestValueErrorAtSerializerCreation(TestCase):
+    def test_slots(self):
+        self.assertRaises(ValueError, Factory().serializer, SlotsClass)
+
+    def test_slots_with_dict(self):
+        self.assertRaises(ValueError, Factory().serializer, SlotsWithDict)
