@@ -8,8 +8,9 @@ from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields
 from .path_utils import CleanKey, CleanPath, init_structure
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
-    hasargs, is_any, is_collection, is_dict, is_enum, is_generic_concrete, is_newtype,
-    is_optional, is_tuple, is_type_var, is_typeddict, is_union, instance_wont_have_dict, is_none,
+    hasargs, is_any, is_collection, is_dict, is_enum, is_generic_concrete, 
+    is_newtype, is_optional, is_tuple, is_type_var, is_typeddict, is_union,
+    is_literal, is_literal36, instance_wont_have_dict, is_none,
 )
 
 
@@ -162,7 +163,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
                            class_: Type) -> Serializer:  # noqa C901,CCR001
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
-    if is_none(class_):
+    if is_literal(class_) or is_literal36(class_) or is_none(class_):
         return stub_serializer
     if is_newtype(class_):
         return create_serializer_impl(factory, schema, debug_path, class_.__supertype__)
