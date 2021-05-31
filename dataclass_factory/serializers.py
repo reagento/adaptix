@@ -8,8 +8,9 @@ from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields
 from .path_utils import CleanKey, CleanPath, init_structure
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
-    hasargs, is_any, is_collection, is_dict, is_enum, is_generic_concrete, is_newtype,
-    is_optional, is_tuple, is_type_var, is_typeddict, is_union, is_literal, is_literal36,
+    hasargs, is_any, is_collection, is_dict, is_enum, is_generic_concrete, 
+    is_newtype, is_optional, is_tuple, is_type_var, is_typeddict, is_union,
+    is_literal, is_literal36, instance_wont_have_dict, is_none,
 )
 
 
@@ -104,8 +105,6 @@ def get_vars_serializer(factory) -> Serializer:
     field_serializer = get_lazy_serializer(factory)
 
     def vars_serializer(data: Any):
-        if data is None:
-            return None
         return {
             k: field_serializer(v)
             for k, v in vars(data).items()
@@ -164,7 +163,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
                            class_: Type) -> Serializer:  # noqa C901,CCR001
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
-    if is_literal(class_) or is_literal36(class_):
+    if is_literal(class_) or is_literal36(class_) or is_none(class_):
         return stub_serializer
     if is_newtype(class_):
         return create_serializer_impl(factory, schema, debug_path, class_.__supertype__)
@@ -223,5 +222,15 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
     if is_collection(class_):
         item_serializer = get_lazy_serializer(factory)
         return get_collection_serializer(item_serializer)
-    else:
-        return get_vars_serializer(factory)
+
+    if isinstance(class_, type):
+        if instance_wont_have_dict(class_):
+            raise ValueError(f"Can not create serializer for {class_}")
+
+        if hasattr(class_, '__slots__') and '__dict__' in class_.__slots__:
+            raise ValueError(
+                f"Can not create serializer for {class_}"
+                f" that has __dict__ inside __slots__"
+            )
+
+    return get_vars_serializer(factory)
