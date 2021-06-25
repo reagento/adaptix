@@ -13,6 +13,10 @@ class CannotProvide(Exception):
     pass
 
 
+class NoSuitableProvider(ValueError):
+    pass
+
+
 T = TypeVar('T')
 ProviderTV = TypeVar('ProviderTV', bound='Provider')
 
@@ -67,6 +71,7 @@ class Provider(Generic[T], ABC):
     It is called if the main method has raised :exception:`CannotProvide`
     By default, it always raises CannotProvide
     """
+
     def __init_subclass__(cls, **kwargs):
         provision_action_list = [
             name for name, attr in vars(cls).items()
@@ -152,15 +157,6 @@ class BaseFactory(ABC):
     recipe: list
 
     @abstractmethod
-    def _ensure_provision_ctx(self, value) -> ProvisionCtx:
-        """Create :class:`ProvisionCtx` from given value.
-        This method is used by children's high-level methods.
-
-        :raise ValueError: Can not create ProvisionCtx from given object instance
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def ensure_provider(self, value) -> Provider:
         """Create :class:`Provider` instance from value
         This method is used by :method:`provide` to convert each item of full_recipe
@@ -194,7 +190,7 @@ class BaseFactory(ABC):
                        and so raise :class:`ValueError`
         :param ctx: Extensible context of search
         :return: Provision result. The type determines by :param provider_tmpl:
-        :raise ValueError: There is no suitable provider in the Full recipe
+        :raise NoSuitableProvider: There is no suitable provider in the Full recipe
         """
         full_recipe = self._full_recipe()
         for idx, item in enumerate(full_recipe[offset:], start=offset):
@@ -203,4 +199,4 @@ class BaseFactory(ABC):
                 return provider.provide(provider_tmpl, self, offset, ctx)
             except CannotProvide:
                 pass
-        raise ValueError(f'{self} can not create provider for {ctx}')
+        raise NoSuitableProvider(f'{self} can not create provider for {ctx}')

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from dataclass_factory_30.core import Provider
-from dataclass_factory_30.factory import BuiltinFactory
+from dataclass_factory_30.high_level.factory import BuiltinFactory
 
 
 @dataclass

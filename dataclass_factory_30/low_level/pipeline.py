@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Tuple, final, Type, List
 
-from .core import Provider, ProvisionCtx, BaseFactory, CannotProvide
+from ..core import Provider, ProvisionCtx, BaseFactory, CannotProvide
 
 T = TypeVar('T')
 V = TypeVar('V')
