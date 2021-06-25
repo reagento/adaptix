@@ -20,3 +20,5 @@ flake8-print
 
 sphinx
 sphinx_rtd_theme
+
+pytest
