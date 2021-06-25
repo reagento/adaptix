@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Type, TypeVar, List, final
 
-from dataclass_factory.common import Parser, Serializer
-from dataclass_factory_30.common import Json
-from dataclass_factory_30.core import Provider, BaseFactory, ProvisionCtx, provision_action
-from dataclass_factory_30.pipeline import PipelineEvalMixin, PipeliningMixin
+from ..common import Json, Parser, Serializer
+from ..core import Provider, BaseFactory, ProvisionCtx, provision_action
+from .pipeline import PipelineEvalMixin, PipeliningMixin
 
 T = TypeVar('T')
 
