@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import TypeVar, Type, Union
+from typing import TypeVar, Type, Union, List
 
-from ..core import Provider, BaseFactory, ProvisionCtx, CannotProvide, NoSuitableProvider
 from .fields import FieldsProvisionCtx
 from .pipeline import PipeliningMixin
+from ..core import Provider, BaseFactory, ProvisionCtx, CannotProvide, NoSuitableProvider
 
 T = TypeVar('T')
 
@@ -62,7 +62,7 @@ class NextProvider(Provider, PipeliningMixin):
 
 @dataclass
 class FromFactoryProvider(Provider[T]):
-    provider_tmpl: Type[Provider[T]]
+    provider_tmpl_list: List[Type[Provider[T]]]
     ctx_checker: ProvCtxChecker
     factory: BaseFactory
 
@@ -73,7 +73,7 @@ class FromFactoryProvider(Provider[T]):
         offset: int,
         ctx: ProvisionCtx
     ) -> T:
-        if self.provider_tmpl != provider_tmpl:
+        if provider_tmpl not in self.provider_tmpl_list:
             raise CannotProvide
 
         if not self.ctx_checker(ctx):

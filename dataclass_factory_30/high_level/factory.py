@@ -5,6 +5,7 @@ from ..common import Parser, Serializer
 from ..core import BaseFactory, Provider, ProvisionCtx
 from ..low_level.provider_utils import ProvCtxChecker, FromFactoryProvider
 from ..low_level.provider import ParserProvider, SerializerProvider
+from ..low_level.pipeline import PipeliningMixin
 
 T = TypeVar('T')
 
@@ -14,16 +15,20 @@ def _provider_from_factory(
     pred,
     value
 ):
-    for parser_template, factory_type in allows:
+    prov_tmpl_list = []
+    for provider_template, factory_type in allows:
         if isinstance(value, factory_type):
-            return FromFactoryProvider(
-                parser_template, ProvCtxChecker(pred), value
-            )
+            prov_tmpl_list.append(provider_template)
+
+    if prov_tmpl_list:
+        return FromFactoryProvider(
+            prov_tmpl_list, ProvCtxChecker(pred), value
+        )
     return None
 
 
 @dataclass(frozen=True)
-class BuiltinFactory(BaseFactory):
+class BuiltinFactory(BaseFactory, PipeliningMixin):
     recipe: list = field(default_factory=list)
 
     def ensure_provider(self, value) -> Provider:

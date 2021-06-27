@@ -16,12 +16,12 @@ def test_several_provision_action_def():
 
 
 def test_inheritance_with_several_provision_action():
-    with pytest.raises(ValueError):
-        class TestProvider(Provider):
-            @provision_action
-            def _provide_test1(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> int:
-                pass
+    class TestProvider(Provider):
+        @provision_action
+        def _provide_test1(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> int:
+            pass
 
+    with pytest.raises(ValueError):
         class TestProviderChild(TestProvider):
             @provision_action
             def _provide_test2(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> int:
@@ -58,4 +58,3 @@ def test_pam_resolution():
             pass
 
         assert _get_provider_tmpl_pam(TestProviderChild12Child) is None
-
