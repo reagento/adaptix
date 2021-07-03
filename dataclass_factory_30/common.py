@@ -1,4 +1,4 @@
-from typing import TypeVar, Protocol, Union, Dict, List, Any
+from typing import TypeVar, Protocol, Union, Dict, List, Any, Optional, Tuple
 
 K_contra = TypeVar('K_contra', contravariant=True)
 V_co = TypeVar('V_co', covariant=True)
@@ -19,3 +19,5 @@ Json = Union[
     List[_JsonBasic],
     _JsonAtomic
 ]
+
+TypeHint = Union[type, None]
