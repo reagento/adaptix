@@ -44,27 +44,26 @@ class NameMapper(NameMappingProvider):
     trim_trailing_underscore: bool = True
     name_style: Optional[NameStyle] = None
 
-    def _filter(self, name: str) -> Optional[str]:
+    def _should_skip(self, name: str) -> bool:
         if name in self.skip:
-            return None
+            return True
 
         if self.only_mapped or self.only is not None:
             if self.only_mapped and name in self.map:
-                return name
+                return False
 
             if self.only is not None and name in self.only:
-                return name
+                return False
 
-            return None
+            return True
 
         if self.skip_internal and name.startswith('_'):
-            return None
+            return True
 
-        return name
+        return False
 
-    def _map_name(self, src_name: str) -> Optional[str]:
-        name = self._filter(src_name)
-        if name is None:
+    def _map_name(self, name: str) -> Optional[str]:
+        if self._should_skip(name):
             return None
 
         try:
