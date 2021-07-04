@@ -1,16 +1,17 @@
 import collections
 import re
-from collections import abc as c_abc
-from collections import defaultdict
+from collections import defaultdict, abc as c_abc
 from typing import (
-    Tuple, Any, Dict, AnyStr, NewType,
-    ClassVar, Final, Literal, Union,
-    Optional, Iterable, List,
-    NoReturn, Generic, TypeVar
+    Any, Optional, List, Dict,
+    ClassVar, Final, Literal,
+    Union, NoReturn, Generic,
+    TypeVar, Tuple, NewType,
+    AnyStr, Iterable
 )
 
 from typing_extensions import Annotated
 
+from .utils import strip_alias, get_args, is_new_type, is_annotated, is_subclass_soft
 from ..common import TypeHint
 
 
@@ -70,56 +71,33 @@ TYPE_PARAM_NO: Dict[TypeHint, int] = defaultdict(
         collections.ChainMap: 2,
     }
 )
-
 ONE_ANY_STR_PARAM = {
     re.Pattern, re.Match
 }
-
 FORBID_ZERO_ARGS = {
     ClassVar, Final, Annotated,
     Literal, Union, Optional
 }
-
 ALLOWED_ORIGINS = {
     Any, None, NoReturn,
     ClassVar, Final, Annotated,
     Literal, Union, Generic
 }
-
 NoneType = type(None)
-
-
-def strip_alias(type_hint):
-    try:
-        return type_hint.__origin__
-    except AttributeError:
-        return type_hint
-
-
-def get_args(type_hint):
-    try:
-        return list(type_hint.__args__)
-    except AttributeError:
-        return []
-
-
-def is_subclass_soft(cls, classinfo) -> bool:
-    try:
-        return issubclass(cls, classinfo)
-    except TypeError:
-        return False
-
-
-def is_new_type(tp) -> bool:
-    return hasattr(tp, '__supertype__')
-
-
-def is_annotated(tp) -> bool:
-    return hasattr(tp, '__metadata__')
 
 
 def _norm_iter(tps):
     return [normalize_type(tp) for tp in tps]
+
+
+def _dedup(inp: Iterable) -> List:
+    in_set = set()
+    result = []
+    for item in inp:
+        if item not in in_set:
+            result.append(item)
+            in_set.add(item)
+    return result
 
 
 def _merge_literals(args: List[NormType]) -> List[NormType]:
@@ -190,15 +168,24 @@ def normalize_type(tp) -> NormType:
             args = origin.__parameters__  # noqa
         return NormType(origin, _norm_iter(args))
 
+    if origin == c_abc.Callable:
+        if not args:
+            return NormType(origin, [..., NormType(Any)])
+
+        if args[0] is ...:
+            call_args = ...
+        else:
+            call_args = list(map(normalize_type, args[:-1]))  # type: ignore
+        return NormType(
+            origin, [call_args, normalize_type(args[-1])]
+        )
+
     if not args:
         if origin in ONE_ANY_STR_PARAM:
             return NormType(origin, [NormType(AnyStr)])
 
         if origin in FORBID_ZERO_ARGS:
             raise ValueError(f'{origin} must be subscribed')
-
-        if origin == c_abc.Callable:
-            return NormType(origin, [..., NormType(Any)])
 
         return NormType(
             origin, [NormType(Any)] * TYPE_PARAM_NO[origin]
@@ -208,15 +195,6 @@ def normalize_type(tp) -> NormType:
         if args == [None]:  # Literal[None] converted to None
             return NormType(None)
         return NormType(origin, args)
-
-    if origin == c_abc.Callable:
-        if args[0] is ...:
-            call_args = ...
-        else:
-            call_args = list(map(normalize_type, args[:-1]))  # type: ignore
-        return NormType(
-            origin, [call_args, normalize_type(args[-1])]
-        )
 
     if origin == Union:
         norm_args = _norm_iter(args)
@@ -228,13 +206,3 @@ def normalize_type(tp) -> NormType:
         return NormType(origin, merged_n_args)
 
     return NormType(origin, _norm_iter(args))
-
-
-def _dedup(inp: Iterable) -> List:
-    in_set = set()
-    result = []
-    for item in inp:
-        if item not in in_set:
-            result.append(item)
-            in_set.add(item)
-    return result
