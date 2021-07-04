@@ -18,7 +18,7 @@ from ..common import TypeHint
 class NormType:
     __slots__ = ('_origin', '_list_args', '_tuple_args')
 
-    def __init__(self, origin: Any, args: Optional[List[Any]] = None):
+    def __init__(self, origin: TypeHint, args: Optional[List[TypeHint]] = None):
         if args is None:
             args = []
 
@@ -123,7 +123,7 @@ def _merge_literals(args: List[NormType]) -> List[NormType]:
     return result
 
 
-def normalize_type(tp) -> NormType:
+def normalize_type(tp: TypeHint) -> NormType:
     origin = strip_alias(tp)
     args = get_args(tp)
 

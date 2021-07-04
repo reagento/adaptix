@@ -20,4 +20,4 @@ Json = Union[
     _JsonAtomic
 ]
 
-TypeHint = Union[type, None]
+TypeHint = Union[type, None, Any]
