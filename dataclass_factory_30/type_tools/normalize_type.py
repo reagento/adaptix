@@ -6,7 +6,7 @@ from typing import (
     ClassVar, Final, Literal,
     Union, NoReturn, Generic,
     TypeVar, Tuple, NewType,
-    AnyStr, Iterable
+    AnyStr, Iterable, ForwardRef
 )
 
 from typing_extensions import Annotated
@@ -81,7 +81,8 @@ FORBID_ZERO_ARGS = {
 ALLOWED_ORIGINS = {
     Any, None, NoReturn,
     ClassVar, Final, Annotated,
-    Literal, Union, Generic
+    Literal, Union, Generic,
+    ForwardRef
 }
 NoneType = type(None)
 
