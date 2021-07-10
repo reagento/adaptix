@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, Field as DCField
 from inspect import isfunction
-from typing import TypeVar, Generic, Callable, Type, final
+from typing import Callable, TypeVar, Generic, Tuple, final, Type, List
 
 
 @dataclass(frozen=True)
@@ -18,7 +18,38 @@ class NoSuitableProvider(ValueError):
 
 
 T = TypeVar('T')
+V = TypeVar('V')
 ProviderTV = TypeVar('ProviderTV', bound='Provider')
+
+
+def _make_pipeline(left, right) -> 'Pipeline':
+    if isinstance(left, Pipeline):
+        left_elems = left.elements
+    else:
+        left_elems = (left,)
+
+    if isinstance(right, Pipeline):
+        right_elems = right.elements
+    else:
+        right_elems = (right,)
+
+    return Pipeline(
+        left_elems + right_elems
+    )
+
+
+class PipeliningMixin:
+    """
+    A mixin that makes your class able to create a pipeline
+    """
+
+    @final
+    def __or__(self, other) -> 'Pipeline':
+        return _make_pipeline(self, other)
+
+    @final
+    def __ror__(self, other) -> 'Pipeline':
+        return _make_pipeline(other, self)
 
 
 def provision_action(func: Callable[[ProviderTV, 'BaseFactory', int, ProvisionCtx], T]):
@@ -43,7 +74,7 @@ def _get_provider_tmpl_pam(cls: 'Type[Provider[T]]') -> str:
     return pam
 
 
-class Provider(Generic[T], ABC):
+class Provider(Generic[T], PipeliningMixin, ABC):
     """Provider is a central part of core API.
     It takes information about a searched target and returns the expected instance.
     For example, :class:`ParserProvider` returns parser,
@@ -142,7 +173,7 @@ def _get_class_own_recipe(cls: type):
 
 
 class BaseFactory(ABC):
-    """Factory create requested object using a recipe.
+    """Factory creates requested object using a recipe.
 
     The recipe is a list that consists of :class:`Provider` or objects
     that a factory could cast to Provider.
@@ -200,3 +231,42 @@ class BaseFactory(ABC):
             except CannotProvide:
                 pass
         raise NoSuitableProvider(f'{self} can not create provider for {ctx}')
+
+
+class PipelineEvalMixin(ABC):
+    """
+    A special mixin for Provider Template that allows to eval pipeline.
+    Subclass should implement :method:`eval_pipeline`
+    """
+
+    @classmethod
+    @abstractmethod
+    def eval_pipeline(
+        cls,
+        providers: List[Provider],
+        factory: 'BaseFactory',
+        offset: int,
+        ctx: ProvisionCtx
+    ):
+        pass
+
+
+@dataclass(frozen=True)
+class Pipeline(Provider, PipeliningMixin, Generic[V]):
+    elements: Tuple[V, ...]
+
+    def _provide_other(
+        self,
+        provider_tmpl: 'Type[Provider[T]]',
+        factory: 'BaseFactory',
+        offset: int,
+        ctx: ProvisionCtx
+    ) -> T:
+        if not issubclass(provider_tmpl, PipelineEvalMixin):
+            raise CannotProvide
+
+        providers = [factory.ensure_provider(el) for el in self.elements]
+
+        return provider_tmpl.eval_pipeline(
+            providers, factory, offset, ctx
+        )
