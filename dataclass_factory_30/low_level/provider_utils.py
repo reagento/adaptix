@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from typing import TypeVar, Type, Union, List
 
 from .fields import FieldsProvisionCtx
-from .pipeline import PipeliningMixin
-from ..core import Provider, BaseFactory, ProvisionCtx, CannotProvide, NoSuitableProvider
+from ..core import Provider, BaseFactory, ProvisionCtx, CannotProvide, NoSuitableProvider, PipeliningMixin
 
 T = TypeVar('T')
 

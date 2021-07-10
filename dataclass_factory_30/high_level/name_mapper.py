@@ -3,8 +3,7 @@ from typing import Optional, List, Dict
 
 from .name_style import NameStyle, convert_snake_style
 from ..core import ProvisionCtx, BaseFactory, CannotProvide
-from ..low_level.provider import NameMappingProvider
-from ..low_level.fields import FieldsProvisionCtx
+from ..low_level import NameMappingProvider, FieldsProvisionCtx
 
 
 # TODO: Add support for path in map
