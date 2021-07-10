@@ -74,7 +74,7 @@ def _get_provider_tmpl_pam(cls: 'Type[Provider[T]]') -> str:
     return pam
 
 
-class Provider(Generic[T], PipeliningMixin, ABC):
+class Provider(PipeliningMixin, Generic[T], ABC):
     """Provider is a central part of core API.
     It takes information about a searched target and returns the expected instance.
     For example, :class:`ParserProvider` returns parser,
