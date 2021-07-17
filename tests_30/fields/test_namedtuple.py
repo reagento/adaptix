@@ -2,7 +2,7 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
-from dataclass_factory_30.low_level.fields import NamedTupleFieldsProvider, FieldsProvisionCtx, DefaultValue
+from dataclass_factory_30.low_level.fields import NamedTupleFieldsProvider, FieldsProvisionCtx, DefaultValue, NoDefault
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')
@@ -16,13 +16,13 @@ def test_order():
             FieldsProvisionCtx(
                 type=Any,
                 field_name='a',
-                default=None,
+                default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
             FieldsProvisionCtx(
                 type=Any,
                 field_name='b',
-                default=None,
+                default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
         ]
@@ -35,13 +35,13 @@ def test_order():
             FieldsProvisionCtx(
                 type=Any,
                 field_name='b',
-                default=None,
+                default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
             FieldsProvisionCtx(
                 type=Any,
                 field_name='a',
-                default=None,
+                default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
         ]
@@ -63,7 +63,7 @@ def test_defaults():
             FieldsProvisionCtx(
                 type=Any,
                 field_name='a',
-                default=None,
+                default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
             FieldsProvisionCtx(
@@ -98,13 +98,13 @@ def test_hinted_namedtuple():
             FieldsProvisionCtx(
                 type=int,
                 field_name='a',
-                default=None,
+                default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
             FieldsProvisionCtx(
                 type=str,
                 field_name='b',
-                default=None,
+                default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
         ]
@@ -117,7 +117,7 @@ def test_hinted_namedtuple():
             FieldsProvisionCtx(
                 type=int,
                 field_name='a',
-                default=None,
+                default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
             FieldsProvisionCtx(

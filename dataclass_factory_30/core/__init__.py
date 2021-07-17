@@ -3,10 +3,12 @@ from dataclasses import dataclass, Field as DCField
 from inspect import isfunction
 from typing import Callable, TypeVar, Generic, Tuple, final, Type, List
 
+from dataclass_factory_30.common import TypeHint
+
 
 @dataclass(frozen=True)
 class ProvisionCtx:
-    type: type
+    type: TypeHint
 
 
 class CannotProvide(Exception):
