@@ -1,6 +1,6 @@
 import inspect
 from abc import abstractmethod
-from dataclasses import dataclass, fields as dc_fields
+from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField
 from inspect import Signature
 from types import MappingProxyType
 from typing import Any, Callable, Union, List, get_type_hints
@@ -140,9 +140,34 @@ class TypedDictInputFieldsProvider(InputFieldsProvider):
         return self._get_fields(ctx.type)
 
 
+def get_dc_default(field: DCField) -> Default:
+    if field.default is not DC_MISSING:
+        return DefaultValue(field.default)
+    if field.default_factory is not DC_MISSING:
+        return DefaultFactory(field.default_factory)
+    return NoDefault(field_is_required=True)
+
+
 class DataclassFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
+    def _get_fields_filtered(self, tp, filer_func):
+        if not is_dataclass(tp):
+            raise CannotProvide
+
+        return [
+            FieldsProvisionCtx(
+                type=fld.type,
+                field_name=fld.name,
+                default=get_dc_default(fld),
+                metadata=MappingProxyType(fld.metadata),
+            )
+            for fld in dc_fields(tp)
+            if filer_func(fld)
+        ]
+
     def _get_input_fields(self, tp):
-        pass
+        return self._get_fields_filtered(
+            tp, lambda fld: fld.init
+        )
 
     def _provide_input_fields(
         self,
@@ -153,7 +178,9 @@ class DataclassFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
         return self._get_input_fields(ctx.type)
 
     def _get_output_fields(self, tp):
-        pass
+        return self._get_fields_filtered(
+            tp, lambda fld: True
+        )
 
     def _provide_output_fields(
         self,
