@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import TypeVar, Type, Union, List
 
 from .fields import FieldsProvisionCtx
-from ..core import Provider, BaseFactory, ProvisionCtx, CannotProvide, NoSuitableProvider, PipeliningMixin
+from ..core import Provider, BaseFactory, ProvisionCtx, CannotProvide, NoSuitableProvider
 
 T = TypeVar('T')
 
@@ -27,7 +27,7 @@ class ProvCtxChecker:
 
 
 @dataclass
-class AsProvider(Provider[T], PipeliningMixin):
+class AsProvider(Provider[T]):
     provider_tmpl: Type[Provider[T]]
     ctx_checker: ProvCtxChecker
     provision: T
@@ -48,7 +48,7 @@ class AsProvider(Provider[T], PipeliningMixin):
         raise CannotProvide
 
 
-class NextProvider(Provider, PipeliningMixin):
+class NextProvider(Provider):
     def _provide_other(
         self,
         provider_tmpl: 'Type[Provider[T]]',
