@@ -1,6 +1,6 @@
 import inspect
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, fields as dc_fields
 from inspect import Signature
 from types import MappingProxyType
 from typing import Any, Callable, Union, List, get_type_hints
@@ -50,24 +50,6 @@ class InputFieldsProvider(Provider[List[FieldsProvisionCtx]]):
 class OutputFieldsProvider(Provider[List[FieldsProvisionCtx]]):
     @abstractmethod
     @provision_action
-    def _provide_output_fields(
-        self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        pass
-
-
-class DataclassFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
-    def _provide_input_fields(
-        self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        pass
-
     def _provide_output_fields(
         self,
         factory: 'BaseFactory',
@@ -156,3 +138,27 @@ class TypedDictInputFieldsProvider(InputFieldsProvider):
         ctx: ProvisionCtx
     ) -> List[FieldsProvisionCtx]:
         return self._get_fields(ctx.type)
+
+
+class DataclassFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
+    def _get_input_fields(self, tp):
+        pass
+
+    def _provide_input_fields(
+        self,
+        factory: 'BaseFactory',
+        offset: int,
+        ctx: ProvisionCtx
+    ) -> List[FieldsProvisionCtx]:
+        return self._get_input_fields(ctx.type)
+
+    def _get_output_fields(self, tp):
+        pass
+
+    def _provide_output_fields(
+        self,
+        factory: 'BaseFactory',
+        offset: int,
+        ctx: ProvisionCtx
+    ) -> List[FieldsProvisionCtx]:
+        return self._get_output_fields(ctx.type)
