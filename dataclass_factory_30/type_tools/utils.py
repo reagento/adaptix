@@ -1,22 +1,25 @@
-from dataclass_factory_30.common import TypeHint
+from typing import List
+
+from ..common import TypeHint
 
 
-def strip_alias(type_hint: TypeHint):
+def strip_alias(type_hint: TypeHint) -> TypeHint:
     try:
-        return type_hint.__origin__ # noqa
+        return type_hint.__origin__  # type: ignore
     except AttributeError:
         return type_hint
 
 
-def get_args(type_hint: TypeHint) -> list:
+def get_args(type_hint: TypeHint) -> List[TypeHint]:
     try:
-        return list(type_hint.__args__)  # noqa
+        return list(type_hint.__args__)  # type: ignore
     except AttributeError:
         return []
 
 
 def is_subclass_soft(cls, classinfo) -> bool:
-    """Acts like builtin issubclass, but returns False instead of rising TypeError
+    """Acts like builtin issubclass,
+     but returns False instead of rising TypeError
     """
     try:
         return issubclass(cls, classinfo)
