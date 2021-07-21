@@ -1,7 +1,7 @@
 import inspect
 from abc import abstractmethod
 from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField
-from inspect import Signature
+from inspect import Signature, Parameter
 from types import MappingProxyType
 from typing import Any, Callable, Union, List, get_type_hints
 
@@ -63,6 +63,16 @@ def get_func_fields_prov_ctx(func, slice_=slice(0, None)) -> List[FieldsProvisio
     params = list(
         inspect.signature(func).parameters.values()
     )[slice_]
+
+    if not all(
+        p.kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY)
+        for p in params
+    ):
+        raise ValueError(
+            'Can not create consistent FieldsProvisionCtx'
+            ' from the function that has not only'
+            ' POSITIONAL_OR_KEYWORD or KEYWORD_ONLY parameters'
+        )
 
     return [
         FieldsProvisionCtx(
@@ -189,3 +199,24 @@ class DataclassFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
         ctx: ProvisionCtx
     ) -> List[FieldsProvisionCtx]:
         return self._get_output_fields(ctx.type)
+
+
+class ClassInitFieldsProvider(InputFieldsProvider):
+    def _get_fields(self, tp):
+        if not isinstance(tp, type):
+            raise CannotProvide
+
+        try:
+            return get_func_fields_prov_ctx(
+                tp.__init__, slice(1, None)
+            )
+        except ValueError:
+            raise CannotProvide
+
+    def _provide_input_fields(
+        self,
+        factory: 'BaseFactory',
+        offset: int,
+        ctx: ProvisionCtx
+    ) -> List[FieldsProvisionCtx]:
+        return self._get_fields(ctx.type)
