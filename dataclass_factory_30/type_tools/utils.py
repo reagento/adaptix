@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Generic
 
 from ..common import TypeHint
 
@@ -62,3 +62,7 @@ def is_typed_dict(tp) -> bool:
     if not TYPED_DICT_MCS_TUPLE:
         return False
     return isinstance(tp, TYPED_DICT_MCS_TUPLE)
+
+
+def is_generic_class(tp) -> bool:
+    return is_subclass_soft(tp, Generic)

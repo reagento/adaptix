@@ -1,7 +1,9 @@
 from dataclasses import dataclass
-from typing import TypeVar, Type, Union, List
+from typing import TypeVar, Type, Union, List, Callable
 
 from .fields import FieldsProvisionCtx
+from .provider_tmpl import ParserProvider
+from ..common import Parser
 from ..core import Provider, BaseFactory, ProvisionCtx, CannotProvide, NoSuitableProvider
 
 T = TypeVar('T')
@@ -82,3 +84,16 @@ class FromFactoryProvider(Provider[T]):
             return self.factory.provide(provider_tmpl, offset, ctx)
         except NoSuitableProvider:
             raise CannotProvide
+
+
+@dataclass
+class ConstructorParserProvider(ParserProvider):
+    ctx_checker: ProvCtxChecker
+    constructor: Callable
+
+    def _provide_parser(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> Parser:
+        if not self.ctx_checker(ctx):
+            raise CannotProvide
+
+        # TODO: finish up
+        raise RuntimeError
