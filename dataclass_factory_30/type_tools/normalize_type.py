@@ -18,7 +18,7 @@ from ..common import TypeHint
 class NormType:
     __slots__ = ('_origin', '_list_args', '_tuple_args')
 
-    def __init__(self, origin: TypeHint, args: Optional[List[TypeHint]] = None):
+    def __init__(self, origin: TypeHint, args: Optional[List] = None):
         if args is None:
             args = []
 
@@ -54,6 +54,66 @@ class NormType:
 
     def __iter__(self):
         return iter((self.origin, self.args))
+
+
+class NormTV:
+    __slots__ = ('_var', '_is_template', '_constraints', '_bound')
+
+    def __init__(self, type_var: Any, *, is_template: bool = False):
+        self._var = type_var
+        self._is_template = is_template
+        self._constraints = tuple(_norm_iter(type_var.__constraints__))
+        if type_var.__bound__ is None:
+            self._bound = None
+        else:
+            self._bound = normalize_type(type_var.__bound__)
+
+    def __getattr__(self, item):
+        return getattr(self._var, item)
+
+    @property
+    def name(self) -> str:
+        return self._var.__name__
+
+    @property
+    def covariant(self) -> bool:
+        return self._var.__covariant__
+
+    @property
+    def contravariant(self) -> bool:
+        return self._var.__contravariant__
+
+    @property
+    def invariant(self) -> bool:
+        return not (
+            self.covariant or self.contravariant
+        )
+
+    @property
+    def constraints(self) -> Tuple['AnyNormType', ...]:
+        return self._constraints
+
+    @property
+    def bound(self) -> Optional['AnyNormType']:
+        return self._bound
+
+    @property
+    def is_template(self) -> bool:
+        return self._is_template
+
+    def __repr__(self):
+        return f'{type(self).__name__}({self._var}, is_template={self._is_template})'
+
+    def __hash__(self):
+        return hash((self._var, self._is_template))
+
+    def __eq__(self, other):
+        if isinstance(other, NormTV):
+            return self._var == other._var and self._is_template == other._is_template
+        return NotImplemented
+
+
+AnyNormType = Union[NormType, NormTV]
 
 
 TYPE_PARAM_NO: Dict[TypeHint, int] = defaultdict(
@@ -124,9 +184,16 @@ def _merge_literals(args: List[NormType]) -> List[NormType]:
     return result
 
 
-def normalize_type(tp: TypeHint) -> NormType:
+T_co = TypeVar('T_co', covariant=True)
+T_contra = TypeVar('T_contra', contravariant=True)
+
+
+def normalize_type(tp: TypeHint) -> AnyNormType:
     origin = strip_alias(tp)
     args = get_args(tp)
+
+    if origin == NewType:
+        raise ValueError('NewType must be instantiating')
 
     if not (
         isinstance(origin, type)
@@ -144,9 +211,12 @@ def normalize_type(tp: TypeHint) -> NormType:
             Annotated, [normalize_type(origin)] + list(tp.__metadata__)
         )
 
+    if isinstance(origin, TypeVar):
+        return NormTV(origin)
+
     if is_subclass_soft(origin, tuple):
         if tp in (tuple, Tuple):  # not subscribed values
-            return NormType(tuple, [NormType(Any), ...])
+            return NormType(tuple, [NormTV(T_co, is_template=True), ...])
 
         # >>> Tuple[()].__args__
         # ((),)
@@ -161,17 +231,17 @@ def normalize_type(tp: TypeHint) -> NormType:
 
         return NormType(origin, _norm_iter(args))
 
-    if origin == NewType:
-        raise ValueError('NewType must be instantiating')
-
     if is_subclass_soft(origin, Generic):
         if not args:
-            args = origin.__parameters__  # noqa
+            params = origin.__parameters__  # type: ignore
+            return NormType(
+                origin, [NormTV(p, is_template=True) for p in params]
+            )
         return NormType(origin, _norm_iter(args))
 
     if origin == c_abc.Callable:
         if not args:
-            return NormType(origin, [..., NormType(Any)])
+            return NormType(origin, [..., NormTV(T_co, is_template=True)])
 
         if args[0] is ...:
             call_args = ...
@@ -183,13 +253,19 @@ def normalize_type(tp: TypeHint) -> NormType:
 
     if not args:
         if origin in ONE_ANY_STR_PARAM:
-            return NormType(origin, [NormType(AnyStr)])
+            return NormType(
+                origin, [NormTV(AnyStr, is_template=True)]
+            )
 
         if origin in FORBID_ZERO_ARGS:
             raise ValueError(f'{origin} must be subscribed')
 
         return NormType(
-            origin, [NormType(Any)] * TYPE_PARAM_NO[origin]
+            origin,
+            [
+                NormTV(T_co, is_template=True)
+                for _ in range(TYPE_PARAM_NO[origin])
+            ]
         )
 
     if origin == Literal:

@@ -16,6 +16,7 @@ from typing import (
 import pytest
 
 from dataclass_factory_30.type_tools import NormType, normalize_type
+from dataclass_factory_30.type_tools.normalize_type import NormTV, T_co, T_contra
 
 T = TypeVar('T')
 
@@ -44,8 +45,8 @@ def test_atomic():
     ]
 )
 def test_generic_concrete_one_arg(tp, alias):
-    assert normalize_type(tp) == NormType(tp, [NormType(Any)])
-    assert normalize_type(alias) == NormType(tp, [NormType(Any)])
+    assert normalize_type(tp) == NormType(tp, [NormTV(T_co, is_template=True)])
+    assert normalize_type(alias) == NormType(tp, [NormTV(T_co, is_template=True)])
     assert normalize_type(tp[int]) == NormType(tp, [NormType(int)])
     assert normalize_type(alias[int]) == NormType(tp, [NormType(int)])
 
@@ -60,32 +61,38 @@ def test_generic_concrete_one_arg(tp, alias):
     ]
 )
 def test_generic_concrete_two_args(tp, alias):
-    assert normalize_type(tp) == NormType(tp, [NormType(Any), NormType(Any)])
-    assert normalize_type(alias) == NormType(tp, [NormType(Any), NormType(Any)])
+    assert normalize_type(tp) == NormType(
+        tp, [NormTV(T_co, is_template=True), NormTV(T_co, is_template=True)]
+    )
+    assert normalize_type(alias) == NormType(
+        tp, [NormTV(T_co, is_template=True), NormTV(T_co, is_template=True)]
+    )
 
     assert normalize_type(tp[int, str]) == NormType(tp, [NormType(int), NormType(str)])
     assert normalize_type(alias[int, str]) == NormType(tp, [NormType(int), NormType(str)])
 
 
 def test_special_generics():
-    assert normalize_type(tuple) == NormType(tuple, [NormType(Any), ...])
-    assert normalize_type(Tuple) == NormType(tuple, [NormType(Any), ...])
+    assert normalize_type(tuple) == NormType(tuple, [NormTV(T_co, is_template=True), ...])
+    assert normalize_type(Tuple) == NormType(tuple, [NormTV(T_co, is_template=True), ...])
     assert normalize_type(tuple[int]) == NormType(tuple, [NormType(int)])
     assert normalize_type(Tuple[int]) == NormType(tuple, [NormType(int)])
     assert normalize_type(tuple[int, ...]) == NormType(tuple, [NormType(int), ...])
     assert normalize_type(Tuple[int, ...]) == NormType(tuple, [NormType(int), ...])
 
-    assert normalize_type(tuple[()]) == NormType(tuple)
-    assert normalize_type(Tuple[()]) == NormType(tuple)
+    assert normalize_type(tuple[()]) == NormType(tuple, [])
+    assert normalize_type(Tuple[()]) == NormType(tuple, [])
 
-    assert normalize_type(Pattern) == NormType(re.Pattern, [NormType(AnyStr)])
-    assert normalize_type(Match) == NormType(re.Match, [NormType(AnyStr)])
+    assert normalize_type(Pattern) == NormType(re.Pattern, [NormTV(AnyStr, is_template=True)])
+    assert normalize_type(Match) == NormType(re.Match, [NormTV(AnyStr, is_template=True)])
     assert normalize_type(Pattern[bytes]) == NormType(re.Pattern, [NormType(bytes)])
     assert normalize_type(Match[bytes]) == NormType(re.Match, [NormType(bytes)])
 
 
 def test_callable():
-    assert normalize_type(Callable) == NormType(c_abc.Callable, [..., NormType(Any)])
+    assert normalize_type(Callable) == NormType(
+        c_abc.Callable, [..., NormTV(T_co, is_template=True)]
+    )
     assert normalize_type(Callable[..., Any]) == NormType(
         c_abc.Callable, [..., NormType(Any)]
     )
@@ -105,10 +112,12 @@ def test_callable():
 
 
 def test_type():
-    assert normalize_type(type) == NormType(type, [NormType(Any)])
-    assert normalize_type(Type) == NormType(type, [NormType(Any)])
+    assert normalize_type(type) == NormType(type, [NormTV(T_co, is_template=True)])
+    assert normalize_type(Type) == NormType(type, [NormTV(T_co, is_template=True)])
 
     assert normalize_type(Type[int]) == NormType(type, [NormType(int)])
+
+    assert normalize_type(Type[Any]) == NormType(type, [NormType(Any)])
 
 
 def test_class_var():
@@ -255,32 +264,32 @@ class SubGenChild4(MyGeneric, Generic[K, V]):
 
 
 def test_generic():
-    assert normalize_type(MyGeneric) == NormType(MyGeneric, [NormType(T)])
-    assert normalize_type(MyGeneric[T]) == NormType(MyGeneric, [NormType(T)])
+    assert normalize_type(MyGeneric) == NormType(MyGeneric, [NormTV(T, is_template=True)])
+    assert normalize_type(MyGeneric[T]) == NormType(MyGeneric, [NormTV(T)])
     assert normalize_type(MyGeneric[int]) == NormType(MyGeneric, [NormType(int)])
 
     assert normalize_type(GConChild) == NormType(GConChild)
     assert normalize_type(GChild) == NormType(GChild)
 
-    assert normalize_type(SubGenChild1) == NormType(SubGenChild1, [NormType(K)])
+    assert normalize_type(SubGenChild1) == NormType(SubGenChild1, [NormTV(K, is_template=True)])
     assert normalize_type(SubGenChild1[int]) == NormType(SubGenChild1, [NormType(int)])
 
     assert normalize_type(SubGenChild2) == NormType(
-        SubGenChild2, [NormType(T), NormType(K)]
+        SubGenChild2, [NormTV(T, is_template=True), NormTV(K, is_template=True)]
     )
     assert normalize_type(SubGenChild2[int, str]) == NormType(
         SubGenChild2, [NormType(int), NormType(str)]
     )
 
     assert normalize_type(SubGenChild3) == NormType(
-        SubGenChild3, [NormType(K), NormType(T)]
+        SubGenChild3, [NormTV(K, is_template=True), NormTV(T, is_template=True)]
     )
     assert normalize_type(SubGenChild3[int, str]) == NormType(
         SubGenChild3, [NormType(int), NormType(str)]
     )
 
     assert normalize_type(SubGenChild4) == NormType(
-        SubGenChild4, [NormType(K), NormType(V)]
+        SubGenChild4, [NormTV(K, is_template=True), NormTV(V, is_template=True)]
     )
     assert normalize_type(SubGenChild4[int, str]) == NormType(
         SubGenChild4, [NormType(int), NormType(str)]
