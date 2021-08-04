@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, Field as DCField
 from inspect import isfunction
-from typing import Callable, TypeVar, Generic, Tuple, final, Type, List
+from typing import Callable, TypeVar, Generic, Tuple, final, Type, List, Optional
 
 from dataclass_factory_30.common import TypeHint
 
@@ -11,8 +11,9 @@ class ProvisionCtx:
     type: TypeHint
 
 
+@dataclass
 class CannotProvide(Exception):
-    pass
+    description: Optional[str] = None
 
 
 class NoSuitableProvider(ValueError):
