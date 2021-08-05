@@ -1,3 +1,5 @@
+from operator import attrgetter
+
 from dataclass_factory_30.type_tools import DefaultSubtypeMatcher
 
 
@@ -20,3 +22,13 @@ class Class:
 
 class SubClass(Class):
     pass
+
+
+def id_gen(obj):
+    try:
+        return obj.__name__
+    except AttributeError:
+        try:
+            return obj._name
+        except AttributeError:
+            return repr(obj)

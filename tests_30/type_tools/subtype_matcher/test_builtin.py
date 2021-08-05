@@ -13,12 +13,13 @@ from typing import (
 
 import pytest
 
-from .conftest import is_subtype, assert_swapped_is_subtype, Class, SubClass
+from .conftest import is_subtype, assert_swapped_is_subtype, Class, SubClass, id_gen
 
 
 @pytest.mark.parametrize(
     'tp',
-    [int, str, bytes, None, Class, SubClass]
+    [int, str, bytes, None, Class, SubClass],
+    ids=id_gen,
 )
 def test_any(tp):
     assert_swapped_is_subtype(tp, Any)
@@ -41,7 +42,8 @@ def test_atomic():
 
 @pytest.mark.parametrize(
     'tp',
-    [Final, ClassVar]
+    [Final, ClassVar],
+    ids=id_gen,
 )
 def test_tags(tp):
     assert is_subtype(
@@ -63,7 +65,8 @@ def test_tags(tp):
     [
         List, Type, FrozenSet,
         Counter, Counter, Set,
-    ]
+    ],
+    ids=id_gen,
 )
 def test_builtin_generic_one_arg(tp):
     assert is_subtype(tp, tp)
@@ -88,7 +91,8 @@ def test_builtin_generic_one_arg(tp):
     [
         Dict, DefaultDict, FrozenSet,
         OrderedDict, ChainMap, Set,
-    ]
+    ],
+    ids=id_gen,
 )
 def test_builtin_generic_two_args(tp):
     assert is_subtype(tp, tp)
