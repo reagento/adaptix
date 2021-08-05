@@ -151,6 +151,17 @@ def get_dc_default(field: DCField) -> Default:
 
 
 class DataclassFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
+    """
+    This provider does not work properly if __init__ signature differs from
+    that would be created by dataclass decorator.
+
+    It happens because we can not distinguish __init__ that generated
+    by @dataclass and __init__ that created by other ways.
+    And we can not analyze only __init__ signature
+    because @dataclass uses private constant
+    as default value for fields with default_factory
+    """
+
     def _get_fields_filtered(self, tp, filer_func):
         if not is_dataclass(tp):
             raise CannotProvide
