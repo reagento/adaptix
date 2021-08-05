@@ -6,7 +6,6 @@ from types import MappingProxyType
 from typing import Any, Callable, Union, List, get_type_hints
 
 from ..core import ProvisionCtx, Provider, BaseFactory, provision_action, CannotProvide
-from ..type_tools import is_subclass_soft
 from ..type_tools.utils import is_typed_dict_class, is_named_tuple_class
 
 
@@ -91,9 +90,6 @@ def get_func_fields_prov_ctx(func, slice_=slice(0, None)) -> List[FieldsProvisio
         )
         for param in params
     ]
-
-
-NAMED_TUPLE_METHODS = {'_fields', '_field_defaults', '_make', '_replace', '_asdict'}
 
 
 class NamedTupleFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
