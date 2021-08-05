@@ -81,4 +81,3 @@ class NameMapper(NameMappingProvider):
             raise CannotProvide
 
         return self._map_name(ctx.field_name)
-

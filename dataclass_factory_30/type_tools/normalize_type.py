@@ -119,7 +119,6 @@ class NormTV:
 
 AnyNormType = Union[NormType, NormTV]
 
-
 TYPE_PARAM_NO: Dict[TypeHint, int] = defaultdict(
     lambda: 0,
     {

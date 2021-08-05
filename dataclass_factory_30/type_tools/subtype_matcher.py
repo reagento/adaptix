@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
-from collections import abc as c_abc
-from typing import Dict, TypeVar, Optional, Any, Annotated, NoReturn, List, ClassVar, Final
+from typing import Dict, TypeVar, Optional
 
-from . import normalize_type, NormType, is_new_type, is_subclass_soft
 from ..common import TypeHint
 
 SubtypeMatch = Dict[TypeVar, TypeHint]
@@ -24,4 +22,3 @@ class DefaultSubtypeMatcher(SubtypeMatcher):
 
     def is_subtype(self, sub_tp: TypeHint, tp: TypeHint) -> bool:
         pass
-
