@@ -8,17 +8,20 @@ SubtypeMatch = Dict[TypeVar, TypeHint]
 
 class SubtypeMatcher(ABC):
     @abstractmethod
-    def __call__(self, sub_tp: TypeHint, tp: TypeHint) -> Optional[SubtypeMatch]:
+    def __call__(self, sub_tp: TypeHint) -> Optional[SubtypeMatch]:
         pass
 
     @abstractmethod
-    def is_subtype(self, sub_tp: TypeHint, tp: TypeHint) -> bool:
+    def is_subtype(self, sub_tp: TypeHint) -> bool:
         pass
 
 
 class DefaultSubtypeMatcher(SubtypeMatcher):
-    def __call__(self, sub_tp: TypeHint, tp: TypeHint) -> Optional[SubtypeMatch]:
+    def __init__(self, tp: TypeHint):
         pass
 
-    def is_subtype(self, sub_tp: TypeHint, tp: TypeHint) -> bool:
+    def __call__(self, sub_tp: TypeHint) -> Optional[SubtypeMatch]:
+        pass
+
+    def is_subtype(self, sub_tp: TypeHint) -> bool:
         pass

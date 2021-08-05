@@ -5,7 +5,9 @@ from typing import (
 
 import pytest
 
-from .conftest import matcher, assert_subtype_shift, Class, SubClass
+from .conftest import (
+    match, is_subtype, assert_swapped_is_subtype, Class, SubClass
+)
 
 
 T_co = TypeVar('T_co', covariant=True)
@@ -30,64 +32,64 @@ class GenInv(Generic[T_inv]):
     [GenCo, GenContra, GenInv]
 )
 def test_generic_default(tp: Any):
-    assert matcher.is_subtype(
+    assert is_subtype(
         tp,
         tp,
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         tp[int],
         tp,
     )
 
 
 def test_generic_match():
-    assert matcher(
+    assert match(
         GenCo[T_co], GenCo[int]
     ) == {T_co: int}
 
-    assert matcher(
+    assert match(
         GenContra[T_contra], GenContra[int]
     ) == {T_contra: int}
 
-    assert matcher(
+    assert match(
         GenInv[T_inv], GenInv[int]
     ) == {T_inv: int}
 
 
 def test_generic():
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenCo[bool],
         GenCo[int],
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenContra[int],
         GenContra[bool],
     )
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         GenInv[int],
         GenInv[bool],
     )
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         GenInv[bool],
         GenInv[int],
     )
 
-    class AnyGen(Generic[T_co, T_contra, T_inv]):
+    class AllGen(Generic[T_co, T_contra, T_inv]):
         pass
 
-    assert matcher.is_subtype(
-        AnyGen[int, bool, int],
-        AnyGen[int, bool, int],
+    assert is_subtype(
+        AllGen[int, bool, int],
+        AllGen[int, bool, int],
     )
 
-    assert_subtype_shift(
-        AnyGen[bool, int, int],
-        AnyGen[int, bool, int],
+    assert_swapped_is_subtype(
+        AllGen[bool, int, int],
+        AllGen[int, bool, int],
     )
 
-    assert not matcher.is_subtype(
-        AnyGen[bool, int, int],
-        AnyGen[int, bool, int],
+    assert not is_subtype(
+        AllGen[bool, int, int],
+        AllGen[int, bool, int],
     )
 
     variants = [[int, bool]] * 6
@@ -98,16 +100,16 @@ def test_generic():
             and
             [a2, b2, c2] == [int, bool, int]
         ):
-            assert matcher(
-                AnyGen[a1, b1, c1],
-                AnyGen[a2, b2, c2],
+            assert match(
+                AllGen[a1, b1, c1],
+                AllGen[a2, b2, c2],
             ) == {}
 
         else:
 
-            assert not matcher.is_subtype(
-                AnyGen[a1, b1, c1],
-                AnyGen[a2, b2, c2],
+            assert not is_subtype(
+                AllGen[a1, b1, c1],
+                AllGen[a2, b2, c2],
             )
 
 
@@ -133,46 +135,46 @@ class BGenInv(Generic[B_inv]):
     [BGenCo, BGenContra, BGenInv]
 )
 def test_generic_default_bound(tp: Any):
-    assert matcher.is_subtype(
+    assert is_subtype(
         tp,
         tp,
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         tp[Class],
         tp,
     )
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         tp[int],
         tp[bool],
     )
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         tp[bool],
         tp[int],
     )
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         tp,
         tp[int],
     )
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         tp[int],
         tp,
     )
 
 
 def test_generic_bound():
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenCo[SubClass],
         GenCo[Class],
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenContra[Class],
         GenContra[SubClass],
     )
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         GenInv[Class],
         GenInv[SubClass],
     )
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         GenInv[SubClass],
         GenInv[Class],
     )
@@ -186,56 +188,55 @@ class GenTVC(Generic[TVConstr]):
 
 
 def test_generic_constraints():
-    assert matcher.is_subtype(
+    assert is_subtype(
         GenTVC,
         GenTVC,
     )
 
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenTVC[int],
         GenTVC,
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenTVC[bool],
         GenTVC,
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenTVC[str],
         GenTVC,
     )
 
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenTVC[Union[str, int]],
         GenTVC,
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenTVC[Union[int, str]],
         GenTVC,
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenTVC[Union[bool, str]],
         GenTVC,
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenTVC[Union[bool, int]],
         GenTVC,
     )
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenTVC[Union[bool, int, str]],
         GenTVC,
     )
 
-    assert_subtype_shift(
+    assert_swapped_is_subtype(
         GenTVC[bool],
         GenTVC[int],
     )
 
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         GenTVC[bool],
         GenTVC[str],
     )
-    assert not matcher.is_subtype(
+    assert not is_subtype(
         GenTVC[str],
         GenTVC[bool],
     )
-

@@ -1,11 +1,17 @@
-from dataclass_factory_30.type_tools.subtype_matcher import DefaultSubtypeMatcher
-
-matcher = DefaultSubtypeMatcher()
+from dataclass_factory_30.type_tools import DefaultSubtypeMatcher
 
 
-def assert_subtype_shift(sub_cls, cls):
-    assert matcher.is_subtype(sub_cls, cls)
-    assert not matcher.is_subtype(cls, sub_cls)
+def assert_swapped_is_subtype(sub_tp, tp):
+    assert is_subtype(sub_tp, tp)
+    assert not is_subtype(sub_tp, tp)
+
+
+def is_subtype(sub_tp, tp):
+    return DefaultSubtypeMatcher(tp).is_subtype(sub_tp)
+
+
+def match(sub_tp, tp):
+    return DefaultSubtypeMatcher(tp)(sub_tp)
 
 
 class Class:
