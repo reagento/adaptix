@@ -7,7 +7,7 @@ from typing import Any, Callable, Union, List, get_type_hints
 
 from ..core import ProvisionCtx, Provider, BaseFactory, provision_action, CannotProvide
 from ..type_tools import is_subclass_soft
-from ..type_tools.utils import is_typed_dict
+from ..type_tools.utils import is_typed_dict_class, is_named_tuple_class
 
 
 @dataclass(frozen=True)
@@ -98,11 +98,7 @@ NAMED_TUPLE_METHODS = {'_fields', '_field_defaults', '_make', '_replace', '_asdi
 
 class NamedTupleFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
     def _get_fields(self, tp: type) -> List[FieldsProvisionCtx]:
-        if not (
-            is_subclass_soft(tp, tuple)
-            and
-            NAMED_TUPLE_METHODS.issubset(vars(tp))
-        ):
+        if not is_named_tuple_class(tp):
             raise CannotProvide
 
         return get_func_fields_prov_ctx(tp.__new__, slice(1, None))
@@ -126,7 +122,7 @@ class NamedTupleFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
 
 class TypedDictInputFieldsProvider(InputFieldsProvider):
     def _get_fields(self, tp):
-        if not is_typed_dict(tp):
+        if not is_typed_dict_class(tp):
             raise CannotProvide
 
         is_required = tp.__total__
