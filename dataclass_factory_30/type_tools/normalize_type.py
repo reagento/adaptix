@@ -109,7 +109,11 @@ class NormTV:
 
     def __eq__(self, other):
         if isinstance(other, NormTV):
-            return self._var == other._var and self._is_template == other._is_template
+            return (
+                self._var == other._var
+                and
+                self._is_template == other._is_template
+            )
         return NotImplemented
 
 
