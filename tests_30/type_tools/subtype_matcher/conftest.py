@@ -1,11 +1,9 @@
-from operator import attrgetter
-
 from dataclass_factory_30.type_tools import DefaultSubtypeMatcher
 
 
 def assert_swapped_is_subtype(sub_tp, tp):
     assert is_subtype(sub_tp, tp)
-    assert not is_subtype(sub_tp, tp)
+    assert not is_subtype(tp, sub_tp)
 
 
 def is_subtype(sub_tp, tp):
