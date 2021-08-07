@@ -1,12 +1,13 @@
 import collections
 import re
+from abc import ABC, abstractmethod
 from collections import defaultdict, abc as c_abc
 from typing import (
     Any, Optional, List, Dict,
     ClassVar, Final, Literal,
     Union, NoReturn, Generic,
     TypeVar, Tuple, NewType,
-    AnyStr, Iterable, ForwardRef
+    AnyStr, Iterable, ForwardRef,
 )
 
 from typing_extensions import Annotated
@@ -15,7 +16,19 @@ from .utils import strip_alias, get_args, is_new_type, is_annotated, is_subclass
 from ..common import TypeHint
 
 
-class NormType:
+class BaseNormType(ABC):
+    @property
+    @abstractmethod
+    def origin(self) -> Any:
+        pass
+
+    @property
+    @abstractmethod
+    def args(self) -> List[Any]:
+        pass
+
+
+class NormType(BaseNormType):
     __slots__ = ('_origin', '_list_args', '_tuple_args')
 
     def __init__(self, origin: TypeHint, args: Optional[List] = None):
@@ -56,13 +69,15 @@ class NormType:
         return iter((self.origin, self.args))
 
 
-class NormTV:
+class NormTV(BaseNormType):
     __slots__ = ('_var', '_is_template', '_constraints', '_bound')
 
     def __init__(self, type_var: Any, *, is_template: bool = False):
         self._var = type_var
         self._is_template = is_template
-        self._constraints = tuple(_norm_iter(type_var.__constraints__))
+        self._constraints = tuple(
+            _dedup(_norm_iter(type_var.__constraints__))
+        )
         if type_var.__bound__ is None:
             self._bound = None
         else:
@@ -70,6 +85,14 @@ class NormTV:
 
     def __getattr__(self, item):
         return getattr(self._var, item)
+
+    @property
+    def origin(self) -> Any:
+        return self._var
+
+    @property
+    def args(self) -> List[Any]:
+        return []
 
     @property
     def name(self) -> str:
@@ -90,11 +113,11 @@ class NormTV:
         )
 
     @property
-    def constraints(self) -> Tuple['AnyNormType', ...]:
+    def constraints(self) -> Tuple['BaseNormType', ...]:
         return self._constraints
 
     @property
-    def bound(self) -> Optional['AnyNormType']:
+    def bound(self) -> Optional['BaseNormType']:
         return self._bound
 
     @property
@@ -116,8 +139,6 @@ class NormTV:
             )
         return NotImplemented
 
-
-AnyNormType = Union[NormType, NormTV]
 
 TYPE_PARAM_NO: Dict[TypeHint, int] = defaultdict(
     lambda: 0,
@@ -188,10 +209,9 @@ def _merge_literals(args: List[NormType]) -> List[NormType]:
 
 
 T_co = TypeVar('T_co', covariant=True)
-T_contra = TypeVar('T_contra', contravariant=True)
 
 
-def normalize_type(tp: TypeHint) -> AnyNormType:
+def normalize_type(tp: TypeHint) -> BaseNormType:
     origin = strip_alias(tp)
     args = get_args(tp)
 
@@ -219,7 +239,9 @@ def normalize_type(tp: TypeHint) -> AnyNormType:
 
     if is_subclass_soft(origin, tuple):
         if tp in (tuple, Tuple):  # not subscribed values
-            return NormType(tuple, [NormTV(T_co, is_template=True), ...])
+            return NormType(
+                tuple, [NormTV(T_co, is_template=True), ...]
+            )
 
         # >>> Tuple[()].__args__
         # ((),)
@@ -244,7 +266,9 @@ def normalize_type(tp: TypeHint) -> AnyNormType:
 
     if origin == c_abc.Callable:
         if not args:
-            return NormType(origin, [..., NormTV(T_co, is_template=True)])
+            return NormType(
+                origin, [..., NormTV(T_co, is_template=True)]
+            )
 
         if args[0] is ...:
             call_args = ...

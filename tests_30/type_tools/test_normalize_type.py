@@ -16,7 +16,7 @@ from typing import (
 import pytest
 
 from dataclass_factory_30.type_tools import NormType, normalize_type
-from dataclass_factory_30.type_tools.normalize_type import NormTV, T_co, T_contra
+from dataclass_factory_30.type_tools.normalize_type import NormTV, T_co
 
 T = TypeVar('T')
 
