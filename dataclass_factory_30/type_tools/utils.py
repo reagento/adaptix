@@ -1,4 +1,4 @@
-from typing import List, Generic
+from typing import List, Generic, Iterable
 
 from ..common import TypeHint
 
@@ -53,12 +53,19 @@ def is_subclass_soft(cls, classinfo) -> bool:
         return False
 
 
+def has_attrs(obj, attrs: Iterable[str]) -> bool:
+    return all(
+        hasattr(obj, attr_name)
+        for attr_name in attrs
+    )
+
+
 def is_new_type(tp) -> bool:
-    return hasattr(tp, '__supertype__')
+    return has_attrs(tp, ['__supertype__', '__name__'])
 
 
 def is_annotated(tp) -> bool:
-    return hasattr(tp, '__metadata__')
+    return has_attrs(tp, ['__metadata__', '__origin__'])
 
 
 def is_typed_dict_class(tp) -> bool:
@@ -67,16 +74,31 @@ def is_typed_dict_class(tp) -> bool:
     return isinstance(tp, TYPED_DICT_MCS_TUPLE)
 
 
-NAMED_TUPLE_METHODS = {'_fields', '_field_defaults', '_make', '_replace', '_asdict'}
+NAMED_TUPLE_METHODS = ('_fields', '_field_defaults', '_make', '_replace', '_asdict')
 
 
 def is_named_tuple_class(tp) -> bool:
     return (
         is_subclass_soft(tp, tuple)
         and
-        NAMED_TUPLE_METHODS.issubset(vars(tp))
+        has_attrs(tp, NAMED_TUPLE_METHODS)
     )
 
 
 def is_generic_class(tp) -> bool:
     return is_subclass_soft(tp, Generic)
+
+
+def is_protocol(tp):
+    from typing import Protocol
+
+    if not isinstance(tp, type):
+        return False
+
+    mro = tp.mro()
+    try:
+        direct_parent = mro[1]
+    except IndexError:
+        return False
+
+    return direct_parent is Protocol
