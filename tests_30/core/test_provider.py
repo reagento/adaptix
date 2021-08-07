@@ -28,33 +28,34 @@ def test_inheritance_with_several_provision_action():
                 pass
 
 
-def test_pam_resolution():
+def test_pam_resolving():
+    class TestProvider1(Provider):
+        @provision_action
+        def _provide_test1(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> int:
+            pass
+
+    assert _get_provider_tmpl_pam(TestProvider1) == '_provide_test1'
+
+    class TestProvider2(Provider):
+        @provision_action
+        def _provide_test2(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> int:
+            pass
+
+    assert _get_provider_tmpl_pam(TestProvider2) == '_provide_test2'
+
+    class TestProviderChild1(TestProvider1):
+        pass
+
+    assert _get_provider_tmpl_pam(TestProviderChild1) == '_provide_test1'
+
+    class TestProviderChild12(TestProvider1, TestProvider2):
+        pass
+
     with pytest.raises(ValueError):
-        class TestProvider1(Provider):
-            @provision_action
-            def _provide_test1(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> int:
-                pass
+        _get_provider_tmpl_pam(TestProviderChild12)
 
-        assert _get_provider_tmpl_pam(TestProvider1) == '_provide_test1'
+    class TestProviderChild12Child(TestProviderChild12):
+        pass
 
-        class TestProvider2(Provider):
-            @provision_action
-            def _provide_test2(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> int:
-                pass
-
-        assert _get_provider_tmpl_pam(TestProvider2) == '_provide_test2'
-
-        class TestProviderChild1(TestProvider1):
-            pass
-
-        assert _get_provider_tmpl_pam(TestProviderChild1) == '_provide_test1'
-
-        class TestProviderChild12(TestProvider1, TestProvider2):
-            pass
-
-        assert _get_provider_tmpl_pam(TestProviderChild12) is None
-
-        class TestProviderChild12Child(TestProviderChild12):
-            pass
-
-        assert _get_provider_tmpl_pam(TestProviderChild12Child) is None
+    with pytest.raises(ValueError):
+        _get_provider_tmpl_pam(TestProviderChild12Child)
