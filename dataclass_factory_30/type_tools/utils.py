@@ -95,10 +95,4 @@ def is_protocol(tp):
     if not isinstance(tp, type):
         return False
 
-    mro = tp.mro()
-    try:
-        direct_parent = mro[1]
-    except IndexError:
-        return False
-
-    return direct_parent is Protocol
+    return Protocol in tp.__bases__

@@ -66,6 +66,14 @@ def test_is_protocol():
 
     assert not is_protocol(ImplProto)
     assert not is_protocol(int)
+    assert not is_protocol(type)
+    assert not is_protocol(object)
 
     assert not is_protocol(15)
     assert not is_protocol('15')
+
+    class ExtProto(Proto, Protocol):
+        def bar(self):
+            pass
+
+    assert is_protocol(ExtProto)
