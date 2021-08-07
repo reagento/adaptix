@@ -2,7 +2,7 @@ import collections
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict, abc as c_abc
-from enum import Enum, auto
+
 from typing import (
     Any, Optional, List, Dict,
     ClassVar, Final, Literal,
