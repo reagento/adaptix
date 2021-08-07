@@ -2,6 +2,7 @@ import collections
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict, abc as c_abc
+from enum import Enum, auto
 from typing import (
     Any, Optional, List, Dict,
     ClassVar, Final, Literal,
@@ -27,14 +28,26 @@ class BaseNormType(ABC):
     def args(self) -> List[Any]:
         pass
 
+    @property
+    @abstractmethod
+    def source(self) -> TypeHint:
+        pass
+
 
 class NormType(BaseNormType):
-    __slots__ = ('_origin', '_list_args', '_tuple_args')
+    __slots__ = ('_source', '_origin', '_list_args', '_tuple_args')
 
-    def __init__(self, origin: TypeHint, args: Optional[List] = None):
+    def __init__(
+        self,
+        origin: TypeHint,
+        args: Optional[List] = None,
+        *,
+        source: TypeHint = None
+    ):
         if args is None:
             args = []
 
+        self._source = source
         self._origin = origin
         self._list_args = args
         self._tuple_args = tuple(
@@ -49,6 +62,10 @@ class NormType(BaseNormType):
     @property
     def args(self) -> List[Any]:
         return self._list_args
+
+    @property
+    def source(self) -> TypeHint:
+        return self._source
 
     def __hash__(self):
         return hash((self._origin, self._tuple_args))
@@ -93,6 +110,10 @@ class NormTV(BaseNormType):
     @property
     def args(self) -> List[Any]:
         return []
+
+    @property
+    def source(self) -> TypeHint:
+        return self._var
 
     @property
     def name(self) -> str:
@@ -185,6 +206,16 @@ def _dedup(inp: Iterable) -> List:
     return result
 
 
+def _create_norm_literal(args):
+    dedup_args = _dedup(args)
+    return NormType(
+        Literal, dedup_args,
+        source=Union.__getitem__(
+            tuple(Literal[arg] for arg in args)  # type: ignore
+        )
+    )
+
+
 def _merge_literals(args: List[NormType]) -> List[NormType]:
     result = []
     lit_args = []
@@ -194,7 +225,7 @@ def _merge_literals(args: List[NormType]) -> List[NormType]:
         else:
             if lit_args:
                 result.append(
-                    NormType(Literal, _dedup(lit_args))
+                    _create_norm_literal(lit_args)
                 )
                 lit_args = []
 
@@ -202,7 +233,7 @@ def _merge_literals(args: List[NormType]) -> List[NormType]:
 
     if lit_args:
         result.append(
-            NormType(Literal, _dedup(lit_args))
+            _create_norm_literal(lit_args)
         )
 
     return result
@@ -227,11 +258,12 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
         raise ValueError(f'Can not normalize {tp}')
 
     if origin is None or origin is NoneType:
-        return NormType(None)
+        return NormType(None, source=tp)
 
     if is_annotated(tp):
         return NormType(
-            Annotated, [normalize_type(origin)] + list(tp.__metadata__)
+            Annotated, [normalize_type(origin)] + list(tp.__metadata__),
+            source=tp
         )
 
     if isinstance(origin, TypeVar):
@@ -240,7 +272,8 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
     if is_subclass_soft(origin, tuple):
         if tp in (tuple, Tuple):  # not subscribed values
             return NormType(
-                tuple, [NormTV(T_co, is_template=True), ...]
+                tuple, [NormTV(T_co, is_template=True), ...],
+                source=tp
             )
 
         # >>> Tuple[()].__args__
@@ -248,26 +281,30 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
         # >>> tuple[()].__args__
         # ()
         if not args or args == [()]:
-            return NormType(tuple)
+            return NormType(tuple, source=tp)
 
         fixed_args = args[-1] is ...
         if fixed_args:
-            return NormType(origin, _norm_iter(args[:-1]) + [...])
+            return NormType(
+                origin, _norm_iter(args[:-1]) + [...],
+                source=tp,
+            )
 
-        return NormType(origin, _norm_iter(args))
+        return NormType(origin, _norm_iter(args), source=tp)
 
     if is_subclass_soft(origin, Generic):
         if not args:
             params = origin.__parameters__  # type: ignore
             return NormType(
-                origin, [NormTV(p, is_template=True) for p in params]
+                origin, [NormTV(p, is_template=True) for p in params],
+                source=tp,
             )
-        return NormType(origin, _norm_iter(args))
+        return NormType(origin, _norm_iter(args), source=tp)
 
     if origin == c_abc.Callable:
         if not args:
             return NormType(
-                origin, [..., NormTV(T_co, is_template=True)]
+                origin, [..., NormTV(T_co, is_template=True)], source=tp
             )
 
         if args[0] is ...:
@@ -275,13 +312,13 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
         else:
             call_args = list(map(normalize_type, args[:-1]))  # type: ignore
         return NormType(
-            origin, [call_args, normalize_type(args[-1])]
+            origin, [call_args, normalize_type(args[-1])], source=tp
         )
 
     if not args:
         if origin in ONE_ANY_STR_PARAM:
             return NormType(
-                origin, [NormTV(AnyStr, is_template=True)]
+                origin, [NormTV(AnyStr, is_template=True)], source=tp
             )
 
         if origin in FORBID_ZERO_ARGS:
@@ -292,13 +329,14 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
             [
                 NormTV(T_co, is_template=True)
                 for _ in range(TYPE_PARAM_NO[origin])
-            ]
+            ],
+            source=tp,
         )
 
     if origin == Literal:
         if args == [None]:  # Literal[None] converted to None
-            return NormType(None)
-        return NormType(origin, args)
+            return NormType(None, source=tp)
+        return NormType(origin, args, source=tp)
 
     if origin == Union:
         norm_args = _norm_iter(args)
@@ -307,6 +345,6 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
 
         if len(merged_n_args) == 1:
             return merged_n_args[0]
-        return NormType(origin, merged_n_args)
+        return NormType(origin, merged_n_args, source=tp)
 
-    return NormType(origin, _norm_iter(args))
+    return NormType(origin, _norm_iter(args), source=tp)
