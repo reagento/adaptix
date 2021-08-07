@@ -84,6 +84,8 @@ def test_defaults():
 
 BarA = NamedTuple('BarA', a=int, b=str)
 
+# ClassVar do not supported in NamedTuple
+
 
 class BarB(NamedTuple):
     a: int
