@@ -44,15 +44,15 @@ def test_generic_default(tp: Any):
 
 def test_generic_match():
     assert match(
-        GenCo[T_co], GenCo[int]
+        GenCo[int], GenCo[T_co]
     ) == {T_co: int}
 
     assert match(
-        GenContra[T_contra], GenContra[int]
+        GenContra[int], GenContra[T_contra]
     ) == {T_contra: int}
 
     assert match(
-        GenInv[T_inv], GenInv[int]
+        GenInv[int], GenInv[T_inv]
     ) == {T_inv: int}
 
 
@@ -163,20 +163,20 @@ def test_generic_default_bound(tp: Any):
 
 def test_generic_bound():
     assert_swapped_is_subtype(
-        GenCo[SubClass],
-        GenCo[Class],
+        BGenCo[SubClass],
+        BGenCo[Class],
     )
     assert_swapped_is_subtype(
-        GenContra[Class],
-        GenContra[SubClass],
+        BGenContra[Class],
+        BGenContra[SubClass],
     )
     assert not is_subtype(
-        GenInv[Class],
-        GenInv[SubClass],
+        BGenInv[Class],
+        BGenInv[SubClass],
     )
     assert not is_subtype(
-        GenInv[SubClass],
-        GenInv[Class],
+        BGenInv[SubClass],
+        BGenInv[Class],
     )
 
 

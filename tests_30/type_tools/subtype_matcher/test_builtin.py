@@ -63,8 +63,8 @@ def test_tags(tp):
 @pytest.mark.parametrize(
     'tp',
     [
-        List, Type, FrozenSet,
-        Counter, Counter, Set,
+        List, Type, Counter,
+        FrozenSet, Set,
     ],
     ids=id_gen,
 )
@@ -89,8 +89,8 @@ def test_builtin_generic_one_arg(tp):
 @pytest.mark.parametrize(
     'tp',
     [
-        Dict, DefaultDict, FrozenSet,
-        OrderedDict, ChainMap, Set,
+        Dict, DefaultDict,
+        OrderedDict, ChainMap,
     ],
     ids=id_gen,
 )
@@ -147,6 +147,28 @@ def test_literal():
 
 
 def test_union():
+    assert_swapped_is_subtype(
+        int,
+        Union[int, str],
+    )
+    assert_swapped_is_subtype(
+        bool,
+        Union[int, str],
+    )
+    assert_swapped_is_subtype(
+        str,
+        Union[int, str],
+    )
+
+    assert is_subtype(
+        Union[int, bool],
+        int,
+    )
+    assert is_subtype(
+        int,
+        Union[int, bool],
+    )
+
     assert is_subtype(
         Union[int, str],
         Union[int, str],
@@ -319,23 +341,84 @@ class BadImplProto:
         pass
 
 
+class InheritedImplProto(Proto):
+    def foo(self) -> bool:
+        pass
+
+
+class InheritedBadImplProto(Proto):
+    def foo(self) -> str:
+        pass
+
+
+class InheritedImplRtProto(RtProto):
+    def foo(self) -> bool:
+        pass
+
+
+class InheritedBadImplRtProto(RtProto):
+    def foo(self) -> str:
+        pass
+
+
+class ProtoAttr:
+    foo = '123'
+
+
+class OtherProto(Protocol):
+    def foo(self) -> bool:
+        pass
+
+
+@runtime_checkable
+class OtherRtProto(Protocol):
+    def foo(self) -> bool:
+        pass
+
+
 def test_protocol():
-    assert_swapped_is_subtype(
-        ImplProto,
-        Proto,
-    )
-    assert_swapped_is_subtype(
-        BadImplProto,
-        Proto,
-    )
+    with pytest.raises(ValueError):
+        is_subtype(ImplProto, Proto)
 
     assert_swapped_is_subtype(
         ImplProto,
         RtProto,
     )
+    # we checks only methods name
     assert_swapped_is_subtype(
         BadImplProto,
         RtProto,
+    )
+
+    assert_swapped_is_subtype(
+        InheritedImplRtProto,
+        RtProto,
+    )
+    # we checks only methods name
+    assert_swapped_is_subtype(
+        InheritedBadImplRtProto,
+        RtProto,
+    )
+
+    with pytest.raises(ValueError):
+        is_subtype(InheritedImplProto, Proto)
+
+    with pytest.raises(ValueError):
+        is_subtype(InheritedBadImplProto, Proto)
+
+    # It is a consequence of builtin runtime_checkable limited behaviour
+    assert is_subtype(
+        ProtoAttr,
+        RtProto
+    )
+
+    assert not is_subtype(
+        OtherRtProto,
+        RtProto
+    )
+    assert not is_subtype(
+        OtherProto,
+        RtProto
     )
 
 
@@ -359,13 +442,13 @@ class TDSmallUT(TypedDict, total=False):
 
 def test_typed_dict():
     assert_swapped_is_subtype(
-        TDBig,
         TDSmall,
+        TDBig,
     )
 
     assert_swapped_is_subtype(
-        TDBigUT,
         TDSmallUT,
+        TDBigUT,
     )
 
     # we repeat behavior of PyCharm and MyPy
@@ -374,3 +457,9 @@ def test_typed_dict():
 
     assert not is_subtype(TDBig, TDSmallUT)
     assert not is_subtype(TDSmallUT, TDBig)
+
+    assert not is_subtype(TDSmallUT, dict)
+    assert not is_subtype(dict, TDSmallUT)
+
+    assert not is_subtype(TDSmall, dict)
+    assert not is_subtype(dict, TDSmall)
