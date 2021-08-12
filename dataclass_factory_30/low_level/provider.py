@@ -1,78 +1,99 @@
-from abc import ABC, abstractmethod
-from typing import Optional, Type, TypeVar, List, final
+from dataclasses import dataclass
+from typing import TypeVar, Type, Union, List, Callable
 
-from ..common import Json, Parser, Serializer
-from ..core import Provider, BaseFactory, ProvisionCtx, provision_action
-from .pipeline import PipelineEvalMixin, PipeliningMixin
+from .fields import FieldsProvisionCtx
+from .provider_tmpl import ParserProvider
+from ..common import Parser
+from ..core import Provider, BaseFactory, ProvisionCtx, CannotProvide, NoSuitableProvider
 
 T = TypeVar('T')
 
 
-class ParserProvider(Provider[Parser], PipelineEvalMixin, PipeliningMixin, ABC):
-    @provision_action
-    @abstractmethod
+class ProvCtxChecker:
+    ALLOWS = Union[type, str]
+
+    # TODO: Add support for type hint as pred
+    def __init__(self, pred: ALLOWS):
+        if not isinstance(pred, (str, type)):
+            raise TypeError(f'Expected {self.ALLOWS}')
+
+        self.pred = pred
+
+    def __call__(self, ctx: ProvisionCtx) -> bool:
+        if isinstance(self.pred, str):
+            if isinstance(ctx, FieldsProvisionCtx):
+                return self.pred == ctx.field_name
+            raise CannotProvide
+
+        return issubclass(ctx.type, self.pred)
+
+
+@dataclass
+class AsProvider(Provider[T]):
+    provider_tmpl: Type[Provider[T]]
+    ctx_checker: ProvCtxChecker
+    provision: T
+
+    def _provide_other(
+        self,
+        provider_tmpl: 'Type[Provider[T]]',
+        factory: 'BaseFactory',
+        offset: int,
+        ctx: ProvisionCtx
+    ) -> T:
+        if self.provider_tmpl == provider_tmpl:
+            raise CannotProvide
+
+        if self.ctx_checker(ctx):
+            return self.provision
+
+        raise CannotProvide
+
+
+class NextProvider(Provider):
+    def _provide_other(
+        self,
+        provider_tmpl: 'Type[Provider[T]]',
+        factory: 'BaseFactory',
+        offset: int,
+        ctx: ProvisionCtx
+    ) -> T:
+        return factory.provide(provider_tmpl, offset + 1, ctx)
+
+
+@dataclass
+class FromFactoryProvider(Provider[T]):
+    provider_tmpl_list: List[Type[Provider[T]]]
+    ctx_checker: ProvCtxChecker
+    factory: BaseFactory
+
+    def _provide_other(
+        self,
+        provider_tmpl: 'Type[Provider[T]]',
+        factory: 'BaseFactory',
+        offset: int,
+        ctx: ProvisionCtx
+    ) -> T:
+        if provider_tmpl not in self.provider_tmpl_list:
+            raise CannotProvide
+
+        if not self.ctx_checker(ctx):
+            raise CannotProvide
+
+        try:
+            return self.factory.provide(provider_tmpl, offset, ctx)
+        except NoSuitableProvider:
+            raise CannotProvide
+
+
+@dataclass
+class ConstructorParserProvider(ParserProvider):
+    ctx_checker: ProvCtxChecker
+    constructor: Callable
+
     def _provide_parser(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> Parser:
-        raise NotImplementedError
+        if not self.ctx_checker(ctx):
+            raise CannotProvide
 
-    @classmethod
-    @final
-    def eval_pipeline(
-        cls: Type[Provider[Parser]],
-        providers: List[Provider],
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> Parser:
-        parsers = [
-            prov.provide(cls, factory, offset, ctx) for prov in providers
-        ]
-
-        def pipeline_parser(value):
-            result = value
-            for prs in parsers:
-                result = prs(result)
-            return result
-
-        return pipeline_parser
-
-
-class SerializerProvider(Provider, PipelineEvalMixin, PipeliningMixin, ABC):
-    @provision_action
-    @abstractmethod
-    def _provide_serializer(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> Serializer:
-        raise NotImplementedError
-
-    @classmethod
-    @final
-    def eval_pipeline(
-        cls: Type[Provider[Serializer]],
-        providers: List[Provider],
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> Serializer:
-        serializers = [
-            prov.provide(cls, factory, offset, ctx) for prov in providers
-        ]
-
-        def pipeline_serializer(value):
-            result = value
-            for srz in serializers:
-                result = srz(result)
-            return result
-
-        return pipeline_serializer
-
-
-class JsonSchemaProvider(Provider[Json], ABC):
-    @provision_action
-    @abstractmethod
-    def _provide_json_schema(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> Json:
-        raise NotImplementedError
-
-
-class NameMappingProvider(Provider[Optional[str]], ABC):
-    @provision_action
-    @abstractmethod
-    def _provide_name_mapping(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> Optional[str]:
-        raise NotImplementedError
+        # TODO: finish up
+        raise RuntimeError
