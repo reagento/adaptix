@@ -192,7 +192,7 @@ class DefaultSubtypeMatcher(SubtypeMatcher):
 
         return all(
             self._match(ctx, source[name], other[name])
-            for name in source_keys & other_keys
+            for name in source_keys
         )
 
     def _match_by_template(self, ctx: MatchCtx, tmpl: NormTV, tp: BaseNormType, sub_tp: BaseNormType) -> bool:
@@ -216,7 +216,7 @@ class DefaultSubtypeMatcher(SubtypeMatcher):
         if isinstance(tp, NormTV):
             return self._match_type_var(ctx, tp, sub_tp, straight=False)
 
-        old_s_ctx = copy(ctx.ma)
+        old_s_ctx = copy(ctx.match)
         old_o_ctx = copy(ctx.o_ctx)
 
         result = self._o_match_dispatch(ctx, tp, sub_tp)
@@ -285,9 +285,6 @@ class DefaultSubtypeMatcher(SubtypeMatcher):
         )
 
     def _match_protocol(self, ctx: MatchCtx, tp: BaseNormType, sub_tp: BaseNormType) -> bool:
-        if not isinstance(sub_tp.origin, type):
-            return False
-
         if is_protocol(sub_tp.origin):
             return False
 

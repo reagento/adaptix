@@ -207,10 +207,11 @@ def _dedup(inp: Iterable) -> List:
 
 
 def _create_norm_literal(args):
+    dedup_args = _dedup(args)
     return NormType(
-        Literal, args,
+        Literal, dedup_args,
         source=Literal.__getitem__(
-            tuple(args)  # type: ignore
+            tuple(dedup_args)  # type: ignore
         )
     )
 
