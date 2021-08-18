@@ -33,6 +33,10 @@ def _norm_dict_values(dct):
 
 @dataclass
 class MatchCtx:
+    """Functions that matching types
+    can add some info to s_ctx and o_ctx
+    that can be used by other functions further
+    """
     match: Dict[NormTV, BaseNormType]
     s_ctx: MutableMapping
     o_ctx: MutableMapping
@@ -223,6 +227,8 @@ class DefaultSubtypeMatcher(SubtypeMatcher):
 
         ctx.s_ctx = old_s_ctx
         ctx.o_ctx = old_o_ctx
+
+        return result
 
     def _match_generic_type(self, ctx: MatchCtx, tp: BaseNormType, sub_tp: BaseNormType) -> bool:
         if not is_subclass_soft(sub_tp.origin, tp.origin):
