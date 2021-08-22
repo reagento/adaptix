@@ -1,28 +1,35 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, Field as DCField
+from abc import abstractmethod, ABC
+from dataclasses import dataclass, field
 from inspect import isfunction
-from typing import Callable, TypeVar, Generic, Tuple, final, Type, List, Optional
+from typing import Type, TypeVar, Generic, final, Optional, Callable, ClassVar, List, Set, Tuple, Any, Sequence
 
-from dataclass_factory_30.common import TypeHint
+T = TypeVar('T')
 
 
 @dataclass(frozen=True)
-class ProvisionCtx:
-    type: TypeHint
+class Request(Generic[T]):
+    """An object that contains data to be processed by Provider.
+
+    Generic argument indicates which object should be
+    returned after request processing
+    """
 
 
 @dataclass
 class CannotProvide(Exception):
-    description: Optional[str] = None
+    msg: Optional[str] = None
+    sub_errors: Sequence['CannotProvide'] = field(default_factory=list)
 
 
-class NoSuitableProvider(ValueError):
-    pass
+class SearchState(ABC):
+    @abstractmethod
+    def start_from_next(self: T) -> T:
+        """Start search from subsequent item of full recipe"""
 
 
-T = TypeVar('T')
 V = TypeVar('V')
 ProviderTV = TypeVar('ProviderTV', bound='Provider')
+RequestTV = TypeVar('RequestTV', bound=Request)
 
 
 def _make_pipeline(left, right) -> 'Pipeline':
@@ -42,9 +49,7 @@ def _make_pipeline(left, right) -> 'Pipeline':
 
 
 class PipeliningMixin:
-    """
-    A mixin that makes your class able to create a pipeline
-    """
+    """A mixin that makes your class able to create a pipeline"""
 
     @final
     def __or__(self, other) -> 'Pipeline':
@@ -55,190 +60,190 @@ class PipeliningMixin:
         return _make_pipeline(other, self)
 
 
-def provision_action(func: Callable[[ProviderTV, 'BaseFactory', int, ProvisionCtx], T]):
-    """
-    Marks method as provision_action.
+def provision_action(request_cls: Type[RequestTV]):
+    """Marks method as provision_action and attaches specified request class
 
     See :class:`Provider` for details.
     """
-    func._is_provision_action = True  # type: ignore
-    return func
+
+    def decorator(func: Callable[[ProviderTV, 'BaseFactory', SearchState, RequestTV], T]):
+        func._pa_request_cls = request_cls  # type: ignore
+
+    return decorator
 
 
-def _get_provider_tmpl_pam(cls: 'Type[Provider[T]]') -> str:
-    try:
-        pam = cls._provision_action_method  # type: ignore
-    except AttributeError:
-        raise ValueError(f'{cls} has no defined provision action')
-
-    if pam is None:
-        raise ValueError(f'{cls} has several provision action')
-
-    return pam
-
-
-class Provider(PipeliningMixin, Generic[T], ABC):
+class Provider(PipeliningMixin):
     """Provider is a central part of core API.
-    It takes information about a searched target and returns the expected instance.
-    For example, :class:`ParserProvider` returns parser,
-    :class:`NameMappingProvider` returns a new name of a field or None
-    if this field must be omitted.
 
-    If you want to apply provider you have to use only :method:`provide`.
+    Providers can define special methods that can process Request instance.
+    They are called provision action and could be created
+    by @provision_action decorator.
+    You have to attach Request class to every provision action.
+    Factory will select provision action
+    which Request type will be supertype of actual request
+    and will be the most closest in mro to actual
 
-    You can define ProviderTemplate if you mark one of the methods by @provision_action.
-    The marked method will be used by :method:`provide` if you pass this class to provider_tmpl argument.
+    You can not define several provision action that attached to one request class.
 
-    The class can define only one @provision_action.
-    You can not define a new @provision_action if the parent class has already defined one.
+    Child class inherits all provision action.
+    You can delete inherited provision action by setting such attribute to None.
 
-    So, if a class has only one method in MRO marked as @provision_action it is a ProviderTemplate.
+    Each provision action takes BaseFactory, SearchState and instance of attached Request subclass.
+    SearchState is created by Factory.
 
-    Provision action should be private and must be never called directly.
+    All registered provision actions are stored in request_dispatching class variable.
+    It's calculating at class initialization and never should be changing by other ways.
 
-    Provider subclass can mix several ProviderTemplate and redefine its provision actions, but
-    such class can not act as ProviderTemplate.
-
-    Any provision action must return the expected value otherwise raise :exception:`CannotProvide`.
-
-    Also, a provider can redefine :method:`_provide_other`.
-    It is called if the main method has raised :exception:`CannotProvide`
-    By default, it always raises CannotProvide
+    Any provision action must return value of expected type otherwise raise :exception:`CannotProvide`.
     """
+    request_dispatching: ClassVar[Any] = {}
 
     def __init_subclass__(cls, **kwargs):
-        provision_action_list = [
-            name for name, attr in vars(cls).items()
-            if isfunction(attr) and getattr(attr, '_is_provision_action', False)
+        # pa - provision action
+
+        # noinspection PyProtectedMember
+        new_pa = [
+            (name, attr._pa_request_cls)
+            for name, attr in vars(cls).items()
+            if isfunction(attr) and hasattr(attr, '_pa_request_cls')
         ]
 
-        if len(provision_action_list) > 1:
-            raise ValueError('Class can not define several @provision_action')
+        # first mro entries must override subsequent entries
+        parent_dispatching = {}
+        for base in cls.__bases__:
+            base_dispatching = getattr(base, 'request_dispatching', {})
+            for key, value in base_dispatching.items():
+                parent_dispatching.setdefault(key, value)
 
-        parents_pam_count = [
-            '_provision_action_method' in vars(parent) for parent in cls.mro()
-        ].count(True)
+        new_pa_none: Set[str] = set()
+        for attr_name in parent_dispatching.values():
+            if getattr(cls, attr_name, 0) is None:
+                new_pa_none.add(attr_name)
 
-        if len(provision_action_list) == 1:
-            if parents_pam_count > 0:
-                raise ValueError(
-                    'You cannot define a @provision_action'
-                    ' because parent has already defined it'
+        result = {
+            key: value for key, value in parent_dispatching.items()
+            if value not in new_pa_none
+        }
+
+        for attr_name, request_cls in new_pa:
+            if request_cls in result:
+                old_name = result[request_cls].__name__
+                new_name = request_cls.__name__
+
+                description = (
+                    'Duplication of attached request class'
+                    f' (`{old_name}` and `{new_name}`).'
+                    f' You should explicitly set `{old_name}` to None'
+                    f' or insert `{new_name}` into `{old_name}`'
                 )
+                raise ValueError(description)
 
-            cls._provision_action_method = provision_action_list[0]
-        else:
-            if parents_pam_count > 1 and cls._provision_action_method is not None:
-                cls._provision_action_method = None
+            result[request_cls] = attr_name
 
-    def _provide_other(
-        self,
-        provider_tmpl: 'Type[Provider[T]]',
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> T:
-        """Dynamic provision action.
-        See :class:`Provider` for details.
-        """
-        raise CannotProvide
+        cls.request_dispatching = result
 
-    @final
-    def provide(
-        self,
-        provider_tmpl: 'Type[Provider[T]]',
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> T:
-        """Returns provision result or raises :exception:`CannotProvide`
 
-        See :class:`Provider` for details.
-        """
-        attr_name = _get_provider_tmpl_pam(provider_tmpl)
-        if isinstance(self, provider_tmpl):
+
+def _get_kinship(sub_cls: type, cls: type) -> int:
+    return sub_cls.mro().index(cls)
+
+
+def find_provision_action_attr_name(request_cls: Type[Request], provider_cls: Type[Provider]) -> Optional[str]:
+    """Finds the most appropriate method in provider_cls
+    to call that can process specified request_cls.
+    If there are no method that can handle such request will return None
+    """
+    try:
+        return provider_cls.request_dispatching[request_cls]
+    except KeyError:
+        min_kinship = None
+        mk_attr_name = None
+
+        for cls, attr_name in provider_cls.request_dispatching.items():
             try:
-                return getattr(self, attr_name)(factory, offset, ctx)
-            except CannotProvide:
-                pass
+                kinship = _get_kinship(request_cls, cls)
+            except ValueError:
+                continue
 
-        return self._provide_other(provider_tmpl, factory, offset, ctx)
+            if min_kinship is None or kinship < min_kinship:
+                min_kinship = kinship
+                mk_attr_name = attr_name
+
+        return mk_attr_name
 
 
-def _get_class_own_recipe(cls: type):
-    if (
-        issubclass(cls, BaseFactory)
-        and 'recipe' in vars(cls)
-        and not isinstance(cls.recipe, DCField)
-    ):
-        return cls.recipe
-    return []
+class NoSuitableProvider(ValueError):
+    pass
 
 
 class BaseFactory(ABC):
-    """Factory creates requested object using a recipe.
+    """Factory responds to requests object using a recipe.
 
     The recipe is a list that consists of :class:`Provider` or objects
-    that a factory could cast to Provider.
+    that a factory could cast to Provider via :method:`ensure_provider`.
 
     When you call :method:`provide`, a factory look for a suitable provider in a full recipe.
     The Full recipe is a sum of instance recipe and class recipe in MRO.
     See :method:`provide` for details of this process.
 
     :method:`provide` is a low-level method. Subclasses should introduce own user-friendly methods
-    like `.parser(type)` of :class:`ParserFactory` or `.json_schema()` of :class:`JsonSchemaFactory`
+    like `.parser()` of :class:`ParserFactory` or `.json_schema()` of :class:`JsonSchemaFactory`
     """
     recipe: list
 
     @abstractmethod
     def ensure_provider(self, value) -> Provider:
         """Create :class:`Provider` instance from value
-        This method is used by :method:`provide` to convert each item of full_recipe
+        This method have to be used by :method:`provide` to convert each item of full recipe
         to provider.
 
         :raise ValueError: Con not create Provider from given object
         """
         raise NotImplementedError
 
-    def _full_recipe(self) -> list:
-        """
+    @abstractmethod
+    def create_init_search_state(self) -> SearchState:
+        raise NotImplementedError
 
-        :return: A
-        """
-        result = self.recipe.copy()
-        for item in type(self).mro():
-            result.extend(
-                _get_class_own_recipe(item)
-            )
-        return result
+    @abstractmethod
+    def provide(self, s_state: SearchState, request: Request[T]) -> T:
+        """Get response of sent request.
 
-    @final
-    def provide(self, provider_tmpl: Type[Provider[T]], offset: int, ctx: ProvisionCtx) -> T:
-        """Provide expected value. Suitable provider searching in Full recipe
-         that obtained by :method:`_full_recipe`
-
-        :param provider_tmpl: Provider Template. See :class:`Provider` for details
-        :param offset: Offset in Full recipe where need to start the search.
-                       If offset is greater than the length of Full recipe
-                       the method will try no providers, stop search
-                       and so raise :class:`ValueError`
-        :param ctx: Extensible context of search
-        :return: Provision result. The type determines by :param provider_tmpl:
-        :raise NoSuitableProvider: There is no suitable provider in the Full recipe
+        :param s_state: Search State of Factory.
+                        If factory should start search from begging,
+                        pass a result of :method:`create_init_search_state`
+        :param request:
+        :return: A result of request processing
+        :raise NoSuitableProvider: A provider that can process request does not found
         """
-        full_recipe = self._full_recipe()
-        for idx, item in enumerate(full_recipe[offset:], start=offset):
-            provider = self.ensure_provider(item)
-            try:
-                return provider.provide(provider_tmpl, self, offset, ctx)
-            except CannotProvide:
-                pass
-        raise NoSuitableProvider(f'{self} can not create provider for {ctx}')
+        raise NotImplementedError
+
+
+def _get_class_own_recipe(cls: type) -> list:
+    if (
+        issubclass(cls, BaseFactory)
+        and 'recipe' in vars(cls)
+        and isinstance(cls.recipe, list)
+    ):
+        return cls.recipe
+    return []
+
+
+def collect_class_full_recipe(factory_cls: Type[BaseFactory]) -> list:
+    """Creates full recipe by concatenating all recipe attributes
+    of classes in mro until BaseFactory.
+    If recipe attribute is not a list (e.g. dataclasses.Field) it will be ignored
+    """
+    result = []
+    for item in factory_cls.mro():
+        result.extend(
+            _get_class_own_recipe(item)
+        )
+    return result
 
 
 class PipelineEvalMixin(ABC):
-    """
-    A special mixin for Provider Template that allows to eval pipeline.
+    """A special mixin for Request that allows to eval pipeline.
     Subclass should implement :method:`eval_pipeline`
     """
 
@@ -247,9 +252,9 @@ class PipelineEvalMixin(ABC):
     def eval_pipeline(
         cls,
         providers: List[Provider],
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: Request
     ):
         pass
 
@@ -258,18 +263,13 @@ class PipelineEvalMixin(ABC):
 class Pipeline(Provider, PipeliningMixin, Generic[V]):
     elements: Tuple[V, ...]
 
-    def _provide_other(
-        self,
-        provider_tmpl: 'Type[Provider[T]]',
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> T:
-        if not issubclass(provider_tmpl, PipelineEvalMixin):
+    @provision_action(Request)
+    def _proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request):
+        if not issubclass(type(request), PipelineEvalMixin):
             raise CannotProvide
 
         providers = [factory.ensure_provider(el) for el in self.elements]
 
-        return provider_tmpl.eval_pipeline(
-            providers, factory, offset, ctx
+        return request.eval_pipeline(  # type: ignore
+            providers, factory, s_state, request
         )
