@@ -43,4 +43,4 @@ class ConstrainingProxyProvider(Provider):
     @provision_action(TypeRequest)
     def _cpp_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: TypeRequest[T]) -> T:
         self.tr_checker(request)
-        return self.provider.provide(factory, s_state, request)
+        return self.provider.apply_provider(factory, s_state, request)

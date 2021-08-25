@@ -144,7 +144,7 @@ class Provider(PipeliningMixin):
         cls.request_dispatching = result
 
     @final
-    def provide(self, factory: 'BaseFactory', s_state: SearchStateTV, request: Request[T]) -> T:
+    def apply_provider(self, factory: 'BaseFactory', s_state: SearchStateTV, request: Request[T]) -> T:
         """This method is suitable wrapper around find_provision_action_attr_name and getattr.
         Factory may not use this method implementing own cached provision action call.
         """

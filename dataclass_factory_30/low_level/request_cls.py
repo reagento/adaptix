@@ -29,7 +29,7 @@ class ParserRequest(TypeRequest[Parser], PipelineEvalMixin):
         request: Request
     ):
         parsers = [
-            prov.provide(factory, s_state, request) for prov in providers
+            prov.apply_provider(factory, s_state, request) for prov in providers
         ]
 
         def pipeline_parser(value):
@@ -51,7 +51,7 @@ class SerializerRequest(TypeRequest[Serializer], PipelineEvalMixin):
         request: Request
     ):
         serializers = [
-            prov.provide(factory, s_state, request) for prov in providers
+            prov.apply_provider(factory, s_state, request) for prov in providers
         ]
 
         def pipeline_serializer(value):
