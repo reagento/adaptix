@@ -30,6 +30,7 @@ class SearchState(ABC):
 V = TypeVar('V')
 ProviderTV = TypeVar('ProviderTV', bound='Provider')
 RequestTV = TypeVar('RequestTV', bound=Request)
+SearchStateTV = TypeVar('SearchStateTV', bound=SearchState)
 
 
 def _make_pipeline(left, right) -> 'Pipeline':
@@ -142,6 +143,17 @@ class Provider(PipeliningMixin):
 
         cls.request_dispatching = result
 
+    @final
+    def provide(self, factory: 'BaseFactory', s_state: SearchStateTV, request: Request[T]) -> T:
+        """This method is suitable wrapper around find_provision_action_attr_name and getattr.
+        Factory may not use this method implementing own cached provision action call.
+        """
+        attr_name = find_provision_action_attr_name(type(request), type(self))
+
+        if attr_name is None:
+            raise CannotProvide
+
+        return getattr(self, attr_name)(factory, s_state, request)
 
 
 def _get_kinship(sub_cls: type, cls: type) -> int:
@@ -176,7 +188,7 @@ class NoSuitableProvider(ValueError):
     pass
 
 
-class BaseFactory(ABC):
+class BaseFactory(ABC, Generic[SearchStateTV]):
     """Factory responds to requests object using a recipe.
 
     The recipe is a list that consists of :class:`Provider` or objects
@@ -202,11 +214,11 @@ class BaseFactory(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def create_init_search_state(self) -> SearchState:
+    def create_init_search_state(self) -> SearchStateTV:
         raise NotImplementedError
 
     @abstractmethod
-    def provide(self, s_state: SearchState, request: Request[T]) -> T:
+    def provide(self, s_state: SearchStateTV, request: Request[T]) -> T:
         """Get response of sent request.
 
         :param s_state: Search State of Factory.
