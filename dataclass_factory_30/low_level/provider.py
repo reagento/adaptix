@@ -1,15 +1,13 @@
 from dataclasses import dataclass
-from typing import TypeVar, Type, Union, List, Callable
+from typing import TypeVar, Union
 
-from .fields import FieldsProvisionCtx
-from .provider_tmpl import ParserProvider
-from ..common import Parser
-from ..core import Provider, BaseFactory, ProvisionCtx, CannotProvide, NoSuitableProvider
+from .request_cls import TypeRequest, TypeFieldRequest
+from ..core import Provider, BaseFactory, CannotProvide, provision_action, Request, SearchState
 
 T = TypeVar('T')
 
 
-class ProvCtxChecker:
+class TypeRequestChecker:
     ALLOWS = Union[type, str]
 
     # TODO: Add support for type hint as pred
@@ -19,81 +17,30 @@ class ProvCtxChecker:
 
         self.pred = pred
 
-    def __call__(self, ctx: ProvisionCtx) -> bool:
+    def __call__(self, request: TypeRequest) -> bool:
         if isinstance(self.pred, str):
-            if isinstance(ctx, FieldsProvisionCtx):
-                return self.pred == ctx.field_name
+            if isinstance(request, TypeFieldRequest):
+                return self.pred == request.field_name
             raise CannotProvide
 
-        return issubclass(ctx.type, self.pred)
-
-
-@dataclass
-class AsProvider(Provider[T]):
-    provider_tmpl: Type[Provider[T]]
-    ctx_checker: ProvCtxChecker
-    provision: T
-
-    def _provide_other(
-        self,
-        provider_tmpl: 'Type[Provider[T]]',
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> T:
-        if self.provider_tmpl == provider_tmpl:
+        if not isinstance(request.type, type):
             raise CannotProvide
 
-        if self.ctx_checker(ctx):
-            return self.provision
-
-        raise CannotProvide
+        return issubclass(request.type, self.pred)
 
 
 class NextProvider(Provider):
-    def _provide_other(
-        self,
-        provider_tmpl: 'Type[Provider[T]]',
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> T:
-        return factory.provide(provider_tmpl, offset + 1, ctx)
+    @provision_action(Request)
+    def _np_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request[T]) -> T:
+        return factory.provide(s_state.start_from_next(), request)
 
 
 @dataclass
-class FromFactoryProvider(Provider[T]):
-    provider_tmpl_list: List[Type[Provider[T]]]
-    ctx_checker: ProvCtxChecker
-    factory: BaseFactory
+class ConstrainingProxyProvider(Provider):
+    tr_checker: TypeRequestChecker
+    provider: Provider
 
-    def _provide_other(
-        self,
-        provider_tmpl: 'Type[Provider[T]]',
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> T:
-        if provider_tmpl not in self.provider_tmpl_list:
-            raise CannotProvide
-
-        if not self.ctx_checker(ctx):
-            raise CannotProvide
-
-        try:
-            return self.factory.provide(provider_tmpl, offset, ctx)
-        except NoSuitableProvider:
-            raise CannotProvide
-
-
-@dataclass
-class ConstructorParserProvider(ParserProvider):
-    ctx_checker: ProvCtxChecker
-    constructor: Callable
-
-    def _provide_parser(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> Parser:
-        if not self.ctx_checker(ctx):
-            raise CannotProvide
-
-        # TODO: finish up
-        raise RuntimeError
+    @provision_action(TypeRequest)
+    def _cpp_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: TypeRequest[T]) -> T:
+        self.tr_checker(request)
+        return self.provider.provide(factory, s_state, request)

@@ -1,122 +1,150 @@
 import inspect
-from abc import abstractmethod
 from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField
+from enum import Enum
 from inspect import Signature, Parameter
+from operator import getitem
 from types import MappingProxyType
-from typing import Any, Callable, Union, List, get_type_hints
+from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Optional, Callable
 
-from ..core import ProvisionCtx, Provider, BaseFactory, provision_action, CannotProvide
+from .request_cls import TypeFieldRequest, NoDefault, DefaultValue, Default, DefaultFactory
+from ..core import BaseFactory, CannotProvide, Provider, provision_action, SearchState, Request
 from ..type_tools.utils import is_typed_dict_class, is_named_tuple_class
 
+T = TypeVar('T')
+
+
+class GetterKind(Enum):
+    ATTR = 0
+    ITEM = 1
+
+    def to_function(self) -> Callable[[Any, str], Any]:
+        return _GETTER_KIND_TO_FUNCTION[self]  # type: ignore
+
+
+_GETTER_KIND_TO_FUNCTION = {
+    GetterKind.ATTR: getattr,
+    GetterKind.ITEM: getitem,
+}
+
+
+class ExtraVariant(Enum):
+    SKIP = 0
+    FORBID = 1
+    KWARGS = 2
+
 
 @dataclass(frozen=True)
-class NoDefault:
-    field_is_required: bool
+class ExtraTargets:
+    fields: List[str]
 
 
-@dataclass(frozen=True)
-class DefaultValue:
-    value: Any
+Extra = Union[ExtraVariant, ExtraTargets]
 
 
-@dataclass(frozen=True)
-class DefaultFactory:
-    factory: Callable[[], Any]
+@dataclass
+class InputFieldsFigure:
+    fields: List[TypeFieldRequest]
+    extra: Optional[Extra]
 
 
-Default = Union[NoDefault, DefaultValue, DefaultFactory]
+@dataclass
+class OutputFieldsFigure:
+    fields: List[TypeFieldRequest]
+    getter_kind: GetterKind
 
 
-@dataclass(frozen=True)
-class FieldsProvisionCtx(ProvisionCtx):
-    field_name: str
-    default: Default
-    metadata: MappingProxyType
+class AnyFFRequest(Request, Generic[T]):
+    type: type
 
 
-class InputFieldsProvider(Provider[List[FieldsProvisionCtx]]):
-    @abstractmethod
-    @provision_action
-    def _provide_input_fields(
-        self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        pass
+class InputFFRequest(AnyFFRequest[InputFieldsFigure]):
+    pass
 
 
-class OutputFieldsProvider(Provider[List[FieldsProvisionCtx]]):
-    @abstractmethod
-    @provision_action
-    def _provide_output_fields(
-        self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        pass
+class OutputFFRequest(AnyFFRequest[OutputFieldsFigure]):
+    pass
 
 
-def get_func_fields_prov_ctx(func, slice_=slice(0, None)) -> List[FieldsProvisionCtx]:
+def get_func_iff(func, slice_=slice(0, None)) -> InputFieldsFigure:
     params = list(
         inspect.signature(func).parameters.values()
     )[slice_]
 
     if not all(
-        p.kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY)
+        p.kind in (
+            Parameter.POSITIONAL_OR_KEYWORD,
+            Parameter.KEYWORD_ONLY,
+            Parameter.VAR_KEYWORD
+        )
         for p in params
     ):
         raise ValueError(
-            'Can not create consistent FieldsProvisionCtx'
+            'Can not create consistent InputFieldsFigure'
             ' from the function that has not only'
-            ' POSITIONAL_OR_KEYWORD or KEYWORD_ONLY parameters'
+            ' POSITIONAL_OR_KEYWORD or KEYWORD_ONLY or VAR_KEYWORD'
+            ' parameters'
         )
 
-    return [
-        FieldsProvisionCtx(
-            type=(
-                Any
-                if param.annotation is Signature.empty
-                else param.annotation
-            ),
-            field_name=param.name,
-            default=(
-                NoDefault(field_is_required=True)
-                if param.default is Signature.empty
-                else DefaultValue(param.default)
-            ),
-            metadata=MappingProxyType({}),
-        )
-        for param in params
-    ]
+    extra: Optional[Extra]
+    if any(p.kind == Parameter.VAR_KEYWORD for p in params):
+        extra = ExtraVariant.KWARGS
+    else:
+        extra = None
+
+    return InputFieldsFigure(
+        fields=[
+            TypeFieldRequest(
+                type=(
+                    Any
+                    if param.annotation is Signature.empty
+                    else param.annotation
+                ),
+                field_name=param.name,
+                default=(
+                    NoDefault(field_is_required=True)
+                    if param.default is Signature.empty
+                    else DefaultValue(param.default)
+                ),
+                metadata=MappingProxyType({}),
+            )
+            for param in params
+        ],
+        extra=extra,
+    )
 
 
-class NamedTupleFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
-    def _get_fields(self, tp: type) -> List[FieldsProvisionCtx]:
+class NamedTupleFieldsProvider(Provider):
+    def _get_input_fields_figure(self, tp: type) -> InputFieldsFigure:
         if not is_named_tuple_class(tp):
             raise CannotProvide
 
-        return get_func_fields_prov_ctx(tp.__new__, slice(1, None))
+        return get_func_iff(tp.__new__, slice(1, None))
 
-    def _provide_input_fields(
+    # noinspection PyUnusedLocal
+    @provision_action(InputFFRequest)
+    def _provide_input_fields_figure(
         self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        return self._get_fields(ctx.type)
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: InputFFRequest
+    ) -> InputFieldsFigure:
+        return self._get_input_fields_figure(request.type)
 
-    def _provide_output_fields(
+    # noinspection PyUnusedLocal
+    @provision_action(OutputFFRequest)
+    def _provide_output_fields_figure(
         self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        return self._get_fields(ctx.type)
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: OutputFFRequest
+    ) -> OutputFieldsFigure:
+        return OutputFieldsFigure(
+            fields=self._get_input_fields_figure(request.type).fields,
+            getter_kind=GetterKind.ATTR,
+        )
 
 
-class TypedDictInputFieldsProvider(InputFieldsProvider):
+class TypedDictFieldsProvider(Provider):
     def _get_fields(self, tp):
         if not is_typed_dict_class(tp):
             raise CannotProvide
@@ -124,7 +152,7 @@ class TypedDictInputFieldsProvider(InputFieldsProvider):
         is_required = tp.__total__
 
         return [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=tp,
                 field_name=name,
                 default=NoDefault(field_is_required=is_required),
@@ -133,13 +161,31 @@ class TypedDictInputFieldsProvider(InputFieldsProvider):
             for name, tp in get_type_hints(tp).items()
         ]
 
-    def _provide_input_fields(
+    # noinspection PyUnusedLocal
+    @provision_action(InputFFRequest)
+    def _provide_input_fields_figure(
         self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        return self._get_fields(ctx.type)
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: InputFFRequest
+    ) -> InputFieldsFigure:
+        return InputFieldsFigure(
+            fields=self._get_fields(request.type),  # type: ignore
+            extra=None,
+        )
+
+    # noinspection PyUnusedLocal
+    @provision_action(OutputFFRequest)
+    def _provide_output_fields_figure(
+        self,
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: OutputFFRequest
+    ) -> OutputFieldsFigure:
+        return OutputFieldsFigure(
+            fields=self._get_fields(request.type),  # type: ignore
+            getter_kind=GetterKind.ITEM,
+        )
 
 
 def get_dc_default(field: DCField) -> Default:
@@ -150,9 +196,8 @@ def get_dc_default(field: DCField) -> Default:
     return NoDefault(field_is_required=True)
 
 
-class DataclassFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
-    """
-    This provider does not work properly if __init__ signature differs from
+class DataclassFieldsProvider(Provider):
+    """This provider does not work properly if __init__ signature differs from
     that would be created by dataclass decorator.
 
     It happens because we can not distinguish __init__ that generated
@@ -167,7 +212,7 @@ class DataclassFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
             raise CannotProvide
 
         return [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=fld.type,
                 field_name=fld.name,
                 default=get_dc_default(fld),
@@ -182,44 +227,56 @@ class DataclassFieldsProvider(InputFieldsProvider, OutputFieldsProvider):
             tp, lambda fld: fld.init
         )
 
-    def _provide_input_fields(
+    # noinspection PyUnusedLocal
+    @provision_action(InputFFRequest)
+    def _provide_input_fields_figure(
         self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        return self._get_input_fields(ctx.type)
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: InputFFRequest
+    ) -> InputFieldsFigure:
+        return InputFieldsFigure(
+            fields=self._get_input_fields(request.type),
+            extra=None,
+        )
 
     def _get_output_fields(self, tp):
         return self._get_fields_filtered(
             tp, lambda fld: True
         )
 
-    def _provide_output_fields(
+    # noinspection PyUnusedLocal
+    @provision_action(OutputFFRequest)
+    def _provide_output_fields_figure(
         self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        return self._get_output_fields(ctx.type)
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: OutputFFRequest
+    ) -> OutputFieldsFigure:
+        return OutputFieldsFigure(
+            fields=self._get_output_fields(request.type),
+            getter_kind=GetterKind.ATTR,
+        )
 
 
-class ClassInitFieldsProvider(InputFieldsProvider):
-    def _get_fields(self, tp):
+class ClassInitFieldsProvider(Provider):
+    def _get_input_fields_figure(self, tp):
         if not isinstance(tp, type):
             raise CannotProvide
 
         try:
-            return get_func_fields_prov_ctx(
+            return get_func_iff(
                 tp.__init__, slice(1, None)
             )
         except ValueError:
             raise CannotProvide
 
-    def _provide_input_fields(
+    # noinspection PyUnusedLocal
+    @provision_action(InputFFRequest)
+    def _provide_input_fields_figure(
         self,
-        factory: 'BaseFactory',
-        offset: int,
-        ctx: ProvisionCtx
-    ) -> List[FieldsProvisionCtx]:
-        return self._get_fields(ctx.type)
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: InputFFRequest
+    ) -> InputFieldsFigure:
+        return self._get_input_fields_figure(request.type)
