@@ -1,87 +1,93 @@
-from types import MethodType, BuiltinMethodType
-from typing import TypeVar, Type, overload, Any, Callable
+from typing import TypeVar, Type, overload, Any, Callable, Tuple
 
+from .utils import resolve_classmethod
 from ..common import Parser, Serializer
-from ..core import Provider
 from ..low_level import (
-    ProvCtxChecker, AsProvider, NextProvider,
-    ParserProvider, SerializerProvider,
-    ConstructorParserProvider,
+    NextProvider, BuiltinTypeRequestChecker, SerializerRequest, ParserRequest,
 )
-from ..type_tools.utils import is_generic_class
+from ..low_level.provider import FuncProvider, ConstructorParserProvider
 
 T = TypeVar('T')
 
+AsParser = Tuple[BuiltinTypeRequestChecker.ALLOWS, Parser]
+
 
 @overload
-def as_parser(pred: Type[T], func: Parser[Any, T]) -> Provider:
+def as_parser(func_or_pred: Type[T], func: Parser[Any, T]) -> AsParser:
     pass
 
 
 @overload
-def as_parser(pred: ProvCtxChecker.ALLOWS, func: Parser) -> Provider:
-    pass
-
-
-def as_parser(pred: ProvCtxChecker.ALLOWS, func: Parser) -> Provider:
-    return AsProvider(ParserProvider, ProvCtxChecker(pred), func)
-
-
-@overload
-def as_serializer(pred: Type[T], func: Serializer[Any, T]) -> Provider:
+def as_parser(func_or_pred: BuiltinTypeRequestChecker.ALLOWS, func: Parser) -> AsParser:
     pass
 
 
 @overload
-def as_serializer(pred: ProvCtxChecker.ALLOWS, func: Serializer) -> Provider:
+def as_parser(func_or_pred: Parser) -> AsParser:
     pass
 
 
-def as_serializer(pred: ProvCtxChecker.ALLOWS, func: Serializer) -> Provider:
-    return AsProvider(SerializerProvider, ProvCtxChecker(pred), func)
+def as_parser(func_or_pred, func=None):
+    if func is None:
+        pred, func = resolve_classmethod(func_or_pred)
+    else:
+        pred, func = func_or_pred, func
+
+    return pred, FuncProvider(ParserRequest, func)
+
+
+AsSerializer = Tuple[BuiltinTypeRequestChecker.ALLOWS, Serializer]
+
+
+@overload
+def as_serializer(func_or_pred: Type[T], func: Serializer[Any, T]) -> AsSerializer:
+    pass
+
+
+@overload
+def as_serializer(func_or_pred: BuiltinTypeRequestChecker.ALLOWS, func: Serializer) -> AsSerializer:
+    pass
+
+
+@overload
+def as_serializer(func_or_pred: Serializer) -> AsSerializer:
+    pass
+
+
+def as_serializer(func_or_pred, func=None):
+    if func is None:
+        pred, func = resolve_classmethod(func_or_pred)
+    else:
+        pred, func = func_or_pred, func
+
+    return pred, FuncProvider(SerializerRequest, func)
+
+
+AsConstructor = Tuple[BuiltinTypeRequestChecker.ALLOWS, Parser]
+
+
+@overload
+def as_constructor(func_or_pred: Type[T], constructor: Callable[..., T]) -> AsConstructor:
+    pass
+
+
+@overload
+def as_constructor(func_or_pred: BuiltinTypeRequestChecker.ALLOWS, constructor: Callable) -> AsConstructor:
+    pass
+
+
+@overload
+def as_constructor(func_or_pred: Callable) -> AsConstructor:
+    pass
+
+
+def as_constructor(func_or_pred, constructor=None):
+    if constructor is None:
+        pred, func = resolve_classmethod(func_or_pred)
+    else:
+        pred, func = func_or_pred, constructor
+
+    return pred, ConstructorParserProvider(func)
 
 
 NEXT_PROVIDER = NextProvider()
-
-
-@overload
-def as_constructor(constr_or_pred: Type[T], constructor: Callable[..., T]) -> ParserProvider:
-    pass
-
-
-@overload
-def as_constructor(constr_or_pred: ProvCtxChecker.ALLOWS, constructor: Callable) -> ParserProvider:
-    pass
-
-
-@overload
-def as_constructor(constr_or_pred: Callable) -> ParserProvider:
-    pass
-
-
-def as_constructor(constr_or_pred, constructor=None) -> ParserProvider:
-    if constructor is None:
-        if not isinstance(constr_or_pred, (MethodType, BuiltinMethodType)):
-            raise ValueError(
-                'as_constructor() with one argument expects classmethod'
-            )
-
-        bound = constr_or_pred.__self__
-
-        if not isinstance(bound, type):
-            raise ValueError(
-                'as_constructor() with one argument expects classmethod'
-            )
-
-        if is_generic_class(bound):
-            raise ValueError(
-                'as_constructor() with one argument does not support generic'
-            )
-
-        return ConstructorParserProvider(
-            ProvCtxChecker(bound), constr_or_pred
-        )
-
-    return ConstructorParserProvider(
-        ProvCtxChecker(constr_or_pred), constructor
-    )

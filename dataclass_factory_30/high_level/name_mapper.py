@@ -2,14 +2,14 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict
 
 from .name_style import NameStyle, convert_snake_style
-from ..core import ProvisionCtx, BaseFactory, CannotProvide
-from ..low_level import NameMappingProvider, FieldsProvisionCtx
+from ..core import Provider, BaseFactory, provision_action, SearchState
+from ..low_level import NameMappingRequest
 
 
 # TODO: Add support for path in map
 
 @dataclass(frozen=True)
-class NameMapper(NameMappingProvider):
+class NameMapper(Provider):
     """A NameMapper decides which fields will be presented
     to the outside world and how they will look.
 
@@ -76,8 +76,12 @@ class NameMapper(NameMappingProvider):
 
         return name
 
-    def _provide_name_mapping(self, factory: 'BaseFactory', offset: int, ctx: ProvisionCtx) -> Optional[str]:
-        if not isinstance(ctx, FieldsProvisionCtx):
-            raise CannotProvide
-
-        return self._map_name(ctx.field_name)
+    # noinspection PyUnusedLocal
+    @provision_action(NameMappingRequest)
+    def _provide_name_mapping(
+        self,
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: NameMappingRequest
+    ) -> Optional[str]:
+        return self._map_name(request.field_name)

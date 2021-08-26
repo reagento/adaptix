@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Union
+from typing import TypeVar, Union, Type, Callable
 
 from .request_cls import TypeRequest, TypeFieldRequest
 from ..core import Provider, BaseFactory, CannotProvide, provision_action, Request, SearchState
@@ -56,3 +56,14 @@ class ConstrainingProxyProvider(Provider):
     def _cpp_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: TypeRequest[T]) -> T:
         self.tr_checker(request)
         return self.provider.apply_provider(factory, s_state, request)
+
+
+@dataclass
+class FuncProvider(Provider):
+    request_cls: Type[Request]
+    func: Callable
+
+
+@dataclass
+class ConstructorParserProvider(Provider):
+    func: Callable

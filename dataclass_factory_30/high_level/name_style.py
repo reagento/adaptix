@@ -81,13 +81,13 @@ def rest_sub_func(conv: StyleConversion, m: re.Match):
     return m[1].replace('_', conv.sep)
 
 
-def convert_snake_style(source: str, style: NameStyle) -> str:
-    if not is_snake_case(source):
+def convert_snake_style(name: str, style: NameStyle) -> str:
+    if not is_snake_case(name):
         raise ValueError("Cannot convert a name that not follows snake_case")
 
-    match = SNAKE_SPLITTER.match(source)
+    match = SNAKE_SPLITTER.match(name)
     if match is None:
-        raise ValueError(f"Cannot convert '{source}'")
+        raise ValueError(f"Cannot convert '{name}'")
 
     front_us, raw_first, raw_rest, trailing_us = match.groups()
     conv = STYLE_CONVERSIONS[style]
