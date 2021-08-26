@@ -18,7 +18,7 @@ from .provider import (
     NextProvider,
     ConstrainingProxyProvider
 )
-from .factory import (
+from .builtin_factory import (
     BuiltinFactory
 )
 from .request_cls import (
