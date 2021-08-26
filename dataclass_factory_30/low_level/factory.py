@@ -60,7 +60,11 @@ class BuiltinFactory(BaseFactory[BuiltinSearchState], PipeliningMixin):
             try:
                 pred, sub_value = value
 
-                tr_checker = TypeRequestChecker(pred)
+                if isinstance(pred, TypeRequestChecker):
+                    tr_checker = pred
+                else:
+                    tr_checker = TypeRequestChecker(pred)
+
                 provider = self.ensure_provider(sub_value)
 
                 return ConstrainingProxyProvider(tr_checker, provider)

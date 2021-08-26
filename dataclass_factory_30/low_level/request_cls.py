@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TypeVar, List, Generic, Any, Callable, Union
+from typing import TypeVar, List, Generic, Any, Callable, Union, Optional
 
 from ..common import TypeHint, Parser, Serializer, Json
 from ..core import (
@@ -86,7 +86,7 @@ Default = Union[NoDefault, DefaultValue, DefaultFactory]
 
 
 @dataclass(frozen=True)
-class TypeFieldRequest(TypeRequest):
+class TypeFieldRequest(TypeRequest, Generic[T]):
     field_name: str
     default: Default
     metadata: MappingProxyType
@@ -100,5 +100,5 @@ class SerializerTypeFieldRequest(SerializerRequest, TypeFieldRequest):
     pass
 
 
-class NameMappingRequest(TypeFieldRequest):
+class NameMappingRequest(TypeFieldRequest[Optional[str]]):
     pass
