@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Union
 
@@ -7,7 +8,14 @@ from ..core import Provider, BaseFactory, CannotProvide, provision_action, Reque
 T = TypeVar('T')
 
 
-class TypeRequestChecker:
+class TypeRequestChecker(ABC):
+    @abstractmethod
+    def __call__(self, request: TypeRequest) -> None:
+        """Raise CannotProvide if the request does not meet the conditions"""
+        raise NotImplementedError
+
+
+class BuiltinTypeRequestChecker(TypeRequestChecker):
     ALLOWS = Union[type, str]
 
     # TODO: Add support for type hint as pred
@@ -17,16 +25,20 @@ class TypeRequestChecker:
 
         self.pred = pred
 
-    def __call__(self, request: TypeRequest) -> bool:
+    def __call__(self, request: TypeRequest) -> None:
         if isinstance(self.pred, str):
-            if isinstance(request, TypeFieldRequest):
-                return self.pred == request.field_name
+            if isinstance(request, TypeFieldRequest) and self.pred == request.field_name:
+                return
+
             raise CannotProvide
 
         if not isinstance(request.type, type):
             raise CannotProvide
 
-        return issubclass(request.type, self.pred)
+        if issubclass(request.type, self.pred):
+            return
+
+        raise CannotProvide
 
 
 class NextProvider(Provider):

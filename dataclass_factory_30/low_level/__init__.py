@@ -15,6 +15,7 @@ from .fields import (
 )
 from .provider import (
     TypeRequestChecker,
+    BuiltinTypeRequestChecker,
     NextProvider,
     ConstrainingProxyProvider
 )
