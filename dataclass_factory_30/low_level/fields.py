@@ -53,15 +53,15 @@ class OutputFieldsFigure:
     getter_kind: GetterKind
 
 
-class AnyFFRequest(Request, Generic[T]):
+class BaseFFRequest(Request, Generic[T]):
     type: type
 
 
-class InputFFRequest(AnyFFRequest[InputFieldsFigure]):
+class InputFFRequest(BaseFFRequest[InputFieldsFigure]):
     pass
 
 
-class OutputFFRequest(AnyFFRequest[OutputFieldsFigure]):
+class OutputFFRequest(BaseFFRequest[OutputFieldsFigure]):
     pass
 
 
