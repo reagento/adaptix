@@ -100,9 +100,6 @@ class NormTV(BaseNormType):
         else:
             self._bound = normalize_type(type_var.__bound__)
 
-    def __getattr__(self, item):
-        return getattr(self._var, item)
-
     @property
     def origin(self) -> Any:
         return self._var
