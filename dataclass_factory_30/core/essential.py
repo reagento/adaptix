@@ -1,7 +1,9 @@
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
 from inspect import isfunction
-from typing import Type, TypeVar, Generic, final, Optional, Callable, ClassVar, List, Set, Tuple, Any, Sequence, Union
+from typing import Type, TypeVar, Generic, final, Optional, Callable, ClassVar, List, Tuple, Sequence, Dict
+
+from .class_dispatcher import ClassDispatcher, check_values_uniqueness
 
 T = TypeVar('T')
 
@@ -73,6 +75,20 @@ def provision_action(request_cls: Type[RequestTV]):
     return decorator
 
 
+RequestDispatcher = ClassDispatcher[Request, str]
+
+
+def _collect_class_own_rd(cls: Type['Provider']) -> RequestDispatcher:
+    # noinspection PyProtectedMember
+    rd_dict = {
+        attr_value._pa_request_cls: name
+        for name, attr_value in vars(cls).items()
+        if isfunction(attr_value) and hasattr(attr_value, '_pa_request_cls')
+    }
+
+    return ClassDispatcher(rd_dict)
+
+
 class Provider(PipeliningMixin):
     """Provider is a central part of core API.
 
@@ -97,99 +113,48 @@ class Provider(PipeliningMixin):
 
     Any provision action must return value of expected type otherwise raise :exception:`CannotProvide`.
     """
-    request_dispatching: ClassVar[Any] = {}
+    request_dispatching: ClassVar[RequestDispatcher] = ClassDispatcher()
 
     def __init_subclass__(cls, **kwargs):
-        # pa - provision action
-
-        # noinspection PyProtectedMember
-        new_pa = [
-            (name, attr._pa_request_cls)
-            for name, attr in vars(cls).items()
-            if isfunction(attr) and hasattr(attr, '_pa_request_cls')
+        none_attrs: List[str] = [
+            name for name, attr_value in vars(cls).items()
+            if attr_value is None
         ]
 
         # first mro entries must override subsequent entries
-        parent_dispatching = {}
-        for base in cls.__bases__:
-            base_dispatching = getattr(base, 'request_dispatching', {})
-            for key, value in base_dispatching.items():
-                parent_dispatching.setdefault(key, value)
+        attr_to_cls: Dict[str, Type[Request]] = {}
+        for base in reversed(cls.__bases__):
+            if issubclass(base, Provider):
+                for request_cls, attr_name in base.request_dispatching.items():
+                    attr_to_cls[attr_name] = request_cls
 
-        new_pa_none: Set[str] = set()
-        for attr_name in parent_dispatching.values():
-            if getattr(cls, attr_name, 0) is None:
-                new_pa_none.add(attr_name)
+        for attr_name in none_attrs:
+            del attr_to_cls[attr_name]
 
-        result = {
-            key: value for key, value in parent_dispatching.items()
-            if value not in new_pa_none
-        }
+        check_values_uniqueness(attr_to_cls)
 
-        for attr_name, request_cls in new_pa:
-            if request_cls in result:
-                old_name = result[request_cls].__name__
-                new_name = request_cls.__name__
+        parent_dispatching = ClassDispatcher(
+            {
+                request_cls: attr_name
+                for attr_name, request_cls in attr_to_cls
+            }
+        )
 
-                description = (
-                    'Duplication of attached request class'
-                    f' (`{old_name}` and `{new_name}`).'
-                    f' You should explicitly set `{old_name}` to None'
-                    f' or insert `{new_name}` into `{old_name}`'
-                )
-                raise ValueError(description)
-
-            result[request_cls] = attr_name
-
-        cls.request_dispatching = result
-
-    @final
-    def _add_provision_action(self, request_cls: Type[Request], attr_name: str):
-        pass
-
-    @final
-    def _copy_request_dispatching(self, provider: Union['Provider', Type['Provider']]):
-        pass
+        cls.request_dispatching = parent_dispatching.merge_exclusive(
+            _collect_class_own_rd(cls)
+        )
 
     @final
     def apply_provider(self, factory: 'BaseFactory', s_state: SearchStateTV, request: Request[T]) -> T:
         """This method is suitable wrapper around find_provision_action_attr_name and getattr.
         Factory may not use this method implementing own cached provision action call.
         """
-        attr_name = find_provision_action_attr_name(type(request), type(self))
-
-        if attr_name is None:
+        try:
+            attr_name = self.request_dispatching[type(request)]
+        except KeyError:
             raise CannotProvide
 
         return getattr(self, attr_name)(factory, s_state, request)
-
-
-def _get_kinship(sub_cls: type, cls: type) -> int:
-    return sub_cls.mro().index(cls)
-
-
-def find_provision_action_attr_name(request_cls: Type[Request], provider_cls: Type[Provider]) -> Optional[str]:
-    """Finds the most appropriate method in provider_cls
-    to call that can process specified request_cls.
-    If there are no method that can handle such request will return None
-    """
-    try:
-        return provider_cls.request_dispatching[request_cls]
-    except KeyError:
-        min_kinship = None
-        mk_attr_name = None
-
-        for cls, attr_name in provider_cls.request_dispatching.items():
-            try:
-                kinship = _get_kinship(request_cls, cls)
-            except ValueError:
-                continue
-
-            if min_kinship is None or kinship < min_kinship:
-                min_kinship = kinship
-                mk_attr_name = attr_name
-
-        return mk_attr_name
 
 
 class NoSuitableProvider(ValueError):
