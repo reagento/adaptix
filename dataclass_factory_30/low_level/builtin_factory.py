@@ -9,7 +9,6 @@ from ..core import (
     SearchState,
     Request,
     collect_class_full_recipe,
-    find_provision_action_attr_name,
     CannotProvide,
     NoSuitableProvider
 )
@@ -40,8 +39,9 @@ class BuiltinFactory(BaseFactory[BuiltinSearchState], PipeliningMixin):
 
         for offset, item in enumerate(full_recipe[start_idx:], start_idx):
             provider = self.ensure_provider(item)
-            attr_name = find_provision_action_attr_name(request_cls, type(provider))
-            if attr_name is None:
+            try:
+                attr_name = provider.request_dispatching[request_cls]
+            except KeyError:
                 continue
 
             item_s_state = BuiltinSearchState(offset)
