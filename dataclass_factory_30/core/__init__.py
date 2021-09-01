@@ -1,3 +1,8 @@
+from .class_dispatcher import (
+    ClassDispatcher,
+    KeyDuplication,
+    ValueDuplication
+)
 from .essential import (
     Request,
     CannotProvide,
@@ -5,7 +10,6 @@ from .essential import (
     PipeliningMixin,
     provision_action,
     Provider,
-    find_provision_action_attr_name,
     NoSuitableProvider,
     BaseFactory,
     collect_class_full_recipe,
