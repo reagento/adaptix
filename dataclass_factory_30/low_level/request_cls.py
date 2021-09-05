@@ -15,11 +15,15 @@ T = TypeVar('T')
 
 
 @dataclass(frozen=True)
-class TypeRequest(Request, Generic[T]):
+class TypeRequest(Request[T], Generic[T]):
     type: TypeHint
 
 
+@dataclass(frozen=True)
 class ParserRequest(TypeRequest[Parser], PipelineEvalMixin):
+    type_check: bool
+    debug_path: bool
+
     @classmethod
     def eval_pipeline(
         cls,
@@ -86,8 +90,12 @@ Default = Union[NoDefault, DefaultValue, DefaultFactory]
 
 
 @dataclass(frozen=True)
-class TypeFieldRequest(TypeRequest, Generic[T]):
+class FieldNameRequest(Request[T], Generic[T]):
     field_name: str
+
+
+@dataclass(frozen=True)
+class TypeFieldRequest(TypeRequest[T], FieldNameRequest[T], Generic[T]):
     default: Default
     metadata: MappingProxyType
 
@@ -100,5 +108,9 @@ class SerializerTypeFieldRequest(SerializerRequest, TypeFieldRequest):
     pass
 
 
-class NameMappingRequest(TypeFieldRequest[Optional[str]]):
+class NameMappingRequest(FieldNameRequest[Optional[str]]):
+    pass
+
+
+class NameMappingTypeFieldRequest(NameMappingRequest, TypeFieldRequest[Optional[str]]):
     pass
