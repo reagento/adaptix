@@ -82,9 +82,6 @@ class NormType(BaseNormType):
     def __repr__(self):
         return f'{type(self).__name__}({self.origin}, {self.args})'
 
-    def __iter__(self):
-        return iter((self.origin, self.args))
-
 
 class NormTV(BaseNormType):
     __slots__ = ('_var', '_is_template', '_constraints', '_bound')
