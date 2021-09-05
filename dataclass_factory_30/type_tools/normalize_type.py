@@ -9,6 +9,7 @@ from typing import (
     Union, NoReturn, Generic,
     TypeVar, Tuple, NewType,
     AnyStr, Iterable, ForwardRef,
+    Hashable,
 )
 
 from typing_extensions import Annotated
@@ -17,7 +18,7 @@ from .basic_utils import strip_alias, get_args, is_new_type, is_annotated, is_su
 from ..common import TypeHint
 
 
-class BaseNormType(ABC):
+class BaseNormType(Hashable, ABC):
     @property
     @abstractmethod
     def origin(self) -> Any:
