@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import ClassVar
 
-from dataclass_factory_30.low_level.fields import DataclassFieldsProvider, FieldsProvisionCtx, NoDefault, DefaultValue, \
+from dataclass_factory_30.low_level.fields import DataclassFieldsProvider, TypeFieldRequest, NoDefault, DefaultValue, \
     DefaultFactory
 
 
@@ -22,25 +22,25 @@ def test_input():
         DataclassFieldsProvider()._get_input_fields(Foo)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=str,
                 field_name='b',
                 default=DefaultValue('text'),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=list,
                 field_name='c',
                 default=DefaultFactory(list),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='g',
                 default=DefaultValue(4),
@@ -55,31 +55,31 @@ def test_output():
         DataclassFieldsProvider()._get_output_fields(Foo)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=str,
                 field_name='b',
                 default=DefaultValue('text'),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=list,
                 field_name='c',
                 default=DefaultFactory(list),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='d',
                 default=DefaultValue(3),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='g',
                 default=DefaultValue(4),
@@ -104,13 +104,13 @@ def test_inheritance():
         DataclassFieldsProvider()._get_input_fields(ChildBar)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='b',
                 default=NoDefault(field_is_required=True),

@@ -1,7 +1,7 @@
 from types import MappingProxyType
 from typing import TypedDict
 
-from dataclass_factory_30.low_level.fields import TypedDictInputFieldsProvider, FieldsProvisionCtx, NoDefault
+from dataclass_factory_30.low_level.fields import TypedDictFieldsProvider, TypeFieldRequest, NoDefault
 
 
 class Foo(TypedDict, total=True):
@@ -16,16 +16,16 @@ class Bar(TypedDict, total=False):
 
 def test_total():
     assert (
-        TypedDictInputFieldsProvider()._get_fields(Foo)
+        TypedDictFieldsProvider()._get_fields(Foo)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=str,
                 field_name='b',
                 default=NoDefault(field_is_required=True),
@@ -37,16 +37,16 @@ def test_total():
 
 def test_not_total():
     assert (
-        TypedDictInputFieldsProvider()._get_fields(Bar)
+        TypedDictFieldsProvider()._get_fields(Bar)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='a',
                 default=NoDefault(field_is_required=False),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=str,
                 field_name='b',
                 default=NoDefault(field_is_required=False),

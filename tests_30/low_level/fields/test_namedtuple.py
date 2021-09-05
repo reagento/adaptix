@@ -2,7 +2,7 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
-from dataclass_factory_30.low_level.fields import NamedTupleFieldsProvider, FieldsProvisionCtx, DefaultValue, NoDefault
+from dataclass_factory_30.low_level.fields import NamedTupleFieldsProvider, TypeFieldRequest, DefaultValue, NoDefault
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')
@@ -10,16 +10,16 @@ FooBA = namedtuple('FooBA', 'b a')
 
 def test_order():
     assert (
-        NamedTupleFieldsProvider()._get_fields(FooAB)
+        NamedTupleFieldsProvider()._get_input_fields_figure(FooAB)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=Any,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=Any,
                 field_name='b',
                 default=NoDefault(field_is_required=True),
@@ -29,16 +29,16 @@ def test_order():
     )
 
     assert (
-        NamedTupleFieldsProvider()._get_fields(FooBA)
+        NamedTupleFieldsProvider()._get_input_fields_figure(FooBA)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=Any,
                 field_name='b',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=Any,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
@@ -57,22 +57,22 @@ FooDefs = namedtuple('FooDefs', 'a b c', defaults=[0, func])
 
 def test_defaults():
     assert (
-        NamedTupleFieldsProvider()._get_fields(FooDefs)
+        NamedTupleFieldsProvider()._get_input_fields_figure(FooDefs)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=Any,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=Any,
                 field_name='b',
                 default=DefaultValue(0),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=Any,
                 field_name='c',
                 default=DefaultValue(func),
@@ -94,16 +94,16 @@ class BarB(NamedTuple):
 
 def test_hinted_namedtuple():
     assert (
-        NamedTupleFieldsProvider()._get_fields(BarA)
+        NamedTupleFieldsProvider()._get_input_fields_figure(BarA)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=str,
                 field_name='b',
                 default=NoDefault(field_is_required=True),
@@ -113,16 +113,16 @@ def test_hinted_namedtuple():
     )
 
     assert (
-        NamedTupleFieldsProvider()._get_fields(BarB)
+        NamedTupleFieldsProvider()._get_input_fields_figure(BarB)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=str,
                 field_name='b',
                 default=DefaultValue('abc'),

@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 
 from dataclass_factory_30.core import CannotProvide
-from dataclass_factory_30.low_level.fields import ClassInitFieldsProvider, FieldsProvisionCtx, NoDefault, DefaultValue
+from dataclass_factory_30.low_level.fields import ClassInitFieldsProvider, NoDefault, DefaultValue, TypeFieldRequest
 
 
 class Valid1:
@@ -26,25 +26,25 @@ def test_good():
         ClassInitFieldsProvider()._get_fields(Valid1)
         ==
         [
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=Any,
                 field_name='a',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=int,
                 field_name='b',
                 default=NoDefault(field_is_required=True),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=str,
                 field_name='c',
                 default=DefaultValue('abc'),
                 metadata=MappingProxyType({})
             ),
-            FieldsProvisionCtx(
+            TypeFieldRequest(
                 type=Any,
                 field_name='d',
                 default=NoDefault(field_is_required=True),
