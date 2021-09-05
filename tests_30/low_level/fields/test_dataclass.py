@@ -2,8 +2,16 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import ClassVar
 
-from dataclass_factory_30.low_level.fields import DataclassFieldsProvider, TypeFieldRequest, NoDefault, DefaultValue, \
-    DefaultFactory
+from dataclass_factory_30.low_level.fields import (
+    DataclassFieldsProvider,
+    TypeFieldRequest,
+    NoDefault,
+    DefaultValue,
+    DefaultFactory,
+    InputFieldsFigure,
+    OutputFieldsFigure,
+    GetterKind
+)
 
 
 @dataclass
@@ -19,73 +27,79 @@ class Foo:
 
 def test_input():
     assert (
-        DataclassFieldsProvider()._get_input_fields(Foo)
+        DataclassFieldsProvider()._get_input_fields_figure(Foo)
         ==
-        [
-            TypeFieldRequest(
-                type=int,
-                field_name='a',
-                default=NoDefault(field_is_required=True),
-                metadata=MappingProxyType({})
-            ),
-            TypeFieldRequest(
-                type=str,
-                field_name='b',
-                default=DefaultValue('text'),
-                metadata=MappingProxyType({})
-            ),
-            TypeFieldRequest(
-                type=list,
-                field_name='c',
-                default=DefaultFactory(list),
-                metadata=MappingProxyType({})
-            ),
-            TypeFieldRequest(
-                type=int,
-                field_name='g',
-                default=DefaultValue(4),
-                metadata=MappingProxyType({'meta': 'data'})
-            ),
-        ]
+        InputFieldsFigure(
+            extra=None,
+            fields=[
+                TypeFieldRequest(
+                    type=int,
+                    field_name='a',
+                    default=NoDefault(field_is_required=True),
+                    metadata=MappingProxyType({})
+                ),
+                TypeFieldRequest(
+                    type=str,
+                    field_name='b',
+                    default=DefaultValue('text'),
+                    metadata=MappingProxyType({})
+                ),
+                TypeFieldRequest(
+                    type=list,
+                    field_name='c',
+                    default=DefaultFactory(list),
+                    metadata=MappingProxyType({})
+                ),
+                TypeFieldRequest(
+                    type=int,
+                    field_name='g',
+                    default=DefaultValue(4),
+                    metadata=MappingProxyType({'meta': 'data'})
+                ),
+            ],
+        )
     )
 
 
 def test_output():
     assert (
-        DataclassFieldsProvider()._get_output_fields(Foo)
+        DataclassFieldsProvider()._get_output_fields_figure(Foo)
         ==
-        [
-            TypeFieldRequest(
-                type=int,
-                field_name='a',
-                default=NoDefault(field_is_required=True),
-                metadata=MappingProxyType({})
-            ),
-            TypeFieldRequest(
-                type=str,
-                field_name='b',
-                default=DefaultValue('text'),
-                metadata=MappingProxyType({})
-            ),
-            TypeFieldRequest(
-                type=list,
-                field_name='c',
-                default=DefaultFactory(list),
-                metadata=MappingProxyType({})
-            ),
-            TypeFieldRequest(
-                type=int,
-                field_name='d',
-                default=DefaultValue(3),
-                metadata=MappingProxyType({})
-            ),
-            TypeFieldRequest(
-                type=int,
-                field_name='g',
-                default=DefaultValue(4),
-                metadata=MappingProxyType({'meta': 'data'})
-            ),
-        ]
+        OutputFieldsFigure(
+            getter_kind=GetterKind.ATTR,
+            fields=[
+                TypeFieldRequest(
+                    type=int,
+                    field_name='a',
+                    default=NoDefault(field_is_required=True),
+                    metadata=MappingProxyType({})
+                ),
+                TypeFieldRequest(
+                    type=str,
+                    field_name='b',
+                    default=DefaultValue('text'),
+                    metadata=MappingProxyType({})
+                ),
+                TypeFieldRequest(
+                    type=list,
+                    field_name='c',
+                    default=DefaultFactory(list),
+                    metadata=MappingProxyType({})
+                ),
+                TypeFieldRequest(
+                    type=int,
+                    field_name='d',
+                    default=DefaultValue(3),
+                    metadata=MappingProxyType({})
+                ),
+                TypeFieldRequest(
+                    type=int,
+                    field_name='g',
+                    default=DefaultValue(4),
+                    metadata=MappingProxyType({'meta': 'data'})
+                ),
+            ],
+        )
     )
 
 
@@ -100,21 +114,35 @@ class ChildBar(Bar):
 
 
 def test_inheritance():
+    fields = [
+        TypeFieldRequest(
+            type=int,
+            field_name='a',
+            default=NoDefault(field_is_required=True),
+            metadata=MappingProxyType({})
+        ),
+        TypeFieldRequest(
+            type=int,
+            field_name='b',
+            default=NoDefault(field_is_required=True),
+            metadata=MappingProxyType({})
+        ),
+    ]
+
     assert (
-        DataclassFieldsProvider()._get_input_fields(ChildBar)
+        DataclassFieldsProvider()._get_input_fields_figure(ChildBar)
         ==
-        [
-            TypeFieldRequest(
-                type=int,
-                field_name='a',
-                default=NoDefault(field_is_required=True),
-                metadata=MappingProxyType({})
-            ),
-            TypeFieldRequest(
-                type=int,
-                field_name='b',
-                default=NoDefault(field_is_required=True),
-                metadata=MappingProxyType({})
-            ),
-        ]
+        InputFieldsFigure(
+            extra=None,
+            fields=fields,
+        )
+    )
+
+    assert (
+        DataclassFieldsProvider()._get_output_fields_figure(ChildBar)
+        ==
+        OutputFieldsFigure(
+            getter_kind=GetterKind.ATTR,
+            fields=fields,
+        )
     )

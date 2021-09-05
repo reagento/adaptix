@@ -4,7 +4,7 @@ from enum import Enum
 from inspect import Signature, Parameter
 from operator import getitem
 from types import MappingProxyType
-from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Optional, Callable
+from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, Literal
 
 from .request_cls import TypeFieldRequest, NoDefault, DefaultValue, Default, DefaultFactory
 from ..core import BaseFactory, CannotProvide, Provider, provision_action, SearchState, Request
@@ -40,11 +40,14 @@ class ExtraTargets:
 
 Extra = Union[ExtraVariant, ExtraTargets]
 
+# Factory should replace None with ExtraVariant.SKIP or ExtraVariant.FORBID
+UnboundExtra = Union[None, Literal[ExtraVariant.KWARGS], ExtraTargets]
+
 
 @dataclass
 class InputFieldsFigure:
     fields: List[TypeFieldRequest]
-    extra: Optional[Extra]
+    extra: UnboundExtra
 
 
 @dataclass
@@ -85,7 +88,7 @@ def get_func_iff(func, slice_=slice(0, None)) -> InputFieldsFigure:
             ' parameters'
         )
 
-    extra: Optional[Extra]
+    extra: UnboundExtra
     if any(p.kind == Parameter.VAR_KEYWORD for p in params):
         extra = ExtraVariant.KWARGS
     else:
@@ -108,6 +111,7 @@ def get_func_iff(func, slice_=slice(0, None)) -> InputFieldsFigure:
                 metadata=MappingProxyType({}),
             )
             for param in params
+            if param.kind != Parameter.VAR_KEYWORD
         ],
         extra=extra,
     )
@@ -130,6 +134,12 @@ class NamedTupleFieldsProvider(Provider):
     ) -> InputFieldsFigure:
         return self._get_input_fields_figure(request.type)
 
+    def _get_output_fields_figure(self, tp: type) -> OutputFieldsFigure:
+        return OutputFieldsFigure(
+            fields=self._get_input_fields_figure(tp).fields,
+            getter_kind=GetterKind.ATTR,
+        )
+
     # noinspection PyUnusedLocal
     @provision_action(OutputFFRequest)
     def _provide_output_fields_figure(
@@ -138,10 +148,7 @@ class NamedTupleFieldsProvider(Provider):
         s_state: SearchState,
         request: OutputFFRequest
     ) -> OutputFieldsFigure:
-        return OutputFieldsFigure(
-            fields=self._get_input_fields_figure(request.type).fields,
-            getter_kind=GetterKind.ATTR,
-        )
+        return self._get_output_fields_figure(request.type)
 
 
 class TypedDictFieldsProvider(Provider):
@@ -161,6 +168,12 @@ class TypedDictFieldsProvider(Provider):
             for name, tp in get_type_hints(tp).items()
         ]
 
+    def _get_input_fields_figure(self, tp):
+        return InputFieldsFigure(
+            fields=self._get_fields(tp),
+            extra=None,
+        )
+
     # noinspection PyUnusedLocal
     @provision_action(InputFFRequest)
     def _provide_input_fields_figure(
@@ -169,9 +182,12 @@ class TypedDictFieldsProvider(Provider):
         s_state: SearchState,
         request: InputFFRequest
     ) -> InputFieldsFigure:
-        return InputFieldsFigure(
-            fields=self._get_fields(request.type),  # type: ignore
-            extra=None,
+        return self._get_input_fields_figure(request.type)  # type: ignore
+
+    def _get_output_fields_figure(self, tp):
+        return OutputFieldsFigure(
+            fields=self._get_fields(tp),
+            getter_kind=GetterKind.ITEM,
         )
 
     # noinspection PyUnusedLocal
@@ -182,10 +198,7 @@ class TypedDictFieldsProvider(Provider):
         s_state: SearchState,
         request: OutputFFRequest
     ) -> OutputFieldsFigure:
-        return OutputFieldsFigure(
-            fields=self._get_fields(request.type),  # type: ignore
-            getter_kind=GetterKind.ITEM,
-        )
+        return self._get_output_fields_figure(request.type)  # type: ignore
 
 
 def get_dc_default(field: DCField) -> Default:
@@ -216,15 +229,18 @@ class DataclassFieldsProvider(Provider):
                 type=fld.type,
                 field_name=fld.name,
                 default=get_dc_default(fld),
-                metadata=MappingProxyType(fld.metadata),
+                metadata=fld.metadata,
             )
             for fld in dc_fields(tp)
             if filer_func(fld)
         ]
 
-    def _get_input_fields(self, tp):
-        return self._get_fields_filtered(
-            tp, lambda fld: fld.init
+    def _get_input_fields_figure(self, tp):
+        return InputFieldsFigure(
+            fields=self._get_fields_filtered(
+                tp, lambda fld: fld.init
+            ),
+            extra=None,
         )
 
     # noinspection PyUnusedLocal
@@ -235,14 +251,14 @@ class DataclassFieldsProvider(Provider):
         s_state: SearchState,
         request: InputFFRequest
     ) -> InputFieldsFigure:
-        return InputFieldsFigure(
-            fields=self._get_input_fields(request.type),
-            extra=None,
-        )
+        return self._get_input_fields_figure(request.type)
 
-    def _get_output_fields(self, tp):
-        return self._get_fields_filtered(
-            tp, lambda fld: True
+    def _get_output_fields_figure(self, tp):
+        return OutputFieldsFigure(
+            fields=self._get_fields_filtered(
+                tp, lambda fld: True
+            ),
+            getter_kind=GetterKind.ATTR
         )
 
     # noinspection PyUnusedLocal
@@ -253,10 +269,7 @@ class DataclassFieldsProvider(Provider):
         s_state: SearchState,
         request: OutputFFRequest
     ) -> OutputFieldsFigure:
-        return OutputFieldsFigure(
-            fields=self._get_output_fields(request.type),
-            getter_kind=GetterKind.ATTR,
-        )
+        return self._get_output_fields_figure(request.type)
 
 
 class ClassInitFieldsProvider(Provider):
