@@ -71,6 +71,7 @@ def provision_action(request_cls: Type[RequestTV]):
 
     def decorator(func: Callable[[ProviderTV, 'BaseFactory', SearchState, RequestTV], T]):
         func._pa_request_cls = request_cls  # type: ignore
+        return func
 
     return decorator
 
@@ -108,12 +109,12 @@ class Provider(PipeliningMixin):
     Each provision action takes BaseFactory, SearchState and instance of attached Request subclass.
     SearchState is created by Factory.
 
-    All registered provision actions are stored in request_dispatching class variable.
+    All registered provision actions are stored in cls_request_dispatching class variable.
     It's calculating at class initialization and never should be changing by other ways.
 
     Any provision action must return value of expected type otherwise raise :exception:`CannotProvide`.
     """
-    request_dispatching: ClassVar[RequestDispatcher] = ClassDispatcher()
+    cls_request_dispatching: ClassVar[RequestDispatcher] = ClassDispatcher()
 
     def __init_subclass__(cls, **kwargs):
         none_attrs: List[str] = [
@@ -125,22 +126,25 @@ class Provider(PipeliningMixin):
         attr_to_cls: Dict[str, Type[Request]] = {}
         for base in reversed(cls.__bases__):
             if issubclass(base, Provider):
-                for request_cls, attr_name in base.request_dispatching.items():
+                for request_cls, attr_name in base.cls_request_dispatching.items():
                     attr_to_cls[attr_name] = request_cls
 
         for attr_name in none_attrs:
-            del attr_to_cls[attr_name]
+            try:
+                del attr_to_cls[attr_name]
+            except KeyError:
+                pass
 
         check_values_uniqueness(attr_to_cls)
 
         parent_dispatching = ClassDispatcher(
             {
                 request_cls: attr_name
-                for attr_name, request_cls in attr_to_cls
+                for attr_name, request_cls in attr_to_cls.items()
             }
         )
 
-        cls.request_dispatching = parent_dispatching.merge_exclusive(
+        cls.cls_request_dispatching = parent_dispatching.merge_exclusive(
             _collect_class_own_rd(cls)
         )
 
@@ -150,7 +154,7 @@ class Provider(PipeliningMixin):
         Factory may not use this method implementing own cached provision action call.
         """
         try:
-            attr_name = self.request_dispatching[type(request)]
+            attr_name = self.cls_request_dispatching[type(request)]
         except KeyError:
             raise CannotProvide
 
