@@ -1,19 +1,24 @@
-import sys
 from typing import (
     Any, Callable, NoReturn,
     List, Type, Set, FrozenSet,
-    Tuple, DefaultDict, Annotated,
+    Tuple, DefaultDict,
     Dict, ChainMap, NewType, Counter,
-    OrderedDict, Union, Final, ClassVar,
+    OrderedDict, Union, ClassVar,
 )
 from typing import (
-    Protocol, TypedDict,
     runtime_checkable,
 )
 
 import pytest
 
-from .conftest import is_subtype, assert_swapped_is_subtype, Class, SubClass, id_gen
+from .conftest import (
+    is_subtype, assert_swapped_is_subtype,
+    Class, SubClass, id_gen
+)
+from dataclass_factory_30.feature_requirement import (
+    has_literal, has_final, has_typed_dict,
+    has_protocol, has_annotated
+)
 
 
 @pytest.mark.parametrize(
@@ -40,23 +45,36 @@ def test_atomic():
     )
 
 
-@pytest.mark.parametrize(
-    'tp',
-    [Final, ClassVar],
-    ids=id_gen,
-)
-def test_tags(tp):
+def test_class_var():
     assert is_subtype(
-        tp[int],
+        ClassVar[int],
         int,
     )
     assert is_subtype(
         int,
-        tp[int],
+        ClassVar[int],
     )
     assert is_subtype(
-        tp[int],
-        tp[int],
+        ClassVar[int],
+        ClassVar[int],
+    )
+
+
+@has_final
+def test_final():
+    from typing import Final
+
+    assert is_subtype(
+        Final[int],
+        int,
+    )
+    assert is_subtype(
+        int,
+        Final[int],
+    )
+    assert is_subtype(
+        Final[int],
+        Final[int],
     )
 
 
@@ -113,7 +131,7 @@ def test_builtin_generic_two_args(tp):
     )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason='Need Python >= 3.8')
+@has_literal
 def test_literal():
     from typing import Literal
 
@@ -298,7 +316,10 @@ def test_new_type():
     )
 
 
+@has_annotated
 def test_annotated():
+    from typing import Annotated
+
     assert is_subtype(
         int,
         Annotated[int, 'meta'],
@@ -320,63 +341,55 @@ def test_annotated():
     )
 
 
-class Proto(Protocol):
-    def foo(self) -> bool:
-        pass
-
-
-@runtime_checkable
-class RtProto(Protocol):
-    def foo(self) -> bool:
-        pass
-
-
-class ImplProto:
-    def foo(self) -> bool:
-        pass
-
-
-class BadImplProto:
-    def foo(self) -> str:
-        pass
-
-
-class InheritedImplProto(Proto):
-    def foo(self) -> bool:
-        pass
-
-
-class InheritedBadImplProto(Proto):
-    def foo(self) -> str:
-        pass
-
-
-class InheritedImplRtProto(RtProto):
-    def foo(self) -> bool:
-        pass
-
-
-class InheritedBadImplRtProto(RtProto):
-    def foo(self) -> str:
-        pass
-
-
-class ProtoAttr:
-    foo = '123'
-
-
-class OtherProto(Protocol):
-    def foo(self) -> bool:
-        pass
-
-
-@runtime_checkable
-class OtherRtProto(Protocol):
-    def foo(self) -> bool:
-        pass
-
-
+@has_protocol
 def test_protocol():
+    from typing import Protocol
+
+    class Proto(Protocol):
+        def foo(self) -> bool:
+            pass
+
+    @runtime_checkable
+    class RtProto(Protocol):
+        def foo(self) -> bool:
+            pass
+
+    class ImplProto:
+        def foo(self) -> bool:
+            pass
+
+    class BadImplProto:
+        def foo(self) -> str:
+            pass
+
+    class InheritedImplProto(Proto):
+        def foo(self) -> bool:
+            pass
+
+    class InheritedBadImplProto(Proto):
+        def foo(self) -> str:  # type: ignore
+            pass
+
+    class InheritedImplRtProto(RtProto):
+        def foo(self) -> bool:
+            pass
+
+    class InheritedBadImplRtProto(RtProto):
+        def foo(self) -> str:  # type: ignore
+            pass
+
+    class ProtoAttr:
+        foo = '123'
+
+    class OtherProto(Protocol):
+        def foo(self) -> bool:
+            pass
+
+    @runtime_checkable
+    class OtherRtProto(Protocol):
+        def foo(self) -> bool:
+            pass
+
     with pytest.raises(ValueError):
         is_subtype(ImplProto, Proto)
 
@@ -422,25 +435,24 @@ def test_protocol():
     )
 
 
-class TDBig(TypedDict):
-    a: int
-    b: str
-
-
-class TDSmall(TypedDict):
-    a: int
-
-
-class TDBigUT(TypedDict, total=False):
-    a: int
-    b: str
-
-
-class TDSmallUT(TypedDict, total=False):
-    a: int
-
-
+@has_typed_dict
 def test_typed_dict():
+    from typing import TypedDict
+
+    class TDBig(TypedDict):
+        a: int
+        b: str
+
+    class TDSmall(TypedDict):
+        a: int
+
+    class TDBigUT(TypedDict, total=False):
+        a: int
+        b: str
+
+    class TDSmallUT(TypedDict, total=False):
+        a: int
+
     assert_swapped_is_subtype(
         TDSmall,
         TDBig,

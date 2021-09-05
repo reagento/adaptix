@@ -17,6 +17,7 @@ import pytest
 
 from dataclass_factory_30.type_tools import NormType, normalize_type
 from dataclass_factory_30.type_tools.normalize_type import NormTV, T_co
+from dataclass_factory_30.feature_requirement import has_literal, has_final, has_annotated
 
 T = TypeVar('T')
 
@@ -127,7 +128,7 @@ def test_class_var():
     assert normalize_type(ClassVar[int]) == NormType(ClassVar, [NormType(int)])
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason='Need Python >= 3.8')
+@has_literal
 def test_literal():
     from typing import Literal
 
@@ -165,7 +166,7 @@ def test_literal():
     )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason='Need Python >= 3.8')
+@has_final
 def test_final():
     from typing import Final
 
@@ -175,7 +176,7 @@ def test_final():
     assert normalize_type(Final[int]) == NormType(Final, [NormType(int)])
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason='Need Python >= 3.9')
+@has_annotated
 def test_annotated():
     from typing import Annotated
 
