@@ -69,5 +69,5 @@ def test_full_recipe():
     g6_recipe = g5_recipe.copy()
     assert collect_class_full_recipe(Gen6Factory) == g6_recipe
 
-    g7_recipe = [SP(4)] + g6_recipe
+    g7_recipe = g6_recipe.copy()
     assert collect_class_full_recipe(Gen7Factory) == g7_recipe
