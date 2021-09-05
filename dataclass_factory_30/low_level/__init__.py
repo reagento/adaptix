@@ -23,7 +23,7 @@ from .builtin_factory import (
     BuiltinFactory
 )
 from .request_cls import (
-    TypeRequest,
+    TypeRM,
     ParserRequest,
     SerializerRequest,
     JsonSchemaProvider,
@@ -31,8 +31,8 @@ from .request_cls import (
     DefaultValue,
     DefaultFactory,
     Default,
-    TypeFieldRequest,
-    ParserTypeFieldRequest,
-    SerializerTypeFieldRequest,
+    FieldRM,
+    ParserFieldRequest,
+    SerializerFieldRequest,
     NameMappingRequest
 )

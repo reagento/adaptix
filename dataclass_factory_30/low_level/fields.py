@@ -6,7 +6,7 @@ from operator import getitem
 from types import MappingProxyType
 from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, Literal
 
-from .request_cls import TypeFieldRequest, NoDefault, DefaultValue, Default, DefaultFactory
+from .request_cls import FieldRM, NoDefault, DefaultValue, Default, DefaultFactory
 from ..core import BaseFactory, CannotProvide, Provider, provision_action, SearchState, Request
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
@@ -46,13 +46,13 @@ UnboundExtra = Union[None, Literal[ExtraVariant.KWARGS], ExtraTargets]
 
 @dataclass
 class InputFieldsFigure:
-    fields: List[TypeFieldRequest]
+    fields: List[FieldRM]
     extra: UnboundExtra
 
 
 @dataclass
 class OutputFieldsFigure:
-    fields: List[TypeFieldRequest]
+    fields: List[FieldRM]
     getter_kind: GetterKind
 
 
@@ -96,7 +96,7 @@ def get_func_iff(func, slice_=slice(0, None)) -> InputFieldsFigure:
 
     return InputFieldsFigure(
         fields=[
-            TypeFieldRequest(
+            FieldRM(
                 type=(
                     Any
                     if param.annotation is Signature.empty
@@ -159,7 +159,7 @@ class TypedDictFieldsProvider(Provider):
         is_required = tp.__total__
 
         return [
-            TypeFieldRequest(
+            FieldRM(
                 type=tp,
                 field_name=name,
                 default=NoDefault(field_is_required=is_required),
@@ -225,7 +225,7 @@ class DataclassFieldsProvider(Provider):
             raise CannotProvide
 
         return [
-            TypeFieldRequest(
+            FieldRM(
                 type=fld.type,
                 field_name=fld.name,
                 default=get_dc_default(fld),

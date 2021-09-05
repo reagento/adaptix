@@ -4,7 +4,7 @@ from typing import Any, NamedTuple
 
 from dataclass_factory_30.low_level.fields import (
     NamedTupleFieldsProvider,
-    TypeFieldRequest,
+    FieldRM,
     DefaultValue,
     NoDefault,
     InputFieldsFigure,
@@ -18,13 +18,13 @@ FooBA = namedtuple('FooBA', 'b a')
 
 def test_order_ab():
     fields = [
-        TypeFieldRequest(
+        FieldRM(
             type=Any,
             field_name='a',
             default=NoDefault(field_is_required=True),
             metadata=MappingProxyType({})
         ),
-        TypeFieldRequest(
+        FieldRM(
             type=Any,
             field_name='b',
             default=NoDefault(field_is_required=True),
@@ -53,13 +53,13 @@ def test_order_ab():
 
 def test_order_ba():
     fields = [
-        TypeFieldRequest(
+        FieldRM(
             type=Any,
             field_name='b',
             default=NoDefault(field_is_required=True),
             metadata=MappingProxyType({})
         ),
-        TypeFieldRequest(
+        FieldRM(
             type=Any,
             field_name='a',
             default=NoDefault(field_is_required=True),
@@ -95,19 +95,19 @@ FooDefs = namedtuple('FooDefs', 'a b c', defaults=[0, func])
 
 def test_defaults():
     fields = [
-        TypeFieldRequest(
+        FieldRM(
             type=Any,
             field_name='a',
             default=NoDefault(field_is_required=True),
             metadata=MappingProxyType({})
         ),
-        TypeFieldRequest(
+        FieldRM(
             type=Any,
             field_name='b',
             default=DefaultValue(0),
             metadata=MappingProxyType({})
         ),
-        TypeFieldRequest(
+        FieldRM(
             type=Any,
             field_name='c',
             default=DefaultValue(func),
@@ -146,13 +146,13 @@ class BarB(NamedTuple):
 
 def test_class_hinted_namedtuple():
     fields = [
-        TypeFieldRequest(
+        FieldRM(
             type=int,
             field_name='a',
             default=NoDefault(field_is_required=True),
             metadata=MappingProxyType({})
         ),
-        TypeFieldRequest(
+        FieldRM(
             type=str,
             field_name='b',
             default=NoDefault(field_is_required=True),
@@ -181,13 +181,13 @@ def test_class_hinted_namedtuple():
 
 def test_hinted_namedtuple():
     fields = [
-        TypeFieldRequest(
+        FieldRM(
             type=int,
             field_name='a',
             default=NoDefault(field_is_required=True),
             metadata=MappingProxyType({})
         ),
-        TypeFieldRequest(
+        FieldRM(
             type=str,
             field_name='b',
             default=DefaultValue('abc'),

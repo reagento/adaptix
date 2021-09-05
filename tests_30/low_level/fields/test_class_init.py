@@ -8,7 +8,7 @@ from dataclass_factory_30.low_level.fields import (
     ClassInitFieldsProvider,
     NoDefault,
     DefaultValue,
-    TypeFieldRequest,
+    FieldRM,
     InputFieldsFigure,
     ExtraVariant
 )
@@ -38,25 +38,25 @@ class Invalid1:
 
 
 VALID_FIELDS = [
-    TypeFieldRequest(
+    FieldRM(
         type=Any,
         field_name='a',
         default=NoDefault(field_is_required=True),
         metadata=MappingProxyType({})
     ),
-    TypeFieldRequest(
+    FieldRM(
         type=int,
         field_name='b',
         default=NoDefault(field_is_required=True),
         metadata=MappingProxyType({})
     ),
-    TypeFieldRequest(
+    FieldRM(
         type=str,
         field_name='c',
         default=DefaultValue('abc'),
         metadata=MappingProxyType({})
     ),
-    TypeFieldRequest(
+    FieldRM(
         type=Any,
         field_name='d',
         default=NoDefault(field_is_required=True),

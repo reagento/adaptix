@@ -15,12 +15,44 @@ T = TypeVar('T')
 
 
 @dataclass(frozen=True)
-class TypeRequest(Request[T], Generic[T]):
+class NoDefault:
+    field_is_required: bool
+
+
+@dataclass(frozen=True)
+class DefaultValue:
+    value: Any
+
+
+@dataclass(frozen=True)
+class DefaultFactory:
+    factory: Callable[[], Any]
+
+
+Default = Union[NoDefault, DefaultValue, DefaultFactory]
+
+
+# RM - Request Mixin
+
+
+@dataclass(frozen=True)
+class TypeRM(Request[T], Generic[T]):
     type: TypeHint
 
 
 @dataclass(frozen=True)
-class ParserRequest(TypeRequest[Parser], PipelineEvalMixin):
+class FieldNameRM(Request[T], Generic[T]):
+    field_name: str
+
+
+@dataclass(frozen=True)
+class FieldRM(TypeRM[T], FieldNameRM[T], Generic[T]):
+    default: Default
+    metadata: MappingProxyType
+
+
+@dataclass(frozen=True)
+class ParserRequest(TypeRM[Parser], PipelineEvalMixin):
     type_check: bool
     debug_path: bool
 
@@ -45,7 +77,11 @@ class ParserRequest(TypeRequest[Parser], PipelineEvalMixin):
         return pipeline_parser
 
 
-class SerializerRequest(TypeRequest[Serializer], PipelineEvalMixin):
+class ParserFieldRequest(ParserRequest, FieldRM[Parser]):
+    pass
+
+
+class SerializerRequest(TypeRM[Serializer], PipelineEvalMixin):
     @classmethod
     def eval_pipeline(
         cls,
@@ -67,50 +103,17 @@ class SerializerRequest(TypeRequest[Serializer], PipelineEvalMixin):
         return pipeline_serializer
 
 
-class JsonSchemaProvider(TypeRequest[Json]):
+class SerializerFieldRequest(SerializerRequest, FieldRM[Parser]):
     pass
 
 
-@dataclass(frozen=True)
-class NoDefault:
-    field_is_required: bool
-
-
-@dataclass(frozen=True)
-class DefaultValue:
-    value: Any
-
-
-@dataclass(frozen=True)
-class DefaultFactory:
-    factory: Callable[[], Any]
-
-
-Default = Union[NoDefault, DefaultValue, DefaultFactory]
-
-
-@dataclass(frozen=True)
-class FieldNameRequest(Request[T], Generic[T]):
-    field_name: str
-
-
-@dataclass(frozen=True)
-class TypeFieldRequest(TypeRequest[T], FieldNameRequest[T], Generic[T]):
-    default: Default
-    metadata: MappingProxyType
-
-
-class ParserTypeFieldRequest(ParserRequest, TypeFieldRequest):
+class JsonSchemaProvider(TypeRM[Json]):
     pass
 
 
-class SerializerTypeFieldRequest(SerializerRequest, TypeFieldRequest):
+class NameMappingRequest(FieldNameRM[Optional[str]]):
     pass
 
 
-class NameMappingRequest(FieldNameRequest[Optional[str]]):
-    pass
-
-
-class NameMappingTypeFieldRequest(NameMappingRequest, TypeFieldRequest[Optional[str]]):
+class NameMappingFieldRequest(NameMappingRequest, FieldRM[Optional[str]]):
     pass

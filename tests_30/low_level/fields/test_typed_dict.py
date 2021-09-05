@@ -3,7 +3,7 @@ from typing import TypedDict
 
 from dataclass_factory_30.low_level.fields import (
     TypedDictFieldsProvider,
-    TypeFieldRequest,
+    FieldRM,
     NoDefault,
     InputFieldsFigure,
     OutputFieldsFigure,
@@ -22,13 +22,13 @@ class Bar(TypedDict, total=False):
 
 
 TOTAL_FIELDS = [
-    TypeFieldRequest(
+    FieldRM(
         type=int,
         field_name='a',
         default=NoDefault(field_is_required=True),
         metadata=MappingProxyType({})
     ),
-    TypeFieldRequest(
+    FieldRM(
         type=str,
         field_name='b',
         default=NoDefault(field_is_required=True),
@@ -60,13 +60,13 @@ def test_total_output():
 
 
 NON_TOTAL_FIELDS = [
-    TypeFieldRequest(
+    FieldRM(
         type=int,
         field_name='a',
         default=NoDefault(field_is_required=False),
         metadata=MappingProxyType({})
     ),
-    TypeFieldRequest(
+    FieldRM(
         type=str,
         field_name='b',
         default=NoDefault(field_is_required=False),

@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from dataclass_factory_30.low_level.fields import (
     DataclassFieldsProvider,
-    TypeFieldRequest,
+    FieldRM,
     NoDefault,
     DefaultValue,
     DefaultFactory,
@@ -32,25 +32,25 @@ def test_input():
         InputFieldsFigure(
             extra=None,
             fields=[
-                TypeFieldRequest(
+                FieldRM(
                     type=int,
                     field_name='a',
                     default=NoDefault(field_is_required=True),
                     metadata=MappingProxyType({})
                 ),
-                TypeFieldRequest(
+                FieldRM(
                     type=str,
                     field_name='b',
                     default=DefaultValue('text'),
                     metadata=MappingProxyType({})
                 ),
-                TypeFieldRequest(
+                FieldRM(
                     type=list,
                     field_name='c',
                     default=DefaultFactory(list),
                     metadata=MappingProxyType({})
                 ),
-                TypeFieldRequest(
+                FieldRM(
                     type=int,
                     field_name='g',
                     default=DefaultValue(4),
@@ -68,31 +68,31 @@ def test_output():
         OutputFieldsFigure(
             getter_kind=GetterKind.ATTR,
             fields=[
-                TypeFieldRequest(
+                FieldRM(
                     type=int,
                     field_name='a',
                     default=NoDefault(field_is_required=True),
                     metadata=MappingProxyType({})
                 ),
-                TypeFieldRequest(
+                FieldRM(
                     type=str,
                     field_name='b',
                     default=DefaultValue('text'),
                     metadata=MappingProxyType({})
                 ),
-                TypeFieldRequest(
+                FieldRM(
                     type=list,
                     field_name='c',
                     default=DefaultFactory(list),
                     metadata=MappingProxyType({})
                 ),
-                TypeFieldRequest(
+                FieldRM(
                     type=int,
                     field_name='d',
                     default=DefaultValue(3),
                     metadata=MappingProxyType({})
                 ),
-                TypeFieldRequest(
+                FieldRM(
                     type=int,
                     field_name='g',
                     default=DefaultValue(4),
@@ -115,13 +115,13 @@ class ChildBar(Bar):
 
 def test_inheritance():
     fields = [
-        TypeFieldRequest(
+        FieldRM(
             type=int,
             field_name='a',
             default=NoDefault(field_is_required=True),
             metadata=MappingProxyType({})
         ),
-        TypeFieldRequest(
+        FieldRM(
             type=int,
             field_name='b',
             default=NoDefault(field_is_required=True),
