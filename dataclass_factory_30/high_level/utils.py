@@ -1,7 +1,7 @@
 from types import MethodType, BuiltinMethodType
 from typing import Tuple, Callable
 
-from ..type_tools import is_generic_class
+from ..type_tools import is_user_defined_generic
 
 
 def resolve_classmethod(func) -> Tuple[type, Callable]:
@@ -17,7 +17,7 @@ def resolve_classmethod(func) -> Tuple[type, Callable]:
             'as_constructor() with one argument expects classmethod'
         )
 
-    if is_generic_class(bound):
+    if is_user_defined_generic(bound):
         raise ValueError(
             'as_constructor() with one argument does not support generic'
         )

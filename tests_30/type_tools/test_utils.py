@@ -1,10 +1,8 @@
-import sys
-from typing import NamedTuple
 from collections import namedtuple
+from typing import NamedTuple, TypeVar, Generic, Tuple
 
-import pytest
-
-from dataclass_factory_30.type_tools import is_named_tuple_class, is_protocol
+from dataclass_factory_30.feature_requirement import has_protocol
+from dataclass_factory_30.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
 
 
 class NTParent(NamedTuple):
@@ -30,7 +28,7 @@ def test_is_named_tuple_class():
     assert is_named_tuple_class(DynNTChild)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason='Need Python >= 3.8')
+@has_protocol
 def test_is_protocol():
     from typing import Protocol, runtime_checkable
     from typing import SupportsInt
@@ -77,3 +75,50 @@ def test_is_protocol():
             pass
 
     assert is_protocol(ExtProto)
+
+
+T = TypeVar('T')
+
+
+class Gen(Generic[T]):
+    pass
+
+
+class GenChildImplicit(Gen):
+    pass
+
+
+class GenChildExplicit(Gen[int]):
+    pass
+
+
+class GenChildExplicitTypeVar(Gen[T]):
+    pass
+
+
+V = TypeVar('V')
+
+
+class GenGen(Gen[int], Generic[T]):
+    pass
+
+
+def test_is_user_defined_generic():
+    assert is_user_defined_generic(Gen)
+    assert is_user_defined_generic(Gen[V])
+    assert not is_user_defined_generic(Gen[int])
+
+    assert not is_user_defined_generic(GenChildImplicit)
+    assert not is_user_defined_generic(GenChildExplicit)
+
+    assert is_user_defined_generic(GenChildExplicitTypeVar)
+    assert is_user_defined_generic(GenChildExplicitTypeVar[V])
+    assert not is_user_defined_generic(GenChildExplicitTypeVar[int])
+
+    assert is_user_defined_generic(GenGen)
+    assert is_user_defined_generic(GenGen[V])
+    assert not is_user_defined_generic(GenGen[int])
+
+    assert not is_user_defined_generic(Tuple)
+    assert not is_user_defined_generic(Tuple[V])
+    assert not is_user_defined_generic(Tuple[int])

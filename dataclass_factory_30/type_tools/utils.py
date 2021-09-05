@@ -85,8 +85,12 @@ def is_named_tuple_class(tp) -> bool:
     )
 
 
-def is_generic_class(tp) -> bool:
-    return is_subclass_soft(tp, Generic)
+def is_user_defined_generic(tp) -> bool:
+    return (
+        hasattr(tp, '__parameters__')
+        and tp.__parameters__
+        and is_subclass_soft(strip_alias(tp), Generic)  # throw away builtin generics
+    )
 
 
 def is_protocol(tp):

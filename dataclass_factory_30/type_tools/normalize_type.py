@@ -13,7 +13,7 @@ from typing import (
 
 from typing_extensions import Annotated
 
-from .utils import strip_alias, get_args, is_new_type, is_annotated, is_subclass_soft
+from .utils import strip_alias, get_args, is_new_type, is_annotated, is_subclass_soft, is_user_defined_generic
 from ..common import TypeHint
 
 
@@ -289,7 +289,7 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
 
         return NormType(origin, _norm_iter(args), source=tp)
 
-    if is_subclass_soft(origin, Generic):
+    if is_user_defined_generic(origin):
         if not args:
             params = origin.__parameters__  # type: ignore
             return NormType(
