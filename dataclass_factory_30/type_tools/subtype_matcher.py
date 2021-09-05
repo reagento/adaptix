@@ -11,7 +11,7 @@ from typing import (
 
 from . import normalize_type, is_subclass_soft, is_new_type, is_typed_dict_class
 from .normalize_type import BaseNormType, NormTV
-from .utils import is_protocol
+from .basic_utils import is_protocol
 from ..common import TypeHint
 
 SubtypeMatch = Dict[TypeVar, TypeHint]

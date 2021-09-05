@@ -13,7 +13,7 @@ from typing import (
 
 from typing_extensions import Annotated
 
-from .utils import strip_alias, get_args, is_new_type, is_annotated, is_subclass_soft, is_user_defined_generic
+from .basic_utils import strip_alias, get_args, is_new_type, is_annotated, is_subclass_soft, is_user_defined_generic
 from ..common import TypeHint
 
 

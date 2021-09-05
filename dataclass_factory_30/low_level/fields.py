@@ -8,7 +8,7 @@ from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable,
 
 from .request_cls import TypeFieldRequest, NoDefault, DefaultValue, Default, DefaultFactory
 from ..core import BaseFactory, CannotProvide, Provider, provision_action, SearchState, Request
-from ..type_tools.utils import is_typed_dict_class, is_named_tuple_class
+from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
 T = TypeVar('T')
 
