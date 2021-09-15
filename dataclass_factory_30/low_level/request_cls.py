@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TypeVar, List, Generic, Any, Callable, Union, Optional
+from typing import TypeVar, List, Generic, Optional
 
+from .definitions import Default
 from ..common import TypeHint, Parser, Serializer, Json
 from ..core import (
     BaseFactory,
@@ -12,25 +13,6 @@ from ..core import (
 )
 
 T = TypeVar('T')
-
-
-@dataclass(frozen=True)
-class NoDefault:
-    field_is_required: bool
-
-
-@dataclass(frozen=True)
-class DefaultValue:
-    value: Any
-
-
-@dataclass(frozen=True)
-class DefaultFactory:
-    factory: Callable[[], Any]
-
-
-Default = Union[NoDefault, DefaultValue, DefaultFactory]
-
 
 # RM - Request Mixin
 
@@ -103,8 +85,9 @@ class SerializerRequest(TypeRM[Serializer], PipelineEvalMixin):
         return pipeline_serializer
 
 
+@dataclass(frozen=True)
 class SerializerFieldRequest(SerializerRequest, FieldRM[Parser]):
-    pass
+    omit_default: bool
 
 
 class JsonSchemaProvider(TypeRM[Json]):

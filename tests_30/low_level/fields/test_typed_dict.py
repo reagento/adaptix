@@ -4,11 +4,11 @@ from typing import TypedDict
 from dataclass_factory_30.low_level.fields import (
     TypedDictFieldsProvider,
     FieldRM,
-    NoDefault,
     InputFieldsFigure,
     OutputFieldsFigure,
     GetterKind
 )
+from dataclass_factory_30.low_level import NoDefault
 
 
 class Foo(TypedDict, total=True):

@@ -27,12 +27,9 @@ from .request_cls import (
     ParserRequest,
     SerializerRequest,
     JsonSchemaProvider,
-    NoDefault,
-    DefaultValue,
-    DefaultFactory,
-    Default,
     FieldRM,
     ParserFieldRequest,
     SerializerFieldRequest,
     NameMappingRequest
 )
+from .definitions import NoDefault, DefaultValue, DefaultFactory, Default

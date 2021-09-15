@@ -6,12 +6,11 @@ import pytest
 from dataclass_factory_30.core import CannotProvide
 from dataclass_factory_30.low_level.fields import (
     ClassInitFieldsProvider,
-    NoDefault,
-    DefaultValue,
     FieldRM,
     InputFieldsFigure,
     ExtraVariant
 )
+from dataclass_factory_30.low_level import NoDefault, DefaultValue
 
 
 class Valid1:

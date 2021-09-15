@@ -5,12 +5,11 @@ from typing import Any, NamedTuple
 from dataclass_factory_30.low_level.fields import (
     NamedTupleFieldsProvider,
     FieldRM,
-    DefaultValue,
-    NoDefault,
     InputFieldsFigure,
     OutputFieldsFigure,
     GetterKind
 )
+from dataclass_factory_30.low_level import NoDefault, DefaultValue
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')
