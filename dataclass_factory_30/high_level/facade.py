@@ -3,13 +3,13 @@ from typing import TypeVar, Type, overload, Any, Callable, Tuple
 from .utils import resolve_classmethod
 from ..common import Parser, Serializer
 from ..low_level import (
-    NextProvider, BuiltinTypeRequestChecker, SerializerRequest, ParserRequest,
+    NextProvider, SerializerRequest, ParserRequest,
 )
 from ..low_level.provider import FuncProvider, ConstructorParserProvider
 
 T = TypeVar('T')
 
-AsParser = Tuple[BuiltinTypeRequestChecker.ALLOWS, Parser]
+AsParser = Tuple[Any, Parser]
 
 
 @overload
@@ -18,7 +18,7 @@ def as_parser(func_or_pred: Type[T], func: Parser[Any, T]) -> AsParser:
 
 
 @overload
-def as_parser(func_or_pred: BuiltinTypeRequestChecker.ALLOWS, func: Parser) -> AsParser:
+def as_parser(func_or_pred: Any, func: Parser) -> AsParser:
     pass
 
 
@@ -36,7 +36,7 @@ def as_parser(func_or_pred, func=None):
     return pred, FuncProvider(ParserRequest, func)
 
 
-AsSerializer = Tuple[BuiltinTypeRequestChecker.ALLOWS, Serializer]
+AsSerializer = Tuple[Any, Serializer]
 
 
 @overload
@@ -45,7 +45,7 @@ def as_serializer(func_or_pred: Type[T], func: Serializer[Any, T]) -> AsSerializ
 
 
 @overload
-def as_serializer(func_or_pred: BuiltinTypeRequestChecker.ALLOWS, func: Serializer) -> AsSerializer:
+def as_serializer(func_or_pred: Any, func: Serializer) -> AsSerializer:
     pass
 
 
@@ -63,7 +63,7 @@ def as_serializer(func_or_pred, func=None):
     return pred, FuncProvider(SerializerRequest, func)
 
 
-AsConstructor = Tuple[BuiltinTypeRequestChecker.ALLOWS, Parser]
+AsConstructor = Tuple[Any, Parser]
 
 
 @overload
@@ -72,7 +72,7 @@ def as_constructor(func_or_pred: Type[T], constructor: Callable[..., T]) -> AsCo
 
 
 @overload
-def as_constructor(func_or_pred: BuiltinTypeRequestChecker.ALLOWS, constructor: Callable) -> AsConstructor:
+def as_constructor(func_or_pred: Any, constructor: Callable) -> AsConstructor:
     pass
 
 

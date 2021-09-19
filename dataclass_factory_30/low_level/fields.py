@@ -6,7 +6,8 @@ from operator import getitem
 from types import MappingProxyType
 from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, Literal
 
-from .request_cls import FieldRM, NoDefault, DefaultValue, Default, DefaultFactory
+from .request_cls import FieldRM
+from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
 from ..core import BaseFactory, CannotProvide, Provider, provision_action, SearchState, Request
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 

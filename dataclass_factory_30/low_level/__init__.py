@@ -15,7 +15,9 @@ from .fields import (
 )
 from .provider import (
     TypeRequestChecker,
-    BuiltinTypeRequestChecker,
+    create_builtin_tr_checker,
+    SubclassTRChecker,
+    FieldNameTRChecker,
     NextProvider,
     ConstrainingProxyProvider
 )

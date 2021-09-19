@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Union, Type, Callable
 
-from .request_cls import TypeRequest, TypeFieldRequest
+from .request_cls import TypeRM, FieldNameRM
 from ..core import Provider, BaseFactory, CannotProvide, provision_action, Request, SearchState
 
 T = TypeVar('T')
@@ -10,35 +10,46 @@ T = TypeVar('T')
 
 class TypeRequestChecker(ABC):
     @abstractmethod
-    def __call__(self, request: TypeRequest) -> None:
+    def __call__(self, request: Request) -> None:
         """Raise CannotProvide if the request does not meet the conditions"""
         raise NotImplementedError
 
 
-class BuiltinTypeRequestChecker(TypeRequestChecker):
-    ALLOWS = Union[type, str]
+@dataclass
+class FieldNameTRChecker(TypeRequestChecker):
+    field_name: str
 
-    # TODO: Add support for type hint as pred
-    def __init__(self, pred: ALLOWS):
-        if not isinstance(pred, (str, type)):
-            raise TypeError(f'Expected {self.ALLOWS}')
-
-        self.pred = pred
-
-    def __call__(self, request: TypeRequest) -> None:
-        if isinstance(self.pred, str):
-            if isinstance(request, TypeFieldRequest) and self.pred == request.field_name:
+    def __call__(self, request: Request) -> None:
+        if isinstance(request, FieldNameRM):
+            if self.field_name == request.field_name:
                 return
+            raise CannotProvide(f'field_name must be a {self.field_name!r}')
 
-            raise CannotProvide
+        raise CannotProvide(f'Only {FieldNameRM} instance is allowed')
 
-        if not isinstance(request.type, type):
-            raise CannotProvide
 
-        if issubclass(request.type, self.pred):
-            return
+@dataclass
+class SubclassTRChecker(TypeRequestChecker):
+    type_: type
 
-        raise CannotProvide
+    def __call__(self, request: Request) -> None:
+        if isinstance(request, TypeRM):
+            if not isinstance(request.type, type):
+                raise CannotProvide(f'{request.type} must be a class')
+
+            if issubclass(request.type, self.type_):
+                return
+            raise CannotProvide(f'{request.type} must be a subclass of {self.type_}')
+
+        raise CannotProvide(f'Only {TypeRM} instance is allowed')
+
+
+def create_builtin_tr_checker(pred: Union[type, str]) -> TypeRequestChecker:
+    if isinstance(pred, str):
+        return FieldNameTRChecker(pred)
+    if isinstance(pred, type):
+        return SubclassTRChecker(pred)
+    raise TypeError(f'Expected {Union[type, str]}')
 
 
 class NextProvider(Provider):
@@ -52,8 +63,8 @@ class ConstrainingProxyProvider(Provider):
     tr_checker: TypeRequestChecker
     provider: Provider
 
-    @provision_action(TypeRequest)
-    def _cpp_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: TypeRequest[T]) -> T:
+    @provision_action(Request)
+    def _cpp_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request[T]) -> T:
         self.tr_checker(request)
         return self.provider.apply_provider(factory, s_state, request)
 
