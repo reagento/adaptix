@@ -1,9 +1,10 @@
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
 from inspect import isfunction
-from typing import Type, TypeVar, Generic, final, Optional, Callable, ClassVar, List, Tuple, Sequence, Dict
+from typing import Type, TypeVar, Generic, final, Optional, Callable, ClassVar, List, Tuple, Sequence, Set
 
-from .class_dispatcher import ClassDispatcher, check_values_uniqueness
+from .class_dispatcher import ClassDispatcher
+from ..type_tools import is_subclass_soft
 
 T = TypeVar('T')
 
@@ -69,6 +70,16 @@ def provision_action(request_cls: Type[RequestTV]):
     See :class:`Provider` for details.
     """
 
+    if not is_subclass_soft(request_cls, Request):
+        if isfunction(request_cls):
+            seems = " It seems you apply decorator without argument"
+        else:
+            seems = ""
+
+        raise TypeError(
+            "The argument of @provision_action must be a subclass of Request." + seems
+        )
+
     def decorator(func: Callable[[ProviderTV, 'BaseFactory', SearchState, RequestTV], T]):
         func._pa_request_cls = request_cls  # type: ignore
         return func
@@ -91,70 +102,77 @@ def _collect_class_own_rd(cls: Type['Provider']) -> RequestDispatcher:
 
 
 class Provider(PipeliningMixin):
-    """Provider is a central part of core API.
+    """The provider is a central part of the core API.
 
-    Providers can define special methods that can process Request instance.
-    They are called provision action and could be created
-    by @provision_action decorator.
-    You have to attach Request class to every provision action.
-    Factory will select provision action
-    which Request type will be supertype of actual request
-    and will be the most closest in mro to actual
+    Providers can define special methods that can process Request instances.
+    They are called provision action
+    and could be created by the @provision_action decorator.
+    You have to attach the Request class to every provision action.
+    The factory will select provision action
+    which Request type will be a supertype of actual request
+    and will be the closest in MRO to actual.
 
-    You can not define several provision action that attached to one request class.
+    You can not define several provision actions
+    that are attached to one request class.
 
-    Child class inherits all provision action.
-    You can delete inherited provision action by setting such attribute to None.
+    The child class inherits all provision action.
+    You can delete inherited provision action
+    by setting such attribute to None.
 
-    Each provision action takes BaseFactory, SearchState and instance of attached Request subclass.
+    Each provision action takes BaseFactory,
+    SearchState, and instance of attached Request subclass.
     SearchState is created by Factory.
 
-    All registered provision actions are stored in cls_request_dispatching class variable.
-    It's calculating at class initialization and never should be changing by other ways.
+    Subclasses must call __init__ of Provider.
+    Be careful with dataclasses.
+    It requires a to call parent __init__ inside __post_init__.
+    You can pass an instance of ClassDispatcher
+    that will merge with class dispatching.
+    This is very useful for decorators, wrapper and etc.
 
-    Any provision action must return value of expected type otherwise raise :exception:`CannotProvide`.
+    Any provision action must return value
+    of expected type otherwise raise :exception:`CannotProvide`.
     """
-    cls_request_dispatching: ClassVar[RequestDispatcher] = ClassDispatcher()
+    _cls_request_dispatching: ClassVar[RequestDispatcher] = ClassDispatcher()
 
     def __init_subclass__(cls, **kwargs):
-        none_attrs: List[str] = [
+        none_attrs: Set[str] = {
             name for name, attr_value in vars(cls).items()
             if attr_value is None
-        ]
+        }
 
-        # first mro entries must override subsequent entries
-        attr_to_cls: Dict[str, Type[Request]] = {}
+        parent_dispatch: RequestDispatcher = ClassDispatcher()
         for base in reversed(cls.__bases__):
             if issubclass(base, Provider):
-                for request_cls, attr_name in base.cls_request_dispatching.items():
-                    attr_to_cls[attr_name] = request_cls
+                parent_dispatch = parent_dispatch.merge(
+                    base._cls_request_dispatching, remove=none_attrs
+                )
 
-        for attr_name in none_attrs:
-            try:
-                del attr_to_cls[attr_name]
-            except KeyError:
-                pass
-
-        check_values_uniqueness(attr_to_cls)
-
-        parent_dispatching = ClassDispatcher(
-            {
-                request_cls: attr_name
-                for attr_name, request_cls in attr_to_cls.items()
-            }
-        )
-
-        cls.cls_request_dispatching = parent_dispatching.merge_exclusive(
+        cls._cls_request_dispatching = parent_dispatch.merge(
             _collect_class_own_rd(cls)
         )
 
+    def __init__(self, request_dispatching: Optional[RequestDispatcher] = None):
+        if request_dispatching is None:
+            self._provider_request_dispatching = self._cls_request_dispatching
+        else:
+            self._provider_request_dispatching = self._cls_request_dispatching.merge(
+                request_dispatching
+            )
+
+    @property
+    def request_dispatching(self) -> RequestDispatcher:
+        return self._provider_request_dispatching
+
     @final
     def apply_provider(self, factory: 'BaseFactory', s_state: SearchStateTV, request: Request[T]) -> T:
-        """This method is suitable wrapper around find_provision_action_attr_name and getattr.
-        Factory may not use this method implementing own cached provision action call.
+        """This method is suitable wrapper
+        around request_dispatching property and getattr.
+        Factory may not use this method
+        implementing own cached provision action call.
         """
         try:
-            attr_name = self.cls_request_dispatching[type(request)]
+            attr_name = self._provider_request_dispatching[type(request)]
         except KeyError:
             raise CannotProvide
 
@@ -251,6 +269,9 @@ class PipelineEvalMixin(ABC):
 @dataclass(frozen=True)
 class Pipeline(Provider, PipeliningMixin, Generic[V]):
     elements: Tuple[V, ...]
+
+    def __post_init__(self):
+        super().__init__()
 
     @provision_action(Request)
     def _proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request):

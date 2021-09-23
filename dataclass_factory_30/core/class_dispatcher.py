@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Generic, TypeVar, Optional, Dict, Iterable, Type, Tuple
+from typing import Generic, TypeVar, Optional, Dict, Type, Tuple, Collection
 
 K_co = TypeVar('K_co', covariant=True)
 K = TypeVar('K')
@@ -16,6 +16,9 @@ class KeyDuplication(Exception, Generic[K, V]):
     left_value: V
     right_value: V
 
+    def __post_init__(self):
+        super().__init__()
+
 
 @dataclass
 class ValueDuplication(ValueError, Generic[K, V]):
@@ -23,8 +26,11 @@ class ValueDuplication(ValueError, Generic[K, V]):
     right_key: K
     value: V
 
+    def __post_init__(self):
+        super().__init__()
 
-def check_values_uniqueness(mapping: Dict[K, V]):
+
+def _check_values_uniqueness(mapping: Dict[K, V]):
     inv_mapping: Dict[V, K] = {}
     for key, value in mapping.items():
         if value in inv_mapping:
@@ -43,7 +49,7 @@ class ClassDispatcher(Generic[K_co, V]):
         if mapping is None:
             self._mapping: Dict[Type[K_co], V] = {}
         else:
-            check_values_uniqueness(mapping)
+            _check_values_uniqueness(mapping)
             self._mapping = mapping
 
     def __getitem__(self, key: Type[K_co]) -> V:
@@ -68,34 +74,62 @@ class ClassDispatcher(Generic[K_co, V]):
 
             return mk_value  # type: ignore
 
-    def merge_overwrite(self, other: 'ClassDispatcher[K_co, V]') -> 'ClassDispatcher[K_co, V]':
-        mapping = self._mapping
+    def merge(
+        self,
+        other: 'ClassDispatcher[K_co, V]',
+        remove: Optional[Collection[V]] = None
+    ) -> 'ClassDispatcher[K_co, V]':
+        if not self._mapping:
+            return other
 
-        for key, value in other._mapping.items():
-            mapping[key] = value
+        if remove is None:
+            self_copy = self._mut_copy()
+        else:
+            self_copy = self.remove_values(remove)._mut_copy()
 
-        return type(self)(mapping)
+        inv_map = {v: k for k, v in self_copy._mapping.items()}
 
-    def merge_exclusive(self, other: 'ClassDispatcher[K_co, V]') -> 'ClassDispatcher[K_co, V]':
-        mapping = self._mapping
+        for key, value in other.items():
+            if remove is not None and value in remove:
+                continue
 
-        for key, value in other._mapping.items():
-            if key in mapping:
+            if key in self_copy.keys():
                 raise KeyDuplication(
-                    key=key, left_value=mapping[key], right_value=value
+                    key=key,
+                    left_value=self_copy._mapping[key],
+                    right_value=value,
                 )
+
+            if value in inv_map:
+                old_self_key = inv_map[value]
+                del self_copy._mapping[old_self_key]
+                self_copy._mapping[key] = value
             else:
-                mapping[key] = value
+                self_copy._mapping[key] = value
 
-        return type(self)(mapping)
+        return self_copy
 
-    def values(self) -> Iterable[V]:
+    def _mut_copy(self):
+        cp = type(self)()
+        cp._mapping = self._mapping.copy()
+        return cp
+
+    # require Container + Iterable
+    def remove_values(self, values: Collection[V]) -> 'ClassDispatcher[K_co, V]':
+        self_copy = self._mut_copy()
+        for key, value in self_copy._mapping.items():
+            if value in values:
+                del self_copy._mapping[key]
+
+        return self_copy
+
+    def values(self) -> Collection[V]:
         return self._mapping.values()
 
-    def keys(self) -> Iterable[Type[K_co]]:
+    def keys(self) -> Collection[Type[K_co]]:
         return self._mapping.keys()
 
-    def items(self) -> Iterable[Tuple[Type[K_co], V]]:
+    def items(self) -> Collection[Tuple[Type[K_co], V]]:
         return self._mapping.items()
 
     def __repr__(self):
