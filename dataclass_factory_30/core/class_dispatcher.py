@@ -74,25 +74,14 @@ class ClassDispatcher(Generic[K_co, V]):
 
             return mk_value  # type: ignore
 
-    def merge(
-        self,
-        other: 'ClassDispatcher[K_co, V]',
-        remove: Optional[Collection[V]] = None
-    ) -> 'ClassDispatcher[K_co, V]':
+    def merge(self, other: 'ClassDispatcher[K_co, V]') -> 'ClassDispatcher[K_co, V]':
         if not self._mapping:
             return other
 
-        if remove is None:
-            self_copy = self._mut_copy()
-        else:
-            self_copy = self.remove_values(remove)._mut_copy()
-
+        self_copy = self._mut_copy()
         inv_map = {v: k for k, v in self_copy._mapping.items()}
 
         for key, value in other.items():
-            if remove is not None and value in remove:
-                continue
-
             if key in self_copy.keys():
                 raise KeyDuplication(
                     key=key,

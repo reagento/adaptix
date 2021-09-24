@@ -145,7 +145,7 @@ class Provider(PipeliningMixin):
         for base in reversed(cls.__bases__):
             if issubclass(base, Provider):
                 parent_dispatch = parent_dispatch.merge(
-                    base._cls_request_dispatcher, remove=none_attrs
+                    base._cls_request_dispatcher.remove_values(none_attrs),
                 )
 
         cls._cls_request_dispatcher = parent_dispatch.merge(
