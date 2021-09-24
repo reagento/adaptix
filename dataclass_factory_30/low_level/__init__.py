@@ -14,10 +14,10 @@ from .fields import (
     ClassInitFieldsProvider
 )
 from .provider import (
-    TypeRequestChecker,
-    create_builtin_tr_checker,
-    SubclassTRChecker,
-    FieldNameTRChecker,
+    RequestChecker,
+    create_builtin_req_checker,
+    SubclassRC,
+    FieldNameRC,
     NextProvider,
     ConstrainingProxyProvider
 )
@@ -34,4 +34,9 @@ from .request_cls import (
     SerializerFieldRequest,
     NameMappingRequest
 )
-from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
+from .definitions import (
+    NoDefault,
+    DefaultValue,
+    DefaultFactory,
+    Default
+)

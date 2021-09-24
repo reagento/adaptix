@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import TypeVar
 
-from .provider import TypeRequestChecker, ConstrainingProxyProvider, create_builtin_tr_checker
+from .provider import RequestChecker, ConstrainingProxyProvider, create_builtin_req_checker
 from ..core import (
     BaseFactory,
     Provider,
@@ -60,14 +60,14 @@ class BuiltinFactory(BaseFactory[BuiltinSearchState], PipeliningMixin):
             try:
                 pred, sub_value = value
 
-                if isinstance(pred, TypeRequestChecker):
-                    tr_checker = pred
+                if isinstance(pred, RequestChecker):
+                    req_checker = pred
                 else:
-                    tr_checker = create_builtin_tr_checker(pred)
+                    req_checker = create_builtin_req_checker(pred)
 
                 provider = self.ensure_provider(sub_value)
 
-                return ConstrainingProxyProvider(tr_checker, provider)
+                return ConstrainingProxyProvider(req_checker, provider)
             except (TypeError, ValueError):
                 pass
 

@@ -8,7 +8,7 @@ from ..core import Provider, BaseFactory, CannotProvide, provision_action, Reque
 T = TypeVar('T')
 
 
-class TypeRequestChecker(ABC):
+class RequestChecker(ABC):
     @abstractmethod
     def __call__(self, request: Request) -> None:
         """Raise CannotProvide if the request does not meet the conditions"""
@@ -16,7 +16,7 @@ class TypeRequestChecker(ABC):
 
 
 @dataclass
-class FieldNameTRChecker(TypeRequestChecker):
+class FieldNameRC(RequestChecker):
     field_name: str
 
     def __call__(self, request: Request) -> None:
@@ -29,7 +29,7 @@ class FieldNameTRChecker(TypeRequestChecker):
 
 
 @dataclass
-class SubclassTRChecker(TypeRequestChecker):
+class SubclassRC(RequestChecker):
     type_: type
 
     def __call__(self, request: Request) -> None:
@@ -44,11 +44,11 @@ class SubclassTRChecker(TypeRequestChecker):
         raise CannotProvide(f'Only {TypeRM} instance is allowed')
 
 
-def create_builtin_tr_checker(pred: Union[type, str]) -> TypeRequestChecker:
+def create_builtin_req_checker(pred: Union[type, str]) -> RequestChecker:
     if isinstance(pred, str):
-        return FieldNameTRChecker(pred)
+        return FieldNameRC(pred)
     if isinstance(pred, type):
-        return SubclassTRChecker(pred)
+        return SubclassRC(pred)
     raise TypeError(f'Expected {Union[type, str]}')
 
 
@@ -60,12 +60,12 @@ class NextProvider(Provider):
 
 @dataclass
 class ConstrainingProxyProvider(Provider):
-    tr_checker: TypeRequestChecker
+    req_checker: RequestChecker
     provider: Provider
 
     @provision_action(Request)
     def _cpp_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request[T]) -> T:
-        self.tr_checker(request)
+        self.req_checker(request)
         return self.provider.apply_provider(factory, s_state, request)
 
 
