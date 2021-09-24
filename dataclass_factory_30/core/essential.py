@@ -133,7 +133,7 @@ class Provider(PipeliningMixin):
     Any provision action must return value
     of expected type otherwise raise :exception:`CannotProvide`.
     """
-    _cls_request_dispatching: ClassVar[RequestDispatcher] = ClassDispatcher()
+    _cls_request_dispatcher: ClassVar[RequestDispatcher] = ClassDispatcher()
 
     def __init_subclass__(cls, **kwargs):
         none_attrs: Set[str] = {
@@ -145,34 +145,34 @@ class Provider(PipeliningMixin):
         for base in reversed(cls.__bases__):
             if issubclass(base, Provider):
                 parent_dispatch = parent_dispatch.merge(
-                    base._cls_request_dispatching, remove=none_attrs
+                    base._cls_request_dispatcher, remove=none_attrs
                 )
 
-        cls._cls_request_dispatching = parent_dispatch.merge(
+        cls._cls_request_dispatcher = parent_dispatch.merge(
             _collect_class_own_rd(cls)
         )
 
     def __init__(self, request_dispatching: Optional[RequestDispatcher] = None):
         if request_dispatching is None:
-            self._provider_request_dispatching = self._cls_request_dispatching
+            self._provider_request_dispatcher = self._cls_request_dispatcher
         else:
-            self._provider_request_dispatching = self._cls_request_dispatching.merge(
+            self._provider_request_dispatcher = self._cls_request_dispatcher.merge(
                 request_dispatching
             )
 
     @property
-    def request_dispatching(self) -> RequestDispatcher:
-        return self._provider_request_dispatching
+    def request_dispatcher(self) -> RequestDispatcher:
+        return self._provider_request_dispatcher
 
     @final
     def apply_provider(self, factory: 'BaseFactory', s_state: SearchStateTV, request: Request[T]) -> T:
         """This method is suitable wrapper
-        around request_dispatching property and getattr.
+        around request_dispatcher property and getattr.
         Factory may not use this method
         implementing own cached provision action call.
         """
         try:
-            attr_name = self._provider_request_dispatching[type(request)]
+            attr_name = self.request_dispatcher[type(request)]
         except KeyError:
             raise CannotProvide
 
