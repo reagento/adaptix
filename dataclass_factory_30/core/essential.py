@@ -152,12 +152,12 @@ class Provider(PipeliningMixin):
             _collect_class_own_rd(cls)
         )
 
-    def __init__(self, request_dispatching: Optional[RequestDispatcher] = None):
-        if request_dispatching is None:
+    def __init__(self, request_dispatcher: Optional[RequestDispatcher] = None):
+        if request_dispatcher is None:
             self._provider_request_dispatcher = self._cls_request_dispatcher
         else:
             self._provider_request_dispatcher = self._cls_request_dispatcher.merge(
-                request_dispatching
+                request_dispatcher
             )
 
     @property
