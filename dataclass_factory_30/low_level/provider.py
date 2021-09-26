@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Union, Type, Callable
+from typing import TypeVar, Union, Type, Callable, Tuple
 
 from .request_cls import TypeRM, FieldNameRM
 from ..core import Provider, BaseFactory, CannotProvide, provision_action, Request, SearchState
@@ -9,39 +9,49 @@ T = TypeVar('T')
 
 
 class RequestChecker(ABC):
+    @property
     @abstractmethod
-    def __call__(self, request: Request) -> None:
+    def allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _check_request(self, request) -> None:
         """Raise CannotProvide if the request does not meet the conditions"""
         raise NotImplementedError
+
+    def __call__(self, request: Request) -> None:
+        """Raise CannotProvide if the request does not meet the conditions"""
+        allowed = self.allowed_request_classes
+        if isinstance(request, allowed):
+            self._check_request(request)
+        raise CannotProvide(f'Only instances of {allowed} are allowed')
 
 
 @dataclass
 class FieldNameRC(RequestChecker):
     field_name: str
 
-    def __call__(self, request: Request) -> None:
-        if isinstance(request, FieldNameRM):
-            if self.field_name == request.field_name:
-                return
-            raise CannotProvide(f'field_name must be a {self.field_name!r}')
+    allowed_request_classes = (FieldNameRM,)
 
-        raise CannotProvide(f'Only {FieldNameRM} instance is allowed')
+    def _check_request(self, request: FieldNameRM) -> None:
+        if self.field_name == request.field_name:
+            return
+        raise CannotProvide(f'field_name must be a {self.field_name!r}')
 
 
 @dataclass
 class SubclassRC(RequestChecker):
     type_: type
 
-    def __call__(self, request: Request) -> None:
-        if isinstance(request, TypeRM):
-            if not isinstance(request.type, type):
-                raise CannotProvide(f'{request.type} must be a class')
+    allowed_request_classes = (TypeRM,)
 
-            if issubclass(request.type, self.type_):
-                return
-            raise CannotProvide(f'{request.type} must be a subclass of {self.type_}')
+    def _check_request(self, request: TypeRM) -> None:
+        if not isinstance(request.type, type):
+            raise CannotProvide(f'{request.type} must be a class')
 
-        raise CannotProvide(f'Only {TypeRM} instance is allowed')
+        if issubclass(request.type, self.type_):
+            return
+        raise CannotProvide(f'{request.type} must be a subclass of {self.type_}')
 
 
 def create_builtin_req_checker(pred: Union[type, str]) -> RequestChecker:
@@ -58,10 +68,11 @@ class NextProvider(Provider):
         return factory.provide(s_state.start_from_next(), request)
 
 
-@dataclass
 class ConstrainingProxyProvider(Provider):
-    req_checker: RequestChecker
-    provider: Provider
+    def __init__(self, req_checker: RequestChecker, provider: Provider):
+        self.req_checker = req_checker
+        self.provider = provider
+        super().__init__()
 
     @provision_action(Request)
     def _cpp_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request[T]) -> T:
