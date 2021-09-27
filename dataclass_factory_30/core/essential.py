@@ -213,17 +213,31 @@ class BaseFactory(ABC, Generic[SearchStateTV]):
         raise NotImplementedError
 
     @abstractmethod
-    def provide(self, s_state: SearchStateTV, request: Request[T]) -> T:
+    def provide_with(self, s_state: SearchStateTV, request: Request[T]) -> T:
         """Get response of sent request.
 
         :param s_state: Search State of Factory.
-                        If factory should start search from begging,
-                        pass a result of :method:`create_init_search_state`
-        :param request:
-        :return: A result of request processing
-        :raise NoSuitableProvider: A provider that can process request does not found
+        If the factory should start the search from begging,
+        pass a result of :method:`create_init_search_state`
+
+        :param request: A request instance
+        :return: Result of the request processing
+        :raise NoSuitableProvider: A provider able to process the request does not found
         """
         raise NotImplementedError
+
+    @final
+    def provide(self, request: Request[T]) -> T:
+        """Get a response to the sent request.
+        Search starts from the beginning of the factory recipe.
+        This method is wrapper around
+        :method:`provide_with` and :method:`create_init_search_state`
+
+        :param request: A request instance
+        :return: Result of the request processing
+        :raise NoSuitableProvider: A provider able to process the request does not found
+        """
+        return self.provide_with(self.create_init_search_state(), request)
 
 
 def _get_class_own_recipe(cls: type) -> list:

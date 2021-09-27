@@ -65,7 +65,7 @@ def create_builtin_req_checker(pred: Union[type, str]) -> RequestChecker:
 class NextProvider(Provider):
     @provision_action(Request)
     def _np_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request[T]) -> T:
-        return factory.provide(s_state.start_from_next(), request)
+        return factory.provide_with(s_state.start_from_next(), request)
 
 
 class ConstrainingProxyProvider(Provider):

@@ -16,7 +16,7 @@ def create_factory_provide_method(request_cls: Type[RequestTV]):
     @provision_action(request_cls)
     def _provide_factory_proxy(self: BaseFactory, factory: BaseFactory, s_state: SearchState, request: ParserRequest):
         try:
-            return self.provide(self.create_init_search_state(), request)
+            return self.provide(request)
         except NoSuitableProvider:
             raise CannotProvide
 
@@ -30,9 +30,13 @@ class ParserFactory(BuiltinFactory, Provider):
 
     _provide_parser = create_factory_provide_method(ParserRequest)
 
-    def parser(self, type_: Type[T]) -> Parser[Any, T]:
+    def parser(self, tp: Type[T]) -> Parser[Any, T]:
         return self.provide(
-            self.create_init_search_state(), ParserRequest(type_)
+            ParserRequest(
+                tp,
+                type_check=self.type_check,
+                debug_path=self.debug_path
+            )
         )
 
 
@@ -42,10 +46,8 @@ class SerializerFactory(BuiltinFactory, Provider):
 
     _provide_serializer = create_factory_provide_method(SerializerRequest)
 
-    def serializer(self, type_: Type[T]) -> Serializer[T, Any]:
-        return self.provide(
-            self.create_init_search_state(), SerializerRequest(type_)
-        )
+    def serializer(self, tp: Type[T]) -> Serializer[T, Any]:
+        return self.provide(SerializerRequest(tp))
 
 
 # TODO: Add JsonSchemaFactory with new API

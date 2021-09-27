@@ -31,7 +31,7 @@ class BuiltinFactory(BaseFactory[BuiltinSearchState], PipeliningMixin):
     def create_init_search_state(self) -> BuiltinSearchState:
         return BuiltinSearchState(0)
 
-    def provide(self, s_state: BuiltinSearchState, request: Request[T]) -> T:
+    def provide_with(self, s_state: BuiltinSearchState, request: Request[T]) -> T:
         # TODO: add caching
         full_recipe = self.recipe + collect_class_full_recipe(type(self))
         start_idx = s_state.offset
