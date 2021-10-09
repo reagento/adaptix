@@ -52,7 +52,10 @@ class StaticProvider(Provider):
         mapping: Dict[Type[Request], str] = {}
 
         for attr_name in dir(cls):
-            attr_value = getattr(cls, attr_name)
+            try:
+                attr_value = getattr(cls, attr_name)
+            except AttributeError:
+                continue
             if hasattr(attr_value, '_spa_request_cls'):
                 rc = attr_value._spa_request_cls
                 if rc in mapping:
