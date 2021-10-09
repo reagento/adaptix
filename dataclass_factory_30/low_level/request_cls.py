@@ -94,8 +94,21 @@ class JsonSchemaProvider(TypeRM[Json]):
     pass
 
 
-class NameMappingRequest(FieldNameRM[Optional[str]]):
-    pass
+class NameMappingRequest(FieldNameRM[Optional[str]], PipelineEvalMixin):
+    @classmethod
+    def eval_pipeline(
+        cls,
+        providers: List[Provider],
+        factory: BaseFactory,
+        s_state: SearchState,
+        request: Request
+    ):
+        name = request.field_name # noqa
+        for name_mapper in providers:
+            name = name_mapper.apply_provider(factory, s_state, request)
+            if name is None:
+                return None
+        return name
 
 
 class NameMappingFieldRequest(NameMappingRequest, FieldRM[Optional[str]]):
