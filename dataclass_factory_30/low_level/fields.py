@@ -6,9 +6,10 @@ from operator import getitem
 from types import MappingProxyType
 from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, Literal
 
-from .request_cls import FieldRM
 from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
-from ..core import BaseFactory, CannotProvide, Provider, provision_action, SearchState, Request
+from .request_cls import FieldRM
+from .static_provider import StaticProvider, static_provision_action
+from ..core import BaseFactory, CannotProvide, SearchState, Request
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
 T = TypeVar('T')
@@ -118,7 +119,7 @@ def get_func_iff(func, slice_=slice(0, None)) -> InputFieldsFigure:
     )
 
 
-class NamedTupleFieldsProvider(Provider):
+class NamedTupleFieldsProvider(StaticProvider):
     def _get_input_fields_figure(self, tp: type) -> InputFieldsFigure:
         if not is_named_tuple_class(tp):
             raise CannotProvide
@@ -126,7 +127,7 @@ class NamedTupleFieldsProvider(Provider):
         return get_func_iff(tp.__new__, slice(1, None))
 
     # noinspection PyUnusedLocal
-    @provision_action(InputFFRequest)
+    @static_provision_action(InputFFRequest)
     def _provide_input_fields_figure(
         self,
         factory: BaseFactory,
@@ -142,7 +143,7 @@ class NamedTupleFieldsProvider(Provider):
         )
 
     # noinspection PyUnusedLocal
-    @provision_action(OutputFFRequest)
+    @static_provision_action(OutputFFRequest)
     def _provide_output_fields_figure(
         self,
         factory: BaseFactory,
@@ -152,7 +153,7 @@ class NamedTupleFieldsProvider(Provider):
         return self._get_output_fields_figure(request.type)
 
 
-class TypedDictFieldsProvider(Provider):
+class TypedDictFieldsProvider(StaticProvider):
     def _get_fields(self, tp):
         if not is_typed_dict_class(tp):
             raise CannotProvide
@@ -176,7 +177,7 @@ class TypedDictFieldsProvider(Provider):
         )
 
     # noinspection PyUnusedLocal
-    @provision_action(InputFFRequest)
+    @static_provision_action(InputFFRequest)
     def _provide_input_fields_figure(
         self,
         factory: BaseFactory,
@@ -192,7 +193,7 @@ class TypedDictFieldsProvider(Provider):
         )
 
     # noinspection PyUnusedLocal
-    @provision_action(OutputFFRequest)
+    @static_provision_action(OutputFFRequest)
     def _provide_output_fields_figure(
         self,
         factory: BaseFactory,
@@ -210,7 +211,7 @@ def get_dc_default(field: DCField) -> Default:
     return NoDefault(field_is_required=True)
 
 
-class DataclassFieldsProvider(Provider):
+class DataclassFieldsProvider(StaticProvider):
     """This provider does not work properly if __init__ signature differs from
     that would be created by dataclass decorator.
 
@@ -245,7 +246,7 @@ class DataclassFieldsProvider(Provider):
         )
 
     # noinspection PyUnusedLocal
-    @provision_action(InputFFRequest)
+    @static_provision_action(InputFFRequest)
     def _provide_input_fields_figure(
         self,
         factory: BaseFactory,
@@ -263,7 +264,7 @@ class DataclassFieldsProvider(Provider):
         )
 
     # noinspection PyUnusedLocal
-    @provision_action(OutputFFRequest)
+    @static_provision_action(OutputFFRequest)
     def _provide_output_fields_figure(
         self,
         factory: BaseFactory,
@@ -273,7 +274,7 @@ class DataclassFieldsProvider(Provider):
         return self._get_output_fields_figure(request.type)
 
 
-class ClassInitFieldsProvider(Provider):
+class ClassInitFieldsProvider(StaticProvider):
     def _get_input_fields_figure(self, tp):
         if not isinstance(tp, type):
             raise CannotProvide
@@ -286,7 +287,7 @@ class ClassInitFieldsProvider(Provider):
             raise CannotProvide
 
     # noinspection PyUnusedLocal
-    @provision_action(InputFFRequest)
+    @static_provision_action(InputFFRequest)
     def _provide_input_fields_figure(
         self,
         factory: BaseFactory,

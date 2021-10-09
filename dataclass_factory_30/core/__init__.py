@@ -1,14 +1,14 @@
 from .class_dispatcher import (
     ClassDispatcher,
-    KeyDuplication,
-    ValueDuplication
+    ClassDispatcherKeysView,
 )
 from .essential import (
     Request,
+    RequestDispatcher,
+    Provider,
     CannotProvide,
     SearchState,
     PipeliningMixin,
-    provision_action,
     Provider,
     NoSuitableProvider,
     BaseFactory,

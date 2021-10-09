@@ -3,15 +3,16 @@ from dataclasses import dataclass
 from typing import TypeVar, Union, Type, Callable, Tuple
 
 from .request_cls import TypeRM, FieldNameRM
-from ..core import Provider, BaseFactory, CannotProvide, provision_action, Request, SearchState
+from .static_provider import StaticProvider, static_provision_action
+from ..core import Provider, BaseFactory, CannotProvide, Request, SearchState, RequestDispatcher
+from ..core.class_dispatcher import ClassDispatcherKeysView
 
 T = TypeVar('T')
 
 
 class RequestChecker(ABC):
-    @property
     @abstractmethod
-    def allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+    def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
         raise NotImplementedError
 
     @abstractmethod
@@ -21,7 +22,7 @@ class RequestChecker(ABC):
 
     def __call__(self, request: Request) -> None:
         """Raise CannotProvide if the request does not meet the conditions"""
-        allowed = self.allowed_request_classes
+        allowed = self.get_allowed_request_classes()
         if isinstance(request, allowed):
             self._check_request(request)
         raise CannotProvide(f'Only instances of {allowed} are allowed')
@@ -31,7 +32,8 @@ class RequestChecker(ABC):
 class FieldNameRC(RequestChecker):
     field_name: str
 
-    allowed_request_classes = (FieldNameRM,)
+    def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+        return (FieldNameRM,)
 
     def _check_request(self, request: FieldNameRM) -> None:
         if self.field_name == request.field_name:
@@ -43,7 +45,8 @@ class FieldNameRC(RequestChecker):
 class SubclassRC(RequestChecker):
     type_: type
 
-    allowed_request_classes = (TypeRM,)
+    def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+        return (TypeRM,)
 
     def _check_request(self, request: TypeRM) -> None:
         if not isinstance(request.type, type):
@@ -62,8 +65,8 @@ def create_builtin_req_checker(pred: Union[type, str]) -> RequestChecker:
     raise TypeError(f'Expected {Union[type, str]}')
 
 
-class NextProvider(Provider):
-    @provision_action(Request)
+class NextProvider(StaticProvider):
+    @static_provision_action(Request)
     def _np_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request[T]) -> T:
         return factory.provide_with(s_state.start_from_next(), request)
 
@@ -72,9 +75,20 @@ class ConstrainingProxyProvider(Provider):
     def __init__(self, req_checker: RequestChecker, provider: Provider):
         self.req_checker = req_checker
         self.provider = provider
+
+        req_checker_rdkw = ClassDispatcherKeysView(
+            set(req_checker.get_allowed_request_classes())
+        )
+
+        self._rd = provider.get_request_dispatcher().keys().intersect(
+            req_checker_rdkw
+        ).bind('_cpp_proxy_provide')
+
         super().__init__()
 
-    @provision_action(Request)
+    def get_request_dispatcher(self) -> RequestDispatcher:
+        return self._rd
+
     def _cpp_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request[T]) -> T:
         self.req_checker(request)
         return self.provider.apply_provider(factory, s_state, request)

@@ -1,10 +1,8 @@
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
-from inspect import isfunction
-from typing import Type, TypeVar, Generic, final, Optional, Callable, ClassVar, List, Tuple, Sequence, Set
+from typing import Type, TypeVar, Generic, final, Optional, List, Tuple, Sequence
 
-from .class_dispatcher import ClassDispatcher
-from ..type_tools import is_subclass_soft
+from .class_dispatcher import ClassDispatcher, ClassDispatcherKeysView
 
 T = TypeVar('T')
 
@@ -28,11 +26,11 @@ class SearchState(ABC):
     @abstractmethod
     def start_from_next(self: T) -> T:
         """Start search from subsequent item of full recipe"""
+        raise NotImplementedError
 
 
 V = TypeVar('V')
 ProviderTV = TypeVar('ProviderTV', bound='Provider')
-RequestTV = TypeVar('RequestTV', bound=Request)
 SearchStateTV = TypeVar('SearchStateTV', bound=SearchState)
 
 
@@ -64,115 +62,47 @@ class PipeliningMixin:
         return _make_pipeline(other, self)
 
 
-def provision_action(request_cls: Type[RequestTV]):
-    """Marks method as provision_action and attaches specified request class
-
-    See :class:`Provider` for details.
-    """
-
-    if not is_subclass_soft(request_cls, Request):
-        if isfunction(request_cls):
-            seems = " It seems you apply decorator without argument"
-        else:
-            seems = ""
-
-        raise TypeError(
-            "The argument of @provision_action must be a subclass of Request." + seems
-        )
-
-    def decorator(func: Callable[[ProviderTV, 'BaseFactory', SearchState, RequestTV], T]):
-        func._pa_request_cls = request_cls  # type: ignore
-        return func
-
-    return decorator
-
-
 RequestDispatcher = ClassDispatcher[Request, str]
 
 
-def _collect_class_own_rd(cls: Type['Provider']) -> RequestDispatcher:
-    # noinspection PyProtectedMember
-    rd_dict = {
-        attr_value._pa_request_cls: name
-        for name, attr_value in vars(cls).items()
-        if isfunction(attr_value) and hasattr(attr_value, '_pa_request_cls')
-    }
-
-    return ClassDispatcher(rd_dict)
-
-
 class Provider(PipeliningMixin):
-    """The provider is a central part of the core API.
+    """A provider is an object that can process Request instances.
+    It defines methods called provision action
+    that takes 3 arguments (BaseFactory, SearchState, Request)
+    and returns the expected result or raises CannotProvide.
 
-    Providers can define special methods that can process Request instances.
-    They are called provision action
-    and could be created by the @provision_action decorator.
-    You have to attach the Request class to every provision action.
-    The factory will select provision action
-    which Request type will be a supertype of actual request
-    and will be the closest in MRO to actual.
+    Which provision action should be called for a specific request
+    is determined by RequestDispatcher obtained from :method get_request_dispatcher:.
+    RequestDispatcher is a :class ClassDispatcher: where keys are :class Request:
+    classes and values are strings (names of methods).
 
-    You can not define several provision actions
-    that are attached to one request class.
+    ``RequestDispatcher({ParserRequest: "provide_parser"})`` means that Provider object may
+    process ParserRequest and it's children. That provision action must never be called with
+    other classes of request.
 
-    The child class inherits all provision action.
-    You can delete inherited provision action
-    by setting such attribute to None.
+    If the request class is a child of several registered classes
+    RequestDispatcher will select the closest parent (defined by MRO).
+    So ``RequestDispatcher({ParserRequest: "provide_parser", Request: "provide_other"})``
+    means that ParserRequest and it's children will be processed by ``provide_parser``
+    and other requests will be processed by ``provide_other``
 
-    Each provision action takes BaseFactory,
-    SearchState, and instance of attached Request subclass.
-    SearchState is created by Factory.
-
-    Subclasses must call __init__ of Provider.
-    Be careful with dataclasses.
-    It requires a to call parent __init__ inside __post_init__.
-    You can pass an instance of ClassDispatcher
-    that will merge with class dispatching.
-    This is very useful for decorators, wrapper and etc.
-
-    Any provision action must return value
-    of expected type otherwise raise :exception:`CannotProvide`.
+    RequestDispatcher returned by :method get_request_dispatcher:
+    must be the same during the provider object lifetime
     """
-    _cls_request_dispatcher: ClassVar[RequestDispatcher] = ClassDispatcher()
 
-    def __init_subclass__(cls, **kwargs):
-        none_attrs: Set[str] = {
-            name for name, attr_value in vars(cls).items()
-            if attr_value is None
-        }
-
-        parent_dispatch: RequestDispatcher = ClassDispatcher()
-        for base in reversed(cls.__bases__):
-            if issubclass(base, Provider):
-                parent_dispatch = parent_dispatch.merge(
-                    base._cls_request_dispatcher.remove_values(none_attrs),
-                )
-
-        cls._cls_request_dispatcher = parent_dispatch.merge(
-            _collect_class_own_rd(cls)
-        )
-
-    def __init__(self, request_dispatcher: Optional[RequestDispatcher] = None):
-        if request_dispatcher is None:
-            self._provider_request_dispatcher = self._cls_request_dispatcher
-        else:
-            self._provider_request_dispatcher = self._cls_request_dispatcher.merge(
-                request_dispatcher
-            )
-
-    @property
-    def request_dispatcher(self) -> RequestDispatcher:
-        return self._provider_request_dispatcher
+    @abstractmethod
+    def get_request_dispatcher(self) -> RequestDispatcher:
+        raise NotImplementedError
 
     @final
     def apply_provider(self, factory: 'BaseFactory', s_state: SearchStateTV, request: Request[T]) -> T:
         """This method is suitable wrapper
-        around request_dispatcher property and getattr.
+        around :method get_request_dispatcher: and getattr().
         Factory may not use this method
         implementing own cached provision action call.
         """
         try:
-            attr_name = self.request_dispatcher[type(request)]
+            attr_name = self.get_request_dispatcher().dispatch(type(request))
         except KeyError:
             raise CannotProvide
 
@@ -280,16 +210,23 @@ class PipelineEvalMixin(ABC):
         pass
 
 
-@dataclass(frozen=True)
 class Pipeline(Provider, PipeliningMixin, Generic[V]):
-    elements: Tuple[V, ...]
+    def __init__(self, elements: Tuple[V, ...]):
+        self.elements = elements
+        self._rd: Optional[RequestDispatcher] = None
 
-    def __post_init__(self):
-        super().__init__()
+    def get_request_dispatcher(self) -> RequestDispatcher:
+        if self._rd is None:
+            keys_view = ClassDispatcherKeysView({Request})
+            for elem in self.elements:
+                if isinstance(elem, Provider):
+                    keys_view = keys_view.intersect(elem.get_request_dispatcher().keys())
+            self._rd = keys_view.bind('_proxy_provide')
 
-    @provision_action(Request)
+        return self._rd
+
     def _proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request):
-        if not issubclass(type(request), PipelineEvalMixin):
+        if not isinstance(request, PipelineEvalMixin):
             raise CannotProvide
 
         providers = [factory.ensure_provider(el) for el in self.elements]

@@ -1,47 +1,19 @@
-from dataclasses import dataclass
-from typing import Generic, TypeVar, Optional, Dict, Type, Tuple, Collection
+from typing import Generic, TypeVar, Optional, Dict, Type, Tuple, Collection, Iterator, Hashable, AbstractSet, List
 
-K_co = TypeVar('K_co', covariant=True)
-K = TypeVar('K')
-V = TypeVar('V')
+K_co = TypeVar('K_co', covariant=True, bound=Hashable)
+K = TypeVar('K', bound=Hashable)
+V = TypeVar('V', bound=Hashable)
 
 
 def _get_kinship(sub_cls: type, cls: type) -> int:
     return sub_cls.mro().index(cls)
 
 
-@dataclass
-class KeyDuplication(Exception, Generic[K, V]):
-    key: K
-    left_value: V
-    right_value: V
-
-    def __post_init__(self):
-        super().__init__()
-
-
-@dataclass
-class ValueDuplication(ValueError, Generic[K, V]):
-    left_key: K
-    right_key: K
-    value: V
-
-    def __post_init__(self):
-        super().__init__()
-
-
-def _check_values_uniqueness(mapping: Dict[K, V]):
-    inv_mapping: Dict[V, K] = {}
-    for key, value in mapping.items():
-        if value in inv_mapping:
-            raise ValueDuplication(
-                left_key=inv_mapping[value], right_key=key, value=value
-            )
-        inv_mapping[value] = key
-
-
 class ClassDispatcher(Generic[K_co, V]):
-    """ClassDispatcher is a special container
+    """Class Dispatcher is a special immutable container
+    that stores classes and values associated with them.
+    If you lookup for the value that is not presented in keys
+    ClassDispatcher will return the value of the closest superclass.
     """
     __slots__ = ('_mapping',)
 
@@ -49,10 +21,13 @@ class ClassDispatcher(Generic[K_co, V]):
         if mapping is None:
             self._mapping: Dict[Type[K_co], V] = {}
         else:
-            _check_values_uniqueness(mapping)
             self._mapping = mapping
 
-    def __getitem__(self, key: Type[K_co]) -> V:
+    def dispatch(self, key: Type[K_co]) -> V:
+        """Returns a value associated with the key.
+        If the key does not exist it will return
+        value of the closest superclass or raise KeyError
+        """
         try:
             return self._mapping[key]
         except KeyError:
@@ -74,30 +49,6 @@ class ClassDispatcher(Generic[K_co, V]):
 
             return mk_value  # type: ignore
 
-    def merge(self, other: 'ClassDispatcher[K_co, V]') -> 'ClassDispatcher[K_co, V]':
-        if not self._mapping:
-            return other
-
-        self_copy = self._mut_copy()
-        inv_map = {v: k for k, v in self_copy._mapping.items()}
-
-        for key, value in other.items():
-            if key in self_copy.keys():
-                raise KeyDuplication(
-                    key=key,
-                    left_value=self_copy._mapping[key],
-                    right_value=value,
-                )
-
-            if value in inv_map:
-                old_self_key = inv_map[value]
-                del self_copy._mapping[old_self_key]
-                self_copy._mapping[key] = value
-            else:
-                self_copy._mapping[key] = value
-
-        return self_copy
-
     def _mut_copy(self):
         cp = type(self)()
         cp._mapping = self._mapping.copy()
@@ -115,11 +66,66 @@ class ClassDispatcher(Generic[K_co, V]):
     def values(self) -> Collection[V]:
         return self._mapping.values()
 
-    def keys(self) -> Collection[Type[K_co]]:
-        return self._mapping.keys()
+    def keys(self) -> 'ClassDispatcherKeysView[K_co]':
+        return ClassDispatcherKeysView(self._mapping.keys())
 
     def items(self) -> Collection[Tuple[Type[K_co], V]]:
         return self._mapping.items()
 
     def __repr__(self):
         return f'{type(self).__qualname__}({self._mapping})'
+
+
+def _remove_superclasses(source: List[type], other: List[type]):
+    """
+    Remove all elements from :param source:
+    that is superclass of any of element from :param other:
+    """
+    i = 0
+    while i < len(source):
+        source_item = source[i]
+        for other_item in other:
+            if issubclass(other_item, source_item):  # noqa
+                source.pop(i)
+                break
+        else:
+            i += 1
+
+
+# It's not a KeysView because __iter__ of KeysView must returns a Iterator[K_co]
+# but there is no inverse of Type[]
+class ClassDispatcherKeysView(Generic[K_co]):
+    def __init__(self, keys: AbstractSet[Type[K_co]]):
+        self._keys = keys
+
+    def bind(self, value: V) -> ClassDispatcher[K_co, V]:
+        """Creates a ClassDispatcher
+         whose elements all point to the same value
+        """
+        return ClassDispatcher({k: value for k in self._keys})
+
+    def intersect(self, other: 'ClassDispatcherKeysView[K_co]') -> 'ClassDispatcherKeysView[K_co]':
+        """Returns ClassDispatcherKeysView which contains keys
+        covered by both keys view
+        """
+        self_keys = list(self._keys)
+        other_keys = list(other._keys)
+        _remove_superclasses(self_keys, other_keys)
+        _remove_superclasses(other_keys, self_keys)
+
+        result = set(self_keys)
+        result.update(other_keys)
+        return ClassDispatcherKeysView(result)
+
+    def __len__(self) -> int:
+        return len(self._keys)
+
+    def __iter__(self) -> Iterator[Type[K_co]]:
+        return iter(self._keys)
+
+    def __contains__(self, element: object) -> bool:
+        return element in self._keys
+
+    def __repr__(self):
+        keys = ", ".join(repr(k) for k in self._keys)
+        return f'{type(self).__qualname__}({keys})'

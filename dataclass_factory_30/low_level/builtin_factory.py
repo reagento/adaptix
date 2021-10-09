@@ -40,7 +40,7 @@ class BuiltinFactory(BaseFactory[BuiltinSearchState], PipeliningMixin):
         for offset, item in enumerate(full_recipe[start_idx:], start_idx):
             provider = self.ensure_provider(item)
             try:
-                attr_name = provider.request_dispatcher[request_cls]
+                attr_name = provider.get_request_dispatcher().dispatch(request_cls)
             except KeyError:
                 continue
 
