@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Type, TypeVar, Any
+from typing import Type, TypeVar, Any, Optional
 
 from ..common import Parser, Serializer
 from ..core import Request, BaseFactory, SearchState, NoSuitableProvider, CannotProvide
@@ -12,7 +12,7 @@ T = TypeVar('T')
 RequestTV = TypeVar('RequestTV', bound=Request)
 
 
-def create_factory_provide_method(request_cls: Type[RequestTV]):
+def create_factory_provision_action(request_cls: Type[RequestTV]):
     # noinspection PyUnusedLocal
     @static_provision_action(request_cls)
     def _provide_factory_proxy(
@@ -31,17 +31,29 @@ def create_factory_provide_method(request_cls: Type[RequestTV]):
 
 @dataclass(frozen=True)
 class ParserFactory(BuiltinFactory, StaticProvider):
-    type_check: bool = False
+    strict_coercion: bool = True
     debug_path: bool = True
 
-    _provide_parser = create_factory_provide_method(ParserRequest)
+    _provide_parser = create_factory_provision_action(ParserRequest)
 
-    def parser(self, tp: Type[T]) -> Parser[Any, T]:
+    def parser(
+        self,
+        tp: Type[T],
+        *,
+        strict_coercion: Optional[bool] = None,
+        debug_path: Optional[bool] = None
+    ) -> Parser[Any, T]:
+
+        if strict_coercion is None:
+            strict_coercion = self.strict_coercion
+        if debug_path is None:
+            debug_path = self.debug_path
+
         return self.provide(
             ParserRequest(
                 tp,
-                type_check=self.type_check,
-                debug_path=self.debug_path
+                strict_coercion=strict_coercion,
+                debug_path=debug_path
             )
         )
 
@@ -50,7 +62,7 @@ class ParserFactory(BuiltinFactory, StaticProvider):
 class SerializerFactory(BuiltinFactory, StaticProvider):
     omit_default: bool = False
 
-    _provide_serializer = create_factory_provide_method(SerializerRequest)
+    _provide_serializer = create_factory_provision_action(SerializerRequest)
 
     def serializer(self, tp: Type[T]) -> Serializer[T, Any]:
         return self.provide(SerializerRequest(tp))

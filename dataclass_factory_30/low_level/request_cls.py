@@ -35,7 +35,7 @@ class FieldRM(TypeRM[T], FieldNameRM[T], Generic[T]):
 
 @dataclass(frozen=True)
 class ParserRequest(TypeRM[Parser], PipelineEvalMixin):
-    type_check: bool
+    strict_coercion: bool
     debug_path: bool
 
     @classmethod
