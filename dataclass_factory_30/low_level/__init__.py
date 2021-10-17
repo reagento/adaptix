@@ -37,6 +37,7 @@ from .provider import (
     ConstrainingProxyProvider
 )
 from .request_cls import (
+    TypeHintRM,
     TypeRM,
     ParserRequest,
     SerializerRequest,

@@ -18,8 +18,13 @@ T = TypeVar('T')
 
 
 @dataclass(frozen=True)
-class TypeRM(Request[T], Generic[T]):
+class TypeHintRM(Request[T], Generic[T]):
     type: TypeHint
+
+
+@dataclass(frozen=True)
+class TypeRM(Request[T], Generic[T]):
+    type: type
 
 
 @dataclass(frozen=True)
@@ -28,13 +33,13 @@ class FieldNameRM(Request[T], Generic[T]):
 
 
 @dataclass(frozen=True)
-class FieldRM(TypeRM[T], FieldNameRM[T], Generic[T]):
+class FieldRM(TypeHintRM[T], FieldNameRM[T], Generic[T]):
     default: Default
     metadata: MappingProxyType
 
 
 @dataclass(frozen=True)
-class ParserRequest(TypeRM[Parser], PipelineEvalMixin):
+class ParserRequest(TypeHintRM[Parser], PipelineEvalMixin):
     strict_coercion: bool
     debug_path: bool
 
@@ -63,7 +68,7 @@ class ParserFieldRequest(ParserRequest, FieldRM[Parser]):
     pass
 
 
-class SerializerRequest(TypeRM[Serializer], PipelineEvalMixin):
+class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin):
     @classmethod
     def eval_pipeline(
         cls,
@@ -90,7 +95,7 @@ class SerializerFieldRequest(SerializerRequest, FieldRM[Parser]):
     omit_default: bool
 
 
-class JsonSchemaProvider(TypeRM[Json]):
+class JsonSchemaProvider(TypeHintRM[Json]):
     pass
 
 

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Union, Type, Callable, Tuple
 
-from .request_cls import TypeRM, FieldNameRM
+from .request_cls import TypeHintRM, FieldNameRM
 from .static_provider import StaticProvider, static_provision_action
 from ..core import Provider, BaseFactory, CannotProvide, Request, SearchState, RequestDispatcher
 from ..core.class_dispatcher import ClassDispatcherKeysView
@@ -46,9 +46,9 @@ class SubclassRC(RequestChecker):
     type_: type
 
     def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
-        return (TypeRM,)
+        return (TypeHintRM,)
 
-    def _check_request(self, request: TypeRM) -> None:
+    def _check_request(self, request: TypeHintRM) -> None:
         if not isinstance(request.type, type):
             raise CannotProvide(f'{request.type} must be a class')
 

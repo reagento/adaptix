@@ -8,9 +8,9 @@ from types import MappingProxyType
 from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, Literal, final
 
 from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
-from .request_cls import FieldRM
+from .request_cls import FieldRM, TypeRM
 from .static_provider import StaticProvider, static_provision_action
-from ..core import BaseFactory, CannotProvide, SearchState, Request
+from ..core import BaseFactory, CannotProvide, SearchState
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
 T = TypeVar('T')
@@ -59,8 +59,8 @@ class OutputFieldsFigure:
     getter_kind: GetterKind
 
 
-class BaseFFRequest(Request, Generic[T]):
-    type: type
+class BaseFFRequest(TypeRM[T], Generic[T]):
+    pass
 
 
 class InputFFRequest(BaseFFRequest[InputFieldsFigure]):
@@ -71,10 +71,10 @@ class OutputFFRequest(BaseFFRequest[OutputFieldsFigure]):
     pass
 
 
-def get_func_iff(func, slice_=slice(0, None)) -> InputFieldsFigure:
+def get_func_iff(func, params_slice=slice(0, None)) -> InputFieldsFigure:
     params = list(
         inspect.signature(func).parameters.values()
-    )[slice_]
+    )[params_slice]
 
     if not all(
         p.kind in (
