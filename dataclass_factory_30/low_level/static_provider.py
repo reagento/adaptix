@@ -1,5 +1,5 @@
 from inspect import isfunction
-from typing import ClassVar, Type, TypeVar, Callable, Dict
+from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable
 
 from ..core import Provider, RequestDispatcher, Request, SearchState, BaseFactory
 from ..type_tools import is_subclass_soft
@@ -10,7 +10,14 @@ SearchStateTV = TypeVar('SearchStateTV', bound=SearchState)
 T = TypeVar('T')
 
 
+_SPA_RC_STORAGE = '_spa_request_cls'
+
+
 def static_provision_action(request_cls: Type[RequestTV]):
+    """Marks method as @static_provision_action
+    See :class StaticProvider: for details
+    """
+
     if not is_subclass_soft(request_cls, Request):
         if isfunction(request_cls) or hasattr(request_cls, '__func__'):
             seems = " It seems you apply decorator without argument"
@@ -22,7 +29,12 @@ def static_provision_action(request_cls: Type[RequestTV]):
         )
 
     def decorator(func: Callable[[ProviderTV, BaseFactory, SearchState, RequestTV], T]):
-        func._spa_request_cls = request_cls  # type: ignore
+        if hasattr(func, _SPA_RC_STORAGE):
+            raise TypeError(
+                "@static_provision_action decorator cannot be applied twice"
+            )
+
+        setattr(func, _SPA_RC_STORAGE, request_cls)
         return func
 
     return decorator
@@ -39,9 +51,10 @@ class StaticProvider(Provider):
 
     Subclasses cannot have multiple methods attached to the same request
 
-    During subclassing StaticProvider goes through attributes of class
-    and collects all methods wrapped by @static_provision_action() decorator
-    to create the RequestDispatcher
+    During subclassing, StaticProvider goes through attributes of the class
+    and collects all methods wrapped by @static_provision_action() decorator.
+    Then it merges new @static_provision_action's with the parent ones
+    and creates the RequestDispatcher
     """
     _sp_cls_request_dispatcher: ClassVar[RequestDispatcher] = RequestDispatcher()
 
@@ -49,23 +62,69 @@ class StaticProvider(Provider):
         return self._sp_cls_request_dispatcher
 
     def __init_subclass__(cls, **kwargs):
-        mapping: Dict[Type[Request], str] = {}
+        own_spa = _collect_class_own_rd_dict(cls)
 
-        for attr_name in dir(cls):
-            try:
-                attr_value = getattr(cls, attr_name)
-            except AttributeError:
-                continue
-            if hasattr(attr_value, '_spa_request_cls'):
-                rc = attr_value._spa_request_cls
-                if rc in mapping:
-                    old_name = mapping[rc]
-                    raise TypeError(
-                        f"The {cls} has several @static_provision_action"
-                        " that attached to the same Request class"
-                        f" ({attr_name!r} and {old_name!r} attached to {rc})"
-                    )
+        parent_rd_dicts = [
+            parent._sp_cls_request_dispatcher.to_dict()
+            for parent in cls.__bases__
+            if issubclass(parent, StaticProvider)
+        ]
 
-                mapping[rc] = attr_name
+        result = _merge_rd_dicts(cls, parent_rd_dicts + [own_spa])
 
-        cls._sp_cls_request_dispatcher = RequestDispatcher(mapping)
+        cls._sp_cls_request_dispatcher = RequestDispatcher(result)
+
+
+def _rc_attached_to_several_spa(cls: type, name1: str, name2: str, rc: Type[Request]):
+    return TypeError(
+        f"The {cls} has several @static_provision_action"
+        " that attached to the same Request class"
+        f" ({name1!r} and {name2!r} attached to {rc})"
+    )
+
+
+def _spa_has_different_rc(cls: type, name: str, rc1: Type[Request], rc2: Type[Request]):
+    raise TypeError(
+        f"The {cls} has @static_provision_action"
+        " that attached to the different Request class"
+        f" ({name!r} attached to {rc1} and {rc2})"
+    )
+
+
+_RdDict = Dict[Type[Request], str]
+
+
+def _collect_class_own_rd_dict(cls) -> _RdDict:
+    mapping: _RdDict = {}
+
+    for attr_name in vars(cls):
+        try:
+            attr_value = getattr(cls, attr_name)
+        except AttributeError:
+            continue
+        if hasattr(attr_value, _SPA_RC_STORAGE):
+            rc = getattr(attr_value, _SPA_RC_STORAGE)
+            if rc in mapping:
+                old_name = mapping[rc]
+                raise _rc_attached_to_several_spa(cls, attr_name, old_name, rc)
+
+            mapping[rc] = attr_name
+
+    return mapping
+
+
+def _merge_rd_dicts(cls: type, dict_iter: Iterable[_RdDict]) -> _RdDict:
+    name_to_rc: Dict[str, Type[Request]] = {}
+    rc_to_name: _RdDict = {}
+    for dct in dict_iter:
+        for rc, name in dct.items():
+            if rc in rc_to_name.keys():
+                raise _rc_attached_to_several_spa(cls, rc_to_name[rc], name, rc)
+
+            if name in name_to_rc.keys() and rc != name_to_rc[name]:
+                raise _spa_has_different_rc(cls, name, name_to_rc[name], rc)
+
+            rc_to_name[rc] = name
+            name_to_rc[name] = rc
+
+    return rc_to_name

@@ -75,6 +75,14 @@ class ClassDispatcher(Generic[K_co, V]):
     def __repr__(self):
         return f'{type(self).__qualname__}({self._mapping})'
 
+    def to_dict(self) -> Dict[Type[K_co], V]:
+        return self._mapping.copy()
+
+    def __eq__(self, other):
+        if isinstance(other, ClassDispatcher):
+            return self._mapping == other._mapping
+        return NotImplemented
+
 
 def _remove_superclasses(source: List[type], other: List[type]):
     """

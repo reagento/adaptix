@@ -1,10 +1,11 @@
 import inspect
+from abc import abstractmethod, ABC
 from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField
 from enum import Enum
 from inspect import Signature, Parameter
 from operator import getitem
 from types import MappingProxyType
-from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, Literal
+from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, Literal, final
 
 from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
 from .request_cls import FieldRM
@@ -119,14 +120,9 @@ def get_func_iff(func, slice_=slice(0, None)) -> InputFieldsFigure:
     )
 
 
-class NamedTupleFieldsProvider(StaticProvider):
-    def _get_input_fields_figure(self, tp: type) -> InputFieldsFigure:
-        if not is_named_tuple_class(tp):
-            raise CannotProvide
-
-        return get_func_iff(tp.__new__, slice(1, None))
-
+class TypeOnlyInputFFProvider(StaticProvider, ABC):
     # noinspection PyUnusedLocal
+    @final
     @static_provision_action(InputFFRequest)
     def _provide_input_fields_figure(
         self,
@@ -136,13 +132,14 @@ class NamedTupleFieldsProvider(StaticProvider):
     ) -> InputFieldsFigure:
         return self._get_input_fields_figure(request.type)
 
-    def _get_output_fields_figure(self, tp: type) -> OutputFieldsFigure:
-        return OutputFieldsFigure(
-            fields=self._get_input_fields_figure(tp).fields,
-            getter_kind=GetterKind.ATTR,
-        )
+    @abstractmethod
+    def _get_input_fields_figure(self, tp: type) -> InputFieldsFigure:
+        pass
 
+
+class TypeOnlyOutputFFProvider(StaticProvider, ABC):
     # noinspection PyUnusedLocal
+    @final
     @static_provision_action(OutputFFRequest)
     def _provide_output_fields_figure(
         self,
@@ -150,10 +147,28 @@ class NamedTupleFieldsProvider(StaticProvider):
         s_state: SearchState,
         request: OutputFFRequest
     ) -> OutputFieldsFigure:
-        return self._get_output_fields_figure(request.type)
+        pass
+
+    @abstractmethod
+    def _get_output_fields_figure(self, tp: type) -> OutputFieldsFigure:
+        pass
 
 
-class TypedDictFieldsProvider(StaticProvider):
+class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
+    def _get_input_fields_figure(self, tp: type) -> InputFieldsFigure:
+        if not is_named_tuple_class(tp):
+            raise CannotProvide
+
+        return get_func_iff(tp.__new__, slice(1, None))
+
+    def _get_output_fields_figure(self, tp: type) -> OutputFieldsFigure:
+        return OutputFieldsFigure(
+            fields=self._get_input_fields_figure(tp).fields,
+            getter_kind=GetterKind.ATTR,
+        )
+
+
+class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
     def _get_fields(self, tp):
         if not is_typed_dict_class(tp):
             raise CannotProvide
@@ -172,35 +187,15 @@ class TypedDictFieldsProvider(StaticProvider):
 
     def _get_input_fields_figure(self, tp):
         return InputFieldsFigure(
-            fields=self._get_fields(tp),
+            fields=self._get_fields(tp),  # noqa
             extra=None,
         )
 
-    # noinspection PyUnusedLocal
-    @static_provision_action(InputFFRequest)
-    def _provide_input_fields_figure(
-        self,
-        factory: BaseFactory,
-        s_state: SearchState,
-        request: InputFFRequest
-    ) -> InputFieldsFigure:
-        return self._get_input_fields_figure(request.type)  # type: ignore
-
     def _get_output_fields_figure(self, tp):
         return OutputFieldsFigure(
-            fields=self._get_fields(tp),
+            fields=self._get_fields(tp),  # noqa
             getter_kind=GetterKind.ITEM,
         )
-
-    # noinspection PyUnusedLocal
-    @static_provision_action(OutputFFRequest)
-    def _provide_output_fields_figure(
-        self,
-        factory: BaseFactory,
-        s_state: SearchState,
-        request: OutputFFRequest
-    ) -> OutputFieldsFigure:
-        return self._get_output_fields_figure(request.type)  # type: ignore
 
 
 def get_dc_default(field: DCField) -> Default:
@@ -211,7 +206,7 @@ def get_dc_default(field: DCField) -> Default:
     return NoDefault(field_is_required=True)
 
 
-class DataclassFieldsProvider(StaticProvider):
+class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
     """This provider does not work properly if __init__ signature differs from
     that would be created by dataclass decorator.
 
@@ -245,16 +240,6 @@ class DataclassFieldsProvider(StaticProvider):
             extra=None,
         )
 
-    # noinspection PyUnusedLocal
-    @static_provision_action(InputFFRequest)
-    def _provide_input_fields_figure(
-        self,
-        factory: BaseFactory,
-        s_state: SearchState,
-        request: InputFFRequest
-    ) -> InputFieldsFigure:
-        return self._get_input_fields_figure(request.type)
-
     def _get_output_fields_figure(self, tp):
         return OutputFieldsFigure(
             fields=self._get_fields_filtered(
@@ -263,18 +248,8 @@ class DataclassFieldsProvider(StaticProvider):
             getter_kind=GetterKind.ATTR
         )
 
-    # noinspection PyUnusedLocal
-    @static_provision_action(OutputFFRequest)
-    def _provide_output_fields_figure(
-        self,
-        factory: BaseFactory,
-        s_state: SearchState,
-        request: OutputFFRequest
-    ) -> OutputFieldsFigure:
-        return self._get_output_fields_figure(request.type)
 
-
-class ClassInitFieldsProvider(StaticProvider):
+class ClassInitFieldsProvider(TypeOnlyInputFFProvider):
     def _get_input_fields_figure(self, tp):
         if not isinstance(tp, type):
             raise CannotProvide
@@ -285,13 +260,3 @@ class ClassInitFieldsProvider(StaticProvider):
             )
         except ValueError:
             raise CannotProvide
-
-    # noinspection PyUnusedLocal
-    @static_provision_action(InputFFRequest)
-    def _provide_input_fields_figure(
-        self,
-        factory: BaseFactory,
-        s_state: SearchState,
-        request: InputFFRequest
-    ) -> InputFieldsFigure:
-        return self._get_input_fields_figure(request.type)
