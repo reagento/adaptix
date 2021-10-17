@@ -1,4 +1,16 @@
-from typing import Generic, TypeVar, Optional, Dict, Type, Tuple, Collection, Iterator, Hashable, AbstractSet, List
+from typing import (
+    Generic,
+    TypeVar,
+    Optional,
+    Dict,
+    Type,
+    Tuple,
+    Collection,
+    Iterator,
+    Hashable,
+    AbstractSet,
+    List,
+)
 
 K_co = TypeVar('K_co', covariant=True, bound=Hashable)
 K = TypeVar('K', bound=Hashable)
@@ -103,6 +115,8 @@ def _remove_superclasses(source: List[type], other: List[type]):
 # It's not a KeysView because __iter__ of KeysView must returns a Iterator[K_co]
 # but there is no inverse of Type[]
 class ClassDispatcherKeysView(Generic[K_co]):
+    __slots__ = ('_keys',)
+
     def __init__(self, keys: AbstractSet[Type[K_co]]):
         self._keys = keys
 
