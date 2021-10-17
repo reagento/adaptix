@@ -60,8 +60,6 @@ T = TypeVar("T")
 
 
 class Factory(AbstractFactory):
-    __slots__ = ("default_schema", "debug_path", "schemas")
-
     def __init__(self,
                  default_schema: Optional[Schema] = None,
                  schemas: Optional[Dict[Type, Schema]] = None,
