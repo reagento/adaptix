@@ -9,3 +9,4 @@ script:
 install:
   - pip3 install -r requirements.txt
   - mypy --install-types
+  - python3 -m pip install types-dataclasses
