@@ -8,3 +8,4 @@ script:
   nose2 -v && mypy tests dataclass_factory
 install:
   - pip3 install -r requirements.txt
+  - mypy --install-types
