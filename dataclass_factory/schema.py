@@ -122,14 +122,14 @@ SCHEMA_FIELDS = {
 }
 
 
+class _Empty:
+    pass
+
+
 class SchemaProxy:
     def __init__(self, *schemas: Schema):
-        # the first empty schema accumulates changes that do not touch actual schema
-        acc_schema: Schema = Schema()
-        # ignore this fields at search in __getattr__
-        acc_schema.pre_validators = None  # type: ignore
-        acc_schema.post_validators = None  # type: ignore
-        self._schemas = [acc_schema, *schemas]
+        # the first empty object accumulates changes that do not touch actual schema
+        self._schemas = [_Empty(), *schemas]
 
     def __getattr__(self, item):
         for schema in self._schemas:
