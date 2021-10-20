@@ -4,7 +4,7 @@ typing_extensions
 nose2
 mypy
 vulture
-flake8
+flake8==3.*
 flake8-blind-except
 flake8-bugbear
 flake8-builtins
