@@ -1,5 +1,4 @@
-from typing import TypeVar, Protocol, Union, Dict, List, Any, ForwardRef
-from typing import _SpecialForm
+from typing import TypeVar, Protocol, Union, Dict, List, Any
 
 K_contra = TypeVar('K_contra', contravariant=True)
 V_co = TypeVar('V_co', covariant=True)
@@ -21,4 +20,4 @@ Json = Union[
     _JsonAtomic
 ]
 
-TypeHint = Union[type, None, TypeVar, ForwardRef, _SpecialForm]
+TypeHint = Any

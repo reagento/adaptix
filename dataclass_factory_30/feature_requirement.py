@@ -10,7 +10,7 @@ def _false():
     return False
 
 
-class VersionRequirement:
+class PythonVersionRequirement:
     __slots__ = ('ver', 'is_meet', '__bool__')
 
     @classmethod
@@ -36,8 +36,8 @@ class VersionRequirement:
         return f"<{type(self).__qualname__} ver={self.ver} is_meet={self.is_meet}>"
 
 
-has_py_38 = VersionRequirement.make(3, 8)
-has_py_39 = VersionRequirement.make(3, 9)
+has_py_38 = PythonVersionRequirement.make(3, 8)
+has_py_39 = PythonVersionRequirement.make(3, 9)
 
 has_protocol = has_py_38
 has_literal = has_py_38
