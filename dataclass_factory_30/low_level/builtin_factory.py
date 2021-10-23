@@ -1,23 +1,21 @@
 from dataclasses import dataclass, field
 from typing import TypeVar
 
-from .provider import RequestChecker, ConstrainingProxyProvider, create_builtin_req_checker
 from ..core import (
-    BaseFactory,
-    Provider,
-    PipeliningMixin,
-    SearchState,
+    Mediator,
     Request,
-    collect_class_full_recipe,
     CannotProvide,
-    NoSuitableProvider
 )
 
 T = TypeVar('T')
 
 
+class NoSuitableProvider(Exception):
+    pass
+
+
 @dataclass
-class BuiltinSearchState(SearchState):
+class BuiltinSearchState:
     offset: int
 
     def start_from_next(self):
@@ -25,13 +23,13 @@ class BuiltinSearchState(SearchState):
 
 
 @dataclass(frozen=True)
-class BuiltinFactory(BaseFactory[BuiltinSearchState], PipeliningMixin):
+class BuiltinFactory:
+    def provide_from_next(self, request: Request[T]) -> T:
+        pass
+
     recipe: list = field(default_factory=list)
 
-    def create_init_search_state(self) -> BuiltinSearchState:
-        return BuiltinSearchState(0)
-
-    def provide_with(self, s_state: BuiltinSearchState, request: Request[T]) -> T:
+    def provide(self, request: Request[T]) -> T:
         # TODO: add caching
         full_recipe = self.recipe + collect_class_full_recipe(type(self))
         start_idx = s_state.offset
@@ -46,35 +44,8 @@ class BuiltinFactory(BaseFactory[BuiltinSearchState], PipeliningMixin):
 
             item_s_state = BuiltinSearchState(offset)
             try:
-                return getattr(provider, attr_name)(self, item_s_state, request)
+                return getattr(provider, attr_name)(self, request)
             except CannotProvide:
                 pass
 
         raise NoSuitableProvider
-
-    def ensure_provider(self, value) -> Provider:
-        if isinstance(value, Provider):
-            return value
-
-        if isinstance(value, tuple):
-            try:
-                pred, sub_value = value
-
-                if isinstance(pred, RequestChecker):
-                    req_checker = pred
-                else:
-                    req_checker = create_builtin_req_checker(pred)
-
-                provider = self.ensure_provider(sub_value)
-
-                return ConstrainingProxyProvider(req_checker, provider)
-            except (TypeError, ValueError):
-                pass
-
-        if isinstance(value, type):
-            raise ValueError(
-                f'Can not create provider from {value}.'
-                'You should pass instance instead of class'
-            )
-
-        raise ValueError(f'Can not create provider from {value}')

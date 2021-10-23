@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from dataclass_factory_30.core import BaseFactory, SearchState, Request, RequestDispatcher
-from dataclass_factory_30.low_level import StaticProvider, static_provision_action, ParserRequest
+from dataclass_factory_30.core import Mediator, Request, RequestDispatcher
+from dataclass_factory_30.low_level import StaticProvider, static_provision_action
 
 
 class SampleRequest(Request):
@@ -13,8 +13,7 @@ def test_simple():
         @static_provision_action(SampleRequest)
         def _provide_sample(
             self,
-            factory: BaseFactory,
-            s_state: SearchState,
+            mediator: Mediator,
             request: SampleRequest
         ):
             return
@@ -32,8 +31,7 @@ def test_abstract_method():
         @static_provision_action(SampleRequest)
         def _provide_sample(
             self,
-            factory: BaseFactory,
-            s_state: SearchState,
+            mediator: Mediator,
             request: SampleRequest
         ):
             pass
@@ -41,8 +39,7 @@ def test_abstract_method():
     class Child(Base):
         def _provide_sample(
             self,
-            factory: BaseFactory,
-            s_state: SearchState,
+            mediator: Mediator,
             request: SampleRequest
         ):
             return

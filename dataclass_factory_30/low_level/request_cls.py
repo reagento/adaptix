@@ -5,14 +5,14 @@ from typing import TypeVar, List, Generic, Optional
 from .definitions import Default
 from ..common import TypeHint, Parser, Serializer, Json
 from ..core import (
-    BaseFactory,
+    Mediator,
     Provider,
-    SearchState,
     Request,
     PipelineEvalMixin
 )
 
 T = TypeVar('T')
+
 
 # RM - Request Mixin
 
@@ -23,7 +23,7 @@ class TypeHintRM(Request[T], Generic[T]):
 
 
 @dataclass(frozen=True)
-class TypeRM(Request[T], Generic[T]):
+class TypeRM(TypeHintRM[T], Generic[T]):
     type: type
 
 
@@ -47,12 +47,11 @@ class ParserRequest(TypeHintRM[Parser], PipelineEvalMixin):
     def eval_pipeline(
         cls,
         providers: List[Provider],
-        factory: BaseFactory,
-        s_state: SearchState,
+        mediator: Mediator,
         request: Request
     ):
         parsers = [
-            prov.apply_provider(factory, s_state, request) for prov in providers
+            prov.apply_provider(mediator, request) for prov in providers
         ]
 
         def pipeline_parser(value):
@@ -73,12 +72,11 @@ class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin):
     def eval_pipeline(
         cls,
         providers: List[Provider],
-        factory: BaseFactory,
-        s_state: SearchState,
+        mediator: Mediator,
         request: Request
     ):
         serializers = [
-            prov.apply_provider(factory, s_state, request) for prov in providers
+            prov.apply_provider(mediator, request) for prov in providers
         ]
 
         def pipeline_serializer(value):
@@ -104,13 +102,12 @@ class NameMappingRequest(FieldNameRM[Optional[str]], PipelineEvalMixin):
     def eval_pipeline(
         cls,
         providers: List[Provider],
-        factory: BaseFactory,
-        s_state: SearchState,
+        mediator: Mediator,
         request: Request
     ):
-        name = request.field_name # noqa
+        name = request.field_name  # noqa
         for name_mapper in providers:
-            name = name_mapper.apply_provider(factory, s_state, request)
+            name = name_mapper.apply_provider(mediator, request)
             if name is None:
                 return None
         return name

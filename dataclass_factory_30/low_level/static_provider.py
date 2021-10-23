@@ -1,14 +1,12 @@
 from inspect import isfunction
 from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable
 
-from ..core import Provider, RequestDispatcher, Request, SearchState, BaseFactory
+from ..core import Provider, RequestDispatcher, Request, Mediator
 from ..type_tools import is_subclass_soft
 
 RequestTV = TypeVar('RequestTV', bound=Request)
 ProviderTV = TypeVar('ProviderTV', bound=Provider)
-SearchStateTV = TypeVar('SearchStateTV', bound=SearchState)
 T = TypeVar('T')
-
 
 _SPA_RC_STORAGE = '_spa_request_cls'
 
@@ -28,7 +26,7 @@ def static_provision_action(request_cls: Type[RequestTV]):
             "The argument of @static_provision_action must be a subclass of Request." + seems
         )
 
-    def decorator(func: Callable[[ProviderTV, BaseFactory, SearchState, RequestTV], T]):
+    def spa_decorator(func: Callable[[ProviderTV, Mediator, RequestTV], T]):
         if hasattr(func, _SPA_RC_STORAGE):
             raise TypeError(
                 "@static_provision_action decorator cannot be applied twice"
@@ -37,7 +35,7 @@ def static_provision_action(request_cls: Type[RequestTV]):
         setattr(func, _SPA_RC_STORAGE, request_cls)
         return func
 
-    return decorator
+    return spa_decorator
 
 
 class StaticProvider(Provider):

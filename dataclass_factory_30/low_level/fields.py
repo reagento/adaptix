@@ -10,7 +10,7 @@ from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable,
 from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
 from .request_cls import FieldRM, TypeRM
 from .static_provider import StaticProvider, static_provision_action
-from ..core import BaseFactory, CannotProvide, SearchState
+from ..core import Mediator, CannotProvide
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
 T = TypeVar('T')
@@ -124,12 +124,7 @@ class TypeOnlyInputFFProvider(StaticProvider, ABC):
     # noinspection PyUnusedLocal
     @final
     @static_provision_action(InputFFRequest)
-    def _provide_input_fields_figure(
-        self,
-        factory: BaseFactory,
-        s_state: SearchState,
-        request: InputFFRequest
-    ) -> InputFieldsFigure:
+    def _provide_input_fields_figure(self, mediator: Mediator, request: InputFFRequest) -> InputFieldsFigure:
         return self._get_input_fields_figure(request.type)
 
     @abstractmethod
@@ -141,12 +136,7 @@ class TypeOnlyOutputFFProvider(StaticProvider, ABC):
     # noinspection PyUnusedLocal
     @final
     @static_provision_action(OutputFFRequest)
-    def _provide_output_fields_figure(
-        self,
-        factory: BaseFactory,
-        s_state: SearchState,
-        request: OutputFFRequest
-    ) -> OutputFieldsFigure:
+    def _provide_output_fields_figure(self, mediator: Mediator, request: OutputFFRequest) -> OutputFieldsFigure:
         pass
 
     @abstractmethod

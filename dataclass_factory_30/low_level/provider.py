@@ -4,7 +4,7 @@ from typing import TypeVar, Union, Type, Callable, Tuple
 
 from .request_cls import TypeHintRM, FieldNameRM
 from .static_provider import StaticProvider, static_provision_action
-from ..core import Provider, BaseFactory, CannotProvide, Request, SearchState, RequestDispatcher
+from ..core import Provider, Mediator, CannotProvide, Request, RequestDispatcher
 from ..core.class_dispatcher import ClassDispatcherKeysView
 
 T = TypeVar('T')
@@ -67,8 +67,8 @@ def create_builtin_req_checker(pred: Union[type, str]) -> RequestChecker:
 
 class NextProvider(StaticProvider):
     @static_provision_action(Request)
-    def _np_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request[T]) -> T:
-        return factory.provide_with(s_state.start_from_next(), request)
+    def _np_proxy_provide(self, mediator: Mediator, request: Request[T]) -> T:
+        return mediator.provide_from_next(request)
 
 
 class ConstrainingProxyProvider(Provider):
@@ -89,9 +89,9 @@ class ConstrainingProxyProvider(Provider):
     def get_request_dispatcher(self) -> RequestDispatcher:
         return self._rd
 
-    def _cpp_proxy_provide(self, factory: BaseFactory, s_state: SearchState, request: Request[T]) -> T:
+    def _cpp_proxy_provide(self, factory: Mediator, request: Request[T]) -> T:
         self.req_checker(request)
-        return self.provider.apply_provider(factory, s_state, request)
+        return self.provider.apply_provider(factory, request)
 
 
 @dataclass

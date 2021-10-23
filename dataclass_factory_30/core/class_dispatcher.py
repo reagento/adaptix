@@ -13,7 +13,6 @@ from typing import (
 )
 
 K_co = TypeVar('K_co', covariant=True, bound=Hashable)
-K = TypeVar('K', bound=Hashable)
 V = TypeVar('V', bound=Hashable)
 
 

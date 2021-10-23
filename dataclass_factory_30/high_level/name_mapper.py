@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict
 
 from .name_style import NameStyle, convert_snake_style
-from ..core import BaseFactory, SearchState
+from ..core import Mediator
 from ..low_level import NameMappingRequest, StaticProvider, static_provision_action
 
 
@@ -79,10 +79,5 @@ class NameMapper(StaticProvider):
 
     # noinspection PyUnusedLocal
     @static_provision_action(NameMappingRequest)
-    def _provide_name_mapping(
-        self,
-        factory: BaseFactory,
-        s_state: SearchState,
-        request: NameMappingRequest
-    ) -> Optional[str]:
+    def _provide_name_mapping(self, mediator: Mediator, request: NameMappingRequest) -> Optional[str]:
         return self._map_name(request.field_name)

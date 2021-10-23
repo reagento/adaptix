@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import Type, TypeVar, Any, Optional
 
 from ..common import Parser, Serializer
-from ..core import Request, BaseFactory, SearchState, NoSuitableProvider, CannotProvide
-from ..low_level.builtin_factory import BuiltinFactory
+from ..core import Request, Mediator, CannotProvide
+from ..low_level.builtin_factory import BuiltinFactory, NoSuitableProvider
 from ..low_level.request_cls import ParserRequest, SerializerRequest
 from ..low_level.static_provider import StaticProvider, static_provision_action
 
@@ -16,9 +16,8 @@ def create_factory_provision_action(request_cls: Type[RequestTV]):
     # noinspection PyUnusedLocal
     @static_provision_action(request_cls)
     def _provide_factory_proxy(
-        self: BaseFactory,
-        factory: BaseFactory,
-        s_state: SearchState,
+        self,
+        mediator: Mediator,
         request: ParserRequest
     ):
         try:
