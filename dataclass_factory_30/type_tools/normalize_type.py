@@ -2,7 +2,7 @@ import collections
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict, abc as c_abc
-
+from dataclasses import InitVar
 from typing import (
     Any, Optional, List, Dict,
     ClassVar, Final, Literal,
@@ -176,7 +176,8 @@ ONE_ANY_STR_PARAM = {
 }
 FORBID_ZERO_ARGS = {
     ClassVar, Final, Annotated,
-    Literal, Union, Optional
+    Literal, Union, Optional,
+    InitVar,
 }
 ALLOWED_ORIGINS = {
     Any, None, NoReturn,
@@ -245,8 +246,7 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
         raise ValueError('NewType must be instantiating')
 
     if not (
-        isinstance(origin, type)
-        or isinstance(origin, TypeVar)
+        isinstance(origin, (type, TypeVar, InitVar))
         or origin in ALLOWED_ORIGINS
         or is_new_type(tp)
     ):
@@ -264,6 +264,10 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
     if isinstance(origin, TypeVar):
         return NormTV(origin)
 
+    if isinstance(origin, InitVar):
+        # origin is InitVar[T]
+        return NormType(InitVar, [normalize_type(origin.type)], source=tp)
+
     if is_subclass_soft(origin, tuple):
         if tp in (tuple, Tuple):  # not subscribed values
             return NormType(
@@ -278,8 +282,8 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
         if not args or args == [()]:
             return NormType(tuple, source=tp)
 
-        fixed_args = args[-1] is ...
-        if fixed_args:
+        is_var_args = args[-1] is ...
+        if is_var_args:
             return NormType(
                 origin, _norm_iter(args[:-1]) + [...],
                 source=tp,

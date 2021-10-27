@@ -1,3 +1,4 @@
+from dataclasses import InitVar
 from typing import ClassVar, Callable
 
 from .normalize_type import BaseNormType, NormTV
@@ -18,6 +19,9 @@ def strip_tag(norm: BaseNormType) -> BaseNormType:
             return norm.args[0]
 
     if norm.origin == ClassVar:
+        return norm.args[0]
+
+    if norm.origin == InitVar:
         return norm.args[0]
 
     return norm

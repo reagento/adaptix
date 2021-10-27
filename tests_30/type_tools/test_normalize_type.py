@@ -1,9 +1,9 @@
 import collections
 import re
-import sys
 import typing
 from collections import abc as c_abc
 from collections import defaultdict
+from dataclasses import InitVar
 from typing import (
     Any, Union, List, Optional,
     Tuple, Callable, NoReturn,
@@ -121,11 +121,15 @@ def test_type():
     assert normalize_type(Type[Any]) == NormType(type, [NormType(Any)])
 
 
-def test_class_var():
+@pytest.mark.parametrize(
+    'tp',
+    [ClassVar, InitVar]
+)
+def test_var_tag(tp):
     with pytest.raises(ValueError):
-        normalize_type(ClassVar)
+        normalize_type(tp)
 
-    assert normalize_type(ClassVar[int]) == NormType(ClassVar, [NormType(int)])
+    assert normalize_type(tp[int]) == NormType(tp, [NormType(int)])
 
 
 @has_literal
