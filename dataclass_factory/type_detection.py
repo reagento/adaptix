@@ -110,6 +110,12 @@ def is_typeddict(type_) -> bool:
     return isinstance(type_, TYPED_DICT_METAS)
 
 
+def is_namedtuple(type_) -> bool:
+    # we check only `_fields` class attribute,
+    # so user can create own typeddict-like classes with minimal implementation
+    return issubclass_safe(type_, tuple) and hasattr(type_, "_fields")
+
+
 def is_optional(type_) -> bool:
     return issubclass_safe(type_, Optional)
 
