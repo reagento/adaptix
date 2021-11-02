@@ -368,6 +368,16 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             pre_validators=schema.pre_validators,
             post_validators=schema.post_validators,
         )
+    if is_dataclass(cls) or (is_generic_concrete(cls) and is_dataclass(cls.__origin__)):
+        return get_complex_parser(
+            class_=cls,
+            factory=factory,
+            fields=get_dataclass_fields(schema, cls),
+            debug_path=debug_path,
+            unknown=schema.unknown,
+            pre_validators=schema.pre_validators,
+            post_validators=schema.post_validators,
+        )
     if is_collection(cls):
         if args_unspecified(cls):
             value_type_arg = Any
@@ -388,16 +398,6 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         if len(parsers) < len(cls.__args__):
             return get_optional_parser(parser)
         return parser
-    if is_dataclass(cls) or (is_generic_concrete(cls) and is_dataclass(cls.__origin__)):
-        return get_complex_parser(
-            class_=cls,
-            factory=factory,
-            fields=get_dataclass_fields(schema, cls),
-            debug_path=debug_path,
-            unknown=schema.unknown,
-            pre_validators=schema.pre_validators,
-            post_validators=schema.post_validators,
-        )
     try:
         return get_complex_parser(
             class_=cls,
