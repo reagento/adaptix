@@ -17,6 +17,10 @@ class TypedNamedTuple(NamedTuple):
 SimpleNamedTuple = namedtuple("SimpleNamedTuple", ["field"])
 
 
+class Complex(NamedTuple):
+    sub: TypedNamedTuple
+
+
 class TestNamedTupleDetection(TestCase):
     def test_typed(self):
         self.assertTrue(is_namedtuple(TypedNamedTuple))
@@ -38,4 +42,11 @@ class TestNamedTuple(TestCase):
         factory = Factory()
         parsed = factory.load(data, SimpleNamedTuple)
         self.assertEqual(parsed, SimpleNamedTuple("hello"))
+        self.assertEqual(factory.dump(parsed), data)
+
+    def test_complex(self):
+        data = {"sub": {"field": "hello"}}
+        factory = Factory()
+        parsed = factory.load(data, Complex)
+        self.assertEqual(parsed, Complex(TypedNamedTuple("hello")))
         self.assertEqual(factory.dump(parsed), data)

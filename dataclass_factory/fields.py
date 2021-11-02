@@ -61,7 +61,7 @@ def all_class_fields(cls) -> List[BaseFieldInfo]:
 
 
 def all_namedtuple_fields(cls) -> List[BaseFieldInfo]:
-    hints = resolve_init_hints(cls)
+    hints = resolve_hints(cls)
     return [
         BaseFieldInfo(field_name=fieldname, type=hints.get(fieldname, Any), default=getattr(cls, fieldname, MISSING))
         for fieldname in cls._fields
