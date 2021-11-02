@@ -60,6 +60,14 @@ def all_class_fields(cls) -> List[BaseFieldInfo]:
     ]
 
 
+def all_namedtuple_fields(cls) -> List[BaseFieldInfo]:
+    hints = resolve_init_hints(cls)
+    return [
+        BaseFieldInfo(field_name=fieldname, type=hints.get(fieldname, Any), default=getattr(cls, fieldname, MISSING))
+        for fieldname in cls._fields
+    ]
+
+
 def all_typeddict_fields(cls) -> List[BaseFieldInfo]:
     all_fields = resolve_hints(cls)
     return [
@@ -149,6 +157,10 @@ def get_only_mapped_fields(
 # wrappers
 def get_dataclass_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
     return get_fields(all_dataclass_fields, schema, class_)
+
+
+def get_namedtuple_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
+    return get_fields(all_namedtuple_fields, schema, class_)
 
 
 def get_typeddict_fields(schema: Schema[T], class_: Type[T]) -> Sequence[FieldInfo]:
