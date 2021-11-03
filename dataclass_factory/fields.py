@@ -70,11 +70,13 @@ def all_class_fields(cls) -> List[BaseFieldInfo]:
 
 def all_namedtuple_fields(cls) -> List[BaseFieldInfo]:
     hints = resolve_hints(cls)
+    # There is no _field_defaults in python 3.6 for `namedtuple()`
+    defaults = getattr(cls, "_field_defaults", {})
     return [
         BaseFieldInfo(
             field_name=fieldname,
             type=hints.get(fieldname, Any),
-            default=cls._field_defaults.get(fieldname, MISSING),
+            default=defaults.get(fieldname, MISSING),
         )
         for fieldname in cls._fields
     ]

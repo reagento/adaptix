@@ -115,7 +115,6 @@ def is_namedtuple(type_) -> bool:
     # so user can create own typeddict-like classes with minimal implementation
     return issubclass_safe(type_, tuple) \
            and hasattr(type_, "_fields") \
-           and hasattr(type_, "_field_defaults") \
            and hasattr(type_, "_make") \
            and hasattr(type_, "_asdict") \
            and hasattr(type_, "_replace")
