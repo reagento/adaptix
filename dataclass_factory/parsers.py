@@ -8,13 +8,16 @@ from typing import (
 
 from .common import AbstractFactory, Parser, T
 from .exceptions import InvalidFieldError, UnionParseError, UnknownFieldsError
-from .fields import FieldInfo, get_class_fields, get_dataclass_fields, get_typeddict_fields
+from .fields import (
+    FieldInfo, get_class_fields, get_dataclass_fields,
+    get_typeddict_fields, get_namedtuple_fields,
+)
 from .path_utils import CleanKey, CleanPath
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
     args_unspecified, hasargs, is_any, is_collection, is_dict,
     is_enum, is_generic_concrete, is_literal, is_literal36, is_newtype,
-    is_none, is_optional, is_tuple, is_typeddict, is_union,
+    is_none, is_optional, is_tuple, is_typeddict, is_union, is_namedtuple,
 )
 from .validators import combine_parser_validators
 
@@ -342,6 +345,16 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return create_parser_impl(factory, schema, debug_path, cls.__supertype__)
     if is_enum(cls):
         return cls
+    if is_namedtuple(cls):
+        return get_complex_parser(
+            class_=cls,
+            factory=factory,
+            fields=get_namedtuple_fields(schema, cls),
+            debug_path=debug_path,
+            unknown=schema.unknown,
+            pre_validators=schema.pre_validators,
+            post_validators=schema.post_validators,
+        )
     if is_tuple(cls):
         if not hasargs(cls):
             return tuple_any_parser
