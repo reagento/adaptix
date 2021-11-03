@@ -46,7 +46,11 @@ def all_dataclass_fields(cls) -> List[BaseFieldInfo]:
     hints = resolve_hints(cls)
 
     return [
-        BaseFieldInfo(field_name=f.name, type=hints[f.name], default=get_dataclass_default(f))
+        BaseFieldInfo(
+            field_name=f.name,
+            type=hints[f.name],
+            default=get_dataclass_default(f),
+        )
         for f in all_fields if f.init
     ]
 
@@ -55,7 +59,11 @@ def all_class_fields(cls) -> List[BaseFieldInfo]:
     all_fields = inspect.signature(cls.__init__).parameters
     hints = resolve_init_hints(cls)
     return [
-        BaseFieldInfo(field_name=f.name, type=hints.get(f.name, Any), default=get_func_default(f))
+        BaseFieldInfo(
+            field_name=f.name,
+            type=hints.get(f.name, Any),
+            default=get_func_default(f),
+        )
         for f in all_fields.values()
     ]
 
@@ -63,7 +71,11 @@ def all_class_fields(cls) -> List[BaseFieldInfo]:
 def all_namedtuple_fields(cls) -> List[BaseFieldInfo]:
     hints = resolve_hints(cls)
     return [
-        BaseFieldInfo(field_name=fieldname, type=hints.get(fieldname, Any), default=getattr(cls, fieldname, MISSING))
+        BaseFieldInfo(
+            field_name=fieldname,
+            type=hints.get(fieldname, Any),
+            default=cls._field_defaults.get(fieldname, MISSING),
+        )
         for fieldname in cls._fields
     ]
 
@@ -100,7 +112,6 @@ def get_fields(
         field for field in all_fields_getter(class_)
         if schema_fields_filter(schema, field.field_name)
     ]
-
     # `only` has more priority than only_mapped
     if schema.only_mapped and schema.only is None:
         if schema.name_mapping is None:
