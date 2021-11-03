@@ -4,13 +4,16 @@ from operator import attrgetter, getitem
 from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
 
 from .common import AbstractFactory, K, Serializer, T
-from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields
+from .fields import (
+    FieldInfo, get_dataclass_fields, get_typeddict_fields,
+    get_namedtuple_fields,
+)
 from .path_utils import CleanKey, CleanPath, init_structure
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
-    hasargs, is_any, is_collection, is_dict, is_enum, is_generic_concrete, 
+    hasargs, is_any, is_collection, is_dict, is_enum, is_generic_concrete,
     is_newtype, is_optional, is_tuple, is_type_var, is_typeddict, is_union,
-    is_literal, is_literal36, instance_wont_have_dict, is_none,
+    is_literal, is_literal36, instance_wont_have_dict, is_none, is_namedtuple,
 )
 
 
@@ -174,6 +177,14 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             factory,
             schema,
             get_dataclass_fields(schema, class_),
+            getattr,
+            schema.unknown,
+        )
+    if is_namedtuple(class_):
+        return get_complex_serializer(
+            factory,
+            schema,
+            get_namedtuple_fields(schema, class_),
             getattr,
             schema.unknown,
         )
