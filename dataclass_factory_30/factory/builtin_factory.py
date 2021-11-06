@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import final, List
 
-from .incremental_factory import IncrementalRecipe, ProvidingFromRecipe
+from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
 from .mediator import RecursionResolving
 from ..provider import StaticProvider, Provider
 

@@ -2,7 +2,7 @@ from .builtin_factory import (
     MultiInheritanceFactory,
     BuiltinFactory,
 )
-from .factory import (
+from .facade_factory import (
     create_factory_provision_action,
     FuncWrapper,
     FuncRecursionResolver,
@@ -10,7 +10,7 @@ from .factory import (
     SerializerFactory,
     Factory,
 )
-from .incremental_factory import (
+from .basic_factory import (
     FullRecipeGetter,
     IncrementalRecipe,
     ConfigProvider,

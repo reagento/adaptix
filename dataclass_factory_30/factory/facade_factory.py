@@ -1,7 +1,7 @@
 from typing import Type, TypeVar, Any, Optional, List, Dict
 
 from .builtin_factory import BuiltinFactory, ProvidingFromRecipe
-from .incremental_factory import NoSuitableProvider, ConfigProvider
+from .basic_factory import NoSuitableProvider, ConfigProvider
 from .mediator import RecursionResolving, StubsRecursionResolver
 from ..common import Parser, Serializer, TypeHint
 from ..provider import (
