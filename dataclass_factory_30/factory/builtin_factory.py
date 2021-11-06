@@ -38,3 +38,7 @@ class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
 
 class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
     recipe = []
+
+    @abstractmethod
+    def clear_cache(self):
+        pass

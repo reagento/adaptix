@@ -3,11 +3,20 @@ from typing import Type, TypeVar, Any, Optional, List, Dict
 from .builtin_factory import BuiltinFactory, ProvidingFromRecipe
 from .incremental_factory import NoSuitableProvider, ConfigProvider
 from .mediator import RecursionResolving, StubsRecursionResolver
-from ..common import Parser, Serializer
-from ..provider import DefaultExtra, CfgDefaultExtra
-from ..provider import ExtraVariant
-from ..provider import ParserRequest, SerializerRequest, CfgOmitDefault, static_provision_action
-from ..provider import Request, Mediator, CannotProvide, Provider
+from ..common import Parser, Serializer, TypeHint
+from ..provider import (
+    DefaultExtra,
+    CfgDefaultExtra,
+    ExtraVariant,
+    ParserRequest,
+    SerializerRequest,
+    CfgOmitDefault,
+    static_provision_action,
+    Request,
+    Mediator,
+    CannotProvide,
+    Provider
+)
 
 T = TypeVar('T')
 
@@ -87,11 +96,15 @@ class ParserFactory(BuiltinFactory):
                 )
             )
 
+    def clear_cache(self):
+        self._parser_cache = {}
+
 
 class SerializerFactory(BuiltinFactory):
     def __init__(self, *, recipe: Optional[List[Provider]] = None, omit_default: bool = False):
         super().__init__(recipe)
         self._omit_default = omit_default
+        self._serializers_cache: Dict[TypeHint, Serializer] = {}
 
     _provide_serializer = create_factory_provision_action(SerializerRequest)
 
@@ -106,7 +119,13 @@ class SerializerFactory(BuiltinFactory):
         )
 
     def serializer(self, tp: Type[T]) -> Serializer[T, Any]:
-        return self._provide_from_recipe(SerializerRequest(tp))
+        try:
+            return self._serializers_cache[tp]
+        except KeyError:
+            return self._provide_from_recipe(SerializerRequest(tp))
+
+    def clear_cache(self):
+        self._serializers_cache = {}
 
 
 # TODO: Add JsonSchemaFactory with new API
@@ -132,3 +151,7 @@ class Factory(ParserFactory, SerializerFactory):
             recipe=recipe,
             omit_default=omit_default
         )
+
+    def clear_cache(self):
+        ParserFactory.clear_cache(self)
+        SerializerFactory.clear_cache(self)
