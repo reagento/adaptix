@@ -37,7 +37,7 @@ class Mediator(ABC):
         """Get response of sent request.
         :param request: A request instance
         :return: Result of the request processing
-        :raise NoSuitableProvider: A provider able to process the request does not found
+        :raise CannotProvide: A provider able to process the request does not found
         """
         raise NotImplementedError
 
@@ -132,7 +132,7 @@ class Pipeline(Provider):
         if not isinstance(request, PipelineEvalMixin):
             raise CannotProvide
 
-        return request.eval_pipeline(  # type: ignore
+        return request.eval_pipeline(
             list(self.elements), factory, request
         )
 

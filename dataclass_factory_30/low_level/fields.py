@@ -10,7 +10,7 @@ from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable,
 from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
 from .request_cls import FieldRM, TypeRM
 from .static_provider import StaticProvider, static_provision_action
-from ..core import Mediator, CannotProvide
+from ..core import Mediator, CannotProvide, Request
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
 T = TypeVar('T')
@@ -45,6 +45,12 @@ Extra = Union[ExtraVariant, ExtraTargets]
 
 # Factory should replace None with ExtraVariant.SKIP or ExtraVariant.FORBID
 UnboundExtra = Union[None, Literal[ExtraVariant.KWARGS], ExtraTargets]
+
+DefaultExtra = Literal[ExtraVariant.SKIP, ExtraVariant.FORBID]
+
+
+class CfgDefaultExtra(Request[DefaultExtra]):
+    pass
 
 
 @dataclass

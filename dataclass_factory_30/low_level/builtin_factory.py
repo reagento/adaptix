@@ -1,51 +1,41 @@
-from dataclasses import dataclass, field
-from typing import TypeVar
+from abc import ABC, abstractmethod
+from typing import final, List
 
-from ..core import (
-    Mediator,
-    Request,
-    CannotProvide,
-)
-
-T = TypeVar('T')
+from . import StaticProvider
+from .incremental_factory import IncrementalRecipe, ProvidingFromRecipe
+from .mediator import RecursionResolving
+from ..core import Provider
 
 
-class NoSuitableProvider(Exception):
-    pass
-
-
-@dataclass
-class BuiltinSearchState:
-    offset: int
-
-    def start_from_next(self):
-        return BuiltinSearchState(self.offset + 1)
-
-
-@dataclass(frozen=True)
-class BuiltinFactory:
-    def provide_from_next(self, request: Request[T]) -> T:
+class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
+    @abstractmethod
+    def _get_raw_config_recipe(self) -> List[Provider]:
         pass
 
-    recipe: list = field(default_factory=list)
+    @final
+    def _get_config_recipe(self) -> List[Provider]:
+        result = []
+        for base in type(self).__bases__:
+            if issubclass(base, MultiInheritanceFactory):
+                result.extend(
+                    base._get_config_recipe(self)
+                )
 
-    def provide(self, request: Request[T]) -> T:
-        # TODO: add caching
-        full_recipe = self.recipe + collect_class_full_recipe(type(self))
-        start_idx = s_state.offset
-        request_cls = type(request)
+        return result
 
-        for offset, item in enumerate(full_recipe[start_idx:], start_idx):
-            provider = self.ensure_provider(item)
-            try:
-                attr_name = provider.get_request_dispatcher().dispatch(request_cls)
-            except KeyError:
-                continue
+    @abstractmethod
+    def _get_raw_recursion_resolving(self) -> RecursionResolving:
+        pass
 
-            item_s_state = BuiltinSearchState(offset)
-            try:
-                return getattr(provider, attr_name)(self, request)
-            except CannotProvide:
-                pass
+    @final
+    def _get_recursion_resolving(self) -> RecursionResolving:
+        result = {}
+        for base in type(self).__bases__:
+            if issubclass(base, MultiInheritanceFactory):
+                result.update(base._get_raw_recursion_resolving(self).to_dict())
 
-        raise NoSuitableProvider
+        return RecursionResolving(result)
+
+
+class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
+    recipe = []

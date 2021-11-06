@@ -115,3 +115,7 @@ class NameMappingRequest(FieldNameRM[Optional[str]], PipelineEvalMixin):
 
 class NameMappingFieldRequest(NameMappingRequest, FieldRM[Optional[str]]):
     pass
+
+
+class CfgOmitDefault(Request[bool]):
+    pass
