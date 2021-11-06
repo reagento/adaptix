@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, TypeVar, Type, Callable, Optional
 
-from dataclass_factory_30.core import Provider, Mediator, Request, RequestDispatcher, CannotProvide
-from ..low_level.mediator import RecipeSearcher, RawRecipeSearcher, BuiltinMediator, StubsRecursionResolver, \
-    RecursionResolving
+from .mediator import RecipeSearcher, RawRecipeSearcher, BuiltinMediator, RecursionResolving
+from ..provider import Provider, Mediator, Request, RequestDispatcher, CannotProvide
 
 
 class FullRecipeGetter(ABC):

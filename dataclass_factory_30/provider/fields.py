@@ -8,9 +8,9 @@ from types import MappingProxyType
 from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, Literal, final
 
 from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
+from .essential import Mediator, CannotProvide, Request
 from .request_cls import FieldRM, TypeRM
 from .static_provider import StaticProvider, static_provision_action
-from ..core import Mediator, CannotProvide, Request
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
 T = TypeVar('T')

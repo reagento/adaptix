@@ -1,11 +1,11 @@
 from typing import TypeVar, Type, overload, Any, Callable, Tuple
 
+from .provider import FuncProvider, ConstructorParserProvider, NextProvider
+from .request_cls import (
+    SerializerRequest, ParserRequest,
+)
 from .utils import resolve_classmethod
 from ..common import Parser, Serializer
-from ..low_level import (
-    NextProvider, SerializerRequest, ParserRequest,
-)
-from ..low_level.provider import FuncProvider, ConstructorParserProvider
 
 T = TypeVar('T')
 

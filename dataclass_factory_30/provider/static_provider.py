@@ -1,7 +1,7 @@
 from inspect import isfunction
 from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable
 
-from ..core import Provider, RequestDispatcher, Request, Mediator
+from .essential import Provider, RequestDispatcher, Request, Mediator
 from ..type_tools import is_subclass_soft
 
 RequestTV = TypeVar('RequestTV', bound=Request)

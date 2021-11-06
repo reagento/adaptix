@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Union, Type, Callable, Tuple
 
+from .class_dispatcher import ClassDispatcherKeysView
+from .essential import Provider, Mediator, CannotProvide, Request, RequestDispatcher
 from .request_cls import TypeHintRM, FieldNameRM
 from .static_provider import StaticProvider, static_provision_action
-from ..core import Provider, Mediator, CannotProvide, Request, RequestDispatcher
-from ..core.class_dispatcher import ClassDispatcherKeysView
 
 T = TypeVar('T')
 

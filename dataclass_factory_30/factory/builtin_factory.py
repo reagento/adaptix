@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import final, List
 
-from . import StaticProvider
 from .incremental_factory import IncrementalRecipe, ProvidingFromRecipe
 from .mediator import RecursionResolving
-from ..core import Provider
+from ..provider import StaticProvider, Provider
 
 
 class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):

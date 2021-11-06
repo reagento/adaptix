@@ -1,14 +1,13 @@
 from typing import Type, TypeVar, Any, Optional, List, Dict
 
+from .builtin_factory import BuiltinFactory, ProvidingFromRecipe
+from .incremental_factory import NoSuitableProvider, ConfigProvider
+from .mediator import RecursionResolving, StubsRecursionResolver
 from ..common import Parser, Serializer
-from ..core import Request, Mediator, CannotProvide, Provider
-from ..low_level import ExtraVariant
-from ..low_level.builtin_factory import BuiltinFactory, ProvidingFromRecipe
-from ..low_level.fields import DefaultExtra, CfgDefaultExtra
-from ..low_level.incremental_factory import NoSuitableProvider, ConfigProvider
-from ..low_level.mediator import RecursionResolving, StubsRecursionResolver
-from ..low_level.request_cls import ParserRequest, SerializerRequest, CfgOmitDefault
-from ..low_level.static_provider import static_provision_action
+from ..provider import DefaultExtra, CfgDefaultExtra
+from ..provider import ExtraVariant
+from ..provider import ParserRequest, SerializerRequest, CfgOmitDefault, static_provision_action
+from ..provider import Request, Mediator, CannotProvide, Provider
 
 T = TypeVar('T')
 

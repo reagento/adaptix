@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
 
+from .essential import Mediator
 from .name_style import NameStyle, convert_snake_style
-from ..core import Mediator
-from ..low_level import NameMappingRequest, StaticProvider, static_provision_action
+from .request_cls import NameMappingRequest
+from .static_provider import StaticProvider, static_provision_action
 
 
 # TODO: Add support for path in map
