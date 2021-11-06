@@ -1,9 +1,6 @@
 from typing import Set
 
-import pytest
-
-from dataclass_factory_30.high_level import NameMapper
-from dataclass_factory_30.high_level.name_style import NameStyle
+from dataclass_factory_30.provider import NameMapper, NameStyle
 
 
 def check_name_mapper(mapper: NameMapper, source: Set[str], target: Set[str]):

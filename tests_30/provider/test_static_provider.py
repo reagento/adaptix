@@ -1,7 +1,12 @@
 from abc import ABC, abstractmethod
 
-from dataclass_factory_30.core import Mediator, Request, RequestDispatcher
-from dataclass_factory_30.low_level import StaticProvider, static_provision_action
+from dataclass_factory_30.provider import (
+    Mediator,
+    Request,
+    RequestDispatcher,
+    StaticProvider,
+    static_provision_action
+)
 
 
 class SampleRequest(Request):

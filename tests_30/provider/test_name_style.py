@@ -1,6 +1,6 @@
 import pytest
 
-from dataclass_factory_30.high_level.name_style import is_snake_case, convert_snake_style, NameStyle
+from dataclass_factory_30.provider.name_style import is_snake_case, convert_snake_style, NameStyle
 
 
 def test_is_snake_case():

@@ -2,14 +2,14 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import ClassVar
 
-from dataclass_factory_30.low_level.fields import (
+from dataclass_factory_30.provider import NoDefault, DefaultValue, DefaultFactory
+from dataclass_factory_30.provider.fields import (
     DataclassFieldsProvider,
     FieldRM,
     InputFieldsFigure,
     OutputFieldsFigure,
     GetterKind
 )
-from dataclass_factory_30.low_level import NoDefault, DefaultValue, DefaultFactory
 
 
 @dataclass

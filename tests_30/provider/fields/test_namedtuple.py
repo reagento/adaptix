@@ -2,14 +2,14 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
-from dataclass_factory_30.low_level.fields import (
+from dataclass_factory_30.provider import NoDefault, DefaultValue
+from dataclass_factory_30.provider.fields import (
     NamedTupleFieldsProvider,
     FieldRM,
     InputFieldsFigure,
     OutputFieldsFigure,
     GetterKind
 )
-from dataclass_factory_30.low_level import NoDefault, DefaultValue
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')
@@ -134,6 +134,7 @@ def test_defaults():
 
 
 BarA = NamedTuple('BarA', a=int, b=str)
+
 
 # ClassVar do not supported in NamedTuple
 

@@ -1,14 +1,14 @@
 from types import MappingProxyType
 from typing import TypedDict
 
-from dataclass_factory_30.low_level.fields import (
+from dataclass_factory_30.provider import NoDefault
+from dataclass_factory_30.provider.fields import (
     TypedDictFieldsProvider,
     FieldRM,
     InputFieldsFigure,
     OutputFieldsFigure,
     GetterKind
 )
-from dataclass_factory_30.low_level import NoDefault
 
 
 class Foo(TypedDict, total=True):

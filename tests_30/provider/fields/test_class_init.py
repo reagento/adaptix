@@ -3,14 +3,14 @@ from typing import Any
 
 import pytest
 
-from dataclass_factory_30.core import CannotProvide
-from dataclass_factory_30.low_level.fields import (
+from dataclass_factory_30.provider import CannotProvide
+from dataclass_factory_30.provider import NoDefault, DefaultValue
+from dataclass_factory_30.provider.fields import (
     ClassInitFieldsProvider,
     FieldRM,
     InputFieldsFigure,
     ExtraVariant
 )
-from dataclass_factory_30.low_level import NoDefault, DefaultValue
 
 
 class Valid1:
