@@ -5,34 +5,37 @@ from .normalize_type import BaseNormType, NormTV
 from ..feature_requirement import has_final, has_annotated
 
 
-def strip_tag(norm: BaseNormType) -> BaseNormType:
+def strip_tags(norm: BaseNormType) -> BaseNormType:
+    """Removes type hints that does not represent type
+     and that only indicates metadata
+    """
     if has_final:
         from typing import Final
 
         if norm.origin == Final:
-            return norm.args[0]
+            return strip_tags(norm.args[0])
 
     if has_annotated:
         from typing import Annotated
 
         if norm.origin == Annotated:
-            return norm.args[0]
+            return strip_tags(norm.args[0])
 
     if norm.origin == ClassVar:
-        return norm.args[0]
+        return strip_tags(norm.args[0])
 
     if norm.origin == InitVar:
-        return norm.args[0]
+        return strip_tags(norm.args[0])
 
     return norm
 
 
 def _tv_or_generic(norm: BaseNormType) -> bool:
-    return isinstance(strip_tag(norm), NormTV) or is_generic(norm)
+    return isinstance(strip_tags(norm), NormTV) or is_generic(norm)
 
 
 def is_generic(norm: BaseNormType) -> bool:
-    st_norm = strip_tag(norm)
+    st_norm = strip_tags(norm)
 
     if st_norm.origin == Callable:
         if st_norm.args[0] is ...:

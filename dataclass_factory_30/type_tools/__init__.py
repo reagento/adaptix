@@ -3,6 +3,6 @@ from .basic_utils import (
     is_typed_dict_class, is_named_tuple_class, is_user_defined_generic,
     is_protocol
 )
-from .norm_utils import strip_tag, is_generic
+from .norm_utils import strip_tags, is_generic
 from .normalize_type import normalize_type, NormType, NormTV
 from .subtype_matcher import SubtypeMatcher, SubtypeMatch, DefaultSubtypeMatcher
