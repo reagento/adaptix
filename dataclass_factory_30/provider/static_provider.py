@@ -1,5 +1,5 @@
 from inspect import isfunction
-from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable
+from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable, final
 
 from .essential import Provider, RequestDispatcher, Request, Mediator
 from ..type_tools import is_subclass_soft
@@ -56,6 +56,7 @@ class StaticProvider(Provider):
     """
     _sp_cls_request_dispatcher: ClassVar[RequestDispatcher] = RequestDispatcher()
 
+    @final
     def get_request_dispatcher(self) -> RequestDispatcher:
         return self._sp_cls_request_dispatcher
 

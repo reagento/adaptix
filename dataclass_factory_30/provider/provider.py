@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Union, Type, Callable, Tuple
+from typing import TypeVar, Union, Type, Tuple
 
 from .class_dispatcher import ClassDispatcherKeysView
 from .essential import Provider, Mediator, CannotProvide, Request, RequestDispatcher
@@ -89,17 +89,6 @@ class ConstrainingProxyProvider(Provider):
     def get_request_dispatcher(self) -> RequestDispatcher:
         return self._rd
 
-    def _cpp_proxy_provide(self, factory: Mediator, request: Request[T]) -> T:
+    def _cpp_proxy_provide(self, mediator: Mediator, request: Request[T]) -> T:
         self.req_checker(request)
-        return self.provider.apply_provider(factory, request)
-
-
-@dataclass
-class FuncProvider(Provider):
-    request_cls: Type[Request]
-    func: Callable
-
-
-@dataclass
-class ConstructorParserProvider(Provider):
-    func: Callable
+        return self.provider.apply_provider(mediator, request)

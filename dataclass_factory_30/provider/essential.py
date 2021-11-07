@@ -21,6 +21,9 @@ class CannotProvide(Exception):
     msg: Optional[str] = None
     sub_errors: Sequence['CannotProvide'] = field(default_factory=list)
 
+    def __post_init__(self):
+        Exception.__init__(self)
+
 
 RequestDispatcher = ClassDispatcher[Request, str]
 
