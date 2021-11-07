@@ -15,9 +15,9 @@ from typing import (
 
 import pytest
 
+from dataclass_factory_30.feature_requirement import has_literal, has_final, has_annotated
 from dataclass_factory_30.type_tools import NormType, normalize_type
 from dataclass_factory_30.type_tools.normalize_type import NormTV, T_co
-from dataclass_factory_30.feature_requirement import has_literal, has_final, has_annotated
 
 T = TypeVar('T')
 
@@ -43,7 +43,7 @@ def test_atomic():
         (frozenset, FrozenSet),
         (collections.Counter, typing.Counter),
         (collections.deque, typing.Deque),
-    ]
+    ],
 )
 def test_generic_concrete_one_arg(tp, alias):
     assert normalize_type(tp) == NormType(tp, [NormTV(T_co, is_template=True)])
@@ -123,7 +123,7 @@ def test_type():
 
 @pytest.mark.parametrize(
     'tp',
-    [ClassVar, InitVar]
+    [ClassVar, InitVar],
 )
 def test_var_tag(tp):
     with pytest.raises(ValueError):
@@ -307,3 +307,6 @@ def test_bad_arg_types():
 
     with pytest.raises(ValueError):
         normalize_type('string')
+
+    with pytest.raises(ValueError):
+        normalize_type(TypeVar)

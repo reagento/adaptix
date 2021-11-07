@@ -11,20 +11,19 @@ from typing import (
 
 import pytest
 
-from .conftest import (
-    is_subtype, assert_swapped_is_subtype,
-    Class, SubClass, id_gen
-)
 from dataclass_factory_30.feature_requirement import (
     has_literal, has_final, has_typed_dict,
     has_protocol, has_annotated
+)
+from .conftest import (
+    is_subtype, assert_swapped_is_subtype,
+    Class, SubClass
 )
 
 
 @pytest.mark.parametrize(
     'tp',
     [int, str, bytes, None, Class, SubClass],
-    ids=id_gen,
 )
 def test_any(tp):
     assert_swapped_is_subtype(tp, Any)
@@ -84,7 +83,6 @@ def test_final():
         List, Type, Counter,
         FrozenSet, Set,
     ],
-    ids=id_gen,
 )
 def test_builtin_generic_one_arg(tp):
     assert is_subtype(tp, tp)
@@ -110,7 +108,6 @@ def test_builtin_generic_one_arg(tp):
         Dict, DefaultDict,
         OrderedDict, ChainMap,
     ],
-    ids=id_gen,
 )
 def test_builtin_generic_two_args(tp):
     assert is_subtype(tp, tp)

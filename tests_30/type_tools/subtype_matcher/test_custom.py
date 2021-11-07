@@ -9,7 +9,6 @@ from .conftest import (
     match, is_subtype, assert_swapped_is_subtype, Class, SubClass
 )
 
-
 T_co = TypeVar('T_co', covariant=True)
 T_contra = TypeVar('T_contra', contravariant=True)
 T_inv = TypeVar('T_inv')

@@ -177,7 +177,6 @@ ONE_ANY_STR_PARAM = {
 FORBID_ZERO_ARGS = {
     ClassVar, Final, Annotated,
     Literal, Union, Optional,
-    InitVar,
 }
 ALLOWED_ORIGINS = {
     Any, None, NoReturn,
@@ -242,8 +241,11 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
     origin = strip_alias(tp)
     args = get_args(tp)
 
-    if origin == NewType:
-        raise ValueError('NewType must be instantiating')
+    if origin in (NewType, TypeVar):
+        raise ValueError(f'{origin} must be instantiating')
+
+    if origin == InitVar:
+        raise ValueError(f'{origin} must be subscribed')
 
     if not (
         isinstance(origin, (type, TypeVar, InitVar))
