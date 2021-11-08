@@ -8,7 +8,7 @@ from .type_detection import (
 )
 
 if sys.version_info < (3, 9):
-    COMPAT_ORIGINS: Dict[Type, Type] = {
+    COMPAT_ORIGINS: Dict[Any, Any] = {
         list: List,
         dict: Dict,
         tuple: Tuple,
@@ -23,11 +23,11 @@ else:
 def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
     type_ = args.get(type_, type_)
     if is_generic_concrete(type_):
-        type_args = tuple(
-            args.get(a, a) for a in type_.__args__
-        )
+        type_args = []
+        for arg in type_.__args__:
+            type_args.append(fill_type_args(args, arg))
         origin = COMPAT_ORIGINS.get(type_.__origin__, type_.__origin__)
-        type_ = origin[type_args]
+        type_ = origin[tuple(type_args)]
     return type_
 
 

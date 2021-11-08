@@ -7,6 +7,8 @@ from dataclass_factory import Factory, Schema
 T = TypeVar('T')
 V = TypeVar('V')
 
+ListList = List[List[T]]
+
 
 @dataclass
 class Foo(Generic[T]):
@@ -105,3 +107,8 @@ class TestGeneric(TestCase):
             Foo[int]: Schema(name_mapping={"value": "v"}),
         })
         self.assertEqual(factory.dump(FooBaz(Foo(1)), FooBaz[int]), {"bar": {"v": 1}})
+
+    def test_alias(self):
+        data = [[1]]
+        self.assertEqual(self.factory.load(data, ListList[int]), data)
+        self.assertEqual(self.factory.dump(data, ListList[int]), data)
