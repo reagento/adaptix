@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, List
 from unittest import TestCase
 
 from dataclass_factory import Factory, Schema
@@ -30,6 +30,11 @@ class FooBaz(Generic[T]):
     foo: Foo[T]
 
 
+@dataclass
+class ListBaz(Generic[T]):
+    foo: List[T]
+
+
 class TestGeneric(TestCase):
     def setUp(self) -> None:
         self.factory = Factory()
@@ -39,6 +44,12 @@ class TestGeneric(TestCase):
         foo_serial = {"value": 1}
         self.assertEqual(self.factory.load(foo_serial, Foo[int]), foo)
         self.assertEqual(self.factory.dump(foo, Foo[int]), foo_serial)
+
+    def test_list_field(self):
+        foo = ListBaz[int]([1])
+        foo_serial = {"foo": [1]}
+        self.assertEqual(self.factory.load(foo_serial, ListBaz[int]), foo)
+        self.assertEqual(self.factory.dump(foo, ListBaz[int]), foo_serial)
 
     def test_simple_str(self):
         foo = Foo[str]("hello")

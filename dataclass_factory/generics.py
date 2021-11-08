@@ -1,8 +1,23 @@
-from typing import Any, Dict, Generic, Type, get_type_hints
+import sys
+from collections import deque
+from typing import Any, Dict, Generic, Type, get_type_hints, Tuple, List, Set, \
+    FrozenSet, Deque
 
 from .type_detection import (
     get_self_type_hints, is_generic, is_generic_concrete,
 )
+
+if sys.version_info < (3, 9):
+    COMPAT_ORIGINS = {
+        list: List,
+        dict: Dict,
+        tuple: Tuple,
+        set: Set,
+        frozenset: FrozenSet,
+        deque: Deque,
+    }
+else:
+    COMPAT_ORIGINS = {}
 
 
 def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
@@ -11,7 +26,8 @@ def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
         type_args = tuple(
             args.get(a, a) for a in type_.__args__
         )
-        type_ = type_.__origin__[type_args]
+        origin = COMPAT_ORIGINS.get(type_.__origin__, type_.__origin__)
+        type_ = origin[type_args]
     return type_
 
 
