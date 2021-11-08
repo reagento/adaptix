@@ -7,8 +7,10 @@ from .type_detection import (
     get_self_type_hints, is_generic, is_generic_concrete,
 )
 
+
+COMPAT_ORIGINS: Dict[Any, Any]
 if sys.version_info < (3, 9):
-    COMPAT_ORIGINS: Dict[Any, Any] = {
+    COMPAT_ORIGINS = {
         list: List,
         dict: Dict,
         tuple: Tuple,
