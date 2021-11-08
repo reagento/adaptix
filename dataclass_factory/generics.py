@@ -8,7 +8,7 @@ from .type_detection import (
 )
 
 if sys.version_info < (3, 9):
-    COMPAT_ORIGINS = {
+    COMPAT_ORIGINS: Dict[Type, Type] = {
         list: List,
         dict: Dict,
         tuple: Tuple,
