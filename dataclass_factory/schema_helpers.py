@@ -1,17 +1,47 @@
-from datetime import datetime
+from datetime import datetime, date, time, timedelta
+from decimal import Decimal
+from pathlib import Path
+from typing import Type
 from uuid import UUID
 
-from .common import T
-from .factory import StackedFactory
+from .common import T, AbstractFactory, Parser
 from .schema import Schema
 
+COMMON_SCHEMAS = {}
 try:
-    isotime_schema = Schema(
+    isodatetime_schema = Schema(
         parser=datetime.fromisoformat,  # type: ignore
         serializer=datetime.isoformat,
     )
+    COMMON_SCHEMAS[datetime] = isodatetime_schema
+    isodate_schema = Schema(
+        parser=date.fromisoformat,
+        serializer=date.isoformat
+    )
+    COMMON_SCHEMAS[date] = isodate_schema
+    isotime_schema = Schema(
+        parser=time.fromisoformat,
+        serializer=time.isoformat
+    )
+    COMMON_SCHEMAS[time] = isotime_schema
 except AttributeError:
     pass
+
+timedelta_schema = Schema(
+    parser=lambda x: timedelta(seconds=x),
+    serializer=lambda x: x.seconds
+)
+COMMON_SCHEMAS[timedelta] = timedelta_schema
+decimal_schema = Schema(
+    parser=Decimal,
+    serializer=lambda x: format(x, "f"),
+)
+COMMON_SCHEMAS[Decimal] = decimal_schema
+path_schema = Schema(
+    parser=Path,
+    serializer=str,
+)
+COMMON_SCHEMAS[Path] = path_schema
 
 
 def type_checker(value, field="type", pre_parse=None):
@@ -34,6 +64,7 @@ uuid_schema = Schema(
     serializer=UUID.__str__,
     parser=UUID,
 )
+COMMON_SCHEMAS[UUID] = uuid_schema
 
 
 def _stub(data: T) -> T:
@@ -49,7 +80,10 @@ stub_schema = Schema(
 class ClsCheckSchema(Schema[T]):
     serializer = _stub
 
-    def get_parser(self, cls, stacked_factory: StackedFactory, debug_path: bool):  # type: ignore
+    def get_parser(self,
+                   cls: Type[T],
+                   stacked_factory: AbstractFactory,
+                   debug_path: bool) -> Parser[T]:
         def cls_check_parser(data):
             if isinstance(data, cls):
                 return data
