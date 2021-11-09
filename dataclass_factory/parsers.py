@@ -12,12 +12,14 @@ from .fields import (
     FieldInfo, get_class_fields, get_dataclass_fields,
     get_typeddict_fields, get_namedtuple_fields,
 )
+from .generics import fix_generic_alias
 from .path_utils import CleanKey, CleanPath
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
     args_unspecified, hasargs, is_any, is_collection, is_dict,
     is_enum, is_generic_concrete, is_literal, is_literal36, is_newtype,
     is_none, is_optional, is_tuple, is_typeddict, is_union, is_namedtuple,
+    is_generic,
 )
 from .validators import combine_parser_validators
 
@@ -325,6 +327,7 @@ def create_parser(factory, schema: Schema, debug_path: bool, cls: Type) -> Parse
 
 
 def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> Parser:  # noqa C901, CCR001
+    cls = fix_generic_alias(cls)
     if is_any(cls):
         return parse_stub
     if is_none(cls):

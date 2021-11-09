@@ -8,6 +8,7 @@ from .fields import (
     FieldInfo, get_dataclass_fields, get_typeddict_fields,
     get_namedtuple_fields,
 )
+from .generics import fix_generic_alias
 from .path_utils import CleanKey, CleanPath, init_structure
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
@@ -164,6 +165,7 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
 
 def create_serializer_impl(factory, schema: Schema, debug_path: bool,
                            class_: Type) -> Serializer:  # noqa C901,CCR001
+    class_ = fix_generic_alias(class_)
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
     if is_literal(class_) or is_literal36(class_) or is_none(class_):

@@ -1,11 +1,14 @@
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, List, Tuple
 from unittest import TestCase
 
 from dataclass_factory import Factory, Schema
 
 T = TypeVar('T')
 V = TypeVar('V')
+
+ListList = List[List[T]]
+ListTuple = List[Tuple[T, V]]
 
 
 @dataclass
@@ -30,6 +33,11 @@ class FooBaz(Generic[T]):
     foo: Foo[T]
 
 
+@dataclass
+class ListBaz(Generic[T]):
+    foo: List[T]
+
+
 class TestGeneric(TestCase):
     def setUp(self) -> None:
         self.factory = Factory()
@@ -39,6 +47,12 @@ class TestGeneric(TestCase):
         foo_serial = {"value": 1}
         self.assertEqual(self.factory.load(foo_serial, Foo[int]), foo)
         self.assertEqual(self.factory.dump(foo, Foo[int]), foo_serial)
+
+    def test_list_field(self):
+        foo = ListBaz[int]([1])
+        foo_serial = {"foo": [1]}
+        self.assertEqual(self.factory.load(foo_serial, ListBaz[int]), foo)
+        self.assertEqual(self.factory.dump(foo, ListBaz[int]), foo_serial)
 
     def test_simple_str(self):
         foo = Foo[str]("hello")
@@ -94,3 +108,14 @@ class TestGeneric(TestCase):
             Foo[int]: Schema(name_mapping={"value": "v"}),
         })
         self.assertEqual(factory.dump(FooBaz(Foo(1)), FooBaz[int]), {"bar": {"v": 1}})
+
+    def test_alias(self):
+        data = [[1]]
+        self.assertEqual(self.factory.load(data, ListList[int]), data)
+        self.assertEqual(self.factory.dump(data, ListList[int]), data)
+
+    def test_alias2(self):
+        data = [[1, "2"]]
+        parsed = [(1, "2")]
+        self.assertEqual(self.factory.load(data, ListTuple[int, V][str]), parsed)
+        self.assertEqual(self.factory.dump(parsed, ListTuple[int, V][str]), data)
