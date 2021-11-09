@@ -1,9 +1,10 @@
-import decimal
+import collections.abc
 from collections import deque
 from dataclasses import is_dataclass
 from typing import (
     Any, Callable, Collection, Deque, Dict, FrozenSet,
-    List, Optional, Sequence, Set, Tuple, Type, Union,
+    List, Optional, Sequence, Set, Tuple, Type, Union, Iterable,
+    MutableSequence, MutableSet, Reversible,
 )
 
 from .common import AbstractFactory, Parser, T
@@ -16,7 +17,7 @@ from .generics import fix_generic_alias
 from .path_utils import CleanKey, CleanPath
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
-    args_unspecified, hasargs, is_any, is_collection, is_dict,
+    args_unspecified, hasargs, is_any, is_iterable, is_dict,
     is_enum, is_generic_concrete, is_literal, is_literal36, is_newtype,
     is_none, is_optional, is_tuple, is_typeddict, is_union, is_namedtuple,
     is_generic,
@@ -261,13 +262,6 @@ def get_optional_parser(parser: Parser[T]) -> Parser[Optional[T]]:
     return optional_parser
 
 
-def decimal_parse(data) -> decimal.Decimal:
-    try:
-        return decimal.Decimal(data)
-    except (decimal.InvalidOperation, TypeError, ValueError):
-        raise ValueError(f'Invalid decimal string representation {data}')
-
-
 def get_collection_factory(cls) -> Type:
     if is_generic_concrete(cls):
         origin = cls.__origin__ or cls
@@ -277,11 +271,24 @@ def get_collection_factory(cls) -> Type:
         List: list,
         list: list,
         Set: set,
+        MutableSet: set,
         set: set,
         FrozenSet: frozenset,
         frozenset: frozenset,
         Deque: deque,
         deque: deque,
+        Collection: list,
+        Iterable: list,
+        Sequence: list,
+        MutableSequence: list,
+        Reversible: list,
+        collections.abc.Collection: list,
+        collections.abc.Iterable: list,
+        collections.abc.Sequence: list,
+        collections.abc.MutableSequence: list,
+        collections.abc.Reversible: list,
+        collections.abc.Set: set,
+        collections.abc.MutableSet: set,
     }.get(origin)
     if not res:
         raise NotImplementedError("Class %s not supported" % cls)
@@ -342,8 +349,6 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_parser_with_check(cls)
     if cls in (int, float, complex, bool):
         return cls
-    if cls in (decimal.Decimal,):
-        return decimal_parse
     if is_newtype(cls):
         return create_parser_impl(factory, schema, debug_path, cls.__supertype__)
     if is_enum(cls):
@@ -394,7 +399,7 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             pre_validators=schema.pre_validators,
             post_validators=schema.post_validators,
         )
-    if is_collection(cls):
+    if is_iterable(cls):
         if args_unspecified(cls):
             value_type_arg = Any
         else:

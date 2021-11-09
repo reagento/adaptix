@@ -1,7 +1,8 @@
 from enum import Enum
 import inspect
 from typing import (
-    Any, Collection, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union, get_type_hints,
+    Any, Collection, Dict, Generic, List, Optional, Tuple, Type, TypeVar,
+    Union, get_type_hints, Iterable,
 )
 
 LITERAL_TYPES: List[Any] = []
@@ -96,10 +97,10 @@ def is_tuple(type_) -> bool:
         return False
 
 
-def is_collection(type_) -> bool:
+def is_iterable(type_) -> bool:
     try:
         # __origin__ exists in 3.7 on user defined generics
-        return issubclass_safe(type_, Collection) or issubclass_safe(type_.__origin__, Collection)
+        return issubclass_safe(type_, Iterable) or issubclass_safe(type_.__origin__, Iterable)
     except AttributeError:
         return False
 
