@@ -1,24 +1,26 @@
 import decimal
 from datetime import datetime, date, time, timedelta
 from pathlib import Path
-from typing import Type
+from typing import Type, Dict, Any
 from uuid import UUID
 
 from .common import T, AbstractFactory, Parser
 from .schema import Schema
 
-COMMON_SCHEMAS = {}
+COMMON_SCHEMAS: Dict[Type, Schema] = {}
 try:
     isodatetime_schema = Schema(
         parser=datetime.fromisoformat,  # type: ignore
         serializer=datetime.isoformat,
     )
     COMMON_SCHEMAS[datetime] = isodatetime_schema
+
     isodate_schema = Schema(
         parser=date.fromisoformat,
         serializer=date.isoformat
     )
     COMMON_SCHEMAS[date] = isodate_schema
+
     isotime_schema = Schema(
         parser=time.fromisoformat,
         serializer=time.isoformat
@@ -34,7 +36,7 @@ timedelta_schema = Schema(
 COMMON_SCHEMAS[timedelta] = timedelta_schema
 
 
-def _parse_decimal(value):
+def _parse_decimal(value: Any) -> decimal.Decimal:
     try:
         return decimal.Decimal(value)
     except decimal.InvalidOperation as e:
@@ -46,6 +48,7 @@ decimal_schema = Schema(
     serializer=lambda x: format(x, "f"),
 )
 COMMON_SCHEMAS[decimal.Decimal] = decimal_schema
+
 path_schema = Schema(
     parser=Path,
     serializer=str,
