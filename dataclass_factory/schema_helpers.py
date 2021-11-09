@@ -1,5 +1,5 @@
+import decimal
 from datetime import datetime, date, time, timedelta
-from decimal import Decimal
 from pathlib import Path
 from typing import Type
 from uuid import UUID
@@ -32,11 +32,20 @@ timedelta_schema = Schema(
     serializer=lambda x: x.seconds
 )
 COMMON_SCHEMAS[timedelta] = timedelta_schema
+
+
+def _parse_decimal(value):
+    try:
+        return decimal.Decimal(value)
+    except decimal.InvalidOperation as e:
+        raise ValueError from e
+
+
 decimal_schema = Schema(
-    parser=Decimal,
+    parser=_parse_decimal,
     serializer=lambda x: format(x, "f"),
 )
-COMMON_SCHEMAS[Decimal] = decimal_schema
+COMMON_SCHEMAS[decimal.Decimal] = decimal_schema
 path_schema = Schema(
     parser=Path,
     serializer=str,
