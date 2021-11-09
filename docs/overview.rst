@@ -34,10 +34,10 @@ Example
 Supported types
 =====================
 
-* numeric types (``int``, ``float``, ``Decimal``, ``complex``)
+* numeric types (``int``, ``float``, ``Decimal``, ``complex``, ``Fraction``)
 * ``bool``
 * ``str``, ``bytearray``, ``bytes``
-* ``List``
+* ``List`` and common protocols like ``Iterable`` are parsed as ``list``
 * ``Tuple``, including something like ``Tuple[int, ...]`` or ``Tuple[int, str, int]``
 * ``Dict``
 * ``Enum`` is converted using its value
@@ -48,6 +48,6 @@ Supported types
 * ``TypedDict`` types with checking of ``total``, including variant from ``typing_exstensions``
 * ``dataclass`` and ``NamedTuple``
 * ``Generic`` dataclasses
-* ``datetime`` and ``UUID`` can be converted using predefined schemas
+* Other standard types like ``datetime``, ``Path``, ``UUID`` and ``IPV4Address``
 * Custom classes can be parsed automatically using info from their ``__init__`` method. Serialization is done by calling `vars()` function and then processing real data types
 * Or you can provide custom parser/serializer
