@@ -1,5 +1,11 @@
 import decimal
 from datetime import datetime, date, time, timedelta
+from fractions import Fraction
+from ipaddress import (
+    IPv4Address, IPv6Address,
+    IPv4Network, IPv6Network,
+    IPv4Interface, IPv6Interface,
+)
 from pathlib import Path
 from typing import Type, Dict, Any
 from uuid import UUID
@@ -49,12 +55,6 @@ decimal_schema = Schema(
 )
 COMMON_SCHEMAS[decimal.Decimal] = decimal_schema
 
-path_schema = Schema(
-    parser=Path,
-    serializer=str,
-)
-COMMON_SCHEMAS[Path] = path_schema
-
 
 def type_checker(value, field="type", pre_parse=None):
     def check_type(data):
@@ -72,11 +72,17 @@ unixtime_schema = Schema(
     serializer=datetime.timestamp,
 )
 
-uuid_schema = Schema(
-    serializer=UUID.__str__,
-    parser=UUID,
-)
-COMMON_SCHEMAS[UUID] = uuid_schema
+for type_ in (
+    UUID, Path, Fraction,
+    IPv4Address, IPv6Address,
+    IPv4Network, IPv6Network,
+    IPv4Interface, IPv6Interface,
+):
+    COMMON_SCHEMAS[type_] = Schema(
+        serializer=type_.__str__,
+        parser=type_,
+
+    )
 
 
 def _stub(data: T) -> T:
