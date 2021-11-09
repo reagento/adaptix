@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple, Union
 from unittest import TestCase
 
-from dataclass_factory import parse
+from dataclass_factory import parse, Factory
 
 
 @dataclass
@@ -36,7 +36,27 @@ class DUnion:
     value: Union[str, int, List[E]]
 
 
+@dataclass
+class PseudoCollection:
+    a: int
+
+    def __contains__(self, item):
+        return False
+
+    def __len__(self):
+        return 0
+
+    def __iter__(self):
+        return iter(())
+
+
 class Test1(TestCase):
+    def test_with_contains(self):
+        factory = Factory()
+        data = {"a": 1}
+        res = factory.load(data, PseudoCollection)
+        self.assertEqual(res, PseudoCollection(1))
+        self.assertEqual(data, factory.dump(res))
 
     def test_enum(self):
         self.assertEqual(parse("hello", E), E.hello)

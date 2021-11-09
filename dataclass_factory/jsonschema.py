@@ -6,7 +6,7 @@ from .common import AbstractFactory
 from .fields import get_dataclass_fields, get_typeddict_fields
 from .schema import Schema, Unknown
 from .type_detection import (
-    hasargs, is_collection, is_dict, is_enum, is_generic_concrete,
+    hasargs, is_iterable, is_dict, is_enum, is_generic_concrete,
     is_none, is_tuple, is_typeddict, is_union,
 )
 
@@ -32,7 +32,7 @@ def get_type(cls) -> Optional[str]:
         return "boolean"
     elif is_dict(cls):
         return "object"
-    elif is_tuple(cls) or is_collection(cls):
+    elif is_tuple(cls) or is_iterable(cls):
         return "array"
     elif is_union(cls) or is_enum(cls):
         return None
@@ -117,7 +117,7 @@ def create_schema(factory: AbstractFactory, schema: Schema, cls: Type) -> Dict[s
                 res["items"] = [type_or_ref(x, factory) for x in cls.__args__]
     elif is_typeddict(cls) or (is_generic_concrete(cls) and is_typeddict(cls.__origin__)):
         res.update(typed_dict_schema(factory, schema, cls))
-    elif is_collection(cls):
+    elif is_iterable(cls):
         res["items"] = type_or_ref(cls.__args__[0], factory)
     elif is_union(cls):
         res["anyOf"] = [type_or_ref(x, factory) for x in cls.__args__]
