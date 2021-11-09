@@ -46,7 +46,7 @@ Supported types
 * ``Union``
 * ``Literal`` types, including variant from ``typing_exstensions``
 * ``TypedDict`` types with checking of ``total``, including variant from ``typing_exstensions``
-* ``dataclass``
+* ``dataclass`` and ``NamedTuple``
 * ``Generic`` dataclasses
 * ``datetime`` and ``UUID`` can be converted using predefined schemas
 * Custom classes can be parsed automatically using info from their ``__init__`` method. Serialization is done by calling `vars()` function and then processing real data types
