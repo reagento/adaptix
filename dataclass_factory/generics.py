@@ -74,3 +74,20 @@ def resolve_init_hints(type_: Any):
         name: fill_type_args(args, type_)
         for name, type_ in hints.items()
     }
+
+
+def fix_generic_alias(type_: Any):
+    """
+    This function normalizes generics created via aliases.
+    E.g. `List[List[T]][int]` should replaced via `List[List[int]]`
+
+    On each call it normalizes one level, so it is recurrent
+    """
+    if not is_generic_concrete(type_):
+        return type_
+    origin = type_.__origin__
+    if not is_generic_concrete(origin):
+        return type_
+    args = dict(zip(origin.__parameters__, type_.__args__))
+    origin_args = tuple(fill_type_args(args, a) for a in origin.__args__)
+    return fix_generic_alias(origin.__origin__[origin_args])

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Generic, TypeVar, List
+from typing import Generic, TypeVar, List, Tuple
 from unittest import TestCase
 
 from dataclass_factory import Factory, Schema
@@ -8,6 +8,7 @@ T = TypeVar('T')
 V = TypeVar('V')
 
 ListList = List[List[T]]
+ListTuple = List[Tuple[T, V]]
 
 
 @dataclass
@@ -112,3 +113,9 @@ class TestGeneric(TestCase):
         data = [[1]]
         self.assertEqual(self.factory.load(data, ListList[int]), data)
         self.assertEqual(self.factory.dump(data, ListList[int]), data)
+
+    def test_alias2(self):
+        data = [[1, "2"]]
+        parsed = [(1, "2")]
+        self.assertEqual(self.factory.load(data, ListTuple[int, V][str]), parsed)
+        self.assertEqual(self.factory.dump(parsed, ListTuple[int, V][str]), data)
