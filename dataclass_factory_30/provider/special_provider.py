@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from datetime import datetime, date
+from datetime import datetime
 from functools import partial
 from typing import Literal, Optional
 
 from dataclass_factory.exceptions import ParseError
 from . import Mediator, ParserRequest, SerializerRequest
-from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_class, for_type
+from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_type
 
 
 def stub(arg):

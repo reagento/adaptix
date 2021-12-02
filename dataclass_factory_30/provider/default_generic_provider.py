@@ -4,7 +4,7 @@ from typing import Literal, Collection, Container, Union
 from .definitions import ParseError, UnionParseError
 from . import Mediator, CannotProvide
 from .static_provider import StaticProvider, static_provision_action
-from .basic_provider import ParserProvider, SerializerProvider, for_origin
+from .basic_provider import ParserProvider, SerializerProvider, for_type
 from .request_cls import TypeHintRM, SerializerRequest, ParserRequest
 from ..common import Parser
 from ..type_tools import is_new_type, strip_tags, normalize_type
@@ -34,7 +34,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
 
 
 @dataclass
-@for_origin(Literal)
+@for_type(Literal)
 class LiteralProvider(ParserProvider, SerializerProvider):
     tuple_size_limit: int = 4
 
@@ -73,7 +73,7 @@ class LiteralProvider(ParserProvider, SerializerProvider):
         return stub
 
 
-@for_origin(Union)
+@for_type(Union)
 class UnionProvider(ParserProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest):
         norm = normalize_type(request.type)
