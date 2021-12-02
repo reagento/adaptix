@@ -107,38 +107,16 @@ class TimeIsoFormatSerializerProvider(SerializerProvider):
 TimedeltaAttrs = Literal['weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds']
 
 
-@dataclass
 @for_type(timedelta)
 class TimedeltaProvider(ParserProvider, SerializerProvider):
-    attr: TimedeltaAttrs = 'seconds'
-
     def _provide_parser(self, mediator: Mediator, request: ParserRequest):
-        attr = self.attr
-
-        if attr == 'seconds':
-            def timedelta_seconds_parser(value):
-                return timedelta(seconds=value)
-
-            return foreign_parser(timedelta_seconds_parser)
-
         def timedelta_parser(value):
-            return timedelta(**{attr: value})
+            return timedelta(seconds=value)
 
         return foreign_parser(timedelta_parser)
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
-        attr = self.attr
-
-        if attr == 'seconds':
-            def timedelta_seconds_serializer(value):
-                return value.seconds
-
-            return timedelta_seconds_serializer
-
-        def timedelta_serializer(value):
-            return getattr(value, attr)
-
-        return timedelta_serializer
+        return timedelta.total_seconds
 
 
 @for_type(None)
