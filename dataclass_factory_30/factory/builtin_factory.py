@@ -13,6 +13,11 @@ from ..provider.default_generic_provider import (
 from ..provider.special_provider import (
     NoneProvider,
     DatetimeIsoFormatParserProvider,
+    DatetimeIsoFormatSerializerProvider,
+    DateIsoFormatProvider,
+    TimeIsoFormatParserProvider,
+    TimeIsoFormatSerializerProvider,
+    TimedeltaProvider,
 )
 
 
@@ -39,7 +44,7 @@ class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
     @final
     def _get_recursion_resolving(self) -> RecursionResolving:
         result = {}
-        for base in type(self).__bases__:
+        for base in reversed(type(self).__bases__):
             if issubclass(base, MultiInheritanceFactory):
                 result.update(base._get_raw_recursion_resolving(self).to_dict())
 
@@ -51,6 +56,11 @@ class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
         NoneProvider(),
 
         DatetimeIsoFormatParserProvider(),
+        DatetimeIsoFormatSerializerProvider(),
+        DateIsoFormatProvider(),
+        TimeIsoFormatParserProvider(),
+        TimeIsoFormatSerializerProvider(),
+        TimedeltaProvider(),
 
         LiteralProvider(),
         UnionProvider(),

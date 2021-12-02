@@ -1,11 +1,12 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, date, time, timedelta
 from functools import partial
 from typing import Literal, Optional
 
 from dataclass_factory.exceptions import ParseError
-from . import Mediator, ParserRequest, SerializerRequest
 from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_type
+from .essential import Mediator
+from .request_cls import ParserRequest, SerializerRequest
 
 
 def stub(arg):
@@ -27,14 +28,14 @@ class DatetimeIsoFormatParserProvider(ParserProvider):
         return foreign_parser(datetime.fromisoformat)
 
 
-TIMESPEC_VARIANTS = Literal['auto', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds']
+TimespecCases = Literal['auto', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds']
 
 
 @dataclass
 @for_type(datetime)
 class DatetimeIsoFormatSerializerProvider(SerializerProvider):
     sep: Optional[str] = None
-    timespec: Optional[TIMESPEC_VARIANTS] = None
+    timespec: Optional[TimespecCases] = None
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
         kwargs = {}
@@ -44,8 +45,8 @@ class DatetimeIsoFormatSerializerProvider(SerializerProvider):
             kwargs['timespec'] = self.timespec
 
         if kwargs:
-            return foreign_parser(partial(datetime.isoformat, **kwargs))
-        return foreign_parser(datetime.isoformat)
+            return partial(datetime.isoformat, **kwargs)
+        return datetime.isoformat
 
 
 @dataclass
@@ -68,6 +69,78 @@ class DatetimeFormattedProvider(ParserProvider, SerializerProvider):
         return datetime_formatted_serializer
 
 
+@for_type(date)
+class DateProvider(ParserProvider, SerializerProvider):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+        return foreign_parser(date.fromisoformat)
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
+        return date.isoformat
+
+
+@for_type(date)
+class DateIsoFormatProvider(ParserProvider, SerializerProvider):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+        return foreign_parser(date.fromisoformat)
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
+        return date.isoformat
+
+
+@for_type(time)
+class TimeIsoFormatParserProvider(ParserProvider):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+        return foreign_parser(time.fromisoformat)
+
+
+@dataclass
+@for_type(time)
+class TimeIsoFormatSerializerProvider(SerializerProvider):
+    timespec: Optional[TimespecCases] = None
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
+        if self.timespec is None:
+            return foreign_parser(time.isoformat)
+        return foreign_parser(partial(time.isoformat, self.timespec))
+
+
+TimedeltaAttrs = Literal['weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds']
+
+
+@dataclass
+@for_type(timedelta)
+class TimedeltaProvider(ParserProvider, SerializerProvider):
+    attr: TimedeltaAttrs = 'seconds'
+
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+        attr = self.attr
+
+        if attr == 'seconds':
+            def timedelta_seconds_parser(value):
+                return timedelta(seconds=value)
+
+            return foreign_parser(timedelta_seconds_parser)
+
+        def timedelta_parser(value):
+            return timedelta(**{attr: value})
+
+        return foreign_parser(timedelta_parser)
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
+        attr = self.attr
+
+        if attr == 'seconds':
+            def timedelta_seconds_serializer(value):
+                return value.seconds
+
+            return timedelta_seconds_serializer
+
+        def timedelta_serializer(value):
+            return getattr(value, attr)
+
+        return timedelta_serializer
+
+
 @for_type(None)
 class NoneProvider(ParserProvider, SerializerProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest):
@@ -80,4 +153,3 @@ class NoneProvider(ParserProvider, SerializerProvider):
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
         return stub
-
