@@ -5,14 +5,14 @@ from typing import Literal, Optional
 
 from dataclass_factory.exceptions import ParseError
 from . import Mediator, ParserRequest, SerializerRequest
-from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_class, for_origin
+from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_class, for_type
 
 
 def stub(arg):
     return arg
 
 
-@for_class(datetime)
+@for_type(datetime)
 class DatetimeUnixTimeProvider(ParserProvider, SerializerProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest):
         return foreign_parser(datetime.fromtimestamp)
@@ -21,7 +21,7 @@ class DatetimeUnixTimeProvider(ParserProvider, SerializerProvider):
         return stub
 
 
-@for_class(datetime)
+@for_type(datetime)
 class DatetimeIsoFormatParserProvider(ParserProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest):
         return foreign_parser(datetime.fromisoformat)
@@ -31,7 +31,7 @@ TIMESPEC_VARIANTS = Literal['auto', 'hours', 'minutes', 'seconds', 'milliseconds
 
 
 @dataclass
-@for_class(datetime)
+@for_type(datetime)
 class DatetimeIsoFormatSerializerProvider(SerializerProvider):
     sep: Optional[str] = None
     timespec: Optional[TIMESPEC_VARIANTS] = None
@@ -49,7 +49,7 @@ class DatetimeIsoFormatSerializerProvider(SerializerProvider):
 
 
 @dataclass
-@for_class(datetime)
+@for_type(datetime)
 class DatetimeFormattedProvider(ParserProvider, SerializerProvider):
     format: str
 
@@ -68,7 +68,7 @@ class DatetimeFormattedProvider(ParserProvider, SerializerProvider):
         return datetime_formatted_serializer
 
 
-@for_origin(None)
+@for_type(None)
 class NoneProvider(ParserProvider, SerializerProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest):
         def none_parser(data):
