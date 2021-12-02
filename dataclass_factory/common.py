@@ -28,6 +28,6 @@ SerializerGetter = Callable[
 Parser = Callable[[Any], T]
 ParserGetter = Callable[
     [Type[T], AbstractFactory, bool],
-    Parser,
+    Parser[T],
 ]
 InnerConverter = Callable[[T], T]

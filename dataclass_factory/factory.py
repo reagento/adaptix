@@ -8,6 +8,7 @@ from .parsers import create_parser, get_lazy_parser
 from .schema import merge_schema, Schema, Unknown
 from .serializers import create_serializer, get_lazy_serializer
 from .type_detection import is_generic_concrete
+from .schema_helpers import COMMON_SCHEMAS
 
 DEFAULT_SCHEMA = Schema[Any](
     trim_trailing_underscore=True,
@@ -60,15 +61,13 @@ T = TypeVar("T")
 
 
 class Factory(AbstractFactory):
-    __slots__ = ("default_schema", "debug_path", "schemas")
-
     def __init__(self,
                  default_schema: Optional[Schema] = None,
                  schemas: Optional[Dict[Type, Schema]] = None,
                  debug_path: bool = False):
         self.debug_path = debug_path
         self.default_schema = default_schema
-        self.schemas: Dict[Type, Schema] = {}
+        self.schemas: Dict[Type, Schema] = COMMON_SCHEMAS.copy()
         if schemas:
             self.schemas.update({
                 type_: merge_schema(schema, self.default_schema, DEFAULT_SCHEMA)

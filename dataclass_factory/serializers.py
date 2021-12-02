@@ -4,13 +4,17 @@ from operator import attrgetter, getitem
 from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
 
 from .common import AbstractFactory, K, Serializer, T
-from .fields import FieldInfo, get_dataclass_fields, get_typeddict_fields
+from .fields import (
+    FieldInfo, get_dataclass_fields, get_typeddict_fields,
+    get_namedtuple_fields,
+)
+from .generics import fix_generic_alias
 from .path_utils import CleanKey, CleanPath, init_structure
 from .schema import RuleForUnknown, Schema, Unknown
 from .type_detection import (
-    hasargs, is_any, is_collection, is_dict, is_enum, is_generic_concrete, 
+    hasargs, is_any, is_iterable, is_dict, is_enum, is_generic_concrete,
     is_newtype, is_optional, is_tuple, is_type_var, is_typeddict, is_union,
-    is_literal, is_literal36, instance_wont_have_dict, is_none,
+    is_literal, is_literal36, instance_wont_have_dict, is_none, is_namedtuple,
 )
 
 
@@ -161,6 +165,7 @@ def create_serializer(factory, schema: Schema, debug_path: bool, class_: Type) -
 
 def create_serializer_impl(factory, schema: Schema, debug_path: bool,
                            class_: Type) -> Serializer:  # noqa C901,CCR001
+    class_ = fix_generic_alias(class_)
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
     if is_literal(class_) or is_literal36(class_) or is_none(class_):
@@ -174,6 +179,14 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             factory,
             schema,
             get_dataclass_fields(schema, class_),
+            getattr,
+            schema.unknown,
+        )
+    if is_namedtuple(class_):
+        return get_complex_serializer(
+            factory,
+            schema,
+            get_namedtuple_fields(schema, class_),
             getattr,
             schema.unknown,
         )
@@ -216,10 +229,10 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
                                    factory.serializer(value_type_arg))
     if is_dict(class_):
         return get_dict_serializer(get_lazy_serializer(factory), get_lazy_serializer(factory))
-    if is_generic_concrete(class_) and is_collection(class_.__origin__):
+    if is_generic_concrete(class_) and is_iterable(class_.__origin__):
         item_serializer = factory.serializer(class_.__args__[0] if class_.__args__ else Any)
         return get_collection_serializer(item_serializer)
-    if is_collection(class_):
+    if is_iterable(class_):
         item_serializer = get_lazy_serializer(factory)
         return get_collection_serializer(item_serializer)
 

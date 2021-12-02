@@ -13,7 +13,7 @@ setup(
     description='An utility class for creating instances of dataclasses',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='2.11',
+    version='2.13',
     url='https://github.com/tishka17/dataclass_factory',
     author='A. Tikhonov',
     author_email='17@itishka.org',

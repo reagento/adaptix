@@ -1,17 +1,35 @@
-from typing import Any, Dict, Generic, Type, get_type_hints
+import sys
+from collections import deque
+from typing import Any, Dict, Generic, Type, get_type_hints, Tuple, List, Set, \
+    FrozenSet, Deque
 
 from .type_detection import (
     get_self_type_hints, is_generic, is_generic_concrete,
 )
 
 
+COMPAT_ORIGINS: Dict[Any, Any]
+if sys.version_info < (3, 9):
+    COMPAT_ORIGINS = {
+        list: List,
+        dict: Dict,
+        tuple: Tuple,
+        set: Set,
+        frozenset: FrozenSet,
+        deque: Deque,
+    }
+else:
+    COMPAT_ORIGINS = {}
+
+
 def fill_type_args(args: Dict[Type, Type], type_: Type) -> Type:
     type_ = args.get(type_, type_)
     if is_generic_concrete(type_):
-        type_args = tuple(
-            args.get(a, a) for a in type_.__args__
-        )
-        type_ = type_.__origin__[type_args]
+        type_args = []
+        for arg in type_.__args__:
+            type_args.append(fill_type_args(args, arg))
+        origin = COMPAT_ORIGINS.get(type_.__origin__, type_.__origin__)
+        type_ = origin[tuple(type_args)]
     return type_
 
 
@@ -56,3 +74,20 @@ def resolve_init_hints(type_: Any):
         name: fill_type_args(args, type_)
         for name, type_ in hints.items()
     }
+
+
+def fix_generic_alias(type_: Any):
+    """
+    This function normalizes generics created via aliases.
+    E.g. `List[List[T]][int]` should replaced via `List[List[int]]`
+
+    On each call it normalizes one level, so it is recurrent
+    """
+    if not is_generic_concrete(type_):
+        return type_
+    origin = type_.__origin__
+    if not is_generic_concrete(origin):
+        return type_
+    args = dict(zip(origin.__parameters__, type_.__args__))
+    origin_args = tuple(fill_type_args(args, a) for a in origin.__args__)
+    return fix_generic_alias(origin.__origin__[origin_args])

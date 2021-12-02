@@ -97,7 +97,7 @@ class Schema(Generic[T]):
             self.description = description
 
 
-SCHEMA_FIELDS = [
+SCHEMA_FIELDS = {
     "only",
     "exclude",
     "name_mapping",
@@ -119,26 +119,39 @@ SCHEMA_FIELDS = [
     "description",
     "pre_validators",
     "post_validators",
-]
+}
+
+
+class _Empty:
+    pass
 
 
 class SchemaProxy:
     def __init__(self, *schemas: Schema):
-        self._schemas = schemas
+        # the first empty object accumulates changes that do not touch actual schema
+        self._schemas = [_Empty(), *schemas]
 
     def __getattr__(self, item):
         for schema in self._schemas:
             res = getattr(schema, item, None)
             if res is not None:
                 return res
+
         if item in SCHEMA_FIELDS:
             return None
+
         raise AttributeError(f"Field `{item}` is not defined for Schema")
 
     def __setattr__(self, key, value):
         if key == "_schemas":
             return super().__setattr__(key, value)
         return setattr(self._schemas[0], key, value)
+
+    def __getstate__(self):
+        return self._schemas
+
+    def __setstate__(self, state):
+        self._schemas = state
 
 
 def merge_schema(*schemas: Optional[Schema]) -> Schema:
