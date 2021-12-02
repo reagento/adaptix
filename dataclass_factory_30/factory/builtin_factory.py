@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime, date, time
 from typing import final, List
 
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
@@ -12,11 +13,7 @@ from ..provider.default_generic_provider import (
 )
 from ..provider.special_provider import (
     NoneProvider,
-    DatetimeIsoFormatParserProvider,
-    DatetimeIsoFormatSerializerProvider,
-    DateIsoFormatProvider,
-    TimeIsoFormatParserProvider,
-    TimeIsoFormatSerializerProvider,
+    IsoFormatProvider,
     TimedeltaProvider,
 )
 
@@ -55,11 +52,9 @@ class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
     recipe = [
         NoneProvider(),
 
-        DatetimeIsoFormatParserProvider(),
-        DatetimeIsoFormatSerializerProvider(),
-        DateIsoFormatProvider(),
-        TimeIsoFormatParserProvider(),
-        TimeIsoFormatSerializerProvider(),
+        IsoFormatProvider(datetime),
+        IsoFormatProvider(date),
+        IsoFormatProvider(time),
         TimedeltaProvider(),
 
         LiteralProvider(),

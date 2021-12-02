@@ -12,16 +12,16 @@ from ..type_tools import normalize_type, is_protocol, is_subclass_soft
 
 T = TypeVar('T')
 
-
-def _dummy_validator(x):
-    return
-
-
 TypeValidator = Callable[[TypeHint], None]
 
 
 class ProviderWithTypeValidator(StaticProvider):
-    _type_validator: TypeValidator = staticmethod(_dummy_validator)
+    def _type_validator(self, tp: TypeHint) -> None:
+        pass
+
+
+# noinspection PyProtectedMember
+_origin_tv = ProviderWithTypeValidator._type_validator
 
 
 def attach_validator(validator: TypeValidator, cls: Type[ProviderWithTypeValidator]):
@@ -31,11 +31,11 @@ def attach_validator(validator: TypeValidator, cls: Type[ProviderWithTypeValidat
     if (
         not hasattr(cls._type_validator, "__func__")
         or
-        cls._type_validator.__func__ is _dummy_validator  # type: ignore
+        cls._type_validator.__func__ is _origin_tv  # type: ignore
     ):
         raise RuntimeError(f"Can not attach validator twice")
 
-    cls._type_validator = validator
+    cls._type_validator = staticmethod(validator)  # type: ignore
     return cls
 
 

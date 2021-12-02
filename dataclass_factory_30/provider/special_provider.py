@@ -1,110 +1,67 @@
 from dataclasses import dataclass
 from datetime import datetime, date, time, timedelta
-from functools import partial
-from typing import Literal, Optional
+from typing import Union, Type
 
 from dataclass_factory.exceptions import ParseError
-from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_type
-from .essential import Mediator
+from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_type, ProviderWithTypeValidator
+from .essential import Mediator, CannotProvide
 from .request_cls import ParserRequest, SerializerRequest
+from ..common import TypeHint
 
 
 def stub(arg):
     return arg
 
 
-@for_type(datetime)
-class DatetimeUnixTimeProvider(ParserProvider, SerializerProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
-        return foreign_parser(datetime.fromtimestamp)
+@dataclass
+class ForAnyDateTime(ProviderWithTypeValidator):
+    cls: Type[Union[date, time]]
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
-        return stub
-
-
-@for_type(datetime)
-class DatetimeIsoFormatParserProvider(ParserProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
-        return foreign_parser(datetime.fromisoformat)
-
-
-TimespecCases = Literal['auto', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds']
+    def _type_validator(self, tp: TypeHint) -> None:
+        if tp != self.cls:
+            raise CannotProvide
 
 
 @dataclass
-@for_type(datetime)
-class DatetimeIsoFormatSerializerProvider(SerializerProvider):
-    sep: Optional[str] = None
-    timespec: Optional[TimespecCases] = None
+class IsoFormatProvider(ForAnyDateTime, ParserProvider, SerializerProvider):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+        return foreign_parser(self.cls.fromisoformat)
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
-        kwargs = {}
-        if self.sep is not None:
-            kwargs['sep'] = self.sep
-        if self.timespec is not None:
-            kwargs['timespec'] = self.timespec
-
-        if kwargs:
-            return partial(datetime.isoformat, **kwargs)
-        return datetime.isoformat
+        return self.cls.isoformat
 
 
 @dataclass
-@for_type(datetime)
-class DatetimeFormattedProvider(ParserProvider, SerializerProvider):
+class AnyDateTimeFormatProvider(ForAnyDateTime, ParserProvider, SerializerProvider):
     format: str
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest):
         fmt = self.format
 
-        def datetime_formatted_parser(value):
+        def any_date_time_format_parser(value):
             return datetime.strptime(value, fmt)
 
-        return foreign_parser(datetime_formatted_parser)
+        return foreign_parser(any_date_time_format_parser)
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
-        def datetime_formatted_serializer(value: datetime):
-            return value.strftime(self.format)
+        fmt = self.format
 
-        return datetime_formatted_serializer
+        def any_date_time_format_serializer(value: datetime):
+            return value.strftime(fmt)
 
-
-@for_type(date)
-class DateProvider(ParserProvider, SerializerProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
-        return foreign_parser(date.fromisoformat)
-
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
-        return date.isoformat
+        return any_date_time_format_serializer
 
 
-@for_type(date)
-class DateIsoFormatProvider(ParserProvider, SerializerProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
-        return foreign_parser(date.fromisoformat)
-
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
-        return date.isoformat
+def datetime_format_provider(fmt: str):
+    return AnyDateTimeFormatProvider(datetime, fmt)
 
 
-@for_type(time)
-class TimeIsoFormatParserProvider(ParserProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
-        return foreign_parser(time.fromisoformat)
+def date_format_provider(fmt: str):
+    return AnyDateTimeFormatProvider(date, fmt)
 
 
-@dataclass
-@for_type(time)
-class TimeIsoFormatSerializerProvider(SerializerProvider):
-    timespec: Optional[TimespecCases] = None
-
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
-        if self.timespec is None:
-            return foreign_parser(time.isoformat)
-        return foreign_parser(partial(time.isoformat, self.timespec))
-
-
-TimedeltaAttrs = Literal['weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds']
+def time_format_provider(fmt: str):
+    return AnyDateTimeFormatProvider(time, fmt)
 
 
 @for_type(timedelta)
