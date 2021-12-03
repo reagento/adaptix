@@ -191,6 +191,16 @@ def _norm_iter(tps):
     return [normalize_type(tp) for tp in tps]
 
 
+def _unfold_union_args(norm_args: List[BaseNormType]) -> List[BaseNormType]:
+    result = []
+    for norm in norm_args:
+        if norm.origin == Union:
+            result.extend(norm.args)
+        else:
+            result.append(norm)
+    return result
+
+
 def _dedup(inp: Iterable) -> List:
     in_set = set()
     result = []
@@ -341,11 +351,20 @@ def normalize_type(tp: TypeHint) -> BaseNormType:
 
     if origin == Union:
         norm_args = _norm_iter(args)
-        unique_n_args = _dedup(norm_args)
+        unfolded_n_args = _unfold_union_args(norm_args)
+        unique_n_args = _dedup(unfolded_n_args)
         merged_n_args = _merge_literals(unique_n_args)
 
         if len(merged_n_args) == 1:
             return merged_n_args[0]
         return NormType(origin, merged_n_args, source=tp)
+
+    if is_subclass_soft(origin, type):
+        norm = normalize_type(args[0])
+        if norm.origin == Union:
+            return NormType(
+                Union, [NormType(type, [arg]) for arg in norm.args],
+                source=tp
+            )
 
     return NormType(origin, _norm_iter(args), source=tp)

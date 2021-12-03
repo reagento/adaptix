@@ -120,6 +120,18 @@ def test_type():
 
     assert normalize_type(Type[Any]) == NormType(type, [NormType(Any)])
 
+    assert normalize_type(Type[Union[int, str]]) == NormType(
+        Union, [normalize_type(Type[int]), normalize_type(Type[str])]
+    )
+
+    assert normalize_type(Union[Type[Union[int, str]], Type[bool]]) == NormType(
+        Union, [normalize_type(Type[int]), normalize_type(Type[str]), normalize_type(Type[bool])]
+    )
+
+    assert normalize_type(Union[Type[Union[int, str]], Type[int]]) == NormType(
+        Union, [normalize_type(Type[int]), normalize_type(Type[str])]
+    )
+
 
 @pytest.mark.parametrize(
     'tp',
