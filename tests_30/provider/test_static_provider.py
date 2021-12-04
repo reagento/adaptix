@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+import pytest
+
 from dataclass_factory_30.provider import (
     Mediator,
     Request,
@@ -16,12 +18,8 @@ class SampleRequest(Request):
 def test_simple():
     class TestSimple(StaticProvider):
         @static_provision_action(SampleRequest)
-        def _provide_sample(
-            self,
-            mediator: Mediator,
-            request: SampleRequest
-        ):
-            return
+        def _provide_sample(self, mediator: Mediator, request: SampleRequest):
+            pass
 
     assert (
         TestSimple().get_request_dispatcher()
@@ -34,23 +32,99 @@ def test_abstract_method():
     class Base(StaticProvider, ABC):
         @abstractmethod
         @static_provision_action(SampleRequest)
-        def _provide_sample(
-            self,
-            mediator: Mediator,
-            request: SampleRequest
-        ):
+        def _provide_sample(self, mediator: Mediator, request: SampleRequest):
             pass
 
     class Child(Base):
-        def _provide_sample(
-            self,
-            mediator: Mediator,
-            request: SampleRequest
-        ):
-            return
+        def _provide_sample(self, mediator: Mediator, request: SampleRequest):
+            pass
 
     assert (
         Child().get_request_dispatcher()
         ==
         RequestDispatcher({SampleRequest: '_provide_sample'})
     )
+
+
+def test_error_raising_with_one_class():
+    with pytest.raises(TypeError):
+        class DecoratorWithoutArgument(StaticProvider):
+            @static_provision_action
+            def _provide(self, mediator: Mediator, request: Request):
+                pass
+
+    with pytest.raises(TypeError):
+        class BadDecoratorArg(StaticProvider):
+            @static_provision_action(int)  # type: ignore
+            def _provide(self, mediator: Mediator, request: int):
+                pass
+
+    with pytest.raises(TypeError):
+        class DoubleDecoration(StaticProvider):
+            @static_provision_action(Request)
+            @static_provision_action(Request)
+            def _provide(self, mediator: Mediator, request: Request):
+                pass
+
+    with pytest.raises(TypeError):
+        class SeveralSPA(StaticProvider):
+            @static_provision_action(Request)
+            def _provide_one(self, mediator: Mediator, request: Request):
+                pass
+
+            @static_provision_action(Request)
+            def _provide_two(self, mediator: Mediator, request: Request):
+                pass
+
+
+class Base1(StaticProvider):
+    @static_provision_action(Request)
+    def _provide_one(self, mediator: Mediator, request: Request):
+        pass
+
+
+class Base2(StaticProvider):
+    @static_provision_action(Request)
+    def _provide_two(self, mediator: Mediator, request: Request):
+        pass
+
+
+def test_inheritance_redefine_spa():
+    with pytest.raises(TypeError):
+        class RedefineSPAChild(Base1):
+            @static_provision_action(Request)
+            def _provide_one(self, mediator: Mediator, request: Request):
+                pass
+
+
+def test_inheritance_several_spa():
+    with pytest.raises(TypeError):
+        class SeveralSPAChild(Base1):
+            @static_provision_action(Request)
+            def _provide_two(self, mediator: Mediator, request: Request):
+                pass
+
+    with pytest.raises(TypeError):
+        class Child12(Base1, Base2):
+            pass
+
+    with pytest.raises(TypeError):
+        class Child21(Base2, Base1):
+            pass
+
+
+def test_inheritance_several_rc():
+    class Base3(StaticProvider):
+        @static_provision_action(SampleRequest)
+        def _provide_one(self, mediator: Mediator, request: SampleRequest):
+            pass
+
+    with pytest.raises(TypeError):
+        class Child13(Base1, Base3):
+            pass
+
+    with pytest.raises(TypeError):
+        class Child1(Base1):
+            @static_provision_action(SampleRequest)
+            def _provide_one(self, mediator: Mediator, request: SampleRequest):
+                pass
