@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, cast, Dict, Generic, List, Optional, Sequence, Tuple, Union
+from typing import Callable, cast, Dict, Generic, List, Optional, Sequence, Tuple, Union, Any
 
 from .common import InnerConverter, Parser, ParserGetter, Serializer, SerializerGetter, T
 from .naming import NameStyle
@@ -121,17 +121,22 @@ SCHEMA_FIELDS = {
     "post_validators",
 }
 
-
-class _Empty:
-    pass
+_SP_OWN_ATTRS = ("_schemas", "_patch")
 
 
 class SchemaProxy:
+    __slots__ = _SP_OWN_ATTRS
+
     def __init__(self, *schemas: Schema):
-        # the first empty object accumulates changes that do not touch actual schema
-        self._schemas = [_Empty(), *schemas]
+        self._schemas = schemas
+        self._patch: Dict[str, Any] = {}
 
     def __getattr__(self, item):
+        try:
+            return self._patch[item]
+        except KeyError:
+            pass
+
         for schema in self._schemas:
             res = getattr(schema, item, None)
             if res is not None:
@@ -143,15 +148,15 @@ class SchemaProxy:
         raise AttributeError(f"Field `{item}` is not defined for Schema")
 
     def __setattr__(self, key, value):
-        if key == "_schemas":
+        if key in _SP_OWN_ATTRS:
             return super().__setattr__(key, value)
-        return setattr(self._schemas[0], key, value)
+        self._patch[key] = value
 
     def __getstate__(self):
-        return self._schemas
+        return self._schemas, self._patch
 
     def __setstate__(self, state):
-        self._schemas = state
+        self._schemas, self._patch = state
 
 
 def merge_schema(*schemas: Optional[Schema]) -> Schema:

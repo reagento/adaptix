@@ -98,18 +98,15 @@ class Factory(AbstractFactory):
     def _parser_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser[T]:
         schema = self.schema(class_)
 
-        if schema.get_parser is not None:
-            if schema.parser is not None:
-                raise TypeError("Schema can not have parser and get_parser at same time")
-            else:
+        if not schema.parser:
+            if schema.get_parser:
                 new_schema = copy(schema)
                 new_schema.parser = schema.get_parser(class_, stacked_factory, self.debug_path)
-                new_schema.get_parser = None
                 self.schemas[class_] = new_schema
                 schema = new_schema
+            else:
+                schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
 
-        if not schema.parser:
-            schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
         return schema.parser
 
     def json_schema_ref_name(self, class_: Type[T]):
@@ -161,18 +158,15 @@ class Factory(AbstractFactory):
     def _serializer_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Serializer[T]:
         schema = self.schema(class_)
 
-        if schema.get_serializer is not None:
-            if schema.serializer is not None:
-                raise TypeError("Schema can not have serializer and get_serializer at same time")
-            else:
+        if not schema.serializer:
+            if schema.get_serializer:
                 new_schema = copy(schema)
                 new_schema.serializer = schema.get_serializer(class_, stacked_factory, self.debug_path)
                 new_schema.get_serializer = None
                 self.schemas[class_] = new_schema
                 schema = new_schema
-
-        if not schema.serializer:
-            schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
+            else:
+                schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
 
         return schema.serializer
 
