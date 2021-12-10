@@ -107,7 +107,7 @@ class Factory(AbstractFactory):
             else:
                 schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
 
-        return schema.parser
+        return schema.parser  # type: ignore
 
     def json_schema_ref_name(self, class_: Type[T]):
         return self._json_schema_ref_name_with_stack(class_, StackedFactory(self))
@@ -162,13 +162,12 @@ class Factory(AbstractFactory):
             if schema.get_serializer:
                 new_schema = copy(schema)
                 new_schema.serializer = schema.get_serializer(class_, stacked_factory, self.debug_path)
-                new_schema.get_serializer = None
                 self.schemas[class_] = new_schema
                 schema = new_schema
             else:
                 schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
 
-        return schema.serializer
+        return schema.serializer  # type: ignore
 
     def load(self, data: Any, class_: Type[T]) -> T:
         return self.parser(class_)(data)
