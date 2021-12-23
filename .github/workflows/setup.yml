@@ -21,6 +21,8 @@ jobs:
         python-version:
           - "3.7"
           - "3.8"
+          - "3.9"
+          - "3.10"
 
     steps:
       - uses: actions/checkout@v2
@@ -61,8 +63,6 @@ jobs:
         pypy-version:
           - "pypy-3.7"
           - "pypy-3.8"
-          - "pypy-3.9"
-          - "pypy-3.10"
 
     steps:
       - uses: actions/checkout@v2
