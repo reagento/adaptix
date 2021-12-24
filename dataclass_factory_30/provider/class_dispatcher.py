@@ -17,7 +17,7 @@ V = TypeVar('V', bound=Hashable)
 
 
 def _get_kinship(sub_cls: type, cls: type) -> int:
-    return sub_cls.mro().index(cls)
+    return sub_cls.__mro__.index(cls)
 
 
 class ClassDispatcher(Generic[K_co, V]):
@@ -41,24 +41,19 @@ class ClassDispatcher(Generic[K_co, V]):
         """
         try:
             return self._mapping[key]
-        except KeyError:
-            min_kinship = None
-            mk_value = None
+        except KeyError as e:
+            result = min(
+                (
+                    (value, _get_kinship(key, cls))
+                    for cls, value in self._mapping.items()
+                ),
+                key=lambda x: x[1],
+                default=None,
+            )
 
-            for cls, value in self._mapping.items():
-                try:
-                    kinship = _get_kinship(key, cls)
-                except ValueError:
-                    continue
-
-                if min_kinship is None or kinship < min_kinship:
-                    min_kinship = kinship
-                    mk_value = value
-
-            if min_kinship is None:
-                raise KeyError
-
-            return mk_value  # type: ignore
+            if result is None:
+                raise KeyError from e
+            return result[0]
 
     def _mut_copy(self):
         cp = type(self)()
