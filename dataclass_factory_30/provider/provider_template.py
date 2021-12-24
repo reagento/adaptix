@@ -1,13 +1,11 @@
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Callable, Any, TypeVar, final, Type
+from typing import Any, TypeVar, final, Type
 
-from .definitions import PARSER_COMPAT_EXCEPTIONS, ParseError
 from .essential import Mediator, Request
-from .provider import RequestChecker, create_builtin_req_checker
+from .provider_basics import RequestChecker, create_builtin_req_checker
 from .request_cls import ParserRequest, SerializerRequest
 from .static_provider import StaticProvider, static_provision_action
-from ..common import Parser
 
 T = TypeVar('T')
 
@@ -46,16 +44,6 @@ class ParserProvider(ProviderWithRC, ABC):
     @abstractmethod
     def _provide_parser(self, mediator: Mediator, request: ParserRequest):
         pass
-
-
-def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
-    def foreign_parser_wrapper(arg):
-        try:
-            return func(arg)
-        except PARSER_COMPAT_EXCEPTIONS as e:
-            raise ParseError() from e
-
-    return foreign_parser_wrapper
 
 
 class SerializerProvider(ProviderWithRC, ABC):

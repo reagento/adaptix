@@ -2,10 +2,10 @@ from dataclasses import dataclass
 from datetime import datetime, date, time, timedelta
 from typing import Union, Type
 
-from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_type, ProviderWithRC
 from .definitions import ParseError
 from .essential import Mediator
-from .provider import ExactTypeRC
+from .provider_basics import ExactTypeRC, foreign_parser
+from .provider_template import ParserProvider, SerializerProvider, for_type, ProviderWithRC
 from .request_cls import ParserRequest, SerializerRequest
 
 

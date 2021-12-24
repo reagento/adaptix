@@ -1,9 +1,8 @@
 from types import MethodType, BuiltinMethodType
 from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union, Generic
 
-from .basic_provider import foreign_parser
 from .essential import Provider, Mediator, Request, RequestDispatcher
-from .provider import create_builtin_req_checker, LimitingProvider
+from .provider_basics import create_builtin_req_checker, LimitingProvider, foreign_parser
 from .request_cls import (
     SerializerRequest, ParserRequest,
 )

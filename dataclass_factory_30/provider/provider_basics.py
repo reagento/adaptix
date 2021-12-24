@@ -1,13 +1,16 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from inspect import isabstract
-from typing import TypeVar, Union, Type, Tuple
+from typing import TypeVar, Union, Type, Tuple, Collection, Callable, Any
 
+from . import PARSER_COMPAT_EXCEPTIONS
 from .class_dispatcher import ClassDispatcherKeysView
+from .definitions import ParseError
 from .essential import Provider, Mediator, CannotProvide, Request, RequestDispatcher
-from .request_cls import TypeHintRM, FieldNameRM
+from .provider_template import ParserProvider
+from .request_cls import TypeHintRM, FieldNameRM, ParserRequest
 from .static_provider import StaticProvider, static_provision_action
-from ..common import TypeHint
+from ..common import TypeHint, Parser
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
 from ..type_tools.normalize_type import FORBID_ZERO_ARGS
 
@@ -129,3 +132,51 @@ class LimitingProvider(Provider):
     def _lp_proxy_provide(self, mediator: Mediator, request: Request[T]) -> T:
         self.req_checker(request)
         return self.provider.apply_provider(mediator, request)
+
+
+class CoercionLimiter(ParserProvider):
+    def __init__(self, parser_provider: Provider, allowed_strict_origins: Collection[type]):
+        self.parser_provider = parser_provider
+
+        if isinstance(allowed_strict_origins, list):
+            allowed_strict_origins = tuple(allowed_strict_origins)
+
+        self.allowed_strict_origins = allowed_strict_origins
+
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+        parser = self.parser_provider.apply_provider(mediator, request)
+
+        if not request.strict_coercion:
+            return parser
+
+        allowed_strict_origins = self.allowed_strict_origins
+
+        if len(allowed_strict_origins) == 0:
+            return parser
+
+        if len(allowed_strict_origins) == 1:
+            origin = next(iter(self.allowed_strict_origins))
+
+            def strict_coercion_parser_1_origin(value):
+                if type(value) == origin:
+                    return parser(value)
+                raise ParseError
+
+            return strict_coercion_parser_1_origin
+
+        def strict_coercion_parser(value):
+            if type(value) in allowed_strict_origins:
+                return parser(value)
+            raise ParseError
+
+        return strict_coercion_parser
+
+
+def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
+    def foreign_parser_wrapper(arg):
+        try:
+            return func(arg)
+        except PARSER_COMPAT_EXCEPTIONS as e:
+            raise ParseError() from e
+
+    return foreign_parser_wrapper

@@ -5,15 +5,15 @@ from typing import final, List
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
 from .mediator import RecursionResolving
 from ..provider import StaticProvider, Provider, as_parser
-from ..provider.default_generic_provider import (
+from ..provider.generic_provider import (
     LiteralProvider,
     UnionProvider,
     NewTypeUnwrappingProvider,
     TypeHintTagsUnwrappingProvider,
-    CoercionLimiter,
     stub,
 )
-from ..provider.special_provider import (
+from ..provider.provider_basics import CoercionLimiter
+from ..provider.concrete_provider import (
     NoneProvider,
     IsoFormatProvider,
     TimedeltaProvider,

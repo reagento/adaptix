@@ -24,8 +24,7 @@ from .essential import (
     PipelineEvalMixin,
     Pipeline,
 )
-from .facade import as_parser, as_serializer, as_constructor
-from .facade import (
+from .provider_factory import (
     as_parser,
     as_serializer,
     as_constructor,
@@ -54,7 +53,7 @@ from .fields import (
 )
 from .name_mapper import NameMapper
 from .name_style import NameStyle, convert_snake_style
-from .provider import (
+from .provider_basics import (
     RequestChecker,
     create_builtin_req_checker,
     SubclassRC,
