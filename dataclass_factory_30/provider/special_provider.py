@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from datetime import datetime, date, time, timedelta
 from typing import Union, Type
 
-from dataclass_factory.exceptions import ParseError
-from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_type, ProviderWithTypeValidator
-from .essential import Mediator, CannotProvide
+from .basic_provider import ParserProvider, SerializerProvider, foreign_parser, for_type, ProviderWithRC
+from .definitions import ParseError
+from .essential import Mediator
+from .provider import ExactTypeRC
 from .request_cls import ParserRequest, SerializerRequest
-from ..common import TypeHint
 
 
 def stub(arg):
@@ -14,12 +14,11 @@ def stub(arg):
 
 
 @dataclass
-class ForAnyDateTime(ProviderWithTypeValidator):
+class ForAnyDateTime(ProviderWithRC):
     cls: Type[Union[date, time]]
 
-    def _type_validator(self, tp: TypeHint) -> None:
-        if tp != self.cls:
-            raise CannotProvide
+    def __post_init__(self):
+        self._check_request = ExactTypeRC(self.cls)
 
 
 @dataclass
