@@ -23,11 +23,6 @@ class TypeHintRM(Request[T], Generic[T]):
 
 
 @dataclass(frozen=True)
-class TypeRM(TypeHintRM[T], Generic[T]):
-    type: type
-
-
-@dataclass(frozen=True)
 class FieldNameRM(Request[T], Generic[T]):
     field_name: str
 

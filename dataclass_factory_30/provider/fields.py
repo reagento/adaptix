@@ -9,7 +9,7 @@ from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable,
 
 from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
 from .essential import Mediator, CannotProvide, Request
-from .request_cls import FieldRM, TypeRM
+from .request_cls import FieldRM, TypeHintRM
 from .static_provider import StaticProvider, static_provision_action
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
@@ -65,7 +65,7 @@ class OutputFieldsFigure:
     getter_kind: GetterKind
 
 
-class BaseFFRequest(TypeRM[T], Generic[T]):
+class BaseFFRequest(TypeHintRM[T], Generic[T]):
     pass
 
 
@@ -134,7 +134,7 @@ class TypeOnlyInputFFProvider(StaticProvider, ABC):
         return self._get_input_fields_figure(request.type)
 
     @abstractmethod
-    def _get_input_fields_figure(self, tp: type) -> InputFieldsFigure:
+    def _get_input_fields_figure(self, tp) -> InputFieldsFigure:
         pass
 
 
@@ -143,21 +143,21 @@ class TypeOnlyOutputFFProvider(StaticProvider, ABC):
     @final
     @static_provision_action(OutputFFRequest)
     def _provide_output_fields_figure(self, mediator: Mediator, request: OutputFFRequest) -> OutputFieldsFigure:
-        pass
+        return self._get_output_fields_figure(request.type)
 
     @abstractmethod
-    def _get_output_fields_figure(self, tp: type) -> OutputFieldsFigure:
+    def _get_output_fields_figure(self, tp) -> OutputFieldsFigure:
         pass
 
 
 class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
-    def _get_input_fields_figure(self, tp: type) -> InputFieldsFigure:
+    def _get_input_fields_figure(self, tp) -> InputFieldsFigure:
         if not is_named_tuple_class(tp):
             raise CannotProvide
 
         return get_func_iff(tp.__new__, slice(1, None))
 
-    def _get_output_fields_figure(self, tp: type) -> OutputFieldsFigure:
+    def _get_output_fields_figure(self, tp) -> OutputFieldsFigure:
         return OutputFieldsFigure(
             fields=self._get_input_fields_figure(tp).fields,
             getter_kind=GetterKind.ATTR,
