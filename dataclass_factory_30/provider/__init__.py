@@ -14,18 +14,6 @@ from .definitions import (
     ExtraFieldsError,
     UnionParseError,
 )
-from .definitions import (
-    NoDefault,
-    DefaultValue,
-    DefaultFactory,
-    Default,
-    PARSER_COMPAT_EXCEPTIONS,
-    PathElement,
-    ParseError,
-    MsgError,
-    ExtraFieldsError,
-    UnionParseError,
-)
 from .essential import (
     Request,
     RequestDispatcher,
@@ -72,11 +60,10 @@ from .provider import (
     SubclassRC,
     FieldNameRC,
     NextProvider,
-    ConstrainingProxyProvider,
+    LimitingProvider,
 )
 from .request_cls import (
     TypeHintRM,
-    TypeRM,
     FieldNameRM,
     ParserRequest,
     SerializerRequest,
@@ -92,4 +79,3 @@ from .static_provider import (
     StaticProvider,
     static_provision_action,
 )
-from .utils import resolve_classmethod

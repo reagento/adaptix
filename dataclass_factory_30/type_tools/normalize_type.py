@@ -177,6 +177,7 @@ ONE_ANY_STR_PARAM = {
 FORBID_ZERO_ARGS = {
     ClassVar, Final, Annotated,
     Literal, Union, Optional,
+    InitVar
 }
 ALLOWED_ORIGINS = {
     Any, None, NoReturn,

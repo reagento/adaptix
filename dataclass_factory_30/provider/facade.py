@@ -1,93 +1,122 @@
-from typing import TypeVar, Type, overload, Any, Callable, Tuple
+from types import MethodType, BuiltinMethodType
+from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union, Generic
 
-from .provider import NextProvider
+from .basic_provider import foreign_parser
+from .essential import Provider, Mediator, Request, RequestDispatcher
+from .provider import create_builtin_req_checker, LimitingProvider
 from .request_cls import (
     SerializerRequest, ParserRequest,
 )
-from .utils import resolve_classmethod
 from ..common import Parser, Serializer
 
 T = TypeVar('T')
 
-AsParser = Tuple[Any, Parser]
+
+class ValueProvider(Provider, Generic[T]):
+    def __init__(self, request_type: Type[Request[T]], value: T):
+        self.value = value
+        self._rd = RequestDispatcher({request_type: "_provide_value"})
+
+    def get_request_dispatcher(self) -> RequestDispatcher:
+        return self._rd
+
+    def _provide_value(self, mediator: Mediator, request: Request):
+        return self.value
+
+
+def resolve_classmethod(func) -> Tuple[type, Callable]:
+    if not isinstance(func, (MethodType, BuiltinMethodType)):
+        raise ValueError
+
+    bound = func.__self__
+
+    if not isinstance(bound, type):
+        raise ValueError
+
+    return bound, func
+
+
+def _resolve_as_args(func_or_pred, maybe_func) -> Tuple[Any, Any]:
+    if maybe_func is None:
+        if isinstance(func_or_pred, type):
+            pred = func_or_pred
+            func = func_or_pred
+        else:
+            pred, func = resolve_classmethod(func_or_pred)
+    else:
+        pred = func_or_pred
+        func = maybe_func
+
+    return pred, func
 
 
 @overload
-def as_parser(func_or_pred: Type[T], func: Parser[Any, T]) -> AsParser:
+def as_parser(func_or_pred: Type[T], func: Parser[T]) -> Provider:
     pass
 
 
 @overload
-def as_parser(func_or_pred: Any, func: Parser) -> AsParser:
+def as_parser(func_or_pred: Any, func: Parser) -> Provider:
     pass
 
 
 @overload
-def as_parser(func_or_pred: Parser) -> AsParser:
+def as_parser(func_or_pred: Union[type, Parser]) -> Provider:
     pass
 
 
 def as_parser(func_or_pred, func=None):
-    if func is None:
-        pred, func = resolve_classmethod(func_or_pred)
-    else:
-        pred, func = func_or_pred, func
-
-    return pred, FuncProvider(ParserRequest, func)
-
-
-AsSerializer = Tuple[Any, Serializer]
+    pred, func = _resolve_as_args(func_or_pred, func)
+    return LimitingProvider(
+        create_builtin_req_checker(pred),
+        ValueProvider(
+            ParserRequest,
+            foreign_parser(func)
+        )
+    )
 
 
 @overload
-def as_serializer(func_or_pred: Type[T], func: Serializer[Any, T]) -> AsSerializer:
+def as_serializer(func_or_pred: Type[T], func: Serializer[T]) -> Provider:
     pass
 
 
 @overload
-def as_serializer(func_or_pred: Any, func: Serializer) -> AsSerializer:
+def as_serializer(func_or_pred: Any, func: Serializer) -> Provider:
     pass
 
 
 @overload
-def as_serializer(func_or_pred: Serializer) -> AsSerializer:
+def as_serializer(func_or_pred: Union[type, Serializer]) -> Provider:
     pass
 
 
 def as_serializer(func_or_pred, func=None):
-    if func is None:
-        pred, func = resolve_classmethod(func_or_pred)
-    else:
-        pred, func = func_or_pred, func
-
-    return pred, FuncProvider(SerializerRequest, func)
-
-
-AsConstructor = Tuple[Any, Parser]
+    pred, func = _resolve_as_args(func_or_pred, func)
+    return LimitingProvider(
+        create_builtin_req_checker(pred),
+        ValueProvider(
+            SerializerRequest,
+            func
+        )
+    )
 
 
 @overload
-def as_constructor(func_or_pred: Type[T], constructor: Callable[..., T]) -> AsConstructor:
+def as_constructor(func_or_pred: Type[T], constructor: Callable[..., T]) -> Provider:
     pass
 
 
 @overload
-def as_constructor(func_or_pred: Any, constructor: Callable) -> AsConstructor:
+def as_constructor(func_or_pred: Any, constructor: Callable) -> Provider:
     pass
 
 
 @overload
-def as_constructor(func_or_pred: Callable) -> AsConstructor:
+def as_constructor(func_or_pred: Callable) -> Provider:
     pass
 
 
+# TODO: make as_constructor
 def as_constructor(func_or_pred, constructor=None):
-    if constructor is None:
-        pred, func = resolve_classmethod(func_or_pred)
-    else:
-        pred, func = func_or_pred, constructor
-
-    return pred, ConstructorParserProvider(func)
-
-
-NEXT_PROVIDER = NextProvider()
+    pass

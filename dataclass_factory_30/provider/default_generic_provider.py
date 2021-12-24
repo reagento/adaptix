@@ -1,11 +1,11 @@
 from dataclasses import replace, dataclass
 from typing import Literal, Collection, Container, Union
 
-from .definitions import ParseError, UnionParseError
-from . import Mediator, CannotProvide
-from .static_provider import StaticProvider, static_provision_action
 from .basic_provider import ParserProvider, SerializerProvider, for_type
+from .definitions import ParseError, UnionParseError
+from .essential import Mediator, CannotProvide, Provider
 from .request_cls import TypeHintRM, SerializerRequest, ParserRequest
+from .static_provider import StaticProvider, static_provision_action
 from ..common import Parser
 from ..type_tools import is_new_type, strip_tags, normalize_type
 
@@ -78,9 +78,9 @@ class UnionProvider(ParserProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest):
         norm = normalize_type(request.type)
 
-        parsers = [
+        parsers = tuple(
             mediator.provide(replace(request, type=tp)) for tp in norm.args
-        ]
+        )
 
         if request.debug_path:
             def union_parser_dp(value):
@@ -105,3 +105,41 @@ class UnionProvider(ParserProvider):
                 raise ParseError
 
             return union_parser
+
+
+class CoercionLimiter(ParserProvider):
+    def __init__(self, parser_provider: Provider, allowed_strict_origins: Collection[type]):
+        self.parser_provider = parser_provider
+
+        if isinstance(allowed_strict_origins, list):
+            allowed_strict_origins = tuple(allowed_strict_origins)
+
+        self.allowed_strict_origins = allowed_strict_origins
+
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+        parser = self.parser_provider.apply_provider(mediator, request)
+
+        if not request.strict_coercion:
+            return parser
+
+        allowed_strict_origins = self.allowed_strict_origins
+
+        if len(allowed_strict_origins) == 0:
+            return parser
+
+        if len(allowed_strict_origins) == 1:
+            origin = next(iter(self.allowed_strict_origins))
+
+            def strict_coercion_parser_1_origin(value):
+                if type(value) == origin:
+                    return parser(value)
+                raise ParseError
+
+            return strict_coercion_parser_1_origin
+
+        def strict_coercion_parser(value):
+            if type(value) in allowed_strict_origins:
+                return parser(value)
+            raise ParseError
+
+        return strict_coercion_parser

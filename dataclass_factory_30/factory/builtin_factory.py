@@ -4,12 +4,14 @@ from typing import final, List
 
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
 from .mediator import RecursionResolving
-from ..provider import StaticProvider, Provider
+from ..provider import StaticProvider, Provider, as_parser
 from ..provider.default_generic_provider import (
     LiteralProvider,
     UnionProvider,
     NewTypeUnwrappingProvider,
     TypeHintTagsUnwrappingProvider,
+    CoercionLimiter,
+    stub,
 )
 from ..provider.special_provider import (
     NoneProvider,
@@ -48,6 +50,10 @@ class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
         return RecursionResolving(result)
 
 
+def _as_is_parser_provider(tp: type) -> Provider:
+    return CoercionLimiter(as_parser(tp, stub), [tp])
+
+
 class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
     recipe = [
         NoneProvider(),
@@ -56,6 +62,11 @@ class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
         IsoFormatProvider(date),
         IsoFormatProvider(time),
         TimedeltaProvider(),
+
+        CoercionLimiter(as_parser(int), [int]),
+        CoercionLimiter(as_parser(float), [float, int]),
+        _as_is_parser_provider(str),
+        _as_is_parser_provider(bool),
 
         LiteralProvider(),
         UnionProvider(),

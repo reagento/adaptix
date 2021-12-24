@@ -9,6 +9,7 @@ from .request_cls import TypeHintRM, FieldNameRM
 from .static_provider import StaticProvider, static_provision_action
 from ..common import TypeHint
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
+from ..type_tools.normalize_type import FORBID_ZERO_ARGS
 
 T = TypeVar('T')
 
@@ -36,7 +37,7 @@ class FieldNameRC(RequestChecker):
     field_name: str
 
     def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
-        return (FieldNameRM, )
+        return (FieldNameRM,)
 
     def _check_request(self, request: FieldNameRM) -> None:
         if self.field_name == request.field_name:
@@ -49,7 +50,7 @@ class ExactTypeRC(RequestChecker):
         self.norm = normalize_type(tp)
 
     def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
-        return (TypeHintRM, )
+        return (TypeHintRM,)
 
     def _check_request(self, request: TypeHintRM) -> None:
         if normalize_type(request.type) == self.norm:
@@ -62,7 +63,7 @@ class SubclassRC(RequestChecker):
     type_: type
 
     def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
-        return (TypeHintRM, )
+        return (TypeHintRM,)
 
     def _check_request(self, request: TypeHintRM) -> None:
         if is_subclass_soft(request.type, self.type_):
@@ -70,11 +71,27 @@ class SubclassRC(RequestChecker):
         raise CannotProvide(f'{request.type} must be a subclass of {self.type_}')
 
 
+class ExactOriginRC(RequestChecker):
+    def __init__(self, origin):
+        self.origin = origin
+
+    def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+        return (TypeHintRM,)
+
+    def _check_request(self, request: TypeHintRM) -> None:
+        if normalize_type(request.type).origin == self.origin:
+            return
+        raise CannotProvide(f'{request.type} must have origin {self.origin}')
+
+
 def create_builtin_req_checker(pred: Union[TypeHint, str]) -> RequestChecker:
     if isinstance(pred, str):
         return FieldNameRC(pred)
     if isinstance(pred, type) and (is_protocol(pred) or isabstract(pred)):
         return SubclassRC(pred)
+
+    if pred in FORBID_ZERO_ARGS:
+        return ExactOriginRC(pred)
 
     try:
         return ExactTypeRC(pred)
@@ -91,7 +108,7 @@ class NextProvider(StaticProvider):
 NEXT_PROVIDER = NextProvider()
 
 
-class ConstrainingProxyProvider(Provider):
+class LimitingProvider(Provider):
     def __init__(self, req_checker: RequestChecker, provider: Provider):
         self.req_checker = req_checker
         self.provider = provider
@@ -102,13 +119,13 @@ class ConstrainingProxyProvider(Provider):
 
         self._rd = provider.get_request_dispatcher().keys().intersect(
             req_checker_rdkw
-        ).bind('_cpp_proxy_provide')
+        ).bind('_lp_proxy_provide')
 
         super().__init__()
 
     def get_request_dispatcher(self) -> RequestDispatcher:
         return self._rd
 
-    def _cpp_proxy_provide(self, mediator: Mediator, request: Request[T]) -> T:
+    def _lp_proxy_provide(self, mediator: Mediator, request: Request[T]) -> T:
         self.req_checker(request)
         return self.provider.apply_provider(mediator, request)
