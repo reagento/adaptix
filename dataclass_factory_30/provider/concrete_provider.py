@@ -1,3 +1,5 @@
+import re
+from binascii import a2b_base64, b2a_base64
 from dataclasses import dataclass
 from datetime import datetime, date, time, timedelta
 from typing import Union, Type
@@ -87,3 +89,24 @@ class NoneProvider(ParserProvider, SerializerProvider):
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
         return stub
+
+
+B64_PATTERN = re.compile(b'[A-Za-z0-9+/]*={0,2}')
+
+
+@for_type(bytes)
+class BytesBase64Provider(ParserProvider, SerializerProvider):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+        def bytes_base64_parser(data):
+            encoded = data.encode('ascii')
+            if B64_PATTERN.fullmatch(encoded):
+                return a2b_base64(encoded)
+            raise ParseError
+
+        return foreign_parser(bytes_base64_parser)
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
+        def bytes_base64_serializer(data):
+            return b2a_base64(data, newline=False).decode('ascii')
+
+        return bytes_base64_serializer

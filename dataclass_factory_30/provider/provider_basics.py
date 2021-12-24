@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from inspect import isabstract
-from typing import TypeVar, Union, Type, Tuple, Collection, Callable, Any
+from typing import TypeVar, Union, Type, Tuple, Collection, Callable, Any, List
 
 from . import PARSER_COMPAT_EXCEPTIONS
 from .class_dispatcher import ClassDispatcherKeysView

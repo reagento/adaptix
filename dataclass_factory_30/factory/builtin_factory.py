@@ -1,10 +1,14 @@
 from abc import ABC, abstractmethod
 from datetime import datetime, date, time
+from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network, IPv4Interface, IPv6Interface
+from itertools import chain
+from pathlib import Path
 from typing import final, List
+from uuid import UUID
 
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
 from .mediator import RecursionResolving
-from ..provider import StaticProvider, Provider, as_parser
+from ..provider import StaticProvider, Provider, as_parser, as_serializer
 from ..provider.generic_provider import (
     LiteralProvider,
     UnionProvider,
@@ -17,6 +21,7 @@ from ..provider.concrete_provider import (
     NoneProvider,
     IsoFormatProvider,
     TimedeltaProvider,
+    BytesBase64Provider,
 )
 
 
@@ -67,6 +72,21 @@ class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
         CoercionLimiter(as_parser(float), [float, int]),
         _as_is_parser_provider(str),
         _as_is_parser_provider(bool),
+
+        BytesBase64Provider(),
+
+        *chain.from_iterable(
+            (
+                as_parser(tp),
+                as_serializer(tp.__str__),
+            )
+            for tp in [
+                UUID, Path,
+                IPv4Address, IPv6Address,
+                IPv4Network, IPv6Network,
+                IPv4Interface, IPv6Interface,
+            ]
+        ),
 
         LiteralProvider(),
         UnionProvider(),
