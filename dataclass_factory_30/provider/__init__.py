@@ -55,7 +55,7 @@ from .name_mapper import NameMapper
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import (
     RequestChecker,
-    create_builtin_req_checker,
+    create_req_checker,
     SubclassRC,
     FieldNameRC,
     NextProvider,

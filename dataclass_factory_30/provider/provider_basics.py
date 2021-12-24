@@ -87,19 +87,24 @@ class ExactOriginRC(RequestChecker):
         raise CannotProvide(f'{request.type} must have origin {self.origin}')
 
 
-def create_builtin_req_checker(pred: Union[TypeHint, str]) -> RequestChecker:
-    if isinstance(pred, str):
-        return FieldNameRC(pred)
-    if isinstance(pred, type) and (is_protocol(pred) or isabstract(pred)):
-        return SubclassRC(pred)
+def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
+    if isinstance(tp, type) and (is_protocol(tp) or isabstract(tp)):
+        return SubclassRC(tp)
 
-    if pred in FORBID_ZERO_ARGS:
-        return ExactOriginRC(pred)
+    if tp in FORBID_ZERO_ARGS:
+        return ExactOriginRC(tp)
 
     try:
-        return ExactTypeRC(pred)
+        return ExactTypeRC(tp)
     except ValueError:
-        raise ValueError(f'Can not create RequestChecker from {pred}')
+        raise ValueError(f'Can not create RequestChecker from {tp}')
+
+
+def create_req_checker(pred: Union[TypeHint, str]) -> RequestChecker:
+    if isinstance(pred, str):
+        return FieldNameRC(pred)
+
+    return create_type_hint_req_checker(pred)
 
 
 class NextProvider(StaticProvider):

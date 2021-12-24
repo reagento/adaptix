@@ -2,7 +2,7 @@ from types import MethodType, BuiltinMethodType
 from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union, Generic
 
 from .essential import Provider, Mediator, Request, RequestDispatcher
-from .provider_basics import create_builtin_req_checker, LimitingProvider, foreign_parser
+from .provider_basics import create_req_checker, LimitingProvider, foreign_parser
 from .request_cls import (
     SerializerRequest, ParserRequest,
 )
@@ -67,7 +67,7 @@ def as_parser(func_or_pred: Union[type, Parser]) -> Provider:
 def as_parser(func_or_pred, func=None):
     pred, func = _resolve_as_args(func_or_pred, func)
     return LimitingProvider(
-        create_builtin_req_checker(pred),
+        create_req_checker(pred),
         ValueProvider(
             ParserRequest,
             foreign_parser(func)
@@ -93,7 +93,7 @@ def as_serializer(func_or_pred: Union[type, Serializer]) -> Provider:
 def as_serializer(func_or_pred, func=None):
     pred, func = _resolve_as_args(func_or_pred, func)
     return LimitingProvider(
-        create_builtin_req_checker(pred),
+        create_req_checker(pred),
         ValueProvider(
             SerializerRequest,
             func

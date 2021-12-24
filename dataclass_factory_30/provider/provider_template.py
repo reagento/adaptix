@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Any, TypeVar, final, Type
+from typing import TypeVar, final, Type
 
 from .essential import Mediator, Request
-from .provider_basics import RequestChecker, create_builtin_req_checker
+from .provider_basics import RequestChecker, create_type_hint_req_checker
 from .request_cls import ParserRequest, SerializerRequest
 from .static_provider import StaticProvider, static_provision_action
+from ..common import TypeHint
 
 T = TypeVar('T')
 
@@ -27,10 +28,10 @@ def attach_request_checker(checker: RequestChecker, cls: Type[ProviderWithRC]):
     return cls
 
 
-def for_type(type_: Any):
+def for_type(tp: TypeHint):
     return partial(
         attach_request_checker,
-        create_builtin_req_checker(type_)
+        create_type_hint_req_checker(tp)
     )
 
 
