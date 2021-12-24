@@ -38,7 +38,7 @@ except AttributeError:
 
 timedelta_schema = Schema[timedelta](
     parser=lambda x: timedelta(seconds=x),
-    serializer=attrgetter("seconds"),
+    serializer=timedelta.total_seconds,
 )
 COMMON_SCHEMAS[timedelta] = timedelta_schema
 
