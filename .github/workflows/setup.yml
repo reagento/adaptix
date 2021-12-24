@@ -60,7 +60,9 @@ jobs:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-        pypy-version: ['pypy3']
+        pypy-version:
+          - "pypy-3.7"
+          - "pypy-3.8"
 
     steps:
       - uses: actions/checkout@v2
