@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime, date, time
+from decimal import Decimal
+from fractions import Fraction
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network, IPv4Interface, IPv6Interface
 from itertools import chain
 from pathlib import Path
@@ -9,6 +11,12 @@ from uuid import UUID
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
 from .mediator import RecursionResolving
 from ..provider import StaticProvider, Provider, as_parser, as_serializer
+from ..provider.concrete_provider import (
+    NoneProvider,
+    IsoFormatProvider,
+    TimedeltaProvider,
+    BytesBase64Provider,
+)
 from ..provider.generic_provider import (
     LiteralProvider,
     UnionProvider,
@@ -17,12 +25,6 @@ from ..provider.generic_provider import (
     stub,
 )
 from ..provider.provider_basics import CoercionLimiter
-from ..provider.concrete_provider import (
-    NoneProvider,
-    IsoFormatProvider,
-    TimedeltaProvider,
-    BytesBase64Provider,
-)
 
 
 class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
@@ -59,6 +61,10 @@ def _as_is_parser_provider(tp: type) -> Provider:
     return CoercionLimiter(as_parser(tp, stub), [tp])
 
 
+def _stub_serializer(tp: type) -> Provider:
+    return as_serializer(tp, stub)
+
+
 class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
     recipe = [
         NoneProvider(),
@@ -69,9 +75,21 @@ class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
         TimedeltaProvider(),
 
         CoercionLimiter(as_parser(int), [int]),
+        _stub_serializer(int),
+
         CoercionLimiter(as_parser(float), [float, int]),
+        _stub_serializer(float),
+
         _as_is_parser_provider(str),
+        _stub_serializer(str),
+
         _as_is_parser_provider(bool),
+        _stub_serializer(bool),
+
+        CoercionLimiter(as_parser(Decimal), [str, Decimal]),
+        as_serializer(Decimal.__str__),
+        CoercionLimiter(as_parser(Fraction), [str, Fraction]),
+        as_serializer(Fraction.__str__),
 
         BytesBase64Provider(),
 

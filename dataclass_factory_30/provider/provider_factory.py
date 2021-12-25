@@ -1,26 +1,14 @@
 from types import MethodType, BuiltinMethodType
-from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union, Generic
+from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union
 
-from .essential import Provider, Mediator, Request, RequestDispatcher
-from .provider_basics import create_req_checker, LimitingProvider, foreign_parser
+from .essential import Provider
+from .provider_basics import create_req_checker, LimitingProvider, foreign_parser, ValueProvider
 from .request_cls import (
     SerializerRequest, ParserRequest,
 )
 from ..common import Parser, Serializer
 
 T = TypeVar('T')
-
-
-class ValueProvider(Provider, Generic[T]):
-    def __init__(self, request_type: Type[Request[T]], value: T):
-        self.value = value
-        self._rd = RequestDispatcher({request_type: "_provide_value"})
-
-    def get_request_dispatcher(self) -> RequestDispatcher:
-        return self._rd
-
-    def _provide_value(self, mediator: Mediator, request: Request):
-        return self.value
 
 
 def resolve_classmethod(func) -> Tuple[type, Callable]:

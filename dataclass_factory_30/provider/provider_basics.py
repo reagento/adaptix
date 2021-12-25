@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from inspect import isabstract
-from typing import TypeVar, Union, Type, Tuple, Collection, Callable, Any, List
+from typing import TypeVar, Union, Type, Tuple, Collection, Callable, Any, Generic
 
 from . import PARSER_COMPAT_EXCEPTIONS
 from .class_dispatcher import ClassDispatcherKeysView
@@ -185,3 +185,15 @@ def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
             raise ParseError() from e
 
     return foreign_parser_wrapper
+
+
+class ValueProvider(Provider, Generic[T]):
+    def __init__(self, request_type: Type[Request[T]], value: T):
+        self.value = value
+        self._rd = RequestDispatcher({request_type: "_provide_value"})
+
+    def get_request_dispatcher(self) -> RequestDispatcher:
+        return self._rd
+
+    def _provide_value(self, mediator: Mediator, request: Request):
+        return self.value
