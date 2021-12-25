@@ -29,7 +29,7 @@ def create_factory_provision_action(request_cls: Type[RequestTV]):
     def _provide_factory_proxy(
         self: ProvidingFromRecipe,
         mediator: Mediator,
-        request: ParserRequest
+        request
     ):
         try:
             return self._provide_from_recipe(request)

@@ -61,12 +61,12 @@ STYLE_CONVERSIONS = {
     NameStyle.UPPER_DOT: StyleConversion('.', *UPPER_CASE),
 }
 
-ONLY_WORD_CHARS = re.compile(r'\w+$')
+ONLY_WORD_CHARS = re.compile(r'\w+')
 
 
 def is_snake_case(name: str) -> bool:
     return (
-        ONLY_WORD_CHARS.match(name) is not None
+        ONLY_WORD_CHARS.fullmatch(name) is not None
         and name.lower() == name
     )
 
