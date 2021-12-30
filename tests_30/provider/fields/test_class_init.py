@@ -9,7 +9,7 @@ from dataclass_factory_30.provider.fields import (
     ClassInitFieldsProvider,
     FieldRM,
     InputFieldsFigure,
-    ExtraVariant
+    ExtraKwargs
 )
 
 
@@ -80,7 +80,7 @@ def test_extra_kwargs():
         ClassInitFieldsProvider()._get_input_fields_figure(Valid2Kwargs)
         ==
         InputFieldsFigure(
-            extra=ExtraVariant.KWARGS,
+            extra=ExtraKwargs,
             fields=VALID_FIELDS,
         )
     )

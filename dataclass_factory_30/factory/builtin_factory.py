@@ -10,21 +10,25 @@ from uuid import UUID
 
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
 from .mediator import RecursionResolving
-from ..provider import StaticProvider, Provider, as_parser, as_serializer
-from ..provider.concrete_provider import (
+from ..provider import (
+    StaticProvider,
+    Provider,
+    as_parser,
+    as_serializer,
     NoneProvider,
     IsoFormatProvider,
     TimedeltaProvider,
     BytesBase64Provider,
-)
-from ..provider.generic_provider import (
     LiteralProvider,
     UnionProvider,
     NewTypeUnwrappingProvider,
     TypeHintTagsUnwrappingProvider,
-    stub,
+    CoercionLimiter,
 )
-from ..provider.provider_basics import CoercionLimiter
+
+
+def stub(arg):
+    return arg
 
 
 class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):

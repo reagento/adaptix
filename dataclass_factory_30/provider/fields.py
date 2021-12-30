@@ -5,7 +5,7 @@ from enum import Enum
 from inspect import Signature, Parameter
 from operator import getitem
 from types import MappingProxyType
-from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, Literal, final
+from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, final, Type
 
 from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
 from .essential import Mediator, CannotProvide, Request
@@ -30,10 +30,19 @@ _GETTER_KIND_TO_FUNCTION = {
 }
 
 
-class ExtraVariant(Enum):
-    SKIP = 0
-    FORBID = 1
-    KWARGS = 2
+class ExtraSkip:
+    def __new__(cls, *args, **kwargs):
+        raise RuntimeError(f"Cannot create instance of {cls}")
+
+
+class ExtraForbid:
+    def __new__(cls, *args, **kwargs):
+        raise RuntimeError(f"Cannot create instance of {cls}")
+
+
+class ExtraKwargs:
+    def __new__(cls, *args, **kwargs):
+        raise RuntimeError(f"Cannot create instance of {cls}")
 
 
 @dataclass(frozen=True)
@@ -41,12 +50,12 @@ class ExtraTargets:
     fields: List[str]
 
 
-Extra = Union[ExtraVariant, ExtraTargets]
+Extra = Union[Type[ExtraSkip], Type[ExtraForbid], Type[ExtraKwargs], ExtraTargets]
 
-# Factory should replace None with ExtraVariant.SKIP or ExtraVariant.FORBID
-UnboundExtra = Union[None, Literal[ExtraVariant.KWARGS], ExtraTargets]
+# Factory should replace None with ExtraSkip or ExtraForbid
+UnboundExtra = Union[None, Type[ExtraKwargs], ExtraTargets]
 
-DefaultExtra = Literal[ExtraVariant.SKIP, ExtraVariant.FORBID]
+DefaultExtra = Union[Type[ExtraSkip], Type[ExtraForbid]]
 
 
 class CfgDefaultExtra(Request[DefaultExtra]):
@@ -99,7 +108,7 @@ def get_func_iff(func, params_slice=slice(0, None)) -> InputFieldsFigure:
 
     extra: UnboundExtra
     if any(p.kind == Parameter.VAR_KEYWORD for p in params):
-        extra = ExtraVariant.KWARGS
+        extra = ExtraKwargs
     else:
         extra = None
 

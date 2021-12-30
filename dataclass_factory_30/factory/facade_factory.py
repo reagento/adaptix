@@ -1,13 +1,13 @@
 from typing import Type, TypeVar, Any, Optional, List, Dict
 
-from .builtin_factory import BuiltinFactory, ProvidingFromRecipe
 from .basic_factory import NoSuitableProvider, ConfigProvider
+from .builtin_factory import BuiltinFactory, ProvidingFromRecipe
 from .mediator import RecursionResolving, StubsRecursionResolver
 from ..common import Parser, Serializer, TypeHint
 from ..provider import (
     DefaultExtra,
     CfgDefaultExtra,
-    ExtraVariant,
+    ExtraSkip,
     ParserRequest,
     SerializerRequest,
     CfgOmitDefault,
@@ -64,7 +64,7 @@ class ParserFactory(BuiltinFactory):
         recipe: Optional[List[Provider]] = None,
         strict_coercion: bool = True,
         debug_path: bool = True,
-        default_extra: DefaultExtra = ExtraVariant.SKIP,
+        default_extra: DefaultExtra = ExtraSkip(),
     ):
         super().__init__(recipe)
         self._strict_coercion = strict_coercion
@@ -84,7 +84,7 @@ class ParserFactory(BuiltinFactory):
             {ParserRequest: FuncRecursionResolver()}
         )
 
-    def parser(self, tp: Type[T]) -> Parser[Any, T]:
+    def parser(self, tp: Type[T]) -> Parser[T]:
         try:
             return self._parser_cache[tp]
         except KeyError:
@@ -118,7 +118,7 @@ class SerializerFactory(BuiltinFactory):
             {SerializerRequest: FuncRecursionResolver()}
         )
 
-    def serializer(self, tp: Type[T]) -> Serializer[T, Any]:
+    def serializer(self, tp: Type[T]) -> Serializer[T]:
         try:
             return self._serializers_cache[tp]
         except KeyError:
@@ -135,7 +135,7 @@ class Factory(ParserFactory, SerializerFactory):
         recipe: Optional[List[Provider]] = None,
         strict_coercion: bool = True,
         debug_path: bool = True,
-        default_extra: DefaultExtra = ExtraVariant.SKIP,
+        default_extra: DefaultExtra = ExtraSkip,
         omit_default: bool = False,
     ):
         ParserFactory.__init__(
