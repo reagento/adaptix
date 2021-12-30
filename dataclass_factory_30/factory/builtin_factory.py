@@ -5,7 +5,7 @@ from fractions import Fraction
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network, IPv4Interface, IPv6Interface
 from itertools import chain
 from pathlib import Path
-from typing import final, List
+from typing import final, List, Any
 from uuid import UUID
 
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
@@ -72,6 +72,8 @@ def _stub_serializer(tp: type) -> Provider:
 class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
     recipe = [
         NoneProvider(),
+        as_parser(Any, stub),
+        as_serializer(Any, stub),
 
         IsoFormatProvider(datetime),
         IsoFormatProvider(date),
