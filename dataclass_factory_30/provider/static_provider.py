@@ -83,7 +83,7 @@ def _rc_attached_to_several_spa(cls: type, name1: str, name2: str, rc: Type[Requ
 
 
 def _spa_has_different_rc(cls: type, name: str, rc1: Type[Request], rc2: Type[Request]):
-    raise TypeError(
+    return TypeError(
         f"The {cls} has @static_provision_action"
         " that attached to the different Request class"
         f" ({name!r} attached to {rc1} and {rc2})"

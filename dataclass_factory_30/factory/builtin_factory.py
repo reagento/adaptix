@@ -33,6 +33,12 @@ def stub(arg):
 
 
 class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
+    def __init_subclass__(cls, **kwargs):
+        cls._mtf_bases = [
+            base for base in cls.__bases__
+            if issubclass(base, MultiInheritanceFactory) and base != MultiInheritanceFactory
+        ]
+
     @abstractmethod
     def _get_raw_config_recipe(self) -> List[Provider]:
         pass
@@ -40,11 +46,10 @@ class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
     @final
     def _get_config_recipe(self) -> List[Provider]:
         result = []
-        for base in type(self).__bases__:
-            if issubclass(base, MultiInheritanceFactory):
-                result.extend(
-                    base._get_config_recipe(self)
-                )
+        for base in self._mtf_bases:
+            result.extend(
+                base._get_config_recipe(self)
+            )
 
         return result
 
@@ -55,9 +60,8 @@ class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
     @final
     def _get_recursion_resolving(self) -> RecursionResolving:
         result = {}
-        for base in reversed(type(self).__bases__):
-            if issubclass(base, MultiInheritanceFactory):
-                result.update(base._get_raw_recursion_resolving(self).to_dict())
+        for base in self._mtf_bases:
+            result.update(base._get_raw_recursion_resolving(self).to_dict())
 
         return RecursionResolving(result)
 
