@@ -9,7 +9,7 @@ from .provider_basics import foreign_parser
 from .provider_template import ParserProvider, SerializerProvider, for_type
 from .request_cls import TypeHintRM, SerializerRequest, ParserRequest
 from .static_provider import StaticProvider, static_provision_action
-from ..common import Parser
+from ..common import Parser, Serializer
 from ..type_tools import is_new_type, strip_tags, normalize_type
 
 
@@ -47,7 +47,7 @@ class LiteralProvider(ParserProvider, SerializerProvider):
         else:
             return tuple(args)
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         norm = normalize_type(request.type)
 
         if request.strict_coercion and any(isinstance(arg, bool) for arg in norm.args):
@@ -72,13 +72,13 @@ class LiteralProvider(ParserProvider, SerializerProvider):
 
         return literal_parser
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         return stub
 
 
 @for_type(Union)
 class UnionProvider(ParserProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         norm = normalize_type(request.type)
 
         parsers = tuple(
@@ -156,7 +156,7 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         return norm, arg
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
@@ -207,7 +207,7 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         return iter_parser
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)

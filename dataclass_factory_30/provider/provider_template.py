@@ -7,7 +7,7 @@ from .essential import Provider, Mediator, Request
 from .provider_basics import RequestChecker, create_type_hint_req_checker
 from .request_cls import ParserRequest, SerializerRequest
 from .static_provider import StaticProvider, static_provision_action
-from ..common import TypeHint
+from ..common import TypeHint, Parser, Serializer
 
 T = TypeVar('T')
 
@@ -44,7 +44,7 @@ class ParserProvider(ProviderWithRC, ABC):
         return self._provide_parser(mediator, request)
 
     @abstractmethod
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         pass
 
 
@@ -56,7 +56,7 @@ class SerializerProvider(ProviderWithRC, ABC):
         return self._provide_serializer(mediator, request)
 
     @abstractmethod
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest):
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         pass
 
 
@@ -69,7 +69,7 @@ class CoercionLimiter(ParserProvider):
 
         self.allowed_strict_origins = allowed_strict_origins
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         parser = self.parser_provider.apply_provider(mediator, request)
 
         if not request.strict_coercion:
