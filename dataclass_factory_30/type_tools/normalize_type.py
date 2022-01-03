@@ -9,7 +9,7 @@ from typing import (
     Union, NoReturn, Generic,
     TypeVar, Tuple, NewType,
     AnyStr, Iterable, ForwardRef,
-    Hashable,
+    Hashable, overload,
 )
 
 from typing_extensions import Annotated
@@ -246,6 +246,16 @@ def _merge_literals(args: List[NormType]) -> List[NormType]:
 
 
 T_co = TypeVar('T_co', covariant=True)
+
+
+@overload
+def normalize_type(tp: type) -> NormType:
+    pass
+
+
+@overload
+def normalize_type(tp: TypeHint) -> BaseNormType:
+    pass
 
 
 def normalize_type(tp: TypeHint) -> BaseNormType:

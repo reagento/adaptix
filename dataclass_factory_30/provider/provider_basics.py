@@ -10,7 +10,7 @@ from .request_cls import TypeHintRM, FieldNameRM
 from .static_provider import StaticProvider, static_provision_action
 from ..common import TypeHint, Parser
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
-from ..type_tools.normalize_type import FORBID_ZERO_ARGS
+from ..type_tools.normalize_type import FORBID_ZERO_ARGS, NormType, NormTV
 
 T = TypeVar('T')
 
@@ -47,8 +47,8 @@ class FieldNameRC(RequestChecker):
 
 
 class ExactTypeRC(RequestChecker):
-    def __init__(self, tp: TypeHint):
-        self.norm = normalize_type(tp)
+    def __init__(self, norm: NormType):
+        self.norm = norm
 
     def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
         return (TypeHintRM,)
@@ -86,16 +86,23 @@ class ExactOriginRC(RequestChecker):
 
 
 def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
-    if isinstance(tp, type) and (is_protocol(tp) or isabstract(tp)):
-        return SubclassRC(tp)
-
     if tp in FORBID_ZERO_ARGS:
         return ExactOriginRC(tp)
 
     try:
-        return ExactTypeRC(tp)
+        norm = normalize_type(tp)
     except ValueError:
         raise ValueError(f'Can not create RequestChecker from {tp}')
+
+    if isinstance(norm, NormTV):
+        raise ValueError(f'Can not create RequestChecker from {tp}')
+
+    origin = norm.origin
+
+    if is_protocol(origin) or isabstract(origin):
+        return SubclassRC(tp)
+
+    return ExactTypeRC(norm)
 
 
 def create_req_checker(pred: Union[TypeHint, str]) -> RequestChecker:

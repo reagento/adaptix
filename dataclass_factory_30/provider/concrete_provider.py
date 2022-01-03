@@ -9,6 +9,7 @@ from .essential import Mediator
 from .provider_basics import ExactTypeRC, foreign_parser
 from .provider_template import ParserProvider, SerializerProvider, for_type, ProviderWithRC
 from .request_cls import ParserRequest, SerializerRequest
+from ..type_tools import normalize_type
 
 
 def stub(arg):
@@ -20,7 +21,7 @@ class ForAnyDateTime(ProviderWithRC):
     cls: Type[Union[date, time]]
 
     def __post_init__(self):
-        self._check_request = ExactTypeRC(self.cls)
+        self._check_request = ExactTypeRC(normalize_type(self.cls))
 
 
 @dataclass

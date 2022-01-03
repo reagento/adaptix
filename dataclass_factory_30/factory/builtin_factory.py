@@ -25,6 +25,7 @@ from ..provider import (
     TypeHintTagsUnwrappingProvider,
     CoercionLimiter,
 )
+from ..provider.generic_provider import IterableProvider
 
 
 def stub(arg):
@@ -114,6 +115,7 @@ class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
 
         LiteralProvider(),
         UnionProvider(),
+        IterableProvider(),
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider()
