@@ -64,7 +64,7 @@ class ParserFactory(BuiltinFactory):
         recipe: Optional[List[Provider]] = None,
         strict_coercion: bool = True,
         debug_path: bool = True,
-        default_extra: DefaultExtra = ExtraSkip(),
+        default_extra: DefaultExtra = ExtraSkip,
     ):
         super().__init__(recipe)
         self._strict_coercion = strict_coercion
