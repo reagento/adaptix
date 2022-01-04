@@ -71,6 +71,8 @@ from .provider_basics import (
     FieldNameRC,
     NextProvider,
     LimitingProvider,
+    ValueProvider,
+    FactoryProvider,
 )
 from .provider_factory import (
     as_parser,

@@ -6,7 +6,6 @@ from typing import TypeVar, Union, Type, Tuple, Callable, Any, Generic
 from .definitions import ParseError, PARSER_COMPAT_EXCEPTIONS
 from .essential import Provider, Mediator, CannotProvide, Request
 from .request_cls import TypeHintRM, FieldNameRM
-from .static_provider import StaticProvider, static_provision_action
 from ..common import TypeHint, Parser
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
 from ..type_tools.normalize_type import FORBID_ZERO_ARGS, NormType, NormTV
@@ -111,9 +110,8 @@ def create_req_checker(pred: Union[TypeHint, str]) -> RequestChecker:
     return create_type_hint_req_checker(pred)
 
 
-class NextProvider(StaticProvider):
-    @static_provision_action(Request)
-    def _np_proxy_provide(self, mediator: Mediator, request: Request[T]) -> T:
+class NextProvider(Provider):
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         return mediator.provide_from_next(request)
 
 
@@ -122,13 +120,12 @@ NEXT_PROVIDER = NextProvider()
 
 class LimitingProvider(Provider):
     def __init__(self, req_checker: RequestChecker, provider: Provider):
-        self.req_checker = req_checker
-        self.provider = provider
-        super().__init__()
+        self._req_checker = req_checker
+        self._provider = provider
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        self.req_checker(request)
-        return self.provider.apply_provider(mediator, request)
+        self._req_checker(request)
+        return self._provider.apply_provider(mediator, request)
 
 
 def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
@@ -142,12 +139,24 @@ def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
 
 
 class ValueProvider(Provider, Generic[T]):
-    def __init__(self, request_type: Type[Request[T]], value: T):
-        self.value = value
-        self._request_type = request_type
+    def __init__(self, req_cls: Type[Request[T]], value: T):
+        self._req_cls = req_cls
+        self._value = value
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        if not isinstance(request, self._request_type):
+        if not isinstance(request, self._req_cls):
             raise CannotProvide
 
-        return self.value
+        return self._value
+
+
+class FactoryProvider(Provider):
+    def __init__(self, req_cls: Type[Request[T]], factory: Callable[[], T]):
+        self._req_cls = req_cls
+        self._factory = factory
+
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+        if not isinstance(request, self._req_cls):
+            raise CannotProvide
+
+        return self._factory()

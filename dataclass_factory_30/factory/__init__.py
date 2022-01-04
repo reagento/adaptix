@@ -1,10 +1,3 @@
-from .basic_factory import (
-    FullRecipeGetter,
-    IncrementalRecipe,
-    ConfigProvider,
-    NoSuitableProvider,
-    ProvidingFromRecipe,
-)
 from .builtin_factory import (
     MultiInheritanceFactory,
     BuiltinFactory,

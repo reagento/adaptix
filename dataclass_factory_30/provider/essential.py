@@ -83,17 +83,21 @@ class PipelineEvalMixin(Request):
 
 class Pipeline(Provider):
     def __init__(self, elements: Tuple[Provider, ...]):
-        self.elements = elements
+        self._elements = elements
+
+    @property
+    def elements(self) -> Tuple[Provider, ...]:
+        return self._elements
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         if not isinstance(request, PipelineEvalMixin):
             raise CannotProvide
 
         return request.eval_pipeline(
-            list(self.elements), mediator, request
+            list(self._elements), mediator, request
         )
 
     def __or__(self, other: Provider):
         if isinstance(other, Pipeline):
-            return Pipeline(self.elements + other.elements)
-        return Pipeline(self.elements + (other,))
+            return Pipeline(self._elements + other._elements)
+        return Pipeline(self._elements + (other,))

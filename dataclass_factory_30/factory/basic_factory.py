@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, TypeVar, Type, Callable, Optional
+from typing import List, TypeVar, Optional
 
 from .mediator import RecipeSearcher, RawRecipeSearcher, BuiltinMediator, RecursionResolving
 from ..provider import Provider, Mediator, Request, CannotProvide
@@ -36,19 +36,6 @@ class IncrementalRecipe(FullRecipeGetter, ABC):
 
 
 T = TypeVar('T')
-
-
-class ConfigProvider(Provider):
-    def __init__(self, req_cls: Type[Request[T]], factory: Callable[[], T]):
-        self._req_cls = req_cls
-        self._factory = factory
-        super().__init__()
-
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        if not isinstance(request, self._req_cls):
-            raise CannotProvide
-
-        return self._factory()
 
 
 class NoSuitableProvider(Exception):

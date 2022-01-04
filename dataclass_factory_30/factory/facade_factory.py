@@ -1,6 +1,6 @@
 from typing import Type, TypeVar, Any, Optional, List, Dict
 
-from .basic_factory import NoSuitableProvider, ConfigProvider
+from .basic_factory import NoSuitableProvider
 from .builtin_factory import BuiltinFactory, ProvidingFromRecipe
 from .mediator import RecursionResolving, StubsRecursionResolver
 from ..common import Parser, Serializer, TypeHint
@@ -15,7 +15,8 @@ from ..provider import (
     Request,
     Mediator,
     CannotProvide,
-    Provider
+    Provider,
+    FactoryProvider
 )
 
 T = TypeVar('T')
@@ -76,7 +77,7 @@ class ParserFactory(BuiltinFactory):
 
     def _get_raw_config_recipe(self) -> List[Provider]:
         return [
-            ConfigProvider(CfgDefaultExtra, lambda: self._default_extra),
+            FactoryProvider(CfgDefaultExtra, lambda: self._default_extra),
         ]
 
     def _get_raw_recursion_resolving(self) -> RecursionResolving:
@@ -110,7 +111,7 @@ class SerializerFactory(BuiltinFactory):
 
     def _get_raw_config_recipe(self) -> List[Provider]:
         return [
-            ConfigProvider(CfgOmitDefault, lambda: self._omit_default),
+            FactoryProvider(CfgOmitDefault, lambda: self._omit_default),
         ]
 
     def _get_raw_recursion_resolving(self) -> RecursionResolving:
