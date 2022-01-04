@@ -25,7 +25,6 @@ from .definitions import (
 )
 from .essential import (
     Request,
-    RequestDispatcher,
     Provider,
     CannotProvide,
     Provider,

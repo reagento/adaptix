@@ -5,10 +5,10 @@ import pytest
 from dataclass_factory_30.provider import (
     Mediator,
     Request,
-    RequestDispatcher,
     StaticProvider,
     static_provision_action
 )
+from dataclass_factory_30.provider.static_provider import RequestDispatcher
 
 
 class SampleRequest(Request):
@@ -22,7 +22,7 @@ def test_simple():
             pass
 
     assert (
-        TestSimple().get_request_dispatcher()
+        TestSimple._sp_cls_request_dispatcher
         ==
         RequestDispatcher({SampleRequest: '_provide_sample'})
     )
@@ -40,7 +40,7 @@ def test_abstract_method():
             pass
 
     assert (
-        Child().get_request_dispatcher()
+        Child._sp_cls_request_dispatcher
         ==
         RequestDispatcher({SampleRequest: '_provide_sample'})
     )

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, TypeVar, Type, Callable, Optional
 
 from .mediator import RecipeSearcher, RawRecipeSearcher, BuiltinMediator, RecursionResolving
-from ..provider import Provider, Mediator, Request, RequestDispatcher, CannotProvide
+from ..provider import Provider, Mediator, Request, CannotProvide
 
 
 class FullRecipeGetter(ABC):
@@ -40,14 +40,15 @@ T = TypeVar('T')
 
 class ConfigProvider(Provider):
     def __init__(self, req_cls: Type[Request[T]], factory: Callable[[], T]):
-        self._rd = RequestDispatcher({req_cls: '_provide_config'})
+        self._req_cls = req_cls
         self._factory = factory
+        super().__init__()
 
-    def _provide_config(self, mediator, request):
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+        if not isinstance(request, self._req_cls):
+            raise CannotProvide
+
         return self._factory()
-
-    def get_request_dispatcher(self) -> RequestDispatcher:
-        return self._rd
 
 
 class NoSuitableProvider(Exception):

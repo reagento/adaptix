@@ -1,8 +1,6 @@
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
-from typing import TypeVar, Generic, final, Optional, List, Tuple, Sequence
-
-from .class_dispatcher import ClassDispatcher, ClassDispatcherKeysView
+from typing import TypeVar, Generic, Optional, List, Tuple, Sequence, Type
 
 T = TypeVar('T')
 
@@ -23,9 +21,6 @@ class CannotProvide(Exception):
 
     def __post_init__(self):
         Exception.__init__(self)
-
-
-RequestDispatcher = ClassDispatcher[Request, str]
 
 
 class Mediator(ABC):
@@ -53,47 +48,16 @@ class Mediator(ABC):
 
 
 class Provider(ABC):
-    """A provider is an object that can process Request instances.
-    It defines methods called provision action
-    that takes 2 arguments (Mediator, Request)
-    and returns the expected result or raises CannotProvide.
-
-    Which provision action should be called for a specific request
-    is determined by RequestDispatcher obtained from :method get_request_dispatcher:.
-    RequestDispatcher is a :class ClassDispatcher: where keys are :class Request:
-    classes and values are strings (names of methods).
-
-    ``RequestDispatcher({ParserRequest: "provide_parser"})`` means that Provider object may
-    process ParserRequest and it's children. That provision action must never be called with
-    other classes of request.
-
-    If the request class is a child of several registered classes
-    RequestDispatcher will select the closest parent (defined by MRO).
-    So ``RequestDispatcher({ParserRequest: "provide_parser", Request: "provide_other"})``
-    means that ParserRequest and it's children will be processed by ``provide_parser``
-    and other requests will be processed by ``provide_other``
-
-    RequestDispatcher returned by :method get_request_dispatcher:
-    must be the same during the provider object lifetime
-    """
+    """An object that can process Request instances"""
 
     @abstractmethod
-    def get_request_dispatcher(self) -> RequestDispatcher:
-        raise NotImplementedError
-
-    @final
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        """This method is suitable wrapper
-        around :method get_request_dispatcher: and getattr().
-        Factory may not use this method
-        implementing own cached provision action call.
-        """
-        try:
-            attr_name = self.get_request_dispatcher().dispatch(type(request))
-        except KeyError:
-            raise CannotProvide
+        """Handle request instance and return a value of type required by request.
+        Behavior must be the same during the provider object lifetime
 
-        return getattr(self, attr_name)(mediator, request)
+        :raise CannotProvide: provider cannot process passed request
+        """
+        raise NotImplementedError
 
     def __or__(self, other: 'Provider') -> 'Pipeline':
         if isinstance(other, Pipeline):
@@ -109,34 +73,24 @@ class PipelineEvalMixin(Request):
     @classmethod
     @abstractmethod
     def eval_pipeline(
-        cls,
+        cls: Type[Request[T]],
         providers: List[Provider],
         mediator: Mediator,
-        request: Request
-    ):
+        request: Request[T]
+    ) -> T:
         pass
 
 
 class Pipeline(Provider):
     def __init__(self, elements: Tuple[Provider, ...]):
         self.elements = elements
-        self._rd: Optional[RequestDispatcher] = None
 
-    def get_request_dispatcher(self) -> RequestDispatcher:
-        if self._rd is None:
-            keys_view = ClassDispatcherKeysView({PipelineEvalMixin})
-            for elem in self.elements:
-                keys_view = keys_view.intersect(elem.get_request_dispatcher().keys())
-            self._rd = keys_view.bind('_proxy_provide')
-
-        return self._rd
-
-    def _proxy_provide(self, factory: Mediator, request: Request):
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         if not isinstance(request, PipelineEvalMixin):
             raise CannotProvide
 
         return request.eval_pipeline(
-            list(self.elements), factory, request
+            list(self.elements), mediator, request
         )
 
     def __or__(self, other: Provider):

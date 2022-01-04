@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import islice
-from typing import TypeVar, Set, List, NamedTuple, Generic, Dict, Any, Iterable, Callable
+from typing import TypeVar, Set, List, Generic, Dict, Any, Iterable, Tuple, Callable
 
 from ..provider import Request, Provider, Mediator, ClassDispatcher, CannotProvide
 
@@ -19,10 +19,7 @@ class StubsRecursionResolver(ABC, Generic[T]):
 
 ProvideCallable = Callable[[Mediator, Request[T]], T]
 
-
-class SearchResult(NamedTuple):
-    provide_callable: ProvideCallable
-    next_offset: int
+SearchResult = Tuple[ProvideCallable, int]
 
 
 class RecipeSearcher(ABC):
@@ -73,14 +70,15 @@ class BuiltinMediator(Mediator):
             self.recursion_stubs[request] = stub
             return stub
 
-        result = self._provide_non_recursive(request, search_offset)
+        else:
+            result = self._provide_non_recursive(request, search_offset)
 
-        if request in self.recursion_stubs:
-            resolver = self._get_resolver(request)
-            stub = self.recursion_stubs.pop(request)
-            resolver.saturate_stub(result, stub)
+            if request in self.recursion_stubs:
+                resolver = self._get_resolver(request)
+                stub = self.recursion_stubs.pop(request)
+                resolver.saturate_stub(result, stub)
 
-        return result
+            return result
 
     def _provide_non_recursive(self, request: Request[T], search_offset: int) -> T:
         init_next_offset = self.next_offset
@@ -107,15 +105,11 @@ class RawRecipeSearcher(RecipeSearcher):
         self.recipe = recipe
 
     def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
-        request_type = type(request)
-
-        for i, provider in enumerate(islice(self.recipe, search_offset), start=search_offset):
-            try:
-                method_name = provider.get_request_dispatcher().dispatch(request_type)
-            except KeyError:
-                continue
-
-            yield SearchResult(getattr(provider, method_name), i + 1)
+        for i, provider in enumerate(
+            islice(self.recipe, search_offset),
+            start=search_offset
+        ):
+            yield provider.apply_provider, i + 1
 
     def clear_cache(self):
         pass

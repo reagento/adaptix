@@ -1,8 +1,11 @@
 from inspect import isfunction
-from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable, final
+from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable
 
-from .essential import Provider, RequestDispatcher, Request, Mediator
+from .class_dispatcher import ClassDispatcher
+from .essential import Provider, Request, Mediator, CannotProvide
 from ..type_tools import is_subclass_soft
+
+RequestDispatcher = ClassDispatcher[Request, str]
 
 RequestTV = TypeVar('RequestTV', bound=Request)
 ProviderTV = TypeVar('ProviderTV', bound=Provider)
@@ -56,10 +59,6 @@ class StaticProvider(Provider):
     """
     _sp_cls_request_dispatcher: ClassVar[RequestDispatcher] = RequestDispatcher()
 
-    @final
-    def get_request_dispatcher(self) -> RequestDispatcher:
-        return self._sp_cls_request_dispatcher
-
     def __init_subclass__(cls, **kwargs):
         own_spa = _collect_class_own_rd_dict(cls)
 
@@ -72,6 +71,14 @@ class StaticProvider(Provider):
         result = _merge_rd_dicts(cls, parent_rd_dicts + [own_spa])
 
         cls._sp_cls_request_dispatcher = RequestDispatcher(result)
+
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+        try:
+            attr_name = self._sp_cls_request_dispatcher.dispatch(type(request))
+        except KeyError:
+            raise CannotProvide
+
+        return getattr(self, attr_name)(mediator, request)
 
 
 def _rc_attached_to_several_spa(cls: type, name1: str, name2: str, rc: Type[Request]):

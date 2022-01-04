@@ -3,9 +3,8 @@ from dataclasses import dataclass
 from inspect import isabstract
 from typing import TypeVar, Union, Type, Tuple, Callable, Any, Generic
 
-from .class_dispatcher import ClassDispatcherKeysView
 from .definitions import ParseError, PARSER_COMPAT_EXCEPTIONS
-from .essential import Provider, Mediator, CannotProvide, Request, RequestDispatcher
+from .essential import Provider, Mediator, CannotProvide, Request
 from .request_cls import TypeHintRM, FieldNameRM
 from .static_provider import StaticProvider, static_provision_action
 from ..common import TypeHint, Parser
@@ -125,21 +124,9 @@ class LimitingProvider(Provider):
     def __init__(self, req_checker: RequestChecker, provider: Provider):
         self.req_checker = req_checker
         self.provider = provider
-
-        req_checker_rdkw = ClassDispatcherKeysView(
-            set(req_checker.get_allowed_request_classes())
-        )
-
-        self._rd = provider.get_request_dispatcher().keys().intersect(
-            req_checker_rdkw
-        ).bind('_lp_proxy_provide')
-
         super().__init__()
 
-    def get_request_dispatcher(self) -> RequestDispatcher:
-        return self._rd
-
-    def _lp_proxy_provide(self, mediator: Mediator, request: Request[T]) -> T:
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         self.req_checker(request)
         return self.provider.apply_provider(mediator, request)
 
@@ -157,10 +144,10 @@ def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
 class ValueProvider(Provider, Generic[T]):
     def __init__(self, request_type: Type[Request[T]], value: T):
         self.value = value
-        self._rd = RequestDispatcher({request_type: "_provide_value"})
+        self._request_type = request_type
 
-    def get_request_dispatcher(self) -> RequestDispatcher:
-        return self._rd
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+        if not isinstance(request, self._request_type):
+            raise CannotProvide
 
-    def _provide_value(self, mediator: Mediator, request: Request):
         return self.value
