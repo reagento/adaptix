@@ -26,12 +26,14 @@ class SearchResult(NamedTuple):
 
 
 class RecipeSearcher(ABC):
+    """An offset of each element must belong to [0; max_offset)"""
+
     @abstractmethod
     def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
         pass
 
     @abstractmethod
-    def get_max_len(self) -> int:
+    def get_max_offset(self) -> int:
         pass
 
     @abstractmethod
@@ -75,7 +77,7 @@ class BuiltinMediator(Mediator):
 
         if request in self.recursion_stubs:
             resolver = self._get_resolver(request)
-            stub = self.recursion_stubs[request]
+            stub = self.recursion_stubs.pop(request)
             resolver.saturate_stub(result, stub)
 
         return result
@@ -118,5 +120,5 @@ class RawRecipeSearcher(RecipeSearcher):
     def clear_cache(self):
         pass
 
-    def get_max_len(self) -> int:
+    def get_max_offset(self) -> int:
         return len(self.recipe)

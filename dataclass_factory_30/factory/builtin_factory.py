@@ -5,7 +5,7 @@ from fractions import Fraction
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network, IPv4Interface, IPv6Interface
 from itertools import chain
 from pathlib import Path
-from typing import final, List, Any
+from typing import final, List, Any, ClassVar, Type
 from uuid import UUID
 
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
@@ -33,6 +33,8 @@ def stub(arg):
 
 
 class MultiInheritanceFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
+    _mtf_bases: ClassVar[List[Type['MultiInheritanceFactory']]] = []
+
     def __init_subclass__(cls, **kwargs):
         cls._mtf_bases = [
             base for base in cls.__bases__
