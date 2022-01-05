@@ -1,4 +1,4 @@
-from types import MethodType, BuiltinMethodType
+from types import MethodType, BuiltinMethodType, WrapperDescriptorType
 from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union
 
 from .essential import Provider
@@ -12,10 +12,12 @@ T = TypeVar('T')
 
 
 def resolve_classmethod(func) -> Tuple[type, Callable]:
-    if not isinstance(func, (MethodType, BuiltinMethodType)):
+    if isinstance(func, (MethodType, BuiltinMethodType)):
+        bound = func.__self__
+    elif isinstance(func, WrapperDescriptorType):
+        bound = func.__objclass__
+    else:
         raise ValueError
-
-    bound = func.__self__
 
     if not isinstance(bound, type):
         raise ValueError
@@ -64,22 +66,18 @@ def as_parser(func_or_pred, func=None):
 
 
 @overload
-def as_serializer(func_or_pred: Type[T], func: Serializer[T]) -> Provider:
+def as_serializer(pred: Type[T], func: Serializer[T]) -> Provider:
     pass
 
 
 @overload
-def as_serializer(func_or_pred: Any, func: Serializer) -> Provider:
+def as_serializer(pred: Any, func: Serializer) -> Provider:
     pass
 
 
-@overload
-def as_serializer(func_or_pred: Union[type, Serializer]) -> Provider:
-    pass
-
-
-def as_serializer(func_or_pred, func=None):
-    pred, func = _resolve_as_args(func_or_pred, func)
+# we can get origin class if WrapperDescriptorType has passed
+# but it is a rare case, so one arg signature was removed
+def as_serializer(pred, func):
     return LimitingProvider(
         create_req_checker(pred),
         ValueProvider(

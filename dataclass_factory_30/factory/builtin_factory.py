@@ -100,16 +100,16 @@ class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
         _stub_serializer(bool),
 
         CoercionLimiter(as_parser(Decimal), [str, Decimal]),
-        as_serializer(Decimal.__str__),
+        as_serializer(Decimal, Decimal.__str__),
         CoercionLimiter(as_parser(Fraction), [str, Fraction]),
-        as_serializer(Fraction.__str__),
+        as_serializer(Fraction, Fraction.__str__),
 
         BytesBase64Provider(),
 
         *chain.from_iterable(
             (
                 as_parser(tp),
-                as_serializer(tp.__str__),
+                as_serializer(tp, tp.__str__),
             )
             for tp in [
                 UUID, Path,
