@@ -1,4 +1,4 @@
-from typing import List, Generic, Iterable
+from typing import List, Generic, Iterable, Tuple
 
 from ..common import TypeHint
 
@@ -36,11 +36,11 @@ def strip_alias(type_hint: TypeHint) -> TypeHint:
         return type_hint
 
 
-def get_args(type_hint: TypeHint) -> List[TypeHint]:
+def get_args(type_hint: TypeHint) -> Tuple[TypeHint, ...]:
     try:
-        return list(type_hint.__args__)  # type: ignore
+        return tuple(type_hint.__args__)  # type: ignore
     except AttributeError:
-        return []
+        return ()
 
 
 def is_subclass_soft(cls, classinfo) -> bool:
