@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import ClassVar
 
-from dataclass_factory_30.provider import NoDefault, DefaultValue, DefaultFactory
+from dataclass_factory_30.provider import DefaultValue, DefaultFactory
 from dataclass_factory_30.provider.fields import (
     DataclassFieldsProvider,
     FieldRM,
@@ -33,25 +33,29 @@ def test_input():
                 FieldRM(
                     type=int,
                     field_name='a',
-                    default=NoDefault(field_is_required=True),
+                    default=None,
+                    is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=str,
                     field_name='b',
                     default=DefaultValue('text'),
+                    is_required=False,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=list,
                     field_name='c',
                     default=DefaultFactory(list),
+                    is_required=False,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=int,
                     field_name='g',
                     default=DefaultValue(4),
+                    is_required=False,
                     metadata=MappingProxyType({'meta': 'data'})
                 ),
             ],
@@ -69,31 +73,36 @@ def test_output():
                 FieldRM(
                     type=int,
                     field_name='a',
-                    default=NoDefault(field_is_required=True),
+                    default=None,
+                    is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=str,
                     field_name='b',
                     default=DefaultValue('text'),
+                    is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=list,
                     field_name='c',
                     default=DefaultFactory(list),
+                    is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=int,
                     field_name='d',
                     default=DefaultValue(3),
+                    is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=int,
                     field_name='g',
                     default=DefaultValue(4),
+                    is_required=True,
                     metadata=MappingProxyType({'meta': 'data'})
                 ),
             ],
@@ -116,13 +125,15 @@ def test_inheritance():
         FieldRM(
             type=int,
             field_name='a',
-            default=NoDefault(field_is_required=True),
+            default=None,
+            is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=int,
             field_name='b',
-            default=NoDefault(field_is_required=True),
+            default=None,
+            is_required=True,
             metadata=MappingProxyType({})
         ),
     ]

@@ -12,7 +12,6 @@ from .concrete_provider import (
     BytesBase64Provider,
 )
 from .definitions import (
-    NoDefault,
     DefaultValue,
     DefaultFactory,
     Default,

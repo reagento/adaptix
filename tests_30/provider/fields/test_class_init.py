@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 
 from dataclass_factory_30.provider import CannotProvide
-from dataclass_factory_30.provider import NoDefault, DefaultValue
+from dataclass_factory_30.provider import DefaultValue
 from dataclass_factory_30.provider.fields import (
     ClassInitFieldsProvider,
     FieldRM,
@@ -40,25 +40,29 @@ VALID_FIELDS = [
     FieldRM(
         type=Any,
         field_name='a',
-        default=NoDefault(field_is_required=True),
+        default=None,
+        is_required=True,
         metadata=MappingProxyType({})
     ),
     FieldRM(
         type=int,
         field_name='b',
-        default=NoDefault(field_is_required=True),
+        default=None,
+        is_required=True,
         metadata=MappingProxyType({})
     ),
     FieldRM(
         type=str,
         field_name='c',
         default=DefaultValue('abc'),
+        is_required=False,
         metadata=MappingProxyType({})
     ),
     FieldRM(
         type=Any,
         field_name='d',
-        default=NoDefault(field_is_required=True),
+        default=None,
+        is_required=True,
         metadata=MappingProxyType({})
     ),
 ]

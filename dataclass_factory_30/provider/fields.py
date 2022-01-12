@@ -1,13 +1,13 @@
 import inspect
 from abc import abstractmethod, ABC
-from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField
+from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField, replace
 from enum import Enum
 from inspect import Signature, Parameter
 from operator import getitem
 from types import MappingProxyType
 from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, final, Type
 
-from .definitions import NoDefault, DefaultValue, DefaultFactory, Default
+from .definitions import DefaultValue, DefaultFactory, Default
 from .essential import Mediator, CannotProvide, Request
 from .request_cls import FieldRM, TypeHintRM
 from .static_provider import StaticProvider, static_provision_action
@@ -67,6 +67,13 @@ class InputFieldsFigure:
     fields: List[FieldRM]
     extra: UnboundExtra
 
+    def __post_init__(self):
+        if any(
+            field.is_required and field.default is not None
+            for field in self.fields
+        ):
+            raise ValueError("The optional fields must have no default")
+
 
 @dataclass
 class OutputFieldsFigure:
@@ -121,8 +128,9 @@ def get_func_iff(func, params_slice=slice(0, None)) -> InputFieldsFigure:
                     else param.annotation
                 ),
                 field_name=param.name,
+                is_required=param.default is Signature.empty,
                 default=(
-                    NoDefault(field_is_required=True)
+                    None
                     if param.default is Signature.empty
                     else DefaultValue(param.default)
                 ),
@@ -168,7 +176,10 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
 
     def _get_output_fields_figure(self, tp) -> OutputFieldsFigure:
         return OutputFieldsFigure(
-            fields=self._get_input_fields_figure(tp).fields,
+            fields=[
+                replace(fld, is_required=True)
+                for fld in self._get_input_fields_figure(tp).fields
+            ],
             getter_kind=GetterKind.ATTR,
         )
 
@@ -184,7 +195,8 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
             FieldRM(
                 type=tp,
                 field_name=name,
-                default=NoDefault(field_is_required=is_required),
+                default=None,
+                is_required=is_required,
                 metadata=MappingProxyType({}),
             )
             for name, tp in get_type_hints(tp).items()
@@ -208,7 +220,7 @@ def get_dc_default(field: DCField) -> Default:
         return DefaultValue(field.default)
     if field.default_factory is not DC_MISSING:
         return DefaultFactory(field.default_factory)
-    return NoDefault(field_is_required=True)
+    return None
 
 
 class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
@@ -222,7 +234,7 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
     as default value for fields with default_factory
     """
 
-    def _get_fields_filtered(self, tp, filer_func):
+    def _get_fields_filtered(self, tp, filer_func, all_are_required: bool):
         if not is_dataclass(tp):
             raise CannotProvide
 
@@ -231,6 +243,7 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
                 type=fld.type,
                 field_name=fld.name,
                 default=get_dc_default(fld),
+                is_required=all_are_required or get_dc_default(fld) is None,
                 metadata=fld.metadata,
             )
             for fld in dc_fields(tp)
@@ -240,7 +253,8 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
     def _get_input_fields_figure(self, tp):
         return InputFieldsFigure(
             fields=self._get_fields_filtered(
-                tp, lambda fld: fld.init
+                tp, lambda fld: fld.init,
+                all_are_required=False,
             ),
             extra=None,
         )
@@ -248,7 +262,8 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
     def _get_output_fields_figure(self, tp):
         return OutputFieldsFigure(
             fields=self._get_fields_filtered(
-                tp, lambda fld: True
+                tp, lambda fld: True,
+                all_are_required=True,
             ),
             getter_kind=GetterKind.ATTR
         )

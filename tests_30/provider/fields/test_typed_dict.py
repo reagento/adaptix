@@ -1,7 +1,6 @@
 from types import MappingProxyType
 from typing import TypedDict
 
-from dataclass_factory_30.provider import NoDefault
 from dataclass_factory_30.provider.fields import (
     TypedDictFieldsProvider,
     FieldRM,
@@ -25,13 +24,15 @@ TOTAL_FIELDS = [
     FieldRM(
         type=int,
         field_name='a',
-        default=NoDefault(field_is_required=True),
+        default=None,
+        is_required=True,
         metadata=MappingProxyType({})
     ),
     FieldRM(
         type=str,
         field_name='b',
-        default=NoDefault(field_is_required=True),
+        default=None,
+        is_required=True,
         metadata=MappingProxyType({})
     ),
 ]
@@ -63,13 +64,15 @@ NON_TOTAL_FIELDS = [
     FieldRM(
         type=int,
         field_name='a',
-        default=NoDefault(field_is_required=False),
+        default=None,
+        is_required=False,
         metadata=MappingProxyType({})
     ),
     FieldRM(
         type=str,
         field_name='b',
-        default=NoDefault(field_is_required=False),
+        default=None,
+        is_required=False,
         metadata=MappingProxyType({})
     ),
 ]

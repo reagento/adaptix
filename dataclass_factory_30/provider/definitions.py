@@ -4,11 +4,6 @@ from typing import Any, Callable, Union, List, Optional, Deque, Iterable
 
 
 @dataclass(frozen=True)
-class NoDefault:
-    field_is_required: bool
-
-
-@dataclass(frozen=True)
 class DefaultValue:
     value: Any
 
@@ -18,7 +13,7 @@ class DefaultFactory:
     factory: Callable[[], Any]
 
 
-Default = Union[NoDefault, DefaultValue, DefaultFactory]
+Default = Union[None, DefaultValue, DefaultFactory]
 
 # Parser calling foreign functions should convert these exception to ParseError
 PARSER_COMPAT_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)

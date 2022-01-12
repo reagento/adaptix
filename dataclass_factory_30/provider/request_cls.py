@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from types import MappingProxyType
-from typing import TypeVar, List, Generic, Optional
+from typing import TypeVar, List, Generic, Optional, Mapping, Any
 
 from .definitions import Default
 from .essential import (
@@ -30,7 +29,8 @@ class FieldNameRM(Request[T], Generic[T]):
 @dataclass(frozen=True)
 class FieldRM(TypeHintRM[T], FieldNameRM[T], Generic[T]):
     default: Default
-    metadata: MappingProxyType
+    is_required: bool
+    metadata: Mapping[Any, Any]
 
 
 @dataclass(frozen=True)

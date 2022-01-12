@@ -2,7 +2,7 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
-from dataclass_factory_30.provider import NoDefault, DefaultValue
+from dataclass_factory_30.provider import DefaultValue
 from dataclass_factory_30.provider.fields import (
     NamedTupleFieldsProvider,
     FieldRM,
@@ -20,13 +20,15 @@ def test_order_ab():
         FieldRM(
             type=Any,
             field_name='a',
-            default=NoDefault(field_is_required=True),
+            default=None,
+            is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=Any,
             field_name='b',
-            default=NoDefault(field_is_required=True),
+            default=None,
+            is_required=True,
             metadata=MappingProxyType({})
         ),
     ]
@@ -55,13 +57,15 @@ def test_order_ba():
         FieldRM(
             type=Any,
             field_name='b',
-            default=NoDefault(field_is_required=True),
+            default=None,
+            is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=Any,
             field_name='a',
-            default=NoDefault(field_is_required=True),
+            default=None,
+            is_required=True,
             metadata=MappingProxyType({})
         ),
     ]
@@ -93,33 +97,34 @@ FooDefs = namedtuple('FooDefs', 'a b c', defaults=[0, func])
 
 
 def test_defaults():
-    fields = [
-        FieldRM(
-            type=Any,
-            field_name='a',
-            default=NoDefault(field_is_required=True),
-            metadata=MappingProxyType({})
-        ),
-        FieldRM(
-            type=Any,
-            field_name='b',
-            default=DefaultValue(0),
-            metadata=MappingProxyType({})
-        ),
-        FieldRM(
-            type=Any,
-            field_name='c',
-            default=DefaultValue(func),
-            metadata=MappingProxyType({})
-        ),
-    ]
-
     assert (
         NamedTupleFieldsProvider()._get_input_fields_figure(FooDefs)
         ==
         InputFieldsFigure(
             extra=None,
-            fields=fields,
+            fields=[
+                FieldRM(
+                    type=Any,
+                    field_name='a',
+                    default=None,
+                    is_required=True,
+                    metadata=MappingProxyType({})
+                ),
+                FieldRM(
+                    type=Any,
+                    field_name='b',
+                    default=DefaultValue(0),
+                    is_required=False,
+                    metadata=MappingProxyType({})
+                ),
+                FieldRM(
+                    type=Any,
+                    field_name='c',
+                    default=DefaultValue(func),
+                    is_required=False,
+                    metadata=MappingProxyType({})
+                ),
+            ],
         )
     )
 
@@ -128,7 +133,29 @@ def test_defaults():
         ==
         OutputFieldsFigure(
             getter_kind=GetterKind.ATTR,
-            fields=fields,
+            fields=[
+                FieldRM(
+                    type=Any,
+                    field_name='a',
+                    default=None,
+                    is_required=True,
+                    metadata=MappingProxyType({})
+                ),
+                FieldRM(
+                    type=Any,
+                    field_name='b',
+                    default=DefaultValue(0),
+                    is_required=True,
+                    metadata=MappingProxyType({})
+                ),
+                FieldRM(
+                    type=Any,
+                    field_name='c',
+                    default=DefaultValue(func),
+                    is_required=True,
+                    metadata=MappingProxyType({})
+                ),
+            ],
         )
     )
 
@@ -136,26 +163,20 @@ def test_defaults():
 BarA = NamedTuple('BarA', a=int, b=str)
 
 
-# ClassVar do not supported in NamedTuple
-
-
-class BarB(NamedTuple):
-    a: int
-    b: str = 'abc'
-
-
 def test_class_hinted_namedtuple():
     fields = [
         FieldRM(
             type=int,
             field_name='a',
-            default=NoDefault(field_is_required=True),
+            default=None,
+            is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=str,
             field_name='b',
-            default=NoDefault(field_is_required=True),
+            default=None,
+            is_required=True,
             metadata=MappingProxyType({})
         ),
     ]
@@ -179,28 +200,35 @@ def test_class_hinted_namedtuple():
     )
 
 
-def test_hinted_namedtuple():
-    fields = [
-        FieldRM(
-            type=int,
-            field_name='a',
-            default=NoDefault(field_is_required=True),
-            metadata=MappingProxyType({})
-        ),
-        FieldRM(
-            type=str,
-            field_name='b',
-            default=DefaultValue('abc'),
-            metadata=MappingProxyType({})
-        ),
-    ]
+# ClassVar do not supported in NamedTuple
 
+class BarB(NamedTuple):
+    a: int
+    b: str = 'abc'
+
+
+def test_hinted_namedtuple():
     assert (
         NamedTupleFieldsProvider()._get_input_fields_figure(BarB)
         ==
         InputFieldsFigure(
             extra=None,
-            fields=fields,
+            fields=[
+                FieldRM(
+                    type=int,
+                    field_name='a',
+                    default=None,
+                    is_required=True,
+                    metadata=MappingProxyType({})
+                ),
+                FieldRM(
+                    type=str,
+                    field_name='b',
+                    default=DefaultValue('abc'),
+                    is_required=False,
+                    metadata=MappingProxyType({})
+                ),
+            ],
         )
     )
 
@@ -209,6 +237,21 @@ def test_hinted_namedtuple():
         ==
         OutputFieldsFigure(
             getter_kind=GetterKind.ATTR,
-            fields=fields,
+            fields=[
+                FieldRM(
+                    type=int,
+                    field_name='a',
+                    default=None,
+                    is_required=True,
+                    metadata=MappingProxyType({})
+                ),
+                FieldRM(
+                    type=str,
+                    field_name='b',
+                    default=DefaultValue('abc'),
+                    is_required=True,
+                    metadata=MappingProxyType({})
+                ),
+            ],
         )
     )
