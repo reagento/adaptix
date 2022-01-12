@@ -10,29 +10,71 @@ from typing import (
     Type, ClassVar, TypeVar,
     Dict, NewType, Set,
     FrozenSet, DefaultDict, Generic,
-    Match, Pattern, AnyStr
+    Match, Pattern, cast
 )
 
 import pytest
 
+from dataclass_factory_30.common import TypeHint
 from dataclass_factory_30.feature_requirement import has_literal, has_final, has_annotated
 from dataclass_factory_30.type_tools import NormType, normalize_type
-from dataclass_factory_30.type_tools.normalize_type import NormTV, T_co
+from dataclass_factory_30.type_tools.normalize_type import (
+    NormTV,
+    BaseNormType,
+    _create_norm_literal,
+    Bound,
+    Constraints
+)
 
-T = TypeVar('T')
+
+def nt_zero(origin):
+    return NormType(origin, (), source=origin)
+
+
+def assert_strict_equal(left: BaseNormType, right: BaseNormType):
+    assert left.origin == right.origin
+    assert left.args == right.args
+
+    for l_arg, r_arg in zip(left.args, right.args):
+
+        if isinstance(l_arg, BaseNormType) and isinstance(r_arg, BaseNormType):
+            assert_strict_equal(l_arg, r_arg)
+
+    if isinstance(left, NormTV) and isinstance(right, NormTV):
+        assert left.variance == right.variance
+        assert left.limit == right.limit
+
+        if isinstance(left, Bound) and isinstance(right, Bound):
+            assert_strict_equal(left.value, right.value)
+
+        if isinstance(left, Constraints) and isinstance(right, Constraints):
+            for l_constraints, r_constraints in zip(left.value, right.value):
+                assert_strict_equal(l_constraints, r_constraints)
+
+    assert left.source == right.source
+
+
+def assert_normalize(tp: TypeHint, origin: TypeHint, args: List[typing.Hashable]):
+    assert_strict_equal(
+        normalize_type(tp),
+        NormType(origin, tuple(args), source=tp)
+    )
 
 
 def test_atomic():
-    assert normalize_type(Any) == NormType(Any)
+    assert_strict_equal(normalize_type(Any), nt_zero(Any))
 
-    assert normalize_type(int) == NormType(int)
-    assert normalize_type(str) == NormType(str)
-    assert normalize_type(None) == NormType(None)
-    assert normalize_type(type(None)) == NormType(None)
+    assert_strict_equal(normalize_type(int), nt_zero(int))
+    assert_strict_equal(normalize_type(str), nt_zero(str))
+    assert_strict_equal(normalize_type(str), nt_zero(str))
+    assert_strict_equal(normalize_type(None), nt_zero(None))
+    assert_strict_equal(
+        normalize_type(type(None)),
+        NormType(None, (), source=type(None))
+    )
 
-    assert normalize_type(object) == NormType(object)
-
-    assert normalize_type(NoReturn) == NormType(NoReturn)
+    assert_strict_equal(normalize_type(object), nt_zero(object))
+    assert_strict_equal(normalize_type(NoReturn), nt_zero(NoReturn))
 
 
 @pytest.mark.parametrize(
@@ -46,10 +88,22 @@ def test_atomic():
     ],
 )
 def test_generic_concrete_one_arg(tp, alias):
-    assert normalize_type(tp) == NormType(tp, [NormTV(T_co, is_template=True)])
-    assert normalize_type(alias) == NormType(tp, [NormTV(T_co, is_template=True)])
-    assert normalize_type(tp[int]) == NormType(tp, [NormType(int)])
-    assert normalize_type(alias[int]) == NormType(tp, [NormType(int)])
+    assert_normalize(
+        tp,
+        tp, [nt_zero(Any)]
+    )
+    assert_normalize(
+        alias,
+        tp, [nt_zero(Any)]
+    )
+    assert_normalize(
+        tp[int],
+        tp, [nt_zero(int)]
+    )
+    assert_normalize(
+        alias[int],
+        tp, [nt_zero(int)]
+    )
 
 
 @pytest.mark.parametrize(
@@ -62,73 +116,112 @@ def test_generic_concrete_one_arg(tp, alias):
     ]
 )
 def test_generic_concrete_two_args(tp, alias):
-    assert normalize_type(tp) == NormType(
-        tp, [NormTV(T_co, is_template=True), NormTV(T_co, is_template=True)]
+    assert_normalize(
+        tp,
+        tp, [nt_zero(Any), nt_zero(Any)]
     )
-    assert normalize_type(alias) == NormType(
-        tp, [NormTV(T_co, is_template=True), NormTV(T_co, is_template=True)]
+    assert_normalize(
+        alias,
+        tp, [nt_zero(Any), nt_zero(Any)]
     )
-
-    assert normalize_type(tp[int, str]) == NormType(tp, [NormType(int), NormType(str)])
-    assert normalize_type(alias[int, str]) == NormType(tp, [NormType(int), NormType(str)])
+    assert_normalize(
+        tp[int, str],
+        tp, [nt_zero(int), nt_zero(str)]
+    )
+    assert_normalize(
+        alias[int, str],
+        tp, [nt_zero(int), nt_zero(str)]
+    )
 
 
 def test_special_generics():
-    assert normalize_type(tuple) == NormType(tuple, [NormTV(T_co, is_template=True), ...])
-    assert normalize_type(Tuple) == NormType(tuple, [NormTV(T_co, is_template=True), ...])
-    assert normalize_type(tuple[int]) == NormType(tuple, [NormType(int)])
-    assert normalize_type(Tuple[int]) == NormType(tuple, [NormType(int)])
-    assert normalize_type(tuple[int, ...]) == NormType(tuple, [NormType(int), ...])
-    assert normalize_type(Tuple[int, ...]) == NormType(tuple, [NormType(int), ...])
+    assert_normalize(
+        tuple,
+        tuple, [nt_zero(Any), ...]
+    )
+    assert_normalize(
+        Tuple,
+        tuple, [nt_zero(Any), ...]
+    )
+    assert_normalize(
+        tuple[int],
+        tuple, [nt_zero(int)]
+    )
+    assert_normalize(
+        Tuple[int],
+        tuple, [nt_zero(int)]
+    )
+    assert_normalize(
+        tuple[int, ...],
+        tuple, [nt_zero(int), ...]
+    )
+    assert_normalize(
+        Tuple[int, ...],
+        tuple, [nt_zero(int), ...]
+    )
 
-    assert normalize_type(tuple[()]) == NormType(tuple, [])
-    assert normalize_type(Tuple[()]) == NormType(tuple, [])
+    assert_normalize(tuple[()], tuple, [])
+    assert_normalize(Tuple[()], tuple, [])
 
-    assert normalize_type(Pattern) == NormType(re.Pattern, [NormTV(AnyStr, is_template=True)])
-    assert normalize_type(Match) == NormType(re.Match, [NormTV(AnyStr, is_template=True)])
-    assert normalize_type(Pattern[bytes]) == NormType(re.Pattern, [NormType(bytes)])
-    assert normalize_type(Match[bytes]) == NormType(re.Match, [NormType(bytes)])
+    any_str_placeholder = NormType(
+        Union, (nt_zero(bytes), nt_zero(str)), source=Union[bytes, str]
+    )
+
+    assert_normalize(Pattern, re.Pattern, [any_str_placeholder])
+    assert_normalize(Match, re.Match, [any_str_placeholder])
+
+    assert_normalize(Pattern[bytes], re.Pattern, [nt_zero(bytes)])
+    assert_normalize(Match[bytes], re.Match, [nt_zero(bytes)])
 
 
 def test_callable():
-    assert normalize_type(Callable) == NormType(
-        c_abc.Callable, [..., NormTV(T_co, is_template=True)]
+    assert_normalize(
+        Callable,
+        c_abc.Callable, [..., nt_zero(Any)],
     )
-    assert normalize_type(Callable[..., Any]) == NormType(
-        c_abc.Callable, [..., NormType(Any)]
+    assert_normalize(
+        Callable[..., Any],
+        c_abc.Callable, [..., nt_zero(Any)],
     )
-    assert normalize_type(Callable[..., int]) == NormType(
-        c_abc.Callable, [..., NormType(int)]
+    assert_normalize(
+        Callable[..., int],
+        c_abc.Callable, [..., nt_zero(int)],
     )
-    assert normalize_type(Callable[[str], int]) == NormType(
-        c_abc.Callable, [[NormType(str)], NormType(int)]
+    assert_normalize(
+        Callable[[str], int],
+        c_abc.Callable, [(nt_zero(str),), nt_zero(int)],
     )
-    assert normalize_type(Callable[[str, bytes], int]) == NormType(
-        c_abc.Callable, [[NormType(str), NormType(bytes)], NormType(int)]
+    assert_normalize(
+        Callable[[str, bytes], int],
+        c_abc.Callable, [(nt_zero(str), nt_zero(bytes)), nt_zero(int)],
     )
 
-    assert normalize_type(Callable[..., NoReturn]) == NormType(
-        c_abc.Callable, [..., NormType(NoReturn)]
+    assert_normalize(
+        Callable[..., NoReturn],
+        c_abc.Callable, [..., nt_zero(NoReturn)],
     )
 
 
 def test_type():
-    assert normalize_type(type) == NormType(type, [NormTV(T_co, is_template=True)])
-    assert normalize_type(Type) == NormType(type, [NormTV(T_co, is_template=True)])
+    assert_normalize(type, type, [nt_zero(Any)])
+    assert_normalize(Type, type, [nt_zero(Any)])
 
-    assert normalize_type(Type[int]) == NormType(type, [NormType(int)])
+    assert_normalize(Type[int], type, [nt_zero(int)])
 
-    assert normalize_type(Type[Any]) == NormType(type, [NormType(Any)])
+    assert_normalize(Type[Any], type, [nt_zero(Any)])
 
-    assert normalize_type(Type[Union[int, str]]) == NormType(
+    assert_normalize(
+        Type[Union[int, str]],
         Union, [normalize_type(Type[int]), normalize_type(Type[str])]
     )
 
-    assert normalize_type(Union[Type[Union[int, str]], Type[bool]]) == NormType(
+    assert_normalize(
+        Union[Type[Union[int, str]], Type[bool]],
         Union, [normalize_type(Type[int]), normalize_type(Type[str]), normalize_type(Type[bool])]
     )
 
-    assert normalize_type(Union[Type[Union[int, str]], Type[int]]) == NormType(
+    assert_normalize(
+        Union[Type[Union[int, str]], Type[int]],
         Union, [normalize_type(Type[int]), normalize_type(Type[str])]
     )
 
@@ -141,7 +234,14 @@ def test_var_tag(tp):
     with pytest.raises(ValueError):
         normalize_type(tp)
 
-    assert normalize_type(tp[int]) == NormType(tp, [NormType(int)])
+    assert_normalize(
+        tp[int],
+        tp, [nt_zero(int)]
+    )
+
+
+def n_lit(*args):
+    return _create_norm_literal(args)
 
 
 @has_literal
@@ -151,34 +251,40 @@ def test_literal():
     with pytest.raises(ValueError):
         normalize_type(Literal)
 
-    assert normalize_type(Literal['a']) == NormType(Literal, ['a'])
-    assert normalize_type(Literal['a', 'b']) == NormType(Literal, ['a', 'b'])
-    assert normalize_type(Literal[None]) == NormType(None)
+    assert_normalize(Literal['a'], Literal, ['a'])
+    assert_normalize(Literal['a', 'b'], Literal, ['a', 'b'])
+    assert_normalize(Literal[None], None, [])
 
-    assert normalize_type(Optional[Literal[None]]) == NormType(None)
+    assert_normalize(Optional[Literal[None]], None, [])
 
-    assert normalize_type(
-        Union[Literal['a'], Literal['b']]
-    ) == NormType(Literal, ['a', 'b'])
-
-    assert normalize_type(
-        Union[Literal['a'], Literal['b'], int]
-    ) == NormType(
-        Union, [NormType(Literal, ['a', 'b']), NormType(int)]
+    assert_normalize(
+        Union[Literal['a'], Literal['b']],
+        Literal, ['a', 'b']
     )
 
-    assert normalize_type(
-        Union[Literal['a'], int, Literal['b']]
-    ) == NormType(
+    assert_normalize(
+        Union[Literal['a'], Literal['b'], int],
         Union, [
-            NormType(Literal, ['a']), NormType(int), NormType(Literal, ['b'])
+            n_lit('a', 'b'),
+            nt_zero(int)
         ]
     )
 
-    assert normalize_type(
-        Union[int, Literal['a'], Literal['b']]
-    ) == NormType(
-        Union, [NormType(int), NormType(Literal, ['a', 'b'])]
+    assert_normalize(
+        Union[Literal['a'], int, Literal['b']],
+        Union, [
+            n_lit('a'),
+            nt_zero(int),
+            n_lit('b'),
+        ]
+    )
+
+    assert_normalize(
+        Union[int, Literal['a'], Literal['b']],
+        Union, [
+            nt_zero(int),
+            n_lit('a', 'b'),
+        ]
     )
 
 
@@ -189,7 +295,10 @@ def test_final():
     with pytest.raises(ValueError):
         assert normalize_type(Final)
 
-    assert normalize_type(Final[int]) == NormType(Final, [NormType(int)])
+    assert_normalize(
+        Final[int],
+        Final, [nt_zero(int)]
+    )
 
 
 @has_annotated
@@ -199,14 +308,17 @@ def test_annotated():
     with pytest.raises(ValueError):
         normalize_type(Annotated)
 
-    assert normalize_type(Annotated[int, 'metadata']) == NormType(
-        Annotated, [NormType(int), 'metadata']
+    assert_normalize(
+        Annotated[int, 'metadata'],
+        Annotated, [nt_zero(int), 'metadata']
     )
-    assert normalize_type(Annotated[int, str]) == NormType(
-        Annotated, [NormType(int), str]
+    assert_normalize(
+        Annotated[int, str],
+        Annotated, [nt_zero(int), str]
     )
-    assert normalize_type(Annotated[int, int]) == NormType(
-        Annotated, [NormType(int), int]
+    assert_normalize(
+        Annotated[int, int],
+        Annotated, [nt_zero(int), int]
     )
 
 
@@ -214,16 +326,30 @@ def test_union():
     with pytest.raises(ValueError):
         normalize_type(Union)
 
-    assert normalize_type(Union[int, str]) == NormType(
-        Union, [NormType(int), NormType(str)]
+    assert_normalize(
+        Union[int, str],
+        Union, [normalize_type(int), normalize_type(str)]
     )
 
-    assert normalize_type(Union[list, List, int]) == NormType(
-        Union, [normalize_type(list), NormType(int)]
+    assert_normalize(
+        Union[list, List, int],
+        Union, [normalize_type(Union[list, List]), normalize_type(int)]
     )
-    assert normalize_type(Union[list, List]) == normalize_type(list)
-    assert normalize_type(Union[list, str, List]) == NormType(
-        Union, [normalize_type(list), normalize_type(str)]
+    assert_normalize(
+        Union[list, List],
+        list, [nt_zero(Any)]
+    )
+    assert_normalize(
+        Union[list, str, List],
+        Union, [normalize_type(Union[list, List]), normalize_type(str)]
+    )
+
+    assert_normalize(
+        Union[Type[list], Type[Union[List, str]]],
+        Union, [
+            normalize_type(Union[Type[list], Type[List]]),
+            normalize_type(Type[str])
+        ]
     )
 
     # Union[int] == int   # normalization does not need
@@ -233,11 +359,15 @@ def test_optional():
     with pytest.raises(ValueError):
         normalize_type(Optional)
 
-    assert normalize_type(Optional[int]) == NormType(
-        Union, [NormType(int), NormType(None)]
+    assert_normalize(
+        Optional[int],
+        Union, [nt_zero(int), NormType(None, (), source=type(None))]
     )
 
-    assert normalize_type(Optional[None]) == NormType(None)
+    assert_normalize(
+        Optional[None],
+        None, []
+    )
 
 
 def test_new_type():
@@ -245,72 +375,102 @@ def test_new_type():
         normalize_type(NewType)
 
     new_int = NewType('new_int', int)
-    assert normalize_type(new_int) == NormType(new_int)
+    assert normalize_type(new_int) == nt_zero(new_int)
+
+
+def assert_norm_tv(tv: TypeVar, target: NormTV):
+    assert_strict_equal(
+        normalize_type(tv),
+        target
+    )
+
+
+@pytest.mark.parametrize(
+    'variance',
+    [
+        pytest.param({}, id="invariant"),
+        pytest.param({'covariant': True}, id='covariant'),
+        pytest.param({'contravariant': True}, id='contravariant'),
+    ],
+)
+def test_type_var(variance: dict):
+    t1 = TypeVar("t1", **variance)
+
+    assert_norm_tv(
+        t1,
+        NormTV(t1, limit=Bound(nt_zero(Any)))
+    )
+
+    t2 = TypeVar("t2", bound=int, **variance)
+
+    assert_norm_tv(
+        t2,
+        NormTV(t2, limit=Bound(nt_zero(int)))
+    )
+
+    t3 = TypeVar("t3", int, str, **variance)
+
+    assert_norm_tv(
+        t3,
+        NormTV(t3, limit=Constraints((nt_zero(int), nt_zero(str))))
+    )
+
+    t4 = TypeVar("t4", list, str, List, **variance)
+
+    t4_union = cast(NormType, normalize_type(Union[list, List]))
+
+    assert_norm_tv(
+        t4,
+        NormTV(
+            t4, limit=Constraints(
+                (t4_union, nt_zero(str))
+            )
+        )
+    )
 
 
 K = TypeVar('K')
 V = TypeVar('V')
+H = TypeVar('H', int, str)
 
 
-class MyGeneric(Generic[T]):
+class MyGeneric1(Generic[K]):
     pass
 
 
-class GChild(MyGeneric):
+class MyGeneric2(Generic[K, V]):
     pass
 
 
-class GConChild(MyGeneric[int]):
+class MyGeneric3(MyGeneric1[K], Generic[K, V, H]):
     pass
 
 
-class SubGenChild1(MyGeneric, Generic[K]):
-    pass
+T1 = TypeVar('T1')
+T2 = TypeVar('T2')
+T3 = TypeVar('T3')
 
 
-class SubGenChild2(MyGeneric, Generic[T, K]):
-    pass
-
-
-class SubGenChild3(MyGeneric, Generic[K, T]):
-    pass
-
-
-class SubGenChild4(MyGeneric, Generic[K, V]):
-    pass
+def any_tv(tv: TypeVar):
+    return NormTV(tv, Bound(nt_zero(Any)))
 
 
 def test_generic():
-    assert normalize_type(MyGeneric) == NormType(MyGeneric, [NormTV(T, is_template=True)])
-    assert normalize_type(MyGeneric[T]) == NormType(MyGeneric, [NormTV(T)])
-    assert normalize_type(MyGeneric[int]) == NormType(MyGeneric, [NormType(int)])
+    assert_normalize(MyGeneric1, MyGeneric1, [nt_zero(Any)])
+    assert_normalize(MyGeneric1[int], MyGeneric1, [nt_zero(int)])
+    assert_normalize(MyGeneric1[T1], MyGeneric1, [any_tv(T1)])
 
-    assert normalize_type(GConChild) == NormType(GConChild)
-    assert normalize_type(GChild) == NormType(GChild)
+    assert_normalize(MyGeneric2, MyGeneric2, [nt_zero(Any), nt_zero(Any)])
+    assert_normalize(MyGeneric2[int, str], MyGeneric2, [nt_zero(int), nt_zero(str)])
+    assert_normalize(MyGeneric2[T1, T2], MyGeneric2, [any_tv(T1), any_tv(T2)])
+    assert_normalize(MyGeneric2[T1, T1], MyGeneric2, [any_tv(T1), any_tv(T1)])
 
-    assert normalize_type(SubGenChild1) == NormType(SubGenChild1, [NormTV(K, is_template=True)])
-    assert normalize_type(SubGenChild1[int]) == NormType(SubGenChild1, [NormType(int)])
+    h_implicit = normalize_type(Union[int, str])
 
-    assert normalize_type(SubGenChild2) == NormType(
-        SubGenChild2, [NormTV(T, is_template=True), NormTV(K, is_template=True)]
-    )
-    assert normalize_type(SubGenChild2[int, str]) == NormType(
-        SubGenChild2, [NormType(int), NormType(str)]
-    )
-
-    assert normalize_type(SubGenChild3) == NormType(
-        SubGenChild3, [NormTV(K, is_template=True), NormTV(T, is_template=True)]
-    )
-    assert normalize_type(SubGenChild3[int, str]) == NormType(
-        SubGenChild3, [NormType(int), NormType(str)]
-    )
-
-    assert normalize_type(SubGenChild4) == NormType(
-        SubGenChild4, [NormTV(K, is_template=True), NormTV(V, is_template=True)]
-    )
-    assert normalize_type(SubGenChild4[int, str]) == NormType(
-        SubGenChild4, [NormType(int), NormType(str)]
-    )
+    assert_normalize(MyGeneric3, MyGeneric3, [nt_zero(Any), nt_zero(Any), h_implicit])
+    assert_normalize(MyGeneric3[int, str, bool], MyGeneric3, [nt_zero(int), nt_zero(str), nt_zero(bool)])
+    assert_normalize(MyGeneric3[T1, T2, T3], MyGeneric3, [any_tv(T1), any_tv(T2), any_tv(T3)])
+    assert_normalize(MyGeneric3[T1, T1, T1], MyGeneric3, [any_tv(T1), any_tv(T1), any_tv(T1)])
 
 
 def test_bad_arg_types():
