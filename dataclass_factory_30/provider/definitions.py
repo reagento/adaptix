@@ -2,6 +2,12 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Any, Callable, Union, List, Optional, Deque, Iterable
 
+from ..singleton import SingletonMeta
+
+
+class NoDefault(metaclass=SingletonMeta):
+    pass
+
 
 @dataclass(frozen=True)
 class DefaultValue:
@@ -13,7 +19,7 @@ class DefaultFactory:
     factory: Callable[[], Any]
 
 
-Default = Union[None, DefaultValue, DefaultFactory]
+Default = Union[NoDefault, DefaultValue, DefaultFactory]
 
 # Parser calling foreign functions should convert these exception to ParseError
 PARSER_COMPAT_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
@@ -46,8 +52,32 @@ class MsgError(ParseError):
 
 
 class ExtraFieldsError(ParseError):
-    def __init__(self, fields: List[str], path: Optional[Deque[PathElement]] = None):
+    def __init__(self, fields: Iterable[str], path: Optional[Deque[PathElement]] = None):
         self.fields = fields
+        ParseError.__init__(self, path)
+
+
+class ExtraItemsError(ParseError):
+    def __init__(self, list_len: int, path: Optional[Deque[PathElement]] = None):
+        self.list_len = list_len
+        ParseError.__init__(self, path)
+
+
+class NoRequiredFieldsError(ParseError):
+    def __init__(self, fields: Iterable[str], path: Optional[Deque[PathElement]] = None):
+        self.fields = fields
+        ParseError.__init__(self, path)
+
+
+class NoRequiredItemsError(ParseError):
+    def __init__(self, indexes: Iterable[int], path: Optional[Deque[PathElement]] = None):
+        self.indexes = indexes
+        ParseError.__init__(self, path)
+
+
+class TypeParseError(ParseError):
+    def __init__(self, expected_type: type, path: Optional[Deque[PathElement]] = None):
+        self.expected_type = expected_type
         ParseError.__init__(self, path)
 
 

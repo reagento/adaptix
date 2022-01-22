@@ -5,8 +5,8 @@ from .builtin_factory import BuiltinFactory, ProvidingFromRecipe
 from .mediator import RecursionResolving, StubsRecursionResolver
 from ..common import Parser, Serializer, TypeHint
 from ..provider import (
-    DefaultExtra,
-    CfgDefaultExtra,
+    ExtraPolicy,
+    CfgExtraPolicy,
     ExtraSkip,
     ParserRequest,
     SerializerRequest,
@@ -65,7 +65,7 @@ class ParserFactory(BuiltinFactory):
         recipe: Optional[List[Provider]] = None,
         strict_coercion: bool = True,
         debug_path: bool = True,
-        default_extra: DefaultExtra = ExtraSkip,
+        default_extra: ExtraPolicy = ExtraSkip(),
     ):
         super().__init__(recipe)
         self._strict_coercion = strict_coercion
@@ -77,7 +77,7 @@ class ParserFactory(BuiltinFactory):
 
     def _get_raw_config_recipe(self) -> List[Provider]:
         return [
-            FactoryProvider(CfgDefaultExtra, lambda: self._default_extra),
+            FactoryProvider(CfgExtraPolicy, lambda: self._default_extra),
         ]
 
     def _get_raw_recursion_resolving(self) -> RecursionResolving:
@@ -136,7 +136,7 @@ class Factory(ParserFactory, SerializerFactory):
         recipe: Optional[List[Provider]] = None,
         strict_coercion: bool = True,
         debug_path: bool = True,
-        default_extra: DefaultExtra = ExtraSkip,
+        default_extra: ExtraPolicy = ExtraSkip(),
         omit_default: bool = False,
     ):
         ParserFactory.__init__(

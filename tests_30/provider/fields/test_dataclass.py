@@ -6,10 +6,13 @@ from dataclass_factory_30.provider import DefaultValue, DefaultFactory
 from dataclass_factory_30.provider.fields import (
     DataclassFieldsProvider,
     FieldRM,
+    InputFieldRM,
+    NoDefault,
     InputFieldsFigure,
     OutputFieldsFigure,
     GetterKind
 )
+from dataclass_factory_30.provider.request_cls import ParamKind
 
 
 @dataclass
@@ -30,33 +33,37 @@ def test_input():
         InputFieldsFigure(
             extra=None,
             fields=[
-                FieldRM(
+                InputFieldRM(
                     type=int,
                     field_name='a',
-                    default=None,
+                    default=NoDefault(),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
                 ),
-                FieldRM(
+                InputFieldRM(
                     type=str,
                     field_name='b',
                     default=DefaultValue('text'),
                     is_required=False,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
                 ),
-                FieldRM(
+                InputFieldRM(
                     type=list,
                     field_name='c',
                     default=DefaultFactory(list),
                     is_required=False,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
                 ),
-                FieldRM(
+                InputFieldRM(
                     type=int,
                     field_name='g',
                     default=DefaultValue(4),
                     is_required=False,
-                    metadata=MappingProxyType({'meta': 'data'})
+                    metadata=MappingProxyType({'meta': 'data'}),
+                    param_kind=ParamKind.POS_OR_KW,
                 ),
             ],
         )
@@ -73,7 +80,7 @@ def test_output():
                 FieldRM(
                     type=int,
                     field_name='a',
-                    default=None,
+                    default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
@@ -121,29 +128,29 @@ class ChildBar(Bar):
 
 
 def test_inheritance():
-    fields = [
-        FieldRM(
-            type=int,
-            field_name='a',
-            default=None,
-            is_required=True,
-            metadata=MappingProxyType({})
-        ),
-        FieldRM(
-            type=int,
-            field_name='b',
-            default=None,
-            is_required=True,
-            metadata=MappingProxyType({})
-        ),
-    ]
-
     assert (
         DataclassFieldsProvider()._get_input_fields_figure(ChildBar)
         ==
         InputFieldsFigure(
             extra=None,
-            fields=fields,
+            fields=[
+                InputFieldRM(
+                    type=int,
+                    field_name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                ),
+                InputFieldRM(
+                    type=int,
+                    field_name='b',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                ),
+            ],
         )
     )
 
@@ -152,6 +159,21 @@ def test_inheritance():
         ==
         OutputFieldsFigure(
             getter_kind=GetterKind.ATTR,
-            fields=fields,
+            fields=[
+                FieldRM(
+                    type=int,
+                    field_name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({})
+                ),
+                FieldRM(
+                    type=int,
+                    field_name='b',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({})
+                ),
+            ],
         )
     )

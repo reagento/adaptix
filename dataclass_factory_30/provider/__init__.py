@@ -12,6 +12,7 @@ from .concrete_provider import (
     BytesBase64Provider,
 )
 from .definitions import (
+    NoDefault,
     DefaultValue,
     DefaultFactory,
     Default,
@@ -37,10 +38,9 @@ from .fields import (
     ExtraSkip,
     ExtraForbid,
     ExtraKwargs,
-    Extra,
-    UnboundExtra,
-    DefaultExtra,
-    CfgDefaultExtra,
+    FigureExtra,
+    ExtraPolicy,
+    CfgExtraPolicy,
     InputFieldsFigure,
     OutputFieldsFigure,
     BaseFFRequest,

@@ -1,16 +1,15 @@
 from types import MappingProxyType
 from typing import Any
 
-import pytest
-
-from dataclass_factory_30.provider import CannotProvide
-from dataclass_factory_30.provider import DefaultValue
+from dataclass_factory_30.feature_requirement import has_pos_only_params
+from dataclass_factory_30.provider import DefaultValue, NoDefault
 from dataclass_factory_30.provider.fields import (
     ClassInitFieldsProvider,
-    FieldRM,
+    InputFieldRM,
     InputFieldsFigure,
     ExtraKwargs
 )
+from dataclass_factory_30.provider.request_cls import ParamKind
 
 
 class Valid1:
@@ -30,40 +29,38 @@ class Valid2Kwargs:
         self.data = data
 
 
-class Invalid1:
-    def __init__(self, a, /, b):
-        self.a = a
-        self.b = b
-
-
 VALID_FIELDS = [
-    FieldRM(
+    InputFieldRM(
         type=Any,
         field_name='a',
-        default=None,
+        default=NoDefault(),
         is_required=True,
-        metadata=MappingProxyType({})
+        metadata=MappingProxyType({}),
+        param_kind=ParamKind.POS_OR_KW,
     ),
-    FieldRM(
+    InputFieldRM(
         type=int,
         field_name='b',
-        default=None,
+        default=NoDefault(),
         is_required=True,
-        metadata=MappingProxyType({})
+        metadata=MappingProxyType({}),
+        param_kind=ParamKind.POS_OR_KW,
     ),
-    FieldRM(
+    InputFieldRM(
         type=str,
         field_name='c',
         default=DefaultValue('abc'),
         is_required=False,
-        metadata=MappingProxyType({})
+        metadata=MappingProxyType({}),
+        param_kind=ParamKind.POS_OR_KW,
     ),
-    FieldRM(
+    InputFieldRM(
         type=Any,
         field_name='d',
-        default=None,
+        default=NoDefault(),
         is_required=True,
-        metadata=MappingProxyType({})
+        metadata=MappingProxyType({}),
+        param_kind=ParamKind.KW_ONLY,
     ),
 ]
 
@@ -84,12 +81,41 @@ def test_extra_kwargs():
         ClassInitFieldsProvider()._get_input_fields_figure(Valid2Kwargs)
         ==
         InputFieldsFigure(
-            extra=ExtraKwargs,
+            extra=ExtraKwargs(),
             fields=VALID_FIELDS,
         )
     )
 
 
-def test_fail():
-    with pytest.raises(CannotProvide):
-        ClassInitFieldsProvider()._get_input_fields_figure(Invalid1)
+@has_pos_only_params
+def test_pos_only():
+    class HasPosOnly:
+        def __init__(self, a, /, b):
+            self.a = a
+            self.b = b
+
+    assert (
+        ClassInitFieldsProvider()._get_input_fields_figure(HasPosOnly)
+        ==
+        InputFieldsFigure(
+            extra=None,
+            fields=[
+                InputFieldRM(
+                    type=Any,
+                    field_name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_ONLY,
+                ),
+                InputFieldRM(
+                    type=Any,
+                    field_name='b',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                ),
+            ],
+        )
+    )

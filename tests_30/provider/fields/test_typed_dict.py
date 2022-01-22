@@ -1,13 +1,15 @@
 from types import MappingProxyType
 from typing import TypedDict
 
+from dataclass_factory_30.provider import NoDefault
 from dataclass_factory_30.provider.fields import (
     TypedDictFieldsProvider,
     FieldRM,
     InputFieldsFigure,
     OutputFieldsFigure,
-    GetterKind
+    GetterKind, _to_inp
 )
+from dataclass_factory_30.provider.request_cls import ParamKind
 
 
 class Foo(TypedDict, total=True):
@@ -24,14 +26,14 @@ TOTAL_FIELDS = [
     FieldRM(
         type=int,
         field_name='a',
-        default=None,
+        default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({})
     ),
     FieldRM(
         type=str,
         field_name='b',
-        default=None,
+        default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({})
     ),
@@ -44,7 +46,7 @@ def test_total_input():
         ==
         InputFieldsFigure(
             extra=None,
-            fields=TOTAL_FIELDS,
+            fields=_to_inp(ParamKind.KW_ONLY, TOTAL_FIELDS),
         )
     )
 
@@ -64,14 +66,14 @@ NON_TOTAL_FIELDS = [
     FieldRM(
         type=int,
         field_name='a',
-        default=None,
+        default=NoDefault(),
         is_required=False,
         metadata=MappingProxyType({})
     ),
     FieldRM(
         type=str,
         field_name='b',
-        default=None,
+        default=NoDefault(),
         is_required=False,
         metadata=MappingProxyType({})
     ),
@@ -84,7 +86,7 @@ def test_non_total_input():
         ==
         InputFieldsFigure(
             extra=None,
-            fields=NON_TOTAL_FIELDS,
+            fields=_to_inp(ParamKind.KW_ONLY, NON_TOTAL_FIELDS),
         )
     )
 

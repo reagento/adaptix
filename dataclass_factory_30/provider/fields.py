@@ -1,16 +1,17 @@
 import inspect
 from abc import abstractmethod, ABC
-from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField, replace
+from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField
 from enum import Enum
 from inspect import Signature, Parameter
-from operator import getitem
+from itertools import islice
 from types import MappingProxyType
-from typing import Any, List, get_type_hints, Union, Generic, TypeVar, Callable, final, Type
+from typing import Any, List, get_type_hints, Union, Generic, TypeVar, final, Dict, Iterable
 
-from .definitions import DefaultValue, DefaultFactory, Default
+from .definitions import DefaultValue, DefaultFactory, Default, NoDefault
 from .essential import Mediator, CannotProvide, Request
-from .request_cls import FieldRM, TypeHintRM
+from .request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind
 from .static_provider import StaticProvider, static_provision_action
+from ..singleton import SingletonMeta
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
 T = TypeVar('T')
@@ -20,29 +21,17 @@ class GetterKind(Enum):
     ATTR = 0
     ITEM = 1
 
-    def to_function(self) -> Callable[[Any, str], Any]:
-        return _GETTER_KIND_TO_FUNCTION[self]  # type: ignore
+
+class ExtraSkip(metaclass=SingletonMeta):
+    pass
 
 
-_GETTER_KIND_TO_FUNCTION = {
-    GetterKind.ATTR: getattr,
-    GetterKind.ITEM: getitem,
-}
+class ExtraForbid(metaclass=SingletonMeta):
+    pass
 
 
-class ExtraSkip:
-    def __new__(cls, *args, **kwargs):
-        raise RuntimeError(f"Cannot create instance of {cls}")
-
-
-class ExtraForbid:
-    def __new__(cls, *args, **kwargs):
-        raise RuntimeError(f"Cannot create instance of {cls}")
-
-
-class ExtraKwargs:
-    def __new__(cls, *args, **kwargs):
-        raise RuntimeError(f"Cannot create instance of {cls}")
+class ExtraKwargs(metaclass=SingletonMeta):
+    pass
 
 
 @dataclass(frozen=True)
@@ -50,29 +39,41 @@ class ExtraTargets:
     fields: List[str]
 
 
-Extra = Union[Type[ExtraSkip], Type[ExtraForbid], Type[ExtraKwargs], ExtraTargets]
-
-# Factory should replace None with ExtraSkip or ExtraForbid
-UnboundExtra = Union[None, Type[ExtraKwargs], ExtraTargets]
-
-DefaultExtra = Union[Type[ExtraSkip], Type[ExtraForbid]]
+class ExtraCollect(metaclass=SingletonMeta):
+    pass
 
 
-class CfgDefaultExtra(Request[DefaultExtra]):
+FigureExtra = Union[None, ExtraKwargs, ExtraTargets]
+
+ExtraPolicy = Union[ExtraSkip, ExtraForbid, ExtraCollect]
+
+
+class CfgExtraPolicy(Request[ExtraPolicy]):
     pass
 
 
 @dataclass
 class InputFieldsFigure:
-    fields: List[FieldRM]
-    extra: UnboundExtra
+    fields: List[InputFieldRM]
+    extra: FigureExtra
 
     def __post_init__(self):
-        if any(
-            field.is_required and field.default is not None
-            for field in self.fields
-        ):
-            raise ValueError("The optional fields must have no default")
+        for past, current in zip(self.fields, islice(self.fields, 1)):
+            if past.param_kind.value > current.param_kind.value:
+                raise ValueError(
+                    f"Inconsistent order of fields,"
+                    f" {current.param_kind} must be after {past.param_kind}"
+                )
+
+            if (
+                not past.is_required
+                and current.is_required
+                and current.param_kind != ParamKind.KW_ONLY
+            ):
+                raise ValueError(
+                    f"All not required fields must be after required ones"
+                    f" except {ParamKind.KW_ONLY} fields"
+                )
 
 
 @dataclass
@@ -93,48 +94,50 @@ class OutputFFRequest(BaseFFRequest[OutputFieldsFigure]):
     pass
 
 
+_PARAM_KIND_CONV: Dict[Any, ParamKind] = {
+    Parameter.POSITIONAL_ONLY: ParamKind.POS_ONLY,
+    Parameter.POSITIONAL_OR_KEYWORD: ParamKind.POS_OR_KW,
+    Parameter.KEYWORD_ONLY: ParamKind.KW_ONLY,
+}
+
+
 def get_func_iff(func, params_slice=slice(0, None)) -> InputFieldsFigure:
     params = list(
         inspect.signature(func).parameters.values()
     )[params_slice]
 
-    if not all(
-        p.kind in (
-            Parameter.POSITIONAL_OR_KEYWORD,
-            Parameter.KEYWORD_ONLY,
-            Parameter.VAR_KEYWORD
-        )
-        for p in params
-    ):
+    return signature_params_to_iff(params)
+
+
+def _is_empty(value):
+    return value is Signature.empty
+
+
+def signature_params_to_iff(params: Iterable[Parameter]) -> InputFieldsFigure:
+    kinds = [p.kind for p in params]
+
+    if Parameter.VAR_POSITIONAL in kinds:
         raise ValueError(
-            'Can not create consistent InputFieldsFigure'
-            ' from the function that has not only'
-            ' POSITIONAL_OR_KEYWORD or KEYWORD_ONLY or VAR_KEYWORD'
-            ' parameters'
+            f'Can not create InputFieldsFigure'
+            f' from the function that has {Parameter.VAR_POSITIONAL}'
+            f' parameter'
         )
 
-    extra: UnboundExtra
-    if any(p.kind == Parameter.VAR_KEYWORD for p in params):
-        extra = ExtraKwargs
-    else:
-        extra = None
+    extra = (
+        ExtraKwargs()
+        if Parameter.VAR_KEYWORD in kinds else
+        None
+    )
 
     return InputFieldsFigure(
         fields=[
-            FieldRM(
-                type=(
-                    Any
-                    if param.annotation is Signature.empty
-                    else param.annotation
-                ),
+            InputFieldRM(
+                type=Any if _is_empty(param.annotation) else param.annotation,
                 field_name=param.name,
-                is_required=param.default is Signature.empty,
-                default=(
-                    None
-                    if param.default is Signature.empty
-                    else DefaultValue(param.default)
-                ),
+                is_required=_is_empty(param.default),
+                default=NoDefault() if _is_empty(param.default) else DefaultValue(param.default),
                 metadata=MappingProxyType({}),
+                param_kind=_PARAM_KIND_CONV[param.kind],
             )
             for param in params
             if param.kind != Parameter.VAR_KEYWORD
@@ -177,11 +180,31 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
     def _get_output_fields_figure(self, tp) -> OutputFieldsFigure:
         return OutputFieldsFigure(
             fields=[
-                replace(fld, is_required=True)
+                FieldRM(
+                    field_name=fld.field_name,
+                    type=fld.type,
+                    default=fld.default,
+                    is_required=True,
+                    metadata=fld.metadata,
+                )
                 for fld in self._get_input_fields_figure(tp).fields
             ],
             getter_kind=GetterKind.ATTR,
         )
+
+
+def _to_inp(param_kind: ParamKind, fields: List[FieldRM]) -> List[InputFieldRM]:
+    return [
+        InputFieldRM(
+            field_name=f.field_name,
+            type=f.type,
+            default=f.default,
+            is_required=f.is_required,
+            metadata=f.metadata,
+            param_kind=param_kind,
+        )
+        for f in fields
+    ]
 
 
 class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
@@ -195,7 +218,7 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
             FieldRM(
                 type=tp,
                 field_name=name,
-                default=None,
+                default=NoDefault(),
                 is_required=is_required,
                 metadata=MappingProxyType({}),
             )
@@ -204,7 +227,7 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
 
     def _get_input_fields_figure(self, tp):
         return InputFieldsFigure(
-            fields=self._get_fields(tp),  # noqa
+            fields=_to_inp(ParamKind.KW_ONLY, self._get_fields(tp)),
             extra=None,
         )
 
@@ -220,7 +243,7 @@ def get_dc_default(field: DCField) -> Default:
         return DefaultValue(field.default)
     if field.default_factory is not DC_MISSING:
         return DefaultFactory(field.default_factory)
-    return None
+    return NoDefault()
 
 
 class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
@@ -243,7 +266,7 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
                 type=fld.type,
                 field_name=fld.name,
                 default=get_dc_default(fld),
-                is_required=all_are_required or get_dc_default(fld) is None,
+                is_required=all_are_required or get_dc_default(fld) == NoDefault(),
                 metadata=fld.metadata,
             )
             for fld in dc_fields(tp)
@@ -252,9 +275,12 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
 
     def _get_input_fields_figure(self, tp):
         return InputFieldsFigure(
-            fields=self._get_fields_filtered(
-                tp, lambda fld: fld.init,
-                all_are_required=False,
+            fields=_to_inp(
+                ParamKind.POS_OR_KW,
+                self._get_fields_filtered(
+                    tp, lambda fld: fld.init,
+                    all_are_required=False,
+                )
             ),
             extra=None,
         )

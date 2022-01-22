@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import TypeVar, List, Generic, Optional, Mapping, Any
 
 from .definitions import Default
@@ -33,6 +34,17 @@ class FieldRM(TypeHintRM[T], FieldNameRM[T], Generic[T]):
     metadata: Mapping[Any, Any]
 
 
+class ParamKind(Enum):
+    POS_ONLY = 0
+    POS_OR_KW = 1
+    KW_ONLY = 3  # 2 is for VAR_POS
+
+
+@dataclass(frozen=True)
+class InputFieldRM(FieldRM[T], Generic[T]):
+    param_kind: ParamKind
+
+
 @dataclass(frozen=True)
 class ParserRequest(TypeHintRM[Parser], PipelineEvalMixin):
     strict_coercion: bool
@@ -58,7 +70,7 @@ class ParserRequest(TypeHintRM[Parser], PipelineEvalMixin):
         return pipeline_parser
 
 
-class ParserFieldRequest(ParserRequest, FieldRM[Parser]):
+class ParserFieldRequest(ParserRequest, InputFieldRM[Parser]):
     pass
 
 

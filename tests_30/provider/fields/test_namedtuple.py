@@ -2,14 +2,16 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
-from dataclass_factory_30.provider import DefaultValue
+from dataclass_factory_30.provider import DefaultValue, NoDefault
 from dataclass_factory_30.provider.fields import (
     NamedTupleFieldsProvider,
     FieldRM,
     InputFieldsFigure,
     OutputFieldsFigure,
-    GetterKind
+    GetterKind,
+    _to_inp,
 )
+from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')
@@ -20,14 +22,14 @@ def test_order_ab():
         FieldRM(
             type=Any,
             field_name='a',
-            default=None,
+            default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=Any,
             field_name='b',
-            default=None,
+            default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
         ),
@@ -38,7 +40,7 @@ def test_order_ab():
         ==
         InputFieldsFigure(
             extra=None,
-            fields=fields,
+            fields=_to_inp(ParamKind.POS_OR_KW, fields),
         )
     )
 
@@ -57,14 +59,14 @@ def test_order_ba():
         FieldRM(
             type=Any,
             field_name='b',
-            default=None,
+            default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=Any,
             field_name='a',
-            default=None,
+            default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
         ),
@@ -75,7 +77,7 @@ def test_order_ba():
         ==
         InputFieldsFigure(
             extra=None,
-            fields=fields,
+            fields=_to_inp(ParamKind.POS_OR_KW, fields),
         )
     )
 
@@ -103,26 +105,29 @@ def test_defaults():
         InputFieldsFigure(
             extra=None,
             fields=[
-                FieldRM(
+                InputFieldRM(
                     type=Any,
                     field_name='a',
-                    default=None,
+                    default=NoDefault(),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
                 ),
-                FieldRM(
+                InputFieldRM(
                     type=Any,
                     field_name='b',
                     default=DefaultValue(0),
                     is_required=False,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
                 ),
-                FieldRM(
+                InputFieldRM(
                     type=Any,
                     field_name='c',
                     default=DefaultValue(func),
                     is_required=False,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
                 ),
             ],
         )
@@ -137,7 +142,7 @@ def test_defaults():
                 FieldRM(
                     type=Any,
                     field_name='a',
-                    default=None,
+                    default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
@@ -168,14 +173,14 @@ def test_class_hinted_namedtuple():
         FieldRM(
             type=int,
             field_name='a',
-            default=None,
+            default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=str,
             field_name='b',
-            default=None,
+            default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
         ),
@@ -186,7 +191,7 @@ def test_class_hinted_namedtuple():
         ==
         InputFieldsFigure(
             extra=None,
-            fields=fields,
+            fields=_to_inp(ParamKind.POS_OR_KW, fields),
         )
     )
 
@@ -214,19 +219,21 @@ def test_hinted_namedtuple():
         InputFieldsFigure(
             extra=None,
             fields=[
-                FieldRM(
+                InputFieldRM(
                     type=int,
                     field_name='a',
-                    default=None,
+                    default=NoDefault(),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
                 ),
-                FieldRM(
+                InputFieldRM(
                     type=str,
                     field_name='b',
                     default=DefaultValue('abc'),
                     is_required=False,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
                 ),
             ],
         )
@@ -241,7 +248,7 @@ def test_hinted_namedtuple():
                 FieldRM(
                     type=int,
                     field_name='a',
-                    default=None,
+                    default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
