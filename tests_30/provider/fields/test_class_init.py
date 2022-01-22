@@ -1,8 +1,10 @@
 from types import MappingProxyType
 from typing import Any
 
+import pytest
+
 from dataclass_factory_30.feature_requirement import has_pos_only_params
-from dataclass_factory_30.provider import DefaultValue, NoDefault
+from dataclass_factory_30.provider import DefaultValue, NoDefault, CannotProvide
 from dataclass_factory_30.provider.fields import (
     ClassInitFieldsProvider,
     InputFieldRM,
@@ -119,3 +121,16 @@ def test_pos_only():
             ],
         )
     )
+
+
+def test_var_arg():
+    class HasVarArg:
+        def __init__(self, a, b, *args):
+            self.a = a
+            self.b = b
+            self.args = args
+
+    with pytest.raises(CannotProvide):
+        ClassInitFieldsProvider()._get_input_fields_figure(
+            HasVarArg
+        )

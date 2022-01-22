@@ -58,7 +58,7 @@ class InputFieldsFigure:
     extra: FigureExtra
 
     def __post_init__(self):
-        for past, current in zip(self.fields, islice(self.fields, 1)):
+        for past, current in zip(self.fields, islice(self.fields, 1, None)):
             if past.param_kind.value > current.param_kind.value:
                 raise ValueError(
                     f"Inconsistent order of fields,"
@@ -73,6 +73,25 @@ class InputFieldsFigure:
                 raise ValueError(
                     f"All not required fields must be after required ones"
                     f" except {ParamKind.KW_ONLY} fields"
+                )
+
+        field_names = {fld.field_name for fld in self.fields}
+        if len(field_names) != len(self.fields):
+            duplicates = {
+                fld.field_name for fld in self.fields
+                if fld.field_name in field_names
+            }
+            raise ValueError(f"Field names {duplicates} are duplicated")
+
+        if isinstance(self.extra, ExtraTargets):
+            wild_targets = [
+                target for target in self.extra.fields
+                if target not in field_names
+            ]
+
+            if wild_targets:
+                raise ValueError(
+                    f"ExtraTargets {wild_targets} are attached to non-existing fields"
                 )
 
 
