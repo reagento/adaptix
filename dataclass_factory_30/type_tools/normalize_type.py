@@ -194,8 +194,9 @@ class ImplicitParamsFiller:
             limits = [normalizer.normalize(p).limit for p in params]
 
             return tuple(
-                _create_union(lim.value) if isinstance(lim, Constraints)
-                else lim.value
+                _create_union(lim.value)
+                if isinstance(lim, Constraints) else
+                lim.value
                 for lim in limits
             )
 
@@ -231,7 +232,7 @@ def _create_norm_literal(args: tuple):
     )
 
 
-def _replace_source(norm: NormType, sources: list) -> NormType:
+def _replace_source_with_union(norm: NormType, sources: list) -> NormType:
     return NormType(
         origin=norm.origin,
         args=norm.args,
@@ -426,7 +427,7 @@ class TypeNormalizer:
                 arg_to_pos[item] = len(result) - 1
 
         return [
-            _replace_source(d_arg, sources)
+            _replace_source_with_union(d_arg, sources)
             if len(sources) != 1 and isinstance(d_arg, NormType)
             else d_arg
             for d_arg, sources in zip(result, args_source)

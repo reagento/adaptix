@@ -1,4 +1,4 @@
-from typing import List, Generic, Iterable, Tuple
+from typing import Generic, Iterable, Tuple
 
 from ..common import TypeHint
 
