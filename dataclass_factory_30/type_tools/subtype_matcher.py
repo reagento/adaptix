@@ -1,18 +1,19 @@
 from abc import ABC, abstractmethod
 from collections import abc as c_abc
 from copy import copy
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, replace, InitVar
 from typing import (
     Dict, TypeVar, Optional, Any,
-    NoReturn, Annotated, List, ClassVar,
+    NoReturn, List, ClassVar,
     Final, MutableMapping, Literal,
     Union, get_type_hints
 )
 
 from . import normalize_type, is_subclass_soft, is_new_type, is_typed_dict_class
-from .normalize_type import BaseNormType, NormTV
 from .basic_utils import is_protocol
+from .normalize_type import BaseNormType, NormTV
 from ..common import TypeHint
+from ..feature_requirement import has_annotated
 
 SubtypeMatch = Dict[TypeVar, TypeHint]
 
@@ -94,11 +95,15 @@ class DefaultSubtypeMatcher(SubtypeMatcher):
         )
 
     _O_MATCH_DISPATCHING = {
-        Annotated: _o_match_first_arg,
         ClassVar: _o_match_first_arg,
         Final: _o_match_first_arg,
+        InitVar: _o_match_first_arg,
         Union: _o_match_union,
     }
+
+    if has_annotated:
+        from typing import Annotated
+        _O_MATCH_DISPATCHING[Annotated] = _o_match_first_arg
 
     # match methods for every type
 
@@ -196,7 +201,7 @@ class DefaultSubtypeMatcher(SubtypeMatcher):
 
         return all(
             self._match(ctx, source[name], other[name])
-            for name in source_keys
+            for name in other_keys
         )
 
     def _match_by_template(self, ctx: MatchCtx, tmpl: NormTV, tp: BaseNormType, sub_tp: BaseNormType) -> bool:
@@ -328,11 +333,15 @@ class DefaultSubtypeMatcher(SubtypeMatcher):
         Any: _match_any,
         None: _match_none,
         NoReturn: _match_no_return,
-        Annotated: _match_first_arg,
         Final: _match_first_arg,
         ClassVar: _match_first_arg,
+        InitVar: _match_first_arg,
         c_abc.Callable: _match_callable,
         tuple: _match_tuple,
         Literal: _match_literal,
         Union: _match_union,
     }
+
+    if has_annotated:
+        from typing import Annotated
+        _MATCH_DISPATCHING_SPECIAL[Annotated] = _match_first_arg

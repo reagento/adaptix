@@ -1,6 +1,6 @@
 import inspect
 from abc import abstractmethod, ABC
-from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField
+from dataclasses import dataclass, fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField, replace
 from enum import Enum
 from inspect import Signature, Parameter
 from itertools import islice
@@ -194,7 +194,21 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
         if not is_named_tuple_class(tp):
             raise CannotProvide
 
-        return get_func_iff(tp.__new__, slice(1, None))
+        iff = get_func_iff(tp.__new__, slice(1, None))
+
+        type_hints = get_type_hints(tp)
+
+        # At <3.9 namedtuple does not generate typehints at __new__
+        return InputFieldsFigure(
+            extra=iff.extra,
+            fields=[
+                replace(
+                    fld,
+                    type=type_hints.get(fld.field_name, Any)
+                )
+                for fld in iff.fields
+            ]
+        )
 
     def _get_output_fields_figure(self, tp) -> OutputFieldsFigure:
         return OutputFieldsFigure(
