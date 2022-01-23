@@ -252,7 +252,7 @@ class AspectStorage(List[str]):
         return type(self)(super().copy())
 
 
-class MustSubscribed(ValueError):
+class NotSubscribedError(ValueError):
     pass
 
 
@@ -296,7 +296,7 @@ class TypeNormalizer:
     @_aspect_storage.add
     def _check_bad_input(self, tp, origin, args):
         if tp in self.MUST_SUBSCRIBED_ORIGINS:
-            raise MustSubscribed(f"{tp} must be subscribed")
+            raise NotSubscribedError(f"{tp} must be subscribed")
 
         if tp in (NewType, TypeVar):
             raise ValueError(f'{origin} must be instantiating')

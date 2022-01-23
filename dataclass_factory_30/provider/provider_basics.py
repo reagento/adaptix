@@ -8,7 +8,7 @@ from .essential import Provider, Mediator, CannotProvide, Request
 from .request_cls import TypeHintRM, FieldNameRM
 from ..common import TypeHint, Parser
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
-from ..type_tools.normalize_type import NormType, NormTV, MustSubscribed
+from ..type_tools.normalize_type import NormType, NormTV, NotSubscribedError
 
 T = TypeVar('T')
 
@@ -86,7 +86,7 @@ class ExactOriginRC(RequestChecker):
 def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
     try:
         norm = normalize_type(tp)
-    except MustSubscribed:
+    except NotSubscribedError:
         return ExactOriginRC(tp)
     except ValueError:
         raise ValueError(f'Can not create RequestChecker from {tp}')
