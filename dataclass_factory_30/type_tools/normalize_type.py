@@ -16,7 +16,8 @@ from typing_extensions import Annotated
 
 from .basic_utils import (
     strip_alias, get_args, is_annotated,
-    is_subclass_soft, is_user_defined_generic, is_new_type
+    is_subclass_soft, is_user_defined_generic, is_new_type,
+    create_union
 )
 from ..common import TypeHint
 
@@ -194,7 +195,7 @@ class ImplicitParamsFiller:
             limits = [normalizer.normalize(p).limit for p in params]
 
             return tuple(
-                _create_union(lim.value)
+                _create_n_union(lim.value)
                 if isinstance(lim, Constraints) else
                 lim.value
                 for lim in limits
@@ -205,10 +206,10 @@ class ImplicitParamsFiller:
         return tuple(ANY_NT for _ in range(count))
 
 
-def _create_union(args: Tuple[BaseNormType, ...]) -> NormType:
+def _create_n_union(args: Tuple[BaseNormType, ...]) -> NormType:
     return NormType(
         Union, args,
-        source=Union.__getitem__(tuple(a.source for a in args))
+        source=create_union(tuple(a.source for a in args))
     )
 
 

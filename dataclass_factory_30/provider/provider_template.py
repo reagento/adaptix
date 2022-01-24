@@ -2,12 +2,13 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import TypeVar, final, Type, Collection
 
-from .definitions import ParseError
+from .definitions import TypeParseError
 from .essential import Provider, Mediator, Request
 from .provider_basics import RequestChecker, create_type_hint_req_checker
 from .request_cls import ParserRequest, SerializerRequest
 from .static_provider import StaticProvider, static_provision_action
 from ..common import TypeHint, Parser, Serializer
+from ..type_tools import create_union
 
 T = TypeVar('T')
 
@@ -86,13 +87,15 @@ class CoercionLimiter(ParserProvider):
             def strict_coercion_parser_1_origin(value):
                 if type(value) == origin:
                     return parser(value)
-                raise ParseError
+                raise TypeParseError(origin)
 
             return strict_coercion_parser_1_origin
+
+        union = create_union(tuple(allowed_strict_origins))
 
         def strict_coercion_parser(value):
             if type(value) in allowed_strict_origins:
                 return parser(value)
-            raise ParseError
+            raise TypeParseError(union)
 
         return strict_coercion_parser

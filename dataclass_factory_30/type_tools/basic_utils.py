@@ -1,4 +1,4 @@
-from typing import Generic, Iterable, Tuple
+from typing import Generic, Iterable, Tuple, Union
 
 from ..common import TypeHint
 
@@ -100,3 +100,7 @@ def is_protocol(tp):
         return False
 
     return Protocol in tp.__bases__
+
+
+def create_union(args: tuple):
+    return Union.__getitem__(args)
