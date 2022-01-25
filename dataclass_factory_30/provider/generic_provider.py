@@ -1,15 +1,17 @@
 import collections.abc
+from abc import ABC
 from dataclasses import replace, dataclass
+from enum import EnumMeta
 from inspect import isabstract
-from typing import Literal, Collection, Container, Union, Iterable, Callable
+from typing import Literal, Collection, Container, Union, Iterable, Callable, Optional
 
 from .definitions import ParseError, UnionParseError
-from .essential import Mediator, CannotProvide
+from .essential import Mediator, CannotProvide, Request
 from .provider_basics import foreign_parser
 from .provider_template import ParserProvider, SerializerProvider, for_type
 from .request_cls import TypeHintRM, SerializerRequest, ParserRequest
 from .static_provider import StaticProvider, static_provision_action
-from ..common import Parser, Serializer
+from ..common import Parser, Serializer, TypeHint
 from ..type_tools import is_new_type, strip_tags, normalize_type
 
 
@@ -82,7 +84,8 @@ class UnionProvider(ParserProvider):
         norm = normalize_type(request.type)
 
         parsers = tuple(
-            mediator.provide(replace(request, type=tp)) for tp in norm.args
+            mediator.provide(replace(request, type=tp.source))
+            for tp in norm.args
         )
 
         if request.debug_path:
@@ -217,3 +220,82 @@ class IterableProvider(ParserProvider, SerializerProvider):
             return iter_factory(map(arg_serializer, value))
 
         return iter_serializer
+
+
+class BaseEnumProvider(ParserProvider, SerializerProvider, ABC):
+    def __init__(self, bounds: Optional[Iterable[EnumMeta]] = None):
+        if bounds is None:
+            bounds = None
+        else:
+            bounds = tuple(bounds)
+
+        self._bounds = bounds
+
+    def _check_request(self, request: Request) -> None:
+        if not isinstance(request, TypeHintRM):
+            raise CannotProvide
+
+        norm = normalize_type(request.type)
+
+        if not isinstance(norm.origin, EnumMeta):
+            raise CannotProvide
+
+        if self._bounds is not None and norm.origin not in self._bounds:
+            raise CannotProvide
+
+
+def _enum_name_serializer(data):
+    return data.name
+
+
+class EnumNameProvider(BaseEnumProvider):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+        enum = request.type
+
+        def enum_parser(data):
+            return enum[data]
+
+        return foreign_parser(enum_parser)
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+        return _enum_name_serializer
+
+
+class EnumValueProvider(BaseEnumProvider):
+    def __init__(self, bounds: Iterable[EnumMeta], value_type: TypeHint):
+        self.value_type = value_type
+        super().__init__(bounds)
+
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+        enum = request.type
+        value_parser = mediator.provide(replace(request, type=self.value_type))
+
+        def enum_parser(data):
+            return enum(value_parser(data))
+
+        return foreign_parser(enum_parser)
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+        value_serializer = mediator.provide(replace(request, type=self.value_type))
+
+        def enum_serializer(data):
+            return value_serializer(data.value)
+
+        return enum_serializer
+
+
+def _enum_exact_value_serializer(data):
+    return data.value
+
+
+class EnumExactValueProvider(BaseEnumProvider):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+        enum = request.type
+
+        def enum_exact_parser(data):
+            return enum(data)
+
+        return foreign_parser(enum_exact_parser)
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+        return _enum_exact_value_serializer

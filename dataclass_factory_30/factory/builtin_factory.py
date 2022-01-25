@@ -24,6 +24,7 @@ from ..provider import (
     NewTypeUnwrappingProvider,
     TypeHintTagsUnwrappingProvider,
     CoercionLimiter,
+    EnumExactValueProvider,
 )
 from ..provider.generic_provider import IterableProvider
 
@@ -86,6 +87,8 @@ class BuiltinFactory(MultiInheritanceFactory, StaticProvider, ABC):
         IsoFormatProvider(date),
         IsoFormatProvider(time),
         TimedeltaProvider(),
+
+        EnumExactValueProvider(),  # it has higher priority than int for IntEnum
 
         CoercionLimiter(as_parser(int), [int]),
         _stub_serializer(int),

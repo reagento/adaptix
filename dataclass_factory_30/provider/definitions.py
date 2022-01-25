@@ -21,7 +21,7 @@ class DefaultFactory:
 
 Default = Union[NoDefault, DefaultValue, DefaultFactory]
 
-# Parser calling foreign functions should convert these exception to ParseError
+# Parser calling foreign functions should convert these exceptions to ParseError
 PARSER_COMPAT_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
 
 PathElement = Union[str, int]
