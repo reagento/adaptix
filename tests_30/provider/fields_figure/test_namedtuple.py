@@ -3,7 +3,7 @@ from types import MappingProxyType
 from typing import Any, NamedTuple
 
 from dataclass_factory_30.provider import DefaultValue, NoDefault
-from dataclass_factory_30.provider.fields import (
+from dataclass_factory_30.provider.fields_figure import (
     NamedTupleFieldsProvider,
     FieldRM,
     InputFieldsFigure,

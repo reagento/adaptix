@@ -3,7 +3,7 @@ from types import MappingProxyType
 from typing import ClassVar
 
 from dataclass_factory_30.provider import DefaultValue, DefaultFactory
-from dataclass_factory_30.provider.fields import (
+from dataclass_factory_30.provider.fields_figure import (
     DataclassFieldsProvider,
     FieldRM,
     InputFieldRM,

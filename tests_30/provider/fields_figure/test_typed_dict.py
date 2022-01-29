@@ -2,7 +2,7 @@ from types import MappingProxyType
 from typing import TypedDict
 
 from dataclass_factory_30.provider import NoDefault
-from dataclass_factory_30.provider.fields import (
+from dataclass_factory_30.provider.fields_figure import (
     TypedDictFieldsProvider,
     FieldRM,
     InputFieldsFigure,

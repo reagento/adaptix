@@ -32,13 +32,13 @@ from .essential import (
     PipelineEvalMixin,
     Pipeline,
 )
-from .fields import (
+from .fields_basics import (
     GetterKind,
     ExtraTargets,
     ExtraSkip,
     ExtraForbid,
-    ExtraKwargs,
     FigureExtra,
+    ExtraKwargs,
     ExtraPolicy,
     CfgExtraPolicy,
     InputFieldsFigure,
@@ -46,6 +46,8 @@ from .fields import (
     BaseFFRequest,
     InputFFRequest,
     OutputFFRequest,
+)
+from .fields_figure import (
     get_func_iff,
     TypeOnlyInputFFProvider,
     TypeOnlyOutputFFProvider,
