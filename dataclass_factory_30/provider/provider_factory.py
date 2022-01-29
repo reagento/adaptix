@@ -26,6 +26,7 @@ def resolve_classmethod(func) -> Tuple[type, Callable]:
 
 
 def _resolve_as_args(func_or_pred, maybe_func) -> Tuple[Any, Any]:
+    func: Any
     if maybe_func is None:
         if isinstance(func_or_pred, type):
             pred = func_or_pred
@@ -75,7 +76,7 @@ def as_serializer(pred: Any, func: Serializer) -> Provider:
     pass
 
 
-# we can get origin class if WrapperDescriptorType has passed
+# We can get origin class if WrapperDescriptorType has passed,
 # but it is a rare case, so one arg signature was removed
 def as_serializer(pred, func):
     return LimitingProvider(

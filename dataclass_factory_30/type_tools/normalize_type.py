@@ -237,7 +237,7 @@ def _replace_source_with_union(norm: NormType, sources: list) -> NormType:
     return NormType(
         origin=norm.origin,
         args=norm.args,
-        source=Union.__getitem__(tuple(sources))
+        source=create_union(tuple(sources))
     )
 
 

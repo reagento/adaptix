@@ -24,7 +24,7 @@ class CannotProvide(Exception):
 
 
 class Mediator(ABC):
-    """Mediator is a object that gives provider access to other providers
+    """Mediator is an object that gives provider access to other providers
     and that stores state of the current search.
 
     Mediator is a proxy to providers of factory.
