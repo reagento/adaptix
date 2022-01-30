@@ -21,14 +21,17 @@ class ClosureCompiler(ABC):
 
 
 class BasicClosureCompiler(ClosureCompiler):
-    def compile(self, builder: CodeBuilder, filename: str, namespace: Dict[str, Any]) -> Callable:
+    def _make_source(self, builder: CodeBuilder):
         main_builder = CodeBuilder()
 
         main_builder += "def closure_maker():"
         with main_builder:
             main_builder.extend(builder)
 
-        source = main_builder.string()
+        return main_builder.string()
+
+    def compile(self, builder: CodeBuilder, filename: str, namespace: Dict[str, Any]) -> Callable:
+        source = self._make_source(builder)
 
         code_obj = compile(source, filename, "exec")
 
@@ -37,3 +40,11 @@ class BasicClosureCompiler(ClosureCompiler):
 
         return local_namespace["closure_maker"]()
 
+
+class SavingClosureCompiler(BasicClosureCompiler):
+    def __init__(self):
+        self.source = ""
+
+    def _make_source(self, builder: CodeBuilder):
+        self.source = super()._make_source(builder)
+        return self.source

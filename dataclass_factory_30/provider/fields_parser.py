@@ -2,7 +2,11 @@ import contextlib
 from collections import deque
 from typing import Dict, Tuple, Set
 
-from .definitions import PathElement, NoRequiredFieldsError, NoRequiredItemsError
+from .definitions import (
+    PathElement, NoRequiredFieldsError,
+    NoRequiredItemsError, TypeParseError,
+    ExtraItemsError, ExtraFieldsError
+)
 from .essential import Mediator, CannotProvide
 from .fields_basics import (
     ExtraForbid, ExtraCollect,
@@ -141,7 +145,7 @@ class FieldsParserGenerator:
                 for path, known_fields in state.path2known_fields.items()
             },
             {
-                f'g_{var}': var
+                var: f'g_{var}'
                 for var in (
                     state.get_field_parser_var_name(field_name)
                     for field_name in field_parsers
@@ -168,6 +172,13 @@ class FieldsParserGenerator:
                 **{
                     "g_" + state.get_field_parser_var_name(field_name): parser
                     for field_name, parser in field_parsers.items()
+                },
+                **{
+                    e.__name__: e
+                    for e in [
+                        ExtraFieldsError, ExtraItemsError,
+                        TypeParseError, NoRequiredFieldsError
+                    ]
                 },
             },
         )
@@ -343,6 +354,7 @@ class FieldsParserGenerator:
                     if $extra:
                         raise ExtraFieldsError($extra, $path_lit)
                 """
+                builder.empty_line()
 
             elif crown.extra == ExtraCollect():
                 builder += """
@@ -350,8 +362,7 @@ class FieldsParserGenerator:
                     for key in set($data) - $known_fields:
                         $extra[key] = $data[key]
                 """
-
-        builder.empty_line()
+                builder.empty_line()
 
         for key, value in crown.map.items():
             self._gen_crown_dispatch(builder, state, value, key)
@@ -380,8 +391,7 @@ class FieldsParserGenerator:
                     if len($data) > $list_len:
                         raise ExtraItemsError($list_len, $path_lit)
                 """
-
-        builder.empty_line()
+                builder.empty_line()
 
         for key, value in crown.map.items():
             self._gen_crown_dispatch(builder, state, value, key)
@@ -408,11 +418,10 @@ class FieldsParserGenerator:
             state,
             state.get_raw_field_var(crown.name),
         )
-        builder.empty_line()
-
         data_for_parser = state.get_raw_field_var(field.field_name)
 
         if field.is_required:
+            builder.empty_line()
             self._gen_field_assigment(
                 builder,
                 field_left_value,
