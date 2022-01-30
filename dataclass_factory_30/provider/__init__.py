@@ -94,7 +94,6 @@ from .request_cls import (
     FieldNameRM,
     ParserRequest,
     SerializerRequest,
-    JsonSchemaProvider,
     FieldRM,
     ParserFieldRequest,
     SerializerFieldRequest,

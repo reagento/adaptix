@@ -9,7 +9,7 @@ from .essential import (
     Request,
     PipelineEvalMixin
 )
-from ..common import TypeHint, Parser, Serializer, Json
+from ..common import TypeHint, Parser, Serializer
 
 T = TypeVar('T')
 
@@ -70,6 +70,7 @@ class ParserRequest(TypeHintRM[Parser], PipelineEvalMixin):
         return pipeline_parser
 
 
+@dataclass(frozen=True)
 class ParserFieldRequest(ParserRequest, InputFieldRM[Parser]):
     pass
 
@@ -100,10 +101,6 @@ class SerializerFieldRequest(SerializerRequest, FieldRM[Parser]):
     omit_default: bool
 
 
-class JsonSchemaProvider(TypeHintRM[Json]):
-    pass
-
-
 class NameMappingRequest(FieldNameRM[Optional[str]], PipelineEvalMixin):
     @classmethod
     def eval_pipeline(
@@ -120,9 +117,11 @@ class NameMappingRequest(FieldNameRM[Optional[str]], PipelineEvalMixin):
         return name
 
 
+@dataclass(frozen=True)
 class NameMappingFieldRequest(NameMappingRequest, FieldRM[Optional[str]]):
     pass
 
 
+@dataclass(frozen=True)
 class CfgOmitDefault(Request[bool]):
     pass
