@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 from types import MappingProxyType
 from typing import ClassVar
 
@@ -15,15 +15,23 @@ from dataclass_factory_30.provider.fields_figure import (
 from dataclass_factory_30.provider.request_cls import ParamKind
 
 
+InitVarInt = InitVar[int]  # InitVar comparing by id()
+
+
 @dataclass
 class Foo:
     a: int
-    b: str = 'text'
-    c: list = field(default_factory=list)
-    d: int = field(default=3, init=False)
-    e: ClassVar[int]
-    f: ClassVar[int] = 1
-    g: int = field(default=4, metadata={'meta': 'data'})
+    b: InitVarInt
+    c: InitVarInt = field(default=1)
+    d: str = 'text'
+    e: list = field(default_factory=list)
+    f: int = field(default=3, init=False)
+    g: ClassVar[int]
+    h: ClassVar[int] = 1
+    i: int = field(default=4, metadata={'meta': 'data'})
+
+    def __post_init__(self, b: int, c: int):
+        pass
 
 
 def test_input():
@@ -43,8 +51,24 @@ def test_input():
                     param_kind=ParamKind.POS_OR_KW,
                 ),
                 InputFieldRM(
-                    type=str,
+                    type=InitVarInt,
                     field_name='b',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                ),
+                InputFieldRM(
+                    type=InitVarInt,
+                    field_name='c',
+                    default=DefaultValue(1),
+                    is_required=False,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                ),
+                InputFieldRM(
+                    type=str,
+                    field_name='d',
                     default=DefaultValue('text'),
                     is_required=False,
                     metadata=MappingProxyType({}),
@@ -52,7 +76,7 @@ def test_input():
                 ),
                 InputFieldRM(
                     type=list,
-                    field_name='c',
+                    field_name='e',
                     default=DefaultFactory(list),
                     is_required=False,
                     metadata=MappingProxyType({}),
@@ -60,7 +84,7 @@ def test_input():
                 ),
                 InputFieldRM(
                     type=int,
-                    field_name='g',
+                    field_name='i',
                     default=DefaultValue(4),
                     is_required=False,
                     metadata=MappingProxyType({'meta': 'data'}),
@@ -87,28 +111,28 @@ def test_output():
                 ),
                 FieldRM(
                     type=str,
-                    field_name='b',
+                    field_name='d',
                     default=DefaultValue('text'),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=list,
-                    field_name='c',
+                    field_name='e',
                     default=DefaultFactory(list),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=int,
-                    field_name='d',
+                    field_name='f',
                     default=DefaultValue(3),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=int,
-                    field_name='g',
+                    field_name='i',
                     default=DefaultValue(4),
                     is_required=True,
                     metadata=MappingProxyType({'meta': 'data'})

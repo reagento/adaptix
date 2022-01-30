@@ -185,6 +185,26 @@ def get_dc_default(field: DCField) -> Default:
     return NoDefault()
 
 
+def _dc_field_to_field_rm(fld: DCField, required_det: Callable[[Default], bool]):
+    default = get_dc_default(fld)
+
+    return FieldRM(
+        type=fld.type,
+        field_name=fld.name,
+        default=default,
+        is_required=required_det(default),
+        metadata=fld.metadata,
+    )
+
+
+def all_dc_fields(cls) -> Dict[str, DCField]:
+    """Builtin introspection function hides
+    some fields like InitVar or ClassVar.
+    That function return full dict
+    """
+    return cls.__dataclass_fields__
+
+
 class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
     """This provider does not work properly if __init__ signature differs from
     that would be created by dataclass decorator.
@@ -196,41 +216,43 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
     as default value for fields with default_factory
     """
 
-    def _get_fields_filtered(self, tp, filer_func, all_are_required: bool):
-        if not is_dataclass(tp):
-            raise CannotProvide
-
+    def _get_fields(self, tp, required_det):
         return [
-            FieldRM(
-                type=fld.type,
-                field_name=fld.name,
-                default=get_dc_default(fld),
-                is_required=all_are_required or get_dc_default(fld) == NoDefault(),
-                metadata=fld.metadata,
-            )
+            _dc_field_to_field_rm(fld, required_det)
             for fld in dc_fields(tp)
-            if filer_func(fld)
         ]
 
     def _get_input_fields_figure(self, tp):
+        if not is_dataclass(tp):
+            raise CannotProvide
+
+        name_to_dc_field = all_dc_fields(tp)
+
+        init_params = list(
+            inspect.signature(tp.__init__).parameters.keys()
+        )[1:]
+
         return InputFieldsFigure(
             constructor=tp,
             fields=_to_inp(
                 ParamKind.POS_OR_KW,
-                self._get_fields_filtered(
-                    tp, lambda fld: fld.init,
-                    all_are_required=False,
-                )
+                [
+                    _dc_field_to_field_rm(
+                        name_to_dc_field[field_name],
+                        lambda default: default == NoDefault()
+                    )
+                    for field_name in init_params
+                ]
             ),
             extra=None,
         )
 
     def _get_output_fields_figure(self, tp):
+        if not is_dataclass(tp):
+            raise CannotProvide
+
         return OutputFieldsFigure(
-            fields=self._get_fields_filtered(
-                tp, lambda fld: True,
-                all_are_required=True,
-            ),
+            fields=self._get_fields(tp, lambda x: True),
             getter_kind=GetterKind.ATTR
         )
 
