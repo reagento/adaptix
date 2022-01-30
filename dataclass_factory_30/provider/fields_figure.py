@@ -216,12 +216,6 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
     as default value for fields with default_factory
     """
 
-    def _get_fields(self, tp, required_det):
-        return [
-            _dc_field_to_field_rm(fld, required_det)
-            for fld in dc_fields(tp)
-        ]
-
     def _get_input_fields_figure(self, tp):
         if not is_dataclass(tp):
             raise CannotProvide
@@ -252,7 +246,10 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
             raise CannotProvide
 
         return OutputFieldsFigure(
-            fields=self._get_fields(tp, lambda x: True),
+            fields=[
+                _dc_field_to_field_rm(fld, lambda default: True)
+                for fld in dc_fields(tp)
+            ],
             getter_kind=GetterKind.ATTR
         )
 
