@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from itertools import islice
-from typing import List, Union, Generic, TypeVar, Dict
+from typing import List, Union, Generic, TypeVar, Dict, Callable
 
 from .essential import Request
 from .request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind
@@ -47,6 +47,7 @@ class CfgExtraPolicy(Request[ExtraPolicy]):
 
 @dataclass
 class InputFieldsFigure:
+    constructor: Callable
     fields: List[InputFieldRM]
     extra: FigureExtra
 

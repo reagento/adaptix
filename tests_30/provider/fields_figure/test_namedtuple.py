@@ -39,6 +39,7 @@ def test_order_ab():
         NamedTupleFieldsProvider()._get_input_fields_figure(FooAB)
         ==
         InputFieldsFigure(
+            constructor=FooAB,
             extra=None,
             fields=_to_inp(ParamKind.POS_OR_KW, fields),
         )
@@ -76,6 +77,7 @@ def test_order_ba():
         NamedTupleFieldsProvider()._get_input_fields_figure(FooBA)
         ==
         InputFieldsFigure(
+            constructor=FooBA,
             extra=None,
             fields=_to_inp(ParamKind.POS_OR_KW, fields),
         )
@@ -103,6 +105,7 @@ def test_defaults():
         NamedTupleFieldsProvider()._get_input_fields_figure(FooDefs)
         ==
         InputFieldsFigure(
+            constructor=FooDefs,
             extra=None,
             fields=[
                 InputFieldRM(
@@ -190,6 +193,7 @@ def test_class_hinted_namedtuple():
         NamedTupleFieldsProvider()._get_input_fields_figure(BarA)
         ==
         InputFieldsFigure(
+            constructor=BarA,
             extra=None,
             fields=_to_inp(ParamKind.POS_OR_KW, fields),
         )
@@ -217,6 +221,7 @@ def test_hinted_namedtuple():
         NamedTupleFieldsProvider()._get_input_fields_figure(BarB)
         ==
         InputFieldsFigure(
+            constructor=BarB,
             extra=None,
             fields=[
                 InputFieldRM(

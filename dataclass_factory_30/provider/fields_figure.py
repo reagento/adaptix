@@ -3,7 +3,7 @@ from abc import abstractmethod, ABC
 from dataclasses import fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField, replace
 from inspect import Signature, Parameter
 from types import MappingProxyType
-from typing import Any, List, get_type_hints, final, Dict, Iterable
+from typing import Any, List, get_type_hints, final, Dict, Iterable, Callable
 
 from .definitions import DefaultValue, DefaultFactory, Default, NoDefault
 from .essential import Mediator, CannotProvide
@@ -28,14 +28,14 @@ def get_func_iff(func, params_slice=slice(0, None)) -> InputFieldsFigure:
         inspect.signature(func).parameters.values()
     )[params_slice]
 
-    return signature_params_to_iff(params)
+    return signature_params_to_iff(func, params)
 
 
 def _is_empty(value):
     return value is Signature.empty
 
 
-def signature_params_to_iff(params: Iterable[Parameter]) -> InputFieldsFigure:
+def signature_params_to_iff(constructor: Callable, params: Iterable[Parameter]) -> InputFieldsFigure:
     kinds = [p.kind for p in params]
 
     if Parameter.VAR_POSITIONAL in kinds:
@@ -52,6 +52,7 @@ def signature_params_to_iff(params: Iterable[Parameter]) -> InputFieldsFigure:
     )
 
     return InputFieldsFigure(
+        constructor=constructor,
         fields=[
             InputFieldRM(
                 type=Any if _is_empty(param.annotation) else param.annotation,
@@ -103,6 +104,7 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
 
         # At <3.9 namedtuple does not generate typehints at __new__
         return InputFieldsFigure(
+            constructor=tp,
             extra=iff.extra,
             fields=[
                 replace(
@@ -163,6 +165,7 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
 
     def _get_input_fields_figure(self, tp):
         return InputFieldsFigure(
+            constructor=tp,
             fields=_to_inp(ParamKind.KW_ONLY, self._get_fields(tp)),
             extra=None,
         )
@@ -211,6 +214,7 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
 
     def _get_input_fields_figure(self, tp):
         return InputFieldsFigure(
+            constructor=tp,
             fields=_to_inp(
                 ParamKind.POS_OR_KW,
                 self._get_fields_filtered(
@@ -237,8 +241,11 @@ class ClassInitFieldsProvider(TypeOnlyInputFFProvider):
             raise CannotProvide
 
         try:
-            return get_func_iff(
-                tp.__init__, slice(1, None)
+            return replace(
+                get_func_iff(
+                    tp.__init__, slice(1, None)
+                ),
+                constructor=tp,
             )
         except ValueError:
             raise CannotProvide

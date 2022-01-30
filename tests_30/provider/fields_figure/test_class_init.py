@@ -72,6 +72,7 @@ def test_extra_none():
         ClassInitFieldsProvider()._get_input_fields_figure(Valid1)
         ==
         InputFieldsFigure(
+            constructor=Valid1,
             extra=None,
             fields=VALID_FIELDS,
         )
@@ -83,6 +84,7 @@ def test_extra_kwargs():
         ClassInitFieldsProvider()._get_input_fields_figure(Valid2Kwargs)
         ==
         InputFieldsFigure(
+            constructor=Valid2Kwargs,
             extra=ExtraKwargs(),
             fields=VALID_FIELDS,
         )
@@ -100,6 +102,7 @@ def test_pos_only():
         ClassInitFieldsProvider()._get_input_fields_figure(HasPosOnly)
         ==
         InputFieldsFigure(
+            constructor=HasPosOnly,
             extra=None,
             fields=[
                 InputFieldRM(

@@ -45,6 +45,7 @@ def test_total_input():
         TypedDictFieldsProvider()._get_input_fields_figure(Foo)
         ==
         InputFieldsFigure(
+            constructor=Foo,
             extra=None,
             fields=_to_inp(ParamKind.KW_ONLY, TOTAL_FIELDS),
         )
@@ -85,6 +86,7 @@ def test_non_total_input():
         TypedDictFieldsProvider()._get_input_fields_figure(Bar)
         ==
         InputFieldsFigure(
+            constructor=Bar,
             extra=None,
             fields=_to_inp(ParamKind.KW_ONLY, NON_TOTAL_FIELDS),
         )

@@ -5,6 +5,10 @@ from dataclass_factory_30.provider.fields_basics import InputFieldsFigure, Input
 from dataclass_factory_30.provider.request_cls import ParamKind
 
 
+def stub_constructor(*args, **kwargs):
+    pass
+
+
 @pytest.mark.parametrize(
     ["first", "second"],
     [
@@ -16,6 +20,7 @@ from dataclass_factory_30.provider.request_cls import ParamKind
 def test_inconsistent_fields_order(first, second):
     with pytest.raises(ValueError):
         InputFieldsFigure(
+            constructor=stub_constructor,
             extra=None,
             fields=[
                 InputFieldRM(
@@ -40,6 +45,7 @@ def test_inconsistent_fields_order(first, second):
 
 def _make_triple_iff(first, second, third):
     return InputFieldsFigure(
+        constructor=stub_constructor,
         extra=None,
         fields=[
             InputFieldRM(
@@ -101,6 +107,7 @@ def test_ok_non_required_field_order(first, second, third):
 def test_field_name_duplicates():
     with pytest.raises(ValueError):
         InputFieldsFigure(
+            constructor=stub_constructor,
             extra=None,
             fields=[
                 InputFieldRM(
@@ -126,6 +133,7 @@ def test_field_name_duplicates():
 def test_wild_targets():
     with pytest.raises(ValueError):
         InputFieldsFigure(
+            constructor=stub_constructor,
             extra=ExtraTargets(["b"]),
             fields=[
                 InputFieldRM(

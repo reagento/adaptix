@@ -31,6 +31,7 @@ def test_input():
         DataclassFieldsProvider()._get_input_fields_figure(Foo)
         ==
         InputFieldsFigure(
+            constructor=Foo,
             extra=None,
             fields=[
                 InputFieldRM(
@@ -132,6 +133,7 @@ def test_inheritance():
         DataclassFieldsProvider()._get_input_fields_figure(ChildBar)
         ==
         InputFieldsFigure(
+            constructor=ChildBar,
             extra=None,
             fields=[
                 InputFieldRM(
