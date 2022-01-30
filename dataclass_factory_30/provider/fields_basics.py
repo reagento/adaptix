@@ -47,6 +47,18 @@ class CfgExtraPolicy(Request[ExtraPolicy]):
 
 @dataclass
 class InputFieldsFigure:
+    """InputFieldsFigure is the signature of the class.
+    `constructor` field contains a callable that produces an instance of the class.
+    `fields` field contains the extended function signature of the constructor.
+
+    `extra` field contains the way of collecting extra data (data that does not map to any field)
+    None means that constructor can not take any extra data.
+    ExtraKwargs means that all extra data could be passed as additional keyword parameters
+    ExtraTargets means that all extra data could be passed to corresponding fields.
+
+    This field defines how extra data will be collected
+    but crown defines whether extra data should be collected
+    """
     constructor: Callable
     fields: List[InputFieldRM]
     extra: FigureExtra
@@ -116,7 +128,11 @@ class FieldCrown:
     name: str
 
 
-# It's like tree crown
+# Crown defines how external structure
+# should be mapped to constructor fields
+# and defines the policy of extra data processing.
+# None means that item of dict or list maps to nothing.
+# This structure is named in honor of the crown of the tree
 Crown = Union[FieldCrown, None, DictCrown, ListCrown]
 
 RootCrown = Union[DictCrown, ListCrown]
