@@ -9,21 +9,16 @@ from typing import (
     Iterator,
     Hashable,
     AbstractSet,
-    List,
 )
 
 K_co = TypeVar('K_co', covariant=True, bound=Hashable)
 V = TypeVar('V', bound=Hashable)
 
 
-def _get_kinship(sub_cls: type, cls: type) -> int:
-    return sub_cls.__mro__.index(cls)
-
-
 class ClassDispatcher(Generic[K_co, V]):
     """Class Dispatcher is a special immutable container
     that stores classes and values associated with them.
-    If you lookup for the value that is not presented in keys
+    If you look up for the value that is not presented in keys
     ClassDispatcher will return the value of the closest superclass.
     """
     __slots__ = ('_mapping',)
@@ -39,35 +34,13 @@ class ClassDispatcher(Generic[K_co, V]):
         If the key does not exist it will return
         value of the closest superclass or raise KeyError
         """
-        try:
-            return self._mapping[key]
-        except KeyError as e:
-            result = min(
-                (
-                    (value, _get_kinship(key, cls))
-                    for cls, value in self._mapping.items()
-                ),
-                key=lambda x: x[1],
-                default=None,
-            )
+        for parent in key.__mro__:
+            try:
+                return self._mapping[parent]
+            except KeyError:
+                pass
 
-            if result is None:
-                raise KeyError from e
-            return result[0]
-
-    def _mut_copy(self):
-        cp = type(self)()
-        cp._mapping = self._mapping.copy()
-        return cp
-
-    # require Container + Iterable
-    def remove_values(self, values: Collection[V]) -> 'ClassDispatcher[K_co, V]':
-        self_copy = self._mut_copy()
-        for key, value in self_copy._mapping.items():
-            if value in values:
-                del self_copy._mapping[key]
-
-        return self_copy
+        raise KeyError
 
     def values(self) -> Collection[V]:
         return self._mapping.values()
@@ -90,23 +63,7 @@ class ClassDispatcher(Generic[K_co, V]):
         return NotImplemented
 
 
-def _remove_superclasses(source: List[type], other: List[type]):
-    """
-    Remove all elements from :param source:
-    that is superclass of any of element from :param other:
-    """
-    i = 0
-    while i < len(source):
-        source_item = source[i]
-        for other_item in other:
-            if issubclass(other_item, source_item):  # noqa
-                source.pop(i)
-                break
-        else:
-            i += 1
-
-
-# It's not a KeysView because __iter__ of KeysView must returns a Iterator[K_co]
+# It's not a KeysView because __iter__ of KeysView must returns an Iterator[K_co]
 # but there is no inverse of Type[]
 class ClassDispatcherKeysView(Generic[K_co]):
     __slots__ = ('_keys',)
@@ -119,19 +76,6 @@ class ClassDispatcherKeysView(Generic[K_co]):
          whose elements all point to the same value
         """
         return ClassDispatcher({k: value for k in self._keys})
-
-    def intersect(self, other: 'ClassDispatcherKeysView[K_co]') -> 'ClassDispatcherKeysView[K_co]':
-        """Returns ClassDispatcherKeysView which contains keys
-        covered by both keys view
-        """
-        self_keys = list(self._keys)
-        other_keys = list(other._keys)
-        _remove_superclasses(self_keys, other_keys)
-        _remove_superclasses(other_keys, self_keys)
-
-        result = set(self_keys)
-        result.update(other_keys)
-        return ClassDispatcherKeysView(result)
 
     def __len__(self) -> int:
         return len(self._keys)
