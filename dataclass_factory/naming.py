@@ -58,6 +58,10 @@ def upper_dot(snake_name):
 
 
 class NameStyle(Enum):
+    """
+    Enumeration to describe which styles do field names fit
+    in plain (serialized/unparsed) structure
+    """
     ignore = "ignore"
     snake = "snake_case"
     kebab = "kebab-case"

@@ -6,6 +6,9 @@ K = TypeVar("K")
 
 
 class AbstractFactory:
+    """
+    Facade class to retrieve data converters
+    """
     def parser(self, class_: Type):
         raise NotImplementedError
 
