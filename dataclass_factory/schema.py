@@ -20,6 +20,13 @@ RuleForUnknown = Union[Unknown, str, Sequence[str], None]
 
 
 class Schema(Generic[T]):
+    """
+    Class describing data conversion rules.
+    See documentation for more details.
+
+    In case of inheriting you can set any setting as a class field.
+    Callable settings can be just methods.
+    """
     pre_validators: Dict[Optional[str], List[Parser]]
     post_validators: Dict[Optional[str], List[Parser]]
 
