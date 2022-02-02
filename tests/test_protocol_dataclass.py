@@ -16,7 +16,7 @@ class Data(MyProto):
     field: int
 
 
-T = TypeVar("T")
+T = TypeVar("T", covariant=True)
 
 
 class MyGenericProto(Protocol[T]):
