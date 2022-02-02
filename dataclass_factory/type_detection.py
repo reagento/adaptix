@@ -144,7 +144,10 @@ def is_generic_concrete(type_: Type) -> bool:
 
 
 def is_generic(type_: Type) -> bool:
-    return issubclass_safe(type_, Generic)
+    # some classes like Protocol inherit from Generic
+    # but do not act like generics unless they are parametrized
+    # we can check if it is a true Generic by checking `__orig_bases__`
+    return issubclass_safe(type_, Generic) and hasattr(type_, "__orig_bases__")
 
 
 def is_none(type_: Type) -> bool:
