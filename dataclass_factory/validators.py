@@ -33,6 +33,18 @@ class ValidatorInfo:
 
 
 def validate(*fields: Optional[str], pre: bool = False):
+    """
+    Decorator to set a method as a data validator.
+    Such method will be called during data parsing.
+
+    Validator method receives data which must be validated
+    and returns corrected data or raises ValueError
+
+    :param fields: names of fields (as they are in target class)
+                   which are processed by this validator.
+                   None is treated as "any single field"
+    :param pre: flag to call validator before parsing corresponding value
+    """
     def dec(func):
         try:
             vi = func.dataclass_factory_validate_info

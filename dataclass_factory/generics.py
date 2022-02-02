@@ -44,6 +44,8 @@ def resolve_hints(type_: Type):
 def resolve_generic_hints(type_: Type):
     if type_ is Generic:
         return {}
+    if not hasattr(type_, "__orig_bases__"):  # not real generic type like Protocol
+        return {}
     res = {}
     for base in reversed(type_.__orig_bases__):
         base_hints = resolve_hints(base)
@@ -54,9 +56,9 @@ def resolve_generic_hints(type_: Type):
 
 
 def resolve_concrete_hints(type_: Type):
-    if type_.__origin__ is Generic:
-        return {}
     hints = resolve_generic_hints(type_.__origin__)
+    if not hints:
+        return {}
     args = dict(zip(type_.__origin__.__parameters__, type_.__args__))
     res = {
         name: fill_type_args(args, type_)

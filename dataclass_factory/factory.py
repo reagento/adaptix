@@ -61,10 +61,22 @@ T = TypeVar("T")
 
 
 class Factory(AbstractFactory):
+    """
+    Facade class for all data conversion operations
+    """
     def __init__(self,
                  default_schema: Optional[Schema] = None,
                  schemas: Optional[Dict[Type, Schema]] = None,
                  debug_path: bool = False):
+        """
+
+        :param default_schema: schema used if no specific schema is provided
+        :param schemas: dictionary with specific schemas for classes
+                        that can be converted. Settings from default schema
+                        will be used if they are not set in more specific one
+        :param debug_path: show path to broken field in parsing exceptions
+                           (InvalidFieldError will be raised)
+        """
         self.debug_path = debug_path
         self.default_schema = default_schema
         self.schemas: Dict[Type, Schema] = COMMON_SCHEMAS.copy()
@@ -77,6 +89,9 @@ class Factory(AbstractFactory):
         self.json_schema_names: Dict[str, Type] = {}
 
     def schema(self, class_: Type[T]) -> Schema[T]:
+        """
+        Finds or creates `Schema` describing `class_` conversion rules
+        """
         if is_generic_concrete(class_):
             base_class = class_.__origin__  # type: ignore
         else:
@@ -93,26 +108,31 @@ class Factory(AbstractFactory):
         return schema
 
     def parser(self, class_: Type[T]) -> Parser[T]:
+        """
+        Returns preconfigure parser to create `class_` instances
+        from simple data structures using previously set schemas
+        """
         return self._parser_with_stack(class_, StackedFactory(self))
 
     def _parser_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Parser[T]:
         schema = self.schema(class_)
 
-        if schema.get_parser is not None:
-            if schema.parser is not None:
-                raise TypeError("Schema can not have parser and get_parser at same time")
-            else:
+        if not schema.parser:
+            if schema.get_parser:
                 new_schema = copy(schema)
                 new_schema.parser = schema.get_parser(class_, stacked_factory, self.debug_path)
-                new_schema.get_parser = None
                 self.schemas[class_] = new_schema
                 schema = new_schema
+            else:
+                schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
 
-        if not schema.parser:
-            schema.parser = create_parser(stacked_factory, schema, self.debug_path, class_)
-        return schema.parser
+        return schema.parser  # type: ignore
 
     def json_schema_ref_name(self, class_: Type[T]):
+        """
+        Create name of jsonschema reference used to locate description
+        of `class_` in overall schema
+        """
         return self._json_schema_ref_name_with_stack(class_, StackedFactory(self))
 
     def _json_schema_ref_name_with_stack(self, class_: Type[T], stacked_factory: StackedFactory):
@@ -136,9 +156,19 @@ class Factory(AbstractFactory):
         return name
 
     def json_schema(self, class_: Type[T]) -> Dict[str, Any]:
+        """
+        Create json schema describing `class_`.
+        Can contain references to other classes
+        """
         return self._json_schema_with_stack(class_, StackedFactory(self))
 
     def json_schema_definitions(self) -> Dict[str, Any]:
+        """
+        Create mapping for all crated json schemas
+
+        Note: it is filled only with schemas which are requested at least
+        once and their references
+        """
         return {
             "definitions": {
                 k: v
@@ -156,30 +186,37 @@ class Factory(AbstractFactory):
         return json_schema
 
     def serializer(self, class_: Type[T]) -> Serializer[T]:
+        """
+        Returns preconfigured serializer to convert `class_` instances
+        to simple data structures using previously set schemas
+        """
         return self._serializer_with_stack(class_, StackedFactory(self))
 
     def _serializer_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Serializer[T]:
         schema = self.schema(class_)
 
-        if schema.get_serializer is not None:
-            if schema.serializer is not None:
-                raise TypeError("Schema can not have serializer and get_serializer at same time")
-            else:
+        if not schema.serializer:
+            if schema.get_serializer:
                 new_schema = copy(schema)
                 new_schema.serializer = schema.get_serializer(class_, stacked_factory, self.debug_path)
-                new_schema.get_serializer = None
                 self.schemas[class_] = new_schema
                 schema = new_schema
+            else:
+                schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
 
-        if not schema.serializer:
-            schema.serializer = create_serializer(stacked_factory, schema, self.debug_path, class_)
-
-        return schema.serializer
+        return schema.serializer  # type: ignore
 
     def load(self, data: Any, class_: Type[T]) -> T:
+        """
+        Create `class_` instance form `data`
+        """
         return self.parser(class_)(data)
 
     def dump(self, data: T, class_: Type[T] = None) -> Any:
+        """
+        Convert `data` to plain structures.
+        If `class_` is not provided then `type(data)` will be used
+        """
         if class_ is None:
             class_ = type(data)
         return self.serializer(class_)(data)
