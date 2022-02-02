@@ -19,7 +19,7 @@ Just use pip to install the library::
 Simple case
 ==============
 
-All you have to do to start pasring you dataclasses is create a Factory instance.
+All you have to do to start parsing you dataclasses is create a Factory instance.
 Then call ``load`` or ``dump`` methods with corresponding type and everything is done automatically.
 
 .. literalinclude:: examples/tldr.py
@@ -38,7 +38,7 @@ Nested objects
 ====================
 
 Nested objects are supported out of the box. It is surprising, but you do not have to do anything except defining your dataclasses.
-For example, your expect that author of Book is instance of Person, but in serialzied form it is dictionary.
+For example, your expect that author of Book is instance of Person, but in serialized form it is dictionary.
 
 Declare your dataclasses as usual and then just parse your data.
 
@@ -58,7 +58,7 @@ Fields also can contain any supported collections.
 Error handling
 ==================
 
-Currently parser doesn't throw any specific exception in case of parser failes. Errors are the same as thrown by corresponding constructors.
+Currently parser doesn't throw any specific exception in case of parser failure. Errors are the same as thrown by corresponding constructors.
 In normal cases all suitable exceptions are described in ``dataclass_factory.PARSER_EXCEPTIONS``
 
 .. literalinclude:: examples/errors.py

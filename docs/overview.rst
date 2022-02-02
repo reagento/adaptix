@@ -9,7 +9,7 @@ Requirements
 
 You can use ``dataclass_factory`` with python 3.6 and ``dataclass`` library installed from pip.
 
-On python 3.7 it has no external dependencies outside of the Python standard library.
+From python 3.7 it has no external dependencies outside of the Python standard library.
 
 
 Advantages
@@ -44,8 +44,8 @@ Supported types
 * ``Optional``
 * ``Any``, using this type no conversion is done during parsing. But serialization is based on real data type
 * ``Union``
-* ``Literal`` types, including variant from ``typing_exstensions``
-* ``TypedDict`` types with checking of ``total``, including variant from ``typing_exstensions``
+* ``Literal`` types, including variant from ``typing_extensions``
+* ``TypedDict`` types with checking of ``total``, including variant from ``typing_extensions``
 * ``dataclass`` and ``NamedTuple``
 * ``Generic`` dataclasses
 * Other standard types like ``datetime``, ``Path``, ``UUID`` and ``IPV4Address``
