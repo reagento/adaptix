@@ -11,6 +11,10 @@ class FullRecipeGetter(ABC):
         pass
 
 
+def _get_own_attr(obj, attr_name: str, default):
+    return vars(obj).get(attr_name, default)
+
+
 class IncrementalRecipe(FullRecipeGetter, ABC):
     """A base class defining building of full recipe.
     Full recipe is sum of instance recipe, config recipe and class recipe.
@@ -20,24 +24,22 @@ class IncrementalRecipe(FullRecipeGetter, ABC):
     Config recipe is creating with :method:`_get_config_recipe()`.
     It can be used to passing factory config attributes to recipe.
 
-    Class recipe is a sum of `recipe` attribute of class and class recipe of parents.
+    Class recipe is a sum of `recipe` attribute of class and class recipe of mro parents.
     """
     recipe: List[Provider] = []
     _inc_class_recipe: ClassVar[List[Provider]] = []
 
     def __init_subclass__(cls, **kwargs):
-        parent_recipe = sum(
+        recipe_sum = sum(
             (
-                parent._inc_class_recipe
-                for parent in cls.__bases__
+                _get_own_attr(parent, 'recipe', [])
+                for parent in cls.__mro__
                 if issubclass(parent, IncrementalRecipe)
             ),
             start=[],
         )
 
-        class_own_recipe = cls.recipe if 'recipe' in vars(cls) else []
-
-        cls._inc_class_recipe = class_own_recipe + parent_recipe
+        cls._inc_class_recipe = recipe_sum
 
     def __init__(self, recipe: Optional[List[Provider]]):
         if recipe is None:
