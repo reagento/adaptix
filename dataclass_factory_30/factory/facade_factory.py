@@ -1,7 +1,6 @@
-from typing import Type, TypeVar, Any, Optional, List, Dict
+from typing import Type, TypeVar, Optional, List, Dict
 
-from .basic_factory import NoSuitableProvider
-from .builtin_factory import BuiltinFactory, ProvidingFromRecipe
+from .builtin_factory import BuiltinFactory
 from .mediator import RecursionResolving, StubsRecursionResolver
 from ..common import Parser, Serializer, TypeHint
 from ..provider import (
@@ -11,7 +10,6 @@ from ..provider import (
     ParserRequest,
     SerializerRequest,
     CfgOmitDefault,
-    static_provision_action,
     Request,
     Mediator,
     CannotProvide,
@@ -22,22 +20,6 @@ from ..provider import (
 T = TypeVar('T')
 
 RequestTV = TypeVar('RequestTV', bound=Request)
-
-
-def create_factory_provision_action(request_cls: Type[RequestTV]):
-    # noinspection PyUnusedLocal
-    @static_provision_action(request_cls)
-    def _provide_factory_proxy(
-        self: ProvidingFromRecipe,
-        mediator: Mediator,
-        request
-    ):
-        try:
-            return self._provide_from_recipe(request)
-        except NoSuitableProvider:
-            raise CannotProvide
-
-    return _provide_factory_proxy
 
 
 class FuncWrapper:
@@ -58,79 +40,12 @@ class FuncRecursionResolver(StubsRecursionResolver):
         stub.set_func(actual)
 
 
-class ParserFactory(BuiltinFactory):
-    def __init__(
-        self,
-        *,
-        recipe: Optional[List[Provider]] = None,
-        strict_coercion: bool = True,
-        debug_path: bool = True,
-        default_extra: ExtraPolicy = ExtraSkip(),
-    ):
-        super().__init__(recipe)
-        self._strict_coercion = strict_coercion
-        self._debug_path = debug_path
-        self._default_extra = default_extra
-        self._parser_cache: Dict[Any, Parser] = {}
-
-    _provide_parser = create_factory_provision_action(ParserRequest)
-
-    def _get_raw_config_recipe(self) -> List[Provider]:
-        return [
-            FactoryProvider(CfgExtraPolicy, lambda: self._default_extra),
-        ]
-
-    def _get_raw_recursion_resolving(self) -> RecursionResolving:
-        return RecursionResolving(
-            {ParserRequest: FuncRecursionResolver()}
-        )
-
-    def parser(self, tp: Type[T]) -> Parser[T]:
-        try:
-            return self._parser_cache[tp]
-        except KeyError:
-            return self._provide_from_recipe(
-                ParserRequest(
-                    tp,
-                    strict_coercion=self._strict_coercion,
-                    debug_path=self._debug_path
-                )
-            )
-
-    def clear_cache(self):
-        self._parser_cache = {}
-
-
-class SerializerFactory(BuiltinFactory):
-    def __init__(self, *, recipe: Optional[List[Provider]] = None, omit_default: bool = False):
-        super().__init__(recipe)
-        self._omit_default = omit_default
-        self._serializers_cache: Dict[TypeHint, Serializer] = {}
-
-    _provide_serializer = create_factory_provision_action(SerializerRequest)
-
-    def _get_raw_config_recipe(self) -> List[Provider]:
-        return [
-            FactoryProvider(CfgOmitDefault, lambda: self._omit_default),
-        ]
-
-    def _get_raw_recursion_resolving(self) -> RecursionResolving:
-        return RecursionResolving(
-            {SerializerRequest: FuncRecursionResolver()}
-        )
-
-    def serializer(self, tp: Type[T]) -> Serializer[T]:
-        try:
-            return self._serializers_cache[tp]
-        except KeyError:
-            return self._provide_from_recipe(SerializerRequest(tp))
-
-    def clear_cache(self):
-        self._serializers_cache = {}
+class NoSuitableProvider(Exception):
+    pass
 
 
 # TODO: Add JsonSchemaFactory with new API
-class Factory(ParserFactory, SerializerFactory):
+class Factory(BuiltinFactory, Provider):
     def __init__(
         self,
         recipe: Optional[List[Provider]] = None,
@@ -139,20 +54,58 @@ class Factory(ParserFactory, SerializerFactory):
         default_extra: ExtraPolicy = ExtraSkip(),
         omit_default: bool = False,
     ):
-        ParserFactory.__init__(
-            self,
-            recipe=recipe,
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-            default_extra=default_extra
+        self._strict_coercion = strict_coercion
+        self._debug_path = debug_path
+        self._default_extra = default_extra
+
+        self._omit_default = omit_default
+
+        self._parser_cache: Dict[TypeHint, Parser] = {}
+        self._serializers_cache: Dict[TypeHint, Serializer] = {}
+
+        super().__init__(recipe)
+
+    def _get_config_recipe(self) -> List[Provider]:
+        return [
+            FactoryProvider(CfgExtraPolicy, lambda: self._default_extra),
+            FactoryProvider(CfgOmitDefault, lambda: self._omit_default),
+        ]
+
+    def _get_recursion_resolving(self) -> RecursionResolving:
+        return RecursionResolving(
+            {
+                ParserRequest: FuncRecursionResolver(),
+                SerializerRequest: FuncRecursionResolver(),
+            }
         )
 
-        SerializerFactory.__init__(
-            self,
-            recipe=recipe,
-            omit_default=omit_default
-        )
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+        return self._provide_from_recipe(request)
+
+    def _facade_provide(self, request: Request[T]) -> T:
+        try:
+            return self._provide_from_recipe(request)
+        except CannotProvide:
+            raise NoSuitableProvider
+
+    def parser(self, tp: Type[T]) -> Parser[T]:
+        try:
+            return self._parser_cache[tp]
+        except KeyError:
+            return self._facade_provide(
+                ParserRequest(
+                    tp,
+                    strict_coercion=self._strict_coercion,
+                    debug_path=self._debug_path
+                )
+            )
+
+    def serializer(self, tp: Type[T]) -> Serializer[T]:
+        try:
+            return self._serializers_cache[tp]
+        except KeyError:
+            return self._facade_provide(SerializerRequest(tp))
 
     def clear_cache(self):
-        ParserFactory.clear_cache(self)
-        SerializerFactory.clear_cache(self)
+        self._parser_cache = {}
+        self._serializers_cache = {}
