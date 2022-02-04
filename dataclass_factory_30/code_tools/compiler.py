@@ -5,9 +5,7 @@ from .code_builder import CodeBuilder
 
 
 class ClosureCompiler(ABC):
-    """
-    Abstract class compiling closures
-    """
+    """Abstract class compiling closures"""
 
     @abstractmethod
     def compile(self, builder: CodeBuilder, filename: str, namespace: Dict[str, Any]) -> Callable:
@@ -21,30 +19,23 @@ class ClosureCompiler(ABC):
 
 
 class BasicClosureCompiler(ClosureCompiler):
-    def _make_source(self, builder: CodeBuilder):
+    def _make_source_builder(self, builder: CodeBuilder) -> CodeBuilder:
         main_builder = CodeBuilder()
 
-        main_builder += "def closure_maker():"
+        main_builder += "def _closure_maker():"
         with main_builder:
             main_builder.extend(builder)
 
-        return main_builder.string()
+        return main_builder
 
-    def compile(self, builder: CodeBuilder, filename: str, namespace: Dict[str, Any]) -> Callable:
-        source = self._make_source(builder)
-
+    def _compile(self, source: str, filename: str, namespace: Dict[str, Any]):
         code_obj = compile(source, filename, "exec")
 
         local_namespace: Dict[str, Any] = {}
         exec(code_obj, namespace, local_namespace)  # noqa
 
-        return local_namespace["closure_maker"]()
+        return local_namespace["_closure_maker"]()
 
-
-class SavingClosureCompiler(BasicClosureCompiler):
-    def __init__(self):
-        self.source = ""
-
-    def _make_source(self, builder: CodeBuilder):
-        self.source = super()._make_source(builder)
-        return self.source
+    def compile(self, builder: CodeBuilder, filename: str, namespace: Dict[str, Any]) -> Callable:
+        source = self._make_source_builder(builder).string()
+        return self._compile(source, filename, namespace)
