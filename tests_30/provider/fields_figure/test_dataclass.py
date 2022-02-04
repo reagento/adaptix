@@ -41,7 +41,7 @@ def test_input():
         InputFieldsFigure(
             constructor=Foo,
             extra=None,
-            fields=[
+            fields=(
                 InputFieldRM(
                     type=int,
                     field_name='a',
@@ -90,7 +90,7 @@ def test_input():
                     metadata=MappingProxyType({'meta': 'data'}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-            ],
+            ),
         )
     )
 
@@ -101,7 +101,7 @@ def test_output():
         ==
         OutputFieldsFigure(
             getter_kind=GetterKind.ATTR,
-            fields=[
+            fields=(
                 FieldRM(
                     type=int,
                     field_name='a',
@@ -137,7 +137,7 @@ def test_output():
                     is_required=True,
                     metadata=MappingProxyType({'meta': 'data'})
                 ),
-            ],
+            ),
         )
     )
 
@@ -159,7 +159,7 @@ def test_inheritance():
         InputFieldsFigure(
             constructor=ChildBar,
             extra=None,
-            fields=[
+            fields=(
                 InputFieldRM(
                     type=int,
                     field_name='a',
@@ -176,7 +176,7 @@ def test_inheritance():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-            ],
+            ),
         )
     )
 
@@ -185,7 +185,7 @@ def test_inheritance():
         ==
         OutputFieldsFigure(
             getter_kind=GetterKind.ATTR,
-            fields=[
+            fields=(
                 FieldRM(
                     type=int,
                     field_name='a',
@@ -200,6 +200,6 @@ def test_inheritance():
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
-            ],
+            ),
         )
     )

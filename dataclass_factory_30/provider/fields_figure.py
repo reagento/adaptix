@@ -3,7 +3,7 @@ from abc import abstractmethod, ABC
 from dataclasses import fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField, replace
 from inspect import Signature, Parameter
 from types import MappingProxyType
-from typing import Any, List, get_type_hints, final, Dict, Iterable, Callable
+from typing import Any, get_type_hints, final, Dict, Iterable, Callable, Tuple
 
 from .definitions import DefaultValue, DefaultFactory, Default, NoDefault
 from .essential import Mediator, CannotProvide
@@ -53,7 +53,7 @@ def signature_params_to_iff(constructor: Callable, params: Iterable[Parameter]) 
 
     return InputFieldsFigure(
         constructor=constructor,
-        fields=[
+        fields=tuple(
             InputFieldRM(
                 type=Any if _is_empty(param.annotation) else param.annotation,
                 field_name=param.name,
@@ -64,7 +64,7 @@ def signature_params_to_iff(constructor: Callable, params: Iterable[Parameter]) 
             )
             for param in params
             if param.kind != Parameter.VAR_KEYWORD
-        ],
+        ),
         extra=extra,
     )
 
@@ -106,18 +106,18 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
         return InputFieldsFigure(
             constructor=tp,
             extra=iff.extra,
-            fields=[
+            fields=tuple(
                 replace(
                     fld,
                     type=type_hints.get(fld.field_name, Any)
                 )
                 for fld in iff.fields
-            ]
+            )
         )
 
     def _get_output_fields_figure(self, tp) -> OutputFieldsFigure:
         return OutputFieldsFigure(
-            fields=[
+            fields=tuple(
                 FieldRM(
                     field_name=fld.field_name,
                     type=fld.type,
@@ -126,13 +126,13 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
                     metadata=fld.metadata,
                 )
                 for fld in self._get_input_fields_figure(tp).fields
-            ],
+            ),
             getter_kind=GetterKind.ATTR,
         )
 
 
-def _to_inp(param_kind: ParamKind, fields: List[FieldRM]) -> List[InputFieldRM]:
-    return [
+def _to_inp(param_kind: ParamKind, fields: Iterable[FieldRM]) -> Tuple[InputFieldRM, ...]:
+    return tuple(
         InputFieldRM(
             field_name=f.field_name,
             type=f.type,
@@ -142,7 +142,7 @@ def _to_inp(param_kind: ParamKind, fields: List[FieldRM]) -> List[InputFieldRM]:
             param_kind=param_kind,
         )
         for f in fields
-    ]
+    )
 
 
 class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
@@ -152,7 +152,7 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
 
         is_required = tp.__total__
 
-        return [
+        return tuple(
             FieldRM(
                 type=tp,
                 field_name=name,
@@ -161,7 +161,7 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
                 metadata=MappingProxyType({}),
             )
             for name, tp in get_type_hints(tp).items()
-        ]
+        )
 
     def _get_input_fields_figure(self, tp):
         return InputFieldsFigure(
@@ -172,7 +172,7 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
 
     def _get_output_fields_figure(self, tp):
         return OutputFieldsFigure(
-            fields=self._get_fields(tp),  # noqa
+            fields=self._get_fields(tp),
             getter_kind=GetterKind.ITEM,
         )
 
@@ -246,11 +246,11 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
             raise CannotProvide
 
         return OutputFieldsFigure(
-            fields=[
+            fields=tuple(
                 _dc_field_to_field_rm(fld, lambda default: True)
                 for fld in dc_fields(tp)
-            ],
-            getter_kind=GetterKind.ATTR
+            ),
+            getter_kind=GetterKind.ATTR,
         )
 
 

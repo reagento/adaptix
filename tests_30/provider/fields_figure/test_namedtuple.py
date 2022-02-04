@@ -18,7 +18,7 @@ FooBA = namedtuple('FooBA', 'b a')
 
 
 def test_order_ab():
-    fields = [
+    fields = (
         FieldRM(
             type=Any,
             field_name='a',
@@ -33,7 +33,7 @@ def test_order_ab():
             is_required=True,
             metadata=MappingProxyType({})
         ),
-    ]
+    )
 
     assert (
         NamedTupleFieldsProvider()._get_input_fields_figure(FooAB)
@@ -56,7 +56,7 @@ def test_order_ab():
 
 
 def test_order_ba():
-    fields = [
+    fields = (
         FieldRM(
             type=Any,
             field_name='b',
@@ -71,7 +71,7 @@ def test_order_ba():
             is_required=True,
             metadata=MappingProxyType({})
         ),
-    ]
+    )
 
     assert (
         NamedTupleFieldsProvider()._get_input_fields_figure(FooBA)
@@ -107,7 +107,7 @@ def test_defaults():
         InputFieldsFigure(
             constructor=FooDefs,
             extra=None,
-            fields=[
+            fields=(
                 InputFieldRM(
                     type=Any,
                     field_name='a',
@@ -132,7 +132,7 @@ def test_defaults():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-            ],
+            ),
         )
     )
 
@@ -141,7 +141,7 @@ def test_defaults():
         ==
         OutputFieldsFigure(
             getter_kind=GetterKind.ATTR,
-            fields=[
+            fields=(
                 FieldRM(
                     type=Any,
                     field_name='a',
@@ -163,7 +163,7 @@ def test_defaults():
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
-            ],
+            ),
         )
     )
 
@@ -172,7 +172,7 @@ BarA = NamedTuple('BarA', a=int, b=str)
 
 
 def test_class_hinted_namedtuple():
-    fields = [
+    fields = (
         FieldRM(
             type=int,
             field_name='a',
@@ -187,7 +187,7 @@ def test_class_hinted_namedtuple():
             is_required=True,
             metadata=MappingProxyType({})
         ),
-    ]
+    )
 
     assert (
         NamedTupleFieldsProvider()._get_input_fields_figure(BarA)
@@ -223,7 +223,7 @@ def test_hinted_namedtuple():
         InputFieldsFigure(
             constructor=BarB,
             extra=None,
-            fields=[
+            fields=(
                 InputFieldRM(
                     type=int,
                     field_name='a',
@@ -240,7 +240,7 @@ def test_hinted_namedtuple():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-            ],
+            ),
         )
     )
 
@@ -249,7 +249,7 @@ def test_hinted_namedtuple():
         ==
         OutputFieldsFigure(
             getter_kind=GetterKind.ATTR,
-            fields=[
+            fields=(
                 FieldRM(
                     type=int,
                     field_name='a',
@@ -264,6 +264,6 @@ def test_hinted_namedtuple():
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
-            ],
+            ),
         )
     )

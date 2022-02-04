@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import TypeVar, List, Generic, Optional, Mapping, Any
 
@@ -31,7 +31,10 @@ class FieldNameRM(Request[T], Generic[T]):
 class FieldRM(TypeHintRM[T], FieldNameRM[T], Generic[T]):
     default: Default
     is_required: bool
-    metadata: Mapping[Any, Any]
+    # Mapping almost never defines __hash__,
+    # so it will be more convenient to exclude this field
+    # from hash computation
+    metadata: Mapping[Any, Any] = field(hash=False)
 
 
 class ParamKind(Enum):
@@ -75,6 +78,7 @@ class ParserFieldRequest(ParserRequest, InputFieldRM[Parser]):
     pass
 
 
+@dataclass(frozen=True)
 class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin):
     @classmethod
     def eval_pipeline(

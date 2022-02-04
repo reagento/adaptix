@@ -31,7 +31,7 @@ class Valid2Kwargs:
         self.data = data
 
 
-VALID_FIELDS = [
+VALID_FIELDS = (
     InputFieldRM(
         type=Any,
         field_name='a',
@@ -64,7 +64,7 @@ VALID_FIELDS = [
         metadata=MappingProxyType({}),
         param_kind=ParamKind.KW_ONLY,
     ),
-]
+)
 
 
 def test_extra_none():
@@ -104,7 +104,7 @@ def test_pos_only():
         InputFieldsFigure(
             constructor=HasPosOnly,
             extra=None,
-            fields=[
+            fields=(
                 InputFieldRM(
                     type=Any,
                     field_name='a',
@@ -121,7 +121,7 @@ def test_pos_only():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-            ],
+            ),
         )
     )
 

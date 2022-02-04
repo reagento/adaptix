@@ -10,7 +10,9 @@ class Request(Generic[T]):
     """An object that contains data to be processed by Provider.
 
     Generic argument indicates which object should be
-    returned after request processing
+    returned after request processing.
+
+    Request must be always a hashable object
     """
 
 

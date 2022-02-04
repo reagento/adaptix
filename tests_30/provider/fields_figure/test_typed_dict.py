@@ -22,7 +22,7 @@ class Bar(TypedDict, total=False):
     b: str
 
 
-TOTAL_FIELDS = [
+TOTAL_FIELDS = (
     FieldRM(
         type=int,
         field_name='a',
@@ -37,7 +37,7 @@ TOTAL_FIELDS = [
         is_required=True,
         metadata=MappingProxyType({})
     ),
-]
+)
 
 
 def test_total_input():
@@ -63,7 +63,7 @@ def test_total_output():
     )
 
 
-NON_TOTAL_FIELDS = [
+NON_TOTAL_FIELDS = (
     FieldRM(
         type=int,
         field_name='a',
@@ -78,7 +78,7 @@ NON_TOTAL_FIELDS = [
         is_required=False,
         metadata=MappingProxyType({})
     ),
-]
+)
 
 
 def test_non_total_input():
