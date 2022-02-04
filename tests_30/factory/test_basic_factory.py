@@ -55,4 +55,3 @@ def test_incremental_recipe_diamond_inheritance():
 
     assert Diamond23._inc_class_recipe == [Sample(23), Sample(2), Sample(3), Sample(1)]
     assert Diamond32._inc_class_recipe == [Sample(32), Sample(3), Sample(2), Sample(1)]
-

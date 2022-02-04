@@ -14,7 +14,6 @@ from dataclass_factory_30.provider.fields_figure import (
 )
 from dataclass_factory_30.provider.request_cls import ParamKind
 
-
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 
 
