@@ -1,13 +1,14 @@
 import contextlib
 from collections import deque
-from typing import Dict, Tuple, Set
+from dataclasses import dataclass
+from typing import Dict, Tuple, Set, Any, Callable
 
 from .definitions import (
     PathElement, NoRequiredFieldsError,
     NoRequiredItemsError, TypeParseError,
     ExtraItemsError, ExtraFieldsError, ParseError
 )
-from .essential import Mediator, CannotProvide
+from .essential import Mediator, CannotProvide, Request
 from .fields_basics import (
     ExtraForbid, ExtraCollect,
     InputFieldsFigure,
@@ -17,8 +18,8 @@ from .fields_basics import (
     ExtraKwargs, ExtraTargets,
 )
 from .provider_template import ParserProvider
-from .request_cls import InputFieldRM
-from .request_cls import ParserRequest, ParserFieldRequest
+from .request_cls import ParserRequest, ParserFieldRequest, InputFieldRM, ParamKind
+from .static_provider import StaticProvider, static_provision_action
 from ..code_tools import CodeBuilder, ClosureCompiler, BasicClosureCompiler
 from ..common import Parser
 
@@ -98,31 +99,46 @@ class GenState:
         self._path = past
 
 
+@dataclass
+class CodeGenHookData:
+    namespace: Dict[str, Any]
+    source: str
+
+
+CodeGenHook = Callable[[CodeGenHookData], None]
+
+
 class FieldsParserGenerator:
     def __init__(
         self,
         figure: InputFieldsFigure,
         debug_path: bool,
         strict_coercion: bool,
+        hook: CodeGenHook,
     ):
         self.debug_path = debug_path
         self.strict_coercion = strict_coercion
         self.figure = figure
+        self.hook = hook
 
     def _gen_header(self, builder: CodeBuilder, state: GenState):
-        for path, suffix in state.path2suffix.items():
-            builder += f"""
-                # {suffix} -> {list(path)}
-            """
+        if state.path2suffix:
+            builder += "# suffix to path"
+            for path, suffix in state.path2suffix.items():
+                builder += f"""
+                    # {suffix} -> {list(path)}
+                """
 
-        builder.empty_line()
+            builder.empty_line()
 
-        for f_name, path in state.field_name2path.items():
-            builder += f"""
-                # {f_name} -> {list(path)}
-            """
+        if state.field_name2path:
+            builder += "# field to path"
+            for f_name, path in state.field_name2path.items():
+                builder += f"""
+                    # {f_name} -> {list(path)}
+                """
 
-        builder.empty_line()
+            builder.empty_line()
 
     def _create_state(self):
         return GenState(self.figure)
@@ -167,24 +183,32 @@ class FieldsParserGenerator:
 
         builder += "return fields_parser"
 
+        namespace = {
+            "g_constructor": self.figure.constructor,
+            **{
+                "g_" + state.get_field_parser_var_name(field_name): parser
+                for field_name, parser in field_parsers.items()
+            },
+            **{
+                e.__name__: e
+                for e in [
+                    ExtraFieldsError, ExtraItemsError,
+                    TypeParseError, NoRequiredFieldsError,
+                    ParseError
+                ]
+            },
+        }
+
+        self.hook(
+            CodeGenHookData(
+                namespace=namespace, source=builder.string()
+            )
+        )
+
         return compiler.compile(
             builder,
             "fields_parser",
-            {
-                "g_constructor": self.figure.constructor,
-                **{
-                    "g_" + state.get_field_parser_var_name(field_name): parser
-                    for field_name, parser in field_parsers.items()
-                },
-                **{
-                    e.__name__: e
-                    for e in [
-                        ExtraFieldsError, ExtraItemsError,
-                        TypeParseError, NoRequiredFieldsError,
-                        ParseError
-                    ]
-                },
-            },
+            namespace,
         )
 
     def _gen_global_to_local(self, builder: CodeBuilder, *local_to_global_vars: Dict[str, str]):
@@ -214,15 +238,20 @@ class FieldsParserGenerator:
 
         builder.extend(crown_builder)
 
-        if isinstance(self.figure.extra, ExtraTargets) and root_crown.extra == ExtraCollect():
+        if isinstance(self.figure.extra, ExtraTargets):
             targets = self.figure.extra.fields
+
+            if root_crown.extra == ExtraCollect():
+                data_for_parser = state.get_extra_var_name()
+            else:
+                data_for_parser = "{}"
 
             for target in targets:
                 self._gen_field_assigment(
                     builder,
                     field_left_value=target,
                     field_name=target,
-                    data_for_parser=state.get_extra_var_name(),
+                    data_for_parser=data_for_parser,
                     state=state,
                 )
 
@@ -263,16 +292,17 @@ class FieldsParserGenerator:
 
     def _gen_field_passing(self, builder: CodeBuilder, state: GenState, field: InputFieldRM):
         if field.is_required or self._field_is_extra_target(field):
-            builder(
-                "$var,",
-                var=state.get_field_var(field.field_name),
-            )
-        else:
-            builder(
-                "$param=$var,",
-                param=field.field_name,
-                var=state.get_field_var(field.field_name),
-            )
+            if field.param_kind == ParamKind.KW_ONLY:
+                builder(
+                    "$var,",
+                    var=state.get_field_var(field.field_name),
+                )
+            else:
+                builder(
+                    "$param=$var,",
+                    param=field.field_name,
+                    var=state.get_field_var(field.field_name),
+                )
 
     def _gen_root_crown_dispatch(self, builder: CodeBuilder, state: GenState, crown: Crown):
         """Returns True if code is generated"""
@@ -330,8 +360,9 @@ class FieldsParserGenerator:
         )
 
     def _gen_dict_crown(self, builder: CodeBuilder, state: GenState, crown: DictCrown):
-        known_fields = set(crown.map.keys())
-        state.path2known_fields[state.path] = known_fields
+        if crown.extra in (ExtraForbid(), ExtraCollect()):
+            known_fields = set(crown.map.keys())
+            state.path2known_fields[state.path] = known_fields
 
         with builder.context(
             known_fields=state.get_known_fields_var_name(),
@@ -434,8 +465,7 @@ class FieldsParserGenerator:
                 state,
             )
         else:
-            builder("else:")
-            with builder:
+            with builder("else:"):
                 self._gen_field_assigment(
                     builder,
                     field_left_value,
@@ -476,12 +506,38 @@ class FieldsParserGenerator:
                 """
 
 
+@dataclass(frozen=True)
+class CodeGenHookRequest(Request[CodeGenHook]):
+    initial_request: Request
+
+
+def _stub_code_gen_hook(data: CodeGenHookData):
+    pass
+
+
+class CodeGenAccumulator(StaticProvider):
+    def __init__(self):
+        self.map: Dict[Request, CodeGenHookData] = {}
+
+    @property
+    def list(self):
+        return list(self.map.items())
+
+    @static_provision_action(CodeGenHookRequest)
+    def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
+        def hook(data: CodeGenHookData):
+            self.map[request.initial_request] = data
+
+        return hook
+
+
 class FieldsParserProvider(ParserProvider):
-    def _create_parser_generator(self, figure: InputFieldsFigure, request: ParserRequest):
+    def _create_parser_generator(self, figure: InputFieldsFigure, request: ParserRequest, hook: CodeGenHook):
         return FieldsParserGenerator(
             figure=figure,
             debug_path=request.debug_path,
             strict_coercion=request.strict_coercion,
+            hook=hook,
         )
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
@@ -498,12 +554,19 @@ class FieldsParserProvider(ParserProvider):
                 " if InputFieldsFigure does not take extra data"
             )
 
-        generator = self._create_parser_generator(figure, request)
+        try:
+            code_gen_hook = mediator.provide(CodeGenHookRequest(initial_request=request))
+        except CannotProvide:
+            code_gen_hook = _stub_code_gen_hook
+
+        generator = self._create_parser_generator(
+            figure, request, code_gen_hook
+        )
 
         fields_parser = {
             field.field_name: mediator.provide(
                 ParserFieldRequest(
-                    type=request.type,
+                    type=field.type,
                     strict_coercion=request.strict_coercion,
                     debug_path=request.debug_path,
                     default=field.default,
