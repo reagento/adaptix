@@ -46,6 +46,11 @@ from .fields_basics import (
     BaseFFRequest,
     InputFFRequest,
     OutputFFRequest,
+    BaseCrownRequest,
+    InputCrownRequest,
+    OutputCrownRequest,
+    BaseCrownProvider,
+    AsIsCrownProvider,
 )
 from .fields_figure import (
     get_func_iff,
@@ -56,6 +61,9 @@ from .fields_figure import (
     get_dc_default,
     DataclassFieldsProvider,
     ClassInitFieldsProvider,
+)
+from .fields_parser import (
+    FieldsParserProvider,
 )
 from .generic_provider import (
     NewTypeUnwrappingProvider,

@@ -23,6 +23,12 @@ from ..provider import (
     TypeHintTagsUnwrappingProvider,
     CoercionLimiter,
     EnumExactValueProvider,
+    FieldsParserProvider,
+    AsIsCrownProvider,
+    NamedTupleFieldsProvider,
+    TypedDictFieldsProvider,
+    DataclassFieldsProvider,
+    ClassInitFieldsProvider,
 )
 from ..provider.generic_provider import IterableProvider
 
@@ -89,7 +95,16 @@ class BuiltinFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
         IterableProvider(),
 
         NewTypeUnwrappingProvider(),
-        TypeHintTagsUnwrappingProvider()
+        TypeHintTagsUnwrappingProvider(),
+
+        FieldsParserProvider(),
+
+        AsIsCrownProvider(),
+
+        NamedTupleFieldsProvider(),
+        TypedDictFieldsProvider(),
+        DataclassFieldsProvider(),
+        ClassInitFieldsProvider(),
     ]
 
     @abstractmethod

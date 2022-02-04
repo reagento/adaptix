@@ -5,7 +5,7 @@ from typing import Dict, Tuple, Set
 from .definitions import (
     PathElement, NoRequiredFieldsError,
     NoRequiredItemsError, TypeParseError,
-    ExtraItemsError, ExtraFieldsError
+    ExtraItemsError, ExtraFieldsError, ParseError
 )
 from .essential import Mediator, CannotProvide
 from .fields_basics import (
@@ -13,7 +13,8 @@ from .fields_basics import (
     InputFieldsFigure,
     RootCrown, Crown,
     DictCrown, ListCrown, FieldCrown,
-    InputFFRequest, RootCrownRequest, ExtraKwargs, ExtraTargets,
+    InputFFRequest, InputCrownRequest,
+    ExtraKwargs, ExtraTargets,
 )
 from .provider_template import ParserProvider
 from .request_cls import InputFieldRM
@@ -50,8 +51,10 @@ class GenState:
             return base
         return base + "_" + self._get_path_suffix(path)
 
-    def get_data_var_name(self):
-        return self._get_var_name("data", self._path)
+    def get_data_var_name(self, path=None):
+        if path is None:
+            path = self._path
+        return self._get_var_name("data", path)
 
     def get_extra_var_name(self):
         return self._get_var_name("extra", self._path)
@@ -177,7 +180,8 @@ class FieldsParserGenerator:
                     e.__name__: e
                     for e in [
                         ExtraFieldsError, ExtraItemsError,
-                        TypeParseError, NoRequiredFieldsError
+                        TypeParseError, NoRequiredFieldsError,
+                        ParseError
                     ]
                 },
             },
@@ -317,7 +321,7 @@ class FieldsParserGenerator:
             except $error:
                 raise $parse_error([$last_path_el], $path_lit)
             """,
-            data=state.get_data_var_name(),
+            data=state.get_data_var_name(state.path[:-1]),
             var=var,
             error=error,
             parse_error=parse_error,
@@ -481,13 +485,17 @@ class FieldsParserProvider(ParserProvider):
         )
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        figure: InputFieldsFigure = mediator.provide(InputFFRequest(request.type))
-        crown: RootCrown = mediator.provide(RootCrownRequest(request.type))
+        figure: InputFieldsFigure = mediator.provide(
+            InputFFRequest(type=request.type)
+        )
+        crown: RootCrown = mediator.provide(
+            InputCrownRequest(type=request.type, figure=figure)
+        )
 
         if crown.extra == ExtraCollect() and figure.extra is None:
             raise CannotProvide(
                 "Cannot create parser that collect extra data"
-                " if figure does not take extra data"
+                " if InputFieldsFigure does not take extra data"
             )
 
         generator = self._create_parser_generator(figure, request)
