@@ -99,3 +99,6 @@ class CoercionLimiter(ParserProvider):
             raise TypeParseError(union)
 
         return strict_coercion_parser
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.parser_provider}, {self.allowed_strict_origins})"

@@ -44,9 +44,9 @@ class FieldNameRC(RequestChecker):
         raise CannotProvide(f'field_name must be a {self.field_name!r}')
 
 
+@dataclass
 class ExactTypeRC(RequestChecker):
-    def __init__(self, norm: NormType):
-        self.norm = norm
+    norm: NormType
 
     def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
         return (TypeHintRM,)
@@ -70,9 +70,9 @@ class SubclassRC(RequestChecker):
         raise CannotProvide(f'{request.type} must be a subclass of {self.type_}')
 
 
+@dataclass
 class ExactOriginRC(RequestChecker):
-    def __init__(self, origin):
-        self.origin = origin
+    origin: Any
 
     def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
         return (TypeHintRM,)
@@ -126,6 +126,9 @@ class LimitingProvider(Provider):
         self._req_checker(request)
         return self._provider.apply_provider(mediator, request)
 
+    def __repr__(self):
+        return f"{type(self).__name__}({self._req_checker}, {self._provider})"
+
 
 def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
     def foreign_parser_wrapper(arg):
@@ -148,6 +151,9 @@ class ValueProvider(Provider, Generic[T]):
 
         return self._value
 
+    def __repr__(self):
+        return f"{type(self).__name__}({self._req_cls}, {self._value})"
+
 
 class FactoryProvider(Provider):
     def __init__(self, req_cls: Type[Request[T]], factory: Callable[[], T]):
@@ -159,3 +165,6 @@ class FactoryProvider(Provider):
             raise CannotProvide
 
         return self._factory()
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self._req_cls}, {self._factory})"
