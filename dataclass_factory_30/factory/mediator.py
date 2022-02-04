@@ -23,7 +23,10 @@ SearchResult = Tuple[ProvideCallable, int]
 
 
 class RecipeSearcher(ABC):
-    """An offset of each element must belong to [0; max_offset)"""
+    """An object that implements iterating over recipe list.
+
+    An offset of each element must belong to [0; max_offset)
+    """
 
     @abstractmethod
     def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
@@ -106,7 +109,7 @@ class RawRecipeSearcher(RecipeSearcher):
 
     def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
         for i, provider in enumerate(
-            islice(self.recipe, search_offset),
+            islice(self.recipe, search_offset, None),
             start=search_offset
         ):
             yield provider.apply_provider, i + 1
