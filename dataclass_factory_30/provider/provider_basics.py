@@ -28,7 +28,8 @@ class RequestChecker(ABC):
         allowed = self.get_allowed_request_classes()
         if isinstance(request, allowed):
             self._check_request(request)
-        raise CannotProvide(f'Only instances of {allowed} are allowed')
+        else:
+            raise CannotProvide(f'Only instances of {allowed} are allowed')
 
 
 @dataclass

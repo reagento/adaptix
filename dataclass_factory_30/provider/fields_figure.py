@@ -260,11 +260,13 @@ class ClassInitFieldsProvider(TypeOnlyInputFFProvider):
             raise CannotProvide
 
         try:
-            return replace(
-                get_func_iff(
-                    tp.__init__, slice(1, None)
-                ),
-                constructor=tp,
+            iff = get_func_iff(
+                tp.__init__, slice(1, None)
             )
         except ValueError:
             raise CannotProvide
+
+        return replace(
+            iff,
+            constructor=tp,
+        )
