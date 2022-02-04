@@ -2,7 +2,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Any, Callable, Union, List, Optional, Deque, Iterable
 
-from ..singleton import SingletonMeta
+from ..utils import SingletonMeta
 
 
 class NoDefault(metaclass=SingletonMeta):

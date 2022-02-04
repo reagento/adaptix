@@ -1,4 +1,4 @@
-from dataclass_factory_30.singleton import SingletonMeta
+from dataclass_factory_30.utils import SingletonMeta
 
 
 def test_simple():

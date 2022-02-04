@@ -7,7 +7,7 @@ from typing import List, Union, Generic, TypeVar, Dict, Callable, Tuple
 from .essential import Request, Mediator
 from .request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind
 from .static_provider import StaticProvider, static_provision_action
-from ..singleton import SingletonMeta
+from ..utils import SingletonMeta
 
 T = TypeVar('T')
 
