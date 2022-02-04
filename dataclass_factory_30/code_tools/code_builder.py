@@ -41,6 +41,7 @@ class CodeBuilder:
             line_or_text,
             lambda line: self._process_line(line, kwargs)
         )
+        return self
 
     def __iadd__(self, line_or_text: str):
         self(line_or_text)
@@ -51,9 +52,11 @@ class CodeBuilder:
             line_or_text,
             lambda line: line
         )
+        return self
 
     def empty_line(self):
         self.add_raw("")
+        return self
 
     @contextlib.contextmanager
     def indent(self, indent_delta: int):
@@ -81,6 +84,7 @@ class CodeBuilder:
     def extend(self, other: "CodeBuilder"):
         for line in other.lines:
             self.add_raw(line)
+        return self
 
     def string(self) -> str:
         return "\n".join(self.lines)
