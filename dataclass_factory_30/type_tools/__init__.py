@@ -5,4 +5,3 @@ from .basic_utils import (
 )
 from .norm_utils import strip_tags, is_generic
 from .normalize_type import normalize_type, NormType, NormTV
-from .subtype_matcher import SubtypeMatcher, SubtypeMatch, DefaultSubtypeMatcher
