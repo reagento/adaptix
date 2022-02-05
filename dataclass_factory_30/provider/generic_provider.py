@@ -146,7 +146,7 @@ class IterableProvider(ParserProvider, SerializerProvider):
         except ValueError:
             raise CannotProvide
 
-        if len(norm.args) != 0:
+        if len(norm.args) != 1:
             raise CannotProvide
 
         try:

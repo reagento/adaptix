@@ -501,7 +501,7 @@ class FieldsParserGenerator:
                 )
             else:
                 builder += """
-                    $field = $field_parser($raw_field)
+                    $field_left_value = $field_parser($data_for_parser)
                 """
 
 

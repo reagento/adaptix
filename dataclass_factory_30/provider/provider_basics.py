@@ -66,7 +66,8 @@ class SubclassRC(RequestChecker):
         return (TypeHintRM,)
 
     def _check_request(self, request: TypeHintRM) -> None:
-        if is_subclass_soft(request.type, self.type_):
+        norm = normalize_type(request.type)
+        if is_subclass_soft(norm.origin, self.type_):
             return
         raise CannotProvide(f'{request.type} must be a subclass of {self.type_}')
 
