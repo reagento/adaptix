@@ -174,11 +174,10 @@ class FieldsParserGenerator:
 
         builder.empty_line()
 
-        builder(
+        with builder(
             "def fields_parser($data):",
             data=state.get_data_var_name()
-        )
-        with builder:
+        ):
             builder.extend(parser_body_builder)
 
         builder += "return fields_parser"
@@ -294,13 +293,13 @@ class FieldsParserGenerator:
         if field.is_required or self._field_is_extra_target(field):
             if field.param_kind == ParamKind.KW_ONLY:
                 builder(
-                    "$var,",
+                    "$param=$var,",
+                    param=field.field_name,
                     var=state.get_field_var(field.field_name),
                 )
             else:
                 builder(
-                    "$param=$var,",
-                    param=field.field_name,
+                    "$var,",
                     var=state.get_field_var(field.field_name),
                 )
 
@@ -443,8 +442,8 @@ class FieldsParserGenerator:
             field_left_value = state.get_field_var(field.field_name)
         else:
             field_left_value = builder.fmt(
-                '$opt_fields["$field_var"]',
-                field_var=state.get_field_var(crown.name),
+                "$opt_fields[$field_var]",
+                field_var=repr(state.get_field_var(crown.name)),
                 opt_fields=state.get_opt_fields_var_name(),
             )
 
