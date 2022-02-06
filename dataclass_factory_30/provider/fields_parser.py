@@ -180,10 +180,8 @@ class FieldsParserGenerator:
 
         builder.empty_line()
 
-        with builder(
-            "def fields_parser($data):",
-            data=state.get_data_var_name()
-        ):
+        data = state.get_data_var_name()
+        with builder(f"def fields_parser({data}):"):
             builder.extend(parser_body_builder)
 
         builder += "return fields_parser"
@@ -219,11 +217,7 @@ class FieldsParserGenerator:
     def _gen_global_to_local(self, builder: CodeBuilder, *local_to_global_vars: Dict[str, str]):
         for local_to_global in local_to_global_vars:
             for l_var, g_var in local_to_global.items():
-                builder(
-                    "$l_val = $g_var",
-                    g_var=g_var,
-                    l_val=l_var,
-                )
+                builder(f"{l_var} = {g_var}")
 
     def _gen_parser_body(self, root_crown: RootCrown, state: GenState) -> CodeBuilder:
         """Creates parser body which consist of 4 elements:
@@ -241,12 +235,10 @@ class FieldsParserGenerator:
         self._gen_header(builder, state)
 
         has_opt_fields = any(not f.is_required for f in self.figure.fields)
+        opt_fields = state.get_opt_fields_var_name()
 
         if has_opt_fields:
-            builder(
-                "$opt_fields = {}",
-                opt_fields=state.get_opt_fields_var_name(),
-            )
+            builder(f"{opt_fields} = {{}}")
 
         builder.extend(crown_builder)
 
@@ -278,20 +270,15 @@ class FieldsParserGenerator:
                 self._gen_field_passing(builder, state, field)
 
             if has_opt_fields:
-                builder(
-                    "**$opt_fields,",
-                    opt_fields=state.get_opt_fields_var_name(),
-                )
+                builder += f"**{opt_fields},",
 
             if (
                 root_crown.extra == ExtraCollect()
                 and
                 self.figure.extra == ExtraKwargs()
             ):
-                builder(
-                    "**$extra",
-                    extra=state.get_extra_var_name(),
-                )
+                extra = state.get_extra_var_name()
+                builder += f"**{extra}"
 
         builder += ")"
 
@@ -306,17 +293,13 @@ class FieldsParserGenerator:
 
     def _gen_field_passing(self, builder: CodeBuilder, state: GenState, field: InputFieldRM):
         if field.is_required or self._field_is_extra_target(field):
+            param = field.field_name
+            var = state.get_field_var(field.field_name)
+
             if field.param_kind == ParamKind.KW_ONLY:
-                builder(
-                    "$param=$var,",
-                    param=field.field_name,
-                    var=state.get_field_var(field.field_name),
-                )
+                builder(f"{param}={var},")
             else:
-                builder(
-                    "$var,",
-                    var=state.get_field_var(field.field_name),
-                )
+                builder(f"{var},")
 
     def _gen_root_crown_dispatch(self, builder: CodeBuilder, state: GenState, crown: Crown):
         """Returns True if code is generated"""
@@ -355,20 +338,16 @@ class FieldsParserGenerator:
             parse_error = NoRequiredItemsError.__name__
 
         path_lit = self._get_path_lit(before_path)
+        data = state.get_data_var_name(state.path[:-1])
+        last_path_el = repr(last_path_el)
 
         builder(
-            """
+            f"""
             try:
-                $var = $data[$last_path_el]
-            except $error:
-                raise $parse_error([$last_path_el], $path_lit)
+                {var} = {data}[{last_path_el}]
+            except {error}:
+                raise {parse_error}([{last_path_el}], {path_lit})
             """,
-            data=state.get_data_var_name(state.path[:-1]),
-            var=var,
-            error=error,
-            parse_error=parse_error,
-            path_lit=path_lit,
-            last_path_el=repr(last_path_el)
         )
 
     def _gen_dict_crown(self, builder: CodeBuilder, state: GenState, crown: DictCrown):
@@ -376,69 +355,67 @@ class FieldsParserGenerator:
             known_fields = set(crown.map.keys())
             state.path2known_fields[state.path] = known_fields
 
-        with builder.context(
-            known_fields=state.get_known_fields_var_name(),
-            data=state.get_data_var_name(),
-            extra=state.get_extra_var_name(),
-            path_lit=self._get_path_lit(state.path),
-        ):
-            if state.path:
-                self._gen_var_assigment_from_data(
-                    builder, state, state.get_data_var_name(),
-                )
-                builder.empty_line()
+        known_fields = state.get_known_fields_var_name()
+        data = state.get_data_var_name()
+        extra = state.get_extra_var_name()
+        path_lit = self._get_path_lit(state.path)
 
-            builder += """
-                if not isinstance($data, dict):
-                    raise TypeParseError(dict, $path_lit)
-            """
-
+        if state.path:
+            self._gen_var_assigment_from_data(
+                builder, state, state.get_data_var_name(),
+            )
             builder.empty_line()
 
-            if crown.extra == ExtraForbid():
-                builder += """
-                    $extra = set($data) - $known_fields
-                    if $extra:
-                        raise ExtraFieldsError($extra, $path_lit)
-                """
-                builder.empty_line()
+        builder += f"""
+            if not isinstance({data}, dict):
+                raise TypeParseError(dict, {path_lit})
+        """
 
-            elif crown.extra == ExtraCollect():
-                builder += """
-                    $extra = {}
-                    for key in set($data) - $known_fields:
-                        $extra[key] = $data[key]
-                """
-                builder.empty_line()
+        builder.empty_line()
+
+        if crown.extra == ExtraForbid():
+            builder += f"""
+                {extra} = set({data}) - {known_fields}
+                if {extra}:
+                    raise ExtraFieldsError({extra}, {path_lit})
+            """
+            builder.empty_line()
+
+        elif crown.extra == ExtraCollect():
+            builder += f"""
+                {extra} = {{}}
+                for key in set({data}) - {known_fields}:
+                    {extra}[key] = {data}[key]
+            """
+            builder.empty_line()
 
         for key, value in crown.map.items():
             self._gen_crown_dispatch(builder, state, value, key)
 
     def _gen_list_crown(self, builder: CodeBuilder, state: GenState, crown: ListCrown):
-        with builder.context(
-            data=state.get_data_var_name(),
-            path_lit=self._get_path_lit(state.path),
-            list_len=str(crown.list_len),
-        ):
-            if state.path:
-                self._gen_var_assigment_from_data(
-                    builder, state, state.get_data_var_name(),
-                )
-                builder.empty_line()
+        data = state.get_data_var_name()
+        path_lit = self._get_path_lit(state.path)
+        list_len = str(crown.list_len)
 
-            builder += """
-                if not isinstance($data, list):
-                    raise TypeParseError(list, $path_lit)
-            """
-
+        if state.path:
+            self._gen_var_assigment_from_data(
+                builder, state, state.get_data_var_name(),
+            )
             builder.empty_line()
 
-            if crown.extra == ExtraForbid():
-                builder += """
-                    if len($data) > $list_len:
-                        raise ExtraItemsError($list_len, $path_lit)
-                """
-                builder.empty_line()
+        builder += f"""
+            if not isinstance({data}, list):
+                raise TypeParseError(list, {path_lit})
+        """
+
+        builder.empty_line()
+
+        if crown.extra == ExtraForbid():
+            builder += f"""
+                if len({data}) > {list_len}:
+                    raise ExtraItemsError({list_len}, {path_lit})
+            """
+            builder.empty_line()
 
         for key, value in crown.map.items():
             self._gen_crown_dispatch(builder, state, value, key)
@@ -454,11 +431,9 @@ class FieldsParserGenerator:
         if field.is_required:
             field_left_value = state.get_field_var(field.field_name)
         else:
-            field_left_value = builder.fmt(
-                "$opt_fields[$field_var]",
-                field_var=repr(state.get_field_var(crown.name)),
-                opt_fields=state.get_opt_fields_var_name(),
-            )
+            field_var = repr(state.get_field_var(crown.name))
+            opt_fields = state.get_opt_fields_var_name()
+            field_left_value = f"{opt_fields}[{field_var}]"
 
         self._gen_var_assigment_from_data(
             builder,
@@ -496,26 +471,23 @@ class FieldsParserGenerator:
         data_for_parser: str,
         state: GenState,
     ):
-        with builder.context(
-            field_left_value=field_left_value,
-            field_parser=state.get_field_parser_var_name(field_name),
-            data_for_parser=data_for_parser,
-        ):
-            if self.debug_path:
-                builder(
-                    """
-                    try:
-                        $field_left_value = $field_parser($data_for_parser)
-                    except ParseError as e:
-                        e.append_path($last_path_el)
-                        raise e
-                    """,
-                    last_path_el=repr(state.path[-1]),
-                )
-            else:
-                builder += """
-                    $field_left_value = $field_parser($data_for_parser)
+        field_parser = state.get_field_parser_var_name(field_name)
+        last_path_el = repr(state.path[-1])
+
+        if self.debug_path:
+            builder(
+                f"""
+                try:
+                    {field_left_value} = {field_parser}({data_for_parser})
+                except ParseError as e:
+                    e.append_path({last_path_el})
+                    raise e
                 """
+            )
+        else:
+            builder(
+                f"{field_left_value} = {field_parser}({data_for_parser})"
+            )
 
 
 @dataclass(frozen=True)
