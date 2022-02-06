@@ -30,7 +30,7 @@ class CodeBuilder:
             for line in lines
         )
 
-    def __call__(self, line_or_text: str, **kwargs: str):
+    def __call__(self, line_or_text: str):
         self._add_string(
             line_or_text,
         )
