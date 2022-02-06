@@ -270,7 +270,7 @@ class FieldsParserGenerator:
                 self._gen_field_passing(builder, state, field)
 
             if has_opt_fields:
-                builder += f"**{opt_fields},",
+                builder += f"**{opt_fields},"
 
             if (
                 root_crown.extra == ExtraCollect()
