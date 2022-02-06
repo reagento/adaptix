@@ -29,6 +29,10 @@ from ..provider import (
     TypedDictFieldsProvider,
     DataclassFieldsProvider,
     ClassInitFieldsProvider,
+    ValueProvider,
+    ParserRequest,
+    LimitingProvider,
+    create_req_checker,
 )
 from ..provider.generic_provider import IterableProvider
 
@@ -48,7 +52,12 @@ def _stub_serializer(tp: type) -> Provider:
 class BuiltinFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
     recipe = [
         NoneProvider(),
-        as_parser(Any, stub),
+
+        # omit wrapping with foreign_parser
+        LimitingProvider(
+            create_req_checker(Any),
+            ValueProvider(ParserRequest, stub)
+        ),
         as_serializer(Any, stub),
 
         IsoFormatProvider(datetime),

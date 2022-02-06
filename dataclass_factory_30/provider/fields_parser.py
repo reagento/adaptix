@@ -1,7 +1,7 @@
 import contextlib
 from collections import deque
 from dataclasses import dataclass
-from typing import Dict, Tuple, Set, Any, Callable
+from typing import Dict, Tuple, Set, Any, Callable, List
 
 from .definitions import (
     PathElement, NoRequiredFieldsError,
@@ -109,6 +109,8 @@ CodeGenHook = Callable[[CodeGenHookData], None]
 
 
 class FieldsParserGenerator:
+    """FieldsParserGenerator creates source code of fields parser."""
+
     def __init__(
         self,
         figure: InputFieldsFigure,
@@ -149,6 +151,10 @@ class FieldsParserGenerator:
         field_parsers: Dict[str, Parser],
         crown: RootCrown
     ) -> Parser:
+        """Create parser.
+        Method generates body of function that produces closure
+        and pass it to ClosureCompiler.
+        """
         state = self._create_state()
 
         parser_body_builder = self._gen_parser_body(crown, state)
@@ -220,6 +226,13 @@ class FieldsParserGenerator:
                 )
 
     def _gen_parser_body(self, root_crown: RootCrown, state: GenState) -> CodeBuilder:
+        """Creates parser body which consist of 4 elements:
+        1. Header of comments containing debug data
+        2. Mapping external structure to fields (this mapping defined by Crown)
+        3. Passing extra data to extra targets
+        4. Passing fields to constructor parameters
+        """
+
         crown_builder = CodeBuilder()
         if not self._gen_root_crown_dispatch(crown_builder, state, root_crown):
             raise ValueError
@@ -237,6 +250,8 @@ class FieldsParserGenerator:
 
         builder.extend(crown_builder)
 
+        # Saturate extra targets with data.
+        # If extra data does not collect parser will always get empty dict
         if isinstance(self.figure.extra, ExtraTargets):
             targets = self.figure.extra.fields
 
@@ -328,17 +343,15 @@ class FieldsParserGenerator:
     def _get_path_lit(self, path: Path) -> str:
         return repr(deque(path)) if self.debug_path and len(path) > 0 else ""
 
-    def _get_lookup_error(self, key: PathElement) -> str:
-        return KeyError.__name__ if isinstance(key, str) else IndexError.__name__
-
     def _gen_var_assigment_from_data(self, builder: CodeBuilder, state: GenState, var: str):
         last_path_el = state.path[-1]
         before_path = state.path[:-1]
-        error = self._get_lookup_error(last_path_el)
 
         if isinstance(last_path_el, str):
+            error = KeyError.__name__
             parse_error = NoRequiredFieldsError.__name__
         else:
+            error = IndexError.__name__
             parse_error = NoRequiredItemsError.__name__
 
         path_lit = self._get_path_lit(before_path)
@@ -516,16 +529,12 @@ def _stub_code_gen_hook(data: CodeGenHookData):
 
 class CodeGenAccumulator(StaticProvider):
     def __init__(self):
-        self.map: Dict[Request, CodeGenHookData] = {}
-
-    @property
-    def list(self):
-        return list(self.map.items())
+        self.list: List[Tuple[Request, CodeGenHookData]] = []
 
     @static_provision_action(CodeGenHookRequest)
     def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
         def hook(data: CodeGenHookData):
-            self.map[request.initial_request] = data
+            self.list.append((request.initial_request, data))
 
         return hook
 
