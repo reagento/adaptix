@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TypeVar, List, Generic, Optional, Mapping, Any
+from typing import TypeVar, List, Generic, Mapping, Any
 
 from .definitions import Default
 from .essential import (
@@ -103,27 +103,6 @@ class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin):
 @dataclass(frozen=True)
 class SerializerFieldRequest(SerializerRequest, FieldRM[Parser]):
     omit_default: bool
-
-
-class NameMappingRequest(FieldNameRM[Optional[str]], PipelineEvalMixin):
-    @classmethod
-    def eval_pipeline(
-        cls,
-        providers: List[Provider],
-        mediator: Mediator,
-        request: Request
-    ):
-        name = request.field_name  # noqa
-        for name_mapper in providers:
-            name = name_mapper.apply_provider(mediator, request)
-            if name is None:
-                return None
-        return name
-
-
-@dataclass(frozen=True)
-class NameMappingFieldRequest(NameMappingRequest, FieldRM[Optional[str]]):
-    pass
 
 
 @dataclass(frozen=True)

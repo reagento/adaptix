@@ -61,7 +61,7 @@ from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from enum import Enum
 from itertools import islice
-from typing import List, Union, Generic, TypeVar, Dict, Callable, Tuple
+from typing import List, Union, Generic, TypeVar, Dict, Callable, Tuple, Collection
 
 from .essential import Request, Mediator
 from .request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind
@@ -198,7 +198,11 @@ class FieldCrown:
 
 Crown = Union[FieldCrown, None, DictCrown, ListCrown]
 
-RootCrown = Union[DictCrown, ListCrown]
+
+@dataclass
+class NameMapping:
+    crown: Union[DictCrown, ListCrown]
+    skipped_extra_targets: Collection[str]
 
 
 @dataclass(frozen=True)
@@ -217,35 +221,31 @@ class OutputFFRequest(BaseFFRequest[OutputFieldsFigure]):
 
 
 @dataclass(frozen=True)
-class BaseCrownRequest(TypeHintRM[RootCrown]):
+class BaseNameMappingRequest(TypeHintRM[NameMapping]):
     figure: BaseFieldsFigure
 
 
 @dataclass(frozen=True)
-class InputCrownRequest(BaseCrownRequest):
+class InputNameMappingRequest(BaseNameMappingRequest):
     figure: InputFieldsFigure
 
 
 @dataclass(frozen=True)
-class OutputCrownRequest(BaseCrownRequest):
+class OutputNameMappingRequest(BaseNameMappingRequest):
     figure: OutputFieldsFigure
 
 
-class BaseCrownProvider(StaticProvider, ABC):
+class NameMappingProvider(StaticProvider, ABC):
     @abstractmethod
-    @static_provision_action(BaseCrownRequest)
-    def _provide_crown(self, mediator: Mediator, request: BaseCrownRequest) -> RootCrown:
+    @static_provision_action(InputNameMappingRequest)
+    def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> NameMapping:
         pass
 
+    @abstractmethod
+    @static_provision_action(OutputNameMappingRequest)
+    def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> NameMapping:
+        pass
 
-class AsIsCrownProvider(BaseCrownProvider):
-    def _provide_crown(self, mediator: Mediator, request: BaseCrownRequest) -> RootCrown:
-        extra_policy: ExtraPolicy = mediator.provide(CfgExtraPolicy())
-
-        return DictCrown(
-            map={
-                field.field_name: FieldCrown(field.field_name)
-                for field in request.figure.fields
-            },
-            extra=extra_policy,
-        )
+    # This method declared only for IDE autocompletion
+    def _provide_name_mapping(self, mediator: Mediator, request: BaseNameMappingRequest) -> NameMapping:
+        pass

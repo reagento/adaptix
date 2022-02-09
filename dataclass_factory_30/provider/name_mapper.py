@@ -1,17 +1,22 @@
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Collection
 
 from .essential import Mediator
+from .fields_basics import (
+    NameMapping, NameMappingProvider,
+    DictCrown, ExtraPolicy,
+    CfgExtraPolicy, FieldCrown,
+    BaseNameMappingRequest, BaseFieldsFigure, InputFieldsFigure,
+    ExtraTargets, InputNameMappingRequest, OutputNameMappingRequest,
+)
 from .name_style import NameStyle, convert_snake_style
-from .request_cls import NameMappingRequest
-from .static_provider import StaticProvider, static_provision_action
 
 
 # TODO: Add support for path in map
 
 
 @dataclass(frozen=True)
-class NameMapper(StaticProvider):
+class NameMapper(NameMappingProvider):
     """A NameMapper decides which fields will be presented
     to the outside world and how they will look.
 
@@ -34,6 +39,9 @@ class NameMapper(StaticProvider):
     trim trailing underscore and convert name style.
 
     The field must follow snake_case to could be converted.
+
+    If you try to skip required input field,
+    class will raise error
     """
 
     skip: List[str] = field(default_factory=list)
@@ -63,10 +71,7 @@ class NameMapper(StaticProvider):
 
         return False
 
-    def _map_name(self, name: str) -> Optional[str]:
-        if self._should_skip(name):
-            return None
-
+    def _convert_name(self, name: str) -> str:
         try:
             name = self.map[name]
         except KeyError:
@@ -78,7 +83,48 @@ class NameMapper(StaticProvider):
 
         return name
 
-    # noinspection PyUnusedLocal
-    @static_provision_action(NameMappingRequest)
-    def _provide_name_mapping(self, mediator: Mediator, request: NameMappingRequest) -> Optional[str]:
-        return self._map_name(request.field_name)
+    def _map_name(self, name: str) -> Optional[str]:
+        if self._should_skip(name):
+            return None
+
+        return self._convert_name(name)
+
+    def _get_extra_targets(self, figure: BaseFieldsFigure) -> Collection[str]:
+        if isinstance(figure, InputFieldsFigure) and isinstance(figure.extra, ExtraTargets):
+            return set(figure.extra.fields)
+        return []
+
+    def _provide_name_mapping(self, mediator: Mediator, request: BaseNameMappingRequest) -> NameMapping:
+        extra_policy: ExtraPolicy = mediator.provide(CfgExtraPolicy())
+
+        extra_targets = self._get_extra_targets(request.figure)
+
+        return NameMapping(
+            crown=DictCrown(
+                map={
+                    self._convert_name(fld.field_name): FieldCrown(fld.field_name)
+                    for fld in request.figure.fields
+                    if not (
+                        self._should_skip(fld.field_name)
+                        and
+                        fld.field_name in extra_targets
+                    )
+                },
+                extra=extra_policy,
+            ),
+            skipped_extra_targets=list(filter(self._should_skip, extra_targets)),
+        )
+
+    def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> NameMapping:
+        skipped_required_fields = [
+            fld for fld in request.figure.fields
+            if fld.is_required and self._should_skip(fld.field_name)
+        ]
+
+        if skipped_required_fields:
+            raise ValueError  # TODO: replace this error with CannotProvide pushing to user
+
+        return self._provide_name_mapping(mediator, request)
+
+    def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> NameMapping:
+        return self._provide_name_mapping(mediator, request)

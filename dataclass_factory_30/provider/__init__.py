@@ -46,11 +46,10 @@ from .fields_basics import (
     BaseFFRequest,
     InputFFRequest,
     OutputFFRequest,
-    BaseCrownRequest,
-    InputCrownRequest,
-    OutputCrownRequest,
-    BaseCrownProvider,
-    AsIsCrownProvider,
+    BaseNameMappingRequest,
+    InputNameMappingRequest,
+    OutputNameMappingRequest,
+    NameMappingProvider,
 )
 from .fields_figure import (
     get_func_iff,
@@ -105,9 +104,7 @@ from .request_cls import (
     FieldRM,
     ParserFieldRequest,
     SerializerFieldRequest,
-    NameMappingRequest,
     CfgOmitDefault,
-    NameMappingFieldRequest,
 )
 from .static_provider import (
     StaticProvider,

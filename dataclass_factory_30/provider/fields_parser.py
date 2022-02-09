@@ -1,7 +1,7 @@
 import contextlib
 from collections import deque
 from dataclasses import dataclass
-from typing import Dict, Tuple, Set, Any, Callable, List
+from typing import Dict, Tuple, Set, Any, Callable, List, Union
 
 from .definitions import (
     PathElement, NoRequiredFieldsError,
@@ -12,9 +12,9 @@ from .essential import Mediator, CannotProvide, Request
 from .fields_basics import (
     ExtraForbid, ExtraCollect,
     InputFieldsFigure,
-    RootCrown, Crown,
+    NameMapping, Crown,
     DictCrown, ListCrown, FieldCrown,
-    InputFFRequest, InputCrownRequest,
+    InputFFRequest, InputNameMappingRequest,
     ExtraKwargs, ExtraTargets,
 )
 from .provider_template import ParserProvider
@@ -149,7 +149,7 @@ class FieldsParserGenerator:
         self,
         compiler: ClosureCompiler,
         field_parsers: Dict[str, Parser],
-        crown: RootCrown
+        name_mapping: NameMapping
     ) -> Parser:
         """Create parser.
         Method generates body of function that produces closure
@@ -157,7 +157,7 @@ class FieldsParserGenerator:
         """
         state = self._create_state()
 
-        parser_body_builder = self._gen_parser_body(crown, state)
+        parser_body_builder = self._gen_parser_body(name_mapping, state)
 
         builder = CodeBuilder()
 
@@ -219,7 +219,7 @@ class FieldsParserGenerator:
             for l_var, g_var in local_to_global.items():
                 builder(f"{l_var} = {g_var}")
 
-    def _gen_parser_body(self, root_crown: RootCrown, state: GenState) -> CodeBuilder:
+    def _gen_parser_body(self, name_mapping: NameMapping, state: GenState) -> CodeBuilder:
         """Creates parser body which consist of 4 elements:
         1. Header of comments containing debug data
         2. Mapping external structure to fields (this mapping defined by Crown)
@@ -228,7 +228,7 @@ class FieldsParserGenerator:
         """
 
         crown_builder = CodeBuilder()
-        if not self._gen_root_crown_dispatch(crown_builder, state, root_crown):
+        if not self._gen_root_crown_dispatch(crown_builder, state, name_mapping.crown):
             raise ValueError
 
         builder = CodeBuilder()
@@ -245,9 +245,13 @@ class FieldsParserGenerator:
         # Saturate extra targets with data.
         # If extra data does not collect parser will always get empty dict
         if isinstance(self.figure.extra, ExtraTargets):
-            targets = self.figure.extra.fields
+            targets = [
+                target
+                for target in self.figure.extra.fields
+                if target not in name_mapping.skipped_extra_targets
+            ]
 
-            if root_crown.extra == ExtraCollect():
+            if name_mapping.crown.extra == ExtraCollect():
                 data_for_parser = state.get_extra_var_name()
             else:
                 data_for_parser = "{}"
@@ -273,7 +277,7 @@ class FieldsParserGenerator:
                 builder += f"**{opt_fields},"
 
             if (
-                root_crown.extra == ExtraCollect()
+                name_mapping.crown.extra == ExtraCollect()
                 and
                 self.figure.extra == ExtraKwargs()
             ):
@@ -524,11 +528,11 @@ class FieldsParserProvider(ParserProvider):
         figure: InputFieldsFigure = mediator.provide(
             InputFFRequest(type=request.type)
         )
-        crown: RootCrown = mediator.provide(
-            InputCrownRequest(type=request.type, figure=figure)
+        name_mapping: NameMapping = mediator.provide(
+            InputNameMappingRequest(type=request.type, figure=figure)
         )
 
-        if crown.extra == ExtraCollect() and figure.extra is None:
+        if name_mapping.crown.extra == ExtraCollect() and figure.extra is None:
             raise CannotProvide(
                 "Cannot create parser that collect extra data"
                 " if InputFieldsFigure does not take extra data"
@@ -562,7 +566,7 @@ class FieldsParserProvider(ParserProvider):
         parser = generator.generate(
             BasicClosureCompiler(),
             fields_parser,
-            crown,
+            name_mapping,
         )
 
         return parser

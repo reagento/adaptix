@@ -24,7 +24,7 @@ from ..provider import (
     CoercionLimiter,
     EnumExactValueProvider,
     FieldsParserProvider,
-    AsIsCrownProvider,
+    NameMapper,
     NamedTupleFieldsProvider,
     TypedDictFieldsProvider,
     DataclassFieldsProvider,
@@ -108,7 +108,7 @@ class BuiltinFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
 
         FieldsParserProvider(),
 
-        AsIsCrownProvider(),
+        NameMapper(),
 
         NamedTupleFieldsProvider(),
         TypedDictFieldsProvider(),
