@@ -35,36 +35,25 @@ class IsoFormatProvider(ForAnyDateTime, ParserProvider, SerializerProvider):
 
 
 @dataclass
-class AnyDateTimeFormatProvider(ForAnyDateTime, ParserProvider, SerializerProvider):
+@for_type(datetime)
+class DatetimeFormatProvider(ParserProvider, SerializerProvider):
     format: str
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         fmt = self.format
 
-        def any_date_time_format_parser(value):
+        def datetime_format_parser(value):
             return datetime.strptime(value, fmt)
 
-        return foreign_parser(any_date_time_format_parser)
+        return foreign_parser(datetime_format_parser)
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         fmt = self.format
 
-        def any_date_time_format_serializer(value: datetime):
+        def datetime_format_serializer(value: datetime):
             return value.strftime(fmt)
 
-        return any_date_time_format_serializer
-
-
-def datetime_format_provider(fmt: str):
-    return AnyDateTimeFormatProvider(datetime, fmt)
-
-
-def date_format_provider(fmt: str):
-    return AnyDateTimeFormatProvider(date, fmt)
-
-
-def time_format_provider(fmt: str):
-    return AnyDateTimeFormatProvider(time, fmt)
+        return datetime_format_serializer
 
 
 @for_type(timedelta)
