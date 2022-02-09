@@ -83,12 +83,6 @@ class NameMapper(NameMappingProvider):
 
         return name
 
-    def _map_name(self, name: str) -> Optional[str]:
-        if self._should_skip(name):
-            return None
-
-        return self._convert_name(name)
-
     def _get_extra_targets(self, figure: BaseFieldsFigure) -> Collection[str]:
         if isinstance(figure, InputFieldsFigure) and isinstance(figure.extra, ExtraTargets):
             return set(figure.extra.fields)

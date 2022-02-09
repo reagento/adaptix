@@ -6,9 +6,8 @@ from dataclass_factory_30.provider import NameMapper, NameStyle
 def check_name_mapper(mapper: NameMapper, source: Set[str], target: Set[str]):
     result = set()
     for s_name in source:
-        result.add(mapper._map_name(s_name))
-
-    result -= {None}
+        if not mapper._should_skip(s_name):
+            result.add(mapper._convert_name(s_name))
 
     assert result == target
 

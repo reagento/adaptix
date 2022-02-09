@@ -22,7 +22,7 @@ def test_inconsistent_fields_order(first, second):
         InputFieldsFigure(
             constructor=stub_constructor,
             extra=None,
-            fields=[
+            fields=(
                 InputFieldRM(
                     field_name="a",
                     type=int,
@@ -39,7 +39,7 @@ def test_inconsistent_fields_order(first, second):
                     metadata={},
                     param_kind=second,
                 ),
-            ],
+            ),
         )
 
 
@@ -47,7 +47,7 @@ def _make_triple_iff(first, second, third):
     return InputFieldsFigure(
         constructor=stub_constructor,
         extra=None,
-        fields=[
+        fields=(
             InputFieldRM(
                 field_name="a",
                 type=int,
@@ -72,7 +72,7 @@ def _make_triple_iff(first, second, third):
                 metadata={},
                 param_kind=third,
             ),
-        ],
+        ),
     )
 
 
@@ -109,7 +109,7 @@ def test_field_name_duplicates():
         InputFieldsFigure(
             constructor=stub_constructor,
             extra=None,
-            fields=[
+            fields=(
                 InputFieldRM(
                     field_name="a",
                     type=int,
@@ -126,7 +126,7 @@ def test_field_name_duplicates():
                     metadata={},
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-            ]
+            )
         )
 
 
@@ -135,7 +135,7 @@ def test_wild_targets():
         InputFieldsFigure(
             constructor=stub_constructor,
             extra=ExtraTargets(["b"]),
-            fields=[
+            fields=(
                 InputFieldRM(
                     field_name="a",
                     type=int,
@@ -144,5 +144,5 @@ def test_wild_targets():
                     metadata={},
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-            ]
+            )
         )
