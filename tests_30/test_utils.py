@@ -1,7 +1,7 @@
 from dataclass_factory_30.utils import SingletonMeta
 
 
-def test_simple():
+def test_singleton_simple():
     class MySingleton(metaclass=SingletonMeta):
         pass
 
@@ -10,3 +10,15 @@ def test_simple():
 
     assert instance1 is instance2
     assert instance1 == instance2
+
+
+def test_singleton_repr():
+    class MySingleton(metaclass=SingletonMeta):
+        pass
+
+    class MyReprSingleton(metaclass=SingletonMeta):
+        def __repr__(self):
+            return "<CustomSingletonRepr>"
+
+    assert repr(MySingleton()) == "MySingleton()"
+    assert repr(MyReprSingleton()) == "<CustomSingletonRepr>"
