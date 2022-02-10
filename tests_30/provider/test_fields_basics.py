@@ -134,7 +134,7 @@ def test_wild_targets():
     with pytest.raises(ValueError):
         InputFieldsFigure(
             constructor=stub_constructor,
-            extra=ExtraTargets(["b"]),
+            extra=ExtraTargets(("b", )),
             fields=(
                 InputFieldRM(
                     field_name="a",

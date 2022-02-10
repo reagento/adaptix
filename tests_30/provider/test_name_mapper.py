@@ -1,6 +1,21 @@
-from typing import Set
+from typing import Set, Tuple
 
-from dataclass_factory_30.provider import NameMapper, NameStyle
+import pytest
+
+from dataclass_factory_30.provider import (
+    NameMapper, NameStyle,
+    ValueProvider, CfgExtraPolicy,
+    ExtraSkip, InputNameMappingRequest,
+    InputFieldsFigure, NoDefault,
+)
+from dataclass_factory_30.provider.fields_basics import (
+    NameMapping, DictCrown, FieldCrown,
+    ExtraTargets, FigureExtra,
+    OutputNameMappingRequest, OutputFieldsFigure,
+    GetterKind
+)
+from dataclass_factory_30.provider.request_cls import InputFieldRM, ParamKind, FieldRM
+from tests_30.provider.conftest import TestFactory
 
 
 def check_name_mapper(mapper: NameMapper, source: Set[str], target: Set[str]):
@@ -171,3 +186,202 @@ def test_name_filtering():
         {'a', 'b', '_c', 'd_', '_e_'},
         {'a', '_c'},
     )
+
+
+class Stub:
+    def __init__(self, *args):
+        pass
+
+
+def make_field(field_name: str, is_required: bool):
+    return InputFieldRM(
+        field_name=field_name,
+        type=int,
+        default=NoDefault(),
+        is_required=is_required,
+        metadata={},
+        param_kind=ParamKind.POS_OR_KW,
+    )
+
+
+def inp_request(fields: Tuple[InputFieldRM, ...], extra: FigureExtra = None):
+    return InputNameMappingRequest(
+        type=Stub,
+        figure=InputFieldsFigure(
+            constructor=Stub,
+            extra=extra,
+            fields=fields
+        ),
+    )
+
+
+def out_request(fields: Tuple[FieldRM, ...]):
+    return OutputNameMappingRequest(
+        type=Stub,
+        figure=OutputFieldsFigure(
+            fields=fields,
+            getter_kind=GetterKind.ATTR,
+        ),
+    )
+
+
+@pytest.fixture
+def factory():
+    return TestFactory(
+        [
+            NameMapper(skip=['c'], map={'d': 'z'}),
+            ValueProvider(CfgExtraPolicy, ExtraSkip()),
+        ]
+    )
+
+
+@pytest.fixture(params=[inp_request, out_request])
+def make_request(request):
+    return request.param
+
+
+def test_name_mapping_simple(factory, make_request):
+    name_mapping = factory.provide(
+        make_request(
+            fields=(
+                make_field(
+                    field_name="a",
+                    is_required=True,
+                ),
+                make_field(
+                    field_name="b",
+                    is_required=True,
+                ),
+            )
+        )
+    )
+
+    assert name_mapping == NameMapping(
+        crown=DictCrown(
+            {
+                'a': FieldCrown('a'),
+                'b': FieldCrown('b'),
+            },
+            extra=ExtraSkip(),
+        ),
+        skipped_extra_targets=[],
+    )
+
+
+def test_name_mapping_skipping(factory, make_request):
+    name_mapping = factory.provide(
+        make_request(
+            fields=(
+                make_field(
+                    field_name="a",
+                    is_required=True,
+                ),
+                make_field(
+                    field_name="c",
+                    is_required=False,
+                ),
+            )
+        )
+    )
+
+    assert name_mapping == NameMapping(
+        crown=DictCrown(
+            {
+                'a': FieldCrown('a'),
+            },
+            extra=ExtraSkip(),
+        ),
+        skipped_extra_targets=[],
+    )
+
+
+def test_name_mapping_extra_targets(factory):
+    name_mapping = factory.provide(
+        inp_request(
+            fields=(
+                make_field(
+                    field_name="a",
+                    is_required=True,
+                ),
+                make_field(
+                    field_name="b",
+                    is_required=False,
+                ),
+            ),
+            extra=ExtraTargets(('b',))
+        )
+    )
+
+    assert name_mapping == NameMapping(
+        crown=DictCrown(
+            {
+                'a': FieldCrown('a'),
+            },
+            extra=ExtraSkip(),
+        ),
+        skipped_extra_targets=[],
+    )
+
+
+def test_name_mapping_extra_targets_skip(factory):
+    name_mapping = factory.provide(
+        inp_request(
+            fields=(
+                make_field(
+                    field_name="a",
+                    is_required=True,
+                ),
+                make_field(
+                    field_name="c",
+                    is_required=False,
+                ),
+            ),
+            extra=ExtraTargets(('c',))
+        )
+    )
+
+    assert name_mapping == NameMapping(
+        crown=DictCrown(
+            {
+                'a': FieldCrown('a'),
+            },
+            extra=ExtraSkip(),
+        ),
+        skipped_extra_targets=['c'],
+    )
+
+
+def test_name_mapping_error_on_required_field_skip(factory):
+    with pytest.raises(ValueError):
+        factory.provide(
+            inp_request(
+                fields=(
+                    make_field(
+                        field_name="a",
+                        is_required=True,
+                    ),
+                    make_field(
+                        field_name="c",
+                        is_required=True,
+                    ),
+                ),
+                extra=None,
+            )
+        )
+
+    with pytest.raises(ValueError):
+        factory.provide(
+            inp_request(
+                fields=(
+                    make_field(
+                        field_name="a",
+                        is_required=True,
+                    ),
+                    make_field(
+                        field_name="c",
+                        is_required=True,
+                    ),
+                ),
+                extra=ExtraTargets(("c",))
+            )
+        )

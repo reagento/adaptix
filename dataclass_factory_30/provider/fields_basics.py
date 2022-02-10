@@ -90,7 +90,7 @@ class ExtraKwargs(metaclass=SingletonMeta):
 
 @dataclass(frozen=True)
 class ExtraTargets:
-    fields: List[str]
+    fields: Tuple[str, ...]
 
 
 class ExtraCollect(metaclass=SingletonMeta):

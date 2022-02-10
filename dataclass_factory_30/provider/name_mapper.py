@@ -100,7 +100,7 @@ class NameMapper(NameMappingProvider):
                     for fld in request.figure.fields
                     if not (
                         self._should_skip(fld.field_name)
-                        and
+                        or
                         fld.field_name in extra_targets
                     )
                 },
