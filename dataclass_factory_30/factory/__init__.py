@@ -1,9 +1,10 @@
 from .builtin_factory import (
+    FuncWrapper,
+    FuncRecursionResolver,
+    OperatingFactory,
     BuiltinFactory,
 )
 from .facade_factory import (
-    FuncWrapper,
-    FuncRecursionResolver,
     Factory,
 )
 from .mediator import (

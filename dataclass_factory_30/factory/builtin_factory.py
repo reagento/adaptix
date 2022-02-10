@@ -9,6 +9,7 @@ from typing import Any
 from uuid import UUID
 
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
+from .mediator import StubsRecursionResolver, RecursionResolving
 from ..provider import (
     Provider,
     as_parser,
@@ -33,6 +34,7 @@ from ..provider import (
     ParserRequest,
     LimitingProvider,
     create_req_checker,
+    SerializerRequest,
 )
 from ..provider.generic_provider import IterableProvider
 
@@ -49,7 +51,39 @@ def _stub_serializer(tp: type) -> Provider:
     return as_serializer(tp, stub)
 
 
-class BuiltinFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
+class FuncWrapper:
+    __slots__ = ('__call__',)
+
+    def __init__(self):
+        self.__call__ = None
+
+    def set_func(self, func):
+        self.__call__ = func.__call__
+
+
+class FuncRecursionResolver(StubsRecursionResolver):
+    def get_stub(self, request):
+        return FuncWrapper()
+
+    def saturate_stub(self, actual, stub) -> None:
+        stub.set_func(actual)
+
+
+class OperatingFactory(IncrementalRecipe, ProvidingFromRecipe, ABC):
+    """A factory that can operate as Factory but have no predefined providers"""
+
+    def _get_recursion_resolving(self) -> RecursionResolving:
+        return RecursionResolving(
+            {
+                ParserRequest: FuncRecursionResolver(),
+                SerializerRequest: FuncRecursionResolver(),
+            }
+        )
+
+
+class BuiltinFactory(OperatingFactory, ABC):
+    """A factory contains builtin providers"""
+
     recipe = [
         NoneProvider(),
 
