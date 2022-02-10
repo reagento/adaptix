@@ -1,4 +1,3 @@
-
 def _singleton_repr(self):
     return f"{type(self).__name__}()"
 

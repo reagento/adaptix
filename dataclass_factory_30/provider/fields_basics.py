@@ -61,7 +61,7 @@ from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from enum import Enum
 from itertools import islice
-from typing import List, Union, Generic, TypeVar, Dict, Callable, Tuple, Collection
+from typing import Union, Generic, TypeVar, Dict, Callable, Tuple, Collection
 
 from .essential import Request, Mediator
 from .request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind

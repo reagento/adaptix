@@ -1,7 +1,7 @@
 import contextlib
 from collections import deque
 from dataclasses import dataclass
-from typing import Dict, Tuple, Set, Any, Callable, List, Union
+from typing import Dict, Tuple, Set, Any, Callable, List
 
 from .definitions import (
     PathElement, NoRequiredFieldsError,
@@ -172,9 +172,9 @@ class FieldsParserGenerator:
             {
                 var: f'g_{var}'
                 for var in (
-                    state.get_field_parser_var_name(field_name)
-                    for field_name in field_parsers
-                )
+                state.get_field_parser_var_name(field_name)
+                for field_name in field_parsers
+            )
             },
         )
 
