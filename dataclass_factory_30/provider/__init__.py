@@ -66,6 +66,8 @@ from .generic_provider import (
     TypeHintTagsUnwrappingProvider,
     LiteralProvider,
     UnionProvider,
+    IterableProvider,
+    DictProvider,
     EnumNameProvider,
     EnumValueProvider,
     EnumExactValueProvider,

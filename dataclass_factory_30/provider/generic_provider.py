@@ -3,16 +3,16 @@ from abc import ABC
 from dataclasses import replace, dataclass
 from enum import EnumMeta
 from inspect import isabstract
-from typing import Literal, Collection, Container, Union, Iterable, Callable, Optional
+from typing import Literal, Collection, Container, Union, Iterable, Callable, Optional, Dict, Tuple
 
-from .definitions import ParseError, UnionParseError
+from .definitions import ParseError, UnionParseError, TypeParseError
 from .essential import Mediator, CannotProvide, Request
 from .provider_basics import foreign_parser
 from .provider_template import ParserProvider, SerializerProvider, for_type
 from .request_cls import TypeHintRM, SerializerRequest, ParserRequest
 from .static_provider import StaticProvider, static_provision_action
 from ..common import Parser, Serializer, TypeHint
-from ..type_tools import is_new_type, strip_tags, normalize_type
+from ..type_tools import is_new_type, strip_tags, normalize_type, BaseNormType
 
 
 def stub(arg):
@@ -32,7 +32,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
     @static_provision_action(TypeHintRM)
     def _provide_unwrapping(self, mediator: Mediator, request: TypeHintRM) -> Parser:
         unwrapped = strip_tags(normalize_type(request.type))
-        if unwrapped.source == request.type:  # type does not changed, continue search
+        if unwrapped.source == request.type:  # type has not changed, continue search
             raise CannotProvide
 
         return mediator.provide(replace(request, type=unwrapped))
@@ -220,6 +220,93 @@ class IterableProvider(ParserProvider, SerializerProvider):
             return iter_factory(map(arg_serializer, value))
 
         return iter_serializer
+
+
+@for_type(Dict)
+class DictProvider(ParserProvider, SerializerProvider):
+    def _fetch_key_value(self, request: TypeHintRM) -> Tuple[BaseNormType, BaseNormType]:
+        norm = normalize_type(request.type)
+        return norm.args  # type: ignore
+
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+        key, value = self._fetch_key_value(request)
+
+        key_parser = mediator.provide(
+            ParserRequest(
+                type=key.source,
+                strict_coercion=request.strict_coercion,
+                debug_path=request.debug_path
+            )
+        )
+
+        value_parser = mediator.provide(
+            ParserRequest(
+                type=value.source,
+                strict_coercion=request.strict_coercion,
+                debug_path=request.debug_path
+            )
+        )
+
+        if request.debug_path:
+            def dict_parser_dp(data):
+                try:
+                    items_method = data.items
+                except AttributeError:
+                    raise TypeParseError(dict)
+
+                result = {}
+                for k, v in items_method():
+                    try:
+                        parsed_key = key_parser(k)
+                    except ParseError as e:
+                        e.append_path(k)
+                        raise e
+
+                    try:
+                        parsed_value = value_parser(v)
+                    except ParseError as e:
+                        e.append_path(k)  # yes, it's a key
+                        raise e
+
+                    result[parsed_key] = parsed_value
+
+                return result
+
+            return dict_parser_dp
+
+        def dict_parser(data):
+            try:
+                items_method = data.items
+            except AttributeError:
+                raise TypeParseError(dict)
+
+            result = {}
+            for k, v in items_method():
+                result[key_parser(k)] = value_parser(k)
+
+            return result
+
+        return dict_parser
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+        key, value = self._fetch_key_value(request)
+
+        key_serializer = mediator.provide(
+            SerializerRequest(type=key.source)
+        )
+
+        value_serializer = mediator.provide(
+            SerializerRequest(type=value.source)
+        )
+
+        def dict_serializer(data: dict):
+            result = {}
+            for k, v in data.items():
+                result[key_serializer(k)] = value_serializer(k)
+
+            return result
+
+        return dict_serializer
 
 
 class BaseEnumProvider(ParserProvider, SerializerProvider, ABC):

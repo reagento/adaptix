@@ -35,8 +35,9 @@ from ..provider import (
     LimitingProvider,
     create_req_checker,
     SerializerRequest,
+    IterableProvider,
+    DictProvider,
 )
-from ..provider.generic_provider import IterableProvider
 
 
 def stub(arg):
@@ -136,6 +137,7 @@ class BuiltinFactory(OperatingFactory, ABC):
         LiteralProvider(),
         UnionProvider(),
         IterableProvider(),
+        DictProvider(),
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),
