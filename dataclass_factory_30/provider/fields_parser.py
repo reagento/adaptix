@@ -2,10 +2,10 @@ import contextlib
 import string
 from collections import deque
 from dataclasses import dataclass
-from typing import Dict, Tuple, Set, Any, Callable, List
+from typing import Dict, Tuple, Set, Any, Callable, List, Union
 
 from .definitions import (
-    PathElement, NoRequiredFieldsError,
+    NoRequiredFieldsError,
     NoRequiredItemsError, TypeParseError,
     ExtraItemsError, ExtraFieldsError, ParseError
 )
@@ -24,7 +24,9 @@ from .static_provider import StaticProvider, static_provision_action
 from ..code_tools import CodeBuilder, ClosureCompiler, BasicClosureCompiler
 from ..common import Parser
 
-Path = Tuple[PathElement, ...]
+
+FldPathElem = Union[str, int]
+Path = Tuple[FldPathElem, ...]
 
 
 class GenState:
@@ -93,7 +95,7 @@ class GenState:
         return self._path
 
     @contextlib.contextmanager
-    def add_key(self, key: PathElement):
+    def add_key(self, key: FldPathElem):
         past = self._path
         self._path += (key,)
         yield
@@ -320,7 +322,7 @@ class FieldsParserGenerator:
             return False
         return True
 
-    def _gen_crown_dispatch(self, builder: CodeBuilder, state: GenState, sub_crown: Crown, key: PathElement):
+    def _gen_crown_dispatch(self, builder: CodeBuilder, state: GenState, sub_crown: Crown, key: FldPathElem):
         with state.add_key(key):
             if self._gen_root_crown_dispatch(builder, state, sub_crown):
                 return

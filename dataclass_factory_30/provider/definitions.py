@@ -24,7 +24,9 @@ Default = Union[NoDefault, DefaultValue, DefaultFactory]
 # Parser calling foreign functions should convert these exceptions to ParseError
 PARSER_COMPAT_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
 
-PathElement = Union[str, int]
+# In most cases path is Union[str, int]
+# but we decided to retain the option for a custom path
+PathElement = Union[str, int, Any]
 
 
 class ParseError(Exception):
@@ -43,6 +45,9 @@ class ParseError(Exception):
 
     def extend_path(self, sub_path: Iterable[PathElement]):
         self.path.extendleft(sub_path)
+
+    def __str__(self):
+        return f"{type(self).__name__}(path={self.path})"
 
 
 class MsgError(ParseError):
