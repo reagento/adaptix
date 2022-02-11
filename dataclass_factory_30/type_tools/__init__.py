@@ -4,4 +4,4 @@ from .basic_utils import (
     is_protocol, create_union
 )
 from .norm_utils import strip_tags, is_generic
-from .normalize_type import normalize_type, NormType, NormTV
+from .normalize_type import normalize_type, NormType, NormTV, BaseNormType
