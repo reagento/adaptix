@@ -1,4 +1,5 @@
 import contextlib
+import string
 from collections import deque
 from dataclasses import dataclass
 from typing import Dict, Tuple, Set, Any, Callable, List
@@ -117,11 +118,15 @@ class FieldsParserGenerator:
         debug_path: bool,
         strict_coercion: bool,
         hook: CodeGenHook,
+        closure_name: str,
+        file_name: str,
     ):
         self.debug_path = debug_path
         self.strict_coercion = strict_coercion
         self.figure = figure
         self.hook = hook
+        self.closure_name = closure_name
+        self.file_name = file_name
 
     def _gen_header(self, builder: CodeBuilder, state: GenState):
         if state.path2suffix:
@@ -172,19 +177,19 @@ class FieldsParserGenerator:
             {
                 var: f'g_{var}'
                 for var in (
-                state.get_field_parser_var_name(field_name)
-                for field_name in field_parsers
-            )
+                    state.get_field_parser_var_name(field_name)
+                    for field_name in field_parsers
+                )
             },
         )
 
         builder.empty_line()
 
         data = state.get_data_var_name()
-        with builder(f"def fields_parser({data}):"):
+        with builder(f"def {self.closure_name}({data}):"):
             builder.extend(parser_body_builder)
 
-        builder += "return fields_parser"
+        builder += f"return {self.closure_name}"
 
         namespace = {
             "g_constructor": self.figure.constructor,
@@ -210,7 +215,7 @@ class FieldsParserGenerator:
 
         return compiler.compile(
             builder,
-            "fields_parser",
+            self.file_name,
             namespace,
         )
 
@@ -504,6 +509,8 @@ def _stub_code_gen_hook(data: CodeGenHookData):
 
 
 class CodeGenAccumulator(StaticProvider):
+    """Accumulates all generated code. It may be useful for debugging"""
+
     def __init__(self):
         self.list: List[Tuple[Request, CodeGenHookData]] = []
 
@@ -515,14 +522,55 @@ class CodeGenAccumulator(StaticProvider):
         return hook
 
 
+_AVAILABLE_CHARS = set(string.ascii_letters + string.digits)
+
+
+def sanitize_name(name: str) -> str:
+    if name == "":
+        return ""
+
+    first_letter = name[0]
+
+    if first_letter not in string.ascii_letters:
+        return sanitize_name(name[1:])
+
+    return first_letter + "".join(
+        c for c in name[1:] if c in _AVAILABLE_CHARS
+    )
+
+
 class FieldsParserProvider(ParserProvider):
-    def _create_parser_generator(self, figure: InputFieldsFigure, request: ParserRequest, hook: CodeGenHook):
+    def _create_parser_generator(
+        self,
+        figure: InputFieldsFigure,
+        request: ParserRequest,
+        hook: CodeGenHook,
+        closure_name: str,
+        file_name: str,
+    ):
         return FieldsParserGenerator(
             figure=figure,
             debug_path=request.debug_path,
             strict_coercion=request.strict_coercion,
             hook=hook,
+            closure_name=closure_name,
+            file_name=file_name,
         )
+
+    def _get_closure_name(self, request: ParserRequest) -> str:
+        tp = request.type
+        if isinstance(tp, type):
+            name = tp.__name__
+        else:
+            name = str(tp)
+
+        s_name = sanitize_name(name)
+        if s_name != "":
+            s_name = "_" + s_name
+        return "fields_parser" + s_name
+
+    def _get_file_name(self, request: ParserRequest) -> str:
+        return self._get_closure_name(request)
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         figure: InputFieldsFigure = mediator.provide(
@@ -544,7 +592,9 @@ class FieldsParserProvider(ParserProvider):
             code_gen_hook = _stub_code_gen_hook
 
         generator = self._create_parser_generator(
-            figure, request, code_gen_hook
+            figure, request, code_gen_hook,
+            closure_name=self._get_closure_name(request),
+            file_name=self._get_file_name(request),
         )
 
         fields_parser = {
