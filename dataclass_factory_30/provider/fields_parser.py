@@ -195,6 +195,7 @@ class FieldsParserGenerator:
 
         namespace = {
             "g_constructor": self.figure.constructor,
+            "deque": deque,
             **{
                 "g_" + state.get_field_parser_var_name(field_name): parser
                 for field_name, parser in field_parsers.items()
