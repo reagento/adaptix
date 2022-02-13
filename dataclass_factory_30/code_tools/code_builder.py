@@ -1,7 +1,6 @@
 import contextlib
-from collections import ChainMap
 from textwrap import dedent
-from typing import Mapping, List, Sequence
+from typing import List, Sequence
 
 
 class CodeBuilder:
@@ -63,6 +62,3 @@ class CodeBuilder:
 
     def string(self) -> str:
         return "\n".join(self.lines)
-
-    def get_context(self) -> Mapping[str, str]:
-        return ChainMap(*reversed(self._ctx_list))  # type: ignore
