@@ -24,7 +24,7 @@ def test_inconsistent_fields_order(first, second):
             extra=None,
             fields=(
                 InputFieldRM(
-                    field_name="a",
+                    name="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -32,7 +32,7 @@ def test_inconsistent_fields_order(first, second):
                     param_kind=first,
                 ),
                 InputFieldRM(
-                    field_name="a",
+                    name="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -49,7 +49,7 @@ def _make_triple_iff(first, second, third):
         extra=None,
         fields=(
             InputFieldRM(
-                field_name="a",
+                name="a",
                 type=int,
                 default=NoDefault(),
                 is_required=True,
@@ -57,7 +57,7 @@ def _make_triple_iff(first, second, third):
                 param_kind=first,
             ),
             InputFieldRM(
-                field_name="b",
+                name="b",
                 type=int,
                 default=NoDefault(),
                 is_required=False,
@@ -65,7 +65,7 @@ def _make_triple_iff(first, second, third):
                 param_kind=second,
             ),
             InputFieldRM(
-                field_name="c",
+                name="c",
                 type=int,
                 default=NoDefault(),
                 is_required=True,
@@ -104,14 +104,14 @@ def test_ok_non_required_field_order(first, second, third):
     _make_triple_iff(first, second, third)
 
 
-def test_field_name_duplicates():
+def test_name_duplicates():
     with pytest.raises(ValueError):
         InputFieldsFigure(
             constructor=stub_constructor,
             extra=None,
             fields=(
                 InputFieldRM(
-                    field_name="a",
+                    name="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -119,7 +119,7 @@ def test_field_name_duplicates():
                     param_kind=ParamKind.POS_OR_KW,
                 ),
                 InputFieldRM(
-                    field_name="a",
+                    name="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -137,7 +137,7 @@ def test_wild_targets():
             extra=ExtraTargets(("b", )),
             fields=(
                 InputFieldRM(
-                    field_name="a",
+                    name="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,

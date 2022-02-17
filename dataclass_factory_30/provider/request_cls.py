@@ -24,7 +24,7 @@ class TypeHintRM(Request[T], Generic[T]):
 
 @dataclass(frozen=True)
 class FieldRM(TypeHintRM[T], Generic[T]):
-    field_name: str
+    name: str
     default: Default
     is_required: bool
     # Mapping almost never defines __hash__,

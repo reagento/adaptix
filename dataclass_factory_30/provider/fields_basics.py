@@ -150,11 +150,11 @@ class InputFieldsFigure(BaseFieldsFigure):
                     f" except {ParamKind.KW_ONLY} fields"
                 )
 
-        field_names = {fld.field_name for fld in self.fields}
+        field_names = {fld.name for fld in self.fields}
         if len(field_names) != len(self.fields):
             duplicates = {
-                fld.field_name for fld in self.fields
-                if fld.field_name in field_names
+                fld.name for fld in self.fields
+                if fld.name in field_names
             }
             raise ValueError(f"Field names {duplicates} are duplicated")
 

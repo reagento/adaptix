@@ -96,12 +96,12 @@ class NameMapper(NameMappingProvider):
         return NameMapping(
             crown=DictCrown(
                 map={
-                    self._convert_name(fld.field_name): FieldCrown(fld.field_name)
+                    self._convert_name(fld.name): FieldCrown(fld.name)
                     for fld in request.figure.fields
                     if not (
-                        self._should_skip(fld.field_name)
-                        or
-                        fld.field_name in extra_targets
+                            self._should_skip(fld.name)
+                            or
+                            fld.name in extra_targets
                     )
                 },
                 extra=extra_policy,
@@ -112,7 +112,7 @@ class NameMapper(NameMappingProvider):
     def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> NameMapping:
         skipped_required_fields = [
             fld for fld in request.figure.fields
-            if fld.is_required and self._should_skip(fld.field_name)
+            if fld.is_required and self._should_skip(fld.name)
         ]
 
         if skipped_required_fields:

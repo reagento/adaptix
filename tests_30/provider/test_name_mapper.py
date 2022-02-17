@@ -193,9 +193,9 @@ class Stub:
         pass
 
 
-def make_field(field_name: str, is_required: bool):
+def make_field(name: str, is_required: bool):
     return InputFieldRM(
-        field_name=field_name,
+        name=name,
         type=int,
         default=NoDefault(),
         is_required=is_required,
@@ -245,11 +245,11 @@ def test_name_mapping_simple(factory, make_request):
         make_request(
             fields=(
                 make_field(
-                    field_name="a",
+                    name="a",
                     is_required=True,
                 ),
                 make_field(
-                    field_name="b",
+                    name="b",
                     is_required=True,
                 ),
             )
@@ -273,11 +273,11 @@ def test_name_mapping_skipping(factory, make_request):
         make_request(
             fields=(
                 make_field(
-                    field_name="a",
+                    name="a",
                     is_required=True,
                 ),
                 make_field(
-                    field_name="c",
+                    name="c",
                     is_required=False,
                 ),
             )
@@ -300,11 +300,11 @@ def test_name_mapping_extra_targets(factory):
         inp_request(
             fields=(
                 make_field(
-                    field_name="a",
+                    name="a",
                     is_required=True,
                 ),
                 make_field(
-                    field_name="b",
+                    name="b",
                     is_required=False,
                 ),
             ),
@@ -328,11 +328,11 @@ def test_name_mapping_extra_targets_skip(factory):
         inp_request(
             fields=(
                 make_field(
-                    field_name="a",
+                    name="a",
                     is_required=True,
                 ),
                 make_field(
-                    field_name="c",
+                    name="c",
                     is_required=False,
                 ),
             ),
@@ -357,11 +357,11 @@ def test_name_mapping_error_on_required_field_skip(factory):
             inp_request(
                 fields=(
                     make_field(
-                        field_name="a",
+                        name="a",
                         is_required=True,
                     ),
                     make_field(
-                        field_name="c",
+                        name="c",
                         is_required=True,
                     ),
                 ),
@@ -374,11 +374,11 @@ def test_name_mapping_error_on_required_field_skip(factory):
             inp_request(
                 fields=(
                     make_field(
-                        field_name="a",
+                        name="a",
                         is_required=True,
                     ),
                     make_field(
-                        field_name="c",
+                        name="c",
                         is_required=True,
                     ),
                 ),

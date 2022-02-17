@@ -56,7 +56,7 @@ def signature_params_to_iff(constructor: Callable, params: Iterable[Parameter]) 
         fields=tuple(
             InputFieldRM(
                 type=Any if _is_empty(param.annotation) else param.annotation,
-                field_name=param.name,
+                name=param.name,
                 is_required=_is_empty(param.default),
                 default=NoDefault() if _is_empty(param.default) else DefaultValue(param.default),
                 metadata=MappingProxyType({}),
@@ -109,7 +109,7 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
             fields=tuple(
                 replace(
                     fld,
-                    type=type_hints.get(fld.field_name, Any)
+                    type=type_hints.get(fld.name, Any)
                 )
                 for fld in iff.fields
             )
@@ -119,7 +119,7 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
         return OutputFieldsFigure(
             fields=tuple(
                 FieldRM(
-                    field_name=fld.field_name,
+                    name=fld.name,
                     type=fld.type,
                     default=fld.default,
                     is_required=True,
@@ -134,7 +134,7 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
 def _to_inp(param_kind: ParamKind, fields: Iterable[FieldRM]) -> Tuple[InputFieldRM, ...]:
     return tuple(
         InputFieldRM(
-            field_name=f.field_name,
+            name=f.name,
             type=f.type,
             default=f.default,
             is_required=f.is_required,
@@ -155,7 +155,7 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
         return tuple(
             FieldRM(
                 type=tp,
-                field_name=name,
+                name=name,
                 default=NoDefault(),
                 is_required=is_required,
                 metadata=MappingProxyType({}),
@@ -190,7 +190,7 @@ def _dc_field_to_field_rm(fld: DCField, required_det: Callable[[Default], bool])
 
     return FieldRM(
         type=fld.type,
-        field_name=fld.name,
+        name=fld.name,
         default=default,
         is_required=required_det(default),
         metadata=fld.metadata,

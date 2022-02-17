@@ -71,7 +71,7 @@ class GenState:
         return f"parser_{field_name}"
 
     def get_field_var_name(self, field: InputFieldRM) -> str:
-        return f"f_{field.field_name}"
+        return f"f_{field.name}"
 
     def get_opt_fields_var_name(self) -> str:
         return "opt_fields"
@@ -119,13 +119,13 @@ class FieldsParserGenerator:
             constructor=SampleClass,
             fields=(
                 InputFieldRM(
-                    field_name='z',
+                    name='z',
                     is_required=True,
                     param_kind=ParamKind.POS_OR_KW,
                     ...
                 ),
                 InputFieldRM(
-                    field_name='y',
+                    name='y',
                     is_required=False,
                     param_kind=ParamKind.POS_OR_KW,
                     ...
@@ -199,25 +199,25 @@ class FieldsParserGenerator:
             constructor=SampleClass,
             fields=(
                 InputFieldRM(
-                    field_name='z',
+                    name='z',
                     is_required=True,
                     param_kind=ParamKind.POS_ONLY,
                     ...
                 ),
                 InputFieldRM(
-                    field_name='y',
+                    name='y',
                     is_required=True,
                     param_kind=ParamKind.KW_ONLY,
                     ...
                 ),
                 InputFieldRM(
-                    field_name='x',
+                    name='x',
                     is_required=True,
                     param_kind=ParamKind.KW_ONLY,
                     ...
                 ),
                 InputFieldRM(
-                    field_name='w',
+                    name='w',
                     is_required=False,
                     param_kind=ParamKind.KW_ONLY,
                     ...
@@ -302,7 +302,7 @@ class FieldsParserGenerator:
         self.strict_coercion = strict_coercion
         self.figure = figure
         self.field_name_to_field: Dict[str, InputFieldRM] = {
-            field.field_name: field for field in self.figure.fields
+            field.name: field for field in self.figure.fields
         }
 
     def _gen_header(self, builder: CodeBuilder, state: GenState):
@@ -433,7 +433,7 @@ class FieldsParserGenerator:
         return (
             isinstance(self.figure.extra, ExtraTargets)
             and
-            field.field_name in self.figure.extra.fields
+            field.name in self.figure.extra.fields
         )
 
     def _gen_parser_body(self, root_crown: RootCrown, state: GenState) -> CodeBuilder:
@@ -491,8 +491,8 @@ class FieldsParserGenerator:
 
     def _gen_field_passing(self, builder: CodeBuilder, state: GenState, field: InputFieldRM):
         if field.is_required:
-            param = field.field_name
-            var = state.get_field_var(field.field_name)
+            param = field.name
+            var = state.get_field_var(field.name)
 
             if field.param_kind == ParamKind.KW_ONLY:
                 builder(f"{param}={var},")
@@ -633,10 +633,10 @@ class FieldsParserGenerator:
         field = state.get_field(crown)
 
         if field.is_required:
-            field_left_value = state.get_field_var(field.field_name)
+            field_left_value = state.get_field_var(field.name)
         else:
             opt_fields = state.get_opt_fields_var_name()
-            field_left_value = f"{opt_fields}[{field.field_name!r}]"
+            field_left_value = f"{opt_fields}[{field.name!r}]"
 
         self._gen_var_assigment_from_data(
             builder,
@@ -644,14 +644,14 @@ class FieldsParserGenerator:
             state.get_raw_field_var(crown.name),
             ignore_lookup_error=not field.is_required,
         )
-        data_for_parser = state.get_raw_field_var(field.field_name)
+        data_for_parser = state.get_raw_field_var(field.name)
 
         if field.is_required:
             builder.empty_line()
             self._gen_field_assigment(
                 builder,
                 field_left_value,
-                field.field_name,
+                field.name,
                 data_for_parser,
                 state,
             )
@@ -660,7 +660,7 @@ class FieldsParserGenerator:
                 self._gen_field_assigment(
                     builder,
                     field_left_value,
-                    field.field_name,
+                    field.name,
                     data_for_parser,
                     state,
                 )
@@ -775,7 +775,7 @@ class FieldsParserProvider(ParserProvider):
         used_fields: Set[str],
         extra_targets: Set[str]
     ):
-        f_name = field.field_name
+        f_name = field.name
         if f_name in extra_targets:
             return f_name in skipped_extra_targets
         else:
@@ -797,7 +797,7 @@ class FieldsParserProvider(ParserProvider):
             extra_targets = set()
 
         skipped_required_fields = [
-            field.field_name
+            field.name
             for field in figure.fields
             if field.is_required and self._field_is_skipped(
                 field,
@@ -823,7 +823,7 @@ class FieldsParserProvider(ParserProvider):
             figure,
             fields=tuple(
                 fld for fld in figure.fields
-                if fld.field_name in used_fields or fld.field_name in filtered_extra_targets
+                if fld.name in used_fields or fld.name in filtered_extra_targets
             ),
             extra=extra,
         )
@@ -878,7 +878,7 @@ class FieldsParserProvider(ParserProvider):
         new_figure = self._process_figure(figure, name_mapping)
 
         field_parsers = {
-            field.field_name: mediator.provide(
+            field.name: mediator.provide(
                 ParserFieldRequest(
                     type=field.type,
                     strict_coercion=request.strict_coercion,
@@ -886,7 +886,7 @@ class FieldsParserProvider(ParserProvider):
                     default=field.default,
                     is_required=field.is_required,
                     metadata=field.metadata,
-                    field_name=field.field_name,
+                    name=field.name,
                     param_kind=field.param_kind,
                 )
             )

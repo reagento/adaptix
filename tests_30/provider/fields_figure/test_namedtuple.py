@@ -21,14 +21,14 @@ def test_order_ab():
     fields = (
         FieldRM(
             type=Any,
-            field_name='a',
+            name='a',
             default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=Any,
-            field_name='b',
+            name='b',
             default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
@@ -59,14 +59,14 @@ def test_order_ba():
     fields = (
         FieldRM(
             type=Any,
-            field_name='b',
+            name='b',
             default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=Any,
-            field_name='a',
+            name='a',
             default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
@@ -110,7 +110,7 @@ def test_defaults():
             fields=(
                 InputFieldRM(
                     type=Any,
-                    field_name='a',
+                    name='a',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({}),
@@ -118,7 +118,7 @@ def test_defaults():
                 ),
                 InputFieldRM(
                     type=Any,
-                    field_name='b',
+                    name='b',
                     default=DefaultValue(0),
                     is_required=False,
                     metadata=MappingProxyType({}),
@@ -126,7 +126,7 @@ def test_defaults():
                 ),
                 InputFieldRM(
                     type=Any,
-                    field_name='c',
+                    name='c',
                     default=DefaultValue(func),
                     is_required=False,
                     metadata=MappingProxyType({}),
@@ -144,21 +144,21 @@ def test_defaults():
             fields=(
                 FieldRM(
                     type=Any,
-                    field_name='a',
+                    name='a',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=Any,
-                    field_name='b',
+                    name='b',
                     default=DefaultValue(0),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=Any,
-                    field_name='c',
+                    name='c',
                     default=DefaultValue(func),
                     is_required=True,
                     metadata=MappingProxyType({})
@@ -175,14 +175,14 @@ def test_class_hinted_namedtuple():
     fields = (
         FieldRM(
             type=int,
-            field_name='a',
+            name='a',
             default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
         ),
         FieldRM(
             type=str,
-            field_name='b',
+            name='b',
             default=NoDefault(),
             is_required=True,
             metadata=MappingProxyType({})
@@ -226,7 +226,7 @@ def test_hinted_namedtuple():
             fields=(
                 InputFieldRM(
                     type=int,
-                    field_name='a',
+                    name='a',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({}),
@@ -234,7 +234,7 @@ def test_hinted_namedtuple():
                 ),
                 InputFieldRM(
                     type=str,
-                    field_name='b',
+                    name='b',
                     default=DefaultValue('abc'),
                     is_required=False,
                     metadata=MappingProxyType({}),
@@ -252,14 +252,14 @@ def test_hinted_namedtuple():
             fields=(
                 FieldRM(
                     type=int,
-                    field_name='a',
+                    name='a',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=str,
-                    field_name='b',
+                    name='b',
                     default=DefaultValue('abc'),
                     is_required=True,
                     metadata=MappingProxyType({})

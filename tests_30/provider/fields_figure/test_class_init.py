@@ -34,7 +34,7 @@ class Valid2Kwargs:
 VALID_FIELDS = (
     InputFieldRM(
         type=Any,
-        field_name='a',
+        name='a',
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
@@ -42,7 +42,7 @@ VALID_FIELDS = (
     ),
     InputFieldRM(
         type=int,
-        field_name='b',
+        name='b',
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
@@ -50,7 +50,7 @@ VALID_FIELDS = (
     ),
     InputFieldRM(
         type=str,
-        field_name='c',
+        name='c',
         default=DefaultValue('abc'),
         is_required=False,
         metadata=MappingProxyType({}),
@@ -58,7 +58,7 @@ VALID_FIELDS = (
     ),
     InputFieldRM(
         type=Any,
-        field_name='d',
+        name='d',
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
@@ -107,7 +107,7 @@ def test_pos_only():
             fields=(
                 InputFieldRM(
                     type=Any,
-                    field_name='a',
+                    name='a',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({}),
@@ -115,7 +115,7 @@ def test_pos_only():
                 ),
                 InputFieldRM(
                     type=Any,
-                    field_name='b',
+                    name='b',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({}),

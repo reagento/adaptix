@@ -43,7 +43,7 @@ def test_input():
             fields=(
                 InputFieldRM(
                     type=int,
-                    field_name='a',
+                    name='a',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({}),
@@ -51,7 +51,7 @@ def test_input():
                 ),
                 InputFieldRM(
                     type=InitVarInt,
-                    field_name='b',
+                    name='b',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({}),
@@ -59,7 +59,7 @@ def test_input():
                 ),
                 InputFieldRM(
                     type=InitVarInt,
-                    field_name='c',
+                    name='c',
                     default=DefaultValue(1),
                     is_required=False,
                     metadata=MappingProxyType({}),
@@ -67,7 +67,7 @@ def test_input():
                 ),
                 InputFieldRM(
                     type=str,
-                    field_name='d',
+                    name='d',
                     default=DefaultValue('text'),
                     is_required=False,
                     metadata=MappingProxyType({}),
@@ -75,7 +75,7 @@ def test_input():
                 ),
                 InputFieldRM(
                     type=list,
-                    field_name='e',
+                    name='e',
                     default=DefaultFactory(list),
                     is_required=False,
                     metadata=MappingProxyType({}),
@@ -83,7 +83,7 @@ def test_input():
                 ),
                 InputFieldRM(
                     type=int,
-                    field_name='i',
+                    name='i',
                     default=DefaultValue(4),
                     is_required=False,
                     metadata=MappingProxyType({'meta': 'data'}),
@@ -103,35 +103,35 @@ def test_output():
             fields=(
                 FieldRM(
                     type=int,
-                    field_name='a',
+                    name='a',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=str,
-                    field_name='d',
+                    name='d',
                     default=DefaultValue('text'),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=list,
-                    field_name='e',
+                    name='e',
                     default=DefaultFactory(list),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=int,
-                    field_name='f',
+                    name='f',
                     default=DefaultValue(3),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=int,
-                    field_name='i',
+                    name='i',
                     default=DefaultValue(4),
                     is_required=True,
                     metadata=MappingProxyType({'meta': 'data'})
@@ -161,7 +161,7 @@ def test_inheritance():
             fields=(
                 InputFieldRM(
                     type=int,
-                    field_name='a',
+                    name='a',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({}),
@@ -169,7 +169,7 @@ def test_inheritance():
                 ),
                 InputFieldRM(
                     type=int,
-                    field_name='b',
+                    name='b',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({}),
@@ -187,14 +187,14 @@ def test_inheritance():
             fields=(
                 FieldRM(
                     type=int,
-                    field_name='a',
+                    name='a',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({})
                 ),
                 FieldRM(
                     type=int,
-                    field_name='b',
+                    name='b',
                     default=NoDefault(),
                     is_required=True,
                     metadata=MappingProxyType({})

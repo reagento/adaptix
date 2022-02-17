@@ -40,7 +40,7 @@ class FieldNameRC(RequestChecker):
         return (FieldRM,)
 
     def _check_request(self, request: FieldRM) -> None:
-        if self.field_name == request.field_name:
+        if self.field_name == request.name:
             return
         raise CannotProvide(f'field_name must be a {self.field_name!r}')
 
