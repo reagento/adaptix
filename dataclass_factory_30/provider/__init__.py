@@ -97,7 +97,6 @@ from .provider_template import (
 )
 from .request_cls import (
     TypeHintRM,
-    FieldNameRM,
     ParserRequest,
     SerializerRequest,
     FieldRM,

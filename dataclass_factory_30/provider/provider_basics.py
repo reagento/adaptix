@@ -5,7 +5,7 @@ from typing import TypeVar, Union, Type, Tuple, Callable, Any, Generic
 
 from .definitions import ParseError, PARSER_COMPAT_EXCEPTIONS
 from .essential import Provider, Mediator, CannotProvide, Request
-from .request_cls import TypeHintRM, FieldNameRM
+from .request_cls import TypeHintRM, FieldRM
 from ..common import TypeHint, Parser
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
 from ..type_tools.normalize_type import NormType, NormTV, NotSubscribedError
@@ -37,9 +37,9 @@ class FieldNameRC(RequestChecker):
     field_name: str
 
     def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
-        return (FieldNameRM,)
+        return (FieldRM,)
 
-    def _check_request(self, request: FieldNameRM) -> None:
+    def _check_request(self, request: FieldRM) -> None:
         if self.field_name == request.field_name:
             return
         raise CannotProvide(f'field_name must be a {self.field_name!r}')
