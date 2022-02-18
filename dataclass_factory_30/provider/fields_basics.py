@@ -56,12 +56,12 @@ ListCrown(
    extra=...
 )
 """
-
+import itertools
 from abc import abstractmethod, ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from itertools import islice
-from typing import Union, Generic, TypeVar, Dict, Callable, Tuple, Collection
+from typing import Union, Generic, TypeVar, Dict, Callable, Tuple, Collection, Iterable, List, Set
 
 from .essential import Request, Mediator
 from .request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind
@@ -249,3 +249,110 @@ class NameMappingProvider(StaticProvider, ABC):
     # This method declared only for IDE autocompletion
     def _provide_name_mapping(self, mediator: Mediator, request: BaseNameMappingRequest) -> NameMapping:
         pass
+
+
+def _merge_iters(args: Iterable[Iterable[T]]) -> List[T]:
+    return list(itertools.chain.from_iterable(args))
+
+
+class FigureProcessor:
+    def _inner_collect_used_fields(self, crown: Crown):
+        if isinstance(crown, (DictCrown, ListCrown)):
+            return _merge_iters(
+                self._collect_used_fields(sub_crown)
+                for sub_crown in crown.map.values()
+            )
+        if isinstance(crown, FieldCrown):
+            return [crown.name]
+        if crown is None:
+            return []
+
+    def _collect_used_fields(self, crown: Crown) -> Set[str]:
+        lst = self._inner_collect_used_fields(crown)
+
+        used_set = set()
+        for f_name in lst:
+            if f_name in used_set:
+                raise ValueError(f"Field {f_name!r} is duplicated at crown")
+            used_set.add(f_name)
+
+        return used_set
+
+    def _field_is_skipped(
+        self,
+        field: InputFieldRM,
+        skipped_extra_targets: Collection[str],
+        used_fields: Set[str],
+        extra_targets: Set[str]
+    ):
+        f_name = field.name
+        if f_name in extra_targets:
+            return f_name in skipped_extra_targets
+        else:
+            return f_name not in used_fields
+
+    def _validate_required_fields(
+        self,
+        figure: InputFieldsFigure,
+        used_fields: Set[str],
+        extra_targets: Set[str],
+        name_mapping: NameMapping,
+    ):
+        skipped_required_fields = [
+            field.name
+            for field in figure.fields
+            if field.is_required and self._field_is_skipped(
+                field,
+                skipped_extra_targets=name_mapping.skipped_extra_targets,
+                used_fields=used_fields,
+                extra_targets=extra_targets
+            )
+        ]
+        if skipped_required_fields:
+            raise ValueError(
+                f"Required fields {skipped_required_fields} not presented at name_mapping crown"
+            )
+
+    def _get_extra_targets(self, figure: InputFieldsFigure, used_fields: Set[str]):
+        if isinstance(figure.extra, ExtraTargets):
+            extra_targets = set(figure.extra.fields)
+
+            extra_targets_at_crown = used_fields & extra_targets
+            if extra_targets_at_crown:
+                raise ValueError(
+                    f"Fields {extra_targets_at_crown} can not be extra target"
+                    f" and be presented at name_mapping"
+                )
+
+            return extra_targets
+
+        return set()
+
+    def process_figure(self, figure: InputFieldsFigure, name_mapping: NameMapping) -> InputFieldsFigure:
+        used_fields = self._collect_used_fields(name_mapping.crown)
+        extra_targets = self._get_extra_targets(figure, used_fields)
+
+        self._validate_required_fields(
+            figure=figure,
+            used_fields=used_fields,
+            extra_targets=extra_targets,
+            name_mapping=name_mapping,
+        )
+
+        filtered_extra_targets = extra_targets - set(name_mapping.skipped_extra_targets)
+        extra = figure.extra
+
+        if isinstance(extra, ExtraTargets):
+            extra = ExtraTargets(tuple(filtered_extra_targets))
+
+        # leave only fields that will be passed to constructor
+        new_figure = replace(
+            figure,
+            fields=tuple(
+                fld for fld in figure.fields
+                if fld.name in used_fields or fld.name in filtered_extra_targets
+            ),
+            extra=extra,
+        )
+
+        return new_figure

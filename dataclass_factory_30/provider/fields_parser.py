@@ -1,9 +1,8 @@
 import contextlib
-import itertools
 import string
 from collections import deque
-from dataclasses import dataclass, replace
-from typing import Dict, Tuple, Set, Any, Callable, List, Union, Iterable, TypeVar, Collection
+from dataclasses import dataclass
+from typing import Dict, Tuple, Set, Any, Callable, List, Union
 
 from .definitions import (
     NoRequiredFieldsError,
@@ -17,7 +16,7 @@ from .fields_basics import (
     NameMapping, Crown,
     DictCrown, ListCrown, FieldCrown,
     InputFFRequest, InputNameMappingRequest,
-    ExtraKwargs, ExtraTargets,
+    ExtraKwargs, ExtraTargets, FigureProcessor,
 )
 from .provider_template import ParserProvider
 from .request_cls import ParserRequest, ParserFieldRequest, InputFieldRM, ParamKind
@@ -83,9 +82,6 @@ class GenState:
         return f"r_{field_name}"
 
     def get_field(self, crown: FieldCrown) -> InputFieldRM:
-        if crown.name in self.field_name2path:
-            raise ValueError(f"{crown} appears twice")
-
         self.field_name2path[crown.name] = self._path
         return self._name_to_field[crown.name]
 
@@ -444,8 +440,8 @@ class FieldsParserGenerator:
         4. Passing fields to constructor parameters
         """
         has_opt_params = any(
-            not f.is_required and not self._field_is_extra_target(f)
-            for f in self.figure.fields
+            not fld.is_required and not self._field_is_extra_target(fld)
+            for fld in self.figure.fields
         )
         opt_fields = state.get_opt_fields_var_name()
 
@@ -720,12 +716,6 @@ class CodeGenAccumulator(StaticProvider):
 
 _AVAILABLE_CHARS = set(string.ascii_letters + string.digits)
 
-T = TypeVar('T')
-
-
-def _merge_iters(args: Iterable[Iterable[T]]) -> List[T]:
-    return list(itertools.chain.from_iterable(args))
-
 
 class FieldsParserProvider(ParserProvider):
     def _sanitize_name(self, name: str):
@@ -756,82 +746,11 @@ class FieldsParserProvider(ParserProvider):
     def _get_file_name(self, request: ParserRequest) -> str:
         return self._get_closure_name(request)
 
-    def _collect_used_fields(self, crown: Crown) -> List[str]:
-        if isinstance(crown, (DictCrown, ListCrown)):
-            return _merge_iters(
-                self._collect_used_fields(sub_crown)
-                for sub_crown in crown.map.values()
-            )
-        if isinstance(crown, FieldCrown):
-            return [crown.name]
-        if crown is None:
-            return []
-        raise RuntimeError
-
-    def _field_is_skipped(
-        self,
-        field: InputFieldRM,
-        skipped_extra_targets: Collection[str],
-        used_fields: Set[str],
-        extra_targets: Set[str]
-    ):
-        f_name = field.name
-        if f_name in extra_targets:
-            return f_name in skipped_extra_targets
-        else:
-            return f_name not in used_fields
-
-    def _process_figure(self, figure: InputFieldsFigure, name_mapping: NameMapping) -> InputFieldsFigure:
-        used_fields = set(self._collect_used_fields(name_mapping.crown))
-
-        if isinstance(figure.extra, ExtraTargets):
-            extra_targets = set(figure.extra.fields)
-
-            extra_targets_at_crown = used_fields & extra_targets
-            if extra_targets_at_crown:
-                raise ValueError(
-                    f"Fields {extra_targets_at_crown} can not be extra target"
-                    f" and be presented at name_mapping"
-                )
-        else:
-            extra_targets = set()
-
-        skipped_required_fields = [
-            field.name
-            for field in figure.fields
-            if field.is_required and self._field_is_skipped(
-                field,
-                skipped_extra_targets=name_mapping.skipped_extra_targets,
-                used_fields=used_fields,
-                extra_targets=extra_targets
-            )
-        ]
-        if skipped_required_fields:
-            raise ValueError(
-                f"Required fields {skipped_required_fields} not presented at name_mapping crown"
-            )
-
-        filtered_extra_targets = extra_targets - set(name_mapping.skipped_extra_targets)
-
-        extra = figure.extra
-
-        if isinstance(extra, ExtraTargets):
-            extra = ExtraTargets(tuple(filtered_extra_targets))
-
-        # leave only fields that will be passed to constructor
-        new_figure = replace(
-            figure,
-            fields=tuple(
-                fld for fld in figure.fields
-                if fld.name in used_fields or fld.name in filtered_extra_targets
-            ),
-            extra=extra,
-        )
-
-        return new_figure
-
     def _get_compiler(self):
         return BasicClosureCompiler()
+
+    def _get_figure_processor(self):
+        return FigureProcessor()
 
     def _make_parser(
         self,
@@ -875,7 +794,7 @@ class FieldsParserProvider(ParserProvider):
         except CannotProvide:
             code_gen_hook = _stub_code_gen_hook
 
-        new_figure = self._process_figure(figure, name_mapping)
+        new_figure = self._get_figure_processor().process_figure(figure, name_mapping)
 
         field_parsers = {
             field.name: mediator.provide(
