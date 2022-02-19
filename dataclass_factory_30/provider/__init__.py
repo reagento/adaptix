@@ -6,7 +6,9 @@ from .concrete_provider import (
     IsoFormatProvider,
     TimedeltaProvider,
     NoneProvider,
-    BytesBase64Provider,
+    BytesBase64ParserProvider,
+    BytearrayBase64ParserProvider,
+    ByteStringBase64Serializer,
 )
 from .definitions import (
     NoDefault,
@@ -94,6 +96,7 @@ from .provider_template import (
     ParserProvider,
     SerializerProvider,
     CoercionLimiter,
+    ABCProxy,
 )
 from .request_cls import (
     TypeHintRM,

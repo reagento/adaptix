@@ -5,7 +5,7 @@ from fractions import Fraction
 from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network, IPv4Interface, IPv6Interface
 from itertools import chain
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping, MutableMapping, ByteString
 from uuid import UUID
 
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
@@ -17,7 +17,6 @@ from ..provider import (
     NoneProvider,
     IsoFormatProvider,
     TimedeltaProvider,
-    BytesBase64Provider,
     LiteralProvider,
     UnionProvider,
     NewTypeUnwrappingProvider,
@@ -37,6 +36,10 @@ from ..provider import (
     SerializerRequest,
     IterableProvider,
     DictProvider,
+    BytesBase64ParserProvider,
+    ByteStringBase64Serializer,
+    BytearrayBase64ParserProvider,
+    ABCProxy,
 )
 
 
@@ -119,7 +122,9 @@ class BuiltinFactory(OperatingFactory, ABC):
         CoercionLimiter(as_parser(Fraction), [str, Fraction]),
         as_serializer(Fraction, Fraction.__str__),
 
-        BytesBase64Provider(),
+        BytesBase64ParserProvider(),
+        BytearrayBase64ParserProvider(),
+        ByteStringBase64Serializer(),
 
         *chain.from_iterable(
             (
@@ -138,6 +143,10 @@ class BuiltinFactory(OperatingFactory, ABC):
         UnionProvider(),
         IterableProvider(),
         DictProvider(),
+
+        ABCProxy(Mapping, dict),
+        ABCProxy(MutableMapping, dict),
+        ABCProxy(ByteString, bytes),
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),

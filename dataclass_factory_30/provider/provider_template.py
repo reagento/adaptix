@@ -1,14 +1,15 @@
 from abc import ABC, abstractmethod
+from dataclasses import replace
 from functools import partial
 from typing import TypeVar, final, Type, Collection
 
 from .definitions import TypeParseError
-from .essential import Provider, Mediator, Request
+from .essential import Provider, Mediator, Request, CannotProvide
 from .provider_basics import RequestChecker, create_type_hint_req_checker
 from .request_cls import ParserRequest, SerializerRequest
 from .static_provider import StaticProvider, static_provision_action
 from ..common import TypeHint, Parser, Serializer
-from ..type_tools import create_union
+from ..type_tools import create_union, normalize_type
 
 T = TypeVar('T')
 
@@ -102,3 +103,20 @@ class CoercionLimiter(ParserProvider):
 
     def __repr__(self):
         return f"{type(self).__name__}({self.parser_provider}, {self.allowed_strict_origins})"
+
+
+class ABCProxy(Provider):
+    def __init__(self, abstract: TypeHint, target: TypeHint):
+        self._abstract = normalize_type(abstract).origin
+        self._target = target
+
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+        if not isinstance(request, (ParserRequest, SerializerRequest)):
+            raise CannotProvide
+
+        norm = normalize_type(request.type)
+
+        if norm.origin != self._abstract:
+            raise CannotProvide
+
+        return mediator.provide(replace(request, type=self._target))
