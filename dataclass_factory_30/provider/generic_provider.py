@@ -253,7 +253,7 @@ class DictProvider(ParserProvider, SerializerProvider):
                 try:
                     items_method = data.items
                 except AttributeError:
-                    raise TypeParseError(dict)
+                    raise TypeParseError(Mapping)
 
                 result = {}
                 for k, v in items_method():
@@ -279,7 +279,7 @@ class DictProvider(ParserProvider, SerializerProvider):
             try:
                 items_method = data.items
             except AttributeError:
-                raise TypeParseError(dict)
+                raise TypeParseError(Mapping)
 
             result = {}
             for k, v in items_method():
@@ -300,7 +300,7 @@ class DictProvider(ParserProvider, SerializerProvider):
             SerializerRequest(type=value.source)
         )
 
-        def dict_serializer(data: dict):
+        def dict_serializer(data: Mapping):
             result = {}
             for k, v in data.items():
                 result[key_serializer(k)] = value_serializer(k)
