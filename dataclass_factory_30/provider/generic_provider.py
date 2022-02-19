@@ -1,11 +1,12 @@
 import collections.abc
 from abc import ABC
+from collections.abc import Mapping
 from dataclasses import replace, dataclass
 from enum import EnumMeta
 from inspect import isabstract
 from typing import Literal, Collection, Container, Union, Iterable, Callable, Optional, Dict, Tuple
 
-from .definitions import ParseError, UnionParseError, TypeParseError
+from .definitions import ParseError, UnionParseError, TypeParseError, ExcludedTypeParseError
 from .essential import Mediator, CannotProvide, Request
 from .provider_basics import foreign_parser
 from .provider_template import ParserProvider, SerializerProvider, for_type
@@ -121,7 +122,7 @@ class IterableProvider(ParserProvider, SerializerProvider):
         collections.abc.Collection: tuple,
         collections.abc.Sequence: tuple,
         collections.abc.MutableSequence: list,
-        collections.abc.ByteString: bytes,  # this abc is generalization of bytes and bytearray
+        # exclude ByteString, because it does not process as Iterable
         collections.abc.Set: frozenset,
         collections.abc.MutableSet: set,
     }
@@ -183,8 +184,8 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         if strict_coercion:
             def iter_parser_dp_sc(value):
-                if type(value) == dict:
-                    raise ParseError
+                if isinstance(value, Mapping):
+                    raise ExcludedTypeParseError(Mapping)
 
                 return iter_factory(map(element_parser_dp, enumerate(value)))
 
@@ -198,8 +199,8 @@ class IterableProvider(ParserProvider, SerializerProvider):
     def _make_non_dp_parser(self, iter_factory, arg_parser, strict_coercion: bool):
         if strict_coercion:
             def iter_parser_sc(value):
-                if type(value) == dict:
-                    raise ParseError
+                if isinstance(value, Mapping):
+                    raise ExcludedTypeParseError(Mapping)
 
                 return iter_factory(map(arg_parser, value))
 

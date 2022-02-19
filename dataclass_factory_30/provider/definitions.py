@@ -2,6 +2,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Any, Callable, Union, List, Optional, Deque, Iterable
 
+from ..common import TypeHint
 from ..utils import SingletonMeta
 
 
@@ -81,8 +82,14 @@ class NoRequiredItemsError(ParseError):
 
 
 class TypeParseError(ParseError):
-    def __init__(self, expected_type: type, path: Optional[Deque[PathElement]] = None):
+    def __init__(self, expected_type: TypeHint, path: Optional[Deque[PathElement]] = None):
         self.expected_type = expected_type
+        ParseError.__init__(self, path)
+
+
+class ExcludedTypeParseError(ParseError):
+    def __init__(self, excluded_type: TypeHint, path: Optional[Deque[PathElement]] = None):
+        self.excluded_type = excluded_type
         ParseError.__init__(self, path)
 
 
