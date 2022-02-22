@@ -50,6 +50,11 @@ class ParseError(Exception):
     def __str__(self):
         return f"{type(self).__name__}(path={self.path})"
 
+    def __eq__(self, other):
+        if type(self) == type(other):
+            return vars(self) == vars(other)
+        return NotImplemented
+
 
 class MsgError(ParseError):
     def __init__(self, msg: str, path: Optional[Deque[PathElement]] = None):

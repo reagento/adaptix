@@ -20,6 +20,11 @@ from .definitions import (
     ParseError,
     MsgError,
     ExtraFieldsError,
+    ExtraItemsError,
+    NoRequiredFieldsError,
+    NoRequiredItemsError,
+    TypeParseError,
+    ExcludedTypeParseError,
     UnionParseError,
 )
 from .essential import (

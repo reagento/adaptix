@@ -1,10 +1,9 @@
 import collections.abc
 from abc import ABC
-from collections.abc import Mapping
 from dataclasses import replace, dataclass
 from enum import EnumMeta
 from inspect import isabstract
-from typing import Literal, Collection, Container, Union, Iterable, Callable, Optional, Dict, Tuple
+from typing import Literal, Collection, Container, Union, Iterable, Callable, Optional, Dict, Tuple, Mapping
 
 from .definitions import ParseError, UnionParseError, TypeParseError, ExcludedTypeParseError
 from .essential import Mediator, CannotProvide, Request
@@ -114,6 +113,9 @@ class UnionProvider(ParserProvider):
             return union_parser
 
 
+CollectionsMapping = collections.abc.Mapping
+
+
 @for_type(Iterable)
 class IterableProvider(ParserProvider, SerializerProvider):
     ABC_TO_IMPL = {
@@ -184,30 +186,50 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         if strict_coercion:
             def iter_parser_dp_sc(value):
-                if isinstance(value, Mapping):
+                if isinstance(value, CollectionsMapping):
                     raise ExcludedTypeParseError(Mapping)
 
-                return iter_factory(map(element_parser_dp, enumerate(value)))
+                try:
+                    enum_iter = enumerate(value)
+                except TypeError:
+                    raise TypeParseError(Iterable)
+
+                return iter_factory(map(element_parser_dp, enum_iter))
 
             return iter_parser_dp_sc
 
         def iter_parser_dp(value):
-            return iter_factory(map(element_parser_dp, enumerate(value)))
+            try:
+                enum_iter = enumerate(value)
+            except TypeError:
+                raise TypeParseError(Iterable)
+
+            return iter_factory(map(element_parser_dp, enum_iter))
 
         return iter_parser_dp
 
     def _make_non_dp_parser(self, iter_factory, arg_parser, strict_coercion: bool):
         if strict_coercion:
             def iter_parser_sc(value):
-                if isinstance(value, Mapping):
+                if isinstance(value, CollectionsMapping):
                     raise ExcludedTypeParseError(Mapping)
 
-                return iter_factory(map(arg_parser, value))
+                try:
+                    map_iter = map(arg_parser, value)
+                except TypeError:
+                    raise TypeParseError(Iterable)
+
+                return iter_factory(map_iter)
 
             return iter_parser_sc
 
         def iter_parser(value):
-            return iter_factory(map(arg_parser, value))
+            try:
+                map_iter = map(arg_parser, value)
+            except TypeError:
+                raise TypeParseError(Iterable)
+
+            return iter_factory(map_iter)
 
         return iter_parser
 
