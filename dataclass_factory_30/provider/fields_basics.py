@@ -256,10 +256,15 @@ def _merge_iters(args: Iterable[Iterable[T]]) -> List[T]:
 
 
 class FigureProcessor:
+    """FigureProcessor takes InputFieldsFigure and NameMapping,
+    produces new InputFieldsFigure discarding unused fields
+    and validating NameMapping
+    """
+
     def _inner_collect_used_fields(self, crown: Crown):
         if isinstance(crown, (DictCrown, ListCrown)):
             return _merge_iters(
-                self._collect_used_fields(sub_crown)
+                self._inner_collect_used_fields(sub_crown)
                 for sub_crown in crown.map.values()
             )
         if isinstance(crown, FieldCrown):

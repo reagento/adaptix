@@ -333,28 +333,10 @@ class FieldsParserGenerator:
         and pass it to ClosureCompiler.
         """
         state = self._create_state()
-
         parser_body_builder = self._gen_parser_body(root_crown, state)
 
         builder = CodeBuilder()
-
-        # copy global variables to local namespace capturing it's by closure
-        self._gen_local_assignment(
-            builder,
-            {'constructor': 'g_constructor'},
-            {
-                state.get_known_fields_var_name(path): repr(known_fields)
-                for path, known_fields in state.path2known_fields.items()
-            },
-            {
-                var: f'g_{var}'
-                for var in (
-                    state.get_field_parser_var_name(field_name)
-                    for field_name in field_parsers
-                )
-            },
-        )
-
+        self._gen_closure_capturing(builder, field_parsers, state)
         builder.empty_line()
 
         data = state.get_data_var_name()
@@ -363,7 +345,18 @@ class FieldsParserGenerator:
 
         builder += f"return {closure_name}"
 
-        namespace = {
+        namespace = self._create_compiler_namespace(field_parsers, state)
+
+        hook(CodeGenHookData(namespace=namespace, source=builder.string()))
+
+        return compiler.compile(
+            builder,
+            file_name,
+            namespace,
+        )
+
+    def _create_compiler_namespace(self, field_parsers: Dict[str, Parser], state: GenState):
+        return {
             "g_constructor": self.figure.constructor,
             "deque": deque,
             **{
@@ -380,16 +373,21 @@ class FieldsParserGenerator:
             },
         }
 
-        hook(
-            CodeGenHookData(
-                namespace=namespace, source=builder.string()
-            )
-        )
+    def _gen_closure_capturing(self, builder: CodeBuilder, field_parsers: Dict[str, Parser], state: GenState):
+        """Copy global variables to local namespace capturing it's by closure"""
+        fields_var_name = [
+            state.get_field_parser_var_name(field_name)
+            for field_name in field_parsers
+        ]
 
-        return compiler.compile(
+        self._gen_local_assignment(
             builder,
-            file_name,
-            namespace,
+            {'constructor': 'g_constructor'},
+            {
+                state.get_known_fields_var_name(path): repr(known_fields)
+                for path, known_fields in state.path2known_fields.items()
+            },
+            {var: f'g_{var}' for var in fields_var_name},
         )
 
     def _gen_local_assignment(self, builder: CodeBuilder, *local_to_literals: Dict[str, str]):
