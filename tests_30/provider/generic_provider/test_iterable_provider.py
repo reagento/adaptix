@@ -14,7 +14,7 @@ from dataclass_factory_30.provider import (
     as_serializer,
 )
 from dataclass_factory_30.provider.definitions import TypeParseError, ExcludedTypeParseError
-from tests_30.provider.conftest import TestFactory
+from tests_30.provider.conftest import TestFactory, raises_instance, parametrize_bool
 
 
 @pytest.fixture
@@ -25,13 +25,6 @@ def factory():
             CoercionLimiter(as_parser(str), [str]),
             as_serializer(str, str),  # this serializer differ from a builtin one
         ]
-    )
-
-
-def parametrize_bool(param: str):
-    return pytest.mark.parametrize(
-        param, [False, True],
-        ids=[f'{param}=False', f'{param}=True']
     )
 
 
@@ -73,12 +66,6 @@ def test_mapping_providing(factory, strict_coercion, debug_path):
                 debug_path=debug_path,
             )
         )
-
-
-def raises_instance(exp_exc: Exception, func):
-    with pytest.raises(type(exp_exc)) as exc:
-        func()
-    assert exc.value == exp_exc
 
 
 @parametrize_bool('strict_coercion')

@@ -38,6 +38,10 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
         return mediator.provide(replace(request, type=unwrapped))
 
 
+def _is_exact_zero_or_one(arg):
+    return type(arg) == int and (arg == 0 or arg == 1)
+
+
 @dataclass
 @for_type(Literal)
 class LiteralProvider(ParserProvider, SerializerProvider):
@@ -52,7 +56,10 @@ class LiteralProvider(ParserProvider, SerializerProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         norm = normalize_type(request.type)
 
-        if request.strict_coercion and any(isinstance(arg, bool) for arg in norm.args):
+        if request.strict_coercion and any(
+            isinstance(arg, bool) or _is_exact_zero_or_one(arg)
+            for arg in norm.args
+        ):
             allowed_values = self._get_container(
                 [(type(el), el) for el in norm.args]
             )
