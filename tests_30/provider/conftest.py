@@ -1,4 +1,4 @@
-from typing import List, TypeVar
+from typing import List, TypeVar, Union, Sequence
 
 import pytest
 
@@ -24,8 +24,15 @@ def raises_instance(exp_exc: Exception, func):
     assert exc.value == exp_exc
 
 
-def parametrize_bool(param: str):
-    return pytest.mark.parametrize(
-        param, [False, True],
-        ids=[f'{param}=False', f'{param}=True']
-    )
+def parametrize_bool(param: str, *params: str):
+    full_params = [param, *params]
+
+    def decorator(func):
+        for p in full_params:
+            func = pytest.mark.parametrize(
+                p, [False, True],
+                ids=[f'{p}=False', f'{p}=True']
+            )(func)
+        return func
+
+    return decorator

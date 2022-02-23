@@ -37,8 +37,7 @@ def check_any_dt(parser):
     )
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_iso_format_provider_datetime(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[IsoFormatProvider(datetime)]
@@ -68,8 +67,7 @@ def test_iso_format_provider_datetime(strict_coercion, debug_path):
     assert serializer(datetime(2011, 11, 4, 0, 0)) == '2011-11-04T00:00:00'
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_iso_format_provider_date(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[IsoFormatProvider(date)]
@@ -93,8 +91,7 @@ def test_iso_format_provider_date(strict_coercion, debug_path):
     assert serializer(date(2019, 12, 4)) == '2019-12-04'
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_iso_format_provider_time(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[IsoFormatProvider(time)]
@@ -122,8 +119,7 @@ def test_iso_format_provider_time(strict_coercion, debug_path):
     assert serializer(time(4, 23, 1)) == '04:23:01'
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_datetime_format_provider(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[DatetimeFormatProvider("%Y-%m-%d")]
@@ -148,8 +144,7 @@ def test_datetime_format_provider(strict_coercion, debug_path):
     assert serializer(datetime(year=3045, month=2, day=13)) == "3045-02-13"
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_timedelta_provider(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[TimedeltaProvider()]
@@ -173,8 +168,7 @@ def test_timedelta_provider(strict_coercion, debug_path):
     assert serializer(timedelta(minutes=10)) == 600
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_none_provider(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[NoneProvider()]
@@ -196,8 +190,7 @@ def test_none_provider(strict_coercion, debug_path):
     )
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_bytes_provider(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[BytesBase64Provider()]
@@ -225,8 +218,7 @@ def test_bytes_provider(strict_coercion, debug_path):
     assert serializer(b'abcd') == 'YWJjZA=='
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_bytearray_provider(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[BytearrayBase64Provider()]

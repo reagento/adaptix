@@ -16,8 +16,7 @@ def factory():
     )
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_parser_base(factory, strict_coercion, debug_path):
     parser = factory.provide(
         ParserRequest(

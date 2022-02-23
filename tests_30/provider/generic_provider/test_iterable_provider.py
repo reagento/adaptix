@@ -28,8 +28,7 @@ def factory():
     )
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_mapping_providing(factory, strict_coercion, debug_path):
     with pytest.raises(CannotProvide):
         factory.provide(
@@ -68,8 +67,7 @@ def test_mapping_providing(factory, strict_coercion, debug_path):
         )
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_parsing(factory, strict_coercion, debug_path):
     parser = factory.provide(
         ParserRequest(

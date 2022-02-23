@@ -27,8 +27,7 @@ class MyIntEnum(IntEnum):
     V1 = 1
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_name_provider(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[
@@ -70,8 +69,7 @@ def test_name_provider(strict_coercion, debug_path):
     assert serializer(MyEnum.V1) == "V1"
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_exact_value_provider(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[
@@ -137,8 +135,7 @@ def custom_string_serializer(value: str):
     return "PREFIX " + value
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_value_provider(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[
@@ -186,8 +183,7 @@ class TestEnumProvider(BaseEnumProvider):
         pass
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_provider_selecting_any(strict_coercion, debug_path):
     all_enums = TestEnumProvider(bounds=None)
 
@@ -207,8 +203,7 @@ def test_provider_selecting_any(strict_coercion, debug_path):
         )
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_provider_selecting_iter(strict_coercion, debug_path):
     my_enum = TestEnumProvider(bounds=[MyEnum])
 
@@ -247,8 +242,7 @@ def test_provider_selecting_iter(strict_coercion, debug_path):
     )
 
 
-@parametrize_bool('strict_coercion')
-@parametrize_bool('debug_path')
+@parametrize_bool('strict_coercion', 'debug_path')
 def test_provider_selecting_int_enum(strict_coercion, debug_path):
     my_int_enum = TestEnumProvider(bounds=[MyIntEnum])
 
