@@ -42,11 +42,11 @@ def rnd():
 
 
 def _is_exact_zero(arg):
-    return type(int) and arg == 0
+    return type(arg) == int and arg == 0
 
 
 def _is_exact_one(arg):
-    return type(int) and arg == 1
+    return type(arg) == int and arg == 1
 
 
 @parametrize_bool('debug_path')
