@@ -106,9 +106,9 @@ class CoercionLimiter(ParserProvider):
 
 
 class ABCProxy(Provider):
-    def __init__(self, abstract: TypeHint, target: TypeHint):
+    def __init__(self, abstract: TypeHint, impl: TypeHint):
         self._abstract = normalize_type(abstract).origin
-        self._target = target
+        self._impl = impl
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         if not isinstance(request, (ParserRequest, SerializerRequest)):
@@ -119,4 +119,4 @@ class ABCProxy(Provider):
         if norm.origin != self._abstract:
             raise CannotProvide
 
-        return mediator.provide(replace(request, type=self._target))
+        return mediator.provide(replace(request, type=self._impl))
