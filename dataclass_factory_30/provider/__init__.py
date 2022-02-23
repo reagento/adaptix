@@ -38,13 +38,13 @@ from .essential import (
     Pipeline,
 )
 from .fields_basics import (
-    GetterKind,
     ExtraTargets,
     ExtraSkip,
     ExtraForbid,
-    FigureExtra,
     ExtraKwargs,
     ExtraPolicy,
+    FigureExtra,
+    FigureExtra,
     CfgExtraPolicy,
     InputFieldsFigure,
     OutputFieldsFigure,

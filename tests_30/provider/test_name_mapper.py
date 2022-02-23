@@ -10,11 +10,10 @@ from dataclass_factory_30.provider import (
 )
 from dataclass_factory_30.provider.fields_basics import (
     NameMapping, DictCrown, FieldCrown,
-    ExtraTargets, FigureExtra,
-    OutputNameMappingRequest, OutputFieldsFigure,
-    GetterKind
+    ExtraTargets, OutputNameMappingRequest, OutputFieldsFigure, OutFigureExtra,
 )
-from dataclass_factory_30.provider.request_cls import InputFieldRM, ParamKind, FieldRM
+from dataclass_factory_30.provider.fields_figure import _to_inp, _to_out
+from dataclass_factory_30.provider.request_cls import ParamKind, FieldRM, AccessKind
 from tests_30.provider.conftest import TestFactory
 
 
@@ -194,33 +193,32 @@ class Stub:
 
 
 def make_field(name: str, is_required: bool):
-    return InputFieldRM(
+    return FieldRM(
         name=name,
         type=int,
         default=NoDefault(),
         is_required=is_required,
         metadata={},
-        param_kind=ParamKind.POS_OR_KW,
     )
 
 
-def inp_request(fields: Tuple[InputFieldRM, ...], extra: FigureExtra = None):
+def inp_request(fields: Tuple[FieldRM, ...], extra: OutFigureExtra = None):
     return InputNameMappingRequest(
         type=Stub,
         figure=InputFieldsFigure(
             constructor=Stub,
             extra=extra,
-            fields=fields
+            fields=_to_inp(ParamKind.POS_OR_KW, fields)
         ),
     )
 
 
-def out_request(fields: Tuple[FieldRM, ...]):
+def out_request(fields: Tuple[FieldRM, ...], extra: OutFigureExtra = None):
     return OutputNameMappingRequest(
         type=Stub,
         figure=OutputFieldsFigure(
-            fields=fields,
-            getter_kind=GetterKind.ATTR,
+            extra=extra,
+            fields=_to_out(AccessKind.ITEM, fields),
         ),
     )
 
@@ -295,9 +293,9 @@ def test_name_mapping_skipping(factory, make_request):
     )
 
 
-def test_name_mapping_extra_targets(factory):
+def test_name_mapping_extra_targets(factory, make_request):
     name_mapping = factory.provide(
-        inp_request(
+        make_request(
             fields=(
                 make_field(
                     name="a",
@@ -323,9 +321,9 @@ def test_name_mapping_extra_targets(factory):
     )
 
 
-def test_name_mapping_extra_targets_skip(factory):
+def test_name_mapping_extra_targets_skip(factory, make_request):
     name_mapping = factory.provide(
-        inp_request(
+        make_request(
             fields=(
                 make_field(
                     name="a",

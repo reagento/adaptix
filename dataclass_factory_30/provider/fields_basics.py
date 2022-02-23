@@ -55,25 +55,23 @@ ListCrown(
    },
    extra=...
 )
+
+ListCrown has a filler attribute defining
+which value will be used to fill elements marked as None at ListCrown
 """
 import itertools
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, replace
-from enum import Enum
 from itertools import islice
 from typing import Union, Generic, TypeVar, Dict, Callable, Tuple, Collection, Iterable, List, Set
 
+from .definitions import DefaultValue, DefaultFactory
 from .essential import Request, Mediator
-from .request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind
+from .request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM
 from .static_provider import StaticProvider, static_provision_action
 from ..utils import SingletonMeta
 
 T = TypeVar('T')
-
-
-class GetterKind(Enum):
-    ATTR = 0
-    ITEM = 1
 
 
 class ExtraSkip(metaclass=SingletonMeta):
@@ -98,6 +96,7 @@ class ExtraCollect(metaclass=SingletonMeta):
 
 
 FigureExtra = Union[None, ExtraKwargs, ExtraTargets]
+OutFigureExtra = Union[None, ExtraTargets]
 
 ExtraPolicy = Union[ExtraSkip, ExtraForbid, ExtraCollect]
 
@@ -109,6 +108,30 @@ class CfgExtraPolicy(Request[ExtraPolicy]):
 @dataclass(frozen=True)
 class BaseFieldsFigure:
     fields: Tuple[FieldRM, ...]
+    extra: FigureExtra
+
+    def _validate(self):
+        field_names = {fld.name for fld in self.fields}
+        if len(field_names) != len(self.fields):
+            duplicates = {
+                fld.name for fld in self.fields
+                if fld.name in field_names
+            }
+            raise ValueError(f"Field names {duplicates} are duplicated")
+
+        if isinstance(self.extra, ExtraTargets):
+            wild_targets = [
+                target for target in self.extra.fields
+                if target not in field_names
+            ]
+
+            if wild_targets:
+                raise ValueError(
+                    f"ExtraTargets {wild_targets} are attached to non-existing fields"
+                )
+
+    def __post_init__(self):
+        self._validate()
 
 
 @dataclass(frozen=True)
@@ -129,9 +152,6 @@ class InputFieldsFigure(BaseFieldsFigure):
     extra: FigureExtra
     constructor: Callable
 
-    def __post_init__(self):
-        self._validate()
-
     def _validate(self):
         for past, current in zip(self.fields, islice(self.fields, 1, None)):
             if past.param_kind.value > current.param_kind.value:
@@ -150,29 +170,13 @@ class InputFieldsFigure(BaseFieldsFigure):
                     f" except {ParamKind.KW_ONLY} fields"
                 )
 
-        field_names = {fld.name for fld in self.fields}
-        if len(field_names) != len(self.fields):
-            duplicates = {
-                fld.name for fld in self.fields
-                if fld.name in field_names
-            }
-            raise ValueError(f"Field names {duplicates} are duplicated")
-
-        if isinstance(self.extra, ExtraTargets):
-            wild_targets = [
-                target for target in self.extra.fields
-                if target not in field_names
-            ]
-
-            if wild_targets:
-                raise ValueError(
-                    f"ExtraTargets {wild_targets} are attached to non-existing fields"
-                )
+        super()._validate()
 
 
 @dataclass(frozen=True)
 class OutputFieldsFigure(BaseFieldsFigure):
-    getter_kind: GetterKind
+    fields: Tuple[OutputFieldRM, ...]
+    extra: OutFigureExtra
 
 
 @dataclass
@@ -185,6 +189,7 @@ class DictCrown:
 class ListCrown:
     map: Dict[int, 'Crown']
     extra: Union[ExtraSkip, ExtraForbid]
+    filler: Union[DefaultValue, DefaultFactory] = DefaultValue(None)
 
     @property
     def list_len(self):
@@ -255,10 +260,13 @@ def _merge_iters(args: Iterable[Iterable[T]]) -> List[T]:
     return list(itertools.chain.from_iterable(args))
 
 
+FF_TV = TypeVar("FF_TV", bound=BaseFieldsFigure)
+
+
 class FigureProcessor:
     """FigureProcessor takes InputFieldsFigure and NameMapping,
     produces new InputFieldsFigure discarding unused fields
-    and validating NameMapping
+    and validates NameMapping
     """
 
     def _inner_collect_used_fields(self, crown: Crown):
@@ -285,7 +293,7 @@ class FigureProcessor:
 
     def _field_is_skipped(
         self,
-        field: InputFieldRM,
+        field: FieldRM,
         skipped_extra_targets: Collection[str],
         used_fields: Set[str],
         extra_targets: Set[str]
@@ -298,7 +306,7 @@ class FigureProcessor:
 
     def _validate_required_fields(
         self,
-        figure: InputFieldsFigure,
+        figure: BaseFieldsFigure,
         used_fields: Set[str],
         extra_targets: Set[str],
         name_mapping: NameMapping,
@@ -318,7 +326,7 @@ class FigureProcessor:
                 f"Required fields {skipped_required_fields} not presented at name_mapping crown"
             )
 
-    def _get_extra_targets(self, figure: InputFieldsFigure, used_fields: Set[str]):
+    def _get_extra_targets(self, figure: BaseFieldsFigure, used_fields: Set[str]):
         if isinstance(figure.extra, ExtraTargets):
             extra_targets = set(figure.extra.fields)
 
@@ -333,7 +341,7 @@ class FigureProcessor:
 
         return set()
 
-    def process_figure(self, figure: InputFieldsFigure, name_mapping: NameMapping) -> InputFieldsFigure:
+    def process_figure(self, figure: FF_TV, name_mapping: NameMapping) -> FF_TV:
         used_fields = self._collect_used_fields(name_mapping.crown)
         extra_targets = self._get_extra_targets(figure, used_fields)
 

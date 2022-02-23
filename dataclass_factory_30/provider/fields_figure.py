@@ -10,9 +10,9 @@ from .essential import Mediator, CannotProvide
 from .fields_basics import (
     InputFieldsFigure, OutputFieldsFigure,
     InputFFRequest, OutputFFRequest,
-    GetterKind, ExtraKwargs
+    ExtraKwargs
 )
-from .request_cls import FieldRM, InputFieldRM, ParamKind
+from .request_cls import FieldRM, InputFieldRM, ParamKind, OutputFieldRM, AccessKind
 from .static_provider import StaticProvider, static_provision_action
 from ..type_tools import is_typed_dict_class, is_named_tuple_class
 
@@ -105,7 +105,7 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
         # At <3.9 namedtuple does not generate typehints at __new__
         return InputFieldsFigure(
             constructor=tp,
-            extra=iff.extra,
+            extra=iff.extra,  # maybe for custom __init__?
             fields=tuple(
                 replace(
                     fld,
@@ -118,16 +118,17 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
     def _get_output_fields_figure(self, tp) -> OutputFieldsFigure:
         return OutputFieldsFigure(
             fields=tuple(
-                FieldRM(
+                OutputFieldRM(
                     name=fld.name,
                     type=fld.type,
                     default=fld.default,
                     is_required=True,
                     metadata=fld.metadata,
+                    access_kind=AccessKind.ATTR,
                 )
                 for fld in self._get_input_fields_figure(tp).fields
             ),
-            getter_kind=GetterKind.ATTR,
+            extra=None,
         )
 
 
@@ -140,6 +141,20 @@ def _to_inp(param_kind: ParamKind, fields: Iterable[FieldRM]) -> Tuple[InputFiel
             is_required=f.is_required,
             metadata=f.metadata,
             param_kind=param_kind,
+        )
+        for f in fields
+    )
+
+
+def _to_out(access_kind: AccessKind, fields: Iterable[FieldRM]) -> Tuple[OutputFieldRM, ...]:
+    return tuple(
+        OutputFieldRM(
+            name=f.name,
+            type=f.type,
+            default=f.default,
+            is_required=f.is_required,
+            metadata=f.metadata,
+            access_kind=access_kind,
         )
         for f in fields
     )
@@ -172,8 +187,8 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
 
     def _get_output_fields_figure(self, tp):
         return OutputFieldsFigure(
-            fields=self._get_fields(tp),
-            getter_kind=GetterKind.ITEM,
+            fields=_to_out(AccessKind.ITEM, self._get_fields(tp)),
+            extra=None,
         )
 
 
@@ -246,11 +261,14 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
             raise CannotProvide
 
         return OutputFieldsFigure(
-            fields=tuple(
-                _dc_field_to_field_rm(fld, lambda default: True)
-                for fld in dc_fields(tp)
+            fields=_to_out(
+                AccessKind.ATTR,
+                [
+                    _dc_field_to_field_rm(fld, lambda default: True)
+                    for fld in dc_fields(tp)
+                ]
             ),
-            getter_kind=GetterKind.ATTR,
+            extra=None,
         )
 
 

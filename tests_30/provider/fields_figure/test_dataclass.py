@@ -5,14 +5,12 @@ from typing import ClassVar
 from dataclass_factory_30.provider import DefaultValue, DefaultFactory
 from dataclass_factory_30.provider.fields_figure import (
     DataclassFieldsProvider,
-    FieldRM,
     InputFieldRM,
     NoDefault,
     InputFieldsFigure,
     OutputFieldsFigure,
-    GetterKind
 )
-from dataclass_factory_30.provider.request_cls import ParamKind
+from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, AccessKind
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 
@@ -99,42 +97,47 @@ def test_output():
         DataclassFieldsProvider()._get_output_fields_figure(Foo)
         ==
         OutputFieldsFigure(
-            getter_kind=GetterKind.ATTR,
+            extra=None,
             fields=(
-                FieldRM(
+                OutputFieldRM(
                     type=int,
                     name='a',
                     default=NoDefault(),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
-                FieldRM(
+                OutputFieldRM(
                     type=str,
                     name='d',
                     default=DefaultValue('text'),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
-                FieldRM(
+                OutputFieldRM(
                     type=list,
                     name='e',
                     default=DefaultFactory(list),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
-                FieldRM(
+                OutputFieldRM(
                     type=int,
                     name='f',
                     default=DefaultValue(3),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
-                FieldRM(
+                OutputFieldRM(
                     type=int,
                     name='i',
                     default=DefaultValue(4),
                     is_required=True,
-                    metadata=MappingProxyType({'meta': 'data'})
+                    metadata=MappingProxyType({'meta': 'data'}),
+                    access_kind=AccessKind.ATTR,
                 ),
             ),
         )
@@ -183,21 +186,23 @@ def test_inheritance():
         DataclassFieldsProvider()._get_output_fields_figure(ChildBar)
         ==
         OutputFieldsFigure(
-            getter_kind=GetterKind.ATTR,
+            extra=None,
             fields=(
-                FieldRM(
+                OutputFieldRM(
                     type=int,
                     name='a',
                     default=NoDefault(),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
-                FieldRM(
+                OutputFieldRM(
                     type=int,
                     name='b',
                     default=NoDefault(),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
             ),
         )

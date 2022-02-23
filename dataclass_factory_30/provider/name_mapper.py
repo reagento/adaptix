@@ -6,8 +6,8 @@ from .fields_basics import (
     NameMapping, NameMappingProvider,
     DictCrown, ExtraPolicy,
     CfgExtraPolicy, FieldCrown,
-    BaseNameMappingRequest, BaseFieldsFigure, InputFieldsFigure,
-    ExtraTargets, InputNameMappingRequest, OutputNameMappingRequest,
+    BaseNameMappingRequest, BaseFieldsFigure, ExtraTargets,
+    InputNameMappingRequest, OutputNameMappingRequest,
 )
 from .name_style import NameStyle, convert_snake_style
 
@@ -84,7 +84,7 @@ class NameMapper(NameMappingProvider):
         return name
 
     def _get_extra_targets(self, figure: BaseFieldsFigure) -> Collection[str]:
-        if isinstance(figure, InputFieldsFigure) and isinstance(figure.extra, ExtraTargets):
+        if isinstance(figure.extra, ExtraTargets):
             return set(figure.extra.fields)
         return []
 

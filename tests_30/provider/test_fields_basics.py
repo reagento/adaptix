@@ -1,8 +1,8 @@
 import pytest
 
 from dataclass_factory_30.provider import NoDefault
-from dataclass_factory_30.provider.fields_basics import InputFieldsFigure, InputFieldRM, ExtraTargets
-from dataclass_factory_30.provider.request_cls import ParamKind
+from dataclass_factory_30.provider.fields_basics import InputFieldsFigure, OutputFieldsFigure, ExtraTargets
+from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM, AccessKind
 
 
 def stub_constructor(*args, **kwargs):
@@ -129,6 +129,29 @@ def test_name_duplicates():
             )
         )
 
+    with pytest.raises(ValueError):
+        OutputFieldsFigure(
+            extra=None,
+            fields=(
+                OutputFieldRM(
+                    name="a",
+                    type=int,
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata={},
+                    access_kind=AccessKind.ATTR,
+                ),
+                OutputFieldRM(
+                    name="a",
+                    type=int,
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata={},
+                    access_kind=AccessKind.ATTR,
+                ),
+            )
+        )
+
 
 def test_wild_targets():
     with pytest.raises(ValueError):
@@ -143,6 +166,21 @@ def test_wild_targets():
                     is_required=True,
                     metadata={},
                     param_kind=ParamKind.POS_OR_KW,
+                ),
+            )
+        )
+
+    with pytest.raises(ValueError):
+        OutputFieldsFigure(
+            extra=ExtraTargets(("b",)),
+            fields=(
+                OutputFieldRM(
+                    name="a",
+                    type=int,
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata={},
+                    access_kind=AccessKind.ATTR,
                 ),
             )
         )

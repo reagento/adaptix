@@ -7,9 +7,9 @@ from dataclass_factory_30.provider.fields_figure import (
     FieldRM,
     InputFieldsFigure,
     OutputFieldsFigure,
-    GetterKind, _to_inp
+    _to_inp, _to_out
 )
-from dataclass_factory_30.provider.request_cls import ParamKind
+from dataclass_factory_30.provider.request_cls import ParamKind, AccessKind
 
 
 class Foo(TypedDict, total=True):
@@ -57,8 +57,8 @@ def test_total_output():
         TypedDictFieldsProvider()._get_output_fields_figure(Foo)
         ==
         OutputFieldsFigure(
-            getter_kind=GetterKind.ITEM,
-            fields=TOTAL_FIELDS,
+            extra=None,
+            fields=_to_out(AccessKind.ITEM, TOTAL_FIELDS),
         )
     )
 
@@ -98,7 +98,7 @@ def test_non_total_output():
         TypedDictFieldsProvider()._get_output_fields_figure(Bar)
         ==
         OutputFieldsFigure(
-            getter_kind=GetterKind.ITEM,
-            fields=NON_TOTAL_FIELDS,
+            extra=None,
+            fields=_to_out(AccessKind.ITEM, NON_TOTAL_FIELDS),
         )
     )

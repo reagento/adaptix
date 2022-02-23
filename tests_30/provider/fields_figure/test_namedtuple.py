@@ -8,10 +8,9 @@ from dataclass_factory_30.provider.fields_figure import (
     FieldRM,
     InputFieldsFigure,
     OutputFieldsFigure,
-    GetterKind,
-    _to_inp,
+    _to_inp, _to_out,
 )
-from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM
+from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, AccessKind, OutputFieldRM
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')
@@ -49,8 +48,8 @@ def test_order_ab():
         NamedTupleFieldsProvider()._get_output_fields_figure(FooAB)
         ==
         OutputFieldsFigure(
-            getter_kind=GetterKind.ATTR,
-            fields=fields,
+            extra=None,
+            fields=_to_out(AccessKind.ATTR, fields),
         )
     )
 
@@ -87,8 +86,8 @@ def test_order_ba():
         NamedTupleFieldsProvider()._get_output_fields_figure(FooBA)
         ==
         OutputFieldsFigure(
-            getter_kind=GetterKind.ATTR,
-            fields=fields,
+            extra=None,
+            fields=_to_out(AccessKind.ATTR, fields),
         )
     )
 
@@ -140,28 +139,31 @@ def test_defaults():
         NamedTupleFieldsProvider()._get_output_fields_figure(FooDefs)
         ==
         OutputFieldsFigure(
-            getter_kind=GetterKind.ATTR,
+            extra=None,
             fields=(
-                FieldRM(
+                OutputFieldRM(
                     type=Any,
                     name='a',
                     default=NoDefault(),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
-                FieldRM(
+                OutputFieldRM(
                     type=Any,
                     name='b',
                     default=DefaultValue(0),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
-                FieldRM(
+                OutputFieldRM(
                     type=Any,
                     name='c',
                     default=DefaultValue(func),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
             ),
         )
@@ -203,13 +205,13 @@ def test_class_hinted_namedtuple():
         NamedTupleFieldsProvider()._get_output_fields_figure(BarA)
         ==
         OutputFieldsFigure(
-            getter_kind=GetterKind.ATTR,
-            fields=fields,
+            extra=None,
+            fields=_to_out(AccessKind.ATTR, fields),
         )
     )
 
 
-# ClassVar do not supported in NamedTuple
+# ClassVar is not supported in NamedTuple
 
 class BarB(NamedTuple):
     a: int
@@ -248,21 +250,23 @@ def test_hinted_namedtuple():
         NamedTupleFieldsProvider()._get_output_fields_figure(BarB)
         ==
         OutputFieldsFigure(
-            getter_kind=GetterKind.ATTR,
+            extra=None,
             fields=(
-                FieldRM(
+                OutputFieldRM(
                     type=int,
                     name='a',
                     default=NoDefault(),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
-                FieldRM(
+                OutputFieldRM(
                     type=str,
                     name='b',
                     default=DefaultValue('abc'),
                     is_required=True,
-                    metadata=MappingProxyType({})
+                    metadata=MappingProxyType({}),
+                    access_kind=AccessKind.ATTR,
                 ),
             ),
         )

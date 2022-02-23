@@ -44,6 +44,16 @@ class InputFieldRM(FieldRM[T], Generic[T]):
     param_kind: ParamKind
 
 
+class AccessKind(Enum):
+    ATTR = 0
+    ITEM = 1
+
+
+@dataclass(frozen=True)
+class OutputFieldRM(FieldRM[T], Generic[T]):
+    access_kind: AccessKind
+
+
 @dataclass(frozen=True)
 class ParserRequest(TypeHintRM[Parser], PipelineEvalMixin):
     strict_coercion: bool
@@ -97,7 +107,7 @@ class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin):
 
 
 @dataclass(frozen=True)
-class SerializerFieldRequest(SerializerRequest, FieldRM[Parser]):
+class SerializerFieldRequest(SerializerRequest, OutputFieldRM[Serializer]):
     omit_default: bool
 
 
