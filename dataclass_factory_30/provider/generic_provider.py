@@ -1,7 +1,7 @@
 import collections.abc
 from abc import ABC
 from dataclasses import replace, dataclass
-from enum import EnumMeta
+from enum import EnumMeta, Enum
 from inspect import isabstract
 from typing import Literal, Collection, Container, Union, Iterable, Callable, Optional, Dict, Tuple, Mapping
 
@@ -340,11 +340,24 @@ class DictProvider(ParserProvider, SerializerProvider):
 
 
 class BaseEnumProvider(ParserProvider, SerializerProvider, ABC):
+    """Base class that defines enum selecting"""
+
     def __init__(self, bounds: Optional[Iterable[EnumMeta]] = None):
+        """Create provider for Enum.
+
+        :param bounds: None means that provider will be applied to any enum,
+            iterable means that provider will be applied to any enum in iterable
+        """
         if bounds is None:
             bounds = None
         else:
             bounds = tuple(bounds)
+
+            if Enum in bounds:
+                raise ValueError(
+                    f"Enum can not be element of bounds."
+                    f" Only is Enum children is accepted"
+                )
 
         self._bounds = bounds
 
@@ -366,6 +379,8 @@ def _enum_name_serializer(data):
 
 
 class EnumNameProvider(BaseEnumProvider):
+    """This provider represents enum members to the outside world by their name"""
+
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         enum = request.type
 
@@ -379,13 +394,24 @@ class EnumNameProvider(BaseEnumProvider):
 
 
 class EnumValueProvider(BaseEnumProvider):
+    """This provider represents enum members to the outside world by their value.
+    Input data will be parsed and then interpreted as one of enum member value.
+    At serializing value of enum member will be serialized.
+    """
+
     def __init__(self, bounds: Iterable[EnumMeta], value_type: TypeHint):
-        self.value_type = value_type
+        """Create value provider for Enum.
+
+        :param bounds: Iterable of Enum classes. Provider will be applied only at this enums
+        :param value_type: Type of enum member value
+            that will be used to create parser and serializer of member value
+        """
+        self._value_type = value_type
         super().__init__(bounds)
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         enum = request.type
-        value_parser = mediator.provide(replace(request, type=self.value_type))
+        value_parser = mediator.provide(replace(request, type=self._value_type))
 
         def enum_parser(data):
             return enum(value_parser(data))
@@ -393,7 +419,7 @@ class EnumValueProvider(BaseEnumProvider):
         return foreign_parser(enum_parser)
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
-        value_serializer = mediator.provide(replace(request, type=self.value_type))
+        value_serializer = mediator.provide(replace(request, type=self._value_type))
 
         def enum_serializer(data):
             return value_serializer(data.value)
@@ -406,6 +432,10 @@ def _enum_exact_value_serializer(data):
 
 
 class EnumExactValueProvider(BaseEnumProvider):
+    """This provider represents enum members to the outside world
+    by their value without any processing
+    """
+
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         enum = request.type
 

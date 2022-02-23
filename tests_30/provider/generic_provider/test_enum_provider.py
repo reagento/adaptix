@@ -1,5 +1,7 @@
 from enum import Enum, IntEnum
 
+import pytest
+
 from dataclass_factory_30.common import Serializer, Parser
 from dataclass_factory_30.provider import (
     EnumNameProvider,
@@ -269,3 +271,8 @@ def test_provider_selecting_int_enum(strict_coercion, debug_path):
             )
         )
     )
+
+
+def test_constructor_exception_raising():
+    with pytest.raises(ValueError):
+        TestEnumProvider(bounds=[Enum])
