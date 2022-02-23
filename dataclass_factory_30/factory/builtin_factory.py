@@ -36,8 +36,8 @@ from ..provider import (
     SerializerRequest,
     IterableProvider,
     DictProvider,
-    BytesBase64ParserProvider,
-    BytearrayBase64ParserProvider,
+    BytesBase64Provider,
+    BytearrayBase64Provider,
     ABCProxy,
 )
 
@@ -121,8 +121,8 @@ class BuiltinFactory(OperatingFactory, ABC):
         CoercionLimiter(as_parser(Fraction), [str, Fraction]),
         as_serializer(Fraction, Fraction.__str__),
 
-        BytesBase64ParserProvider(),
-        BytearrayBase64ParserProvider(),
+        BytesBase64Provider(),
+        BytearrayBase64Provider(),
 
         *chain.from_iterable(
             (

@@ -6,9 +6,10 @@ from .concrete_provider import (
     IsoFormatProvider,
     TimedeltaProvider,
     NoneProvider,
-    BytesBase64ParserProvider,
-    BytearrayBase64ParserProvider,
+    BytesBase64Provider,
+    BytearrayBase64Provider,
     Base64SerializerMixin,
+    DatetimeFormatProvider,
 )
 from .definitions import (
     NoDefault,
