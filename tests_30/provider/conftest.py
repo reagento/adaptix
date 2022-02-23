@@ -1,4 +1,4 @@
-from typing import List, TypeVar, Union, Sequence
+from typing import List, TypeVar
 
 import pytest
 

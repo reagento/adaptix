@@ -57,4 +57,3 @@ def test_simple_int_no_debug_path(accum):
         parser({'field1': 1, 'field2': '1'})
 
     assert exc_info.value.path == deque()
-
