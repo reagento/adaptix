@@ -14,6 +14,12 @@ class NoDefault(metaclass=SingletonMeta):
 class DefaultValue:
     value: Any
 
+    def __hash__(self):
+        try:
+            return hash(self.value)
+        except TypeError:
+            return 29492071388  # some random number
+
 
 @dataclass(frozen=True)
 class DefaultFactory:
