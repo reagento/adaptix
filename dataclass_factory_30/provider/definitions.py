@@ -23,7 +23,10 @@ class DefaultFactory:
 Default = Union[NoDefault, DefaultValue, DefaultFactory]
 
 # Parser calling foreign functions should convert these exceptions to ParseError
-PARSER_COMPAT_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
+PARSER_COMPAT_EXCEPTIONS = (
+    ValueError, TypeError, LookupError,
+    AssertionError, ArithmeticError, AttributeError,
+)
 
 # In most cases path is Union[str, int]
 # but we decided to retain the option for a custom path
