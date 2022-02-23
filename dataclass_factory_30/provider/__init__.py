@@ -8,7 +8,7 @@ from .concrete_provider import (
     NoneProvider,
     BytesBase64ParserProvider,
     BytearrayBase64ParserProvider,
-    ByteStringBase64Serializer,
+    Base64SerializerMixin,
 )
 from .definitions import (
     NoDefault,

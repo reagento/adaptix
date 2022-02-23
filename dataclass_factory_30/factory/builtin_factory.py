@@ -37,7 +37,6 @@ from ..provider import (
     IterableProvider,
     DictProvider,
     BytesBase64ParserProvider,
-    ByteStringBase64Serializer,
     BytearrayBase64ParserProvider,
     ABCProxy,
 )
@@ -124,7 +123,6 @@ class BuiltinFactory(OperatingFactory, ABC):
 
         BytesBase64ParserProvider(),
         BytearrayBase64ParserProvider(),
-        ByteStringBase64Serializer(),
 
         *chain.from_iterable(
             (
