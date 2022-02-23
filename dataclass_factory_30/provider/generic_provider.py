@@ -410,6 +410,9 @@ class EnumExactValueProvider(BaseEnumProvider):
         enum = request.type
 
         def enum_exact_parser(data):
+            # MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
+            if isinstance(data, enum):
+                raise ParseError
             return enum(data)
 
         return foreign_parser(enum_exact_parser)
