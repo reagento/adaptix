@@ -99,9 +99,9 @@ class NameMapper(NameMappingProvider):
                     self._convert_name(fld.name): FieldCrown(fld.name)
                     for fld in request.figure.fields
                     if not (
-                            self._should_skip(fld.name)
-                            or
-                            fld.name in extra_targets
+                        self._should_skip(fld.name)
+                        or
+                        fld.name in extra_targets
                     )
                 },
                 extra=extra_policy,
