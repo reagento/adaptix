@@ -304,7 +304,7 @@ def get_literal_parser(factory, values: Sequence[Any]) -> Parser:
         for v in values:
             if (type(v), v) == (type(data), data):
                 return data
-        raise ValueError("Invalid literal data")
+        raise ValueError("Invalid literal %s" % repr(data))
 
     return literal_parser
 
