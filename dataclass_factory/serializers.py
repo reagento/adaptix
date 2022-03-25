@@ -2,6 +2,7 @@ from dataclasses import is_dataclass, MISSING
 from marshal import dumps, loads
 from operator import attrgetter, getitem
 from typing import Any, Callable, Dict, List, Optional, Sequence, Type, Union
+from re import Pattern, compile as regex_compile
 
 from .common import AbstractFactory, K, Serializer, T
 from .fields import (
@@ -120,6 +121,8 @@ def get_vars_serializer(factory) -> Serializer:
 def stub_serializer(data: T) -> T:
     return data
 
+def regex_serializer(data: Pattern) -> str:
+    return data.pattern
 
 def get_dict_serializer(
     key_serializer: Serializer[K], serializer: Serializer[T]
@@ -168,6 +171,8 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
     class_ = fix_generic_alias(class_)
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
+    if class_ is Pattern:
+        return regex_serializer
     if is_literal(class_) or is_literal36(class_) or is_none(class_):
         return stub_serializer
     if is_newtype(class_):
