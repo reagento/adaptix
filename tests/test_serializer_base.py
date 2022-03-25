@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from re import Pattern, compile
 import unittest
 
 from dataclass_factory import Factory
@@ -19,10 +18,6 @@ class D:
     c: str = "def_value"
 
 @dataclass
-class RegexPattern:
-    pattern: Pattern
-
-@dataclass
 class ListD:
     data: List[D]
     ints: List[int]
@@ -37,14 +32,6 @@ class DictD:
 class TestSerializer(unittest.TestCase):
     def setUp(self) -> None:
         self.factory = Factory()
-
-    def test_regex_pattern(self):
-        serializer = self.factory.serializer(RegexPattern)
-        regex_pattern = RegexPattern(compile(r'testcase'))
-        self.assertEqual(
-            serializer(regex_pattern),
-            {"pattern": "testcase"}
-        )
 
     def test_plain(self):
         serializer = self.factory.serializer(D)
