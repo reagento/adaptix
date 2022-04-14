@@ -79,6 +79,9 @@ class Factory(AbstractFactory):
                         will be used if they are not set in more specific one
         :param debug_path: show path to broken field in parsing exceptions
                            (InvalidFieldError will be raised)
+        :param json_schema_definitions_path: path to definitions of jsonschemas
+                       in overall schema, used by $ref
+
         """
         self.debug_path = debug_path
         self.default_schema = default_schema
@@ -186,6 +189,7 @@ class Factory(AbstractFactory):
         json_schema = create_schema(
             stacked_factory, schema, class_, self.json_schema_definitions_path,
         )
+        # we store schema only fot those types that can be referenced
         if need_ref(class_):
             self.json_schemas[name] = json_schema
         return json_schema

@@ -21,6 +21,7 @@ def need_ref(cls) -> bool:
     if is_union(cls):
         return False
     if is_iterable(cls):
+        # TypdeDict is one of heterogeneous structures
         return is_typeddict(cls)
     return True
 
