@@ -299,11 +299,21 @@ def get_dict_parser(key_parser, value_parser) -> Parser:
     return lambda data: {key_parser(k): value_parser(v) for k, v in data.items()}
 
 
-def get_literal_parser(factory, values: Sequence[Any]) -> Parser:
+def get_literal_parser(
+    factory: AbstractFactory, values: Sequence[Any],
+) -> Parser:
+    # we expect that values are serialized
+    expected_values = []
+    for value in values:
+        serialized = factory.serializer(type(value))(value)
+        expected_values.append(
+            (value, type(serialized), serialized)
+        )
+
     def literal_parser(data: Any):
-        for v in values:
-            if (type(v), v) == (type(data), data):
-                return data
+        for value, expected_type, expected_value in expected_values:
+            if (expected_type, expected_value) == (type(data), data):
+                return value
         raise ValueError("Invalid literal %s" % repr(data))
 
     return literal_parser

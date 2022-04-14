@@ -1,4 +1,5 @@
 import sys
+from enum import Enum
 from typing import Any
 from unittest import TestCase
 
@@ -12,6 +13,10 @@ if sys.version_info >= (3, 8):
     from typing import Literal as PyLiteral
 
     LITERALS.append(PyLiteral)
+
+
+class MyType(Enum):
+    A = "a"
 
 
 class TestLiteral(TestCase):
@@ -43,3 +48,8 @@ class TestLiteral(TestCase):
         self.assertEqual(self.factory.dump("Z", abc), "Z")
 
         self.assertEqual(self.factory.dump(1, one), 1)
+
+    @params(*LITERALS)
+    def test_literal_enum(self, literal):
+        enum_value = self.factory.load(MyType.A.value, literal[MyType.A])
+        self.assertEqual(enum_value, MyType.A)
