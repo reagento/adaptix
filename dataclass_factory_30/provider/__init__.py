@@ -37,15 +37,11 @@ from .essential import (
     PipelineEvalMixin,
     Pipeline,
 )
-from .fields_basics import (
+from .fields.definitions import (
     ExtraTargets,
     ExtraSkip,
     ExtraForbid,
     ExtraKwargs,
-    ExtraPolicy,
-    FigureExtra,
-    FigureExtra,
-    CfgExtraPolicy,
     InputFieldsFigure,
     OutputFieldsFigure,
     BaseFFRequest,
@@ -54,9 +50,8 @@ from .fields_basics import (
     BaseNameMappingRequest,
     InputNameMappingRequest,
     OutputNameMappingRequest,
-    NameMappingProvider,
 )
-from .fields_figure import (
+from .fields.figure_provider import (
     get_func_iff,
     TypeOnlyInputFFProvider,
     TypeOnlyOutputFFProvider,
@@ -66,7 +61,7 @@ from .fields_figure import (
     DataclassFieldsProvider,
     ClassInitFieldsProvider,
 )
-from .fields_parser import (
+from .fields.parser_gen import (
     FieldsParserProvider,
 )
 from .generic_provider import (
@@ -81,6 +76,7 @@ from .generic_provider import (
     EnumExactValueProvider,
 )
 from .name_mapper import NameMapper
+from .fields.basic_provider import NameMappingProvider
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import (
     RequestChecker,
@@ -111,7 +107,6 @@ from .request_cls import (
     FieldRM,
     ParserFieldRequest,
     SerializerFieldRequest,
-    CfgOmitDefault,
 )
 from .static_provider import (
     StaticProvider,

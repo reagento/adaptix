@@ -3,18 +3,16 @@ from typing import Type, TypeVar, Optional, List, Dict
 from .builtin_factory import BuiltinFactory
 from ..common import Parser, Serializer, TypeHint
 from ..provider import (
-    ExtraPolicy,
-    CfgExtraPolicy,
     ExtraSkip,
     ParserRequest,
     SerializerRequest,
-    CfgOmitDefault,
     Request,
     Mediator,
     CannotProvide,
     Provider,
     FactoryProvider
 )
+from ..provider.fields.basic_provider import ExtraPolicy, CfgExtraPolicy
 
 T = TypeVar('T')
 
@@ -33,13 +31,10 @@ class Factory(BuiltinFactory, Provider):
         strict_coercion: bool = True,
         debug_path: bool = True,
         extra_policy: ExtraPolicy = ExtraSkip(),
-        omit_default: bool = False,
     ):
         self._strict_coercion = strict_coercion
         self._debug_path = debug_path
         self._extra_policy = extra_policy
-
-        self._omit_default = omit_default
 
         self._parser_cache: Dict[TypeHint, Parser] = {}
         self._serializers_cache: Dict[TypeHint, Serializer] = {}
@@ -49,7 +44,6 @@ class Factory(BuiltinFactory, Provider):
     def _get_config_recipe(self) -> List[Provider]:
         return [
             FactoryProvider(CfgExtraPolicy, lambda: self._extra_policy),
-            FactoryProvider(CfgOmitDefault, lambda: self._omit_default),
         ]
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:

@@ -2,17 +2,19 @@ from typing import Set, Tuple
 
 import pytest
 
+from dataclass_factory.path_utils import NameMapping
 from dataclass_factory_30.provider import (
     NameMapper, NameStyle,
-    ValueProvider, CfgExtraPolicy,
+    ValueProvider,
     ExtraSkip, InputNameMappingRequest,
     InputFieldsFigure, NoDefault,
 )
-from dataclass_factory_30.provider.fields_basics import (
-    NameMapping, DictCrown, FieldCrown,
-    ExtraTargets, OutputNameMappingRequest, OutputFieldsFigure, OutFigureExtra,
-)
-from dataclass_factory_30.provider.fields_figure import _to_inp, _to_out
+
+from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
+
+from dataclass_factory_30.provider.fields.basic_provider import CfgExtraPolicy
+from dataclass_factory_30.provider.fields.definitions import OutFigureExtra, OutputNameMappingRequest, \
+    OutputFieldsFigure, InpDictCrown, InpFieldCrown, ExtraTargets
 from dataclass_factory_30.provider.request_cls import ParamKind, FieldRM, AccessKind
 from tests_30.provider.conftest import TestFactory
 
@@ -255,10 +257,10 @@ def test_name_mapping_simple(factory, make_request):
     )
 
     assert name_mapping == NameMapping(
-        crown=DictCrown(
+        crown=InpDictCrown(
             {
-                'a': FieldCrown('a'),
-                'b': FieldCrown('b'),
+                'a': InpFieldCrown('a'),
+                'b': InpFieldCrown('b'),
             },
             extra=ExtraSkip(),
         ),
@@ -283,9 +285,9 @@ def test_name_mapping_skipping(factory, make_request):
     )
 
     assert name_mapping == NameMapping(
-        crown=DictCrown(
+        crown=InpDictCrown(
             {
-                'a': FieldCrown('a'),
+                'a': InpFieldCrown('a'),
             },
             extra=ExtraSkip(),
         ),
@@ -311,9 +313,9 @@ def test_name_mapping_extra_targets(factory, make_request):
     )
 
     assert name_mapping == NameMapping(
-        crown=DictCrown(
+        crown=InpDictCrown(
             {
-                'a': FieldCrown('a'),
+                'a': InpFieldCrown('a'),
             },
             extra=ExtraSkip(),
         ),
@@ -339,9 +341,9 @@ def test_name_mapping_extra_targets_skip(factory, make_request):
     )
 
     assert name_mapping == NameMapping(
-        crown=DictCrown(
+        crown=InpDictCrown(
             {
-                'a': FieldCrown('a'),
+                'a': InpFieldCrown('a'),
             },
             extra=ExtraSkip(),
         ),

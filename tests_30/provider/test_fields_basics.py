@@ -1,7 +1,7 @@
 import pytest
 
 from dataclass_factory_30.provider import NoDefault
-from dataclass_factory_30.provider.fields_basics import InputFieldsFigure, OutputFieldsFigure, ExtraTargets
+from dataclass_factory_30.provider.fields.definitions import InputFieldsFigure, OutputFieldsFigure, ExtraTargets
 from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM, AccessKind
 
 

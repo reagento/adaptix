@@ -1,15 +1,9 @@
 from types import MappingProxyType
 from typing import TypedDict
 
-from dataclass_factory_30.provider import NoDefault
-from dataclass_factory_30.provider.fields_figure import (
-    TypedDictFieldsProvider,
-    FieldRM,
-    InputFieldsFigure,
-    OutputFieldsFigure,
-    _to_inp, _to_out
-)
-from dataclass_factory_30.provider.request_cls import ParamKind, AccessKind
+from dataclass_factory_30.provider import NoDefault, TypedDictFieldsProvider, InputFieldsFigure, OutputFieldsFigure
+from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
+from dataclass_factory_30.provider.request_cls import ParamKind, AccessKind, FieldRM
 
 
 class Foo(TypedDict, total=True):

@@ -1,32 +1,34 @@
 import contextlib
 import string
 from collections import deque
-from dataclasses import dataclass
-from typing import Dict, Tuple, Set, Any, Callable, List, Union
+from typing import Dict, Set, Union
 
-from .definitions import (
+from .basic_gen import (
+    CodeGenHookData, CodeGenHook,
+    stub_code_gen_hook, CodeGenHookRequest,
+    FldPathElem, Path
+)
+from .processor import FigureProcessor
+from ..definitions import (
     NoRequiredFieldsError,
     NoRequiredItemsError, TypeParseError,
     ExtraItemsError, ExtraFieldsError, ParseError
 )
-from .essential import Mediator, CannotProvide, Request
-from .fields_basics import (
+from ..essential import Mediator, CannotProvide
+from .definitions import (
     ExtraForbid, ExtraCollect,
     InputFieldsFigure,
-    NameMapping, Crown,
-    DictCrown, ListCrown, FieldCrown,
+    InpDictCrown,
     InputFFRequest, InputNameMappingRequest,
-    ExtraKwargs, ExtraTargets, FigureProcessor,
+    ExtraKwargs, ExtraTargets, InpFieldCrown,
+    InpListCrown, InpCrown, InpNameMapping,
 )
-from .provider_template import ParserProvider
-from .request_cls import ParserRequest, ParserFieldRequest, InputFieldRM, ParamKind
-from .static_provider import StaticProvider, static_provision_action
-from ..code_tools import CodeBuilder, ClosureCompiler, BasicClosureCompiler
-from ..common import Parser
+from ..provider_template import ParserProvider
+from ..request_cls import ParserRequest, ParserFieldRequest, InputFieldRM, ParamKind
+from ...code_tools import CodeBuilder, ClosureCompiler, BasicClosureCompiler
+from ...common import Parser
 
-FldPathElem = Union[str, int]
-Path = Tuple[FldPathElem, ...]
-RootCrown = Union[DictCrown, ListCrown]
+RootCrown = Union[InpDictCrown, InpListCrown]
 
 
 class GenState:
@@ -81,7 +83,7 @@ class GenState:
     def get_raw_field_var(self, field_name: str) -> str:
         return f"r_{field_name}"
 
-    def get_field(self, crown: FieldCrown) -> InputFieldRM:
+    def get_field(self, crown: InpFieldCrown) -> InputFieldRM:
         self.field_name2path[crown.name] = self._path
         return self._name_to_field[crown.name]
 
@@ -95,15 +97,6 @@ class GenState:
         self._path += (key,)
         yield
         self._path = past
-
-
-@dataclass
-class CodeGenHookData:
-    namespace: Dict[str, Any]
-    source: str
-
-
-CodeGenHook = Callable[[CodeGenHookData], None]
 
 
 class FieldsParserGenerator:
@@ -132,10 +125,10 @@ class FieldsParserGenerator:
 
     and root crown is
 
-        DictCrown(
+        InpDictCrown(
             map={
-                'a': FieldCrown('z'),
-                'b': FieldCrown('y'),
+                'a': InpFieldCrown('z'),
+                'b': InpFieldCrown('y'),
             },
             extra=ExtraCollect(),
         )
@@ -225,10 +218,10 @@ class FieldsParserGenerator:
     and
 
         NameMapping(
-            crown=DictCrown(
+            crown=InpDictCrown(
                 map={
-                    'a': FieldCrown('z'),
-                    'b': FieldCrown('y'),
+                    'a': InpFieldCrown('z'),
+                    'b': InpFieldCrown('y'),
                 },
                 extra=ExtraCollect(),
             ),
@@ -493,21 +486,21 @@ class FieldsParserGenerator:
             else:
                 builder(f"{var},")
 
-    def _gen_root_crown_dispatch(self, builder: CodeBuilder, state: GenState, crown: Crown):
+    def _gen_root_crown_dispatch(self, builder: CodeBuilder, state: GenState, crown: InpCrown):
         """Returns True if code is generated"""
-        if isinstance(crown, DictCrown):
+        if isinstance(crown, InpDictCrown):
             self._gen_dict_crown(builder, state, crown)
-        elif isinstance(crown, ListCrown):
+        elif isinstance(crown, InpListCrown):
             self._gen_list_crown(builder, state, crown)
         else:
             return False
         return True
 
-    def _gen_crown_dispatch(self, builder: CodeBuilder, state: GenState, sub_crown: Crown, key: FldPathElem):
+    def _gen_crown_dispatch(self, builder: CodeBuilder, state: GenState, sub_crown: InpCrown, key: FldPathElem):
         with state.add_key(key):
             if self._gen_root_crown_dispatch(builder, state, sub_crown):
                 return
-            if isinstance(sub_crown, FieldCrown):
+            if isinstance(sub_crown, InpFieldCrown):
                 self._gen_field_crown(builder, state, sub_crown)
                 return
             if sub_crown is None:
@@ -553,7 +546,7 @@ class FieldsParserGenerator:
             """,
         )
 
-    def _gen_dict_crown(self, builder: CodeBuilder, state: GenState, crown: DictCrown):
+    def _gen_dict_crown(self, builder: CodeBuilder, state: GenState, crown: InpDictCrown):
         if crown.extra in (ExtraForbid(), ExtraCollect()):
             known_fields = set(crown.map.keys())
             state.path2known_fields[state.path] = known_fields
@@ -595,7 +588,7 @@ class FieldsParserGenerator:
         for key, value in crown.map.items():
             self._gen_crown_dispatch(builder, state, value, key)
 
-    def _gen_list_crown(self, builder: CodeBuilder, state: GenState, crown: ListCrown):
+    def _gen_list_crown(self, builder: CodeBuilder, state: GenState, crown: InpListCrown):
         data = state.get_data_var_name()
         path_lit = self._get_path_lit(state.path)
         list_len = str(crown.list_len)
@@ -623,7 +616,7 @@ class FieldsParserGenerator:
         for key, value in crown.map.items():
             self._gen_crown_dispatch(builder, state, value, key)
 
-    def _gen_field_crown(self, builder: CodeBuilder, state: GenState, crown: FieldCrown):
+    def _gen_field_crown(self, builder: CodeBuilder, state: GenState, crown: InpFieldCrown):
         field = state.get_field(crown)
 
         if field.is_required:
@@ -687,29 +680,6 @@ class FieldsParserGenerator:
             builder(
                 f"{field_left_value} = {field_parser}({data_for_parser})"
             )
-
-
-@dataclass(frozen=True)
-class CodeGenHookRequest(Request[CodeGenHook]):
-    initial_request: Request
-
-
-def _stub_code_gen_hook(data: CodeGenHookData):
-    pass
-
-
-class CodeGenAccumulator(StaticProvider):
-    """Accumulates all generated code. It may be useful for debugging"""
-
-    def __init__(self):
-        self.list: List[Tuple[Request, CodeGenHookData]] = []
-
-    @static_provision_action(CodeGenHookRequest)
-    def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
-        def hook(data: CodeGenHookData):
-            self.list.append((request.initial_request, data))
-
-        return hook
 
 
 _AVAILABLE_CHARS = set(string.ascii_letters + string.digits)
@@ -777,7 +747,7 @@ class FieldsParserProvider(ParserProvider):
         figure: InputFieldsFigure = mediator.provide(
             InputFFRequest(type=request.type)
         )
-        name_mapping: NameMapping = mediator.provide(
+        name_mapping: InpNameMapping = mediator.provide(
             InputNameMappingRequest(type=request.type, figure=figure)
         )
 
@@ -790,7 +760,7 @@ class FieldsParserProvider(ParserProvider):
         try:
             code_gen_hook = mediator.provide(CodeGenHookRequest(initial_request=request))
         except CannotProvide:
-            code_gen_hook = _stub_code_gen_hook
+            code_gen_hook = stub_code_gen_hook
 
         new_figure = self._get_figure_processor().process_figure(figure, name_mapping)
 

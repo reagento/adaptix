@@ -2,15 +2,10 @@ from dataclasses import dataclass, field, InitVar
 from types import MappingProxyType
 from typing import ClassVar
 
-from dataclass_factory_30.provider import DefaultValue, DefaultFactory
-from dataclass_factory_30.provider.fields_figure import (
-    DataclassFieldsProvider,
-    InputFieldRM,
-    NoDefault,
-    InputFieldsFigure,
-    OutputFieldsFigure,
-)
-from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, AccessKind
+from dataclass_factory_30.provider import DefaultValue, DefaultFactory, DataclassFieldsProvider, InputFieldsFigure, \
+    NoDefault, OutputFieldsFigure
+
+from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, AccessKind, InputFieldRM
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 

@@ -5,16 +5,16 @@ from inspect import Signature, Parameter
 from types import MappingProxyType
 from typing import Any, get_type_hints, final, Dict, Iterable, Callable, Tuple
 
-from .definitions import DefaultValue, DefaultFactory, Default, NoDefault
-from .essential import Mediator, CannotProvide
-from .fields_basics import (
+from ..definitions import DefaultValue, DefaultFactory, Default, NoDefault
+from ..essential import Mediator, CannotProvide
+from .definitions import (
     InputFieldsFigure, OutputFieldsFigure,
     InputFFRequest, OutputFFRequest,
     ExtraKwargs
 )
-from .request_cls import FieldRM, InputFieldRM, ParamKind, OutputFieldRM, AccessKind
-from .static_provider import StaticProvider, static_provision_action
-from ..type_tools import is_typed_dict_class, is_named_tuple_class
+from ..request_cls import FieldRM, InputFieldRM, ParamKind, OutputFieldRM, AccessKind
+from ..static_provider import StaticProvider, static_provision_action
+from ...type_tools import is_typed_dict_class, is_named_tuple_class
 
 _PARAM_KIND_CONV: Dict[Any, ParamKind] = {
     Parameter.POSITIONAL_ONLY: ParamKind.POS_ONLY,

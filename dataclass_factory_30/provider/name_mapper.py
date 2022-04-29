@@ -2,12 +2,13 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Collection
 
 from .essential import Mediator
-from .fields_basics import (
-    NameMapping, NameMappingProvider,
-    DictCrown, ExtraPolicy,
-    CfgExtraPolicy, FieldCrown,
-    BaseNameMappingRequest, BaseFieldsFigure, ExtraTargets,
+from .fields.basic_provider import ExtraPolicy, CfgExtraPolicy, NameMappingProvider
+from .fields.definitions import (
+    InpDictCrown, BaseNameMappingRequest, BaseFieldsFigure, ExtraTargets,
     InputNameMappingRequest, OutputNameMappingRequest,
+    InpNameMapping, OutNameMapping, BaseNameMapping, BaseFieldCrown, BaseDictCrown, BaseCrown, InpCrown, InpFieldCrown,
+    BaseNoneCrown, InpNoneCrown, InpExtraPolicy, BaseListCrown, InpListCrown, InpExtraPolicyDict, InpExtraPolicyList,
+    OutCrown, OutFieldCrown, OutNoneCrown, Filler, OutDictCrown, Sieve, OutListCrown
 )
 from .name_style import NameStyle, convert_snake_style
 
@@ -88,15 +89,13 @@ class NameMapper(NameMappingProvider):
             return set(figure.extra.fields)
         return []
 
-    def _provide_name_mapping(self, mediator: Mediator, request: BaseNameMappingRequest) -> NameMapping:
-        extra_policy: ExtraPolicy = mediator.provide(CfgExtraPolicy())
-
+    def _provide_name_mapping(self, mediator: Mediator, request: BaseNameMappingRequest) -> BaseNameMapping:
         extra_targets = self._get_extra_targets(request.figure)
 
-        return NameMapping(
-            crown=DictCrown(
+        return BaseNameMapping(
+            crown=BaseDictCrown(
                 map={
-                    self._convert_name(fld.name): FieldCrown(fld.name)
+                    self._convert_name(fld.name): BaseFieldCrown(fld.name)
                     for fld in request.figure.fields
                     if not (
                         self._should_skip(fld.name)
@@ -104,12 +103,66 @@ class NameMapper(NameMappingProvider):
                         fld.name in extra_targets
                     )
                 },
-                extra=extra_policy,
             ),
             skipped_extra_targets=list(filter(self._should_skip, extra_targets)),
         )
 
-    def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> NameMapping:
+    def _to_inp_crown(
+        self,
+        base: BaseCrown,
+        dict_extra: InpExtraPolicyDict,
+        list_extra: InpExtraPolicyList,
+    ) -> InpCrown:
+        if isinstance(base, BaseFieldCrown):
+            return InpFieldCrown(base.name)
+        if isinstance(base, BaseNoneCrown):
+            return InpNoneCrown()
+        if isinstance(base, BaseDictCrown):
+            return InpDictCrown(
+                map={
+                    key: self._to_inp_crown(value, dict_extra, list_extra)
+                    for key, value in base.map.items()
+                },
+                extra=dict_extra,
+            )
+        if isinstance(base, BaseListCrown):
+            return InpListCrown(
+                map=[
+                    self._to_inp_crown(value, dict_extra, list_extra)
+                    for value in base.map
+                ],
+                extra=list_extra,
+            )
+        raise RuntimeError
+
+    def _to_out_crown(
+        self,
+        base: BaseCrown,
+        filler: Filler,
+        sieves: Dict[str, Sieve]
+    ) -> OutCrown:
+        if isinstance(base, BaseFieldCrown):
+            return OutFieldCrown(base.name)
+        if isinstance(base, BaseNoneCrown):
+            return OutNoneCrown(filler)
+        if isinstance(base, BaseDictCrown):
+            return OutDictCrown(
+                map={
+                    key: self._to_out_crown(value, filler, sieves)
+                    for key, value in base.map.items()
+                },
+                sieves={k: sieves[k] for k in base.map if k in sieves},
+            )
+        if isinstance(base, BaseListCrown):
+            return OutListCrown(
+                map=[
+                    self._to_out_crown(value, filler, sieves)
+                    for value in base.map
+                ],
+            )
+        raise RuntimeError
+
+    def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> InpNameMapping:
         skipped_required_fields = [
             fld for fld in request.figure.fields
             if fld.is_required and self._should_skip(fld.name)
@@ -118,7 +171,13 @@ class NameMapper(NameMappingProvider):
         if skipped_required_fields:
             raise ValueError  # TODO: replace this error with CannotProvide pushing to user
 
-        return self._provide_name_mapping(mediator, request)
+        base_name_mapping = self._provide_name_mapping(mediator, request)
+        extra_policy: ExtraPolicy = mediator.provide(CfgExtraPolicy())
 
-    def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> NameMapping:
+        return InpNameMapping(
+            crown=self._to_inp_crown(base_name_mapping.crown, extra_policy, extra_policy),
+            skipped_extra_targets=base_name_mapping.skipped_extra_targets,
+        )
+
+    def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> OutNameMapping:
         return self._provide_name_mapping(mediator, request)

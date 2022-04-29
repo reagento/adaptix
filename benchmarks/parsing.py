@@ -7,6 +7,7 @@ from mashumaro import DataClassDictMixin
 from pydantic import BaseModel, Field
 
 from dataclass_factory import Factory, Schema as DSchema
+from dataclass_factory_30.factory import Factory as NewFactory
 
 
 @dataclass
@@ -103,8 +104,25 @@ def do4():
 
 assert do1() == do2()
 
-print("my       ", timeit("do()", globals={"do": do1}, number=100000))  # 1.5959172130096704
-print("my debug ", timeit("do()", globals={"do": do1_debug}, number=100000))  # 2.087571810989175
+
+@dataclass
+class TodoDesc:
+    id: int
+    title: str
+    description: str
+
+
+new_factory = NewFactory(strict_coercion=False, debug_path=True)
+new_parser = new_factory.parser(List[TodoDesc])
+
+
+def do5():
+    return new_parser(todos)
+
+
+print("my-new   ", timeit("do()", globals={"do": do5}, number=100000))  #
+#print("my       ", timeit("do()", globals={"do": do1}, number=100000))  # 1.5959172130096704
+#print("my debug ", timeit("do()", globals={"do": do1_debug}, number=100000))  # 2.087571810989175
 print("mashumaro", timeit("do()", globals={"do": do4}, number=100000))  # 1.459100882988423
-print("marsh    ", timeit("do()", globals={"do": do2}, number=100000))  # 21.77947078004945
-print("mpydantic", timeit("do()", globals={"do": do3}, number=100000))  # 7.471431287995074
+#print("marsh    ", timeit("do()", globals={"do": do2}, number=100000))  # 21.77947078004945
+#print("mpydantic", timeit("do()", globals={"do": do3}, number=100000))  # 7.471431287995074

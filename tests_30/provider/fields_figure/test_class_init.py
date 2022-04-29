@@ -4,14 +4,9 @@ from typing import Any
 import pytest
 
 from dataclass_factory_30.feature_requirement import has_pos_only_params
-from dataclass_factory_30.provider import DefaultValue, NoDefault, CannotProvide
-from dataclass_factory_30.provider.fields_figure import (
-    ClassInitFieldsProvider,
-    InputFieldRM,
-    InputFieldsFigure,
-    ExtraKwargs
-)
-from dataclass_factory_30.provider.request_cls import ParamKind
+from dataclass_factory_30.provider import DefaultValue, NoDefault, CannotProvide, ClassInitFieldsProvider, \
+    InputFieldsFigure, ExtraKwargs
+from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM
 
 
 class Valid1:

@@ -2,15 +2,10 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
-from dataclass_factory_30.provider import DefaultValue, NoDefault
-from dataclass_factory_30.provider.fields_figure import (
-    NamedTupleFieldsProvider,
-    FieldRM,
-    InputFieldsFigure,
-    OutputFieldsFigure,
-    _to_inp, _to_out,
-)
-from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, AccessKind, OutputFieldRM
+from dataclass_factory_30.provider import DefaultValue, NoDefault, NamedTupleFieldsProvider, InputFieldsFigure, \
+    OutputFieldsFigure
+from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
+from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, AccessKind, OutputFieldRM, FieldRM
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')

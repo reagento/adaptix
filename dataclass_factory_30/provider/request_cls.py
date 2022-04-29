@@ -108,9 +108,4 @@ class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin):
 
 @dataclass(frozen=True)
 class SerializerFieldRequest(SerializerRequest, OutputFieldRM[Serializer]):
-    omit_default: bool
-
-
-@dataclass(frozen=True)
-class CfgOmitDefault(Request[bool]):
     pass
