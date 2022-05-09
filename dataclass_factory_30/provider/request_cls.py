@@ -32,6 +32,10 @@ class FieldRM(TypeHintRM[T], Generic[T]):
     # from hash computation
     metadata: Mapping[Any, Any] = field(hash=False)
 
+    @property
+    def is_optional(self):
+        return not self.is_required
+
 
 class ParamKind(Enum):
     POS_ONLY = 0

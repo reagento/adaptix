@@ -17,27 +17,40 @@ class CodeBuilder:
     def lines(self) -> Sequence[str]:
         return self._lines
 
-    def _add_string(self, line_or_text: str):
+    def _extract_lines(self, line_or_text: str) -> List[str]:
         if "\n" in line_or_text:
-            lines = dedent(line_or_text).strip("\n").split("\n")
-        else:
-            lines = [line_or_text]
+            return dedent(line_or_text).strip("\n").split("\n")
+        return [line_or_text]
 
+    def _add_indenting_lines(self, lines: List[str]):
         indent = " " * self._cur_indent
         self._lines.extend(
             indent + line
             for line in lines
         )
 
-    def __call__(self, line_or_text: str):
-        self._add_string(
-            line_or_text,
-        )
+    def __call__(self, line_or_text: str) -> "CodeBuilder":
+        """Append lines to builder"""
+        lines = self._extract_lines(line_or_text)
+        self._add_indenting_lines(lines)
         return self
 
-    def __iadd__(self, line_or_text: str):
-        self(line_or_text)
+    __add__ = __call__
+    __iadd__ = __call__
+
+    def include(self, line_or_text: str) -> "CodeBuilder":
+        """Add first line of input text to last line of builder and append other lines"""
+        first_line, *other_lines = self._extract_lines(line_or_text)
+
+        if self._lines:
+            self._lines[-1] += first_line
+        else:
+            self._lines.append(first_line)
+        self._add_indenting_lines(other_lines)
         return self
+
+    __lshift__ = include
+    __ilshift__ = include
 
     def empty_line(self):
         self("")
