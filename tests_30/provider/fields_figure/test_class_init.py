@@ -5,7 +5,7 @@ import pytest
 
 from dataclass_factory_30.feature_requirement import has_pos_only_params
 from dataclass_factory_30.provider import DefaultValue, NoDefault, CannotProvide, ClassInitFieldsProvider, \
-    InputFieldsFigure, ExtraKwargs
+    InputFigure, ExtraKwargs
 from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM
 
 
@@ -64,9 +64,9 @@ VALID_FIELDS = (
 
 def test_extra_none():
     assert (
-        ClassInitFieldsProvider()._get_input_fields_figure(Valid1)
-        ==
-        InputFieldsFigure(
+            ClassInitFieldsProvider()._get_input_fields_figure(Valid1)
+            ==
+            InputFigure(
             constructor=Valid1,
             extra=None,
             fields=VALID_FIELDS,
@@ -76,9 +76,9 @@ def test_extra_none():
 
 def test_extra_kwargs():
     assert (
-        ClassInitFieldsProvider()._get_input_fields_figure(Valid2Kwargs)
-        ==
-        InputFieldsFigure(
+            ClassInitFieldsProvider()._get_input_fields_figure(Valid2Kwargs)
+            ==
+            InputFigure(
             constructor=Valid2Kwargs,
             extra=ExtraKwargs(),
             fields=VALID_FIELDS,
@@ -94,9 +94,9 @@ def test_pos_only():
             self.b = b
 
     assert (
-        ClassInitFieldsProvider()._get_input_fields_figure(HasPosOnly)
-        ==
-        InputFieldsFigure(
+            ClassInitFieldsProvider()._get_input_fields_figure(HasPosOnly)
+            ==
+            InputFigure(
             constructor=HasPosOnly,
             extra=None,
             fields=(

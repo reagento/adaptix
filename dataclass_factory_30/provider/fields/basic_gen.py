@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-from typing import Dict, Any, Callable, List, Tuple, Union
+from typing import Dict, Any, Callable, List, Tuple, Union, Iterable
 
+from .. import FieldRM
 from ..essential import Request, Mediator
 from ..static_provider import StaticProvider, static_provision_action
+from ...code_tools import PrefixManglerBase, MangledConstant, mangling_method
 
 
 @dataclass
@@ -37,6 +39,19 @@ class CodeGenAccumulator(StaticProvider):
         return hook
 
 
-FldPathElem = Union[str, int]
-Path = Tuple[FldPathElem, ...]
+class VarBinder(PrefixManglerBase):
+    data = MangledConstant("data")
+    extra = MangledConstant("extra")
+    opt_fields = MangledConstant("opt_fields")
 
+    @mangling_method("field_")
+    def field(self, field: FieldRM) -> str:
+        return field.name
+
+    @mangling_method("raw_field_")
+    def raw_field(self, field_name: str) -> str:
+        return field_name
+
+    @mangling_method("parser_")
+    def field_parser(self, field_name: str) -> str:
+        return field_name

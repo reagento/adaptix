@@ -7,14 +7,14 @@ from dataclass_factory_30.provider import (
     NameMapper, NameStyle,
     ValueProvider,
     ExtraSkip, InputNameMappingRequest,
-    InputFieldsFigure, NoDefault,
+    InputFigure, NoDefault,
 )
 
 from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
 
 from dataclass_factory_30.provider.fields.basic_provider import CfgExtraPolicy
 from dataclass_factory_30.provider.fields.definitions import OutFigureExtra, OutputNameMappingRequest, \
-    OutputFieldsFigure, InpDictCrown, InpFieldCrown, ExtraTargets
+    OutputFigure, InpDictCrown, InpFieldCrown, ExtraTargets
 from dataclass_factory_30.provider.request_cls import ParamKind, FieldRM, AccessKind
 from tests_30.provider.conftest import TestFactory
 
@@ -207,7 +207,7 @@ def make_field(name: str, is_required: bool):
 def inp_request(fields: Tuple[FieldRM, ...], extra: OutFigureExtra = None):
     return InputNameMappingRequest(
         type=Stub,
-        figure=InputFieldsFigure(
+        figure=InputFigure(
             constructor=Stub,
             extra=extra,
             fields=_to_inp(ParamKind.POS_OR_KW, fields)
@@ -218,7 +218,7 @@ def inp_request(fields: Tuple[FieldRM, ...], extra: OutFigureExtra = None):
 def out_request(fields: Tuple[FieldRM, ...], extra: OutFigureExtra = None):
     return OutputNameMappingRequest(
         type=Stub,
-        figure=OutputFieldsFigure(
+        figure=OutputFigure(
             extra=extra,
             fields=_to_out(AccessKind.ITEM, fields),
         ),

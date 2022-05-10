@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Collection
 from .essential import Mediator
 from .fields.basic_provider import ExtraPolicy, CfgExtraPolicy, NameMappingProvider
 from .fields.definitions import (
-    InpDictCrown, BaseNameMappingRequest, BaseFieldsFigure, ExtraTargets,
+    InpDictCrown, BaseNameMappingRequest, BaseFigure, ExtraTargets,
     InputNameMappingRequest, OutputNameMappingRequest,
     InpNameMapping, OutNameMapping, BaseNameMapping, BaseFieldCrown, BaseDictCrown, BaseCrown, InpCrown, InpFieldCrown,
     BaseNoneCrown, InpNoneCrown, InpExtraPolicy, BaseListCrown, InpListCrown, InpExtraPolicyDict, InpExtraPolicyList,
@@ -84,7 +84,7 @@ class NameMapper(NameMappingProvider):
 
         return name
 
-    def _get_extra_targets(self, figure: BaseFieldsFigure) -> Collection[str]:
+    def _get_extra_targets(self, figure: BaseFigure) -> Collection[str]:
         if isinstance(figure.extra, ExtraTargets):
             return set(figure.extra.fields)
         return []

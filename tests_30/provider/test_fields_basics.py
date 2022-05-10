@@ -1,7 +1,7 @@
 import pytest
 
 from dataclass_factory_30.provider import NoDefault
-from dataclass_factory_30.provider.fields.definitions import InputFieldsFigure, OutputFieldsFigure, ExtraTargets
+from dataclass_factory_30.provider.fields.definitions import InputFigure, OutputFigure, ExtraTargets
 from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM, AccessKind
 
 
@@ -19,7 +19,7 @@ def stub_constructor(*args, **kwargs):
 )
 def test_inconsistent_fields_order(first, second):
     with pytest.raises(ValueError):
-        InputFieldsFigure(
+        InputFigure(
             constructor=stub_constructor,
             extra=None,
             fields=(
@@ -44,7 +44,7 @@ def test_inconsistent_fields_order(first, second):
 
 
 def _make_triple_iff(first, second, third):
-    return InputFieldsFigure(
+    return InputFigure(
         constructor=stub_constructor,
         extra=None,
         fields=(
@@ -106,7 +106,7 @@ def test_ok_non_required_field_order(first, second, third):
 
 def test_name_duplicates():
     with pytest.raises(ValueError):
-        InputFieldsFigure(
+        InputFigure(
             constructor=stub_constructor,
             extra=None,
             fields=(
@@ -130,7 +130,7 @@ def test_name_duplicates():
         )
 
     with pytest.raises(ValueError):
-        OutputFieldsFigure(
+        OutputFigure(
             extra=None,
             fields=(
                 OutputFieldRM(
@@ -155,7 +155,7 @@ def test_name_duplicates():
 
 def test_wild_targets():
     with pytest.raises(ValueError):
-        InputFieldsFigure(
+        InputFigure(
             constructor=stub_constructor,
             extra=ExtraTargets(("b",)),
             fields=(
@@ -171,7 +171,7 @@ def test_wild_targets():
         )
 
     with pytest.raises(ValueError):
-        OutputFieldsFigure(
+        OutputFigure(
             extra=ExtraTargets(("b",)),
             fields=(
                 OutputFieldRM(

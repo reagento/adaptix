@@ -2,7 +2,7 @@ from typing import Dict, Set
 
 from dataclass_factory_30.code_tools import ClosureCompiler, CodeBuilder
 from dataclass_factory_30.common import Serializer
-from dataclass_factory_30.provider import OutputFieldsFigure
+from dataclass_factory_30.provider import OutputFigure
 from dataclass_factory_30.provider.code_gen_basics import CodeGenHook, RootCrown, FldPathElem
 from dataclass_factory_30.provider.fields_basics import InpDictCrown, Crown, ListCrown
 
@@ -16,7 +16,7 @@ class GenState:
 class FieldsSerializerGenerator:
     def __init__(
         self,
-        figure: OutputFieldsFigure,
+        figure: OutputFigure,
         omit_default: Set[str],
     ):
         self.figure = figure

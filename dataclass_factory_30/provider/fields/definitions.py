@@ -1,19 +1,12 @@
 from dataclasses import dataclass
-from typing import Union, Generic, TypeVar, Dict, Callable, Tuple, Collection, Any, List
+from typing import Union, Generic, TypeVar, Dict, Callable, Tuple, Collection, Any, List, Mapping
 
 from ..definitions import DefaultValue, DefaultFactory
 from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM
+from ...common import VarTuple
 from ...utils import SingletonMeta, pairs
 
 T = TypeVar('T')
-
-
-class ExtraSkip(metaclass=SingletonMeta):
-    pass
-
-
-class ExtraForbid(metaclass=SingletonMeta):
-    pass
 
 
 class ExtraKwargs(metaclass=SingletonMeta):
@@ -22,23 +15,29 @@ class ExtraKwargs(metaclass=SingletonMeta):
 
 @dataclass(frozen=True)
 class ExtraTargets:
-    fields: Tuple[str, ...]
+    fields: VarTuple[str]
 
 
-class ExtraCollect(metaclass=SingletonMeta):
-    pass
+@dataclass(frozen=True)
+class ExtraSaturate(Generic[T]):
+    func: Callable[[T, Mapping[str, Any]], None]
+
+
+@dataclass(frozen=True)
+class ExtraExtract(Generic[T]):
+    func: Callable[[Mapping[str, Any], T], Mapping[str, Any]]
 
 
 #  =======================
 #       Base Fields
 #  =======================
 
-BaseFigureExtra = Union[None, ExtraKwargs, ExtraTargets]
+BaseFigureExtra = Union[None, ExtraKwargs, ExtraTargets, ExtraSaturate[T], ExtraExtract[T]]
 
 
 @dataclass(frozen=True)
-class BaseFieldsFigure:
-    fields: Tuple[FieldRM, ...]
+class BaseFigure:
+    fields: VarTuple[FieldRM]
     extra: BaseFigureExtra
 
     def _validate(self):
@@ -65,74 +64,24 @@ class BaseFieldsFigure:
         self._validate()
 
 
-@dataclass
-class BaseDictCrown(Generic[T]):
-    map: Dict[str, T]
-
-
-@dataclass
-class BaseListCrown(Generic[T]):
-    map: List[T]
-
-    @property
-    def list_len(self):
-        return len(self.map)
-
-
-@dataclass
-class BaseNoneCrown:
-    pass
-
-
-@dataclass
-class BaseFieldCrown:
-    name: str
-
-
-BaseCrown = Union[BaseDictCrown, BaseListCrown, BaseNoneCrown, BaseFieldCrown]
-
-
-@dataclass
-class BaseNameMapping:
-    crown: Union[BaseDictCrown, BaseListCrown]
-    skipped_extra_targets: Collection[str]
+InpFigureExtra = Union[None, ExtraKwargs, ExtraTargets, ExtraSaturate[T]]
 
 
 @dataclass(frozen=True)
-class BaseFFRequest(TypeHintRM[T], Generic[T]):
-    pass
-
-
-@dataclass(frozen=True)
-class BaseNameMappingRequest(TypeHintRM[T], Generic[T]):
-    figure: BaseFieldsFigure
-
-
-#  =======================
-#       Input Fields
-#  =======================
-
-
-InpFigureExtra = Union[None, ExtraKwargs, ExtraTargets]
-
-
-@dataclass(frozen=True)
-class InputFieldsFigure(BaseFieldsFigure):
-    """InputFieldsFigure is the signature of the class.
+class InputFigure(BaseFigure, Generic[T]):
+    """InputFigure describes how to create desired object.
     `constructor` field contains a callable that produces an instance of the class.
-    `fields` field contains the extended function signature of the constructor.
+    `fields` field contains parameters of the constructor.
 
-    `extra` field contains the way of collecting extra data (data that does not map to any field)
+    `extra` field contains the way of passing extra data (data that does not map to any field)
     None means that constructor can not take any extra data.
     ExtraKwargs means that all extra data could be passed as additional keyword parameters
     ExtraTargets means that all extra data could be passed to corresponding fields.
-
-    This field defines how extra data will be collected
-    but crown defines whether extra data should be collected
+    ExtraSaturate means that after constructing object specified function will be applied
     """
-    fields: Tuple[InputFieldRM, ...]
-    extra: InpFigureExtra
-    constructor: Callable
+    fields: VarTuple[InputFieldRM]
+    extra: InpFigureExtra[T]
+    constructor: Callable[..., T]
 
     def _validate(self):
         for past, current in pairs(self.fields):
@@ -143,7 +92,7 @@ class InputFieldsFigure(BaseFieldsFigure):
                 )
 
             if (
-                not past.is_required
+                past.is_optional
                 and current.is_required
                 and current.param_kind != ParamKind.KW_ONLY
             ):
@@ -155,127 +104,10 @@ class InputFieldsFigure(BaseFieldsFigure):
         super()._validate()
 
 
-InpExtraPolicyDict = Union[ExtraSkip, ExtraForbid, ExtraCollect]
-InpExtraPolicyList = Union[ExtraSkip, ExtraForbid]
-
-
-@dataclass
-class InpDictCrown(BaseDictCrown['InpCrown']):
-    extra: InpExtraPolicyDict
-
-
-@dataclass
-class InpListCrown(BaseListCrown['InpCrown']):
-    extra: InpExtraPolicyList
-
-
-@dataclass
-class InpNoneCrown(BaseNoneCrown):
-    pass
-
-
-@dataclass
-class InpFieldCrown(BaseFieldCrown):
-    pass
-
-
-InpCrown = Union[InpFieldCrown, InpNoneCrown, InpDictCrown, InpListCrown]
-
-
-@dataclass
-class InpNameMapping(BaseNameMapping):
-    crown: Union[InpDictCrown, InpListCrown]
+OutFigureExtra = Union[None, ExtraTargets, ExtraExtract[T]]
 
 
 @dataclass(frozen=True)
-class InputFFRequest(BaseFFRequest[InputFieldsFigure]):
-    pass
-
-
-@dataclass(frozen=True)
-class InputNameMappingRequest(BaseNameMappingRequest[InpNameMapping]):
-    figure: InputFieldsFigure
-
-
-#  =======================
-#       Output Fields
-#  =======================
-
-
-OutFigureExtra = BaseFigureExtra
-
-
-@dataclass(frozen=True)
-class OutputFieldsFigure(BaseFieldsFigure):
-    fields: Tuple[OutputFieldRM, ...]
+class OutputFigure(BaseFigure):
+    fields: VarTuple[OutputFieldRM]
     extra: OutFigureExtra
-
-
-Sieve = Callable[[Any], bool]
-
-
-@dataclass
-class OutDictCrown(BaseDictCrown['OutCrown']):
-    sieves: Dict[str, Sieve]
-
-    def _validate(self):
-        wild_sieves = self.sieves.keys() - self.map.keys()
-        if wild_sieves:
-            raise ValueError(
-                f"Sieves {wild_sieves} are attached to non-existing keys"
-            )
-
-    def __post_init__(self):
-        self._validate()
-
-
-@dataclass
-class OutListCrown(BaseListCrown['OutCrown']):
-    pass
-
-
-Filler = Union[DefaultValue, DefaultFactory]
-
-
-@dataclass
-class OutNoneCrown(BaseNoneCrown):
-    filler: Filler
-
-
-@dataclass
-class OutFieldCrown(BaseFieldCrown):
-    pass
-
-
-OutCrown = Union[OutDictCrown, OutListCrown, OutNoneCrown, OutFieldCrown]
-
-
-@dataclass
-class OutNameMapping(BaseNameMapping):
-    crown: Union[OutDictCrown, OutListCrown]
-
-
-@dataclass(frozen=True)
-class OutputFFRequest(BaseFFRequest[OutputFieldsFigure]):
-    pass
-
-
-@dataclass(frozen=True)
-class OutputNameMappingRequest(BaseNameMappingRequest[OutNameMapping]):
-    figure: OutputFieldsFigure
-
-
-
-DATA = {
-    'a1': {
-        'b1': BaseFieldCrown("field"),
-        'b2': 2,
-    },
-    'a2': {
-
-    }
-}
-
-RESULT = {
-    'field': 0,
-}

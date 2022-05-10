@@ -8,7 +8,7 @@ from typing import Any, get_type_hints, final, Dict, Iterable, Callable, Tuple
 from ..definitions import DefaultValue, DefaultFactory, Default, NoDefault
 from ..essential import Mediator, CannotProvide
 from .definitions import (
-    InputFieldsFigure, OutputFieldsFigure,
+    InputFigure, OutputFigure,
     InputFFRequest, OutputFFRequest,
     ExtraKwargs
 )
@@ -23,7 +23,7 @@ _PARAM_KIND_CONV: Dict[Any, ParamKind] = {
 }
 
 
-def get_func_iff(func, params_slice=slice(0, None)) -> InputFieldsFigure:
+def get_func_iff(func, params_slice=slice(0, None)) -> InputFigure:
     params = list(
         inspect.signature(func).parameters.values()
     )[params_slice]
@@ -35,7 +35,7 @@ def _is_empty(value):
     return value is Signature.empty
 
 
-def signature_params_to_iff(constructor: Callable, params: Iterable[Parameter]) -> InputFieldsFigure:
+def signature_params_to_iff(constructor: Callable, params: Iterable[Parameter]) -> InputFigure:
     kinds = [p.kind for p in params]
 
     if Parameter.VAR_POSITIONAL in kinds:
@@ -51,7 +51,7 @@ def signature_params_to_iff(constructor: Callable, params: Iterable[Parameter]) 
         None
     )
 
-    return InputFieldsFigure(
+    return InputFigure(
         constructor=constructor,
         fields=tuple(
             InputFieldRM(
@@ -73,11 +73,11 @@ class TypeOnlyInputFFProvider(StaticProvider, ABC):
     # noinspection PyUnusedLocal
     @final
     @static_provision_action(InputFFRequest)
-    def _provide_input_fields_figure(self, mediator: Mediator, request: InputFFRequest) -> InputFieldsFigure:
+    def _provide_input_fields_figure(self, mediator: Mediator, request: InputFFRequest) -> InputFigure:
         return self._get_input_fields_figure(request.type)
 
     @abstractmethod
-    def _get_input_fields_figure(self, tp) -> InputFieldsFigure:
+    def _get_input_fields_figure(self, tp) -> InputFigure:
         pass
 
 
@@ -85,16 +85,16 @@ class TypeOnlyOutputFFProvider(StaticProvider, ABC):
     # noinspection PyUnusedLocal
     @final
     @static_provision_action(OutputFFRequest)
-    def _provide_output_fields_figure(self, mediator: Mediator, request: OutputFFRequest) -> OutputFieldsFigure:
+    def _provide_output_fields_figure(self, mediator: Mediator, request: OutputFFRequest) -> OutputFigure:
         return self._get_output_fields_figure(request.type)
 
     @abstractmethod
-    def _get_output_fields_figure(self, tp) -> OutputFieldsFigure:
+    def _get_output_fields_figure(self, tp) -> OutputFigure:
         pass
 
 
 class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider):
-    def _get_input_fields_figure(self, tp) -> InputFieldsFigure:
+    def _get_input_fields_figure(self, tp) -> InputFigure:
         if not is_named_tuple_class(tp):
             raise CannotProvide
 
@@ -103,7 +103,7 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
         type_hints = get_type_hints(tp)
 
         # At <3.9 namedtuple does not generate typehints at __new__
-        return InputFieldsFigure(
+        return InputFigure(
             constructor=tp,
             extra=iff.extra,  # maybe for custom __init__?
             fields=tuple(
@@ -115,8 +115,8 @@ class NamedTupleFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider
             )
         )
 
-    def _get_output_fields_figure(self, tp) -> OutputFieldsFigure:
-        return OutputFieldsFigure(
+    def _get_output_fields_figure(self, tp) -> OutputFigure:
+        return OutputFigure(
             fields=tuple(
                 OutputFieldRM(
                     name=fld.name,
@@ -179,14 +179,14 @@ class TypedDictFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
         )
 
     def _get_input_fields_figure(self, tp):
-        return InputFieldsFigure(
+        return InputFigure(
             constructor=tp,
             fields=_to_inp(ParamKind.KW_ONLY, self._get_fields(tp)),
             extra=None,
         )
 
     def _get_output_fields_figure(self, tp):
-        return OutputFieldsFigure(
+        return OutputFigure(
             fields=_to_out(AccessKind.ITEM, self._get_fields(tp)),
             extra=None,
         )
@@ -241,7 +241,7 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
             inspect.signature(tp.__init__).parameters.keys()
         )[1:]
 
-        return InputFieldsFigure(
+        return InputFigure(
             constructor=tp,
             fields=_to_inp(
                 ParamKind.POS_OR_KW,
@@ -260,7 +260,7 @@ class DataclassFieldsProvider(TypeOnlyInputFFProvider, TypeOnlyOutputFFProvider)
         if not is_dataclass(tp):
             raise CannotProvide
 
-        return OutputFieldsFigure(
+        return OutputFigure(
             fields=_to_out(
                 AccessKind.ATTR,
                 [

@@ -2,8 +2,8 @@ from dataclasses import dataclass, field, InitVar
 from types import MappingProxyType
 from typing import ClassVar
 
-from dataclass_factory_30.provider import DefaultValue, DefaultFactory, DataclassFieldsProvider, InputFieldsFigure, \
-    NoDefault, OutputFieldsFigure
+from dataclass_factory_30.provider import DefaultValue, DefaultFactory, DataclassFieldsProvider, InputFigure, \
+    NoDefault, OutputFigure
 
 from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, AccessKind, InputFieldRM
 
@@ -28,9 +28,9 @@ class Foo:
 
 def test_input():
     assert (
-        DataclassFieldsProvider()._get_input_fields_figure(Foo)
-        ==
-        InputFieldsFigure(
+            DataclassFieldsProvider()._get_input_fields_figure(Foo)
+            ==
+            InputFigure(
             constructor=Foo,
             extra=None,
             fields=(
@@ -91,7 +91,7 @@ def test_output():
     assert (
         DataclassFieldsProvider()._get_output_fields_figure(Foo)
         ==
-        OutputFieldsFigure(
+        OutputFigure(
             extra=None,
             fields=(
                 OutputFieldRM(
@@ -151,9 +151,9 @@ class ChildBar(Bar):
 
 def test_inheritance():
     assert (
-        DataclassFieldsProvider()._get_input_fields_figure(ChildBar)
-        ==
-        InputFieldsFigure(
+            DataclassFieldsProvider()._get_input_fields_figure(ChildBar)
+            ==
+            InputFigure(
             constructor=ChildBar,
             extra=None,
             fields=(
@@ -180,7 +180,7 @@ def test_inheritance():
     assert (
         DataclassFieldsProvider()._get_output_fields_figure(ChildBar)
         ==
-        OutputFieldsFigure(
+        OutputFigure(
             extra=None,
             fields=(
                 OutputFieldRM(

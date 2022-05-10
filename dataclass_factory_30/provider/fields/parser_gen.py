@@ -8,7 +8,7 @@ from .basic_gen import (
     stub_code_gen_hook, CodeGenHookRequest,
     FldPathElem, Path
 )
-from .processor import FigureProcessor
+from .provider import FigureProcessor
 from ..definitions import (
     NoRequiredFieldsError,
     NoRequiredItemsError, TypeParseError,
@@ -17,7 +17,7 @@ from ..definitions import (
 from ..essential import Mediator, CannotProvide
 from .definitions import (
     ExtraForbid, ExtraCollect,
-    InputFieldsFigure,
+    InputFigure,
     InpDictCrown,
     InputFFRequest, InputNameMappingRequest,
     ExtraKwargs, ExtraTargets, InpFieldCrown,
@@ -104,7 +104,7 @@ class FieldsParserGenerator:
 
     For example, if fields figure is
 
-        InputFieldsFigure(
+        InputFigure(
             constructor=SampleClass,
             fields=(
                 InputFieldRM(
@@ -184,7 +184,7 @@ class FieldsParserGenerator:
 
     for
 
-        InputFieldsFigure(
+        InputFigure(
             constructor=SampleClass,
             fields=(
                 InputFieldRM(
@@ -283,7 +283,7 @@ class FieldsParserGenerator:
 
     def __init__(
         self,
-        figure: InputFieldsFigure,
+        figure: InputFigure,
         debug_path: bool,
         strict_coercion: bool,
     ):
@@ -722,7 +722,7 @@ class FieldsParserProvider(ParserProvider):
 
     def _make_parser(
         self,
-        figure: InputFieldsFigure,
+        figure: InputFigure,
         request: ParserRequest,
         field_parsers: Dict[str, Parser],
         root_crown: RootCrown,
@@ -744,7 +744,7 @@ class FieldsParserProvider(ParserProvider):
         )
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        figure: InputFieldsFigure = mediator.provide(
+        figure: InputFigure = mediator.provide(
             InputFFRequest(type=request.type)
         )
         name_mapping: InpNameMapping = mediator.provide(
@@ -754,7 +754,7 @@ class FieldsParserProvider(ParserProvider):
         if name_mapping.crown.extra == ExtraCollect() and figure.extra is None:
             raise CannotProvide(
                 "Cannot create parser that collect extra data"
-                " if InputFieldsFigure does not take extra data"
+                " if InputFigure does not take extra data"
             )
 
         try:
