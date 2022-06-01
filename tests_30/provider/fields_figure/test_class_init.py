@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 
 from dataclass_factory_30.feature_requirement import has_pos_only_params
-from dataclass_factory_30.provider import DefaultValue, NoDefault, CannotProvide, ClassInitFieldsProvider, \
+from dataclass_factory_30.provider import DefaultValue, NoDefault, CannotProvide, ClassInitInputFigureProvider, \
     InputFigure, ExtraKwargs
 from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM
 
@@ -64,7 +64,7 @@ VALID_FIELDS = (
 
 def test_extra_none():
     assert (
-            ClassInitFieldsProvider()._get_input_fields_figure(Valid1)
+            ClassInitInputFigureProvider()._get_input_figure(Valid1)
             ==
             InputFigure(
             constructor=Valid1,
@@ -76,7 +76,7 @@ def test_extra_none():
 
 def test_extra_kwargs():
     assert (
-            ClassInitFieldsProvider()._get_input_fields_figure(Valid2Kwargs)
+            ClassInitInputFigureProvider()._get_input_figure(Valid2Kwargs)
             ==
             InputFigure(
             constructor=Valid2Kwargs,
@@ -94,7 +94,7 @@ def test_pos_only():
             self.b = b
 
     assert (
-            ClassInitFieldsProvider()._get_input_fields_figure(HasPosOnly)
+            ClassInitInputFigureProvider()._get_input_figure(HasPosOnly)
             ==
             InputFigure(
             constructor=HasPosOnly,
@@ -129,6 +129,6 @@ def test_var_arg():
             self.args = args
 
     with pytest.raises(CannotProvide):
-        ClassInitFieldsProvider()._get_input_fields_figure(
+        ClassInitInputFigureProvider()._get_input_figure(
             HasVarArg
         )

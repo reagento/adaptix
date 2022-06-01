@@ -1,7 +1,7 @@
 from types import MappingProxyType
 from typing import TypedDict
 
-from dataclass_factory_30.provider import NoDefault, TypedDictFieldsProvider, InputFigure, OutputFigure
+from dataclass_factory_30.provider import NoDefault, TypedDictFigureProvider, InputFigure, OutputFigure
 from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
 from dataclass_factory_30.provider.request_cls import ParamKind, AccessKind, FieldRM
 
@@ -36,7 +36,7 @@ TOTAL_FIELDS = (
 
 def test_total_input():
     assert (
-            TypedDictFieldsProvider()._get_input_fields_figure(Foo)
+            TypedDictFigureProvider()._get_input_figure(Foo)
             ==
             InputFigure(
             constructor=Foo,
@@ -48,9 +48,9 @@ def test_total_input():
 
 def test_total_output():
     assert (
-        TypedDictFieldsProvider()._get_output_fields_figure(Foo)
-        ==
-        OutputFigure(
+            TypedDictFigureProvider()._get_output_figure(Foo)
+            ==
+            OutputFigure(
             extra=None,
             fields=_to_out(AccessKind.ITEM, TOTAL_FIELDS),
         )
@@ -77,7 +77,7 @@ NON_TOTAL_FIELDS = (
 
 def test_non_total_input():
     assert (
-            TypedDictFieldsProvider()._get_input_fields_figure(Bar)
+            TypedDictFigureProvider()._get_input_figure(Bar)
             ==
             InputFigure(
             constructor=Bar,
@@ -89,9 +89,9 @@ def test_non_total_input():
 
 def test_non_total_output():
     assert (
-        TypedDictFieldsProvider()._get_output_fields_figure(Bar)
-        ==
-        OutputFigure(
+            TypedDictFigureProvider()._get_output_figure(Bar)
+            ==
+            OutputFigure(
             extra=None,
             fields=_to_out(AccessKind.ITEM, NON_TOTAL_FIELDS),
         )

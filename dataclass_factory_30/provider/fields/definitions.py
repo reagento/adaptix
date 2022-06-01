@@ -1,9 +1,12 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Union, Generic, TypeVar, Dict, Callable, Tuple, Collection, Any, List, Mapping
+from typing import Union, Generic, TypeVar, Callable, Any, Mapping, AbstractSet
 
-from ..definitions import DefaultValue, DefaultFactory
-from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM
-from ...common import VarTuple
+from .. import Request
+from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM, ParserRequest
+from ...code_tools import CodeBuilder, PrefixManglerBase, MangledConstant, mangling_method
+from ...code_tools.context_namespace import ContextNamespace
+from ...common import VarTuple, Parser
 from ...utils import SingletonMeta, pairs
 
 T = TypeVar('T')
@@ -29,7 +32,7 @@ class ExtraExtract(Generic[T]):
 
 
 #  =======================
-#       Base Fields
+#       Base Figure
 #  =======================
 
 BaseFigureExtra = Union[None, ExtraKwargs, ExtraTargets, ExtraSaturate[T], ExtraExtract[T]]
@@ -104,6 +107,11 @@ class InputFigure(BaseFigure, Generic[T]):
         super()._validate()
 
 
+@dataclass(frozen=True)
+class InputFigureRequest(TypeHintRM[InputFigure]):
+    pass
+
+
 OutFigureExtra = Union[None, ExtraTargets, ExtraExtract[T]]
 
 
@@ -111,3 +119,64 @@ OutFigureExtra = Union[None, ExtraTargets, ExtraExtract[T]]
 class OutputFigure(BaseFigure):
     fields: VarTuple[OutputFieldRM]
     extra: OutFigureExtra
+
+
+@dataclass(frozen=True)
+class OutputFigureRequest(TypeHintRM[OutputFigure]):
+    pass
+
+
+##################
+
+class VarBinder(PrefixManglerBase):
+    data = MangledConstant("data")
+    extra = MangledConstant("extra")
+    opt_fields = MangledConstant("opt_fields")
+
+    @mangling_method("field_")
+    def field(self, field: FieldRM) -> str:
+        return field.name
+
+
+class ExtractionGen(ABC):
+    @abstractmethod
+    def generate_extraction(
+        self,
+        binder: VarBinder,
+        ctx_namespace: ContextNamespace,
+        field_parsers: Mapping[str, Parser],
+    ) -> CodeBuilder:
+        pass
+
+
+class CreationGen(ABC):
+    @abstractmethod
+    def generate_creation(
+        self,
+        binder: VarBinder,
+        ctx_namespace: ContextNamespace,
+    ) -> CodeBuilder:
+        pass
+
+
+@dataclass(frozen=True)
+class ExtractionImage:
+    extraction_gen: ExtractionGen
+    skipped_fields: AbstractSet[str]
+
+
+@dataclass(frozen=True)
+class ExtractionImageRequest(Request[ExtractionImage]):
+    figure: InputFigure
+    initial_request: ParserRequest
+
+
+@dataclass(frozen=True)
+class CreationImage:
+    creation_gen: CreationGen
+
+
+@dataclass(frozen=True)
+class CreationImageRequest(Request[CreationImage]):
+    figure: InputFigure
+    initial_request: ParserRequest

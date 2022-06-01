@@ -59,8 +59,10 @@ class CodeBuilder:
     @contextlib.contextmanager
     def indent(self, indent_delta: int):
         self._cur_indent += indent_delta
-        yield
-        self._cur_indent -= indent_delta
+        try:
+            yield
+        finally:
+            self._cur_indent -= indent_delta
 
     def __enter__(self):
         self._cur_indent += self._indent_delta

@@ -11,7 +11,7 @@ from .basic_gen import (
     stub_code_gen_hook, CodeGenHookRequest, VarBinder, CodeGenHookData,
 )
 from .creation_gen import CreationGen
-from .field_mapping_gen import FieldMappingGen
+from .extraction_gen import FieldMappingGen
 from .fmg_definitions import ExtraCollect, BaseCrown, BaseDictCrown, BaseFieldCrown, BaseNameMapping, BaseListCrown
 from .parser_gen import RootCrown
 from .. import FieldRM, ExtraTargets

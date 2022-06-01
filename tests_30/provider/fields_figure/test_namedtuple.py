@@ -2,7 +2,7 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
-from dataclass_factory_30.provider import DefaultValue, NoDefault, NamedTupleFieldsProvider, InputFigure, \
+from dataclass_factory_30.provider import DefaultValue, NoDefault, NamedTupleFigureProvider, InputFigure, \
     OutputFigure
 from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
 from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, AccessKind, OutputFieldRM, FieldRM
@@ -30,7 +30,7 @@ def test_order_ab():
     )
 
     assert (
-            NamedTupleFieldsProvider()._get_input_fields_figure(FooAB)
+            NamedTupleFigureProvider()._get_input_figure(FooAB)
             ==
             InputFigure(
             constructor=FooAB,
@@ -40,9 +40,9 @@ def test_order_ab():
     )
 
     assert (
-        NamedTupleFieldsProvider()._get_output_fields_figure(FooAB)
-        ==
-        OutputFigure(
+            NamedTupleFigureProvider()._get_output_figure(FooAB)
+            ==
+            OutputFigure(
             extra=None,
             fields=_to_out(AccessKind.ATTR, fields),
         )
@@ -68,7 +68,7 @@ def test_order_ba():
     )
 
     assert (
-            NamedTupleFieldsProvider()._get_input_fields_figure(FooBA)
+            NamedTupleFigureProvider()._get_input_figure(FooBA)
             ==
             InputFigure(
             constructor=FooBA,
@@ -78,9 +78,9 @@ def test_order_ba():
     )
 
     assert (
-        NamedTupleFieldsProvider()._get_output_fields_figure(FooBA)
-        ==
-        OutputFigure(
+            NamedTupleFigureProvider()._get_output_figure(FooBA)
+            ==
+            OutputFigure(
             extra=None,
             fields=_to_out(AccessKind.ATTR, fields),
         )
@@ -96,7 +96,7 @@ FooDefs = namedtuple('FooDefs', 'a b c', defaults=[0, func])
 
 def test_defaults():
     assert (
-            NamedTupleFieldsProvider()._get_input_fields_figure(FooDefs)
+            NamedTupleFigureProvider()._get_input_figure(FooDefs)
             ==
             InputFigure(
             constructor=FooDefs,
@@ -131,9 +131,9 @@ def test_defaults():
     )
 
     assert (
-        NamedTupleFieldsProvider()._get_output_fields_figure(FooDefs)
-        ==
-        OutputFigure(
+            NamedTupleFigureProvider()._get_output_figure(FooDefs)
+            ==
+            OutputFigure(
             extra=None,
             fields=(
                 OutputFieldRM(
@@ -187,7 +187,7 @@ def test_class_hinted_namedtuple():
     )
 
     assert (
-            NamedTupleFieldsProvider()._get_input_fields_figure(BarA)
+            NamedTupleFigureProvider()._get_input_figure(BarA)
             ==
             InputFigure(
             constructor=BarA,
@@ -197,9 +197,9 @@ def test_class_hinted_namedtuple():
     )
 
     assert (
-        NamedTupleFieldsProvider()._get_output_fields_figure(BarA)
-        ==
-        OutputFigure(
+            NamedTupleFigureProvider()._get_output_figure(BarA)
+            ==
+            OutputFigure(
             extra=None,
             fields=_to_out(AccessKind.ATTR, fields),
         )
@@ -215,7 +215,7 @@ class BarB(NamedTuple):
 
 def test_hinted_namedtuple():
     assert (
-            NamedTupleFieldsProvider()._get_input_fields_figure(BarB)
+            NamedTupleFigureProvider()._get_input_figure(BarB)
             ==
             InputFigure(
             constructor=BarB,
@@ -242,9 +242,9 @@ def test_hinted_namedtuple():
     )
 
     assert (
-        NamedTupleFieldsProvider()._get_output_fields_figure(BarB)
-        ==
-        OutputFigure(
+            NamedTupleFigureProvider()._get_output_figure(BarB)
+            ==
+            OutputFigure(
             extra=None,
             fields=(
                 OutputFieldRM(

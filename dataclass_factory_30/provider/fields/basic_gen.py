@@ -37,21 +37,3 @@ class CodeGenAccumulator(StaticProvider):
             self.list.append((request.initial_request, data))
 
         return hook
-
-
-class VarBinder(PrefixManglerBase):
-    data = MangledConstant("data")
-    extra = MangledConstant("extra")
-    opt_fields = MangledConstant("opt_fields")
-
-    @mangling_method("field_")
-    def field(self, field: FieldRM) -> str:
-        return field.name
-
-    @mangling_method("raw_field_")
-    def raw_field(self, field_name: str) -> str:
-        return field_name
-
-    @mangling_method("parser_")
-    def field_parser(self, field_name: str) -> str:
-        return field_name

@@ -52,14 +52,14 @@ from .fields.definitions import (
     OutputNameMappingRequest,
 )
 from .fields.figure_provider import (
-    get_func_iff,
-    TypeOnlyInputFFProvider,
-    TypeOnlyOutputFFProvider,
-    NamedTupleFieldsProvider,
-    TypedDictFieldsProvider,
+    get_func_inp_fig,
+    TypeOnlyInputFigureProvider,
+    TypeOnlyOutputFigureProvider,
+    NamedTupleFigureProvider,
+    TypedDictFigureProvider,
     get_dc_default,
-    DataclassFieldsProvider,
-    ClassInitFieldsProvider,
+    DataclassFigureProvider,
+    ClassInitInputFigureProvider,
 )
 from .fields.parser_gen import (
     FieldsParserProvider,

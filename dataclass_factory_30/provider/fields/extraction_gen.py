@@ -1,27 +1,28 @@
 import contextlib
 from collections import deque
 from copy import copy
-from typing import Dict, Set, Optional
+from typing import Dict, Set, Optional, Mapping
 
-from dataclass_factory.path_utils import Path
 from dataclass_factory_30.code_tools import CodeBuilder
-from dataclass_factory_30.code_tools.name_allocator import NameAllocator
+from dataclass_factory_30.code_tools.context_namespace import ContextNamespace
+from dataclass_factory_30.common import Parser, VarTuple
 from dataclass_factory_30.provider import InputFigure, ExtraTargets, NoRequiredFieldsError, NoRequiredItemsError
-from dataclass_factory_30.provider.fields.basic_gen import VarBinder
+from dataclass_factory_30.provider.fields.definitions import ExtractionGen, VarBinder
 from dataclass_factory_30.provider.fields.fmg_definitions import InpDictCrown, InpListCrown, InpFieldCrown, InpCrown, \
     ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem
 from dataclass_factory_30.provider.request_cls import InputFieldRM
 
 
-class GenState:
-    def __init__(self, binder: VarBinder, allocator: NameAllocator, name_to_field: Dict[str, InputFieldRM]):
-        self._binder = binder
-        self._allocator = allocator
-        self._name_to_field = name_to_field
+Path = VarTuple[FldPathElem]
 
-        self._data_prefix = self._allocator.alloc_prefix(self._binder.data + "_")
-        self._extra_prefix = self._allocator.alloc_prefix(self._binder.extra)
-        self._known_fields_prefix = self._allocator.alloc_prefix("known_fields")
+
+class GenState:
+    KNOWN_FIELDS = 'known_fields'
+
+    def __init__(self, binder: VarBinder, ctx_namespace: ContextNamespace, name_to_field: Dict[str, InputFieldRM]):
+        self.binder = binder
+        self.ctx_namespace = ctx_namespace
+        self._name_to_field = name_to_field
 
         self.field_name2path: Dict[str, Path] = {}
         self.path2suffix: Dict[Path, str] = {}
@@ -42,20 +43,26 @@ class GenState:
 
     def get_data_var_name(self) -> str:
         if not self._path:
-            return self._binder.data
-        return self._data_prefix + self._get_path_idx(self._path)
+            return self.binder.data
+        return self.binder.data + '_' + self._get_path_idx(self._path)
 
     def get_known_fields_var_name(self) -> str:
         if not self._path:
-            return self._known_fields_prefix
+            return self.KNOWN_FIELDS
 
-        return self._known_fields_prefix + '_' + self._get_path_idx(self._path)
+        return self.KNOWN_FIELDS + '_' + self._get_path_idx(self._path)
 
     def get_extra_var_name(self) -> str:
         if not self._path:
-            return self._known_fields_prefix
+            return self.binder.extra
 
-        return self._extra_prefix + '_' + self._get_path_idx(self._path)
+        return self.binder.extra + '_' + self._get_path_idx(self._path)
+
+    def field_parser(self, field_name: str) -> str:
+        return f"parser_{field_name}"
+
+    def raw_field(self, field: InputFieldRM) -> str:
+        return f"r_{field.name}"
 
     @property
     def path(self):
@@ -86,20 +93,20 @@ class GenState:
         return cp
 
 
-class FieldMappingGen:
+class DefaultExtractionGen(ExtractionGen):
+    """DefaultExtractionGen generates code that extracts raw values from input data,
+    calls parsers and stores results at variables.
+    """
+
     def __init__(
         self,
         figure: InputFigure,
-        binder: VarBinder,
         crown: RootInpCrown,
-        name_allocator: NameAllocator,
         debug_path: bool,
         strict_coercion: bool,
     ):
         self._figure = figure
-        self._binder = binder
         self._root_crown = crown
-        self._allocator = name_allocator
         self._debug_path = debug_path
         self._strict_coercion = strict_coercion
         self._field_name_to_field: Dict[str, InputFieldRM] = {
@@ -113,13 +120,21 @@ class FieldMappingGen:
             field.name in self._figure.extra.fields
         )
 
-    def _create_state(self) -> GenState:
-        return GenState(self._binder, self._field_name_to_field)
+    def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
+        return GenState(binder, ctx_namespace, self._field_name_to_field)
 
-    def generate(self) -> CodeBuilder:
+    def generate_extraction(
+        self,
+        binder: VarBinder,
+        ctx_namespace: ContextNamespace,
+        field_parsers: Mapping[str, Parser],
+    ) -> CodeBuilder:
         crown_builder = CodeBuilder()
+        state = self._create_state(binder, ctx_namespace)
 
-        state = self._create_state()
+        for field_name, parser in field_parsers.items():
+            state.ctx_namespace.add(state.field_parser(field_name), parser)
+
         if not self._gen_root_crown_dispatch(crown_builder, state, self._root_crown):
             raise TypeError
 
@@ -131,7 +146,7 @@ class FieldMappingGen:
         builder = CodeBuilder()
 
         if has_opt_fields:
-            builder += f"{self._binder.opt_fields} = {{}}"
+            builder += f"{binder.opt_fields} = {{}}"
 
         self._gen_header(builder, state)
 
@@ -219,10 +234,11 @@ class FieldMappingGen:
         )
 
     def _gen_dict_crown(self, builder: CodeBuilder, state: GenState, crown: InpDictCrown):
-        if crown.extra in (ExtraForbid(), ExtraCollect()):
-            state.path2known_fields[state.path] = set(crown.map.keys())
-
         known_fields = state.get_known_fields_var_name()
+
+        if crown.extra in (ExtraForbid(), ExtraCollect()):
+            state.ctx_namespace.add(known_fields, set(crown.map.keys()))
+
         data = state.get_data_var_name()
         extra = state.get_extra_var_name()
         path_lit = self._get_path_lit(state.path)
@@ -291,17 +307,17 @@ class FieldMappingGen:
         field = state.get_field(crown)
 
         if field.is_required:
-            field_left_value = self._binder.field(field)
+            field_left_value = state.binder.field(field)
         else:
-            field_left_value = f"{self._binder.opt_fields}[{field.name!r}]"
+            field_left_value = f"{state.binder.opt_fields}[{field.name!r}]"
 
         self._gen_var_assigment_from_data(
             builder,
             state,
-            assign_to=self._binder.raw_field(crown.name),
+            assign_to=state.raw_field(field),
             ignore_lookup_error=field.is_optional,
         )
-        data_for_parser = self._binder.raw_field(field.name)
+        data_for_parser = state.raw_field(field)
 
         if field.is_required:
             builder.empty_line()
@@ -332,7 +348,7 @@ class FieldMappingGen:
         data_for_parser: str,
         state: GenState,
     ):
-        field_parser = self._binder.field_parser(field_name)
+        field_parser = state.field_parser(field_name)
 
         if self._debug_path and state.path:
             last_path_el = repr(state.path[-1])
@@ -363,7 +379,7 @@ class FieldMappingGen:
 
                 self._gen_field_assigment(
                     builder,
-                    field_left_value=self._binder.field(field),
+                    field_left_value=state.binder.field(field),
                     field_name=target,
                     data_for_parser=state.get_extra_var_name(),
                     state=state,
@@ -375,7 +391,7 @@ class FieldMappingGen:
                 if field.is_required:
                     self._gen_field_assigment(
                         builder,
-                        field_left_value=self._binder.field(field),
+                        field_left_value=state.binder.field(field),
                         field_name=target,
                         data_for_parser="{}",
                         state=state,

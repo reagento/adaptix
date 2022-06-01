@@ -25,10 +25,10 @@ from ..provider import (
     EnumExactValueProvider,
     FieldsParserProvider,
     NameMapper,
-    NamedTupleFieldsProvider,
-    TypedDictFieldsProvider,
-    DataclassFieldsProvider,
-    ClassInitFieldsProvider,
+    NamedTupleFigureProvider,
+    TypedDictFigureProvider,
+    DataclassFigureProvider,
+    ClassInitInputFigureProvider,
     ValueProvider,
     ParserRequest,
     LimitingProvider,
@@ -153,10 +153,10 @@ class BuiltinFactory(OperatingFactory, ABC):
 
         NameMapper(),
 
-        NamedTupleFieldsProvider(),
-        TypedDictFieldsProvider(),
-        DataclassFieldsProvider(),
-        ClassInitFieldsProvider(),
+        NamedTupleFigureProvider(),
+        TypedDictFigureProvider(),
+        DataclassFigureProvider(),
+        ClassInitInputFigureProvider(),
     ]
 
     @abstractmethod

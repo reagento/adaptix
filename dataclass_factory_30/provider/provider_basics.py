@@ -6,7 +6,7 @@ from typing import TypeVar, Union, Type, Tuple, Callable, Any, Generic
 from .definitions import ParseError, PARSER_COMPAT_EXCEPTIONS
 from .essential import Provider, Mediator, CannotProvide, Request
 from .request_cls import TypeHintRM, FieldRM
-from ..common import TypeHint, Parser
+from ..common import TypeHint, Parser, VarTuple
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
 from ..type_tools.normalize_type import NormType, NormTV, NotSubscribedError
 
@@ -15,7 +15,7 @@ T = TypeVar('T')
 
 class RequestChecker(ABC):
     @abstractmethod
-    def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
         raise NotImplementedError
 
     @abstractmethod
@@ -36,7 +36,7 @@ class RequestChecker(ABC):
 class FieldNameRC(RequestChecker):
     field_name: str
 
-    def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
         return (FieldRM,)
 
     def _check_request(self, request: FieldRM) -> None:
@@ -49,7 +49,7 @@ class FieldNameRC(RequestChecker):
 class ExactTypeRC(RequestChecker):
     norm: NormType
 
-    def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
         return (TypeHintRM,)
 
     def _check_request(self, request: TypeHintRM) -> None:
@@ -62,7 +62,7 @@ class ExactTypeRC(RequestChecker):
 class SubclassRC(RequestChecker):
     type_: type
 
-    def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
         return (TypeHintRM,)
 
     def _check_request(self, request: TypeHintRM) -> None:
@@ -76,7 +76,7 @@ class SubclassRC(RequestChecker):
 class ExactOriginRC(RequestChecker):
     origin: Any
 
-    def get_allowed_request_classes(self) -> Tuple[Type[Request], ...]:
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
         return (TypeHintRM,)
 
     def _check_request(self, request: TypeHintRM) -> None:
@@ -86,6 +86,9 @@ class ExactOriginRC(RequestChecker):
 
 
 def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
+    if isinstance(tp, RequestChecker):
+        return tp
+
     try:
         norm = normalize_type(tp)
     except NotSubscribedError:
