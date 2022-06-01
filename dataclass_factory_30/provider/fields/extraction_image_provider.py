@@ -4,12 +4,12 @@ from typing import Set, List, TypeVar, Iterable
 from dataclass_factory_30.provider.essential import Mediator, CannotProvide
 from dataclass_factory_30.provider.static_provider import StaticProvider, static_provision_action
 from .definitions import ExtractionImageRequest, ExtractionImage
-from .extraction_gen import DefaultExtractionGen
 from .deg_definitions import (
     InputNameMappingRequest,
     BaseDictCrown, BaseCrown, BaseListCrown, BaseFieldCrown,
     InpCrown, InpDictCrown, ExtraCollect, BaseNoneCrown, InpListCrown
 )
+from .extraction_gen import DefaultExtractionGen
 
 T = TypeVar('T')
 

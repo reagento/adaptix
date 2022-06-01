@@ -1,3 +1,6 @@
+from .creation_gen import (
+    DefaultCreationGen,
+)
 from .definitions import (
     ExtraKwargs,
     ExtraTargets,
@@ -18,20 +21,6 @@ from .definitions import (
     ExtractionImageRequest,
     CreationImage,
     CreationImageRequest,
-)
-from .creation_gen import (
-    DefaultCreationGen,
-)
-from .figure_provider import (
-    get_func_inp_fig,
-    signature_params_to_inp_fig,
-    TypeOnlyInputFigureProvider,
-    TypeOnlyOutputFigureProvider,
-    NamedTupleFigureProvider,
-    TypedDictFigureProvider,
-    get_dc_default,
-    DataclassFigureProvider,
-    ClassInitInputFigureProvider,
 )
 from .deg_definitions import (
     ExtraSkip,
@@ -68,4 +57,15 @@ from .deg_definitions import (
     OutputNameMapping,
     OutputNameMappingRequest,
     NameMappingProvider,
+)
+from .figure_provider import (
+    get_func_inp_fig,
+    signature_params_to_inp_fig,
+    TypeOnlyInputFigureProvider,
+    TypeOnlyOutputFigureProvider,
+    NamedTupleFigureProvider,
+    TypedDictFigureProvider,
+    get_dc_default,
+    DataclassFigureProvider,
+    ClassInitInputFigureProvider,
 )

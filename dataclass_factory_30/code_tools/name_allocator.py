@@ -1,10 +1,9 @@
 import string
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, InitVar
-from itertools import chain
-from random import Random
-from typing import TypeVar, Generic, Optional, Any, Dict, MutableSet, AbstractSet, Iterator, List, Iterable
 from collections.abc import Set
+from dataclasses import dataclass, InitVar
+from random import Random
+from typing import TypeVar, Optional, Any, Dict, MutableSet, AbstractSet, List
 
 T = TypeVar('T')
 
@@ -164,6 +163,7 @@ class MyPrefixSolver(ConflictSolver):
         if prefix not in self._prefixes:
             raise ValueError("Can not use unknown prefix")
         self._prefix = prefix
+
 
 namespace = Namespace(...)
 

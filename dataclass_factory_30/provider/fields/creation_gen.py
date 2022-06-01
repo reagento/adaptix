@@ -1,6 +1,6 @@
-from ...code_tools import CodeBuilder, ContextNamespace
 from .definitions import InputFigure, ExtraTargets, ExtraKwargs, ExtraSaturate, CreationGen, VarBinder
 from ..request_cls import InputFieldRM, ParamKind
+from ...code_tools import CodeBuilder, ContextNamespace
 
 
 class DefaultCreationGen(CreationGen):

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from inspect import isabstract
-from typing import TypeVar, Union, Type, Tuple, Callable, Any, Generic
+from typing import TypeVar, Union, Type, Callable, Any, Generic
 
 from .definitions import ParseError, PARSER_COMPAT_EXCEPTIONS
 from .essential import Provider, Mediator, CannotProvide, Request

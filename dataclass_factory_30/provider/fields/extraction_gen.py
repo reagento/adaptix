@@ -14,7 +14,6 @@ from dataclass_factory_30.provider.fields.deg_definitions import (
 )
 from dataclass_factory_30.provider.request_cls import InputFieldRM
 
-
 Path = VarTuple[FldPathElem]
 
 

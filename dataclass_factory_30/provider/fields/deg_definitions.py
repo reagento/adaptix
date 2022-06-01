@@ -5,10 +5,10 @@ from typing import TypeVar, Generic, Dict, List, Union, Callable, Any, Set, Coll
 from ..definitions import (
     DefaultValue, DefaultFactory,
 )
-from ..static_provider import StaticProvider, static_provision_action
-from ..request_cls import TypeHintRM
 from ..essential import Request, Mediator
 from ..fields.definitions import BaseFigure, OutputFigure, InputFigure
+from ..request_cls import TypeHintRM
+from ..static_provider import StaticProvider, static_provision_action
 from ...utils import SingletonMeta
 
 T = TypeVar('T')

@@ -51,6 +51,7 @@ from .fields import (
     InputNameMappingRequest,
     OutputNameMappingRequest,
 )
+from .fields.deg_definitions import NameMappingProvider
 from .fields.figure_provider import (
     get_func_inp_fig,
     TypeOnlyInputFigureProvider,
@@ -73,7 +74,6 @@ from .generic_provider import (
     EnumExactValueProvider,
 )
 from .name_mapper import NameMapper
-from .fields.deg_definitions import NameMappingProvider
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import (
     RequestChecker,

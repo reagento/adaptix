@@ -10,4 +10,3 @@ class ContextNamespace:
             raise KeyError("Key duplication")
 
         self._namespace[name] = value
-
