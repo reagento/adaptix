@@ -37,16 +37,16 @@ from .essential import (
     PipelineEvalMixin,
     Pipeline,
 )
-from .fields.definitions import (
+from .fields import (
     ExtraTargets,
     ExtraSkip,
     ExtraForbid,
     ExtraKwargs,
     InputFigure,
     OutputFigure,
-    BaseFFRequest,
-    InputFFRequest,
-    OutputFFRequest,
+    InputFigureRequest,
+    OutputFigureRequest,
+
     BaseNameMappingRequest,
     InputNameMappingRequest,
     OutputNameMappingRequest,
@@ -61,9 +61,6 @@ from .fields.figure_provider import (
     DataclassFigureProvider,
     ClassInitInputFigureProvider,
 )
-from .fields.parser_gen import (
-    FieldsParserProvider,
-)
 from .generic_provider import (
     NewTypeUnwrappingProvider,
     TypeHintTagsUnwrappingProvider,
@@ -76,7 +73,7 @@ from .generic_provider import (
     EnumExactValueProvider,
 )
 from .name_mapper import NameMapper
-from .fields.basic_provider import NameMappingProvider
+from .fields.deg_definitions import NameMappingProvider
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import (
     RequestChecker,

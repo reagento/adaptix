@@ -12,7 +12,7 @@ from ..provider import (
     Provider,
     FactoryProvider
 )
-from ..provider.fields.basic_provider import ExtraPolicy, CfgExtraPolicy
+from ..provider.fields.deg_definitions import ExtraPolicy, CfgExtraPolicy
 
 T = TypeVar('T')
 

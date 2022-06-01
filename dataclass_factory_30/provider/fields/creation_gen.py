@@ -1,8 +1,6 @@
-from dataclass_factory_30.code_tools import CodeBuilder
-from dataclass_factory_30.code_tools.context_namespace import ContextNamespace
-from dataclass_factory_30.provider import InputFigure, ExtraTargets, ExtraKwargs
-from dataclass_factory_30.provider.fields.definitions import ExtraSaturate, CreationGen, VarBinder
-from dataclass_factory_30.provider.request_cls import InputFieldRM, ParamKind
+from ...code_tools import CodeBuilder, ContextNamespace
+from .definitions import InputFigure, ExtraTargets, ExtraKwargs, ExtraSaturate, CreationGen, VarBinder
+from ..request_cls import InputFieldRM, ParamKind
 
 
 class DefaultCreationGen(CreationGen):

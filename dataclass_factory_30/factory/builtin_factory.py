@@ -23,7 +23,6 @@ from ..provider import (
     TypeHintTagsUnwrappingProvider,
     CoercionLimiter,
     EnumExactValueProvider,
-    FieldsParserProvider,
     NameMapper,
     NamedTupleFigureProvider,
     TypedDictFigureProvider,
@@ -148,8 +147,6 @@ class BuiltinFactory(OperatingFactory, ABC):
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),
-
-        FieldsParserProvider(),
 
         NameMapper(),
 

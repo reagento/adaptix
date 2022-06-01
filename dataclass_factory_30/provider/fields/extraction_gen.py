@@ -8,8 +8,10 @@ from dataclass_factory_30.code_tools.context_namespace import ContextNamespace
 from dataclass_factory_30.common import Parser, VarTuple
 from dataclass_factory_30.provider import InputFigure, ExtraTargets, NoRequiredFieldsError, NoRequiredItemsError
 from dataclass_factory_30.provider.fields.definitions import ExtractionGen, VarBinder
-from dataclass_factory_30.provider.fields.fmg_definitions import InpDictCrown, InpListCrown, InpFieldCrown, InpCrown, \
-    ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem
+from dataclass_factory_30.provider.fields.deg_definitions import (
+    InpDictCrown, InpListCrown, InpFieldCrown, InpCrown,
+    ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem,
+)
 from dataclass_factory_30.provider.request_cls import InputFieldRM
 
 

@@ -74,12 +74,6 @@ class FieldsParserProvider(ParserProvider):
             )
         )
 
-        if name_mapping.crown.extra == ExtraCollect() and figure.extra is None:
-            raise CannotProvide(
-                "Cannot create parser that collect extra data"
-                " if InputFigure does not take extra data"
-            )
-
         try:
             code_gen_hook = mediator.provide(CodeGenHookRequest(initial_request=request))
         except CannotProvide:

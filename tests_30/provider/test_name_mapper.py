@@ -2,19 +2,20 @@ from typing import Set, Tuple
 
 import pytest
 
-from dataclass_factory.path_utils import NameMapping
 from dataclass_factory_30.provider import (
     NameMapper, NameStyle,
     ValueProvider,
     ExtraSkip, InputNameMappingRequest,
-    InputFigure, NoDefault,
+    InputFigure, NoDefault, OutputFigure, ExtraTargets,
 )
+from dataclass_factory_30.provider.fields import OutFigureExtra, InpFigureExtra
 
 from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
 
-from dataclass_factory_30.provider.fields.basic_provider import CfgExtraPolicy
-from dataclass_factory_30.provider.fields.definitions import OutFigureExtra, OutputNameMappingRequest, \
-    OutputFigure, InpDictCrown, InpFieldCrown, ExtraTargets
+from dataclass_factory_30.provider.fields.deg_definitions import (
+    CfgExtraPolicy, OutputNameMappingRequest, InpDictCrown,
+    InpFieldCrown, InputNameMapping,
+)
 from dataclass_factory_30.provider.request_cls import ParamKind, FieldRM, AccessKind
 from tests_30.provider.conftest import TestFactory
 
@@ -204,7 +205,7 @@ def make_field(name: str, is_required: bool):
     )
 
 
-def inp_request(fields: Tuple[FieldRM, ...], extra: OutFigureExtra = None):
+def inp_request(fields: Tuple[FieldRM, ...], extra: InpFigureExtra = None):
     return InputNameMappingRequest(
         type=Stub,
         figure=InputFigure(
@@ -235,7 +236,7 @@ def factory():
     )
 
 
-@pytest.fixture(params=[inp_request, out_request])
+@pytest.fixture(params=[inp_request])
 def make_request(request):
     return request.param
 
@@ -256,7 +257,7 @@ def test_name_mapping_simple(factory, make_request):
         )
     )
 
-    assert name_mapping == NameMapping(
+    assert name_mapping == InputNameMapping(
         crown=InpDictCrown(
             {
                 'a': InpFieldCrown('a'),
@@ -284,7 +285,7 @@ def test_name_mapping_skipping(factory, make_request):
         )
     )
 
-    assert name_mapping == NameMapping(
+    assert name_mapping == InputNameMapping(
         crown=InpDictCrown(
             {
                 'a': InpFieldCrown('a'),
@@ -312,7 +313,7 @@ def test_name_mapping_extra_targets(factory, make_request):
         )
     )
 
-    assert name_mapping == NameMapping(
+    assert name_mapping == InputNameMapping(
         crown=InpDictCrown(
             {
                 'a': InpFieldCrown('a'),
@@ -340,7 +341,7 @@ def test_name_mapping_extra_targets_skip(factory, make_request):
         )
     )
 
-    assert name_mapping == NameMapping(
+    assert name_mapping == InputNameMapping(
         crown=InpDictCrown(
             {
                 'a': InpFieldCrown('a'),

@@ -2,13 +2,14 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Collection
 
 from .essential import Mediator
-from .fields.basic_provider import ExtraPolicy, CfgExtraPolicy, NameMappingProvider
-from .fields.definitions import (
+from .fields import (
     InpDictCrown, BaseNameMappingRequest, BaseFigure, ExtraTargets,
     InputNameMappingRequest, OutputNameMappingRequest,
-    InpNameMapping, OutNameMapping, BaseNameMapping, BaseFieldCrown, BaseDictCrown, BaseCrown, InpCrown, InpFieldCrown,
-    BaseNoneCrown, InpNoneCrown, InpExtraPolicy, BaseListCrown, InpListCrown, InpExtraPolicyDict, InpExtraPolicyList,
-    OutCrown, OutFieldCrown, OutNoneCrown, Filler, OutDictCrown, Sieve, OutListCrown
+    InputNameMapping, BaseNameMapping, BaseFieldCrown, BaseDictCrown, BaseCrown, InpCrown,
+    InpFieldCrown,
+    BaseNoneCrown, InpNoneCrown, BaseListCrown, InpListCrown, InpExtraPolicyDict, InpExtraPolicyList,
+    OutCrown, OutFieldCrown, OutNoneCrown, Filler, OutDictCrown, Sieve, OutListCrown, ExtraPolicy, CfgExtraPolicy,
+    OutputNameMapping, NameMappingProvider
 )
 from .name_style import NameStyle, convert_snake_style
 
@@ -162,7 +163,7 @@ class NameMapper(NameMappingProvider):
             )
         raise RuntimeError
 
-    def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> InpNameMapping:
+    def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> InputNameMapping:
         skipped_required_fields = [
             fld for fld in request.figure.fields
             if fld.is_required and self._should_skip(fld.name)
@@ -174,10 +175,10 @@ class NameMapper(NameMappingProvider):
         base_name_mapping = self._provide_name_mapping(mediator, request)
         extra_policy: ExtraPolicy = mediator.provide(CfgExtraPolicy())
 
-        return InpNameMapping(
+        return InputNameMapping(
             crown=self._to_inp_crown(base_name_mapping.crown, extra_policy, extra_policy),
             skipped_extra_targets=base_name_mapping.skipped_extra_targets,
         )
 
-    def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> OutNameMapping:
+    def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> OutputNameMapping:
         return self._provide_name_mapping(mediator, request)

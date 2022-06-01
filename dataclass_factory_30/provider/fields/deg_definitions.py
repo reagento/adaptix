@@ -1,12 +1,20 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Dict, List, Union, Collection, Callable, Any, Set
+from typing import TypeVar, Generic, Dict, List, Union, Callable, Any, Set, Collection
 
-from dataclass_factory_30.provider import DefaultValue, DefaultFactory
-from dataclass_factory_30.utils import SingletonMeta
+from ..definitions import (
+    DefaultValue, DefaultFactory,
+)
+from ..static_provider import StaticProvider, static_provision_action
+from ..request_cls import TypeHintRM
+from ..essential import Request, Mediator
+from ..fields.definitions import BaseFigure, OutputFigure, InputFigure
+from ...utils import SingletonMeta
 
 T = TypeVar('T')
 
 FldPathElem = Union[str, int]
+
 
 # Policies how to process extra data
 
@@ -21,6 +29,8 @@ class ExtraForbid(metaclass=SingletonMeta):
 class ExtraCollect(metaclass=SingletonMeta):
     """Collect extra data and pass it to constructor"""
 
+
+# --------  Base classes for crown -------- #
 
 @dataclass
 class BaseDictCrown(Generic[T]):
@@ -55,7 +65,7 @@ class BaseNameMapping:
     used_extra_targets: Set[str]
 
 
-#############################################
+# --------  Input Crown -------- #
 
 InpExtraPolicyDict = Union[ExtraSkip, ExtraForbid, ExtraCollect]
 InpExtraPolicyList = Union[ExtraSkip, ExtraForbid]
@@ -84,7 +94,7 @@ class InpFieldCrown(BaseFieldCrown):
 InpCrown = Union[InpDictCrown, InpListCrown, InpFieldCrown, InpNoneCrown]
 RootInpCrown = Union[InpDictCrown, InpListCrown]
 
-#############################################
+# --------  Output Crown -------- #
 
 
 Sieve = Callable[[Any], bool]
@@ -125,3 +135,54 @@ class OutFieldCrown(BaseFieldCrown):
 
 OutCrown = Union[OutDictCrown, OutListCrown, OutNoneCrown, OutFieldCrown]
 OutRootCrown = Union[OutDictCrown, OutListCrown]
+
+# --------  Name Mapping -------- #
+
+ExtraPolicy = Union[ExtraSkip, ExtraForbid, ExtraCollect]
+
+
+class CfgExtraPolicy(Request[ExtraPolicy]):
+    pass
+
+
+@dataclass(frozen=True)
+class BaseNameMapping:
+    crown: Union[BaseDictCrown, BaseListCrown]
+    skipped_extra_targets: Collection[str]
+
+
+@dataclass(frozen=True)
+class BaseNameMappingRequest(TypeHintRM[T], Generic[T]):
+    figure: BaseFigure
+
+
+@dataclass(frozen=True)
+class InputNameMapping(BaseNameMapping):
+    crown: Union[InpDictCrown, InpListCrown]
+
+
+@dataclass(frozen=True)
+class InputNameMappingRequest(BaseNameMappingRequest[InputNameMapping]):
+    figure: InputFigure
+
+
+@dataclass(frozen=True)
+class OutputNameMapping(BaseNameMapping):
+    crown: Union[OutDictCrown, OutListCrown]
+
+
+@dataclass(frozen=True)
+class OutputNameMappingRequest(BaseNameMappingRequest[OutputNameMapping]):
+    figure: OutputFigure
+
+
+class NameMappingProvider(StaticProvider, ABC):
+    @abstractmethod
+    @static_provision_action(InputNameMappingRequest)
+    def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> InputNameMapping:
+        pass
+
+    @abstractmethod
+    @static_provision_action(OutputNameMappingRequest)
+    def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> OutputNameMapping:
+        pass
