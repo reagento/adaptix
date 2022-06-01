@@ -59,12 +59,6 @@ class BaseFieldCrown:
 BaseCrown = Union[BaseDictCrown, BaseListCrown, BaseNoneCrown, BaseFieldCrown]
 
 
-@dataclass
-class BaseNameMapping:
-    crown: Union[BaseDictCrown, BaseListCrown]
-    used_extra_targets: Set[str]
-
-
 # --------  Input Crown -------- #
 
 InpExtraPolicyDict = Union[ExtraSkip, ExtraForbid, ExtraCollect]

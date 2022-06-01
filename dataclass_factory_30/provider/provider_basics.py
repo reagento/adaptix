@@ -86,9 +86,6 @@ class ExactOriginRC(RequestChecker):
 
 
 def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
-    if isinstance(tp, RequestChecker):
-        return tp
-
     try:
         norm = normalize_type(tp)
     except NotSubscribedError:
@@ -107,9 +104,12 @@ def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
     return ExactTypeRC(norm)
 
 
-def create_req_checker(pred: Union[TypeHint, str]) -> RequestChecker:
+def create_req_checker(pred: Union[TypeHint, str, RequestChecker]) -> RequestChecker:
     if isinstance(pred, str):
         return FieldNameRC(pred)
+
+    if isinstance(pred, RequestChecker):
+        return pred
 
     return create_type_hint_req_checker(pred)
 

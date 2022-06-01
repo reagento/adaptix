@@ -109,7 +109,7 @@ TVLimit = Union[Bound, Constraints]
 class NormTV(BaseNormType):
     __slots__ = ('_var', '_limit', '_variance')
 
-    def __init__(self, type_var: TypeVar, limit: TVLimit):  # type: ignore
+    def __init__(self, type_var: TypeVar, limit: TVLimit):
         self._var = type_var
         self._limit = limit
 
