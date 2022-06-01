@@ -9,6 +9,7 @@ from dataclass_factory_30.provider.definitions import TypeParseError
 
 pytestmark = pytest.mark.skip()
 
+
 @dataclass
 class ExampleAny:
     field1: Any

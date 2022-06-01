@@ -9,13 +9,11 @@ from dataclass_factory_30.provider import (
     InputFigure, NoDefault, OutputFigure, ExtraTargets,
 )
 from dataclass_factory_30.provider.fields import OutFigureExtra, InpFigureExtra
-
-from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
-
 from dataclass_factory_30.provider.fields.deg_definitions import (
     CfgExtraPolicy, OutputNameMappingRequest, InpDictCrown,
     InpFieldCrown, InputNameMapping,
 )
+from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
 from dataclass_factory_30.provider.request_cls import ParamKind, FieldRM, AccessKind
 from tests_30.provider.conftest import TestFactory
 

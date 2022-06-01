@@ -64,9 +64,9 @@ VALID_FIELDS = (
 
 def test_extra_none():
     assert (
-            ClassInitInputFigureProvider()._get_input_figure(Valid1)
-            ==
-            InputFigure(
+        ClassInitInputFigureProvider()._get_input_figure(Valid1)
+        ==
+        InputFigure(
             constructor=Valid1,
             extra=None,
             fields=VALID_FIELDS,
@@ -76,9 +76,9 @@ def test_extra_none():
 
 def test_extra_kwargs():
     assert (
-            ClassInitInputFigureProvider()._get_input_figure(Valid2Kwargs)
-            ==
-            InputFigure(
+        ClassInitInputFigureProvider()._get_input_figure(Valid2Kwargs)
+        ==
+        InputFigure(
             constructor=Valid2Kwargs,
             extra=ExtraKwargs(),
             fields=VALID_FIELDS,
@@ -94,9 +94,9 @@ def test_pos_only():
             self.b = b
 
     assert (
-            ClassInitInputFigureProvider()._get_input_figure(HasPosOnly)
-            ==
-            InputFigure(
+        ClassInitInputFigureProvider()._get_input_figure(HasPosOnly)
+        ==
+        InputFigure(
             constructor=HasPosOnly,
             extra=None,
             fields=(

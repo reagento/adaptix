@@ -36,9 +36,9 @@ TOTAL_FIELDS = (
 
 def test_total_input():
     assert (
-            TypedDictFigureProvider()._get_input_figure(Foo)
-            ==
-            InputFigure(
+        TypedDictFigureProvider()._get_input_figure(Foo)
+        ==
+        InputFigure(
             constructor=Foo,
             extra=None,
             fields=_to_inp(ParamKind.KW_ONLY, TOTAL_FIELDS),
@@ -48,9 +48,9 @@ def test_total_input():
 
 def test_total_output():
     assert (
-            TypedDictFigureProvider()._get_output_figure(Foo)
-            ==
-            OutputFigure(
+        TypedDictFigureProvider()._get_output_figure(Foo)
+        ==
+        OutputFigure(
             extra=None,
             fields=_to_out(AccessKind.ITEM, TOTAL_FIELDS),
         )
@@ -77,9 +77,9 @@ NON_TOTAL_FIELDS = (
 
 def test_non_total_input():
     assert (
-            TypedDictFigureProvider()._get_input_figure(Bar)
-            ==
-            InputFigure(
+        TypedDictFigureProvider()._get_input_figure(Bar)
+        ==
+        InputFigure(
             constructor=Bar,
             extra=None,
             fields=_to_inp(ParamKind.KW_ONLY, NON_TOTAL_FIELDS),
@@ -89,9 +89,9 @@ def test_non_total_input():
 
 def test_non_total_output():
     assert (
-            TypedDictFigureProvider()._get_output_figure(Bar)
-            ==
-            OutputFigure(
+        TypedDictFigureProvider()._get_output_figure(Bar)
+        ==
+        OutputFigure(
             extra=None,
             fields=_to_out(AccessKind.ITEM, NON_TOTAL_FIELDS),
         )

@@ -4,7 +4,6 @@ from typing import ClassVar
 
 from dataclass_factory_30.provider import DefaultValue, DefaultFactory, DataclassFigureProvider, InputFigure, \
     NoDefault, OutputFigure
-
 from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, AccessKind, InputFieldRM
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
@@ -28,9 +27,9 @@ class Foo:
 
 def test_input():
     assert (
-            DataclassFigureProvider()._get_input_figure(Foo)
-            ==
-            InputFigure(
+        DataclassFigureProvider()._get_input_figure(Foo)
+        ==
+        InputFigure(
             constructor=Foo,
             extra=None,
             fields=(
@@ -89,9 +88,9 @@ def test_input():
 
 def test_output():
     assert (
-            DataclassFigureProvider()._get_output_figure(Foo)
-            ==
-            OutputFigure(
+        DataclassFigureProvider()._get_output_figure(Foo)
+        ==
+        OutputFigure(
             extra=None,
             fields=(
                 OutputFieldRM(
@@ -151,9 +150,9 @@ class ChildBar(Bar):
 
 def test_inheritance():
     assert (
-            DataclassFigureProvider()._get_input_figure(ChildBar)
-            ==
-            InputFigure(
+        DataclassFigureProvider()._get_input_figure(ChildBar)
+        ==
+        InputFigure(
             constructor=ChildBar,
             extra=None,
             fields=(
@@ -178,9 +177,9 @@ def test_inheritance():
     )
 
     assert (
-            DataclassFigureProvider()._get_output_figure(ChildBar)
-            ==
-            OutputFigure(
+        DataclassFigureProvider()._get_output_figure(ChildBar)
+        ==
+        OutputFigure(
             extra=None,
             fields=(
                 OutputFieldRM(
