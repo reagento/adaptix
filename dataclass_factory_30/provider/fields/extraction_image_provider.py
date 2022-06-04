@@ -3,13 +3,13 @@ from typing import Set, List, TypeVar, Iterable
 
 from dataclass_factory_30.provider.essential import Mediator, CannotProvide
 from dataclass_factory_30.provider.static_provider import StaticProvider, static_provision_action
-from .definitions import ExtractionImageRequest, ExtractionImage
-from .deg_definitions import (
+from .definitions import ExtractionImageRequest, ExtractionImage, ExtractionGen
+from .crown_definitions import (
     InputNameMappingRequest,
     BaseDictCrown, BaseCrown, BaseListCrown, BaseFieldCrown,
-    InpCrown, InpDictCrown, ExtraCollect, BaseNoneCrown, InpListCrown
+    InpCrown, InpDictCrown, ExtraCollect, BaseNoneCrown, InpListCrown, InputNameMapping
 )
-from .extraction_gen import DefaultExtractionGen
+from .extraction_gen import BuiltinExtractionGen
 
 T = TypeVar('T')
 
@@ -18,7 +18,7 @@ def _merge_iters(args: Iterable[Iterable[T]]) -> List[T]:
     return list(itertools.chain.from_iterable(args))
 
 
-class DefaultExtractionImageProvider(StaticProvider):
+class BuiltinExtractionImageProvider(StaticProvider):
     @static_provision_action(ExtractionImageRequest)
     def _provide_extraction_image(self, mediator: Mediator, request: ExtractionImageRequest) -> ExtractionImage:
         name_mapping = mediator.provide(
@@ -28,12 +28,7 @@ class DefaultExtractionImageProvider(StaticProvider):
             )
         )
 
-        extraction_gen = DefaultExtractionGen(
-            figure=request.figure,
-            crown=name_mapping.crown,
-            debug_path=request.initial_request.debug_path,
-            strict_coercion=request.initial_request.strict_coercion,
-        )
+        extraction_gen = self._create_extraction_gen(request, name_mapping)
 
         if self._has_collect_policy(name_mapping.crown) and request.figure.extra is None:
             raise CannotProvide(
@@ -49,7 +44,19 @@ class DefaultExtractionImageProvider(StaticProvider):
 
         return ExtractionImage(
             extraction_gen=extraction_gen,
-            skipped_fields=skipped_direct_fields + name_mapping.skipped_extra_targets,
+            skipped_fields=skipped_direct_fields + list(name_mapping.skipped_extra_targets),
+        )
+
+    def _create_extraction_gen(
+        self,
+        request: ExtractionImageRequest,
+        name_mapping: InputNameMapping,
+    ) -> ExtractionGen:
+        return BuiltinExtractionGen(
+            figure=request.figure,
+            crown=name_mapping.crown,
+            debug_path=request.initial_request.debug_path,
+            strict_coercion=request.initial_request.strict_coercion,
         )
 
     def _inner_collect_used_direct_fields(self, crown: BaseCrown) -> List[str]:

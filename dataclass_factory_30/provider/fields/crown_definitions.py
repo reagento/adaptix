@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Dict, List, Union, Callable, Any, Set, Collection
+from typing import TypeVar, Generic, Dict, List, Union, Callable, Any, Collection
 
 from ..definitions import (
     DefaultValue, DefaultFactory,
@@ -57,7 +57,6 @@ class BaseFieldCrown:
 
 
 BaseCrown = Union[BaseDictCrown, BaseListCrown, BaseNoneCrown, BaseFieldCrown]
-
 
 # --------  Input Crown -------- #
 

@@ -8,7 +8,7 @@ from dataclass_factory_30.code_tools.context_namespace import ContextNamespace
 from dataclass_factory_30.common import Parser, VarTuple
 from dataclass_factory_30.provider import InputFigure, ExtraTargets, NoRequiredFieldsError, NoRequiredItemsError
 from dataclass_factory_30.provider.fields.definitions import ExtractionGen, VarBinder
-from dataclass_factory_30.provider.fields.deg_definitions import (
+from dataclass_factory_30.provider.fields.crown_definitions import (
     InpDictCrown, InpListCrown, InpFieldCrown, InpCrown,
     ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem,
 )
@@ -94,8 +94,8 @@ class GenState:
         return cp
 
 
-class DefaultExtractionGen(ExtractionGen):
-    """DefaultExtractionGen generates code that extracts raw values from input data,
+class BuiltinExtractionGen(ExtractionGen):
+    """BuiltinExtractionGen generates code that extracts raw values from input data,
     calls parsers and stores results at variables.
     """
 

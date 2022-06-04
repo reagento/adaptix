@@ -3,7 +3,7 @@ from ..request_cls import InputFieldRM, ParamKind
 from ...code_tools import CodeBuilder, ContextNamespace
 
 
-class DefaultCreationGen(CreationGen):
+class BuiltinCreationGen(CreationGen):
     """Generator producing creation of desired object.
 
     It takes fields, extra and opt_fields from local vars to

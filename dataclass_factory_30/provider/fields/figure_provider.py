@@ -221,6 +221,7 @@ def all_dc_fields(cls) -> Dict[str, DCField]:
     return cls.__dataclass_fields__
 
 
+# TODO: scan init if init=False at dataclass
 class DataclassFigureProvider(TypeOnlyInputFigureProvider, TypeOnlyOutputFigureProvider):
     """This provider does not work properly if __init__ signature differs from
     that would be created by dataclass decorator.

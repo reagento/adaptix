@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Union, Generic, TypeVar, Callable, Any, Mapping, AbstractSet
+from typing import Union, Generic, TypeVar, Callable, Any, Mapping, Collection
 
 from .. import Request
 from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM, ParserRequest
@@ -162,7 +162,7 @@ class CreationGen(ABC):
 @dataclass(frozen=True)
 class ExtractionImage:
     extraction_gen: ExtractionGen
-    skipped_fields: AbstractSet[str]
+    skipped_fields: Collection[str]
 
 
 @dataclass(frozen=True)

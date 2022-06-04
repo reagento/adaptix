@@ -1,5 +1,5 @@
 from .creation_gen import (
-    DefaultCreationGen,
+    BuiltinCreationGen,
 )
 from .definitions import (
     ExtraKwargs,
@@ -22,7 +22,7 @@ from .definitions import (
     CreationImage,
     CreationImageRequest,
 )
-from .deg_definitions import (
+from .crown_definitions import (
     ExtraSkip,
     ExtraForbid,
     ExtraCollect,
