@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from inspect import isabstract
 from typing import TypeVar, Union, Type, Callable, Any, Generic
 
-from .definitions import ParseError, PARSER_COMPAT_EXCEPTIONS
+from .definitions import ParseError, PARSER_COMPAT_EXCEPTIONS, SerializeError
 from .essential import Provider, Mediator, CannotProvide, Request
 from .request_cls import TypeHintRM, FieldRM
-from ..common import TypeHint, Parser, VarTuple
+from ..common import TypeHint, Parser, Serializer, VarTuple
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
 from ..type_tools.normalize_type import NormType, NormTV, NotSubscribedError
 
@@ -143,6 +143,18 @@ def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
             raise ParseError() from e
 
     return foreign_parser_wrapper
+
+
+def foreign_serializer(func: Callable[[T], Any]) -> Serializer[T]:
+    def foreign_serializer_wrapper(arg):
+        try:
+            return func(arg)
+        except SerializeError:
+            raise
+        except Exception as e:
+            raise SerializeError() from e
+
+    return foreign_serializer_wrapper
 
 
 class ValueProvider(Provider, Generic[T]):

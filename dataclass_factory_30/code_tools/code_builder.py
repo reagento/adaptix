@@ -1,6 +1,6 @@
 import contextlib
 from textwrap import dedent
-from typing import List, Sequence
+from typing import List, Sequence, Iterable
 
 
 class CodeBuilder:
@@ -22,7 +22,7 @@ class CodeBuilder:
             return dedent(line_or_text).strip("\n").split("\n")
         return [line_or_text]
 
-    def _add_indenting_lines(self, lines: List[str]):
+    def _add_indenting_lines(self, lines: Iterable[str]):
         indent = " " * self._cur_indent
         self._lines.extend(
             indent + line
@@ -71,8 +71,7 @@ class CodeBuilder:
         self._cur_indent -= self._indent_delta
 
     def extend(self, other: "CodeBuilder"):
-        for line in other.lines:
-            self(line)
+        self._add_indenting_lines(other.lines)
         return self
 
     def string(self) -> str:

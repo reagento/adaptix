@@ -18,7 +18,7 @@ class DefaultValue:
         try:
             return hash(self.value)
         except TypeError:
-            return 29492071388  # some random number
+            return 236  # some random number that fits in byte
 
 
 @dataclass(frozen=True)
@@ -34,12 +34,27 @@ PARSER_COMPAT_EXCEPTIONS = (
     AssertionError, ArithmeticError, AttributeError,
 )
 
-# In most cases path is Union[str, int]
-# but we decided to retain the option for a custom path
-PathElement = Union[str, int, Any]
+
+class PathElementMarker:
+    pass
 
 
-class ParseError(Exception):
+@dataclass(frozen=True)
+class Attr(PathElementMarker):
+    name: str
+
+    def __repr__(self):
+        return f"{type(self)}({self.name!r})"
+
+
+# PathElement describes how to extract next object from the source.
+# By default, you must subscribe source to get next object,
+# except with PathElementMarker children that define custom way to extract values.
+# For example, Attr means that next value must be gotten by attribute access
+PathElement = Union[str, int, Any, PathElementMarker]
+
+
+class PathError(Exception):
     path: Deque[PathElement]
 
     def __init__(self, path: Optional[Deque[PathElement]] = None):
@@ -63,6 +78,10 @@ class ParseError(Exception):
         if type(self) == type(other):
             return vars(self) == vars(other)
         return NotImplemented
+
+
+class ParseError(PathError):
+    pass
 
 
 class MsgError(ParseError):
@@ -111,3 +130,7 @@ class UnionParseError(ParseError):
     def __init__(self, sub_errors: List[ParseError], path: Optional[Deque[PathElement]] = None):
         self.sub_errors = sub_errors
         ParseError.__init__(self, path)
+
+
+class SerializeError(PathError):
+    pass

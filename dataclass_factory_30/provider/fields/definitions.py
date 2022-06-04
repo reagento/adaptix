@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Union, Generic, TypeVar, Callable, Any, Mapping, Collection
+from typing import Union, Generic, TypeVar, Callable, Any, Mapping, Collection, MutableMapping
 
 from .. import Request
 from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM, ParserRequest
@@ -28,7 +28,7 @@ class ExtraSaturate(Generic[T]):
 
 @dataclass(frozen=True)
 class ExtraExtract(Generic[T]):
-    func: Callable[[Mapping[str, Any], T], Mapping[str, Any]]
+    func: Callable[[T], Mapping[str, Any]]
 
 
 #  =======================
