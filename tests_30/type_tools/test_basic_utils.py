@@ -77,7 +77,7 @@ def test_is_protocol():
     assert is_protocol(ExtProto)
 
 
-T = TypeVar('T')
+T = TypeVar('T', covariant=True)  # make it covariant to use at protocol
 
 
 class Gen(Generic[T]):
@@ -122,3 +122,37 @@ def test_is_user_defined_generic():
     assert not is_user_defined_generic(Tuple)
     assert not is_user_defined_generic(Tuple[V])
     assert not is_user_defined_generic(Tuple[int])
+
+
+def test_is_user_defined_generic_protocol():
+    from typing import Protocol
+
+    class Prot(Protocol[T]):
+        pass
+
+    class ProtChildImplicit(Prot):
+        pass
+
+    class ProtChildExplicit(Prot[int]):
+        pass
+
+    class ProtChildExplicitTypeVar(Prot[T]):
+        pass
+
+    class ProtProt(Prot[int], Protocol[T]):
+        pass
+
+    assert is_user_defined_generic(Prot)
+    assert is_user_defined_generic(Prot[V])
+    assert not is_user_defined_generic(Prot[int])
+
+    assert not is_user_defined_generic(ProtChildImplicit)
+    assert not is_user_defined_generic(ProtChildExplicit)
+
+    assert is_user_defined_generic(ProtChildExplicitTypeVar)
+    assert is_user_defined_generic(ProtChildExplicitTypeVar[V])
+    assert not is_user_defined_generic(ProtChildExplicitTypeVar[int])
+
+    assert is_user_defined_generic(ProtProt)
+    assert is_user_defined_generic(ProtProt[V])
+    assert not is_user_defined_generic(ProtProt[int])

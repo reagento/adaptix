@@ -16,7 +16,7 @@ from typing import (
 import pytest
 
 from dataclass_factory_30.common import TypeHint
-from dataclass_factory_30.feature_requirement import has_literal, has_final, has_annotated
+from dataclass_factory_30.feature_requirement import has_literal, has_final, has_annotated, has_protocol
 from dataclass_factory_30.type_tools import NormType, normalize_type
 from dataclass_factory_30.type_tools.normalize_type import (
     NormTV,
@@ -428,9 +428,9 @@ def test_type_var(variance: dict):
         )
     )
 
-
-K = TypeVar('K')
-V = TypeVar('V')
+# make it covariant to use at protocol
+K = TypeVar('K', covariant=True)
+V = TypeVar('V', covariant=True)
 H = TypeVar('H', int, str)
 
 
@@ -471,6 +471,36 @@ def test_generic():
     assert_normalize(MyGeneric3[int, str, bool], MyGeneric3, [nt_zero(int), nt_zero(str), nt_zero(bool)])
     assert_normalize(MyGeneric3[T1, T2, T3], MyGeneric3, [any_tv(T1), any_tv(T2), any_tv(T3)])
     assert_normalize(MyGeneric3[T1, T1, T1], MyGeneric3, [any_tv(T1), any_tv(T1), any_tv(T1)])
+
+
+@has_protocol
+def test_protocol():
+    from typing import Protocol
+
+    class MyProtocol1(Protocol[K]):
+        pass
+
+    class MyProtocol2(Protocol[K, V]):
+        pass
+
+    class MyProtocol3(MyProtocol1[K], Protocol[K, V, H]):
+        pass
+
+    assert_normalize(MyProtocol1, MyProtocol1, [nt_zero(Any)])
+    assert_normalize(MyProtocol1[int], MyProtocol1, [nt_zero(int)])
+    assert_normalize(MyProtocol1[T1], MyProtocol1, [any_tv(T1)])
+
+    assert_normalize(MyProtocol2, MyProtocol2, [nt_zero(Any), nt_zero(Any)])
+    assert_normalize(MyProtocol2[int, str], MyProtocol2, [nt_zero(int), nt_zero(str)])
+    assert_normalize(MyProtocol2[T1, T2], MyProtocol2, [any_tv(T1), any_tv(T2)])
+    assert_normalize(MyProtocol2[T1, T1], MyProtocol2, [any_tv(T1), any_tv(T1)])
+
+    h_implicit = normalize_type(Union[int, str])
+
+    assert_normalize(MyProtocol3, MyProtocol3, [nt_zero(Any), nt_zero(Any), h_implicit])
+    assert_normalize(MyProtocol3[int, str, bool], MyProtocol3, [nt_zero(int), nt_zero(str), nt_zero(bool)])
+    assert_normalize(MyProtocol3[T1, T2, T3], MyProtocol3, [any_tv(T1), any_tv(T2), any_tv(T3)])
+    assert_normalize(MyProtocol3[T1, T1, T1], MyProtocol3, [any_tv(T1), any_tv(T1), any_tv(T1)])
 
 
 def test_bad_arg_types():
