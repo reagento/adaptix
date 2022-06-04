@@ -38,6 +38,9 @@ from ..provider import (
     BytesBase64Provider,
     BytearrayBase64Provider,
     ABCProxy,
+    FieldsParserProvider,
+    BuiltinExtractionImageProvider,
+    BuiltinCreationImageProvider,
 )
 
 
@@ -148,6 +151,9 @@ class BuiltinFactory(OperatingFactory, ABC):
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),
 
+        FieldsParserProvider(),
+        BuiltinExtractionImageProvider(),
+        BuiltinCreationImageProvider(),
         NameMapper(),
 
         NamedTupleFigureProvider(),

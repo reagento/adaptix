@@ -69,3 +69,8 @@ from .figure_provider import (
     DataclassFigureProvider,
     ClassInitInputFigureProvider,
 )
+from .parser_provider import (
+    BuiltinCreationImageProvider,
+    BuiltinExtractionImageProvider,
+    FieldsParserProvider,
+)

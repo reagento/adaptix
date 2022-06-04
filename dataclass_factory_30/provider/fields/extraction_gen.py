@@ -3,16 +3,18 @@ from collections import deque
 from copy import copy
 from typing import Dict, Set, Optional, Mapping
 
-from dataclass_factory_30.code_tools import CodeBuilder
-from dataclass_factory_30.code_tools.context_namespace import ContextNamespace
-from dataclass_factory_30.common import Parser, VarTuple
-from dataclass_factory_30.provider import InputFigure, ExtraTargets, NoRequiredFieldsError, NoRequiredItemsError
-from dataclass_factory_30.provider.fields.definitions import ExtractionGen, VarBinder
-from dataclass_factory_30.provider.fields.crown_definitions import (
+from .crown_definitions import (
     InpDictCrown, InpListCrown, InpFieldCrown, InpCrown,
     ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem,
 )
-from dataclass_factory_30.provider.request_cls import InputFieldRM
+from .definitions import ExtractionGen, VarBinder, InputFigure, ExtraTargets
+from ...code_tools import CodeBuilder, ContextNamespace
+from ...common import Parser, VarTuple
+from ...provider.definitions import (
+    NoRequiredFieldsError, NoRequiredItemsError, ExtraFieldsError,
+    ExtraItemsError, TypeParseError, ParseError
+)
+from ...provider.request_cls import InputFieldRM
 
 Path = VarTuple[FldPathElem]
 
@@ -130,6 +132,13 @@ class BuiltinExtractionGen(ExtractionGen):
         ctx_namespace: ContextNamespace,
         field_parsers: Mapping[str, Parser],
     ) -> CodeBuilder:
+        for exception in [
+            ExtraFieldsError, ExtraItemsError,
+            TypeParseError, NoRequiredFieldsError,
+            ParseError
+        ]:
+            ctx_namespace.add(exception.__name__, exception)
+
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
 
