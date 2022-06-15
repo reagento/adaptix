@@ -223,7 +223,7 @@ def _dedup(inp: Iterable) -> List:
     return result
 
 
-def _create_norm_literal(args: tuple):
+def _create_norm_literal(args: Iterable):
     dedup_args = tuple(_dedup(args))
     return NormType(
         Literal, dedup_args,
@@ -405,7 +405,7 @@ class TypeNormalizer:
             return NormType(origin, args, source=tp)
 
     def _unfold_union_args(self, norm_args: Iterable[T_Norm]) -> List[T_Norm]:
-        result = []
+        result: List[T_Norm] = []
         for norm in norm_args:
             if norm.origin == Union:
                 result.extend(norm.args)
@@ -436,7 +436,7 @@ class TypeNormalizer:
 
     def _merge_literals(self, args: Iterable[T_Norm]) -> List[T_Norm]:
         result = []
-        lit_args = []
+        lit_args: List[T_Norm] = []
         for norm in args:
             if norm.origin == Literal:
                 lit_args.extend(norm.args)

@@ -87,7 +87,7 @@ def convert_snake_style(name: str, style: NameStyle) -> str:
 
     match = SNAKE_SPLITTER.match(name)
     if match is None:
-        raise ValueError(f"Cannot convert '{name}'")
+        raise ValueError(f"Cannot convert {name!r}")
 
     front_us, raw_first, raw_rest, trailing_us = match.groups()
     conv = STYLE_CONVERSIONS[style]

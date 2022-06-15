@@ -1,5 +1,5 @@
 from dataclasses import InitVar
-from typing import ClassVar, Callable
+from typing import ClassVar, Callable, Tuple
 
 from .normalize_type import BaseNormType, NormTV
 from ..feature_requirement import has_final, has_annotated
@@ -49,8 +49,9 @@ def is_generic(norm: BaseNormType) -> bool:
             _tv_or_generic(st_norm.args[1])
         )
 
+    args: Tuple
     if st_norm.origin == tuple and st_norm.args[-1] is ...:
-        args = [st_norm.args[0]]
+        args = (st_norm.args[0], )
     else:
         args = st_norm.args
 
