@@ -1,9 +1,9 @@
-from .definitions import InputFigure, ExtraTargets, ExtraKwargs, ExtraSaturate, CreationGen, VarBinder
+from .definitions import InputFigure, ExtraTargets, ExtraKwargs, ExtraSaturate, InputCreationGen, VarBinder
 from ..request_cls import InputFieldRM, ParamKind
 from ...code_tools import CodeBuilder, ContextNamespace
 
 
-class BuiltinCreationGen(CreationGen):
+class BuiltinInputCreationGen(InputCreationGen):
     """Generator producing creation of desired object.
 
     It takes fields, extra and opt_fields from local vars to
@@ -19,7 +19,7 @@ class BuiltinCreationGen(CreationGen):
             field.name in self._figure.extra.fields
         )
 
-    def generate_creation(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
+    def generate_input_creation(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         has_opt_fields = any(
             fld.is_optional and not self._is_extra_target(fld)
             for fld in self._figure.fields

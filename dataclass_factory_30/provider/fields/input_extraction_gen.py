@@ -7,7 +7,7 @@ from .crown_definitions import (
     InpDictCrown, InpListCrown, InpFieldCrown, InpCrown,
     ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem,
 )
-from .definitions import ExtractionGen, VarBinder, InputFigure, ExtraTargets
+from .definitions import InputExtractionGen, VarBinder, InputFigure, ExtraTargets
 from ...code_tools import CodeBuilder, ContextNamespace
 from ...common import Parser, VarTuple
 from ...provider.definitions import (
@@ -96,8 +96,8 @@ class GenState:
         return cp
 
 
-class BuiltinExtractionGen(ExtractionGen):
-    """BuiltinExtractionGen generates code that extracts raw values from input data,
+class BuiltinInputExtractionGen(InputExtractionGen):
+    """BuiltinInputExtractionGen generates code that extracts raw values from input data,
     calls parsers and stores results at variables.
     """
 
@@ -126,7 +126,7 @@ class BuiltinExtractionGen(ExtractionGen):
     def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
         return GenState(binder, ctx_namespace, self._field_name_to_field)
 
-    def generate_extraction(
+    def generate_input_extraction(
         self,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,

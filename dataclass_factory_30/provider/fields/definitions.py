@@ -6,7 +6,7 @@ from .. import Request
 from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM, ParserRequest
 from ...code_tools import CodeBuilder, PrefixManglerBase, MangledConstant, mangling_method
 from ...code_tools.context_namespace import ContextNamespace
-from ...common import VarTuple, Parser
+from ...common import VarTuple, Parser, Serializer
 from ...utils import SingletonMeta, pairs
 
 T = TypeVar('T')
@@ -138,9 +138,9 @@ class VarBinder(PrefixManglerBase):
         return field.name
 
 
-class ExtractionGen(ABC):
+class InputExtractionGen(ABC):
     @abstractmethod
-    def generate_extraction(
+    def generate_input_extraction(
         self,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
@@ -149,9 +149,9 @@ class ExtractionGen(ABC):
         pass
 
 
-class CreationGen(ABC):
+class InputCreationGen(ABC):
     @abstractmethod
-    def generate_creation(
+    def generate_input_creation(
         self,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
@@ -160,23 +160,44 @@ class CreationGen(ABC):
 
 
 @dataclass(frozen=True)
-class ExtractionImage:
-    extraction_gen: ExtractionGen
+class InputExtractionImage:
+    extraction_gen: InputExtractionGen
     skipped_fields: Collection[str]
 
 
 @dataclass(frozen=True)
-class ExtractionImageRequest(Request[ExtractionImage]):
+class InputExtractionImageRequest(Request[InputExtractionImage]):
     figure: InputFigure
     initial_request: ParserRequest
 
 
 @dataclass(frozen=True)
-class CreationImage:
-    creation_gen: CreationGen
+class InputCreationImage:
+    creation_gen: InputCreationGen
 
 
 @dataclass(frozen=True)
-class CreationImageRequest(Request[CreationImage]):
+class InputCreationImageRequest(Request[InputCreationImage]):
     figure: InputFigure
     initial_request: ParserRequest
+
+
+class OutputExtractionGen(ABC):
+    @abstractmethod
+    def generate_output_extraction(
+        self,
+        binder: VarBinder,
+        ctx_namespace: ContextNamespace,
+        field_serializers: Mapping[str, Serializer],
+    ) -> CodeBuilder:
+        pass
+
+
+class OutputCreationGen(ABC):
+    @abstractmethod
+    def generate_output_creation(
+        self,
+        binder: VarBinder,
+        ctx_namespace: ContextNamespace,
+    ) -> CodeBuilder:
+        pass

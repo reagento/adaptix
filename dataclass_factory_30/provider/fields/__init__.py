@@ -1,5 +1,5 @@
-from .creation_gen import (
-    BuiltinCreationGen,
+from .input_creation_gen import (
+    BuiltinInputCreationGen,
 )
 from .definitions import (
     ExtraKwargs,
@@ -15,12 +15,12 @@ from .definitions import (
     OutputFigure,
     OutputFigureRequest,
     VarBinder,
-    ExtractionGen,
-    CreationGen,
-    ExtractionImage,
-    ExtractionImageRequest,
-    CreationImage,
-    CreationImageRequest,
+    InputExtractionGen,
+    InputCreationGen,
+    InputExtractionImage,
+    InputExtractionImageRequest,
+    InputCreationImage,
+    InputCreationImageRequest,
 )
 from .crown_definitions import (
     ExtraSkip,
