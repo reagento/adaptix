@@ -117,6 +117,11 @@ def get_vars_serializer(factory) -> Serializer:
     return vars_serializer
 
 
+def serialize_none(data: Any) -> None:
+    if data is not None:
+        raise ValueError("None expected")
+
+
 def stub_serializer(data: T) -> T:
     return data
 
@@ -168,6 +173,8 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
     class_ = fix_generic_alias(class_)
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
+    if is_none(class_):
+        return serialize_none
     if is_literal(class_) or is_literal36(class_) or is_none(class_):
         return stub_serializer
     if is_newtype(class_):
@@ -210,10 +217,17 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
     if is_enum(class_):
         return attrgetter("value")
     if is_union(class_):
-        # create serializers:
-        for type_ in class_.__args__:
-            factory.serializer(type_)
-        return get_lazy_serializer(factory)
+        # also, check if Union can be converted to Optional[...] or Optional[Union[...]]
+        serializers = tuple(factory.serializer(x) for x in class_.__args__ if not is_none(x))
+        if len(serializers) == 0:
+            return serialize_none
+        if len(serializers) == 1:
+            serializer = serializers[0]
+        else:
+            serializer = get_lazy_serializer(factory)
+        if len(serializers) < len(class_.__args__):
+            return get_optional_serializer(serializer)
+        return serializer
     if is_tuple(class_):
         if not hasargs(class_):
             return get_collection_any_serializer()
