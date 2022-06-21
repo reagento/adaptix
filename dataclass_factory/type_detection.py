@@ -23,6 +23,11 @@ except ImportError:
     CompatLiteral = None
 
 try:
+    from types import UnionType  # type: ignore
+except ImportError:
+    UnionType = None  # type: ignore
+
+try:
     from typing import TypedDict as PyTypedDict  # type: ignore
 
 
@@ -129,7 +134,10 @@ def is_union(type_: Type) -> bool:
     try:
         return issubclass_safe(type_.__origin__, Union)
     except AttributeError:
-        return False
+        pass
+    if UnionType is not None:
+        return isinstance(type_, UnionType)
+    return False
 
 
 def is_any(type_: Type) -> bool:
