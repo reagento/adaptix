@@ -77,12 +77,14 @@ def get_collection_parser(
     if debug_path:
         def collection_parser(data):
             return collection_factory(
-                dyn_element_parser(item_parser, x, i) for i, x in enumerate(data)
+                dyn_element_parser(item_parser, x, i)
+                for i, x in enumerate(data)
             )
     else:
         def collection_parser(data):
             return collection_factory(
-                item_parser(x) for x in data
+                item_parser(x)
+                for x in data
             )
     return collection_parser
 

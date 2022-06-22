@@ -8,6 +8,7 @@ from .fields import (
     FieldInfo, get_dataclass_fields, get_typeddict_fields,
     get_namedtuple_fields,
 )
+from .exceptions import InvalidFieldError
 from .generics import fix_generic_alias
 from .path_utils import CleanKey, CleanPath, init_structure
 from .schema import RuleForUnknown, Schema, Unknown
@@ -16,6 +17,35 @@ from .type_detection import (
     is_newtype, is_optional, is_tuple, is_type_var, is_typeddict, is_union,
     is_literal, is_literal36, instance_wont_have_dict, is_none, is_namedtuple,
 )
+
+
+SERIALIZER_EXCEPTIONS = (ValueError, TypeError, AttributeError, LookupError)
+
+
+def get_element_serializer(serializer: Serializer[T], key: Any) -> Serializer[T]:
+    def element_serializer(data: Any) -> T:
+        try:
+            return serializer(data)
+        except InvalidFieldError as e:
+            e._append_path(str(key))
+            raise
+        except SERIALIZER_EXCEPTIONS as e:
+            raise InvalidFieldError(str(e), [str(key)])
+
+    return element_serializer
+
+
+
+def dyn_element_serializer(
+    serializer: Serializer[T], data: Any, key: Any,
+) -> T:
+    try:
+        return serializer(data)
+    except InvalidFieldError as e:
+        e._append_path(str(key))
+        raise
+    except SERIALIZER_EXCEPTIONS as e:
+        raise InvalidFieldError(str(e), [str(key)])
 
 
 def to_path(key: Union[CleanKey, CleanPath]) -> CleanPath:
@@ -29,16 +59,25 @@ def unpack_fields(dest, fields):
         dest.update(dest.pop(f, {}))
 
 
-def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
-                           schema: Schema[T],
-                           fields: Sequence[FieldInfo],
-                           getter: Callable[[Any, Any], Any],
-                           unknown: RuleForUnknown) -> Serializer[T]:
+def get_complex_serializer(
+    factory: AbstractFactory,  # noqa C901,CCR001
+    schema: Schema[T],
+    fields: Sequence[FieldInfo],
+    getter: Callable[[Any, Any], Any],
+    unknown: RuleForUnknown,
+    debug_path: bool,
+) -> Serializer[T]:
     has_default = schema.omit_default and any(f.default != MISSING for f in fields)
     field_info = tuple(
         (f.field_name, factory.serializer(f.type), f.data_name, f.default)
         for f in fields
     )
+    if debug_path:
+        field_info = tuple(
+            (field_name, get_element_serializer(serializer, field_name), data_name, default)
+            for field_name, serializer, data_name, default in field_info
+        )
+
     if isinstance(unknown, Unknown):
         unpack_unknown = False
     elif isinstance(unknown, str):
@@ -53,7 +92,7 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
         if has_default:
             raise ValueError("Cannot use `omit_default` option with flattening schema")
 
-        def serialize(data):
+        def complex_serialize(data):
             container, field_containers = loads(pickled)
             for (
                 (inner_container, data_name), (field_name, serializer, *_)
@@ -64,7 +103,7 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
             return container
     else:
         if has_default:
-            def serialize(data):
+            def complex_serialize(data):
                 container = {
                     data_name: value
                     for field_name, serializer, data_name, default in field_info
@@ -76,7 +115,7 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
                 return container
         else:
             # optimized version
-            def serialize(data):
+            def complex_serialize(data):
                 container = {
                     data_name: serializer(getter(data, field_name))
                     for field_name, serializer, data_name, default in field_info
@@ -84,17 +123,36 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
                 if unpack_unknown:
                     unpack_fields(container, unknown)
                 return container
-    return serialize
+    return complex_serialize
 
 
-def get_collection_serializer(serializer: Serializer[T]) -> Serializer[List[T]]:
-    def collection_serializer(data):
-        return [serializer(x) for x in data]
+def get_collection_serializer(
+    serializer: Serializer[T],
+    debug_path: bool,
+) -> Serializer[List[T]]:
+    if debug_path:
+        def collection_serializer(data):
+            return [
+                dyn_element_serializer(serializer, x, i)
+                for i, x in enumerate(data)
+            ]
+    else:
+        def collection_serializer(data):
+            return [serializer(x) for x in data]
 
     return collection_serializer
 
 
-def get_tuple_serializer(serializers) -> Serializer[List]:
+def get_tuple_serializer(
+    serializers,
+    debug_path: bool,
+) -> Serializer[List]:
+    if debug_path:
+        serializers = [
+            get_element_serializer(serializer, i)
+            for i, serializer in enumerate(serializers)
+        ]
+
     def tuple_serializer(data):
         return [serializer(x) for x, serializer in zip(data, serializers)]
 
@@ -102,7 +160,7 @@ def get_tuple_serializer(serializers) -> Serializer[List]:
 
 
 def get_collection_any_serializer() -> Serializer[List[Any]]:
-    return lambda data: list(data)
+    return list
 
 
 def get_vars_serializer(factory) -> Serializer:
@@ -127,11 +185,23 @@ def stub_serializer(data: T) -> T:
 
 
 def get_dict_serializer(
-    key_serializer: Serializer[K], serializer: Serializer[T]
+    key_serializer: Serializer[K], serializer: Serializer[T],
+    debug_path: bool,
 ) -> Serializer[Dict[Any, Any]]:
-    return lambda data: {
-        key_serializer(k): serializer(v) for k, v in data.items()
-    }
+    if debug_path:
+        def dict_serializer(data):
+            return {
+                key_serializer(k): dyn_element_serializer(serializer, v, k)
+                for k, v in data.items()
+            }
+    else:
+        def dict_serializer(data):
+            return {
+                key_serializer(k): serializer(v)
+                for k, v in data.items()
+            }
+
+    return dict_serializer
 
 
 def get_lazy_serializer(factory) -> Serializer:
@@ -188,6 +258,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             get_dataclass_fields(schema, class_),
             getattr,
             schema.unknown,
+            debug_path=debug_path,
         )
     if is_namedtuple(class_):
         return get_complex_serializer(
@@ -196,6 +267,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             get_namedtuple_fields(schema, class_),
             getattr,
             schema.unknown,
+            debug_path=debug_path,
         )
     if is_typeddict(class_) or (is_generic_concrete(class_) and is_typeddict(class_.__origin__)):
         return get_complex_serializer(
@@ -204,6 +276,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             get_typeddict_fields(schema, class_),
             getitem,
             schema.unknown,
+            debug_path=debug_path,
         )
     if is_any(class_):
         return get_lazy_serializer(factory)
@@ -233,22 +306,41 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             return get_collection_any_serializer()
         elif len(class_.__args__) == 2 and class_.__args__[1] is Ellipsis:
             item_serializer = factory.serializer(class_.__args__[0])
-            return get_collection_serializer(item_serializer)
+            return get_collection_serializer(
+                item_serializer,
+                debug_path=debug_path,
+            )
         else:
-            return get_tuple_serializer(tuple(factory.serializer(x) for x in class_.__args__))
+            return get_tuple_serializer(
+                tuple(factory.serializer(x) for x in class_.__args__),
+                debug_path=debug_path,
+            )
     if is_generic_concrete(class_) and is_dict(class_.__origin__):
         key_type_arg = class_.__args__[0] if class_.__args__ else Any
         value_type_arg = class_.__args__[1] if class_.__args__ else Any
-        return get_dict_serializer(factory.serializer(key_type_arg),
-                                   factory.serializer(value_type_arg))
+        return get_dict_serializer(
+            factory.serializer(key_type_arg),
+            factory.serializer(value_type_arg),
+            debug_path=debug_path,
+        )
     if is_dict(class_):
-        return get_dict_serializer(get_lazy_serializer(factory), get_lazy_serializer(factory))
+        return get_dict_serializer(
+            get_lazy_serializer(factory),
+            get_lazy_serializer(factory),
+            debug_path=debug_path,
+        )
     if is_generic_concrete(class_) and is_iterable(class_.__origin__):
         item_serializer = factory.serializer(class_.__args__[0] if class_.__args__ else Any)
-        return get_collection_serializer(item_serializer)
+        return get_collection_serializer(
+            item_serializer,
+            debug_path=debug_path,
+        )
     if is_iterable(class_):
         item_serializer = get_lazy_serializer(factory)
-        return get_collection_serializer(item_serializer)
+        return get_collection_serializer(
+            item_serializer,
+            debug_path=debug_path,
+        )
 
     if isinstance(class_, type):
         if instance_wont_have_dict(class_):
