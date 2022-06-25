@@ -61,7 +61,7 @@ def test_iso_format_provider_datetime(strict_coercion, debug_path):
     check_any_dt(parser)
 
     serializer = factory.provide(
-        SerializerRequest(type=datetime)
+        SerializerRequest(type=datetime, debug_path=debug_path)
     )
 
     assert serializer(datetime(2011, 11, 4, 0, 0)) == '2011-11-04T00:00:00'
@@ -85,7 +85,7 @@ def test_iso_format_provider_date(strict_coercion, debug_path):
     check_any_dt(parser)
 
     serializer = factory.provide(
-        SerializerRequest(type=date)
+        SerializerRequest(type=date, debug_path=debug_path)
     )
 
     assert serializer(date(2019, 12, 4)) == '2019-12-04'
@@ -113,7 +113,7 @@ def test_iso_format_provider_time(strict_coercion, debug_path):
     check_any_dt(parser)
 
     serializer = factory.provide(
-        SerializerRequest(type=time)
+        SerializerRequest(type=time, debug_path=debug_path)
     )
 
     assert serializer(time(4, 23, 1)) == '04:23:01'
@@ -138,7 +138,7 @@ def test_datetime_format_provider(strict_coercion, debug_path):
     check_any_dt(parser)
 
     serializer = factory.provide(
-        SerializerRequest(type=datetime)
+        SerializerRequest(type=datetime, debug_path=debug_path)
     )
 
     assert serializer(datetime(year=3045, month=2, day=13)) == "3045-02-13"
@@ -162,7 +162,7 @@ def test_timedelta_provider(strict_coercion, debug_path):
     assert parser(600) == timedelta(minutes=10)
 
     serializer = factory.provide(
-        SerializerRequest(type=timedelta)
+        SerializerRequest(type=timedelta, debug_path=debug_path)
     )
 
     assert serializer(timedelta(minutes=10)) == 600
@@ -212,7 +212,7 @@ def test_bytes_provider(strict_coercion, debug_path):
     )
 
     serializer = factory.provide(
-        SerializerRequest(type=bytes)
+        SerializerRequest(type=bytes, debug_path=debug_path)
     )
 
     assert serializer(b'abcd') == 'YWJjZA=='
@@ -240,7 +240,7 @@ def test_bytearray_provider(strict_coercion, debug_path):
     )
 
     serializer = factory.provide(
-        SerializerRequest(type=bytearray)
+        SerializerRequest(type=bytearray, debug_path=debug_path)
     )
 
     assert serializer(bytearray(b'abcd')) == 'YWJjZA=='

@@ -1,6 +1,6 @@
 import inspect
 from abc import abstractmethod, ABC
-from dataclasses import fields as dc_fields, is_dataclass, MISSING as DC_MISSING, Field as DCField, replace
+from dataclasses import is_dataclass, MISSING as DC_MISSING, Field as DCField, replace, fields as dc_fields
 from inspect import Signature, Parameter
 from types import MappingProxyType
 from typing import Any, get_type_hints, final, Dict, Iterable, Callable
@@ -10,11 +10,10 @@ from .definitions import (
     InputFigureRequest, OutputFigureRequest,
     ExtraKwargs,
 )
-from ..definitions import DefaultValue, DefaultFactory, Default, NoDefault
+from ..definitions import DefaultValue, DefaultFactory, Default, NoDefault, AttrAccessor, ItemAccessor
 from ..essential import Mediator, CannotProvide
-from ..request_cls import FieldRM, InputFieldRM, ParamKind, OutputFieldRM, AccessKind
+from ..request_cls import InputFieldRM, ParamKind, OutputFieldRM
 from ..static_provider import StaticProvider, static_provision_action
-from ...common import VarTuple
 from ...type_tools import is_typed_dict_class, is_named_tuple_class
 
 _PARAM_KIND_CONV: Dict[Any, ParamKind] = {
@@ -123,9 +122,8 @@ class NamedTupleFigureProvider(TypeOnlyInputFigureProvider, TypeOnlyOutputFigure
                     name=fld.name,
                     type=fld.type,
                     default=fld.default,
-                    is_required=True,
                     metadata=fld.metadata,
-                    access_kind=AccessKind.ATTR,
+                    accessor=AttrAccessor(attr_name=fld.name, is_required=True),
                 )
                 for fld in self._get_input_figure(tp).fields
             ),
@@ -133,84 +131,48 @@ class NamedTupleFigureProvider(TypeOnlyInputFigureProvider, TypeOnlyOutputFigure
         )
 
 
-def _to_inp(param_kind: ParamKind, fields: Iterable[FieldRM]) -> VarTuple[InputFieldRM]:
-    return tuple(
-        InputFieldRM(
-            name=f.name,
-            type=f.type,
-            default=f.default,
-            is_required=f.is_required,
-            metadata=f.metadata,
-            param_kind=param_kind,
-        )
-        for f in fields
-    )
-
-
-def _to_out(access_kind: AccessKind, fields: Iterable[FieldRM]) -> VarTuple[OutputFieldRM]:
-    return tuple(
-        OutputFieldRM(
-            name=f.name,
-            type=f.type,
-            default=f.default,
-            is_required=f.is_required,
-            metadata=f.metadata,
-            access_kind=access_kind,
-        )
-        for f in fields
-    )
-
-
 class TypedDictFigureProvider(TypeOnlyInputFigureProvider, TypeOnlyOutputFigureProvider):
-    def _get_fields(self, tp):
+    def _get_fields_are_required(self, tp) -> bool:
         if not is_typed_dict_class(tp):
             raise CannotProvide
 
-        is_required = tp.__total__
-
-        return tuple(
-            FieldRM(
-                type=tp,
-                name=name,
-                default=NoDefault(),
-                is_required=is_required,
-                metadata=MappingProxyType({}),
-            )
-            for name, tp in get_type_hints(tp).items()
-        )
+        return tp.__total__
 
     def _get_input_figure(self, tp):
+        are_required = self._get_fields_are_required(tp)
+
         return InputFigure(
             constructor=tp,
-            fields=_to_inp(ParamKind.KW_ONLY, self._get_fields(tp)),
+            fields=tuple(
+                InputFieldRM(
+                    type=tp,
+                    name=name,
+                    default=NoDefault(),
+                    is_required=are_required,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.KW_ONLY,
+                )
+                for name, tp in get_type_hints(tp).items()
+            ),
             extra=None,
         )
 
     def _get_output_figure(self, tp):
+        are_required = self._get_fields_are_required(tp)
+
         return OutputFigure(
-            fields=_to_out(AccessKind.ITEM, self._get_fields(tp)),
+            fields=tuple(
+                OutputFieldRM(
+                    type=tp,
+                    name=name,
+                    default=NoDefault(),
+                    accessor=ItemAccessor(name, are_required),
+                    metadata=MappingProxyType({}),
+                )
+                for name, tp in get_type_hints(tp).items()
+            ),
             extra=None,
         )
-
-
-def get_dc_default(field: DCField) -> Default:
-    if field.default is not DC_MISSING:
-        return DefaultValue(field.default)
-    if field.default_factory is not DC_MISSING:
-        return DefaultFactory(field.default_factory)
-    return NoDefault()
-
-
-def _dc_field_to_field_rm(fld: DCField, required_det: Callable[[Default], bool]):
-    default = get_dc_default(fld)
-
-    return FieldRM(
-        type=fld.type,
-        name=fld.name,
-        default=default,
-        is_required=required_det(default),
-        metadata=fld.metadata,
-    )
 
 
 def all_dc_fields(cls) -> Dict[str, DCField]:
@@ -221,7 +183,26 @@ def all_dc_fields(cls) -> Dict[str, DCField]:
     return cls.__dataclass_fields__
 
 
-# TODO: scan init if init=False at dataclass
+def get_dc_default(field: DCField) -> Default:
+    if field.default is not DC_MISSING:
+        return DefaultValue(field.default)
+    if field.default_factory is not DC_MISSING:
+        return DefaultFactory(field.default_factory)
+    return NoDefault()
+
+
+def create_inp_field_rm(dc_field: DCField):
+    default = get_dc_default(dc_field)
+    return InputFieldRM(
+        type=dc_field.type,
+        name=dc_field.name,
+        default=default,
+        is_required=default == NoDefault(),
+        metadata=dc_field.metadata,
+        param_kind=ParamKind.POS_OR_KW,
+    )
+
+
 class DataclassFigureProvider(TypeOnlyInputFigureProvider, TypeOnlyOutputFigureProvider):
     """This provider does not work properly if __init__ signature differs from
     that would be created by dataclass decorator.
@@ -245,15 +226,9 @@ class DataclassFigureProvider(TypeOnlyInputFigureProvider, TypeOnlyOutputFigureP
 
         return InputFigure(
             constructor=tp,
-            fields=_to_inp(
-                ParamKind.POS_OR_KW,
-                [
-                    _dc_field_to_field_rm(
-                        name_to_dc_field[field_name],
-                        lambda default: default == NoDefault()
-                    )
-                    for field_name in init_params
-                ]
+            fields=tuple(
+                create_inp_field_rm(name_to_dc_field[field_name])
+                for field_name in init_params
             ),
             extra=None,
         )
@@ -262,13 +237,18 @@ class DataclassFigureProvider(TypeOnlyInputFigureProvider, TypeOnlyOutputFigureP
         if not is_dataclass(tp):
             raise CannotProvide
 
+        name_to_dc_field = all_dc_fields(tp)
+
         return OutputFigure(
-            fields=_to_out(
-                AccessKind.ATTR,
-                [
-                    _dc_field_to_field_rm(fld, lambda default: True)
-                    for fld in dc_fields(tp)
-                ]
+            fields=tuple(
+                OutputFieldRM(
+                    type=field.type,
+                    name=field.name,
+                    default=get_dc_default(name_to_dc_field[field.name]),
+                    accessor=AttrAccessor(field.name, True),
+                    metadata=field.metadata,
+                )
+                for field in dc_fields(tp)
             ),
             extra=None,
         )

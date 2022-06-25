@@ -2,8 +2,8 @@ from types import MappingProxyType
 from typing import TypedDict
 
 from dataclass_factory_30.provider import NoDefault, TypedDictFigureProvider, InputFigure, OutputFigure
-from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
-from dataclass_factory_30.provider.request_cls import ParamKind, AccessKind, FieldRM
+from dataclass_factory_30.provider.definitions import ItemAccessor
+from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM
 
 
 class Foo(TypedDict, total=True):
@@ -16,24 +16,6 @@ class Bar(TypedDict, total=False):
     b: str
 
 
-TOTAL_FIELDS = (
-    FieldRM(
-        type=int,
-        name='a',
-        default=NoDefault(),
-        is_required=True,
-        metadata=MappingProxyType({})
-    ),
-    FieldRM(
-        type=str,
-        name='b',
-        default=NoDefault(),
-        is_required=True,
-        metadata=MappingProxyType({})
-    ),
-)
-
-
 def test_total_input():
     assert (
         TypedDictFigureProvider()._get_input_figure(Foo)
@@ -41,7 +23,24 @@ def test_total_input():
         InputFigure(
             constructor=Foo,
             extra=None,
-            fields=_to_inp(ParamKind.KW_ONLY, TOTAL_FIELDS),
+            fields=(
+                InputFieldRM(
+                    type=int,
+                    name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.KW_ONLY,
+                ),
+                InputFieldRM(
+                    type=str,
+                    name='b',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.KW_ONLY,
+                ),
+            ),
         )
     )
 
@@ -52,27 +51,24 @@ def test_total_output():
         ==
         OutputFigure(
             extra=None,
-            fields=_to_out(AccessKind.ITEM, TOTAL_FIELDS),
+            fields=(
+                OutputFieldRM(
+                    type=int,
+                    name='a',
+                    default=NoDefault(),
+                    metadata=MappingProxyType({}),
+                    accessor=ItemAccessor('a', is_required=True),
+                ),
+                OutputFieldRM(
+                    type=str,
+                    name='b',
+                    default=NoDefault(),
+                    metadata=MappingProxyType({}),
+                    accessor=ItemAccessor('b', is_required=True),
+                ),
+            ),
         )
     )
-
-
-NON_TOTAL_FIELDS = (
-    FieldRM(
-        type=int,
-        name='a',
-        default=NoDefault(),
-        is_required=False,
-        metadata=MappingProxyType({})
-    ),
-    FieldRM(
-        type=str,
-        name='b',
-        default=NoDefault(),
-        is_required=False,
-        metadata=MappingProxyType({})
-    ),
-)
 
 
 def test_non_total_input():
@@ -82,7 +78,24 @@ def test_non_total_input():
         InputFigure(
             constructor=Bar,
             extra=None,
-            fields=_to_inp(ParamKind.KW_ONLY, NON_TOTAL_FIELDS),
+            fields=(
+                InputFieldRM(
+                    type=int,
+                    name='a',
+                    default=NoDefault(),
+                    is_required=False,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.KW_ONLY,
+                ),
+                InputFieldRM(
+                    type=str,
+                    name='b',
+                    default=NoDefault(),
+                    is_required=False,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.KW_ONLY,
+                ),
+            ),
         )
     )
 
@@ -93,6 +106,21 @@ def test_non_total_output():
         ==
         OutputFigure(
             extra=None,
-            fields=_to_out(AccessKind.ITEM, NON_TOTAL_FIELDS),
+            fields=(
+                OutputFieldRM(
+                    type=int,
+                    name='a',
+                    default=NoDefault(),
+                    metadata=MappingProxyType({}),
+                    accessor=ItemAccessor('a', is_required=False),
+                ),
+                OutputFieldRM(
+                    type=str,
+                    name='b',
+                    default=NoDefault(),
+                    metadata=MappingProxyType({}),
+                    accessor=ItemAccessor('b', is_required=False),
+                ),
+            ),
         )
     )

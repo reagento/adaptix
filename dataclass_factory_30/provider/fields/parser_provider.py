@@ -36,7 +36,9 @@ def _merge_iters(args: Iterable[Iterable[T]]) -> List[T]:
 
 class BuiltinExtractionImageProvider(StaticProvider):
     @static_provision_action(InputExtractionImageRequest)
-    def _provide_extraction_image(self, mediator: Mediator, request: InputExtractionImageRequest) -> InputExtractionImage:
+    def _provide_extraction_image(
+        self, mediator: Mediator,  request: InputExtractionImageRequest,
+    ) -> InputExtractionImage:
         name_mapping = mediator.provide(
             InputNameMappingRequest(
                 type=request.initial_request.type,

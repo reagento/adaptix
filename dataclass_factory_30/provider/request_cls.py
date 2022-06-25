@@ -1,8 +1,9 @@
+from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TypeVar, List, Generic, Mapping, Any
 
-from .definitions import Default
+from .definitions import Default, Accessor
 from .essential import (
     Mediator,
     Provider,
@@ -23,18 +24,13 @@ class TypeHintRM(Request[T], Generic[T]):
 
 
 @dataclass(frozen=True)
-class FieldRM(TypeHintRM[T], Generic[T]):
+class FieldRM(TypeHintRM[T], ABC, Generic[T]):
     name: str
     default: Default
-    is_required: bool
     # Mapping almost never defines __hash__,
     # so it will be more convenient to exclude this field
     # from hash computation
     metadata: Mapping[Any, Any] = field(hash=False)
-
-    @property
-    def is_optional(self):
-        return not self.is_required
 
 
 class ParamKind(Enum):
@@ -45,17 +41,25 @@ class ParamKind(Enum):
 
 @dataclass(frozen=True)
 class InputFieldRM(FieldRM[T], Generic[T]):
+    is_required: bool
     param_kind: ParamKind
 
-
-class AccessKind(Enum):
-    ATTR = 0
-    ITEM = 1
+    @property
+    def is_optional(self):
+        return not self.is_required
 
 
 @dataclass(frozen=True)
 class OutputFieldRM(FieldRM[T], Generic[T]):
-    access_kind: AccessKind
+    accessor: Accessor
+
+    @property
+    def is_optional(self) -> bool:
+        return self.accessor.access_error is None
+
+    @property
+    def is_required(self) -> bool:
+        return not self.is_optional
 
 
 @dataclass(frozen=True)
@@ -90,6 +94,8 @@ class ParserFieldRequest(ParserRequest, InputFieldRM[Parser]):
 
 @dataclass(frozen=True)
 class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin):
+    debug_path: bool
+
     @classmethod
     def eval_pipeline(
         cls,

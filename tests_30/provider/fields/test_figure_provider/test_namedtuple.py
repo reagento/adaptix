@@ -4,38 +4,38 @@ from typing import Any, NamedTuple
 
 from dataclass_factory_30.provider import DefaultValue, NoDefault, NamedTupleFigureProvider, InputFigure, \
     OutputFigure
-from dataclass_factory_30.provider.fields.figure_provider import _to_inp, _to_out
-from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, AccessKind, OutputFieldRM, FieldRM
+from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM, FieldRM
+from dataclass_factory_30.provider.definitions import AttrAccessor
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')
 
 
 def test_order_ab():
-    fields = (
-        FieldRM(
-            type=Any,
-            name='a',
-            default=NoDefault(),
-            is_required=True,
-            metadata=MappingProxyType({})
-        ),
-        FieldRM(
-            type=Any,
-            name='b',
-            default=NoDefault(),
-            is_required=True,
-            metadata=MappingProxyType({})
-        ),
-    )
-
     assert (
         NamedTupleFigureProvider()._get_input_figure(FooAB)
         ==
         InputFigure(
             constructor=FooAB,
             extra=None,
-            fields=_to_inp(ParamKind.POS_OR_KW, fields),
+            fields=(
+                InputFieldRM(
+                    type=Any,
+                    name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    param_kind=ParamKind.POS_OR_KW,
+                    metadata=MappingProxyType({}),
+                ),
+                InputFieldRM(
+                    type=Any,
+                    name='b',
+                    default=NoDefault(),
+                    is_required=True,
+                    param_kind=ParamKind.POS_OR_KW,
+                    metadata=MappingProxyType({}),
+                ),
+            ),
         )
     )
 
@@ -44,36 +44,51 @@ def test_order_ab():
         ==
         OutputFigure(
             extra=None,
-            fields=_to_out(AccessKind.ATTR, fields),
+            fields=(
+                OutputFieldRM(
+                    type=Any,
+                    name='a',
+                    default=NoDefault(),
+                    accessor=AttrAccessor('a', is_required=True),
+                    metadata=MappingProxyType({}),
+                ),
+                OutputFieldRM(
+                    type=Any,
+                    name='b',
+                    default=NoDefault(),
+                    accessor=AttrAccessor('b', is_required=True),
+                    metadata=MappingProxyType({}),
+                ),
+            ),
         )
     )
 
 
 def test_order_ba():
-    fields = (
-        FieldRM(
-            type=Any,
-            name='b',
-            default=NoDefault(),
-            is_required=True,
-            metadata=MappingProxyType({})
-        ),
-        FieldRM(
-            type=Any,
-            name='a',
-            default=NoDefault(),
-            is_required=True,
-            metadata=MappingProxyType({})
-        ),
-    )
-
     assert (
         NamedTupleFigureProvider()._get_input_figure(FooBA)
         ==
         InputFigure(
             constructor=FooBA,
             extra=None,
-            fields=_to_inp(ParamKind.POS_OR_KW, fields),
+            fields=(
+                InputFieldRM(
+                    type=Any,
+                    name='b',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                ),
+                InputFieldRM(
+                    type=Any,
+                    name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                ),
+            ),
         )
     )
 
@@ -82,7 +97,22 @@ def test_order_ba():
         ==
         OutputFigure(
             extra=None,
-            fields=_to_out(AccessKind.ATTR, fields),
+            fields=(
+                OutputFieldRM(
+                    type=Any,
+                    name='b',
+                    default=NoDefault(),
+                    metadata=MappingProxyType({}),
+                    accessor=AttrAccessor('b', is_required=True),
+                ),
+                OutputFieldRM(
+                    type=Any,
+                    name='a',
+                    default=NoDefault(),
+                    metadata=MappingProxyType({}),
+                    accessor=AttrAccessor('a', is_required=True),
+                ),
+            ),
         )
     )
 
@@ -140,25 +170,22 @@ def test_defaults():
                     type=Any,
                     name='a',
                     default=NoDefault(),
-                    is_required=True,
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
+                    accessor=AttrAccessor('a', is_required=True),
                 ),
                 OutputFieldRM(
                     type=Any,
                     name='b',
                     default=DefaultValue(0),
-                    is_required=True,
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
+                    accessor=AttrAccessor('b', is_required=True),
                 ),
                 OutputFieldRM(
                     type=Any,
                     name='c',
                     default=DefaultValue(func),
-                    is_required=True,
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
+                    accessor=AttrAccessor('c', is_required=True),
                 ),
             ),
         )
@@ -169,30 +196,30 @@ BarA = NamedTuple('BarA', a=int, b=str)
 
 
 def test_class_hinted_namedtuple():
-    fields = (
-        FieldRM(
-            type=int,
-            name='a',
-            default=NoDefault(),
-            is_required=True,
-            metadata=MappingProxyType({})
-        ),
-        FieldRM(
-            type=str,
-            name='b',
-            default=NoDefault(),
-            is_required=True,
-            metadata=MappingProxyType({})
-        ),
-    )
-
     assert (
         NamedTupleFigureProvider()._get_input_figure(BarA)
         ==
         InputFigure(
             constructor=BarA,
             extra=None,
-            fields=_to_inp(ParamKind.POS_OR_KW, fields),
+            fields=(
+                InputFieldRM(
+                    type=int,
+                    name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                ),
+                InputFieldRM(
+                    type=str,
+                    name='b',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                ),
+            ),
         )
     )
 
@@ -201,7 +228,22 @@ def test_class_hinted_namedtuple():
         ==
         OutputFigure(
             extra=None,
-            fields=_to_out(AccessKind.ATTR, fields),
+            fields=(
+                OutputFieldRM(
+                    type=int,
+                    name='a',
+                    default=NoDefault(),
+                    metadata=MappingProxyType({}),
+                    accessor=AttrAccessor('a', is_required=True),
+                ),
+                OutputFieldRM(
+                    type=str,
+                    name='b',
+                    default=NoDefault(),
+                    metadata=MappingProxyType({}),
+                    accessor=AttrAccessor('b', is_required=True),
+                ),
+            ),
         )
     )
 
@@ -251,17 +293,15 @@ def test_hinted_namedtuple():
                     type=int,
                     name='a',
                     default=NoDefault(),
-                    is_required=True,
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
+                    accessor=AttrAccessor('a', is_required=True),
                 ),
                 OutputFieldRM(
                     type=str,
                     name='b',
                     default=DefaultValue('abc'),
-                    is_required=True,
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
+                    accessor=AttrAccessor('b', is_required=True),
                 ),
             ),
         )

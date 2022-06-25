@@ -2,18 +2,18 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Dict, List, Union, Callable, Any, Collection
 
-from ..definitions import (
-    DefaultValue, DefaultFactory,
-)
+from .definitions import BaseFigure, OutputFigure, InputFigure
+from ..definitions import DefaultValue, DefaultFactory
 from ..essential import Request, Mediator
-from ..fields.definitions import BaseFigure, OutputFigure, InputFigure
 from ..request_cls import TypeHintRM
 from ..static_provider import StaticProvider, static_provision_action
+from ...common import VarTuple
 from ...utils import SingletonMeta
 
 T = TypeVar('T')
 
 FldPathElem = Union[str, int]
+Path = VarTuple[FldPathElem]
 
 
 # Policies how to process extra data
@@ -127,7 +127,7 @@ class OutFieldCrown(BaseFieldCrown):
 
 
 OutCrown = Union[OutDictCrown, OutListCrown, OutNoneCrown, OutFieldCrown]
-OutRootCrown = Union[OutDictCrown, OutListCrown]
+RootOutCrown = Union[OutDictCrown, OutListCrown]
 
 # --------  Name Mapping -------- #
 

@@ -63,6 +63,7 @@ def test_name_provider(strict_coercion, debug_path):
     serializer = factory.provide(
         SerializerRequest(
             type=MyEnum,
+            debug_path=debug_path,
         )
     )
 
@@ -105,6 +106,7 @@ def test_exact_value_provider(strict_coercion, debug_path):
     serializer = factory.provide(
         SerializerRequest(
             type=MyEnum,
+            debug_path=debug_path,
         )
     )
 
@@ -169,6 +171,7 @@ def test_value_provider(strict_coercion, debug_path):
     serializer = factory.provide(
         SerializerRequest(
             type=MyEnum,
+            debug_path=debug_path,
         )
     )
 
@@ -199,6 +202,7 @@ def test_provider_selecting_any(strict_coercion, debug_path):
         all_enums._check_request(
             SerializerRequest(
                 type=tp,
+                debug_path=debug_path,
             )
         )
 
@@ -218,6 +222,7 @@ def test_provider_selecting_iter(strict_coercion, debug_path):
     my_enum._check_request(
         SerializerRequest(
             type=MyEnum,
+            debug_path=debug_path,
         )
     )
 
@@ -237,6 +242,7 @@ def test_provider_selecting_iter(strict_coercion, debug_path):
         lambda: my_enum._check_request(
             SerializerRequest(
                 type=MyIntEnum,
+                debug_path=debug_path,
             )
         )
     )
@@ -262,6 +268,7 @@ def test_provider_selecting_int_enum(strict_coercion, debug_path):
         lambda: my_int_enum._check_request(
             SerializerRequest(
                 type=int,
+                debug_path=debug_path,
             )
         )
     )

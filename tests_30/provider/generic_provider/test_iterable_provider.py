@@ -120,10 +120,12 @@ def test_parsing(factory, strict_coercion, debug_path):
         )
 
 
-def test_serializing(factory):
+@parametrize_bool('debug_path')
+def test_serializing(factory, debug_path):
     list_serializer = factory.provide(
         SerializerRequest(
             type=List[str],
+            debug_path=debug_path,
         )
     )
 
@@ -133,6 +135,7 @@ def test_serializing(factory):
     iterable_serializer = factory.provide(
         SerializerRequest(
             type=Iterable[str],
+            debug_path=debug_path,
         )
     )
 

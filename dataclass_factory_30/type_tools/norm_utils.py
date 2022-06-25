@@ -51,7 +51,7 @@ def is_generic(norm: BaseNormType) -> bool:
 
     args: Tuple
     if st_norm.origin == tuple and st_norm.args[-1] is ...:
-        args = (st_norm.args[0], )
+        args = (st_norm.args[0],)
     else:
         args = st_norm.args
 

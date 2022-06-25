@@ -4,7 +4,8 @@ from typing import ClassVar
 
 from dataclass_factory_30.provider import DefaultValue, DefaultFactory, DataclassFigureProvider, InputFigure, \
     NoDefault, OutputFigure
-from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, AccessKind, InputFieldRM
+from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, InputFieldRM
+from dataclass_factory_30.provider.definitions import AttrAccessor
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 
@@ -97,41 +98,36 @@ def test_output():
                     type=int,
                     name='a',
                     default=NoDefault(),
-                    is_required=True,
+                    accessor=AttrAccessor('a', is_required=True),
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
                 ),
                 OutputFieldRM(
                     type=str,
                     name='d',
                     default=DefaultValue('text'),
-                    is_required=True,
+                    accessor=AttrAccessor('d', is_required=True),
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
                 ),
                 OutputFieldRM(
                     type=list,
                     name='e',
                     default=DefaultFactory(list),
-                    is_required=True,
+                    accessor=AttrAccessor('e', is_required=True),
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
                 ),
                 OutputFieldRM(
                     type=int,
                     name='f',
                     default=DefaultValue(3),
-                    is_required=True,
+                    accessor=AttrAccessor('f', is_required=True),
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
                 ),
                 OutputFieldRM(
                     type=int,
                     name='i',
                     default=DefaultValue(4),
-                    is_required=True,
+                    accessor=AttrAccessor('i', is_required=True),
                     metadata=MappingProxyType({'meta': 'data'}),
-                    access_kind=AccessKind.ATTR,
                 ),
             ),
         )
@@ -186,17 +182,15 @@ def test_inheritance():
                     type=int,
                     name='a',
                     default=NoDefault(),
-                    is_required=True,
+                    accessor=AttrAccessor('a', is_required=True),
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
                 ),
                 OutputFieldRM(
                     type=int,
                     name='b',
                     default=NoDefault(),
-                    is_required=True,
+                    accessor=AttrAccessor('b', is_required=True),
                     metadata=MappingProxyType({}),
-                    access_kind=AccessKind.ATTR,
                 ),
             ),
         )

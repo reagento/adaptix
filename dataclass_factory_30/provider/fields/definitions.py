@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Union, Generic, TypeVar, Callable, Any, Mapping, Collection, MutableMapping
+from typing import Union, Generic, TypeVar, Callable, Any, Mapping, Collection
 
 from .. import Request
 from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM, ParserRequest

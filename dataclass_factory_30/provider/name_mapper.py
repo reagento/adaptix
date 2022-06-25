@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field as dc_field
 from typing import Optional, List, Dict, Collection
 
+from . import DefaultValue, DefaultFactory, NoDefault
 from .essential import Mediator
 from .fields import (
     InpDictCrown, BaseNameMappingRequest, BaseFigure, ExtraTargets,
@@ -12,10 +13,10 @@ from .fields import (
     OutputNameMapping, NameMappingProvider
 )
 from .name_style import NameStyle, convert_snake_style
+from .request_cls import OutputFieldRM
 
 
 # TODO: Add support for path in map
-
 
 @dataclass(frozen=True)
 class NameMapper(NameMappingProvider):
@@ -46,14 +47,16 @@ class NameMapper(NameMappingProvider):
     class will raise error
     """
 
-    skip: List[str] = field(default_factory=list)
+    skip: List[str] = dc_field(default_factory=list)
     only_mapped: bool = False
     only: Optional[List[str]] = None
     skip_internal: bool = True
 
-    map: Dict[str, str] = field(default_factory=dict)
+    map: Dict[str, str] = dc_field(default_factory=dict)
     trim_trailing_underscore: bool = True
     name_style: Optional[NameStyle] = None
+
+    omit_default: bool = True  # TODO: may be ask factory for this parameter
 
     def _should_skip(self, name: str) -> bool:
         if name in self.skip:
@@ -180,5 +183,31 @@ class NameMapper(NameMappingProvider):
             skipped_extra_targets=base_name_mapping.skipped_extra_targets,
         )
 
+    def _create_sieve(self, field: OutputFieldRM) -> Sieve:
+        if isinstance(field.default, DefaultValue):
+            default_value = field.default.value
+
+            return lambda x: x == default_value
+
+        if isinstance(field.default, DefaultFactory):
+            default_factory = field.default.factory
+
+            return lambda x: x == default_factory()
+
+        raise ValueError
+
     def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> OutputNameMapping:
-        return self._provide_name_mapping(mediator, request)
+        base_name_mapping = self._provide_name_mapping(mediator, request)
+
+        if self.omit_default:
+            sieves = {
+                field.name: self._create_sieve(field)
+                for field in request.figure.fields if field.default != NoDefault()
+            }
+        else:
+            sieves = {}
+
+        return OutputNameMapping(
+            crown=self._to_out_crown(base_name_mapping.crown, filler=DefaultValue(None), sieves=sieves),
+            skipped_extra_targets=base_name_mapping.skipped_extra_targets,
+        )

@@ -19,7 +19,7 @@ from .basic_utils import (
     is_subclass_soft, is_user_defined_generic, is_new_type,
     create_union
 )
-from ..common import TypeHint
+from ..common import TypeHint, VarTuple
 
 
 class BaseNormType(Hashable, ABC):
@@ -30,7 +30,7 @@ class BaseNormType(Hashable, ABC):
 
     @property
     @abstractmethod
-    def args(self) -> Tuple[Any, ...]:
+    def args(self) -> VarTuple[Any]:
         pass
 
     @property
@@ -48,7 +48,7 @@ class NormType(BaseNormType):
     def __init__(
         self,
         origin: TypeHint,
-        args: Tuple[Hashable, ...],
+        args: VarTuple[Hashable],
         *,
         source: TypeHint
     ):
@@ -61,7 +61,7 @@ class NormType(BaseNormType):
         return self._origin
 
     @property
-    def args(self) -> Tuple[Any, ...]:
+    def args(self) -> VarTuple[Any]:
         return self._args
 
     @property

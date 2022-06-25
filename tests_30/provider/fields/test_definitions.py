@@ -1,8 +1,9 @@
 import pytest
 
 from dataclass_factory_30.provider import NoDefault
+from dataclass_factory_30.provider.definitions import AttrAccessor
 from dataclass_factory_30.provider.fields.definitions import InputFigure, OutputFigure, ExtraTargets
-from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM, AccessKind
+from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM
 
 
 def stub_constructor(*args, **kwargs):
@@ -137,17 +138,15 @@ def test_name_duplicates():
                     name="a",
                     type=int,
                     default=NoDefault(),
-                    is_required=True,
+                    accessor=AttrAccessor("a", is_required=True),
                     metadata={},
-                    access_kind=AccessKind.ATTR,
                 ),
                 OutputFieldRM(
                     name="a",
                     type=int,
                     default=NoDefault(),
-                    is_required=True,
+                    accessor=AttrAccessor("a", is_required=True),
                     metadata={},
-                    access_kind=AccessKind.ATTR,
                 ),
             )
         )
@@ -178,9 +177,8 @@ def test_wild_targets():
                     name="a",
                     type=int,
                     default=NoDefault(),
-                    is_required=True,
+                    accessor=AttrAccessor("a", is_required=True),
                     metadata={},
-                    access_kind=AccessKind.ATTR,
                 ),
             )
         )

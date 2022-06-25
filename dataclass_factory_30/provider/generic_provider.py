@@ -322,11 +322,11 @@ class DictProvider(ParserProvider, SerializerProvider):
         key, value = self._fetch_key_value(request)
 
         key_serializer = mediator.provide(
-            SerializerRequest(type=key.source)
+            replace(request, type=key.source),
         )
 
         value_serializer = mediator.provide(
-            SerializerRequest(type=value.source)
+            replace(request, type=value.source),
         )
 
         def dict_serializer(data: Mapping):
@@ -355,8 +355,8 @@ class BaseEnumProvider(ParserProvider, SerializerProvider, ABC):
 
             if Enum in bounds:
                 raise ValueError(
-                    f"Enum can not be element of bounds."
-                    f" Only is Enum children is accepted"
+                    f"{Enum} can not be element of bounds."
+                    f" Only is {Enum} children are accepted"
                 )
 
         self._bounds = bounds
