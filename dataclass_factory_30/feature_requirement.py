@@ -1,5 +1,6 @@
 import sys
-from typing import Tuple
+
+from dataclass_factory_30.common import VarTuple
 
 
 def _true():
@@ -17,7 +18,7 @@ class PythonVersionRequirement:
     def make(cls, *ver: int):
         return cls(ver)
 
-    def __init__(self, ver: Tuple[int, ...]):
+    def __init__(self, ver: VarTuple[int]):
         self.ver = ver
         self.is_meet = sys.version_info >= ver
         self.__bool__ = _true if self.is_meet else _false

@@ -1,6 +1,8 @@
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
-from typing import TypeVar, Generic, Optional, List, Tuple, Sequence, Type
+from typing import TypeVar, Generic, Optional, List, Sequence, Type
+
+from ..common import VarTuple
 
 T = TypeVar('T')
 
@@ -84,11 +86,11 @@ class PipelineEvalMixin(Request):
 
 
 class Pipeline(Provider):
-    def __init__(self, elements: Tuple[Provider, ...]):
+    def __init__(self, elements: VarTuple[Provider]):
         self._elements = elements
 
     @property
-    def elements(self) -> Tuple[Provider, ...]:
+    def elements(self) -> VarTuple[Provider]:
         return self._elements
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:

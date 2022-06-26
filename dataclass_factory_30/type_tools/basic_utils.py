@@ -1,6 +1,6 @@
-from typing import Generic, Iterable, Tuple, Union
+from typing import Generic, Iterable, Union
 
-from ..common import TypeHint
+from ..common import TypeHint, VarTuple
 
 TYPED_DICT_MCS_TUPLE: tuple = ()
 
@@ -36,7 +36,7 @@ def strip_alias(type_hint: TypeHint) -> TypeHint:
         return type_hint
 
 
-def get_args(type_hint: TypeHint) -> Tuple[TypeHint, ...]:
+def get_args(type_hint: TypeHint) -> VarTuple[TypeHint]:
     try:
         return tuple(type_hint.__args__)  # type: ignore
     except AttributeError:

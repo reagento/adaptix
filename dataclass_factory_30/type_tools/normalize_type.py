@@ -100,7 +100,7 @@ class Bound:
 
 @dataclass
 class Constraints:
-    value: Tuple[NormType, ...]
+    value: VarTuple[NormType]
 
 
 TVLimit = Union[Bound, Constraints]
@@ -186,7 +186,7 @@ class ImplicitParamsFiller:
         source=Union[bytes, str],
     )
 
-    def get_implicit_params(self, origin, normalizer: "TypeNormalizer") -> Tuple[NormType, ...]:
+    def get_implicit_params(self, origin, normalizer: "TypeNormalizer") -> VarTuple[NormType]:
         if origin in self.ONE_ANY_STR_PARAM:
             return (self.NORM_ANY_STR_PARAM,)
 
@@ -206,7 +206,7 @@ class ImplicitParamsFiller:
         return tuple(ANY_NT for _ in range(count))
 
 
-def _create_n_union(args: Tuple[BaseNormType, ...]) -> NormType:
+def _create_n_union(args: VarTuple[BaseNormType]) -> NormType:
     return NormType(
         Union, args,
         source=create_union(tuple(a.source for a in args))
@@ -285,7 +285,7 @@ class TypeNormalizer:
 
     _aspect_storage = AspectStorage()
 
-    def _norm_iter(self, tps) -> Tuple[BaseNormType, ...]:
+    def _norm_iter(self, tps) -> VarTuple[BaseNormType]:
         return tuple(self.normalize(tp) for tp in tps)
 
     MUST_SUBSCRIBED_ORIGINS = {
