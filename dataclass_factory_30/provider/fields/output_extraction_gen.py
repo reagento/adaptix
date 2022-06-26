@@ -5,8 +5,7 @@ from . import VarBinder
 from .definitions import OutputExtractionGen, OutputFigure, ExtraTargets, ExtraExtract
 from ..definitions import SerializeError, AttrAccessor, ItemAccessor
 from ..request_cls import OutputFieldRM
-from ...code_tools import ContextNamespace, CodeBuilder
-from ...code_tools.utils import has_literal_repr
+from ...code_tools import ContextNamespace, CodeBuilder, get_literal_repr
 from ...common import Serializer
 
 
@@ -78,9 +77,9 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
     def _gen_path_element_expr(self, ctx_namespace: ContextNamespace, field: OutputFieldRM) -> str:
         path_element = field.accessor.path_element
-
-        if has_literal_repr(path_element):
-            return repr(path_element)
+        literal_repr = get_literal_repr(path_element)
+        if literal_repr is not None:
+            return literal_repr
 
         pe_var_name = self._get_path_element_var_name(field)
         ctx_namespace.add(pe_var_name, path_element)
