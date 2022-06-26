@@ -4,8 +4,7 @@ from typing import Union, Generic, TypeVar, Callable, Any, Mapping, Collection
 
 from .. import Request
 from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM, ParserRequest, SerializerRequest
-from ...code_tools import CodeBuilder, PrefixManglerBase, MangledConstant, mangling_method
-from ...code_tools.context_namespace import ContextNamespace
+from ...code_tools import CodeBuilder, PrefixManglerBase, MangledConstant, mangling_method, ContextNamespace
 from ...common import VarTuple, Parser, Serializer
 from ...utils import SingletonMeta, pairs
 

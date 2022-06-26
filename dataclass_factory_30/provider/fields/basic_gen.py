@@ -4,9 +4,10 @@ from dataclasses import dataclass, replace
 from typing import Dict, Any, Callable, List, Tuple, TypeVar, Iterable, Set
 
 from .crown_definitions import BaseCrown, BaseDictCrown, BaseListCrown, BaseFieldCrown, BaseNoneCrown, BaseFigure
-from .definitions import WithSkippedFields, ExtraTargets
+from .definitions import WithSkippedFields, ExtraTargets, VarBinder
 from ..essential import Request, Mediator
 from ..static_provider import StaticProvider, static_provision_action
+from ...code_tools import CodeBuilder, ClosureCompiler
 
 
 @dataclass
@@ -118,3 +119,43 @@ class NameSanitizer:
         return first_letter + "".join(
             c for c in name[1:] if c in self._AVAILABLE_CHARS
         )
+
+
+def compile_closure_with_globals_capturing(
+    compiler: ClosureCompiler,
+    code_gen_hook: CodeGenHook,
+    binder: VarBinder,
+    namespace: Dict[str, object],
+    body_builders: Iterable[CodeBuilder],
+    *,
+    closure_name: str,
+    file_name: str,
+):
+    builder = CodeBuilder()
+
+    global_namespace_dict = {}
+    for name, value in namespace.items():
+        global_name = f"g_{name}"
+        global_namespace_dict[global_name] = value
+        builder += f"{name} = {global_name}"
+
+    builder.empty_line()
+
+    with builder(f"def {closure_name}({binder.data}):"):
+        for body_builder in body_builders:
+            builder.extend(body_builder)
+
+    builder += f"return {closure_name}"
+
+    code_gen_hook(
+        CodeGenHookData(
+            namespace=global_namespace_dict,
+            source=builder.string(),
+        )
+    )
+
+    return compiler.compile(
+        builder,
+        file_name,
+        global_namespace_dict,
+    )

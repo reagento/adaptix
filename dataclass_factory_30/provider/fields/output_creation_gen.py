@@ -259,7 +259,7 @@ class BuiltinOutputCreationGen(OutputCreationGen):
         builder += "]"
 
     def _gen_field_crown(self, builder: CodeBuilder, state: GenState, crown: OutFieldCrown):
-        pass
+        state.field_name2path[crown.name] = state.path
 
     def _gen_none_crown(self, builder: CodeBuilder, state: GenState, crown: OutNoneCrown):
         pass
