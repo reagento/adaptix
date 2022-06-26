@@ -71,7 +71,7 @@ class Factory(BuiltinFactory, Provider):
         try:
             return self._serializers_cache[tp]
         except KeyError:
-            return self._facade_provide(SerializerRequest(tp))
+            return self._facade_provide(SerializerRequest(tp, debug_path=self._debug_path))
 
     def clear_cache(self):
         self._parser_cache = {}

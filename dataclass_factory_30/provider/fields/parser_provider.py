@@ -1,25 +1,20 @@
-import itertools
-import string
-from dataclasses import replace
-from typing import Dict, Any, TypeVar, Iterable, List, Set
+from typing import Dict, Any
 
-from . import BuiltinInputCreationGen
 from .basic_gen import (
     CodeGenHookRequest, stub_code_gen_hook,
-    CodeGenHook, CodeGenHookData
+    CodeGenHook, CodeGenHookData, DirectFieldsCollectorMixin, strip_figure, NameSanitizer
 )
 from .crown_definitions import (
     InputNameMappingRequest, InputNameMapping,
-    BaseDictCrown, BaseCrown, BaseListCrown,
-    BaseFieldCrown, BaseNoneCrown, InpCrown,
-    InpDictCrown, ExtraCollect, InpListCrown
+    InpCrown,
+    InpDictCrown, ExtraCollect, InpListCrown, InpFieldCrown, InpNoneCrown
 )
+from .input_creation_gen import BuiltinInputCreationGen
 from ...code_tools import BasicClosureCompiler, CodeBuilder, ContextNamespace
 from ...common import Parser
 from ...provider.essential import Mediator, CannotProvide
 from ...provider.fields.definitions import (
-    InputFigureRequest, InputExtractionImageRequest, ExtraTargets,
-    InputFigure, InputExtractionImage, InputCreationImageRequest,
+    InputFigureRequest, InputExtractionImageRequest, InputFigure, InputExtractionImage, InputCreationImageRequest,
     InputCreationGen, InputExtractionGen, VarBinder, InputCreationImage,
 )
 from ...provider.fields.input_extraction_gen import BuiltinInputExtractionGen
@@ -27,17 +22,11 @@ from ...provider.provider_template import ParserProvider
 from ...provider.request_cls import ParserRequest, ParserFieldRequest
 from ...provider.static_provider import StaticProvider, static_provision_action
 
-T = TypeVar('T')
 
-
-def _merge_iters(args: Iterable[Iterable[T]]) -> List[T]:
-    return list(itertools.chain.from_iterable(args))
-
-
-class BuiltinExtractionImageProvider(StaticProvider):
+class BuiltinInputExtractionImageProvider(StaticProvider, DirectFieldsCollectorMixin):
     @static_provision_action(InputExtractionImageRequest)
     def _provide_extraction_image(
-        self, mediator: Mediator,  request: InputExtractionImageRequest,
+        self, mediator: Mediator, request: InputExtractionImageRequest,
     ) -> InputExtractionImage:
         name_mapping = mediator.provide(
             InputNameMappingRequest(
@@ -77,34 +66,6 @@ class BuiltinExtractionImageProvider(StaticProvider):
             strict_coercion=request.initial_request.strict_coercion,
         )
 
-    def _inner_collect_used_direct_fields(self, crown: BaseCrown) -> List[str]:
-        if isinstance(crown, BaseDictCrown):
-            return _merge_iters(
-                self._inner_collect_used_direct_fields(sub_crown)
-                for sub_crown in crown.map.values()
-            )
-        if isinstance(crown, BaseListCrown):
-            return _merge_iters(
-                self._inner_collect_used_direct_fields(sub_crown)
-                for sub_crown in crown.map
-            )
-        if isinstance(crown, BaseFieldCrown):
-            return [crown.name]
-        if isinstance(crown, BaseNoneCrown):
-            return []
-        raise TypeError
-
-    def _collect_used_direct_fields(self, crown: BaseCrown) -> Set[str]:
-        lst = self._inner_collect_used_direct_fields(crown)
-
-        used_set = set()
-        for f_name in lst:
-            if f_name in used_set:
-                raise ValueError(f"Field {f_name!r} is duplicated at crown")
-            used_set.add(f_name)
-
-        return used_set
-
     def _has_collect_policy(self, crown: InpCrown) -> bool:
         if isinstance(crown, InpDictCrown):
             return crown.extra == ExtraCollect() or any(
@@ -116,12 +77,12 @@ class BuiltinExtractionImageProvider(StaticProvider):
                 self._has_collect_policy(sub_crown)
                 for sub_crown in crown.map
             )
-        if isinstance(crown, (BaseFieldCrown, BaseNoneCrown)):
+        if isinstance(crown, (InpFieldCrown, InpNoneCrown)):
             return False
         raise TypeError
 
 
-class BuiltinCreationImageProvider(StaticProvider):
+class BuiltinInputCreationImageProvider(StaticProvider):
     @static_provision_action(InputCreationImageRequest)
     def _provide_extraction_image(self, mediator: Mediator, request: InputCreationImageRequest) -> InputCreationImage:
         return InputCreationImage(
@@ -131,10 +92,10 @@ class BuiltinCreationImageProvider(StaticProvider):
         )
 
 
-_AVAILABLE_CHARS = set(string.ascii_letters + string.digits)
-
-
 class FieldsParserProvider(ParserProvider):
+    def __init__(self, name_sanitizer: NameSanitizer):
+        self._name_sanitizer = name_sanitizer
+
     def _process_figure(self, figure: InputFigure, extraction_image: InputExtractionImage) -> InputFigure:
         skipped_required_fields = [
             field.name
@@ -147,29 +108,10 @@ class FieldsParserProvider(ParserProvider):
                 f"Required fields {skipped_required_fields} are skipped"
             )
 
-        extra = figure.extra
-        if isinstance(extra, ExtraTargets):
-            extra = ExtraTargets(
-                tuple(
-                    field_name for field_name in extra.fields
-                    if field_name not in extraction_image.skipped_fields
-                )
-            )
-
-        # leave only fields that will be passed to constructor
-        new_figure = replace(
-            figure,
-            fields=tuple(
-                field for field in figure.fields
-                if field.name not in extraction_image.skipped_fields
-            ),
-            extra=extra,
-        )
-
-        return new_figure
+        return strip_figure(figure, extraction_image)
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        figure = mediator.provide(
+        figure: InputFigure = mediator.provide(
             InputFigureRequest(type=request.type)
         )
 
@@ -214,21 +156,8 @@ class FieldsParserProvider(ParserProvider):
             request=request,
             creation_gen=creation_image.creation_gen,
             extraction_gen=extraction_image.extraction_gen,
-            field_parsers=field_parsers,
+            fields_parsers=field_parsers,
             code_gen_hook=code_gen_hook,
-        )
-
-    def _sanitize_name(self, name: str):
-        if name == "":
-            return ""
-
-        first_letter = name[0]
-
-        if first_letter not in string.ascii_letters:
-            return self._sanitize_name(name[1:])
-
-        return first_letter + "".join(
-            c for c in name[1:] if c in _AVAILABLE_CHARS
         )
 
     def _get_closure_name(self, request: ParserRequest) -> str:
@@ -238,7 +167,7 @@ class FieldsParserProvider(ParserProvider):
         else:
             name = str(tp)
 
-        s_name = self._sanitize_name(name)
+        s_name = self._name_sanitizer.sanitize(name)
         if s_name != "":
             s_name = "_" + s_name
         return "fields_parser" + s_name
@@ -255,7 +184,7 @@ class FieldsParserProvider(ParserProvider):
     def _make_parser(
         self,
         request: ParserRequest,
-        field_parsers: Dict[str, Parser],
+        fields_parsers: Dict[str, Parser],
         creation_gen: InputCreationGen,
         extraction_gen: InputExtractionGen,
         code_gen_hook: CodeGenHook,
@@ -266,7 +195,7 @@ class FieldsParserProvider(ParserProvider):
         namespace_dict: Dict[str, Any] = {}
         ctx_namespace = ContextNamespace(namespace_dict)
 
-        extraction_code_builder = extraction_gen.generate_input_extraction(binder, ctx_namespace, field_parsers)
+        extraction_code_builder = extraction_gen.generate_input_extraction(binder, ctx_namespace, fields_parsers)
         creation_code_builder = creation_gen.generate_input_creation(binder, ctx_namespace)
 
         closure_name = self._get_closure_name(request)

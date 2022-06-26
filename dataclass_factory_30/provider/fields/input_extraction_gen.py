@@ -5,18 +5,16 @@ from typing import Dict, Set, Optional, Mapping
 
 from .crown_definitions import (
     InpDictCrown, InpListCrown, InpFieldCrown, InpCrown,
-    ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem,
+    ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem, Path, InpNoneCrown,
 )
 from .definitions import InputExtractionGen, VarBinder, InputFigure, ExtraTargets
 from ...code_tools import CodeBuilder, ContextNamespace
-from ...common import Parser, VarTuple
+from ...common import Parser
 from ...provider.definitions import (
     NoRequiredFieldsError, NoRequiredItemsError, ExtraFieldsError,
     ExtraItemsError, TypeParseError, ParseError
 )
 from ...provider.request_cls import InputFieldRM
-
-Path = VarTuple[FldPathElem]
 
 
 class GenState:
@@ -112,7 +110,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
         self._root_crown = crown
         self._debug_path = debug_path
         self._strict_coercion = strict_coercion
-        self._field_name_to_field: Dict[str, InputFieldRM] = {
+        self._name_to_field: Dict[str, InputFieldRM] = {
             field.name: field for field in self._figure.fields
         }
 
@@ -124,7 +122,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
         )
 
     def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
-        return GenState(binder, ctx_namespace, self._field_name_to_field)
+        return GenState(binder, ctx_namespace, self._name_to_field)
 
     def generate_input_extraction(
         self,
@@ -198,12 +196,13 @@ class BuiltinInputExtractionGen(InputExtractionGen):
             if isinstance(sub_crown, InpFieldCrown):
                 self._gen_field_crown(builder, state, sub_crown)
                 return
-            if sub_crown is None:
+            if isinstance(sub_crown, InpNoneCrown):
+                self._gen_none_crown(builder, state, sub_crown)
                 return
 
             raise TypeError
 
-    def _get_path_lit(self, path: Path) -> str:
+    def _get_path_literal(self, path: Path) -> str:
         return repr(deque(path)) if self._debug_path and len(path) > 0 else ""
 
     def _gen_var_assigment_from_data(
@@ -225,7 +224,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
             error = IndexError.__name__
             parse_error = NoRequiredItemsError.__name__
 
-        path_lit = self._get_path_lit(before_path)
+        path_lit = self._get_path_literal(before_path)
         data = parent_state.get_data_var_name()
         last_path_el = repr(last_path_el)
 
@@ -251,7 +250,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
 
         data = state.get_data_var_name()
         extra = state.get_extra_var_name()
-        path_lit = self._get_path_lit(state.path)
+        path_lit = self._get_path_literal(state.path)
 
         if state.path:
             self._gen_var_assigment_from_data(
@@ -287,7 +286,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
 
     def _gen_list_crown(self, builder: CodeBuilder, state: GenState, crown: InpListCrown):
         data = state.get_data_var_name()
-        path_lit = self._get_path_lit(state.path)
+        path_lit = self._get_path_literal(state.path)
         list_len = str(crown.list_len)
 
         if state.path:
@@ -385,7 +384,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
 
         if self._root_crown.extra == ExtraCollect():
             for target in self._figure.extra.fields:
-                field = self._field_name_to_field[target]
+                field = self._name_to_field[target]
 
                 self._gen_field_assigment(
                     builder,
@@ -396,7 +395,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
                 )
         else:
             for target in self._figure.extra.fields:
-                field = self._field_name_to_field[target]
+                field = self._name_to_field[target]
 
                 if field.is_required:
                     self._gen_field_assigment(
@@ -408,3 +407,6 @@ class BuiltinInputExtractionGen(InputExtractionGen):
                     )
 
         builder.empty_line()
+
+    def _gen_none_crown(self, builder: CodeBuilder, state: GenState, crown: InpNoneCrown):
+        pass

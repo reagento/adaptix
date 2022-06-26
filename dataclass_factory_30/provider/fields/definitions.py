@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Union, Generic, TypeVar, Callable, Any, Mapping, Collection
 
 from .. import Request
-from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM, ParserRequest
+from ..request_cls import FieldRM, TypeHintRM, InputFieldRM, ParamKind, OutputFieldRM, ParserRequest, SerializerRequest
 from ...code_tools import CodeBuilder, PrefixManglerBase, MangledConstant, mangling_method
 from ...code_tools.context_namespace import ContextNamespace
 from ...common import VarTuple, Parser, Serializer
@@ -138,6 +138,11 @@ class VarBinder(PrefixManglerBase):
         return field.name
 
 
+@dataclass(frozen=True)
+class WithSkippedFields:
+    skipped_fields: Collection[str]
+
+
 class InputExtractionGen(ABC):
     @abstractmethod
     def generate_input_extraction(
@@ -160,9 +165,8 @@ class InputCreationGen(ABC):
 
 
 @dataclass(frozen=True)
-class InputExtractionImage:
+class InputExtractionImage(WithSkippedFields):
     extraction_gen: InputExtractionGen
-    skipped_fields: Collection[str]
 
 
 @dataclass(frozen=True)
@@ -201,3 +205,25 @@ class OutputCreationGen(ABC):
         ctx_namespace: ContextNamespace,
     ) -> CodeBuilder:
         pass
+
+
+@dataclass(frozen=True)
+class OutputExtractionImage:
+    extraction_gen: OutputExtractionGen
+
+
+@dataclass(frozen=True)
+class OutputExtractionImageRequest(Request[OutputExtractionImage]):
+    figure: OutputFigure
+    initial_request: SerializerRequest
+
+
+@dataclass(frozen=True)
+class OutputCreationImage(WithSkippedFields):
+    creation_gen: OutputCreationGen
+
+
+@dataclass(frozen=True)
+class OutputCreationImageRequest(Request[OutputCreationImage]):
+    figure: OutputFigure
+    initial_request: SerializerRequest

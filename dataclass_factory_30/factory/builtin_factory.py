@@ -39,8 +39,12 @@ from ..provider import (
     BytearrayBase64Provider,
     ABCProxy,
     FieldsParserProvider,
-    BuiltinExtractionImageProvider,
-    BuiltinCreationImageProvider,
+    BuiltinInputExtractionImageProvider,
+    BuiltinInputCreationImageProvider,
+    NameSanitizer,
+    FieldsSerializerProvider,
+    BuiltinOutputExtractionImageProvider,
+    BuiltinOutputCreationImageProvider,
 )
 
 
@@ -148,18 +152,23 @@ class BuiltinFactory(OperatingFactory, ABC):
         ABCProxy(MutableMapping, dict),
         ABCProxy(ByteString, bytes),
 
-        NewTypeUnwrappingProvider(),
-        TypeHintTagsUnwrappingProvider(),
+        FieldsParserProvider(NameSanitizer()),
+        BuiltinInputExtractionImageProvider(),
+        BuiltinInputCreationImageProvider(),
 
-        FieldsParserProvider(),
-        BuiltinExtractionImageProvider(),
-        BuiltinCreationImageProvider(),
+        FieldsSerializerProvider(NameSanitizer()),
+        BuiltinOutputExtractionImageProvider(),
+        BuiltinOutputCreationImageProvider(),
+
         NameMapper(),
 
         NamedTupleFigureProvider(),
         TypedDictFigureProvider(),
         DataclassFigureProvider(),
         ClassInitInputFigureProvider(),
+
+        NewTypeUnwrappingProvider(),
+        TypeHintTagsUnwrappingProvider(),
     ]
 
     @abstractmethod

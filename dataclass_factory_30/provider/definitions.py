@@ -36,6 +36,25 @@ PARSER_COMPAT_EXCEPTIONS = (
 )
 
 
+class PathElementMarker:
+    pass
+
+
+@dataclass(frozen=True)
+class Attr(PathElementMarker):
+    name: str
+
+    def __repr__(self):
+        return f"{type(self)}({self.name!r})"
+
+
+# PathElement describes how to extract next object from the source.
+# By default, you must subscribe source to get next object,
+# except with PathElementMarker children that define custom way to extract values.
+# For example, Attr means that next value must be gotten by attribute access
+PathElement = Union[str, int, Any, PathElementMarker]
+
+
 class Accessor(Hashable, ABC):
     @property
     @abstractmethod
@@ -45,6 +64,11 @@ class Accessor(Hashable, ABC):
     @property
     @abstractmethod
     def access_error(self) -> Optional[Catchable]:
+        pass
+
+    @property
+    @abstractmethod
+    def path_element(self) -> PathElement:
         pass
 
 
@@ -60,6 +84,10 @@ class AttrAccessor(Accessor):
     @property
     def access_error(self) -> Optional[Catchable]:
         return None if self.is_required else AttributeError
+
+    @property
+    def path_element(self) -> PathElement:
+        return Attr(self.attr_name)
 
     def __hash__(self):
         return hash((self.attr_name, self.is_required))
@@ -78,30 +106,12 @@ class ItemAccessor(Accessor):
     def access_error(self) -> Optional[Catchable]:
         return None if self.is_required else KeyError
 
+    @property
+    def path_element(self) -> PathElement:
+        return self.item_name
+
     def __hash__(self):
         return hash((self.item_name, self.is_required))
-
-
-# TODO: link PathElementMarker and Accessor
-
-
-class PathElementMarker:
-    pass
-
-
-@dataclass(frozen=True)
-class Attr(PathElementMarker):
-    name: str
-
-    def __repr__(self):
-        return f"{type(self)}({self.name!r})"
-
-
-# PathElement describes how to extract next object from the source.
-# By default, you must subscribe source to get next object,
-# except with PathElementMarker children that define custom way to extract values.
-# For example, Attr means that next value must be gotten by attribute access
-PathElement = Union[str, int, Any, PathElementMarker]
 
 
 class PathError(Exception):
