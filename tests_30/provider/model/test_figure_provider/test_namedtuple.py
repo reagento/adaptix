@@ -4,8 +4,8 @@ from typing import Any, NamedTuple
 
 from dataclass_factory_30.provider import DefaultValue, NoDefault, NamedTupleFigureProvider, InputFigure, \
     OutputFigure
-from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM, FieldRM
 from dataclass_factory_30.provider.definitions import AttrAccessor
+from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')

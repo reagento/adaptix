@@ -37,11 +37,24 @@ from .essential import (
     PipelineEvalMixin,
     Pipeline,
 )
+from .generic_provider import (
+    NewTypeUnwrappingProvider,
+    TypeHintTagsUnwrappingProvider,
+    LiteralProvider,
+    UnionProvider,
+    IterableProvider,
+    DictProvider,
+    EnumNameProvider,
+    EnumValueProvider,
+    EnumExactValueProvider,
+)
 from .model import (
     ExtraTargets,
     ExtraSkip,
     ExtraForbid,
     ExtraKwargs,
+    ExtraPolicy,
+    CfgExtraPolicy,
     InputFigure,
     OutputFigure,
     InputFigureRequest,
@@ -71,17 +84,6 @@ from .model.figure_provider import (
     get_dc_default,
     DataclassFigureProvider,
     ClassInitInputFigureProvider,
-)
-from .generic_provider import (
-    NewTypeUnwrappingProvider,
-    TypeHintTagsUnwrappingProvider,
-    LiteralProvider,
-    UnionProvider,
-    IterableProvider,
-    DictProvider,
-    EnumNameProvider,
-    EnumValueProvider,
-    EnumExactValueProvider,
 )
 from .name_mapper import NameMapper
 from .name_style import NameStyle, convert_snake_style

@@ -10,9 +10,10 @@ from ..provider import (
     Mediator,
     CannotProvide,
     Provider,
-    FactoryProvider
+    FactoryProvider,
+    ExtraPolicy,
+    CfgExtraPolicy,
 )
-from ..provider.model.crown_definitions import ExtraPolicy, CfgExtraPolicy
 
 T = TypeVar('T')
 

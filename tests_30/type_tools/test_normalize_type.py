@@ -428,6 +428,7 @@ def test_type_var(variance: dict):
         )
     )
 
+
 # make it covariant to use at protocol
 K = TypeVar('K', covariant=True)
 V = TypeVar('V', covariant=True)

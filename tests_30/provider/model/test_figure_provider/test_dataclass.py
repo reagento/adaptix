@@ -4,8 +4,8 @@ from typing import ClassVar
 
 from dataclass_factory_30.provider import DefaultValue, DefaultFactory, DataclassFigureProvider, InputFigure, \
     NoDefault, OutputFigure
-from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, InputFieldRM
 from dataclass_factory_30.provider.definitions import AttrAccessor
+from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, InputFieldRM
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 

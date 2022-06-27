@@ -58,13 +58,10 @@ def _get_complex_literal_repr(obj: object) -> Optional[str]:
         return f"slice" + _parenthesize("()", parts)
 
     if type(obj) == dict:
-        return (
-            "{"
-            + ", ".join(
-                f"{_provide_lit_repr(key)}: {_provide_lit_repr(value)}"
-                for key, value in obj.items()  # type: ignore[attr-defined]
-            )
-            + "}"
+        body = ", ".join(
+            f"{_provide_lit_repr(key)}: {_provide_lit_repr(value)}"
+            for key, value in obj.items()  # type: ignore[attr-defined]
         )
+        return "{" + body + "}"
 
     return None
