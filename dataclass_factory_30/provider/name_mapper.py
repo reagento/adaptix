@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Collection
 
 from . import DefaultValue, DefaultFactory, NoDefault
 from .essential import Mediator
-from .fields import (
+from .model import (
     InpDictCrown, BaseNameMappingRequest, BaseFigure, ExtraTargets,
     InputNameMappingRequest, OutputNameMappingRequest,
     InputNameMapping, BaseNameMapping, BaseFieldCrown, BaseDictCrown, BaseCrown, InpCrown,

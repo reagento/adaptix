@@ -2,7 +2,7 @@ import pytest
 
 from dataclass_factory_30.provider import NoDefault
 from dataclass_factory_30.provider.definitions import AttrAccessor
-from dataclass_factory_30.provider.fields.definitions import InputFigure, OutputFigure, ExtraTargets
+from dataclass_factory_30.provider.model.definitions import InputFigure, OutputFigure, ExtraTargets
 from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM
 
 

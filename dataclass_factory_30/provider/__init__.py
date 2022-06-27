@@ -37,7 +37,7 @@ from .essential import (
     PipelineEvalMixin,
     Pipeline,
 )
-from .fields import (
+from .model import (
     ExtraTargets,
     ExtraSkip,
     ExtraForbid,
@@ -61,8 +61,8 @@ from .fields import (
 
     NameSanitizer,
 )
-from .fields.crown_definitions import NameMappingProvider
-from .fields.figure_provider import (
+from .model.crown_definitions import NameMappingProvider
+from .model.figure_provider import (
     get_func_inp_fig,
     TypeOnlyInputFigureProvider,
     TypeOnlyOutputFigureProvider,

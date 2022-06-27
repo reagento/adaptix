@@ -14,7 +14,7 @@ from .output_extraction_gen import BuiltinOutputExtractionGen
 from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
 from ...common import Serializer
 from ...provider.essential import Mediator, CannotProvide
-from ...provider.fields.definitions import (
+from ...provider.model.definitions import (
     OutputFigureRequest, VarBinder, OutputExtractionImageRequest,
     OutputExtractionImage, OutputExtractionGen, OutputCreationImageRequest, OutputCreationImage, OutputCreationGen,
     OutputFigure,
@@ -153,7 +153,7 @@ class FieldsSerializerProvider(SerializerProvider):
         s_name = self._name_sanitizer.sanitize(name)
         if s_name != "":
             s_name = "_" + s_name
-        return "fields_serializer" + s_name
+        return "model_serializer" + s_name
 
     def _get_file_name(self, request: SerializerRequest) -> str:
         return self._get_closure_name(request)

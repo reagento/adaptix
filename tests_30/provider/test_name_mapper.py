@@ -10,8 +10,8 @@ from dataclass_factory_30.provider import (
     InputFigure, NoDefault, OutputFigure, ExtraTargets,
 )
 from dataclass_factory_30.provider.definitions import AttrAccessor
-from dataclass_factory_30.provider.fields import OutFigureExtra, InpFigureExtra
-from dataclass_factory_30.provider.fields.crown_definitions import (
+from dataclass_factory_30.provider.model import OutFigureExtra, InpFigureExtra
+from dataclass_factory_30.provider.model.crown_definitions import (
     CfgExtraPolicy, OutputNameMappingRequest, InpDictCrown,
     InpFieldCrown, InputNameMapping, OutputNameMapping, OutDictCrown, OutFieldCrown,
 )

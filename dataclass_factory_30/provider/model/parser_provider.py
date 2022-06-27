@@ -14,11 +14,11 @@ from .input_creation_gen import BuiltinInputCreationGen
 from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
 from ...common import Parser
 from ...provider.essential import Mediator, CannotProvide
-from ...provider.fields.definitions import (
+from ...provider.model.definitions import (
     InputFigureRequest, InputExtractionImageRequest, InputFigure, InputExtractionImage, InputCreationImageRequest,
     InputCreationGen, InputExtractionGen, VarBinder, InputCreationImage,
 )
-from ...provider.fields.input_extraction_gen import BuiltinInputExtractionGen
+from ...provider.model.input_extraction_gen import BuiltinInputExtractionGen
 from ...provider.provider_template import ParserProvider
 from ...provider.request_cls import ParserRequest, ParserFieldRequest
 from ...provider.static_provider import StaticProvider, static_provision_action
@@ -171,7 +171,7 @@ class FieldsParserProvider(ParserProvider):
         s_name = self._name_sanitizer.sanitize(name)
         if s_name != "":
             s_name = "_" + s_name
-        return "fields_parser" + s_name
+        return "model_parser" + s_name
 
     def _get_file_name(self, request: ParserRequest) -> str:
         return self._get_closure_name(request)
