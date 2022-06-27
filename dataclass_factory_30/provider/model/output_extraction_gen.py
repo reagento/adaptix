@@ -115,6 +115,9 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
         builder.empty_line()
 
+    def _get_access_error_var_name(self, field: OutputFieldRM) -> str:
+        return f"access_error_{field.name}"
+
     def _gen_optional_field_extraction(
         self,
         builder: CodeBuilder,
@@ -133,13 +136,17 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
         on_access_ok_stmt = on_access_ok(f"{serializer}({raw_field})")
 
-        # TODO: allow custom exception at field.accessor.access_error
+        access_error = field.accessor.access_error
+        access_error_var = get_literal_repr(access_error)
+        if access_error_var is None:
+            access_error_var = self._get_access_error_var_name(field)
+            ctx_namespace.add(access_error_var, access_error)
 
         if self._debug_path:
             builder += f"""
                 try:
                     {raw_field} = {raw_access_expr}
-                except {field.accessor.access_error}:
+                except {access_error_var}:
                     {on_access_error}
                 else:
                     try:
