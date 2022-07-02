@@ -8,15 +8,15 @@ _BUILTINS_DICT = {
 }
 
 
-def get_literal_repr(obj: object) -> Optional[str]:
-    if type(obj) in (int, float, str, bytes, bytearray, range):
+def get_literal_expr(obj: object) -> Optional[str]:
+    if type(obj) in (int, float, str, bytes, bytearray):
         return repr(obj)
 
     try:
         b_obj, name = _BUILTINS_DICT[obj]
     except KeyError:
         try:
-            return _get_complex_literal_repr(obj)
+            return _get_complex_literal_expr(obj)
         except ValueError:
             return None
 
@@ -25,18 +25,18 @@ def get_literal_repr(obj: object) -> Optional[str]:
     return None
 
 
-def _provide_lit_repr(obj: object) -> str:
-    literal_repr = get_literal_repr(obj)
+def _provide_lit_expr(obj: object) -> str:
+    literal_repr = get_literal_expr(obj)
     if literal_repr is None:
         raise ValueError
     return literal_repr
 
 
 def _parenthesize(parentheses: str, elements) -> str:
-    return parentheses[0] + ", ".join(map(_provide_lit_repr, elements)) + parentheses[1]
+    return parentheses[0] + ", ".join(map(_provide_lit_expr, elements)) + parentheses[1]
 
 
-def _get_complex_literal_repr(obj: object) -> Optional[str]:
+def _get_complex_literal_expr(obj: object) -> Optional[str]:
     if type(obj) == list:
         return _parenthesize("[]", obj)
 
@@ -57,9 +57,13 @@ def _get_complex_literal_repr(obj: object) -> Optional[str]:
         parts = (obj.start, obj.step, obj.stop)  # type: ignore[attr-defined]
         return f"slice" + _parenthesize("()", parts)
 
+    if type(obj) == range:
+        parts = (obj.start, obj.step, obj.stop)  # type: ignore[attr-defined]
+        return f"range" + _parenthesize("()", parts)
+
     if type(obj) == dict:
         body = ", ".join(
-            f"{_provide_lit_repr(key)}: {_provide_lit_repr(value)}"
+            f"{_provide_lit_expr(key)}: {_provide_lit_expr(value)}"
             for key, value in obj.items()  # type: ignore[attr-defined]
         )
         return "{" + body + "}"

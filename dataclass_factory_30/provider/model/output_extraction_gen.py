@@ -3,7 +3,7 @@ from typing import Mapping, Dict, Callable
 
 from .definitions import OutputExtractionGen, VarBinder
 from ..definitions import SerializeError
-from ...code_tools import ContextNamespace, CodeBuilder, get_literal_repr
+from ...code_tools import ContextNamespace, CodeBuilder, get_literal_expr
 from ...common import Serializer
 from ...model_tools import OutputFigure, ExtraTargets, OutputField, ExtraExtract, AttrAccessor, ItemAccessor
 
@@ -76,9 +76,9 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
     def _gen_path_element_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         path_element = field.accessor.path_element
-        literal_repr = get_literal_repr(path_element)
-        if literal_repr is not None:
-            return literal_repr
+        literal_expr = get_literal_expr(path_element)
+        if literal_expr is not None:
+            return literal_expr
 
         pe_var_name = self._get_path_element_var_name(field)
         ctx_namespace.add(pe_var_name, path_element)
@@ -136,7 +136,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         on_access_ok_stmt = on_access_ok(f"{serializer}({raw_field})")
 
         access_error = field.accessor.access_error
-        access_error_var = get_literal_repr(access_error)
+        access_error_var = get_literal_expr(access_error)
         if access_error_var is None:
             access_error_var = self._get_access_error_var_name(field)
             ctx_namespace.add(access_error_var, access_error)

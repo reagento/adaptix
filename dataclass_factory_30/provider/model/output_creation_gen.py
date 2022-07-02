@@ -8,7 +8,7 @@ from .crown_definitions import (
 )
 from .definitions import VarBinder, OutputCreationGen, OutputFigure
 from .input_extraction_gen import Path
-from ...code_tools import ContextNamespace, CodeBuilder, get_literal_repr
+from ...code_tools import ContextNamespace, CodeBuilder, get_literal_expr
 from ...model_tools import DefaultValue, DefaultFactory, OutputField
 
 
@@ -152,9 +152,9 @@ class BuiltinOutputCreationGen(OutputCreationGen):
                 state.ctx_namespace.add(state.filler(), crown.filler)
                 return LinkExpr(state.filler() + '()', is_atomic=False)
             if isinstance(crown.filler, DefaultValue):
-                literal_repr = get_literal_repr(crown.filler)
-                if literal_repr is not None:
-                    return LinkExpr(literal_repr, is_atomic=True)
+                literal_expr = get_literal_expr(crown.filler)
+                if literal_expr is not None:
+                    return LinkExpr(literal_expr, is_atomic=True)
 
                 state.ctx_namespace.add(state.filler(), crown.filler)
                 return LinkExpr(state.filler(), is_atomic=True)
