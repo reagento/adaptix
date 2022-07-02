@@ -31,6 +31,109 @@ class RequestChecker(ABC):
         else:
             raise CannotProvide(f'Only instances of {allowed} are allowed')
 
+    def __or__(self, other: 'RequestChecker') -> 'RequestChecker':
+        return OrRequestChecker(self, other)
+
+    def __and__(self, other: 'RequestChecker') -> 'RequestChecker':
+        return AndRequestChecker(self, other)
+
+    def __xor__(self, other: 'RequestChecker') -> 'RequestChecker':
+        return XorRequestChecker(self, other)
+
+    def __neg__(self) -> 'RequestChecker':
+        return NegRequestChecker(self)
+
+
+class OrRequestChecker(RequestChecker):
+    def __init__(self, left: RequestChecker, right: RequestChecker):
+        self._left = left
+        self._right = right
+        self._request_classes = tuple(
+            set(left.get_allowed_request_classes()) | set(right.get_allowed_request_classes())
+        )
+
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
+        return self._request_classes
+
+    def _check_request(self, request: Request) -> None:
+        left_exc = None
+        try:
+            self._left(request)
+        except CannotProvide as exc:
+            left_exc = exc
+        else:
+            return
+
+        try:
+            self._right(request)
+        except CannotProvide as right_exc:
+            raise CannotProvide(sub_errors=[left_exc, right_exc])
+        else:
+            return
+
+
+class AndRequestChecker(RequestChecker):
+    def __init__(self, left: RequestChecker, right: RequestChecker):
+        self._left = left
+        self._right = right
+        self._request_classes = tuple(
+            set(left.get_allowed_request_classes()) & set(right.get_allowed_request_classes())
+        )
+
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
+        return self._request_classes
+
+    def _check_request(self, request: Request) -> None:
+        self._left(request)
+        self._right(request)
+
+
+class NegRequestChecker(RequestChecker):
+    def __init__(self, rc: RequestChecker):
+        self._rc = rc
+
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
+        return (Request,)
+
+    def _check_request(self, request: Request) -> None:
+        try:
+            self._rc(request)
+        except CannotProvide:
+            return
+        else:
+            raise CannotProvide
+
+
+class XorRequestChecker(RequestChecker):
+    def __init__(self, left: RequestChecker, right: RequestChecker):
+        self._left = left
+        self._right = right
+        self._request_classes = tuple(
+            set(left.get_allowed_request_classes()) ^ set(right.get_allowed_request_classes())
+        )
+
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
+        return self._request_classes
+
+    def _check_request(self, request: Request) -> None:
+        exceptions = []
+
+        try:
+            self._left(request)
+        except CannotProvide as exc:
+            exceptions.append(exc)
+
+        try:
+            self._right(request)
+        except CannotProvide as exc:
+            exceptions.append(exc)
+
+        if len(exceptions) == 0:
+            raise CannotProvide
+
+        if len(exceptions) == 2:
+            raise CannotProvide(sub_errors=exceptions)
+
 
 @dataclass
 class FieldNameRC(RequestChecker):
