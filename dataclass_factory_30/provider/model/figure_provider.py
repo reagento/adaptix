@@ -72,7 +72,7 @@ def signature_params_to_inp_fig(constructor: Callable, params: Iterable[Paramete
 class TypeOnlyInputFigureProvider(StaticProvider, ABC):
     # noinspection PyUnusedLocal
     @final
-    @static_provision_action(InputFigureRequest)
+    @static_provision_action
     def _provide_input_figure(self, mediator: Mediator, request: InputFigureRequest) -> InputFigure:
         return self._get_input_figure(request.type)
 
@@ -84,7 +84,7 @@ class TypeOnlyInputFigureProvider(StaticProvider, ABC):
 class TypeOnlyOutputFigureProvider(StaticProvider, ABC):
     # noinspection PyUnusedLocal
     @final
-    @static_provision_action(OutputFigureRequest)
+    @static_provision_action
     def _provide_output_figure(self, mediator: Mediator, request: InputFigureRequest) -> OutputFigure:
         return self._get_output_figure(request.type)
 

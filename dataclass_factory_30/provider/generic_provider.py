@@ -20,7 +20,7 @@ def stub(arg):
 
 
 class NewTypeUnwrappingProvider(StaticProvider):
-    @static_provision_action(TypeHintRM)
+    @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: TypeHintRM) -> Parser:
         if not is_new_type(request.type):
             raise CannotProvide
@@ -29,7 +29,7 @@ class NewTypeUnwrappingProvider(StaticProvider):
 
 
 class TypeHintTagsUnwrappingProvider(StaticProvider):
-    @static_provision_action(TypeHintRM)
+    @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: TypeHintRM) -> Parser:
         unwrapped = strip_tags(normalize_type(request.type))
         if unwrapped.source == request.type:  # type has not changed, continue search

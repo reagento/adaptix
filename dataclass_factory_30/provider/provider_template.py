@@ -40,7 +40,7 @@ def for_type(tp: TypeHint):
 
 class ParserProvider(ProviderWithRC, ABC):
     @final
-    @static_provision_action(ParserRequest)
+    @static_provision_action
     def _outer_provide_parser(self, mediator: Mediator, request: ParserRequest):
         self._check_request(request)
         return self._provide_parser(mediator, request)
@@ -52,7 +52,7 @@ class ParserProvider(ProviderWithRC, ABC):
 
 class SerializerProvider(ProviderWithRC, ABC):
     @final
-    @static_provision_action(SerializerRequest)
+    @static_provision_action
     def _outer_provide_serializer(self, mediator: Mediator, request: SerializerRequest):
         self._check_request(request)
         return self._provide_serializer(mediator, request)

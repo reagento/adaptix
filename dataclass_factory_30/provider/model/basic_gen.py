@@ -34,7 +34,7 @@ class CodeGenAccumulator(StaticProvider):
     def __init__(self):
         self.list: List[Tuple[Request, CodeGenHookData]] = []
 
-    @static_provision_action(CodeGenHookRequest)
+    @static_provision_action
     def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
         def hook(data: CodeGenHookData):
             self.list.append((request.initial_request, data))

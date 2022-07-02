@@ -25,7 +25,7 @@ from ...provider.static_provider import StaticProvider, static_provision_action
 
 
 class BuiltinOutputExtractionImageProvider(StaticProvider, DirectFieldsCollectorMixin):
-    @static_provision_action(OutputExtractionImageRequest)
+    @static_provision_action
     def _provide_extraction_image(
         self, mediator: Mediator, request: OutputExtractionImageRequest,
     ) -> OutputExtractionImage:
@@ -38,7 +38,7 @@ class BuiltinOutputExtractionImageProvider(StaticProvider, DirectFieldsCollector
 
 
 class BuiltinOutputCreationImageProvider(StaticProvider, DirectFieldsCollectorMixin):
-    @static_provision_action(OutputCreationImageRequest)
+    @static_provision_action
     def _provide_extraction_image(self, mediator: Mediator, request: OutputCreationImageRequest) -> OutputCreationImage:
         name_mapping = mediator.provide(
             OutputNameMappingRequest(

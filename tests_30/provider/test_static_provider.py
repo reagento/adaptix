@@ -16,13 +16,60 @@ class SampleRequest(Request):
 
 
 def test_simple():
-    class TestSimple(StaticProvider):
+    class TestSimple1(StaticProvider):
         @static_provision_action(SampleRequest)
         def _provide_sample(self, mediator: Mediator, request: SampleRequest):
             pass
 
     assert (
-        TestSimple._sp_cls_request_dispatcher
+        TestSimple1._sp_cls_request_dispatcher
+        ==
+        RequestDispatcher({SampleRequest: '_provide_sample'})
+    )
+
+    class TestSimple2(StaticProvider):
+        @static_provision_action()
+        def _provide_sample(self, mediator: Mediator, request: SampleRequest):
+            pass
+
+    assert (
+        TestSimple2._sp_cls_request_dispatcher
+        ==
+        RequestDispatcher({SampleRequest: '_provide_sample'})
+    )
+
+    class TestSimple3(StaticProvider):
+        @static_provision_action
+        def _provide_sample(self, mediator: Mediator, request: SampleRequest):
+            pass
+
+    assert (
+        TestSimple3._sp_cls_request_dispatcher
+        ==
+        RequestDispatcher({SampleRequest: '_provide_sample'})
+    )
+
+    class TestSimple4(StaticProvider):
+        @static_provision_action(SampleRequest)
+        def _provide_sample(self, mediator: Mediator, request):
+            pass
+
+    assert (
+        TestSimple4._sp_cls_request_dispatcher
+        ==
+        RequestDispatcher({SampleRequest: '_provide_sample'})
+    )
+
+    class NotASampleRequest(Request):
+        pass
+
+    class TestSimple5(StaticProvider):
+        @static_provision_action(SampleRequest)
+        def _provide_sample(self, mediator: Mediator, request: NotASampleRequest):
+            pass
+
+    assert (
+        TestSimple5._sp_cls_request_dispatcher
         ==
         RequestDispatcher({SampleRequest: '_provide_sample'})
     )
@@ -31,7 +78,7 @@ def test_simple():
 def test_abstract_method():
     class Base(StaticProvider, ABC):
         @abstractmethod
-        @static_provision_action(SampleRequest)
+        @static_provision_action
         def _provide_sample(self, mediator: Mediator, request: SampleRequest):
             pass
 
@@ -48,43 +95,37 @@ def test_abstract_method():
 
 def test_error_raising_with_one_class():
     with pytest.raises(TypeError):
-        class DecoratorWithoutArgument(StaticProvider):
+        class BadDecoratorArg(StaticProvider):
+            @static_provision_action
+            def _provide(self, mediator: Mediator, request: int):
+                pass
+
+    with pytest.raises(ValueError):
+        class DoubleDecoration(StaticProvider):
+            @static_provision_action
             @static_provision_action
             def _provide(self, mediator: Mediator, request: Request):
                 pass
 
     with pytest.raises(TypeError):
-        class BadDecoratorArg(StaticProvider):
-            @static_provision_action(int)  # type: ignore
-            def _provide(self, mediator: Mediator, request: int):
-                pass
-
-    with pytest.raises(TypeError):
-        class DoubleDecoration(StaticProvider):
-            @static_provision_action(Request)
-            @static_provision_action(Request)
-            def _provide(self, mediator: Mediator, request: Request):
-                pass
-
-    with pytest.raises(TypeError):
         class SeveralSPA(StaticProvider):
-            @static_provision_action(Request)
+            @static_provision_action
             def _provide_one(self, mediator: Mediator, request: Request):
                 pass
 
-            @static_provision_action(Request)
+            @static_provision_action
             def _provide_two(self, mediator: Mediator, request: Request):
                 pass
 
 
 class Base1(StaticProvider):
-    @static_provision_action(Request)
+    @static_provision_action
     def _provide_one(self, mediator: Mediator, request: Request):
         pass
 
 
 class Base2(StaticProvider):
-    @static_provision_action(Request)
+    @static_provision_action
     def _provide_two(self, mediator: Mediator, request: Request):
         pass
 
@@ -92,7 +133,7 @@ class Base2(StaticProvider):
 def test_inheritance_redefine_spa():
     with pytest.raises(TypeError):
         class RedefineSPAChild(Base1):
-            @static_provision_action(Request)
+            @static_provision_action
             def _provide_one(self, mediator: Mediator, request: Request):
                 pass
 
@@ -100,7 +141,7 @@ def test_inheritance_redefine_spa():
 def test_inheritance_several_spa():
     with pytest.raises(TypeError):
         class SeveralSPAChild(Base1):
-            @static_provision_action(Request)
+            @static_provision_action
             def _provide_two(self, mediator: Mediator, request: Request):
                 pass
 
@@ -115,7 +156,7 @@ def test_inheritance_several_spa():
 
 def test_inheritance_several_rc():
     class Base3(StaticProvider):
-        @static_provision_action(SampleRequest)
+        @static_provision_action
         def _provide_one(self, mediator: Mediator, request: SampleRequest):
             pass
 
@@ -125,6 +166,6 @@ def test_inheritance_several_rc():
 
     with pytest.raises(TypeError):
         class Child1(Base1):
-            @static_provision_action(SampleRequest)
+            @static_provision_action
             def _provide_one(self, mediator: Mediator, request: SampleRequest):
                 pass
