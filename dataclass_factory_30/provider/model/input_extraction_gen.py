@@ -7,20 +7,20 @@ from .crown_definitions import (
     InpDictCrown, InpListCrown, InpFieldCrown, InpCrown,
     ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem, Path, InpNoneCrown,
 )
-from .definitions import InputExtractionGen, VarBinder, InputFigure, ExtraTargets
+from .definitions import InputExtractionGen, VarBinder
 from ...code_tools import CodeBuilder, ContextNamespace
 from ...common import Parser
+from ...model_tools import InputFigure, ExtraTargets, InputField
 from ...provider.definitions import (
     NoRequiredFieldsError, NoRequiredItemsError, ExtraFieldsError,
     ExtraItemsError, TypeParseError, ParseError
 )
-from ...provider.request_cls import InputFieldRM
 
 
 class GenState:
     KNOWN_FIELDS = 'known_fields'
 
-    def __init__(self, binder: VarBinder, ctx_namespace: ContextNamespace, name_to_field: Dict[str, InputFieldRM]):
+    def __init__(self, binder: VarBinder, ctx_namespace: ContextNamespace, name_to_field: Dict[str, InputField]):
         self.binder = binder
         self.ctx_namespace = ctx_namespace
         self._name_to_field = name_to_field
@@ -62,7 +62,7 @@ class GenState:
     def field_parser(self, field_name: str) -> str:
         return f"parser_{field_name}"
 
-    def raw_field(self, field: InputFieldRM) -> str:
+    def raw_field(self, field: InputField) -> str:
         return f"r_{field.name}"
 
     @property
@@ -80,7 +80,7 @@ class GenState:
         self._path = past
         self._parent_path = past_parent
 
-    def get_field(self, crown: InpFieldCrown) -> InputFieldRM:
+    def get_field(self, crown: InpFieldCrown) -> InputField:
         self.field_name2path[crown.name] = self._path
         return self._name_to_field[crown.name]
 
@@ -110,11 +110,11 @@ class BuiltinInputExtractionGen(InputExtractionGen):
         self._root_crown = crown
         self._debug_path = debug_path
         self._strict_coercion = strict_coercion
-        self._name_to_field: Dict[str, InputFieldRM] = {
+        self._name_to_field: Dict[str, InputField] = {
             field.name: field for field in self._figure.fields
         }
 
-    def _is_extra_target(self, field: InputFieldRM):
+    def _is_extra_target(self, field: InputField):
         return (
             isinstance(self._figure.extra, ExtraTargets)
             and

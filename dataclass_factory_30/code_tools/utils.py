@@ -1,21 +1,67 @@
-def has_literal_repr(obj: object) -> bool:
-    if obj is None or obj is Ellipsis or obj is NotImplemented:
-        return True
+import builtins
+from typing import Optional
 
-    obj_type = type(obj)
-    if obj_type in (int, float, str, bytes, bool, bytearray, range):
-        return True
+_BUILTINS_DICT = {
+    getattr(builtins, name): (getattr(builtins, name), name)
+    for name in sorted(dir(builtins))
+    if not name.startswith('__')
+}
 
-    if obj_type in (list, tuple, set, frozenset):
-        return all(has_literal_repr(el) for el in obj)  # type: ignore
 
-    if obj_type == slice:
-        return has_literal_repr(obj.start) and has_literal_repr(obj.step) and has_literal_repr(obj.stop)  # type: ignore
+def get_literal_repr(obj: object) -> Optional[str]:
+    if type(obj) in (int, float, str, bytes, bytearray, range):
+        return repr(obj)
 
-    if obj_type == dict:
-        return all(
-            has_literal_repr(key) and has_literal_repr(value)
-            for key, value in obj.items()  # type: ignore
+    try:
+        b_obj, name = _BUILTINS_DICT[obj]
+    except KeyError:
+        try:
+            return _get_complex_literal_repr(obj)
+        except ValueError:
+            return None
+
+    if obj is b_obj:
+        return name
+    return None
+
+
+def _provide_lit_repr(obj: object) -> str:
+    literal_repr = get_literal_repr(obj)
+    if literal_repr is None:
+        raise ValueError
+    return literal_repr
+
+
+def _parenthesize(parentheses: str, elements) -> str:
+    return parentheses[0] + ", ".join(map(_provide_lit_repr, elements)) + parentheses[1]
+
+
+def _get_complex_literal_repr(obj: object) -> Optional[str]:
+    if type(obj) == list:
+        return _parenthesize("[]", obj)
+
+    if type(obj) == tuple:
+        return _parenthesize("()", obj)
+
+    if type(obj) == set:
+        if obj:
+            return _parenthesize("{}", obj)
+        return "set()"
+
+    if type(obj) == frozenset:
+        if obj:
+            return "frozenset(" + _parenthesize("{}", obj) + ")"
+        return "frozenset()"
+
+    if type(obj) == slice:
+        parts = (obj.start, obj.step, obj.stop)  # type: ignore[attr-defined]
+        return f"slice" + _parenthesize("()", parts)
+
+    if type(obj) == dict:
+        body = ", ".join(
+            f"{_provide_lit_repr(key)}: {_provide_lit_repr(value)}"
+            for key, value in obj.items()  # type: ignore[attr-defined]
         )
+        return "{" + body + "}"
 
-    return False
+    return None

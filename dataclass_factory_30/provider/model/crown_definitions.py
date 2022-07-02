@@ -2,12 +2,11 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Dict, List, Union, Callable, Any, Collection
 
-from .definitions import BaseFigure, OutputFigure, InputFigure
-from ..definitions import DefaultValue, DefaultFactory
 from ..essential import Request, Mediator
 from ..request_cls import TypeHintRM
 from ..static_provider import StaticProvider, static_provision_action
 from ...common import VarTuple
+from ...model_tools import DefaultValue, DefaultFactory, BaseFigure, InputFigure, OutputFigure
 from ...utils import SingletonMeta
 
 T = TypeVar('T')
@@ -171,11 +170,11 @@ class OutputNameMappingRequest(BaseNameMappingRequest[OutputNameMapping]):
 
 class NameMappingProvider(StaticProvider, ABC):
     @abstractmethod
-    @static_provision_action(InputNameMappingRequest)
+    @static_provision_action
     def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> InputNameMapping:
         pass
 
     @abstractmethod
-    @static_provision_action(OutputNameMappingRequest)
+    @static_provision_action
     def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> OutputNameMapping:
         pass

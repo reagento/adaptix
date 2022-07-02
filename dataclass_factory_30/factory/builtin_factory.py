@@ -24,10 +24,6 @@ from ..provider import (
     CoercionLimiter,
     EnumExactValueProvider,
     NameMapper,
-    NamedTupleFigureProvider,
-    TypedDictFigureProvider,
-    DataclassFigureProvider,
-    ClassInitInputFigureProvider,
     ValueProvider,
     ParserRequest,
     LimitingProvider,
@@ -45,6 +41,10 @@ from ..provider import (
     FieldsSerializerProvider,
     BuiltinOutputExtractionImageProvider,
     BuiltinOutputCreationImageProvider,
+    NAMED_TUPLE_FIGURE_PROVIDER,
+    TYPED_DICT_FIGURE_PROVIDER,
+    DATACLASS_FIGURE_PROVIDER,
+    CLASS_INIT_FIGURE_PROVIDER,
 )
 
 
@@ -133,7 +133,7 @@ class BuiltinFactory(OperatingFactory, ABC):
         *chain.from_iterable(
             (
                 as_parser(tp),
-                as_serializer(tp, tp.__str__),
+                as_serializer(tp, tp.__str__),  # type: ignore[arg-type]
             )
             for tp in [
                 UUID, Path,
@@ -162,10 +162,10 @@ class BuiltinFactory(OperatingFactory, ABC):
 
         NameMapper(),
 
-        NamedTupleFigureProvider(),
-        TypedDictFigureProvider(),
-        DataclassFigureProvider(),
-        ClassInitInputFigureProvider(),
+        NAMED_TUPLE_FIGURE_PROVIDER,
+        TYPED_DICT_FIGURE_PROVIDER,
+        DATACLASS_FIGURE_PROVIDER,
+        CLASS_INIT_FIGURE_PROVIDER,
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),

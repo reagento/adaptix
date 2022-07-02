@@ -1,22 +1,20 @@
 from dataclasses import dataclass, field as dc_field
-from typing import Optional, List, Dict, Collection
+from typing import Optional, List, Dict, Collection, cast
 
-from . import DefaultValue, DefaultFactory, NoDefault
 from .essential import Mediator
-from .fields import (
-    InpDictCrown, BaseNameMappingRequest, BaseFigure, ExtraTargets,
+from .model import (
+    InpDictCrown, BaseNameMappingRequest,
     InputNameMappingRequest, OutputNameMappingRequest,
     InputNameMapping, BaseNameMapping, BaseFieldCrown, BaseDictCrown, BaseCrown, InpCrown,
     InpFieldCrown,
     BaseNoneCrown, InpNoneCrown, BaseListCrown, InpListCrown, InpExtraPolicyDict, InpExtraPolicyList,
     OutCrown, OutFieldCrown, OutNoneCrown, Filler, OutDictCrown, Sieve, OutListCrown, ExtraPolicy, CfgExtraPolicy,
-    OutputNameMapping, NameMappingProvider
+    OutputNameMapping, NameMappingProvider, RootOutCrown, RootInpCrown, ExtraCollect
 )
 from .name_style import NameStyle, convert_snake_style
-from .request_cls import OutputFieldRM
-
-
 # TODO: Add support for path in map
+from ..model_tools import BaseFigure, ExtraTargets, DefaultValue, DefaultFactory, NoDefault, OutputField
+
 
 @dataclass(frozen=True)
 class NameMapper(NameMappingProvider):
@@ -178,12 +176,20 @@ class NameMapper(NameMappingProvider):
         base_name_mapping = self._provide_name_mapping(mediator, request)
         extra_policy: ExtraPolicy = mediator.provide(CfgExtraPolicy())
 
+        if isinstance(extra_policy, ExtraCollect) and isinstance(base_name_mapping.crown, BaseListCrown):
+            raise ValueError
+
         return InputNameMapping(
-            crown=self._to_inp_crown(base_name_mapping.crown, extra_policy, extra_policy),
+            crown=cast(
+                RootInpCrown,
+                self._to_inp_crown(
+                    base_name_mapping.crown, extra_policy, cast(InpExtraPolicyList, extra_policy)
+                )
+            ),
             skipped_extra_targets=base_name_mapping.skipped_extra_targets,
         )
 
-    def _create_sieve(self, field: OutputFieldRM) -> Sieve:
+    def _create_sieve(self, field: OutputField) -> Sieve:
         if isinstance(field.default, DefaultValue):
             default_value = field.default.value
 
@@ -208,6 +214,11 @@ class NameMapper(NameMappingProvider):
             sieves = {}
 
         return OutputNameMapping(
-            crown=self._to_out_crown(base_name_mapping.crown, filler=DefaultValue(None), sieves=sieves),
+            crown=cast(
+                RootOutCrown,
+                self._to_out_crown(
+                    base_name_mapping.crown, filler=DefaultValue(None), sieves=sieves
+                ),
+            ),
             skipped_extra_targets=base_name_mapping.skipped_extra_targets,
         )

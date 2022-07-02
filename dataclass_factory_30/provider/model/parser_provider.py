@@ -1,8 +1,9 @@
-from typing import Dict, Any
+from typing import Dict
 
 from .basic_gen import (
     CodeGenHookRequest, stub_code_gen_hook,
-    CodeGenHook, CodeGenHookData, DirectFieldsCollectorMixin, strip_figure, NameSanitizer
+    CodeGenHook, DirectFieldsCollectorMixin, strip_figure, NameSanitizer,
+    compile_closure_with_globals_capturing
 )
 from .crown_definitions import (
     InputNameMappingRequest, InputNameMapping,
@@ -10,21 +11,21 @@ from .crown_definitions import (
     InpDictCrown, ExtraCollect, InpListCrown, InpFieldCrown, InpNoneCrown
 )
 from .input_creation_gen import BuiltinInputCreationGen
-from ...code_tools import BasicClosureCompiler, CodeBuilder, ContextNamespace
+from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
 from ...common import Parser
 from ...provider.essential import Mediator, CannotProvide
-from ...provider.fields.definitions import (
+from ...provider.model.definitions import (
     InputFigureRequest, InputExtractionImageRequest, InputFigure, InputExtractionImage, InputCreationImageRequest,
     InputCreationGen, InputExtractionGen, VarBinder, InputCreationImage,
 )
-from ...provider.fields.input_extraction_gen import BuiltinInputExtractionGen
+from ...provider.model.input_extraction_gen import BuiltinInputExtractionGen
 from ...provider.provider_template import ParserProvider
 from ...provider.request_cls import ParserRequest, ParserFieldRequest
 from ...provider.static_provider import StaticProvider, static_provision_action
 
 
 class BuiltinInputExtractionImageProvider(StaticProvider, DirectFieldsCollectorMixin):
-    @static_provision_action(InputExtractionImageRequest)
+    @static_provision_action
     def _provide_extraction_image(
         self, mediator: Mediator, request: InputExtractionImageRequest,
     ) -> InputExtractionImage:
@@ -83,7 +84,7 @@ class BuiltinInputExtractionImageProvider(StaticProvider, DirectFieldsCollectorM
 
 
 class BuiltinInputCreationImageProvider(StaticProvider):
-    @static_provision_action(InputCreationImageRequest)
+    @static_provision_action
     def _provide_extraction_image(self, mediator: Mediator, request: InputCreationImageRequest) -> InputCreationImage:
         return InputCreationImage(
             creation_gen=BuiltinInputCreationGen(
@@ -170,7 +171,7 @@ class FieldsParserProvider(ParserProvider):
         s_name = self._name_sanitizer.sanitize(name)
         if s_name != "":
             s_name = "_" + s_name
-        return "fields_parser" + s_name
+        return "model_parser" + s_name
 
     def _get_file_name(self, request: ParserRequest) -> str:
         return self._get_closure_name(request)
@@ -189,43 +190,20 @@ class FieldsParserProvider(ParserProvider):
         extraction_gen: InputExtractionGen,
         code_gen_hook: CodeGenHook,
     ) -> Parser:
-        compiler = self._get_compiler()
         binder = self._get_binder()
-
-        namespace_dict: Dict[str, Any] = {}
-        ctx_namespace = ContextNamespace(namespace_dict)
-
+        ctx_namespace = BuiltinContextNamespace()
         extraction_code_builder = extraction_gen.generate_input_extraction(binder, ctx_namespace, fields_parsers)
         creation_code_builder = creation_gen.generate_input_creation(binder, ctx_namespace)
 
-        closure_name = self._get_closure_name(request)
-        file_name = self._get_file_name(request)
-
-        builder = CodeBuilder()
-
-        global_namespace_dict = {}
-        for name, value in namespace_dict.items():
-            global_name = f"g_{name}"
-            global_namespace_dict[global_name] = value
-            builder += f"{name} = {global_name}"
-
-        builder.empty_line()
-
-        with builder(f"def {closure_name}({binder.data}):"):
-            builder.extend(extraction_code_builder)
-            builder.extend(creation_code_builder)
-
-        builder += f"return {closure_name}"
-
-        code_gen_hook(
-            CodeGenHookData(
-                namespace=global_namespace_dict,
-                source=builder.string(),
-            )
-        )
-
-        return compiler.compile(
-            builder,
-            file_name,
-            global_namespace_dict,
+        return compile_closure_with_globals_capturing(
+            compiler=self._get_compiler(),
+            code_gen_hook=code_gen_hook,
+            binder=binder,
+            namespace=ctx_namespace.dict,
+            body_builders=[
+                extraction_code_builder,
+                creation_code_builder,
+            ],
+            closure_name=self._get_closure_name(request),
+            file_name=self._get_file_name(request),
         )

@@ -1,13 +1,11 @@
 from collections import deque
 from typing import Mapping, Dict, Callable
 
-from . import VarBinder
-from .definitions import OutputExtractionGen, OutputFigure, ExtraTargets, ExtraExtract
-from ..definitions import SerializeError, AttrAccessor, ItemAccessor
-from ..request_cls import OutputFieldRM
-from ...code_tools import ContextNamespace, CodeBuilder
-from ...code_tools.utils import has_literal_repr
+from .definitions import OutputExtractionGen, VarBinder
+from ..definitions import SerializeError
+from ...code_tools import ContextNamespace, CodeBuilder, get_literal_repr
 from ...common import Serializer
+from ...model_tools import OutputFigure, ExtraTargets, OutputField, ExtraExtract, AttrAccessor, ItemAccessor
 
 
 class BuiltinOutputExtractionGen(OutputExtractionGen):
@@ -50,19 +48,19 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
         return builder
 
-    def _is_extra_target(self, field: OutputFieldRM) -> bool:
+    def _is_extra_target(self, field: OutputField) -> bool:
         return field.name in self._extra_targets
 
-    def _serializer(self, field: OutputFieldRM) -> str:
+    def _serializer(self, field: OutputField) -> str:
         return f"serializer_{field.name}"
 
-    def _raw_field(self, field: OutputFieldRM) -> str:
+    def _raw_field(self, field: OutputField) -> str:
         return f"r_{field.name}"
 
-    def _accessor_getter(self, field: OutputFieldRM) -> str:
+    def _accessor_getter(self, field: OutputField) -> str:
         return f"accessor_getter_{field.name}"
 
-    def _gen_access_expr(self, binder: VarBinder, ctx_namespace: ContextNamespace, field: OutputFieldRM) -> str:
+    def _gen_access_expr(self, binder: VarBinder, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         accessor = field.accessor
         if isinstance(accessor, AttrAccessor):
             return f"{binder.data}.{accessor.attr_name}"
@@ -73,14 +71,14 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         ctx_namespace.add(accessor_getter, field.accessor.getter)
         return f"{accessor_getter}({binder.data})"
 
-    def _get_path_element_var_name(self, field: OutputFieldRM) -> str:
+    def _get_path_element_var_name(self, field: OutputField) -> str:
         return f"path_element_{field.name}"
 
-    def _gen_path_element_expr(self, ctx_namespace: ContextNamespace, field: OutputFieldRM) -> str:
+    def _gen_path_element_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         path_element = field.accessor.path_element
-
-        if has_literal_repr(path_element):
-            return repr(path_element)
+        literal_repr = get_literal_repr(path_element)
+        if literal_repr is not None:
+            return literal_repr
 
         pe_var_name = self._get_path_element_var_name(field)
         ctx_namespace.add(pe_var_name, path_element)
@@ -91,7 +89,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        field: OutputFieldRM,
+        field: OutputField,
         *,
         on_access_ok: Callable[[str], str],
     ):
@@ -116,12 +114,15 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
         builder.empty_line()
 
+    def _get_access_error_var_name(self, field: OutputField) -> str:
+        return f"access_error_{field.name}"
+
     def _gen_optional_field_extraction(
         self,
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        field: OutputFieldRM,
+        field: OutputField,
         *,
         on_access_error: str,
         on_access_ok: Callable[[str], str],
@@ -134,13 +135,17 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
         on_access_ok_stmt = on_access_ok(f"{serializer}({raw_field})")
 
-        # TODO: allow custom exception at field.accessor.access_error
+        access_error = field.accessor.access_error
+        access_error_var = get_literal_repr(access_error)
+        if access_error_var is None:
+            access_error_var = self._get_access_error_var_name(field)
+            ctx_namespace.add(access_error_var, access_error)
 
         if self._debug_path:
             builder += f"""
                 try:
                     {raw_field} = {raw_access_expr}
-                except {field.accessor.access_error}:
+                except {access_error_var}:
                     {on_access_error}
                 else:
                     try:
@@ -168,7 +173,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        field: OutputFieldRM,
+        field: OutputField,
         *,
         on_access_ok_req: Callable[[str], str],
         on_access_ok_opt: Callable[[str], str],
@@ -191,7 +196,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        name_to_fields: Dict[str, OutputFieldRM],
+        name_to_fields: Dict[str, OutputField],
     ):
         extra = self._figure.extra
         if isinstance(extra, ExtraTargets):
@@ -209,7 +214,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        name_to_fields: Dict[str, OutputFieldRM],
+        name_to_fields: Dict[str, OutputField],
     ):
         if len(self._extra_targets) == 1:
             field = name_to_fields[self._extra_targets[0]]

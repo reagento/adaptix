@@ -394,28 +394,28 @@ def assert_norm_tv(tv: TypeVar, target: NormTV):
     ],
 )
 def test_type_var(variance: dict):
-    t1 = TypeVar("t1", **variance)
+    t1 = TypeVar("t1", **variance)  # type: ignore[misc]
 
     assert_norm_tv(
         t1,
         NormTV(t1, limit=Bound(nt_zero(Any)))
     )
 
-    t2 = TypeVar("t2", bound=int, **variance)
+    t2 = TypeVar("t2", bound=int, **variance)  # type: ignore[misc]
 
     assert_norm_tv(
         t2,
         NormTV(t2, limit=Bound(nt_zero(int)))
     )
 
-    t3 = TypeVar("t3", int, str, **variance)
+    t3 = TypeVar("t3", int, str, **variance)  # type: ignore[misc]
 
     assert_norm_tv(
         t3,
         NormTV(t3, limit=Constraints((nt_zero(int), nt_zero(str))))
     )
 
-    t4 = TypeVar("t4", list, str, List, **variance)
+    t4 = TypeVar("t4", list, str, List, **variance)  # type: ignore[misc]
 
     t4_union = cast(NormType, normalize_type(Union[list, List]))
 
@@ -432,7 +432,7 @@ def test_type_var(variance: dict):
 # make it covariant to use at protocol
 K = TypeVar('K', covariant=True)
 V = TypeVar('V', covariant=True)
-H = TypeVar('H', int, str)
+H = TypeVar('H', int, str, covariant=True)
 
 
 class MyGeneric1(Generic[K]):

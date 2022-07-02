@@ -1,37 +1,85 @@
+import inspect
 from inspect import isfunction
-from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable
+from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable, overload
 
 from .class_dispatcher import ClassDispatcher
 from .essential import Provider, Request, Mediator, CannotProvide
-from ..type_tools import is_subclass_soft
+from ..type_tools import is_subclass_soft, normalize_type, strip_tags
+
+__all__ = ('StaticProvider', 'static_provision_action', 'RequestDispatcher')
 
 RequestDispatcher = ClassDispatcher[Request, str]
 
-RequestTV = TypeVar('RequestTV', bound=Request)
-ProviderTV = TypeVar('ProviderTV', bound=Provider)
+R = TypeVar('R', bound=Request)
+P = TypeVar('P', bound=Provider)
 T = TypeVar('T')
+SPA = Callable[[P, Mediator, R], T]
 
 _SPA_RC_STORAGE = '_spa_request_cls'
 
 
-def static_provision_action(request_cls: Type[RequestTV]):
+@overload
+def static_provision_action() -> Callable[[SPA[P, R, T]], SPA[P, R, T]]:
+    pass
+
+
+@overload
+def static_provision_action(__request_cls: Type[Request]) -> Callable[[SPA[P, R, T]], SPA[P, R, T]]:
+    pass
+
+
+@overload
+def static_provision_action(__func: SPA[P, R, T]) -> SPA[P, R, T]:
+    pass
+
+
+def static_provision_action(__arg=None):
     """Marks method as @static_provision_action
     See :class StaticProvider: for details
     """
 
-    if not is_subclass_soft(request_cls, Request):
-        if isfunction(request_cls) or hasattr(request_cls, '__func__'):
-            seems = " It seems you apply decorator without argument"
-        else:
-            seems = ""
+    if __arg is None:
+        return static_provision_action
 
-        raise TypeError(
-            "The argument of @static_provision_action must be a subclass of Request." + seems
-        )
+    if is_subclass_soft(__arg, Request):
+        return _make_spa_decorator(__arg)
 
-    def spa_decorator(func: Callable[[ProviderTV, Mediator, RequestTV], T]):
+    if isfunction(__arg):
+        return _make_spa_decorator(_infer_rc(__arg))(__arg)
+
+    if hasattr(__arg, '__func__'):
+        return _make_spa_decorator(_infer_rc(__arg.__func__))(__arg)
+
+    raise TypeError(
+        "static_provision_action must be applied"
+        " as @static_provision_action or @static_provision_action()"
+        " or @static_provision_action(Request)"
+    )
+
+
+def _infer_rc(func) -> Type[Request]:
+    signature = inspect.signature(func)
+
+    params = list(signature.parameters.values())
+
+    if len(params) != 3:
+        raise ValueError("Can not infer request class from callable")
+
+    if params[2].annotation == signature.empty:
+        raise ValueError("Can not infer request class from callable")
+
+    request_tp = strip_tags(normalize_type(params[2].annotation))
+
+    if is_subclass_soft(request_tp.origin, Request):
+        return params[2].annotation
+
+    raise TypeError("Request parameter must be subclass of Request")
+
+
+def _make_spa_decorator(request_cls: Type[R]):
+    def spa_decorator(func: Callable[[P, Mediator, R], T]):
         if hasattr(func, _SPA_RC_STORAGE):
-            raise TypeError(
+            raise ValueError(
                 "@static_provision_action decorator cannot be applied twice"
             )
 
@@ -50,17 +98,19 @@ class StaticProvider(Provider):
     It means that that provision action will be called for specified
     request or it's subclass. See :class Provider: for details.
 
-    Subclasses cannot have multiple methods attached to the same request
+    You can omit request_cls parameter and decorator try to infer it introspecting method signature.
+
+    Subclasses cannot have multiple methods attached to the same request.
 
     During subclassing, StaticProvider goes through attributes of the class
     and collects all methods wrapped by @static_provision_action() decorator.
     Then it merges new @static_provision_action's with the parent ones
-    and creates the RequestDispatcher
+    and creates the RequestDispatcher.
     """
     _sp_cls_request_dispatcher: ClassVar[RequestDispatcher] = RequestDispatcher()
 
     def __init_subclass__(cls, **kwargs):
-        own_spa = _collect_class_own_rd_dict(cls)
+        own_spa = _collect_class_own_rc_dict(cls)
 
         parent_rd_dicts = [
             parent._sp_cls_request_dispatcher.to_dict()
@@ -68,7 +118,7 @@ class StaticProvider(Provider):
             if issubclass(parent, StaticProvider)
         ]
 
-        result = _merge_rd_dicts(cls, parent_rd_dicts + [own_spa])
+        result = _merge_rc_dicts(cls, parent_rd_dicts + [own_spa])
 
         cls._sp_cls_request_dispatcher = RequestDispatcher(result)
 
@@ -97,11 +147,11 @@ def _spa_has_different_rc(cls: type, name: str, rc1: Type[Request], rc2: Type[Re
     )
 
 
-_RdDict = Dict[Type[Request], str]
+_RcDict = Dict[Type[Request], str]
 
 
-def _collect_class_own_rd_dict(cls) -> _RdDict:
-    mapping: _RdDict = {}
+def _collect_class_own_rc_dict(cls) -> _RcDict:
+    mapping: _RcDict = {}
 
     for attr_name in vars(cls):
         try:
@@ -119,9 +169,9 @@ def _collect_class_own_rd_dict(cls) -> _RdDict:
     return mapping
 
 
-def _merge_rd_dicts(cls: type, dict_iter: Iterable[_RdDict]) -> _RdDict:
+def _merge_rc_dicts(cls: type, dict_iter: Iterable[_RcDict]) -> _RcDict:
     name_to_rc: Dict[str, Type[Request]] = {}
-    rc_to_name: _RdDict = {}
+    rc_to_name: _RcDict = {}
     for dct in dict_iter:
         for rc, name in dct.items():
             if rc in rc_to_name.keys():

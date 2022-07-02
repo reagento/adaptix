@@ -1,8 +1,9 @@
-from typing import Dict, Any
+from typing import Dict
 
 from .basic_gen import (
     CodeGenHookRequest, stub_code_gen_hook,
-    CodeGenHook, CodeGenHookData, DirectFieldsCollectorMixin, strip_figure, NameSanitizer
+    CodeGenHook, DirectFieldsCollectorMixin, strip_figure, NameSanitizer,
+    compile_closure_with_globals_capturing
 )
 from .crown_definitions import (
     OutputNameMappingRequest, OutputNameMapping, OutCrown, OutDictCrown,
@@ -10,21 +11,22 @@ from .crown_definitions import (
 )
 from .output_creation_gen import BuiltinOutputCreationGen
 from .output_extraction_gen import BuiltinOutputExtractionGen
-from ...code_tools import BasicClosureCompiler, CodeBuilder, ContextNamespace
+from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
 from ...common import Serializer
+from ...model_tools import OutputField
 from ...provider.essential import Mediator, CannotProvide
-from ...provider.fields.definitions import (
+from ...provider.model.definitions import (
     OutputFigureRequest, VarBinder, OutputExtractionImageRequest,
     OutputExtractionImage, OutputExtractionGen, OutputCreationImageRequest, OutputCreationImage, OutputCreationGen,
     OutputFigure,
 )
 from ...provider.provider_template import SerializerProvider
-from ...provider.request_cls import OutputFieldRM, SerializerRequest, SerializerFieldRequest
+from ...provider.request_cls import SerializerRequest, SerializerFieldRequest
 from ...provider.static_provider import StaticProvider, static_provision_action
 
 
 class BuiltinOutputExtractionImageProvider(StaticProvider, DirectFieldsCollectorMixin):
-    @static_provision_action(OutputExtractionImageRequest)
+    @static_provision_action
     def _provide_extraction_image(
         self, mediator: Mediator, request: OutputExtractionImageRequest,
     ) -> OutputExtractionImage:
@@ -37,7 +39,7 @@ class BuiltinOutputExtractionImageProvider(StaticProvider, DirectFieldsCollector
 
 
 class BuiltinOutputCreationImageProvider(StaticProvider, DirectFieldsCollectorMixin):
-    @static_provision_action(OutputCreationImageRequest)
+    @static_provision_action
     def _provide_extraction_image(self, mediator: Mediator, request: OutputCreationImageRequest) -> OutputCreationImage:
         name_mapping = mediator.provide(
             OutputNameMappingRequest(
@@ -71,7 +73,7 @@ class BuiltinOutputCreationImageProvider(StaticProvider, DirectFieldsCollectorMi
             debug_path=request.initial_request.debug_path,
         )
 
-    def _check_optional_field_at_list_crown(self, fields_dict: Dict[str, OutputFieldRM], crown: OutCrown):
+    def _check_optional_field_at_list_crown(self, fields_dict: Dict[str, OutputField], crown: OutCrown):
         if isinstance(crown, OutDictCrown):
             for sub_crown in crown.map.values():
                 self._check_optional_field_at_list_crown(fields_dict, sub_crown)
@@ -152,7 +154,7 @@ class FieldsSerializerProvider(SerializerProvider):
         s_name = self._name_sanitizer.sanitize(name)
         if s_name != "":
             s_name = "_" + s_name
-        return "fields_serializer" + s_name
+        return "model_serializer" + s_name
 
     def _get_file_name(self, request: SerializerRequest) -> str:
         return self._get_closure_name(request)
@@ -171,43 +173,20 @@ class FieldsSerializerProvider(SerializerProvider):
         extraction_gen: OutputExtractionGen,
         code_gen_hook: CodeGenHook,
     ) -> Serializer:
-        compiler = self._get_compiler()
         binder = self._get_binder()
-
-        namespace_dict: Dict[str, Any] = {}
-        ctx_namespace = ContextNamespace(namespace_dict)
-
+        ctx_namespace = BuiltinContextNamespace()
         extraction_code_builder = extraction_gen.generate_output_extraction(binder, ctx_namespace, fields_serializers)
         creation_code_builder = creation_gen.generate_output_creation(binder, ctx_namespace)
 
-        closure_name = self._get_closure_name(request)
-        file_name = self._get_file_name(request)
-
-        builder = CodeBuilder()
-
-        global_namespace_dict = {}
-        for name, value in namespace_dict.items():
-            global_name = f"g_{name}"
-            global_namespace_dict[global_name] = value
-            builder += f"{name} = {global_name}"
-
-        builder.empty_line()
-
-        with builder(f"def {closure_name}({binder.data}):"):
-            builder.extend(extraction_code_builder)
-            builder.extend(creation_code_builder)
-
-        builder += f"return {closure_name}"
-
-        code_gen_hook(
-            CodeGenHookData(
-                namespace=global_namespace_dict,
-                source=builder.string(),
-            )
-        )
-
-        return compiler.compile(
-            builder,
-            file_name,
-            global_namespace_dict,
+        return compile_closure_with_globals_capturing(
+            compiler=self._get_compiler(),
+            code_gen_hook=code_gen_hook,
+            binder=binder,
+            namespace=ctx_namespace.dict,
+            body_builders=[
+                extraction_code_builder,
+                creation_code_builder,
+            ],
+            closure_name=self._get_closure_name(request),
+            file_name=self._get_file_name(request),
         )

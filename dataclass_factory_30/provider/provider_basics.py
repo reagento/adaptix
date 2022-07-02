@@ -8,7 +8,7 @@ from .essential import Provider, Mediator, CannotProvide, Request
 from .request_cls import TypeHintRM, FieldRM
 from ..common import TypeHint, Parser, Serializer, VarTuple
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
-from ..type_tools.normalize_type import NormType, NormTV, NotSubscribedError
+from ..type_tools.normalize_type import NormTV, NotSubscribedError, BaseNormType
 
 T = TypeVar('T')
 
@@ -47,7 +47,7 @@ class FieldNameRC(RequestChecker):
 
 @dataclass
 class ExactTypeRC(RequestChecker):
-    norm: NormType
+    norm: BaseNormType
 
     def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
         return (TypeHintRM,)
@@ -162,7 +162,7 @@ class ValueProvider(Provider, Generic[T]):
         self._req_cls = req_cls
         self._value = value
 
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+    def apply_provider(self, mediator: Mediator, request: Request):
         if not isinstance(request, self._req_cls):
             raise CannotProvide
 
@@ -172,12 +172,12 @@ class ValueProvider(Provider, Generic[T]):
         return f"{type(self).__name__}({self._req_cls}, {self._value})"
 
 
-class FactoryProvider(Provider):
+class FactoryProvider(Provider, Generic[T]):
     def __init__(self, req_cls: Type[Request[T]], factory: Callable[[], T]):
         self._req_cls = req_cls
         self._factory = factory
 
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+    def apply_provider(self, mediator: Mediator, request: Request):
         if not isinstance(request, self._req_cls):
             raise CannotProvide
 

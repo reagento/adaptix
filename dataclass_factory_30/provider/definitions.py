@@ -1,117 +1,14 @@
-from abc import ABC, abstractmethod
 from collections import deque
-from dataclasses import dataclass
-from typing import Any, Callable, Union, List, Optional, Deque, Iterable, Hashable
+from typing import List, Optional, Deque, Iterable
 
-from ..common import TypeHint, Catchable
-from ..utils import SingletonMeta
-
-
-class NoDefault(metaclass=SingletonMeta):
-    pass
-
-
-@dataclass(frozen=True)
-class DefaultValue:
-    value: Any
-
-    def __hash__(self):
-        try:
-            return hash(self.value)
-        except TypeError:
-            return 236  # some random number that fits in byte
-
-
-@dataclass(frozen=True)
-class DefaultFactory:
-    factory: Callable[[], Any]
-
-
-Default = Union[NoDefault, DefaultValue, DefaultFactory]
+from ..common import TypeHint
+from ..model_tools import PathElement
 
 # Parser calling foreign functions should convert these exceptions to ParseError
 PARSER_COMPAT_EXCEPTIONS = (
     ValueError, TypeError, LookupError,
     AssertionError, ArithmeticError, AttributeError,
 )
-
-
-class PathElementMarker:
-    pass
-
-
-@dataclass(frozen=True)
-class Attr(PathElementMarker):
-    name: str
-
-    def __repr__(self):
-        return f"{type(self)}({self.name!r})"
-
-
-# PathElement describes how to extract next object from the source.
-# By default, you must subscribe source to get next object,
-# except with PathElementMarker children that define custom way to extract values.
-# For example, Attr means that next value must be gotten by attribute access
-PathElement = Union[str, int, Any, PathElementMarker]
-
-
-class Accessor(Hashable, ABC):
-    @property
-    @abstractmethod
-    def getter(self) -> Callable[[Any], Any]:
-        pass
-
-    @property
-    @abstractmethod
-    def access_error(self) -> Optional[Catchable]:
-        pass
-
-    @property
-    @abstractmethod
-    def path_element(self) -> PathElement:
-        pass
-
-
-@dataclass(frozen=True)
-class AttrAccessor(Accessor):
-    attr_name: str
-    is_required: bool
-
-    # noinspection PyMethodOverriding
-    def getter(self, obj):
-        return getattr(obj, self.attr_name)
-
-    @property
-    def access_error(self) -> Optional[Catchable]:
-        return None if self.is_required else AttributeError
-
-    @property
-    def path_element(self) -> PathElement:
-        return Attr(self.attr_name)
-
-    def __hash__(self):
-        return hash((self.attr_name, self.is_required))
-
-
-@dataclass(frozen=True)
-class ItemAccessor(Accessor):
-    item_name: str
-    is_required: bool
-
-    # noinspection PyMethodOverriding
-    def getter(self, obj):
-        return obj[self.item_name]
-
-    @property
-    def access_error(self) -> Optional[Catchable]:
-        return None if self.is_required else KeyError
-
-    @property
-    def path_element(self) -> PathElement:
-        return self.item_name
-
-    def __hash__(self):
-        return hash((self.item_name, self.is_required))
 
 
 class PathError(Exception):

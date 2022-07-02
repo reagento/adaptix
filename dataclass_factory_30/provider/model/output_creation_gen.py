@@ -8,14 +8,12 @@ from .crown_definitions import (
 )
 from .definitions import VarBinder, OutputCreationGen, OutputFigure
 from .input_extraction_gen import Path
-from ..definitions import DefaultFactory, DefaultValue
-from ..request_cls import OutputFieldRM
-from ...code_tools import ContextNamespace, CodeBuilder
-from ...code_tools.utils import has_literal_repr
+from ...code_tools import ContextNamespace, CodeBuilder, get_literal_repr
+from ...model_tools import DefaultValue, DefaultFactory, OutputField
 
 
 class GenState:
-    def __init__(self, binder: VarBinder, ctx_namespace: ContextNamespace, name_to_field: Dict[str, OutputFieldRM]):
+    def __init__(self, binder: VarBinder, ctx_namespace: ContextNamespace, name_to_field: Dict[str, OutputField]):
         self.binder = binder
         self.ctx_namespace = ctx_namespace
         self._name_to_field = name_to_field
@@ -154,10 +152,13 @@ class BuiltinOutputCreationGen(OutputCreationGen):
                 state.ctx_namespace.add(state.filler(), crown.filler)
                 return LinkExpr(state.filler() + '()', is_atomic=False)
             if isinstance(crown.filler, DefaultValue):
-                if has_literal_repr(crown.filler):
-                    return LinkExpr(repr(crown.filler), is_atomic=True)
+                literal_repr = get_literal_repr(crown.filler)
+                if literal_repr is not None:
+                    return LinkExpr(literal_repr, is_atomic=True)
+
                 state.ctx_namespace.add(state.filler(), crown.filler)
                 return LinkExpr(state.filler(), is_atomic=True)
+
             raise TypeError
 
         if isinstance(crown, OutFieldCrown):
@@ -259,7 +260,7 @@ class BuiltinOutputCreationGen(OutputCreationGen):
         builder += "]"
 
     def _gen_field_crown(self, builder: CodeBuilder, state: GenState, crown: OutFieldCrown):
-        pass
+        state.field_name2path[crown.name] = state.path
 
     def _gen_none_crown(self, builder: CodeBuilder, state: GenState, crown: OutNoneCrown):
         pass

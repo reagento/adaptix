@@ -3,16 +3,16 @@ from typing import Type, TypeVar, Optional, List, Dict
 from .builtin_factory import BuiltinFactory
 from ..common import Parser, Serializer, TypeHint
 from ..provider import (
-    ExtraSkip,
     ParserRequest,
     SerializerRequest,
     Request,
     Mediator,
     CannotProvide,
     Provider,
-    FactoryProvider
+    FactoryProvider,
+    CfgExtraPolicy,
 )
-from ..provider.fields.crown_definitions import ExtraPolicy, CfgExtraPolicy
+from ..provider.model import ExtraPolicy, ExtraSkip
 
 T = TypeVar('T')
 
