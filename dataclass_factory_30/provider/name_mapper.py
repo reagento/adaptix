@@ -12,7 +12,6 @@ from .model import (
     OutputNameMapping, NameMappingProvider
 )
 from .name_style import NameStyle, convert_snake_style
-
 # TODO: Add support for path in map
 from ..model_tools import BaseFigure, ExtraTargets, DefaultValue, DefaultFactory, NoDefault, OutputField
 

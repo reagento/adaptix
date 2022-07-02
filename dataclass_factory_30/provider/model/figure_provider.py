@@ -1,11 +1,11 @@
 from typing import Any, Callable, Optional
 
 from .definitions import (
-    InputFigure, OutputFigure,
     InputFigureRequest, OutputFigureRequest,
 )
 from ..essential import Mediator, CannotProvide, Provider, Request
 from ...model_tools import (
+    InputFigure, OutputFigure,
     get_named_tuple_input_figure, get_named_tuple_output_figure,
     get_typed_dict_input_figure, get_typed_dict_output_figure,
     get_dataclass_input_figure, get_dataclass_output_figure,
