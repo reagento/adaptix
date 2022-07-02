@@ -127,32 +127,32 @@ def test_is_user_defined_generic():
 def test_is_user_defined_generic_protocol():
     from typing import Protocol
 
-    class Prot(Protocol[T]):
+    class Proto(Protocol[T]):
         pass
 
-    class ProtChildImplicit(Prot):
+    class ProtoChildImplicit(Proto):
         pass
 
-    class ProtChildExplicit(Prot[int]):
+    class ProtoChildExplicit(Proto[int]):
         pass
 
-    class ProtChildExplicitTypeVar(Prot[T]):
+    class ProtoChildExplicitTypeVar(Proto[T]):
         pass
 
-    class ProtProt(Prot[int], Protocol[T]):
+    class ProtoProto(Proto[int], Protocol[T]):
         pass
 
-    assert is_user_defined_generic(Prot)
-    assert is_user_defined_generic(Prot[V])
-    assert not is_user_defined_generic(Prot[int])
+    assert is_user_defined_generic(Proto)
+    assert is_user_defined_generic(Proto[V])
+    assert not is_user_defined_generic(Proto[int])
 
-    assert not is_user_defined_generic(ProtChildImplicit)
-    assert not is_user_defined_generic(ProtChildExplicit)
+    assert not is_user_defined_generic(ProtoChildImplicit)
+    assert not is_user_defined_generic(ProtoChildExplicit)
 
-    assert is_user_defined_generic(ProtChildExplicitTypeVar)
-    assert is_user_defined_generic(ProtChildExplicitTypeVar[V])
-    assert not is_user_defined_generic(ProtChildExplicitTypeVar[int])
+    assert is_user_defined_generic(ProtoChildExplicitTypeVar)
+    assert is_user_defined_generic(ProtoChildExplicitTypeVar[V])
+    assert not is_user_defined_generic(ProtoChildExplicitTypeVar[int])
 
-    assert is_user_defined_generic(ProtProt)
-    assert is_user_defined_generic(ProtProt[V])
-    assert not is_user_defined_generic(ProtProt[int])
+    assert is_user_defined_generic(ProtoProto)
+    assert is_user_defined_generic(ProtoProto[V])
+    assert not is_user_defined_generic(ProtoProto[int])
