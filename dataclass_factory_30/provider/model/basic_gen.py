@@ -4,10 +4,11 @@ from dataclasses import dataclass, replace
 from typing import Dict, Any, Callable, List, Tuple, TypeVar, Iterable, Set
 
 from .crown_definitions import BaseCrown, BaseDictCrown, BaseListCrown, BaseFieldCrown, BaseNoneCrown, BaseFigure
-from .definitions import WithSkippedFields, ExtraTargets, VarBinder
+from .definitions import WithSkippedFields, VarBinder
 from ..essential import Request, Mediator
 from ..static_provider import StaticProvider, static_provision_action
 from ...code_tools import CodeBuilder, ClosureCompiler
+from ...model_tools import ExtraTargets
 
 
 @dataclass

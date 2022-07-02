@@ -1,10 +1,9 @@
 from dataclasses import dataclass, field as dc_field
 from typing import Optional, List, Dict, Collection
 
-from . import DefaultValue, DefaultFactory, NoDefault
 from .essential import Mediator
 from .model import (
-    InpDictCrown, BaseNameMappingRequest, BaseFigure, ExtraTargets,
+    InpDictCrown, BaseNameMappingRequest,
     InputNameMappingRequest, OutputNameMappingRequest,
     InputNameMapping, BaseNameMapping, BaseFieldCrown, BaseDictCrown, BaseCrown, InpCrown,
     InpFieldCrown,
@@ -13,10 +12,10 @@ from .model import (
     OutputNameMapping, NameMappingProvider
 )
 from .name_style import NameStyle, convert_snake_style
-from .request_cls import OutputFieldRM
-
 
 # TODO: Add support for path in map
+from ..model_tools import BaseFigure, ExtraTargets, DefaultValue, DefaultFactory, NoDefault, OutputField
+
 
 @dataclass(frozen=True)
 class NameMapper(NameMappingProvider):
@@ -183,7 +182,7 @@ class NameMapper(NameMappingProvider):
             skipped_extra_targets=base_name_mapping.skipped_extra_targets,
         )
 
-    def _create_sieve(self, field: OutputFieldRM) -> Sieve:
+    def _create_sieve(self, field: OutputField) -> Sieve:
         if isinstance(field.default, DefaultValue):
             default_value = field.default.value
 

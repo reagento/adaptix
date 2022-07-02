@@ -2,10 +2,8 @@ from dataclasses import dataclass, field, InitVar
 from types import MappingProxyType
 from typing import ClassVar
 
-from dataclass_factory_30.provider import DefaultValue, DefaultFactory, DataclassFigureProvider, InputFigure, \
-    NoDefault, OutputFigure
-from dataclass_factory_30.provider.definitions import AttrAccessor
-from dataclass_factory_30.provider.request_cls import ParamKind, OutputFieldRM, InputFieldRM
+from dataclass_factory_30.model_tools import get_dataclass_input_figure, InputFigure, InputField, NoDefault, ParamKind, \
+    DefaultValue, DefaultFactory, OutputFigure, get_dataclass_output_figure, OutputField, AttrAccessor
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 
@@ -28,13 +26,13 @@ class Foo:
 
 def test_input():
     assert (
-        DataclassFigureProvider()._get_input_figure(Foo)
+        get_dataclass_input_figure(Foo)
         ==
         InputFigure(
             constructor=Foo,
             extra=None,
             fields=(
-                InputFieldRM(
+                InputField(
                     type=int,
                     name='a',
                     default=NoDefault(),
@@ -42,7 +40,7 @@ def test_input():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-                InputFieldRM(
+                InputField(
                     type=InitVarInt,
                     name='b',
                     default=NoDefault(),
@@ -50,7 +48,7 @@ def test_input():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-                InputFieldRM(
+                InputField(
                     type=InitVarInt,
                     name='c',
                     default=DefaultValue(1),
@@ -58,7 +56,7 @@ def test_input():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-                InputFieldRM(
+                InputField(
                     type=str,
                     name='d',
                     default=DefaultValue('text'),
@@ -66,7 +64,7 @@ def test_input():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-                InputFieldRM(
+                InputField(
                     type=list,
                     name='e',
                     default=DefaultFactory(list),
@@ -74,7 +72,7 @@ def test_input():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-                InputFieldRM(
+                InputField(
                     type=int,
                     name='i',
                     default=DefaultValue(4),
@@ -89,40 +87,40 @@ def test_input():
 
 def test_output():
     assert (
-        DataclassFigureProvider()._get_output_figure(Foo)
+        get_dataclass_output_figure(Foo)
         ==
         OutputFigure(
             extra=None,
             fields=(
-                OutputFieldRM(
+                OutputField(
                     type=int,
                     name='a',
                     default=NoDefault(),
                     accessor=AttrAccessor('a', is_required=True),
                     metadata=MappingProxyType({}),
                 ),
-                OutputFieldRM(
+                OutputField(
                     type=str,
                     name='d',
                     default=DefaultValue('text'),
                     accessor=AttrAccessor('d', is_required=True),
                     metadata=MappingProxyType({}),
                 ),
-                OutputFieldRM(
+                OutputField(
                     type=list,
                     name='e',
                     default=DefaultFactory(list),
                     accessor=AttrAccessor('e', is_required=True),
                     metadata=MappingProxyType({}),
                 ),
-                OutputFieldRM(
+                OutputField(
                     type=int,
                     name='f',
                     default=DefaultValue(3),
                     accessor=AttrAccessor('f', is_required=True),
                     metadata=MappingProxyType({}),
                 ),
-                OutputFieldRM(
+                OutputField(
                     type=int,
                     name='i',
                     default=DefaultValue(4),
@@ -146,13 +144,13 @@ class ChildBar(Bar):
 
 def test_inheritance():
     assert (
-        DataclassFigureProvider()._get_input_figure(ChildBar)
+        get_dataclass_input_figure(ChildBar)
         ==
         InputFigure(
             constructor=ChildBar,
             extra=None,
             fields=(
-                InputFieldRM(
+                InputField(
                     type=int,
                     name='a',
                     default=NoDefault(),
@@ -160,7 +158,7 @@ def test_inheritance():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-                InputFieldRM(
+                InputField(
                     type=int,
                     name='b',
                     default=NoDefault(),
@@ -173,19 +171,19 @@ def test_inheritance():
     )
 
     assert (
-        DataclassFigureProvider()._get_output_figure(ChildBar)
+        get_dataclass_output_figure(ChildBar)
         ==
         OutputFigure(
             extra=None,
             fields=(
-                OutputFieldRM(
+                OutputField(
                     type=int,
                     name='a',
                     default=NoDefault(),
                     accessor=AttrAccessor('a', is_required=True),
                     metadata=MappingProxyType({}),
                 ),
-                OutputFieldRM(
+                OutputField(
                     type=int,
                     name='b',
                     default=NoDefault(),

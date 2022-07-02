@@ -1,6 +1,6 @@
-from .definitions import InputFigure, ExtraTargets, ExtraKwargs, ExtraSaturate, InputCreationGen, VarBinder
-from ..request_cls import InputFieldRM, ParamKind
+from .definitions import InputFigure, InputCreationGen, VarBinder
 from ...code_tools import CodeBuilder, ContextNamespace
+from ...model_tools import ExtraTargets, ExtraKwargs, ExtraSaturate, InputField, ParamKind
 
 
 class BuiltinInputCreationGen(InputCreationGen):
@@ -12,7 +12,7 @@ class BuiltinInputCreationGen(InputCreationGen):
     def __init__(self, figure: InputFigure):
         self._figure = figure
 
-    def _is_extra_target(self, field: InputFieldRM):
+    def _is_extra_target(self, field: InputField):
         return (
             isinstance(self._figure.extra, ExtraTargets)
             and

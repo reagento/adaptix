@@ -12,10 +12,6 @@ from .concrete_provider import (
     DatetimeFormatProvider,
 )
 from .definitions import (
-    NoDefault,
-    DefaultValue,
-    DefaultFactory,
-    Default,
     PARSER_COMPAT_EXCEPTIONS,
     PathElement,
     ParseError,
@@ -49,14 +45,7 @@ from .generic_provider import (
     EnumExactValueProvider,
 )
 from .model import (
-    ExtraTargets,
-    ExtraSkip,
-    ExtraForbid,
-    ExtraKwargs,
-    ExtraPolicy,
     CfgExtraPolicy,
-    InputFigure,
-    OutputFigure,
     InputFigureRequest,
     OutputFigureRequest,
 
@@ -73,17 +62,13 @@ from .model import (
     FieldsSerializerProvider,
 
     NameSanitizer,
-)
-from .model.crown_definitions import NameMappingProvider
-from .model.figure_provider import (
-    get_func_inp_fig,
-    TypeOnlyInputFigureProvider,
-    TypeOnlyOutputFigureProvider,
-    NamedTupleFigureProvider,
-    TypedDictFigureProvider,
-    get_dc_default,
-    DataclassFigureProvider,
-    ClassInitInputFigureProvider,
+
+    NameMappingProvider,
+
+    NAMED_TUPLE_FIGURE_PROVIDER,
+    TYPED_DICT_FIGURE_PROVIDER,
+    DATACLASS_FIGURE_PROVIDER,
+    CLASS_INIT_FIGURE_PROVIDER,
 )
 from .name_mapper import NameMapper
 from .name_style import NameStyle, convert_snake_style

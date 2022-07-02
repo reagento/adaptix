@@ -3,19 +3,21 @@ from typing import Set, List, Iterable
 
 import pytest
 
-from dataclass_factory_30.provider import (
-    NameMapper, NameStyle,
-    ValueProvider,
-    ExtraSkip, InputNameMappingRequest,
-    InputFigure, NoDefault, OutputFigure, ExtraTargets,
+from dataclass_factory_30.model_tools import (
+    InpFigureExtra, InputFigure, InputField,
+    ParamKind, OutFigureExtra,
+    OutputFigure, OutputField, NoDefault, AttrAccessor, ExtraTargets,
 )
-from dataclass_factory_30.provider.definitions import AttrAccessor
-from dataclass_factory_30.provider.model import OutFigureExtra, InpFigureExtra
+from dataclass_factory_30.provider import (
+    NameMapper,
+    NameStyle,
+    ValueProvider,
+    InputNameMappingRequest,
+)
 from dataclass_factory_30.provider.model.crown_definitions import (
     CfgExtraPolicy, OutputNameMappingRequest, InpDictCrown,
-    InpFieldCrown, InputNameMapping, OutputNameMapping, OutDictCrown, OutFieldCrown,
+    InpFieldCrown, InputNameMapping, OutputNameMapping, OutDictCrown, OutFieldCrown, ExtraSkip,
 )
-from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM
 from tests_30.provider.conftest import TestFactory
 
 
@@ -207,7 +209,7 @@ def inp_request(fields: List[MapField], extra: InpFigureExtra = None):
             constructor=Stub,
             extra=extra,
             fields=tuple(
-                InputFieldRM(
+                InputField(
                     type=int,
                     name=field.name,
                     default=NoDefault(),
@@ -227,7 +229,7 @@ def out_request(fields: Iterable[MapField], extra: OutFigureExtra = None):
         figure=OutputFigure(
             extra=extra,
             fields=tuple(
-                OutputFieldRM(
+                OutputField(
                     type=int,
                     name=field.name,
                     default=NoDefault(),

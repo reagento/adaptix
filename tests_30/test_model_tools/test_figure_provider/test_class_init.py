@@ -4,9 +4,8 @@ from typing import Any
 import pytest
 
 from dataclass_factory_30.feature_requirement import has_pos_only_params
-from dataclass_factory_30.provider import DefaultValue, NoDefault, CannotProvide, ClassInitInputFigureProvider, \
-    InputFigure, ExtraKwargs
-from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM
+from dataclass_factory_30.model_tools import InputField, NoDefault, ParamKind, DefaultValue, \
+    get_class_init_input_figure, InputFigure, ExtraKwargs, IntrospectionError
 
 
 class Valid1:
@@ -27,7 +26,7 @@ class Valid2Kwargs:
 
 
 VALID_FIELDS = (
-    InputFieldRM(
+    InputField(
         type=Any,
         name='a',
         default=NoDefault(),
@@ -35,7 +34,7 @@ VALID_FIELDS = (
         metadata=MappingProxyType({}),
         param_kind=ParamKind.POS_OR_KW,
     ),
-    InputFieldRM(
+    InputField(
         type=int,
         name='b',
         default=NoDefault(),
@@ -43,7 +42,7 @@ VALID_FIELDS = (
         metadata=MappingProxyType({}),
         param_kind=ParamKind.POS_OR_KW,
     ),
-    InputFieldRM(
+    InputField(
         type=str,
         name='c',
         default=DefaultValue('abc'),
@@ -51,7 +50,7 @@ VALID_FIELDS = (
         metadata=MappingProxyType({}),
         param_kind=ParamKind.POS_OR_KW,
     ),
-    InputFieldRM(
+    InputField(
         type=Any,
         name='d',
         default=NoDefault(),
@@ -64,7 +63,7 @@ VALID_FIELDS = (
 
 def test_extra_none():
     assert (
-        ClassInitInputFigureProvider()._get_input_figure(Valid1)
+        get_class_init_input_figure(Valid1)
         ==
         InputFigure(
             constructor=Valid1,
@@ -76,7 +75,7 @@ def test_extra_none():
 
 def test_extra_kwargs():
     assert (
-        ClassInitInputFigureProvider()._get_input_figure(Valid2Kwargs)
+        get_class_init_input_figure(Valid2Kwargs)
         ==
         InputFigure(
             constructor=Valid2Kwargs,
@@ -94,13 +93,13 @@ def test_pos_only():
             self.b = b
 
     assert (
-        ClassInitInputFigureProvider()._get_input_figure(HasPosOnly)
+        get_class_init_input_figure(HasPosOnly)
         ==
         InputFigure(
             constructor=HasPosOnly,
             extra=None,
             fields=(
-                InputFieldRM(
+                InputField(
                     type=Any,
                     name='a',
                     default=NoDefault(),
@@ -108,7 +107,7 @@ def test_pos_only():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_ONLY,
                 ),
-                InputFieldRM(
+                InputField(
                     type=Any,
                     name='b',
                     default=NoDefault(),
@@ -128,7 +127,5 @@ def test_var_arg():
             self.b = b
             self.args = args
 
-    with pytest.raises(CannotProvide):
-        ClassInitInputFigureProvider()._get_input_figure(
-            HasVarArg
-        )
+    with pytest.raises(IntrospectionError):
+        get_class_init_input_figure(HasVarArg)

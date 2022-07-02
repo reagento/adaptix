@@ -1,8 +1,6 @@
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import TypeVar, List, Generic, Mapping, Any
+from dataclasses import dataclass
+from typing import TypeVar, List, Generic
 
-from .definitions import Default, Accessor
 from .essential import (
     Mediator,
     Provider,
@@ -10,6 +8,7 @@ from .essential import (
     PipelineEvalMixin
 )
 from ..common import TypeHint, Parser, Serializer
+from ..model_tools import InputField, OutputField, BaseField
 
 T = TypeVar('T')
 
@@ -23,46 +22,18 @@ class TypeHintRM(Request[T], Generic[T]):
 
 
 @dataclass(frozen=True)
-class FieldRM(TypeHintRM[T], Generic[T]):
-    name: str
-    default: Default
-    # Mapping almost never defines __hash__,
-    # so it will be more convenient to exclude this field
-    # from hash computation
-    metadata: Mapping[Any, Any] = field(hash=False)
-
-    def __post_init__(self):
-        if not self.name.isidentifier():
-            raise ValueError("Name of field must be python identifier")
-
-
-class ParamKind(Enum):
-    POS_ONLY = 0
-    POS_OR_KW = 1
-    KW_ONLY = 3  # 2 is for VAR_POS
+class FieldRM(TypeHintRM[T], BaseField, Generic[T]):
+    pass
 
 
 @dataclass(frozen=True)
-class InputFieldRM(FieldRM[T], Generic[T]):
-    is_required: bool
-    param_kind: ParamKind
-
-    @property
-    def is_optional(self):
-        return not self.is_required
+class InputFieldRM(FieldRM[T], InputField, Generic[T]):
+    pass
 
 
 @dataclass(frozen=True)
-class OutputFieldRM(FieldRM[T], Generic[T]):
-    accessor: Accessor
-
-    @property
-    def is_optional(self) -> bool:
-        return not self.is_optional
-
-    @property
-    def is_required(self) -> bool:
-        return self.accessor.access_error is None
+class OutputFieldRM(FieldRM[T], OutputField, Generic[T]):
+    pass
 
 
 @dataclass(frozen=True)

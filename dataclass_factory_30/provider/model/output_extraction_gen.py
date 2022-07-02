@@ -1,12 +1,11 @@
 from collections import deque
 from typing import Mapping, Dict, Callable
 
-from . import VarBinder
-from .definitions import OutputExtractionGen, OutputFigure, ExtraTargets, ExtraExtract
-from ..definitions import SerializeError, AttrAccessor, ItemAccessor
-from ..request_cls import OutputFieldRM
+from .definitions import OutputExtractionGen, VarBinder
+from ..definitions import SerializeError
 from ...code_tools import ContextNamespace, CodeBuilder, get_literal_repr
 from ...common import Serializer
+from ...model_tools import OutputFigure, ExtraTargets, OutputField, ExtraExtract, AttrAccessor, ItemAccessor
 
 
 class BuiltinOutputExtractionGen(OutputExtractionGen):
@@ -49,19 +48,19 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
         return builder
 
-    def _is_extra_target(self, field: OutputFieldRM) -> bool:
+    def _is_extra_target(self, field: OutputField) -> bool:
         return field.name in self._extra_targets
 
-    def _serializer(self, field: OutputFieldRM) -> str:
+    def _serializer(self, field: OutputField) -> str:
         return f"serializer_{field.name}"
 
-    def _raw_field(self, field: OutputFieldRM) -> str:
+    def _raw_field(self, field: OutputField) -> str:
         return f"r_{field.name}"
 
-    def _accessor_getter(self, field: OutputFieldRM) -> str:
+    def _accessor_getter(self, field: OutputField) -> str:
         return f"accessor_getter_{field.name}"
 
-    def _gen_access_expr(self, binder: VarBinder, ctx_namespace: ContextNamespace, field: OutputFieldRM) -> str:
+    def _gen_access_expr(self, binder: VarBinder, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         accessor = field.accessor
         if isinstance(accessor, AttrAccessor):
             return f"{binder.data}.{accessor.attr_name}"
@@ -72,10 +71,10 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         ctx_namespace.add(accessor_getter, field.accessor.getter)
         return f"{accessor_getter}({binder.data})"
 
-    def _get_path_element_var_name(self, field: OutputFieldRM) -> str:
+    def _get_path_element_var_name(self, field: OutputField) -> str:
         return f"path_element_{field.name}"
 
-    def _gen_path_element_expr(self, ctx_namespace: ContextNamespace, field: OutputFieldRM) -> str:
+    def _gen_path_element_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         path_element = field.accessor.path_element
         literal_repr = get_literal_repr(path_element)
         if literal_repr is not None:
@@ -90,7 +89,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        field: OutputFieldRM,
+        field: OutputField,
         *,
         on_access_ok: Callable[[str], str],
     ):
@@ -115,7 +114,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
         builder.empty_line()
 
-    def _get_access_error_var_name(self, field: OutputFieldRM) -> str:
+    def _get_access_error_var_name(self, field: OutputField) -> str:
         return f"access_error_{field.name}"
 
     def _gen_optional_field_extraction(
@@ -123,7 +122,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        field: OutputFieldRM,
+        field: OutputField,
         *,
         on_access_error: str,
         on_access_ok: Callable[[str], str],
@@ -174,7 +173,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        field: OutputFieldRM,
+        field: OutputField,
         *,
         on_access_ok_req: Callable[[str], str],
         on_access_ok_opt: Callable[[str], str],
@@ -197,7 +196,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        name_to_fields: Dict[str, OutputFieldRM],
+        name_to_fields: Dict[str, OutputField],
     ):
         extra = self._figure.extra
         if isinstance(extra, ExtraTargets):
@@ -215,7 +214,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        name_to_fields: Dict[str, OutputFieldRM],
+        name_to_fields: Dict[str, OutputField],
     ):
         if len(self._extra_targets) == 1:
             field = name_to_fields[self._extra_targets[0]]

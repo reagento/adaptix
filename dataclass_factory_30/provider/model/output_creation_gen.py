@@ -8,9 +8,9 @@ from .crown_definitions import (
 )
 from .definitions import VarBinder, OutputCreationGen, OutputFigure
 from .input_extraction_gen import Path
-from ..definitions import DefaultFactory, DefaultValue
 from ..request_cls import OutputFieldRM
 from ...code_tools import ContextNamespace, CodeBuilder, get_literal_repr
+from ...model_tools import DefaultValue, DefaultFactory
 
 
 class GenState:

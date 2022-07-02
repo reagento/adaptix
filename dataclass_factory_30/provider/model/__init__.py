@@ -38,17 +38,7 @@ from .crown_definitions import (
     NameMappingProvider,
 )
 from .definitions import (
-    ExtraKwargs,
-    ExtraTargets,
-    ExtraSaturate,
-    ExtraExtract,
-    BaseFigureExtra,
-    BaseFigure,
-    InpFigureExtra,
-    InputFigure,
     InputFigureRequest,
-    OutFigureExtra,
-    OutputFigure,
     OutputFigureRequest,
     VarBinder,
     InputExtractionGen,
@@ -59,15 +49,11 @@ from .definitions import (
     InputCreationImageRequest,
 )
 from .figure_provider import (
-    get_func_inp_fig,
-    signature_params_to_inp_fig,
-    TypeOnlyInputFigureProvider,
-    TypeOnlyOutputFigureProvider,
-    NamedTupleFigureProvider,
-    TypedDictFigureProvider,
-    get_dc_default,
-    DataclassFigureProvider,
-    ClassInitInputFigureProvider,
+    FigureProvider,
+    NAMED_TUPLE_FIGURE_PROVIDER,
+    TYPED_DICT_FIGURE_PROVIDER,
+    DATACLASS_FIGURE_PROVIDER,
+    CLASS_INIT_FIGURE_PROVIDER,
 )
 from .input_creation_gen import (
     BuiltinInputCreationGen,

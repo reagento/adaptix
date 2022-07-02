@@ -1,9 +1,10 @@
 import pytest
 
-from dataclass_factory_30.provider import NoDefault
-from dataclass_factory_30.provider.definitions import AttrAccessor
-from dataclass_factory_30.provider.model.definitions import InputFigure, OutputFigure, ExtraTargets
-from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM
+from dataclass_factory_30.model_tools import (
+    ParamKind, InputFigure, InputField,
+    NoDefault, OutputFigure, OutputField,
+    AttrAccessor, ExtraTargets
+)
 
 
 def stub_constructor(*args, **kwargs):
@@ -24,7 +25,7 @@ def test_inconsistent_fields_order(first, second):
             constructor=stub_constructor,
             extra=None,
             fields=(
-                InputFieldRM(
+                InputField(
                     name="a",
                     type=int,
                     default=NoDefault(),
@@ -32,7 +33,7 @@ def test_inconsistent_fields_order(first, second):
                     metadata={},
                     param_kind=first,
                 ),
-                InputFieldRM(
+                InputField(
                     name="a",
                     type=int,
                     default=NoDefault(),
@@ -49,7 +50,7 @@ def _make_triple_iff(first, second, third):
         constructor=stub_constructor,
         extra=None,
         fields=(
-            InputFieldRM(
+            InputField(
                 name="a",
                 type=int,
                 default=NoDefault(),
@@ -57,7 +58,7 @@ def _make_triple_iff(first, second, third):
                 metadata={},
                 param_kind=first,
             ),
-            InputFieldRM(
+            InputField(
                 name="b",
                 type=int,
                 default=NoDefault(),
@@ -65,7 +66,7 @@ def _make_triple_iff(first, second, third):
                 metadata={},
                 param_kind=second,
             ),
-            InputFieldRM(
+            InputField(
                 name="c",
                 type=int,
                 default=NoDefault(),
@@ -111,7 +112,7 @@ def test_name_duplicates():
             constructor=stub_constructor,
             extra=None,
             fields=(
-                InputFieldRM(
+                InputField(
                     name="a",
                     type=int,
                     default=NoDefault(),
@@ -119,7 +120,7 @@ def test_name_duplicates():
                     metadata={},
                     param_kind=ParamKind.POS_OR_KW,
                 ),
-                InputFieldRM(
+                InputField(
                     name="a",
                     type=int,
                     default=NoDefault(),
@@ -134,14 +135,14 @@ def test_name_duplicates():
         OutputFigure(
             extra=None,
             fields=(
-                OutputFieldRM(
+                OutputField(
                     name="a",
                     type=int,
                     default=NoDefault(),
                     accessor=AttrAccessor("a", is_required=True),
                     metadata={},
                 ),
-                OutputFieldRM(
+                OutputField(
                     name="a",
                     type=int,
                     default=NoDefault(),
@@ -158,7 +159,7 @@ def test_wild_targets():
             constructor=stub_constructor,
             extra=ExtraTargets(("b",)),
             fields=(
-                InputFieldRM(
+                InputField(
                     name="a",
                     type=int,
                     default=NoDefault(),
@@ -173,7 +174,7 @@ def test_wild_targets():
         OutputFigure(
             extra=ExtraTargets(("b",)),
             fields=(
-                OutputFieldRM(
+                OutputField(
                     name="a",
                     type=int,
                     default=NoDefault(),

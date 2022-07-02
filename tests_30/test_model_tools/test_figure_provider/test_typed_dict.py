@@ -1,9 +1,8 @@
 from types import MappingProxyType
 from typing import TypedDict
 
-from dataclass_factory_30.provider import NoDefault, TypedDictFigureProvider, InputFigure, OutputFigure
-from dataclass_factory_30.provider.definitions import ItemAccessor
-from dataclass_factory_30.provider.request_cls import ParamKind, InputFieldRM, OutputFieldRM
+from dataclass_factory_30.model_tools import get_typed_dict_input_figure, InputFigure, InputField, NoDefault, ParamKind, \
+    OutputFigure, OutputField, ItemAccessor, get_typed_dict_output_figure
 
 
 class Foo(TypedDict, total=True):
@@ -18,13 +17,13 @@ class Bar(TypedDict, total=False):
 
 def test_total_input():
     assert (
-        TypedDictFigureProvider()._get_input_figure(Foo)
+        get_typed_dict_input_figure(Foo)
         ==
         InputFigure(
             constructor=Foo,
             extra=None,
             fields=(
-                InputFieldRM(
+                InputField(
                     type=int,
                     name='a',
                     default=NoDefault(),
@@ -32,7 +31,7 @@ def test_total_input():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.KW_ONLY,
                 ),
-                InputFieldRM(
+                InputField(
                     type=str,
                     name='b',
                     default=NoDefault(),
@@ -47,19 +46,19 @@ def test_total_input():
 
 def test_total_output():
     assert (
-        TypedDictFigureProvider()._get_output_figure(Foo)
+        get_typed_dict_output_figure(Foo)
         ==
         OutputFigure(
             extra=None,
             fields=(
-                OutputFieldRM(
+                OutputField(
                     type=int,
                     name='a',
                     default=NoDefault(),
                     metadata=MappingProxyType({}),
                     accessor=ItemAccessor('a', is_required=True),
                 ),
-                OutputFieldRM(
+                OutputField(
                     type=str,
                     name='b',
                     default=NoDefault(),
@@ -73,13 +72,13 @@ def test_total_output():
 
 def test_non_total_input():
     assert (
-        TypedDictFigureProvider()._get_input_figure(Bar)
+        get_typed_dict_input_figure(Bar)
         ==
         InputFigure(
             constructor=Bar,
             extra=None,
             fields=(
-                InputFieldRM(
+                InputField(
                     type=int,
                     name='a',
                     default=NoDefault(),
@@ -87,7 +86,7 @@ def test_non_total_input():
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.KW_ONLY,
                 ),
-                InputFieldRM(
+                InputField(
                     type=str,
                     name='b',
                     default=NoDefault(),
@@ -102,19 +101,19 @@ def test_non_total_input():
 
 def test_non_total_output():
     assert (
-        TypedDictFigureProvider()._get_output_figure(Bar)
+        get_typed_dict_output_figure(Bar)
         ==
         OutputFigure(
             extra=None,
             fields=(
-                OutputFieldRM(
+                OutputField(
                     type=int,
                     name='a',
                     default=NoDefault(),
                     metadata=MappingProxyType({}),
                     accessor=ItemAccessor('a', is_required=False),
                 ),
-                OutputFieldRM(
+                OutputField(
                     type=str,
                     name='b',
                     default=NoDefault(),
