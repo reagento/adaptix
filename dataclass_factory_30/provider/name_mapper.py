@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field as dc_field
-from typing import Optional, List, Dict, Collection
+from typing import Optional, List, Dict, Collection, cast
 
 from .essential import Mediator
 from .model import (
@@ -9,7 +9,7 @@ from .model import (
     InpFieldCrown,
     BaseNoneCrown, InpNoneCrown, BaseListCrown, InpListCrown, InpExtraPolicyDict, InpExtraPolicyList,
     OutCrown, OutFieldCrown, OutNoneCrown, Filler, OutDictCrown, Sieve, OutListCrown, ExtraPolicy, CfgExtraPolicy,
-    OutputNameMapping, NameMappingProvider
+    OutputNameMapping, NameMappingProvider, RootOutCrown, RootInpCrown, ExtraCollect
 )
 from .name_style import NameStyle, convert_snake_style
 # TODO: Add support for path in map
@@ -176,8 +176,16 @@ class NameMapper(NameMappingProvider):
         base_name_mapping = self._provide_name_mapping(mediator, request)
         extra_policy: ExtraPolicy = mediator.provide(CfgExtraPolicy())
 
+        if isinstance(extra_policy, ExtraCollect) and isinstance(base_name_mapping.crown, BaseListCrown):
+            raise ValueError
+
         return InputNameMapping(
-            crown=self._to_inp_crown(base_name_mapping.crown, extra_policy, extra_policy),
+            crown=cast(
+                RootInpCrown,
+                self._to_inp_crown(
+                    base_name_mapping.crown, extra_policy, cast(InpExtraPolicyList, extra_policy)
+                )
+            ),
             skipped_extra_targets=base_name_mapping.skipped_extra_targets,
         )
 
@@ -206,6 +214,11 @@ class NameMapper(NameMappingProvider):
             sieves = {}
 
         return OutputNameMapping(
-            crown=self._to_out_crown(base_name_mapping.crown, filler=DefaultValue(None), sieves=sieves),
+            crown=cast(
+                RootOutCrown,
+                self._to_out_crown(
+                    base_name_mapping.crown, filler=DefaultValue(None), sieves=sieves
+                ),
+            ),
             skipped_extra_targets=base_name_mapping.skipped_extra_targets,
         )

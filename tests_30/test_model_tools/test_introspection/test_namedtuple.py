@@ -194,7 +194,7 @@ def test_defaults():
     )
 
 
-BarA = NamedTuple('BarA', a=int, b=str)
+BarA = NamedTuple('BarA', a=int, b=str)  # type: ignore[misc]
 
 
 def test_class_hinted_namedtuple():

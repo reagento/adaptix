@@ -11,6 +11,19 @@ from .concrete_provider import (
     Base64SerializerMixin,
     DatetimeFormatProvider,
 )
+from .definitions import (
+    PathError,
+    ParseError,
+    MsgError,
+    ExtraFieldsError,
+    ExtraItemsError,
+    NoRequiredFieldsError,
+    NoRequiredItemsError,
+    TypeParseError,
+    ExcludedTypeParseError,
+    UnionParseError,
+    SerializeError,
+)
 from .essential import (
     Request,
     Provider,
