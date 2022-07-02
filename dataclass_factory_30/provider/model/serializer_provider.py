@@ -13,6 +13,7 @@ from .output_creation_gen import BuiltinOutputCreationGen
 from .output_extraction_gen import BuiltinOutputExtractionGen
 from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
 from ...common import Serializer
+from ...model_tools import OutputField
 from ...provider.essential import Mediator, CannotProvide
 from ...provider.model.definitions import (
     OutputFigureRequest, VarBinder, OutputExtractionImageRequest,
@@ -20,7 +21,7 @@ from ...provider.model.definitions import (
     OutputFigure,
 )
 from ...provider.provider_template import SerializerProvider
-from ...provider.request_cls import OutputFieldRM, SerializerRequest, SerializerFieldRequest
+from ...provider.request_cls import SerializerRequest, SerializerFieldRequest
 from ...provider.static_provider import StaticProvider, static_provision_action
 
 
@@ -72,7 +73,7 @@ class BuiltinOutputCreationImageProvider(StaticProvider, DirectFieldsCollectorMi
             debug_path=request.initial_request.debug_path,
         )
 
-    def _check_optional_field_at_list_crown(self, fields_dict: Dict[str, OutputFieldRM], crown: OutCrown):
+    def _check_optional_field_at_list_crown(self, fields_dict: Dict[str, OutputField], crown: OutCrown):
         if isinstance(crown, OutDictCrown):
             for sub_crown in crown.map.values():
                 self._check_optional_field_at_list_crown(fields_dict, sub_crown)

@@ -37,7 +37,7 @@ class OutputFieldRM(FieldRM[T], OutputField, Generic[T]):
 
 
 @dataclass(frozen=True)
-class ParserRequest(TypeHintRM[Parser], PipelineEvalMixin):
+class ParserRequest(TypeHintRM[Parser], PipelineEvalMixin[Parser]):
     strict_coercion: bool
     debug_path: bool
 
@@ -67,7 +67,7 @@ class ParserFieldRequest(ParserRequest, InputFieldRM[Parser]):
 
 
 @dataclass(frozen=True)
-class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin):
+class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin[Serializer]):
     debug_path: bool
 
     @classmethod

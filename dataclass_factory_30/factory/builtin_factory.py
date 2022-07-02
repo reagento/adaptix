@@ -133,7 +133,7 @@ class BuiltinFactory(OperatingFactory, ABC):
         *chain.from_iterable(
             (
                 as_parser(tp),
-                as_serializer(tp, tp.__str__),
+                as_serializer(tp, tp.__str__),  # type: ignore[arg-type]
             )
             for tp in [
                 UUID, Path,

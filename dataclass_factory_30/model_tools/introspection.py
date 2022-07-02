@@ -2,7 +2,7 @@ import inspect
 from dataclasses import is_dataclass, MISSING as DC_MISSING, Field as DCField, replace, fields as dc_fields
 from inspect import Signature, Parameter
 from types import MappingProxyType
-from typing import Any, get_type_hints, Dict
+from typing import Any, get_type_hints, Dict, Callable, Iterable
 
 from .definitions import (
     InputFigure, OutputFigure,
@@ -31,6 +31,10 @@ def get_func_input_figure(func, params_slice=slice(0, None)) -> InputFigure:
         inspect.signature(func).parameters.values()
     )[params_slice]
 
+    return params_to_input_figure(func, params)
+
+
+def params_to_input_figure(constructor: Callable, params: Iterable[Parameter]) -> InputFigure:
     kinds = [p.kind for p in params]
 
     if Parameter.VAR_POSITIONAL in kinds:
@@ -47,7 +51,7 @@ def get_func_input_figure(func, params_slice=slice(0, None)) -> InputFigure:
     )
 
     return InputFigure(
-        constructor=func,
+        constructor=constructor,
         fields=tuple(
             InputField(
                 type=Any if _is_empty(param.annotation) else param.annotation,
@@ -72,20 +76,20 @@ def get_named_tuple_input_figure(tp) -> InputFigure:
     if not is_named_tuple_class(tp):
         raise IntrospectionError
 
-    iff = get_func_input_figure(tp.__new__, slice(1, None))
+    input_figure = get_func_input_figure(tp.__new__, slice(1, None))
 
     type_hints = get_type_hints(tp)
 
     # At <3.9 namedtuple does not generate typehints at __new__
     return InputFigure(
         constructor=tp,
-        extra=iff.extra,  # maybe for custom __init__?
+        extra=input_figure.extra,  # maybe for custom __init__?
         fields=tuple(
             replace(
                 fld,
                 type=type_hints.get(fld.name, Any)
             )
-            for fld in iff.fields
+            for fld in input_figure.fields
         )
     )
 
@@ -247,13 +251,14 @@ def get_class_init_input_figure(tp) -> InputFigure:
         raise IntrospectionError
 
     try:
-        iff = get_func_input_figure(
-            tp.__init__, slice(1, None)
+        input_figure = get_func_input_figure(
+            tp.__init__,  # type: ignore[misc]
+            slice(1, None)
         )
     except ValueError:
         raise IntrospectionError
 
     return replace(
-        iff,
+        input_figure,
         constructor=tp,
     )

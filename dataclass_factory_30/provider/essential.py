@@ -67,7 +67,7 @@ class Provider(ABC):
         return Pipeline((self, other))
 
 
-class PipelineEvalMixin(Request):
+class PipelineEvalMixin(Request[T], Generic[T]):
     """A special mixin for Request that allows to eval pipeline.
     Subclass should implement :method:`eval_pipeline`
     """

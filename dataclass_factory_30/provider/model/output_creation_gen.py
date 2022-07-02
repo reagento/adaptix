@@ -8,13 +8,12 @@ from .crown_definitions import (
 )
 from .definitions import VarBinder, OutputCreationGen, OutputFigure
 from .input_extraction_gen import Path
-from ..request_cls import OutputFieldRM
 from ...code_tools import ContextNamespace, CodeBuilder, get_literal_repr
-from ...model_tools import DefaultValue, DefaultFactory
+from ...model_tools import DefaultValue, DefaultFactory, OutputField
 
 
 class GenState:
-    def __init__(self, binder: VarBinder, ctx_namespace: ContextNamespace, name_to_field: Dict[str, OutputFieldRM]):
+    def __init__(self, binder: VarBinder, ctx_namespace: ContextNamespace, name_to_field: Dict[str, OutputField]):
         self.binder = binder
         self.ctx_namespace = ctx_namespace
         self._name_to_field = name_to_field
