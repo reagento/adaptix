@@ -1,15 +1,21 @@
-from typing import Any, Callable, Optional
+import inspect
+from dataclasses import replace
+from typing import Any, Callable, Optional, Iterable, Container, cast
 
 from .definitions import (
     InputFigureRequest, OutputFigureRequest,
 )
+from ..static_provider import StaticProvider, static_provision_action
+from ..provider_basics import RequestChecker
 from ..essential import Mediator, CannotProvide, Provider, Request
+from ...common import TypeHint
 from ...model_tools import (
     InputFigure, OutputFigure,
     get_named_tuple_input_figure, get_named_tuple_output_figure,
     get_typed_dict_input_figure, get_typed_dict_output_figure,
     get_dataclass_input_figure, get_dataclass_output_figure,
     get_class_init_input_figure, IntrospectionError,
+    OutputField, DescriptorAccessor,
 )
 
 
@@ -60,3 +66,59 @@ DATACLASS_FIGURE_PROVIDER = FigureProvider(
 CLASS_INIT_FIGURE_PROVIDER = FigureProvider(
     get_class_init_input_figure,
 )
+
+
+class PropertyAdder(StaticProvider):
+    def __init__(
+        self,
+        request_checker: RequestChecker,
+        output_fields: Iterable[OutputField],
+        infer_types_for: Container[str],
+    ):
+        self._request_checker = request_checker
+        self._output_fields = output_fields
+        self._infer_types_for = infer_types_for
+
+        bad_fields_accessors = [
+            field for field in self._output_fields if not isinstance(field.accessor, DescriptorAccessor)
+        ]
+        if bad_fields_accessors:
+            raise ValueError(
+                f"Fields {bad_fields_accessors} has bad accessors,"
+                f" all fields must use DescriptorAccessor"
+            )
+
+    @static_provision_action
+    def provide_output_figure(self, mediator: Mediator, request: OutputFigureRequest) -> OutputFigure:
+        self._request_checker(request)
+        figure: OutputFigure = mediator.provide_from_next(request)
+
+        additional_fields = tuple(
+            replace(field, type=self._infer_property_type(request.type, self._get_attr_name(field)))
+            if field.name in self._infer_types_for else
+            field
+            for field in self._output_fields
+        )
+
+        return replace(figure, fields=figure.fields + additional_fields)
+
+    def _get_attr_name(self, field: OutputField) -> str:
+        return cast(DescriptorAccessor, field.accessor).attr_name
+
+    def _infer_property_type(self, tp: TypeHint, attr_name: str):
+        if not isinstance(tp, type):
+            raise CannotProvide
+
+        prop = getattr(tp, attr_name)
+
+        if not isinstance(prop, property):
+            raise CannotProvide
+
+        if prop.fget is None:
+            raise CannotProvide
+
+        signature = inspect.signature(prop.fget)
+
+        if signature.return_annotation is inspect.Signature.empty:
+            return Any
+        return signature.return_annotation

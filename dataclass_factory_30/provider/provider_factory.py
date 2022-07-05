@@ -1,12 +1,16 @@
-from types import MethodType, BuiltinMethodType, WrapperDescriptorType
-from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union
+import inspect
+from types import MethodType, BuiltinMethodType, WrapperDescriptorType, MappingProxyType
+from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union, Iterable, List, Optional, Mapping
 
 from .essential import Provider
+from .model import InputFigureRequest
+from .model.figure_provider import PropertyAdder
 from .provider_basics import create_req_checker, LimitingProvider, foreign_parser, ValueProvider
 from .request_cls import (
     SerializerRequest, ParserRequest,
 )
-from ..common import Parser, Serializer
+from ..common import Parser, Serializer, TypeHint, Catchable
+from ..model_tools import get_func_input_figure, Default, NoDefault, OutputField, AttrAccessor, PropertyAccessor
 
 T = TypeVar('T')
 
@@ -25,19 +29,19 @@ def resolve_classmethod(func) -> Tuple[type, Callable]:
     return bound, func
 
 
-def _resolve_as_args(func_or_pred, maybe_func) -> Tuple[Any, Any]:
-    func: Any
-    if maybe_func is None:
-        if isinstance(func_or_pred, type):
-            pred = func_or_pred
-            func = func_or_pred
+def _resolve_pred_and_value(value_or_pred, value_or_none) -> Tuple[Any, Any]:
+    value: Any
+    if value_or_none is None:
+        if isinstance(value_or_pred, type):
+            pred = value_or_pred
+            value = value_or_pred
         else:
-            pred, func = resolve_classmethod(func_or_pred)
+            pred, value = resolve_classmethod(value_or_pred)
     else:
-        pred = func_or_pred
-        func = maybe_func
+        pred = value_or_pred
+        value = value_or_none
 
-    return pred, func
+    return pred, value
 
 
 @overload
@@ -56,7 +60,7 @@ def as_parser(func_or_pred: Union[type, Parser]) -> Provider:
 
 
 def as_parser(func_or_pred, func=None):
-    pred, func = _resolve_as_args(func_or_pred, func)
+    pred, func = _resolve_pred_and_value(func_or_pred, func)
     return LimitingProvider(
         create_req_checker(pred),
         ValueProvider(
@@ -76,8 +80,10 @@ def as_serializer(pred: Any, func: Serializer) -> Provider:
     pass
 
 
-# We can get origin class if WrapperDescriptorType has passed,
-# but it is a rare case, so one arg signature was removed
+# We can not extract origin class from method
+# because at class level it is a simple function.
+# There is rare case when method is WrapperDescriptorType,
+# nevertheless one arg signature was removed
 def as_serializer(pred, func):
     return LimitingProvider(
         create_req_checker(pred),
@@ -103,6 +109,80 @@ def as_constructor(func_or_pred: Callable) -> Provider:
     pass
 
 
-# TODO: make as_constructor
 def as_constructor(func_or_pred, constructor=None):
+    pred, func = _resolve_pred_and_value(func_or_pred, constructor)
+    return LimitingProvider(
+        create_req_checker(pred),
+        ValueProvider(
+            InputFigureRequest,
+            get_func_input_figure(func, slice(1, None))
+        )
+    )
+
+
+NameOrProp = Union[str, property]
+
+_OMITTED = object()
+
+
+@overload
+def add_property(
+    pred: Any,
+    prop: NameOrProp,
+    *,
+    default: Default = NoDefault(),
+    access_error: Optional[Catchable] = None,
+    metadata: Mapping[Any, Any] = MappingProxyType({}),
+):
     pass
+
+
+@overload
+def add_property(
+    pred: Any,
+    prop: NameOrProp,
+    tp: TypeHint,
+    *,
+    default: Default = NoDefault(),
+    access_error: Optional[Catchable] = None,
+    metadata: Mapping[Any, Any] = MappingProxyType({}),
+):
+    pass
+
+
+def add_property(
+    pred: Any,
+    prop: NameOrProp,
+    tp: TypeHint = _OMITTED,
+    *,
+    default: Default = NoDefault(),
+    access_error: Optional[Catchable] = None,
+    metadata: Mapping[Any, Any] = MappingProxyType({}),
+):
+    request_checker = create_req_checker(pred)
+    attr_name = _ensure_attr_name(prop)
+
+    field = OutputField(
+        name=attr_name,
+        type=tp,
+        accessor=PropertyAccessor(attr_name, access_error),
+        default=default,
+        metadata=metadata,
+    )
+
+    return PropertyAdder(
+        request_checker=request_checker,
+        output_fields=[field],
+        infer_types_for=[field.name] if tp is _OMITTED else [],
+    )
+
+
+def _ensure_attr_name(prop: NameOrProp) -> str:
+    if isinstance(prop, str):
+        return prop
+
+    fget = prop.fget
+    if fget is None:
+        raise ValueError(f"Property {prop} has no fget")
+
+    return fget.__name__

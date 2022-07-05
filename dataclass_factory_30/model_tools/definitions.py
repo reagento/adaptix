@@ -68,22 +68,38 @@ class Accessor(Hashable, ABC):
         pass
 
 
-@dataclass(frozen=True)
-class AttrAccessor(Accessor):
+class DescriptorAccessor(Accessor, ABC):
+    # Dataclasses delete all field() attributes if there is no default value.
+    # So, if setup it as abstract property,
+    # constructor can not set value to attribute due property has no setter
     attr_name: str
-    is_required: bool
 
     # noinspection PyMethodOverriding
     def getter(self, obj):
         return getattr(obj, self.attr_name)
 
     @property
-    def access_error(self) -> Optional[Catchable]:
-        return None if self.is_required else AttributeError
-
-    @property
     def path_element(self) -> PathElement:
         return Attr(self.attr_name)
+
+
+@dataclass(frozen=True)
+class PropertyAccessor(DescriptorAccessor):  # TODO: make up more appropriate name
+    attr_name: str
+    access_error: Optional[Catchable] = field(default=None)
+
+    def __hash__(self):
+        return hash((self.attr_name, self.access_error))
+
+
+@dataclass(frozen=True)
+class AttrAccessor(DescriptorAccessor):
+    attr_name: str
+    is_required: bool
+
+    @property
+    def access_error(self) -> Optional[Catchable]:
+        return None if self.is_required else AttributeError
 
     def __hash__(self):
         return hash((self.attr_name, self.is_required))

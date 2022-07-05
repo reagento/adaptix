@@ -7,6 +7,8 @@ from .definitions import (
     Attr,
     PathElement,
     Accessor,
+    DescriptorAccessor,
+    PropertyAccessor,
     AttrAccessor,
     ItemAccessor,
     BaseField,

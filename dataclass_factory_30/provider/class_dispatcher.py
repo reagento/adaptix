@@ -87,5 +87,4 @@ class ClassDispatcherKeysView(Generic[K_co]):
         return element in self._keys
 
     def __repr__(self):
-        keys = ", ".join(repr(k) for k in self._keys)
-        return f'{type(self).__qualname__}({keys})'
+        return f'{type(self).__qualname__}({self._keys!r})'
