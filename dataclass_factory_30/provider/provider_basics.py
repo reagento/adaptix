@@ -44,7 +44,12 @@ class RequestChecker(ABC):
         return NegRequestChecker(self)
 
 
-class OrRequestChecker(RequestChecker):
+class NoInstanceCheckRC(RequestChecker, ABC):
+    def __call__(self, request: Request) -> None:
+        self._check_request(request)
+
+
+class OrRequestChecker(NoInstanceCheckRC):
     def __init__(self, left: RequestChecker, right: RequestChecker):
         self._left = left
         self._right = right
@@ -72,7 +77,7 @@ class OrRequestChecker(RequestChecker):
             return
 
 
-class AndRequestChecker(RequestChecker):
+class AndRequestChecker(NoInstanceCheckRC):
     def __init__(self, left: RequestChecker, right: RequestChecker):
         self._left = left
         self._right = right
@@ -88,7 +93,7 @@ class AndRequestChecker(RequestChecker):
         self._right(request)
 
 
-class NegRequestChecker(RequestChecker):
+class NegRequestChecker(NoInstanceCheckRC):
     def __init__(self, rc: RequestChecker):
         self._rc = rc
 
@@ -104,7 +109,7 @@ class NegRequestChecker(RequestChecker):
             raise CannotProvide
 
 
-class XorRequestChecker(RequestChecker):
+class XorRequestChecker(NoInstanceCheckRC):
     def __init__(self, left: RequestChecker, right: RequestChecker):
         self._left = left
         self._right = right
