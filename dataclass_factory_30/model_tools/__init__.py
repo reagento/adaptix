@@ -3,7 +3,6 @@ from .definitions import (
     DefaultValue,
     DefaultFactory,
     Default,
-    PathElementMarker,
     Attr,
     PathElement,
     Accessor,

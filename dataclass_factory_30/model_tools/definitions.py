@@ -4,6 +4,7 @@ from enum import Enum
 from typing import TypeVar, Any, Callable, Union, Mapping, Generic, Hashable, Optional, MutableMapping
 
 from ..common import VarTuple, Catchable, TypeHint
+from ..struct_path import PathElement, Attr
 from ..utils import SingletonMeta, pairs
 
 T = TypeVar('T')
@@ -30,25 +31,6 @@ class DefaultFactory(Generic[T]):
 
 
 Default = Union[NoDefault, DefaultValue[T], DefaultFactory[T]]
-
-
-class PathElementMarker:
-    pass
-
-
-@dataclass(frozen=True)
-class Attr(PathElementMarker):
-    name: str
-
-    def __repr__(self):
-        return f"{type(self)}({self.name!r})"
-
-
-# PathElement describes how to extract next object from the source.
-# By default, you must subscribe source to get next object,
-# except with PathElementMarker children that define custom way to extract values.
-# For example, Attr means that next value must be gotten by attribute access
-PathElement = Union[str, int, Any, PathElementMarker]
 
 
 class Accessor(Hashable, ABC):
