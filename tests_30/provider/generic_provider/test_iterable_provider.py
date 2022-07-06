@@ -103,20 +103,22 @@ def test_parsing(factory, strict_coercion, debug_path):
         )
 
         if debug_path:
-            path1 = deque([0])
-            path2 = deque([1])
+            path1 = [0]
+            path2 = [1]
         else:
-            path1 = None
-            path2 = None
+            path1 = []
+            path2 = []
 
         raises_instance(
-            TypeParseError(str, path=path1),
-            lambda: parser([1, 2, 3])
+            TypeParseError(str),
+            lambda: parser([1, 2, 3]),
+            path=path1,
         )
 
         raises_instance(
-            TypeParseError(str, path=path2),
-            lambda: parser(["1", 2, 3])
+            TypeParseError(str),
+            lambda: parser(["1", 2, 3]),
+            path=path2,
         )
 
 

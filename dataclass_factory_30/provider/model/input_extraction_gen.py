@@ -15,6 +15,7 @@ from ...provider.definitions import (
     NoRequiredFieldsError, NoRequiredItemsError, ExtraFieldsError,
     ExtraItemsError, TypeParseError, ParseError
 )
+from ...struct_path import append_path, extend_path
 
 
 class GenState:
@@ -136,6 +137,9 @@ class BuiltinInputExtractionGen(InputExtractionGen):
             ParseError
         ]:
             ctx_namespace.add(exception.__name__, exception)
+
+        ctx_namespace.add("append_path", append_path)
+        ctx_namespace.add("extend_path", extend_path)
 
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
@@ -366,8 +370,8 @@ class BuiltinInputExtractionGen(InputExtractionGen):
                 f"""
                 try:
                     {field_left_value} = {field_parser}({data_for_parser})
-                except ParseError as e:
-                    e.append_path({last_path_el})
+                except Exception as e:
+                    append_path(e, {last_path_el})
                     raise e
                 """
             )

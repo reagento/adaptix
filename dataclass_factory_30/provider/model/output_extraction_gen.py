@@ -6,6 +6,7 @@ from ..definitions import SerializeError
 from ...code_tools import ContextNamespace, CodeBuilder, get_literal_expr
 from ...common import Serializer
 from ...model_tools import OutputFigure, ExtraTargets, OutputField, ExtraExtract, AttrAccessor, ItemAccessor
+from ...struct_path import append_path, extend_path
 
 
 class BuiltinOutputExtractionGen(OutputExtractionGen):
@@ -28,6 +29,8 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
         ctx_namespace.add("SerializeError", SerializeError)
         ctx_namespace.add("deque", deque)
+        ctx_namespace.add("append_path", append_path)
+        ctx_namespace.add("extend_path", extend_path)
         name_to_fields = {field.name: field for field in self._figure.fields}
 
         for field_name, serializer in field_serializers.items():
@@ -103,11 +106,9 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
             builder += f"""
                 try:
                     {on_access_ok_stmt}
-                except SerializeError as e:
-                    e.append_path({path_element_expr})
-                    raise e
                 except Exception as e:
-                    raise SerializeError(deque([{path_element_expr}])) from e
+                    append_path(e, {path_element_expr})
+                    raise e
             """
         else:
             builder += on_access_ok_stmt
@@ -150,11 +151,9 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
                 else:
                     try:
                         {on_access_ok_stmt}
-                    except SerializeError as e:
-                        e.append_path({path_element_expr})
-                        raise e
                     except Exception as e:
-                        raise SerializeError(deque([{path_element_expr}])) from e
+                        append_path(e, {path_element_expr})
+                        raise e
             """
         else:
             builder += f"""

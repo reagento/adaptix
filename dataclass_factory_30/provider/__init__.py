@@ -12,7 +12,6 @@ from .concrete_provider import (
     DatetimeFormatProvider,
 )
 from .definitions import (
-    PathError,
     ParseError,
     MsgError,
     ExtraFieldsError,

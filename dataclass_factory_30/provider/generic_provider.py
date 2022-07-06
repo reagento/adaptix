@@ -12,6 +12,7 @@ from .provider_template import ParserProvider, SerializerProvider, for_type
 from .request_cls import TypeHintRM, SerializerRequest, ParserRequest
 from .static_provider import StaticProvider, static_provision_action
 from ..common import Parser, Serializer, TypeHint
+from ..struct_path import append_path
 from ..type_tools import is_new_type, strip_tags, normalize_type, BaseNormType
 
 
@@ -187,8 +188,8 @@ class IterableProvider(ParserProvider, SerializerProvider):
         def element_parser_dp(idx_and_elem):
             try:
                 return arg_parser(idx_and_elem[1])
-            except ParseError as e:
-                e.append_path(idx_and_elem[0])
+            except Exception as e:
+                append_path(e, idx_and_elem[0])
                 raise e
 
         if strict_coercion:
@@ -288,14 +289,14 @@ class DictProvider(ParserProvider, SerializerProvider):
                 for k, v in items_method():
                     try:
                         parsed_key = key_parser(k)
-                    except ParseError as e:
-                        e.append_path(k)
+                    except Exception as e:
+                        append_path(e, k)
                         raise e
 
                     try:
                         parsed_value = value_parser(v)
-                    except ParseError as e:
-                        e.append_path(k)  # yes, it's a key
+                    except Exception as e:
+                        append_path(e, k)  # yes, it's a key
                         raise e
 
                     result[parsed_key] = parsed_value

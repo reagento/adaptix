@@ -6,6 +6,7 @@ import pytest
 
 from dataclass_factory_30.factory import Factory
 from dataclass_factory_30.provider.definitions import TypeParseError
+from dataclass_factory_30.struct_path import get_path
 
 
 @dataclass
@@ -40,7 +41,7 @@ def test_simple_int(accum):
     with pytest.raises(TypeParseError) as exc_info:
         parser({'field1': 1, 'field2': '1'})
 
-    assert exc_info.value.path == deque(['field2'])
+    assert list(get_path(exc_info.value)) == ['field2']
 
     serializer = factory.serializer(ExampleInt)
     assert serializer(ExampleInt(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
@@ -63,7 +64,7 @@ def test_simple_int_no_debug_path(accum):
     with pytest.raises(TypeParseError) as exc_info:
         parser({'field1': 1, 'field2': '1'})
 
-    assert exc_info.value.path == deque()
+    assert list(get_path(exc_info.value)) == []
 
     serializer = factory.serializer(ExampleInt)
     assert serializer(ExampleInt(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
