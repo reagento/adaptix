@@ -1,19 +1,16 @@
 from dataclasses import InitVar
-from typing import ClassVar, Callable, Tuple
+from typing import ClassVar, Callable, Tuple, Final
 
 from .normalize_type import BaseNormType, NormTV
-from ..feature_requirement import has_final, has_annotated
+from ..feature_requirement import has_annotated
 
 
 def strip_tags(norm: BaseNormType) -> BaseNormType:
     """Removes type hints that does not represent type
      and that only indicates metadata
     """
-    if has_final:
-        from typing import Final
-
-        if norm.origin == Final:
-            return strip_tags(norm.args[0])
+    if norm.origin == Final:
+        return strip_tags(norm.args[0])
 
     if has_annotated:
         from typing import Annotated

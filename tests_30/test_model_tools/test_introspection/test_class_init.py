@@ -3,7 +3,6 @@ from typing import Any
 
 import pytest
 
-from dataclass_factory_30.feature_requirement import has_pos_only_params
 from dataclass_factory_30.model_tools import InputField, NoDefault, ParamKind, DefaultValue, \
     get_class_init_input_figure, InputFigure, ExtraKwargs, IntrospectionError
 
@@ -85,7 +84,6 @@ def test_extra_kwargs():
     )
 
 
-@has_pos_only_params
 def test_pos_only():
     class HasPosOnly:
         def __init__(self, a, /, b):

@@ -40,10 +40,5 @@ class PythonVersionRequirement:
 has_py_38 = PythonVersionRequirement.make(3, 8)
 has_py_39 = PythonVersionRequirement.make(3, 9)
 
-has_pos_only_params = has_py_38
-has_protocol = has_py_38
-has_literal = has_py_38
-has_final = has_py_38
-has_typed_dict = has_py_38
-
 has_annotated = has_py_39
+has_std_classes_generics = has_py_39

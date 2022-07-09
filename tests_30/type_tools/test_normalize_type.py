@@ -16,14 +16,14 @@ from typing import (
 import pytest
 
 from dataclass_factory_30.common import TypeHint
-from dataclass_factory_30.feature_requirement import has_literal, has_final, has_annotated, has_protocol
+from dataclass_factory_30.feature_requirement import has_annotated, has_std_classes_generics
 from dataclass_factory_30.type_tools import NormType, normalize_type
 from dataclass_factory_30.type_tools.normalize_type import (
     NormTV,
     BaseNormType,
     _create_norm_literal,
     Bound,
-    Constraints
+    Constraints, NotSubscribedError
 )
 
 
@@ -96,10 +96,11 @@ def test_generic_concrete_one_arg(tp, alias):
         alias,
         tp, [nt_zero(Any)]
     )
-    assert_normalize(
-        tp[int],
-        tp, [nt_zero(int)]
-    )
+    if has_std_classes_generics:
+        assert_normalize(
+            tp[int],
+            tp, [nt_zero(int)]
+        )
     assert_normalize(
         alias[int],
         tp, [nt_zero(int)]
@@ -124,10 +125,11 @@ def test_generic_concrete_two_args(tp, alias):
         alias,
         tp, [nt_zero(Any), nt_zero(Any)]
     )
-    assert_normalize(
-        tp[int, str],
-        tp, [nt_zero(int), nt_zero(str)]
-    )
+    if has_std_classes_generics:
+        assert_normalize(
+            tp[int, str],
+            tp, [nt_zero(int), nt_zero(str)]
+        )
     assert_normalize(
         alias[int, str],
         tp, [nt_zero(int), nt_zero(str)]
@@ -143,24 +145,27 @@ def test_special_generics():
         Tuple,
         tuple, [nt_zero(Any), ...]
     )
-    assert_normalize(
-        tuple[int],
-        tuple, [nt_zero(int)]
-    )
+    if has_std_classes_generics:
+        assert_normalize(
+            tuple[int],
+            tuple, [nt_zero(int)]
+        )
     assert_normalize(
         Tuple[int],
         tuple, [nt_zero(int)]
     )
-    assert_normalize(
-        tuple[int, ...],
-        tuple, [nt_zero(int), ...]
-    )
+    if has_std_classes_generics:
+        assert_normalize(
+            tuple[int, ...],
+            tuple, [nt_zero(int), ...]
+        )
     assert_normalize(
         Tuple[int, ...],
         tuple, [nt_zero(int), ...]
     )
 
-    assert_normalize(tuple[()], tuple, [])
+    if has_std_classes_generics:
+        assert_normalize(tuple[()], tuple, [])
     assert_normalize(Tuple[()], tuple, [])
 
     any_str_placeholder = NormType(
@@ -244,7 +249,6 @@ def n_lit(*args):
     return _create_norm_literal(args)
 
 
-@has_literal
 def test_literal():
     from typing import Literal
 
@@ -288,7 +292,6 @@ def test_literal():
     )
 
 
-@has_final
 def test_final():
     from typing import Final
 
@@ -305,7 +308,7 @@ def test_final():
 def test_annotated():
     from typing import Annotated
 
-    with pytest.raises(ValueError):
+    with pytest.raises(NotSubscribedError):
         normalize_type(Annotated)
 
     assert_normalize(
@@ -474,7 +477,6 @@ def test_generic():
     assert_normalize(MyGeneric3[T1, T1, T1], MyGeneric3, [any_tv(T1), any_tv(T1), any_tv(T1)])
 
 
-@has_protocol
 def test_protocol():
     from typing import Protocol
 

@@ -1,46 +1,13 @@
-from typing import Generic, Iterable, Union
+from typing import Generic, Iterable, Union, get_origin, TypedDict
+import types
+from dataclass_factory_30.common import TypeHint
 
-from ..common import TypeHint, VarTuple
-
-TYPED_DICT_MCS_TUPLE: tuple = ()
-
-try:
-    from typing import TypedDict as PyTypedDict  # type: ignore
-
-
-    class RealPyTypedDict(PyTypedDict):
-        pass  # create real class, because PyTypedDict can be helper function
-
-
-    TYPED_DICT_MCS_TUPLE += (type(RealPyTypedDict),)
-except ImportError:
-    pass
-
-try:
-    from typing_extensions import TypedDict as CompatTypedDict  # type: ignore
-
-    # This is a hack. It exists because typing_extensions.TypedDict
-    # is not guaranteed to be a type, it can also be a function (which it is in 3.9)
-    _Foo = CompatTypedDict("_Foo", {})
-
-    TYPED_DICT_MCS_TUPLE += (type(_Foo),)
-    del _Foo
-except ImportError:
-    pass
+TYPED_DICT_MCS = type(types.new_class("_TypedDictSample", (TypedDict, ), {}))
 
 
 def strip_alias(type_hint: TypeHint) -> TypeHint:
-    try:
-        return type_hint.__origin__  # type: ignore
-    except AttributeError:
-        return type_hint
-
-
-def get_args(type_hint: TypeHint) -> VarTuple[TypeHint]:
-    try:
-        return tuple(type_hint.__args__)  # type: ignore
-    except AttributeError:
-        return ()
+    origin = get_origin(type_hint)
+    return type_hint if origin is None else origin
 
 
 def is_subclass_soft(cls, classinfo) -> bool:
@@ -69,9 +36,7 @@ def is_annotated(tp) -> bool:
 
 
 def is_typed_dict_class(tp) -> bool:
-    if not TYPED_DICT_MCS_TUPLE:
-        return False
-    return isinstance(tp, TYPED_DICT_MCS_TUPLE)
+    return isinstance(tp, TYPED_DICT_MCS)
 
 
 NAMED_TUPLE_METHODS = ('_fields', '_field_defaults', '_make', '_replace', '_asdict')

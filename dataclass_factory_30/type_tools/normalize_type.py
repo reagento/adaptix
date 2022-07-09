@@ -9,17 +9,16 @@ from typing import (
     Dict, ClassVar, Final, Literal,
     Union, TypeVar, Tuple, Iterable,
     Hashable, Callable, Type, NewType,
-    overload, NoReturn,
+    overload, NoReturn, get_args,
 )
-
-from typing_extensions import Annotated
 
 from .basic_utils import (
-    strip_alias, get_args, is_annotated,
-    is_subclass_soft, is_user_defined_generic, is_new_type,
-    create_union
+    is_annotated, is_new_type,
+    is_subclass_soft, create_union,
+    is_user_defined_generic, strip_alias,
 )
 from ..common import TypeHint, VarTuple
+from ..feature_requirement import has_annotated
 
 
 class BaseNormType(Hashable, ABC):
@@ -162,9 +161,7 @@ ANY_NT = NormType(Any, (), source=Any)
 
 
 class ImplicitParamsFiller:
-    ONE_ANY_STR_PARAM = {
-        re.Pattern, re.Match
-    }
+    ONE_ANY_STR_PARAM = [re.Pattern, re.Match]
 
     TYPE_PARAM_CNT = {
         type: 1,
@@ -288,11 +285,14 @@ class TypeNormalizer:
     def _norm_iter(self, tps) -> VarTuple[BaseNormType]:
         return tuple(self.normalize(tp) for tp in tps)
 
-    MUST_SUBSCRIBED_ORIGINS = {
-        ClassVar, Final, Annotated,
-        Literal, Union, Optional,
-        InitVar
-    }
+    MUST_SUBSCRIBED_ORIGINS = [
+        ClassVar, Final, Literal,
+        Union, Optional, InitVar,
+    ]
+
+    if has_annotated:
+        from typing import Annotated
+        MUST_SUBSCRIBED_ORIGINS.append(Annotated)
 
     @_aspect_storage.add
     def _check_bad_input(self, tp, origin, args):
@@ -307,14 +307,17 @@ class TypeNormalizer:
         if origin is None or origin is NoneType:
             return NormType(None, (), source=tp)
 
-    @_aspect_storage.add
-    def _norm_annotated(self, tp, origin, args):
-        if is_annotated(tp):
-            return NormType(
-                Annotated,
-                (self.normalize(origin), *tp.__metadata__),
-                source=tp
-            )
+    if has_annotated:
+        @_aspect_storage.add
+        def _norm_annotated(self, tp, origin, args):
+            from typing import Annotated
+
+            if is_annotated(tp):
+                return NormType(
+                    Annotated,
+                    (self.normalize(args[0]), *args[1:]),
+                    source=tp
+                )
 
     @_aspect_storage.add
     def _norm_type_var(self, tp, origin, args):
@@ -391,7 +394,7 @@ class TypeNormalizer:
             if args[0] is ...:
                 call_args = ...
             else:
-                call_args = tuple(map(normalize_type, args[:-1]))
+                call_args = tuple(map(normalize_type, args[0]))
             return NormType(
                 origin, (call_args, self.normalize(args[-1])), source=tp
             )

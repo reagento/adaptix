@@ -1,7 +1,6 @@
 from collections import namedtuple
 from typing import NamedTuple, TypeVar, Generic, Tuple
 
-from dataclass_factory_30.feature_requirement import has_protocol
 from dataclass_factory_30.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
 
 
@@ -28,7 +27,6 @@ def test_is_named_tuple_class():
     assert is_named_tuple_class(DynNTChild)
 
 
-@has_protocol
 def test_is_protocol():
     from typing import Protocol, runtime_checkable
     from typing import SupportsInt
