@@ -231,16 +231,16 @@ NEXT_PROVIDER = NextProvider()
 
 
 class LimitingProvider(Provider):
-    def __init__(self, req_checker: RequestChecker, provider: Provider):
-        self._req_checker = req_checker
+    def __init__(self, request_checker: RequestChecker, provider: Provider):
+        self._request_checker = request_checker
         self._provider = provider
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        self._req_checker(request)
+        self._request_checker(request)
         return self._provider.apply_provider(mediator, request)
 
     def __repr__(self):
-        return f"{type(self).__name__}({self._req_checker}, {self._provider})"
+        return f"{type(self).__name__}({self._request_checker}, {self._provider})"
 
 
 def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:

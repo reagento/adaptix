@@ -159,7 +159,6 @@ def add_property(
     access_error: Optional[Catchable] = None,
     metadata: Mapping[Any, Any] = MappingProxyType({}),
 ):
-    request_checker = create_req_checker(pred)
     attr_name = _ensure_attr_name(prop)
 
     field = OutputField(
@@ -170,10 +169,12 @@ def add_property(
         metadata=metadata,
     )
 
-    return PropertyAdder(
-        request_checker=request_checker,
-        output_fields=[field],
-        infer_types_for=[field.name] if tp is _OMITTED else [],
+    return LimitingProvider(
+        create_req_checker(pred),
+        PropertyAdder(
+            output_fields=[field],
+            infer_types_for=[field.name] if tp is _OMITTED else [],
+        )
     )
 
 

@@ -6,7 +6,6 @@ from .definitions import (
     InputFigureRequest, OutputFigureRequest,
 )
 from ..static_provider import StaticProvider, static_provision_action
-from ..provider_basics import RequestChecker
 from ..essential import Mediator, CannotProvide, Provider, Request
 from ...common import TypeHint
 from ...model_tools import (
@@ -71,11 +70,9 @@ CLASS_INIT_FIGURE_PROVIDER = FigureProvider(
 class PropertyAdder(StaticProvider):
     def __init__(
         self,
-        request_checker: RequestChecker,
         output_fields: Iterable[OutputField],
         infer_types_for: Container[str],
     ):
-        self._request_checker = request_checker
         self._output_fields = output_fields
         self._infer_types_for = infer_types_for
 
@@ -90,7 +87,6 @@ class PropertyAdder(StaticProvider):
 
     @static_provision_action
     def provide_output_figure(self, mediator: Mediator, request: OutputFigureRequest) -> OutputFigure:
-        self._request_checker(request)
         figure: OutputFigure = mediator.provide_from_next(request)
 
         additional_fields = tuple(
