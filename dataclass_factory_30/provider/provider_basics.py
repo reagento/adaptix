@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from inspect import isabstract
 from typing import TypeVar, Union, Type, Callable, Any, Generic
 
-from .definitions import ParseError, PARSER_COMPAT_EXCEPTIONS, SerializeError
+from .definitions import ParseError, PARSER_COMPAT_EXCEPTIONS
 from .essential import Provider, Mediator, CannotProvide, Request
 from .request_cls import TypeHintRM, FieldRM
-from ..common import TypeHint, Parser, Serializer, VarTuple
+from ..common import TypeHint, Parser, VarTuple
 from ..type_tools import is_protocol, normalize_type, is_subclass_soft
 from ..type_tools.normalize_type import NormTV, NotSubscribedError, BaseNormType
 

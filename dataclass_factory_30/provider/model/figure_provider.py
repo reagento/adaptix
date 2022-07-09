@@ -5,8 +5,8 @@ from typing import Any, Callable, Optional, Iterable, Container, cast
 from .definitions import (
     InputFigureRequest, OutputFigureRequest,
 )
-from ..static_provider import StaticProvider, static_provision_action
 from ..essential import Mediator, CannotProvide, Provider, Request
+from ..static_provider import StaticProvider, static_provision_action
 from ...common import TypeHint
 from ...model_tools import (
     InputFigure, OutputFigure,

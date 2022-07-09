@@ -1,6 +1,6 @@
-import inspect
 from types import MethodType, BuiltinMethodType, WrapperDescriptorType, MappingProxyType
-from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union, Iterable, List, Optional, Mapping
+from types import MethodType, BuiltinMethodType, WrapperDescriptorType, MappingProxyType
+from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union, Optional, Mapping
 
 from .essential import Provider
 from .model import InputFigureRequest
@@ -10,7 +10,7 @@ from .request_cls import (
     SerializerRequest, ParserRequest,
 )
 from ..common import Parser, Serializer, TypeHint, Catchable
-from ..model_tools import get_func_input_figure, Default, NoDefault, OutputField, AttrAccessor, PropertyAccessor
+from ..model_tools import get_func_input_figure, Default, NoDefault, OutputField, PropertyAccessor
 
 T = TypeVar('T')
 

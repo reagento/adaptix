@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Type, TypeVar, Optional, List, Dict, Sequence
+from typing import Type, TypeVar, Optional, List, Dict
 
 from .builtin_factory import BuiltinFactory
 from ..common import Parser, Serializer, TypeHint

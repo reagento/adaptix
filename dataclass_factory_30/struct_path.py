@@ -92,4 +92,3 @@ def get_path_unchecked(obj: object) -> Sequence[PathElement]:
     except AttributeError:
         return deque()
     return path
-

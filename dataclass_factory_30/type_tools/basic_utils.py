@@ -1,8 +1,9 @@
-from typing import Generic, Iterable, Union, get_origin, TypedDict
 import types
+from typing import Generic, Iterable, Union, get_origin, TypedDict
+
 from dataclass_factory_30.common import TypeHint
 
-TYPED_DICT_MCS = type(types.new_class("_TypedDictSample", (TypedDict, ), {}))
+TYPED_DICT_MCS = type(types.new_class("_TypedDictSample", (TypedDict,), {}))
 
 
 def strip_alias(type_hint: TypeHint) -> TypeHint:
