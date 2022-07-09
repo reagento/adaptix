@@ -1,4 +1,5 @@
-from typing import Type, TypeVar, Optional, List, Dict
+from dataclasses import dataclass
+from typing import Type, TypeVar, Optional, List, Dict, Sequence
 
 from .builtin_factory import BuiltinFactory
 from ..common import Parser, Serializer, TypeHint
@@ -19,8 +20,12 @@ T = TypeVar('T')
 RequestTV = TypeVar('RequestTV', bound=Request)
 
 
+@dataclass
 class NoSuitableProvider(Exception):
-    pass
+    important_error: Optional[CannotProvide]
+
+    def __str__(self):
+        return repr(self.important_error)
 
 
 # TODO: Add JsonSchemaFactory with new API
@@ -52,8 +57,9 @@ class Factory(BuiltinFactory, Provider):
     def _facade_provide(self, request: Request[T]) -> T:
         try:
             return self._provide_from_recipe(request)
-        except CannotProvide:
-            raise NoSuitableProvider
+        except CannotProvide as e:
+            important_error = e if e.is_important() else None
+            raise NoSuitableProvider(important_error=important_error)
 
     def parser(self, tp: Type[T]) -> Parser[T]:
         try:

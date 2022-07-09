@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
-from dataclasses import dataclass, field
-from typing import TypeVar, Generic, Optional, List, Sequence, Type
+from dataclasses import dataclass
+from typing import TypeVar, Generic, Optional, Sequence, Type, Iterable
 
 from ..common import VarTuple
 
@@ -18,13 +18,41 @@ class Request(Generic[T]):
     """
 
 
-@dataclass
 class CannotProvide(Exception):
-    msg: Optional[str] = None
-    sub_errors: Sequence['CannotProvide'] = field(default_factory=list)
+    def __init__(
+        self,
+        msg: Optional[str] = None,
+        sub_errors: Optional[Sequence['CannotProvide']] = None,
+        is_important: bool = False,
+    ):
+        """
+        :param msg: Human-oriented description of error
+        :param sub_errors: Errors caused this error
+        :param is_important: if the error is important,
+            it will be propagated above and the following providers will not be tested
+        """
+        if sub_errors is None:
+            sub_errors = []
+        self.msg = msg
+        self.sub_errors = sub_errors
+        self._is_important = is_important
 
-    def __post_init__(self):
-        Exception.__init__(self)
+    def __eq__(self, other):
+        if isinstance(other, CannotProvide):
+            return (
+                self.msg == other.msg
+                and self.sub_errors == other.sub_errors
+                and self._is_important == other._is_important
+            )
+        return NotImplemented
+
+    # TODO: maybe add checking of __cause__ and __context__
+    def is_important(self) -> bool:
+        return self._is_important or any(error.is_important for error in self.sub_errors)
+
+    def __repr__(self):
+        content = f"msg={self.msg!r}, sub_errors={self.sub_errors!r}, is_important={self._is_important!r}"
+        return f"{type(self).__name__}({content})"
 
 
 class Mediator(ABC):
@@ -78,7 +106,7 @@ class PipelineEvalMixin(Request[T], Generic[T]):
     @abstractmethod
     def eval_pipeline(
         cls: Type[Request[T]],
-        providers: List[Provider],
+        providers: Iterable[Provider],
         mediator: Mediator,
         request: Request[T]
     ) -> T:

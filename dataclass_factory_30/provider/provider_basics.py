@@ -253,18 +253,6 @@ def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
     return foreign_parser_wrapper
 
 
-def foreign_serializer(func: Callable[[T], Any]) -> Serializer[T]:
-    def foreign_serializer_wrapper(arg):
-        try:
-            return func(arg)
-        except SerializeError:
-            raise
-        except Exception as e:
-            raise SerializeError() from e
-
-    return foreign_serializer_wrapper
-
-
 class ValueProvider(Provider, Generic[T]):
     def __init__(self, req_cls: Type[Request[T]], value: T):
         self._req_cls = req_cls

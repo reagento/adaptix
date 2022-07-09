@@ -13,6 +13,7 @@ from dataclass_factory_30.provider import (
     NameStyle,
     ValueProvider,
     InputNameMappingRequest,
+    CannotProvide,
 )
 from dataclass_factory_30.provider.model.crown_definitions import (
     CfgExtraPolicy, OutputNameMappingRequest, InpDictCrown,
@@ -422,7 +423,7 @@ def test_name_mapping_extra_targets_skip(factory):
 
 
 def test_name_mapping_error_on_required_field_skip(factory):
-    with pytest.raises(ValueError):
+    with pytest.raises(CannotProvide):
         factory.provide(
             inp_request(
                 fields=[
@@ -439,7 +440,7 @@ def test_name_mapping_error_on_required_field_skip(factory):
             )
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(CannotProvide):
         factory.provide(
             inp_request(
                 fields=[

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TypeVar, List, Generic
+from typing import TypeVar, Generic, Iterable
 
 from .essential import (
     Mediator,
@@ -44,7 +44,7 @@ class ParserRequest(TypeHintRM[Parser], PipelineEvalMixin[Parser]):
     @classmethod
     def eval_pipeline(
         cls,
-        providers: List[Provider],
+        providers: Iterable[Provider],
         mediator: Mediator,
         request: Request
     ):
@@ -73,7 +73,7 @@ class SerializerRequest(TypeHintRM[Serializer], PipelineEvalMixin[Serializer]):
     @classmethod
     def eval_pipeline(
         cls,
-        providers: List[Provider],
+        providers: Iterable[Provider],
         mediator: Mediator,
         request: Request
     ):

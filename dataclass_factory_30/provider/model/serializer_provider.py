@@ -81,7 +81,8 @@ class BuiltinOutputCreationImageProvider(StaticProvider, DirectFieldsCollectorMi
             for sub_crown in crown.map:
                 if isinstance(sub_crown, OutFieldCrown) and fields_dict[sub_crown.name].is_optional:
                     raise CannotProvide(
-                        "OutListCrown cannot contain OutFieldCrown of optional field"
+                        "OutListCrown cannot contain OutFieldCrown of optional field",
+                        is_important=True,
                     )
                 else:
                     self._check_optional_field_at_list_crown(fields_dict, crown)

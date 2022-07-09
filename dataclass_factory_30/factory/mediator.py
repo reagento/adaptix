@@ -18,7 +18,6 @@ class StubsRecursionResolver(ABC, Generic[T]):
 
 
 ProvideCallable = Callable[[Mediator, Request[T]], T]
-
 SearchResult = Tuple[ProvideCallable, int]
 
 
@@ -92,7 +91,9 @@ class BuiltinMediator(Mediator):
             self.next_offset = next_offset
             try:
                 result = provide_callable(self, request)
-            except CannotProvide:
+            except CannotProvide as e:
+                if e.is_important():
+                    raise
                 continue
             finally:
                 self.provided_request.remove(request)

@@ -41,7 +41,8 @@ class BuiltinInputExtractionImageProvider(StaticProvider, DirectFieldsCollectorM
         if self._has_collect_policy(name_mapping.crown) and request.figure.extra is None:
             raise CannotProvide(
                 "Cannot create parser that collect extra data"
-                " if InputFigure does not take extra data"
+                " if InputFigure does not take extra data",
+                is_important=True,
             )
 
         used_direct_fields = self._collect_used_direct_fields(name_mapping.crown)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field as dc_field
 from typing import Optional, List, Dict, Collection, cast
 
-from .essential import Mediator
+from .essential import Mediator, CannotProvide
 from .model import (
     InpDictCrown, BaseNameMappingRequest,
     InputNameMappingRequest, OutputNameMappingRequest,
@@ -171,7 +171,12 @@ class NameMapper(NameMappingProvider):
         ]
 
         if skipped_required_fields:
-            raise ValueError  # TODO: replace this error with CannotProvide pushing to user
+            sr_field_names = [field.name for field in skipped_required_fields]
+            raise CannotProvide(
+                f"Can not create name mapping for type {request.type}"
+                f" that skips required fields {sr_field_names}",
+                is_important=True,
+            )
 
         base_name_mapping = self._provide_name_mapping(mediator, request)
         extra_policy: ExtraPolicy = mediator.provide(CfgExtraPolicy())
