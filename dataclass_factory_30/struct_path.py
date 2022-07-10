@@ -20,6 +20,7 @@ class Attr(PathElementMarker):
 # except with PathElementMarker children that define custom way to extract values.
 # For example, Attr means that next value must be gotten by attribute access
 PathElement = Union[str, int, Any, PathElementMarker]
+Path = Sequence[PathElement]
 
 
 def append_path(obj: object, path_element: PathElement) -> None:
@@ -56,7 +57,7 @@ def extend_path(obj: object, sub_path: Reversible[PathElement]) -> None:
         path.extendleft(reversed(sub_path))
 
 
-def get_path(obj: object) -> Optional[Sequence[PathElement]]:
+def get_path(obj: object) -> Optional[Path]:
     """Retrieve path from object. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, returns None.
 
@@ -77,7 +78,7 @@ def get_path(obj: object) -> Optional[Sequence[PathElement]]:
     return path
 
 
-def get_path_unchecked(obj: object) -> Sequence[PathElement]:
+def get_path_unchecked(obj: object) -> Path:
     """Retrieve path from object. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, returns empty sequence.
 

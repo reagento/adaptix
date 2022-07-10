@@ -46,12 +46,12 @@ class CodeGenAccumulator(StaticProvider):
 T = TypeVar('T')
 
 
-def _merge_iters(args: Iterable[Iterable[T]]) -> List[T]:
+def _merge_iters(args: Iterable[Iterable[T]]) -> Iterable[T]:
     return list(itertools.chain.from_iterable(args))
 
 
 class DirectFieldsCollectorMixin:
-    def _inner_collect_used_direct_fields(self, crown: BaseCrown) -> List[str]:
+    def _inner_collect_used_direct_fields(self, crown: BaseCrown) -> Iterable[str]:
         if isinstance(crown, BaseDictCrown):
             return _merge_iters(
                 self._inner_collect_used_direct_fields(sub_crown)

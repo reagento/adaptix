@@ -1,6 +1,6 @@
 import sys
 
-from dataclass_factory_30.common import VarTuple
+from .common import VarTuple
 
 
 def _true():
@@ -37,7 +37,6 @@ class PythonVersionRequirement:
         return f"<{type(self).__qualname__} ver={self.ver} is_meet={self.is_meet}>"
 
 
-has_py_38 = PythonVersionRequirement.make(3, 8)
 has_py_39 = PythonVersionRequirement.make(3, 9)
 
 has_annotated = has_py_39

@@ -1,4 +1,3 @@
-from collections import deque
 from typing import Mapping, Dict, Callable
 
 from .definitions import OutputExtractionGen, VarBinder
@@ -28,7 +27,6 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         builder = CodeBuilder()
 
         ctx_namespace.add("SerializeError", SerializeError)
-        ctx_namespace.add("deque", deque)
         ctx_namespace.add("append_path", append_path)
         ctx_namespace.add("extend_path", extend_path)
         name_to_fields = {field.name: field for field in self._figure.fields}

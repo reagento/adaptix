@@ -237,12 +237,12 @@ class BuiltinOutputCreationGen(OutputCreationGen):
         link_expr = self._gen_crown_link_expr(state, key, sub_crown)
         if link_expr.is_atomic:
             builder += f"""
-                if {sieve}({link_expr}):
-                    {self_var}[{key!r}] = {link_expr}
+                if {sieve}({link_expr.expr}):
+                    {self_var}[{key!r}] = {link_expr.expr}
             """
         else:
             builder += f"""
-                value = {link_expr}
+                value = {link_expr.expr}
                 if {sieve}(value):
                     {self_var}[{key!r}] = value
             """

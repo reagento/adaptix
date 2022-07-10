@@ -12,7 +12,7 @@ from ...utils import SingletonMeta
 T = TypeVar('T')
 
 FldPathElem = Union[str, int]
-Path = VarTuple[FldPathElem]
+Path = VarTuple[FldPathElem]  # subset of struct_path.Path
 
 
 # Policies how to process extra data

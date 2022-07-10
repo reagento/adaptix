@@ -198,12 +198,12 @@ class NameMapper(NameMappingProvider):
         if isinstance(field.default, DefaultValue):
             default_value = field.default.value
 
-            return lambda x: x == default_value
+            return lambda x: x != default_value
 
         if isinstance(field.default, DefaultFactory):
             default_factory = field.default.factory
 
-            return lambda x: x == default_factory()
+            return lambda x: x != default_factory()
 
         raise ValueError
 

@@ -38,7 +38,7 @@ class BuiltinInputExtractionImageProvider(StaticProvider, DirectFieldsCollectorM
 
         extraction_gen = self._create_extraction_gen(request, name_mapping)
 
-        if self._has_collect_policy(name_mapping.crown) and request.figure.extra is None:
+        if request.figure.extra is None and self._has_collect_policy(name_mapping.crown):
             raise CannotProvide(
                 "Cannot create parser that collect extra data"
                 " if InputFigure does not take extra data",

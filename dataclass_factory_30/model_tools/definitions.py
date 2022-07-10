@@ -145,7 +145,7 @@ class OutputField(BaseField):
 
     @property
     def is_optional(self) -> bool:
-        return not self.is_optional
+        return not self.is_required
 
     @property
     def is_required(self) -> bool:
