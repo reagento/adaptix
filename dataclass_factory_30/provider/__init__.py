@@ -77,14 +77,16 @@ from .provider_basics import (
     SubclassRC,
     FieldNameRC,
     NextProvider,
-    LimitingProvider,
+    BoundingProvider,
     ValueProvider,
     FactoryProvider,
 )
 from .provider_factory import (
+    bound,
     as_parser,
     as_serializer,
     as_constructor,
+    add_property,
 )
 from .provider_template import (
     for_type,

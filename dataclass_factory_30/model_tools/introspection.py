@@ -250,13 +250,10 @@ def get_class_init_input_figure(tp) -> InputFigure:
     if not isinstance(tp, type):
         raise IntrospectionError
 
-    try:
-        input_figure = get_func_input_figure(
-            tp.__init__,  # type: ignore[misc]
-            slice(1, None)
-        )
-    except ValueError:
-        raise IntrospectionError
+    input_figure = get_func_input_figure(
+        tp.__init__,  # type: ignore[misc]
+        slice(1, None)
+    )
 
     return replace(
         input_figure,

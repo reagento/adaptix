@@ -26,8 +26,6 @@ from ..provider import (
     NameMapper,
     ValueProvider,
     ParserRequest,
-    LimitingProvider,
-    create_req_checker,
     SerializerRequest,
     IterableProvider,
     DictProvider,
@@ -45,6 +43,7 @@ from ..provider import (
     TYPED_DICT_FIGURE_PROVIDER,
     DATACLASS_FIGURE_PROVIDER,
     CLASS_INIT_FIGURE_PROVIDER,
+    bound,
 )
 
 
@@ -97,10 +96,7 @@ class BuiltinFactory(OperatingFactory, ABC):
         NoneProvider(),
 
         # omit wrapping with foreign_parser
-        LimitingProvider(
-            create_req_checker(Any),
-            ValueProvider(ParserRequest, stub)
-        ),
+        bound(Any, ValueProvider(ParserRequest, stub)),
         as_serializer(Any, stub),
 
         IsoFormatProvider(datetime),

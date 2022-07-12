@@ -230,7 +230,7 @@ class NextProvider(Provider):
 NEXT_PROVIDER = NextProvider()
 
 
-class LimitingProvider(Provider):
+class BoundingProvider(Provider):
     def __init__(self, request_checker: RequestChecker, provider: Provider):
         self._request_checker = request_checker
         self._provider = provider

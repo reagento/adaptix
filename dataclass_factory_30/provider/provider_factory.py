@@ -1,11 +1,10 @@
 from types import MethodType, BuiltinMethodType, WrapperDescriptorType, MappingProxyType
-from types import MethodType, BuiltinMethodType, WrapperDescriptorType, MappingProxyType
 from typing import TypeVar, Type, overload, Any, Callable, Tuple, Union, Optional, Mapping
 
 from .essential import Provider
 from .model import InputFigureRequest
 from .model.figure_provider import PropertyAdder
-from .provider_basics import create_req_checker, LimitingProvider, foreign_parser, ValueProvider
+from .provider_basics import create_req_checker, BoundingProvider, foreign_parser, ValueProvider
 from .request_cls import (
     SerializerRequest, ParserRequest,
 )
@@ -13,6 +12,10 @@ from ..common import Parser, Serializer, TypeHint, Catchable
 from ..model_tools import get_func_input_figure, Default, NoDefault, OutputField, PropertyAccessor
 
 T = TypeVar('T')
+
+
+def bound(pred: Any, provider: Provider) -> Provider:
+    return BoundingProvider(create_req_checker(pred), provider)
 
 
 def resolve_classmethod(func) -> Tuple[type, Callable]:
@@ -61,12 +64,9 @@ def as_parser(func_or_pred: Union[type, Parser]) -> Provider:
 
 def as_parser(func_or_pred, func=None):
     pred, func = _resolve_pred_and_value(func_or_pred, func)
-    return LimitingProvider(
-        create_req_checker(pred),
-        ValueProvider(
-            ParserRequest,
-            foreign_parser(func)
-        )
+    return bound(
+        pred,
+        ValueProvider(ParserRequest, foreign_parser(func))
     )
 
 
@@ -85,7 +85,7 @@ def as_serializer(pred: Any, func: Serializer) -> Provider:
 # There is rare case when method is WrapperDescriptorType,
 # nevertheless one arg signature was removed
 def as_serializer(pred, func):
-    return LimitingProvider(
+    return BoundingProvider(
         create_req_checker(pred),
         ValueProvider(
             SerializerRequest,
@@ -111,8 +111,8 @@ def as_constructor(func_or_pred: Callable) -> Provider:
 
 def as_constructor(func_or_pred, constructor=None):
     pred, func = _resolve_pred_and_value(func_or_pred, constructor)
-    return LimitingProvider(
-        create_req_checker(pred),
+    return bound(
+        pred,
         ValueProvider(
             InputFigureRequest,
             get_func_input_figure(func, slice(1, None))
@@ -169,8 +169,8 @@ def add_property(
         metadata=metadata,
     )
 
-    return LimitingProvider(
-        create_req_checker(pred),
+    return bound(
+        pred,
         PropertyAdder(
             output_fields=[field],
             infer_types_for=[field.name] if tp is _OMITTED else [],
