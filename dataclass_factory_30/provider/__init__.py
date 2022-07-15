@@ -52,6 +52,7 @@ from .model import (
     OutputFigureRequest,
     OutputNameMappingRequest
 )
+from .model.figure_provider import PropertyAdder
 from .name_mapper import NameMapper
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import (
@@ -63,9 +64,9 @@ from .provider_basics import (
     RequestChecker,
     SubclassRC,
     ValueProvider,
-    create_req_checker
+    create_req_checker,
+    foreign_parser
 )
-from .provider_factory import add_property, as_constructor, as_parser, as_serializer, bound
 from .provider_template import ABCProxy, CoercionLimiter, ParserProvider, SerializerProvider, for_type
 from .request_cls import (
     FieldRM,

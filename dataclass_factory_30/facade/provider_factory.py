@@ -3,13 +3,20 @@ from typing import Any, Callable, Mapping, Optional, Tuple, Type, TypeVar, Union
 
 from ..common import Catchable, Parser, Serializer, TypeHint
 from ..model_tools import Default, NoDefault, OutputField, PropertyAccessor, get_func_input_figure
-from .essential import Provider
-from .model import InputFigureRequest
-from .model.figure_provider import PropertyAdder
-from .provider_basics import BoundingProvider, ValueProvider, create_req_checker, foreign_parser
-from .request_cls import ParserRequest, SerializerRequest
+from ..provider import (
+    BoundingProvider,
+    InputFigureRequest,
+    ParserRequest,
+    PropertyAdder,
+    Provider,
+    SerializerRequest,
+    ValueProvider,
+    create_req_checker,
+    foreign_parser
+)
 
 T = TypeVar('T')
+_OMITTED = object()
 
 
 def bound(pred: Any, provider: Provider) -> Provider:
@@ -119,8 +126,6 @@ def as_constructor(func_or_pred, constructor=None):
 
 
 NameOrProp = Union[str, property]
-
-_OMITTED = object()
 
 
 @overload
