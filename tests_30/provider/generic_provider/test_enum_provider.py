@@ -1,21 +1,13 @@
 from enum import Enum, IntEnum
 
-import pytest
-
-from dataclass_factory_30.common import Parser, Serializer
+from dataclass_factory_30.facade import enum_by_value, parser, serializer
 from dataclass_factory_30.provider import (
-    CannotProvide,
     EnumExactValueProvider,
     EnumNameProvider,
-    EnumValueProvider,
-    Mediator,
     ParseError,
     ParserRequest,
-    SerializerRequest,
-    as_parser,
-    as_serializer
+    SerializerRequest
 )
-from dataclass_factory_30.provider.generic_provider import BaseEnumProvider
 from tests_30.provider.conftest import TestFactory, parametrize_bool, raises_instance
 
 
@@ -141,13 +133,13 @@ def custom_string_serializer(value: str):
 def test_value_provider(strict_coercion, debug_path):
     factory = TestFactory(
         recipe=[
-            EnumValueProvider([MyEnum], value_type=str),
-            as_parser(str),
-            as_serializer(str, custom_string_serializer),
+            enum_by_value(MyEnum, tp=str),
+            parser(str),
+            serializer(str, custom_string_serializer),
         ]
     )
 
-    parser = factory.provide(
+    enum_parser = factory.provide(
         ParserRequest(
             type=MyEnum,
             strict_coercion=strict_coercion,
@@ -155,125 +147,24 @@ def test_value_provider(strict_coercion, debug_path):
         )
     )
 
-    assert parser("1") == MyEnum.V1
-    assert parser(1) == MyEnum.V1
+    assert enum_parser("1") == MyEnum.V1
+    assert enum_parser(1) == MyEnum.V1
 
     raises_instance(
         ParseError(),
-        lambda: parser("V1")
+        lambda: enum_parser("V1")
     )
 
     raises_instance(
         ParseError(),
-        lambda: parser(MyEnum.V1)
+        lambda: enum_parser(MyEnum.V1)
     )
 
-    serializer = factory.provide(
+    enum_serializer = factory.provide(
         SerializerRequest(
             type=MyEnum,
             debug_path=debug_path,
         )
     )
 
-    assert serializer(MyEnum.V1) == "PREFIX 1"
-
-
-class TestEnumProvider(BaseEnumProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        pass
-
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
-        pass
-
-
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_provider_selecting_any(strict_coercion, debug_path):
-    all_enums = TestEnumProvider(bounds=None)
-
-    for tp in [MyEnum, MyIntEnum]:
-        all_enums._check_request(
-            ParserRequest(
-                type=tp,
-                strict_coercion=strict_coercion,
-                debug_path=debug_path
-            )
-        )
-
-        all_enums._check_request(
-            SerializerRequest(
-                type=tp,
-                debug_path=debug_path,
-            )
-        )
-
-
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_provider_selecting_iter(strict_coercion, debug_path):
-    my_enum = TestEnumProvider(bounds=[MyEnum])
-
-    my_enum._check_request(
-        ParserRequest(
-            type=MyEnum,
-            strict_coercion=strict_coercion,
-            debug_path=debug_path
-        )
-    )
-
-    my_enum._check_request(
-        SerializerRequest(
-            type=MyEnum,
-            debug_path=debug_path,
-        )
-    )
-
-    raises_instance(
-        CannotProvide(),
-        lambda: my_enum._check_request(
-            ParserRequest(
-                type=MyIntEnum,
-                strict_coercion=strict_coercion,
-                debug_path=debug_path
-            )
-        )
-    )
-
-    raises_instance(
-        CannotProvide(),
-        lambda: my_enum._check_request(
-            SerializerRequest(
-                type=MyIntEnum,
-                debug_path=debug_path,
-            )
-        )
-    )
-
-
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_provider_selecting_int_enum(strict_coercion, debug_path):
-    my_int_enum = TestEnumProvider(bounds=[MyIntEnum])
-
-    raises_instance(
-        CannotProvide(),
-        lambda: my_int_enum._check_request(
-            ParserRequest(
-                type=int,
-                strict_coercion=strict_coercion,
-                debug_path=debug_path
-            )
-        )
-    )
-
-    raises_instance(
-        CannotProvide(),
-        lambda: my_int_enum._check_request(
-            SerializerRequest(
-                type=int,
-                debug_path=debug_path,
-            )
-        )
-    )
-
-
-def test_constructor_exception_raising():
-    with pytest.raises(ValueError):
-        TestEnumProvider(bounds=[Enum])
+    assert enum_serializer(MyEnum.V1) == "PREFIX 1"

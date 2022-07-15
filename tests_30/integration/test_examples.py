@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from dataclass_factory_30.factory import Factory
+from dataclass_factory_30.facade import Factory
 
 
 @dataclass

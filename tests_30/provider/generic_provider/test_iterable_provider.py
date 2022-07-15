@@ -4,14 +4,13 @@ from typing import Dict, Iterable, List, Mapping
 
 import pytest
 
+from dataclass_factory_30.facade import parser, serializer
 from dataclass_factory_30.provider import (
     CannotProvide,
     CoercionLimiter,
     IterableProvider,
     ParserRequest,
-    SerializerRequest,
-    as_parser,
-    as_serializer
+    SerializerRequest
 )
 from dataclass_factory_30.provider.definitions import ExcludedTypeParseError, TypeParseError
 from tests_30.provider.conftest import TestFactory, parametrize_bool, raises_instance
@@ -22,8 +21,8 @@ def factory():
     return TestFactory(
         recipe=[
             IterableProvider(),
-            CoercionLimiter(as_parser(str), [str]),
-            as_serializer(str, str),  # this serializer differ from a builtin one
+            CoercionLimiter(parser(str), [str]),
+            serializer(str, str),  # this serializer differ from a builtin one
         ]
     )
 

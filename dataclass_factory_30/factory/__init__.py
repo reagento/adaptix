@@ -1,5 +1,3 @@
-from .builtin_factory import BuiltinFactory, FuncRecursionResolver, FuncWrapper, OperatingFactory
-from .facade_factory import Factory
 from .mediator import (
     BuiltinMediator,
     ProvideCallable,
@@ -9,3 +7,4 @@ from .mediator import (
     SearchResult,
     StubsRecursionResolver
 )
+from .operating_factory import FuncRecursionResolver, FuncWrapper, OperatingFactory

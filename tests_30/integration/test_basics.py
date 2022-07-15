@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 
-from dataclass_factory_30.factory import Factory
+from dataclass_factory_30.facade import Factory
 from dataclass_factory_30.provider.definitions import TypeParseError
 from dataclass_factory_30.struct_path import get_path
 
