@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Mapping, Collection
+from typing import Collection, Mapping, TypeVar
 
-from .. import Request
-from ..request_cls import TypeHintRM, ParserRequest, SerializerRequest
-from ...code_tools import CodeBuilder, PrefixManglerBase, MangledConstant, mangling_method, ContextNamespace
+from ...code_tools import CodeBuilder, ContextNamespace, MangledConstant, PrefixManglerBase, mangling_method
 from ...common import Parser, Serializer
-from ...model_tools import InputFigure, OutputFigure, BaseField
+from ...model_tools import BaseField, InputFigure, OutputFigure
+from .. import Request
+from ..request_cls import ParserRequest, SerializerRequest, TypeHintRM
 
 T = TypeVar('T')
 

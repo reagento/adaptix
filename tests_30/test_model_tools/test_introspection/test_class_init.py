@@ -3,8 +3,16 @@ from typing import Any
 
 import pytest
 
-from dataclass_factory_30.model_tools import InputField, NoDefault, ParamKind, DefaultValue, \
-    get_class_init_input_figure, InputFigure, ExtraKwargs, IntrospectionError
+from dataclass_factory_30.model_tools import (
+    DefaultValue,
+    ExtraKwargs,
+    InputField,
+    InputFigure,
+    IntrospectionError,
+    NoDefault,
+    ParamKind,
+    get_class_init_input_figure
+)
 
 
 class Valid1:

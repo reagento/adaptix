@@ -1,4 +1,4 @@
-from typing import TypeVar, Any, Callable, Tuple, Union, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Tuple, Type, TypeVar, Union
 
 K_contra = TypeVar('K_contra', contravariant=True)
 V_co = TypeVar('V_co', covariant=True)

@@ -1,19 +1,19 @@
 from dataclasses import dataclass
-from typing import Type, TypeVar, Optional, List, Dict
+from typing import Dict, List, Optional, Type, TypeVar
 
-from .builtin_factory import BuiltinFactory
 from ..common import Parser, Serializer, TypeHint
 from ..provider import (
-    ParserRequest,
-    SerializerRequest,
-    Request,
-    Mediator,
     CannotProvide,
-    Provider,
-    FactoryProvider,
     CfgExtraPolicy,
+    FactoryProvider,
+    Mediator,
+    ParserRequest,
+    Provider,
+    Request,
+    SerializerRequest
 )
 from ..provider.model import ExtraPolicy, ExtraSkip
+from .builtin_factory import BuiltinFactory
 
 T = TypeVar('T')
 

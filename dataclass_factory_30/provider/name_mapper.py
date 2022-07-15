@@ -1,19 +1,44 @@
-from dataclasses import dataclass, field as dc_field
-from typing import Optional, List, Dict, Collection, cast
+from dataclasses import dataclass
+from dataclasses import field as dc_field
+from typing import Collection, Dict, List, Optional, cast
 
-from .essential import Mediator, CannotProvide
+# TODO: Add support for path in map
+from ..model_tools import BaseFigure, DefaultFactory, DefaultValue, ExtraTargets, NoDefault, OutputField
+from .essential import CannotProvide, Mediator
 from .model import (
-    InpDictCrown, BaseNameMappingRequest,
-    InputNameMappingRequest, OutputNameMappingRequest,
-    InputNameMapping, BaseNameMapping, BaseFieldCrown, BaseDictCrown, BaseCrown, InpCrown,
+    BaseCrown,
+    BaseDictCrown,
+    BaseFieldCrown,
+    BaseListCrown,
+    BaseNameMapping,
+    BaseNameMappingRequest,
+    BaseNoneCrown,
+    CfgExtraPolicy,
+    ExtraCollect,
+    ExtraPolicy,
+    Filler,
+    InpCrown,
+    InpDictCrown,
+    InpExtraPolicyDict,
+    InpExtraPolicyList,
     InpFieldCrown,
-    BaseNoneCrown, InpNoneCrown, BaseListCrown, InpListCrown, InpExtraPolicyDict, InpExtraPolicyList,
-    OutCrown, OutFieldCrown, OutNoneCrown, Filler, OutDictCrown, Sieve, OutListCrown, ExtraPolicy, CfgExtraPolicy,
-    OutputNameMapping, NameMappingProvider, RootOutCrown, RootInpCrown, ExtraCollect
+    InpListCrown,
+    InpNoneCrown,
+    InputNameMapping,
+    InputNameMappingRequest,
+    NameMappingProvider,
+    OutCrown,
+    OutDictCrown,
+    OutFieldCrown,
+    OutListCrown,
+    OutNoneCrown,
+    OutputNameMapping,
+    OutputNameMappingRequest,
+    RootInpCrown,
+    RootOutCrown,
+    Sieve
 )
 from .name_style import NameStyle, convert_snake_style
-# TODO: Add support for path in map
-from ..model_tools import BaseFigure, ExtraTargets, DefaultValue, DefaultFactory, NoDefault, OutputField
 
 
 @dataclass(frozen=True)

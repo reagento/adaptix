@@ -1,5 +1,5 @@
 import types
-from typing import Generic, Iterable, Union, get_origin, TypedDict
+from typing import Generic, Iterable, TypedDict, Union, get_origin
 
 from dataclass_factory_30.common import TypeHint
 

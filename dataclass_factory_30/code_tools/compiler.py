@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Any
+from typing import Any, Callable, Dict
 
 from .code_builder import CodeBuilder
 

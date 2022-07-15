@@ -1,14 +1,9 @@
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Iterable
+from typing import Generic, Iterable, TypeVar
 
-from .essential import (
-    Mediator,
-    Provider,
-    Request,
-    PipelineEvalMixin
-)
-from ..common import TypeHint, Parser, Serializer
-from ..model_tools import InputField, OutputField, BaseField
+from ..common import Parser, Serializer, TypeHint
+from ..model_tools import BaseField, InputField, OutputField
+from .essential import Mediator, PipelineEvalMixin, Provider, Request
 
 T = TypeVar('T')
 

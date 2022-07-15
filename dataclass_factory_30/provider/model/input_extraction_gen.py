@@ -1,21 +1,33 @@
 import contextlib
 from collections import deque
 from copy import copy
-from typing import Dict, Set, Optional, Mapping
+from typing import Dict, Mapping, Optional, Set
 
-from .crown_definitions import (
-    InpDictCrown, InpListCrown, InpFieldCrown, InpCrown,
-    ExtraForbid, ExtraCollect, RootInpCrown, FldPathElem, Path, InpNoneCrown,
-)
-from .definitions import InputExtractionGen, VarBinder
 from ...code_tools import CodeBuilder, ContextNamespace
 from ...common import Parser
-from ...model_tools import InputFigure, ExtraTargets, InputField
+from ...model_tools import ExtraTargets, InputField, InputFigure
 from ...provider.definitions import (
-    NoRequiredFieldsError, NoRequiredItemsError, ExtraFieldsError,
-    ExtraItemsError, TypeParseError, ParseError
+    ExtraFieldsError,
+    ExtraItemsError,
+    NoRequiredFieldsError,
+    NoRequiredItemsError,
+    ParseError,
+    TypeParseError
 )
 from ...struct_path import append_path, extend_path
+from .crown_definitions import (
+    ExtraCollect,
+    ExtraForbid,
+    FldPathElem,
+    InpCrown,
+    InpDictCrown,
+    InpFieldCrown,
+    InpListCrown,
+    InpNoneCrown,
+    Path,
+    RootInpCrown
+)
+from .definitions import InputExtractionGen, VarBinder
 
 
 class GenState:

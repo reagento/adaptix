@@ -1,10 +1,10 @@
 import inspect
 from inspect import isfunction
-from typing import ClassVar, Type, TypeVar, Callable, Dict, Iterable, overload
+from typing import Callable, ClassVar, Dict, Iterable, Type, TypeVar, overload
 
-from .class_dispatcher import ClassDispatcher
-from .essential import Provider, Request, Mediator, CannotProvide
 from ..type_tools import is_subclass_soft, normalize_type, strip_tags
+from .class_dispatcher import ClassDispatcher
+from .essential import CannotProvide, Mediator, Provider, Request
 
 __all__ = ('StaticProvider', 'static_provision_action', 'RequestDispatcher')
 

@@ -1,8 +1,17 @@
 from types import MappingProxyType
 from typing import TypedDict
 
-from dataclass_factory_30.model_tools import get_typed_dict_input_figure, InputFigure, InputField, NoDefault, ParamKind, \
-    OutputFigure, OutputField, ItemAccessor, get_typed_dict_output_figure
+from dataclass_factory_30.model_tools import (
+    InputField,
+    InputFigure,
+    ItemAccessor,
+    NoDefault,
+    OutputField,
+    OutputFigure,
+    ParamKind,
+    get_typed_dict_input_figure,
+    get_typed_dict_output_figure
+)
 
 
 class Foo(TypedDict, total=True):

@@ -3,8 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-from dataclass_factory_30.provider import LiteralProvider, ParserRequest, ParseError
-from tests_30.provider.conftest import TestFactory, raises_instance, parametrize_bool
+from dataclass_factory_30.provider import LiteralProvider, ParseError, ParserRequest
+from tests_30.provider.conftest import TestFactory, parametrize_bool, raises_instance
 
 
 @pytest.fixture

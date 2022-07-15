@@ -1,9 +1,20 @@
-from dataclasses import dataclass, field, InitVar
+from dataclasses import InitVar, dataclass, field
 from types import MappingProxyType
 from typing import ClassVar
 
-from dataclass_factory_30.model_tools import get_dataclass_input_figure, InputFigure, InputField, NoDefault, ParamKind, \
-    DefaultValue, DefaultFactory, OutputFigure, get_dataclass_output_figure, OutputField, AttrAccessor
+from dataclass_factory_30.model_tools import (
+    AttrAccessor,
+    DefaultFactory,
+    DefaultValue,
+    InputField,
+    InputFigure,
+    NoDefault,
+    OutputField,
+    OutputFigure,
+    ParamKind,
+    get_dataclass_input_figure,
+    get_dataclass_output_figure
+)
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 

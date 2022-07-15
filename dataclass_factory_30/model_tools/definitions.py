@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TypeVar, Any, Callable, Union, Mapping, Generic, Hashable, Optional, MutableMapping
+from typing import Any, Callable, Generic, Hashable, Mapping, MutableMapping, Optional, TypeVar, Union
 
-from ..common import VarTuple, Catchable, TypeHint
-from ..struct_path import PathElement, Attr
+from ..common import Catchable, TypeHint, VarTuple
+from ..struct_path import Attr, PathElement
 from ..utils import SingletonMeta, pairs
 
 T = TypeVar('T')

@@ -1,27 +1,43 @@
 from typing import Dict
 
-from .basic_gen import (
-    CodeGenHookRequest, stub_code_gen_hook,
-    CodeGenHook, DirectFieldsCollectorMixin, strip_figure, NameSanitizer,
-    compile_closure_with_globals_capturing
-)
-from .crown_definitions import (
-    InputNameMappingRequest, InputNameMapping,
-    InpCrown,
-    InpDictCrown, ExtraCollect, InpListCrown, InpFieldCrown, InpNoneCrown
-)
-from .input_creation_gen import BuiltinInputCreationGen
 from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
 from ...common import Parser
-from ...provider.essential import Mediator, CannotProvide
+from ...provider.essential import CannotProvide, Mediator
 from ...provider.model.definitions import (
-    InputFigureRequest, InputExtractionImageRequest, InputFigure, InputExtractionImage, InputCreationImageRequest,
-    InputCreationGen, InputExtractionGen, VarBinder, InputCreationImage,
+    InputCreationGen,
+    InputCreationImage,
+    InputCreationImageRequest,
+    InputExtractionGen,
+    InputExtractionImage,
+    InputExtractionImageRequest,
+    InputFigure,
+    InputFigureRequest,
+    VarBinder
 )
 from ...provider.model.input_extraction_gen import BuiltinInputExtractionGen
 from ...provider.provider_template import ParserProvider
-from ...provider.request_cls import ParserRequest, ParserFieldRequest
+from ...provider.request_cls import ParserFieldRequest, ParserRequest
 from ...provider.static_provider import StaticProvider, static_provision_action
+from .basic_gen import (
+    CodeGenHook,
+    CodeGenHookRequest,
+    DirectFieldsCollectorMixin,
+    NameSanitizer,
+    compile_closure_with_globals_capturing,
+    strip_figure,
+    stub_code_gen_hook
+)
+from .crown_definitions import (
+    ExtraCollect,
+    InpCrown,
+    InpDictCrown,
+    InpFieldCrown,
+    InpListCrown,
+    InpNoneCrown,
+    InputNameMapping,
+    InputNameMappingRequest
+)
+from .input_creation_gen import BuiltinInputCreationGen
 
 
 class BuiltinInputExtractionImageProvider(StaticProvider, DirectFieldsCollectorMixin):

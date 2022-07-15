@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from itertools import islice
-from typing import TypeVar, Set, List, Generic, Dict, Any, Iterable, Tuple, Callable
+from typing import Any, Callable, Dict, Generic, Iterable, List, Set, Tuple, TypeVar
 
-from ..provider import Request, Provider, Mediator, ClassDispatcher, CannotProvide
+from ..provider import CannotProvide, ClassDispatcher, Mediator, Provider, Request
 
 T = TypeVar('T')
 

@@ -1,19 +1,19 @@
 import collections.abc
 from abc import ABC
-from dataclasses import replace, dataclass
-from enum import EnumMeta, Enum
+from dataclasses import dataclass, replace
+from enum import Enum, EnumMeta
 from inspect import isabstract
-from typing import Literal, Collection, Container, Union, Iterable, Callable, Optional, Dict, Tuple, Mapping
+from typing import Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Optional, Tuple, Union
 
-from .definitions import ParseError, UnionParseError, TypeParseError, ExcludedTypeParseError
-from .essential import Mediator, CannotProvide, Request
-from .provider_basics import foreign_parser
-from .provider_template import ParserProvider, SerializerProvider, for_type
-from .request_cls import TypeHintRM, SerializerRequest, ParserRequest
-from .static_provider import StaticProvider, static_provision_action
 from ..common import Parser, Serializer, TypeHint
 from ..struct_path import append_path
-from ..type_tools import is_new_type, strip_tags, normalize_type, BaseNormType
+from ..type_tools import BaseNormType, is_new_type, normalize_type, strip_tags
+from .definitions import ExcludedTypeParseError, ParseError, TypeParseError, UnionParseError
+from .essential import CannotProvide, Mediator, Request
+from .provider_basics import foreign_parser
+from .provider_template import ParserProvider, SerializerProvider, for_type
+from .request_cls import ParserRequest, SerializerRequest, TypeHintRM
+from .static_provider import StaticProvider, static_provision_action
 
 
 def stub(arg):

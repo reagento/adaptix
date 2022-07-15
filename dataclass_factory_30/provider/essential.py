@@ -1,6 +1,6 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Optional, Sequence, Type, Iterable
+from typing import Generic, Iterable, Optional, Sequence, Type, TypeVar
 
 from ..common import VarTuple
 

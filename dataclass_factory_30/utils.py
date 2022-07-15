@@ -1,4 +1,4 @@
-from typing import Iterable, TypeVar, Tuple
+from typing import Iterable, Tuple, TypeVar
 
 
 def _singleton_repr(self):

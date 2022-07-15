@@ -1,8 +1,8 @@
 from dataclasses import InitVar
-from typing import ClassVar, Callable, Tuple, Final
+from typing import Callable, ClassVar, Final, Tuple
 
-from .normalize_type import BaseNormType, NormTV
 from ..feature_requirement import has_annotated
+from .normalize_type import BaseNormType, NormTV
 
 
 def strip_tags(norm: BaseNormType) -> BaseNormType:

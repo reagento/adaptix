@@ -1,11 +1,11 @@
-from typing import Mapping, Dict, Callable
+from typing import Callable, Dict, Mapping
 
-from .definitions import OutputExtractionGen, VarBinder
-from ..definitions import SerializeError
-from ...code_tools import ContextNamespace, CodeBuilder, get_literal_expr
+from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr
 from ...common import Serializer
-from ...model_tools import OutputFigure, ExtraTargets, OutputField, ExtraExtract, AttrAccessor, ItemAccessor
+from ...model_tools import AttrAccessor, ExtraExtract, ExtraTargets, ItemAccessor, OutputField, OutputFigure
 from ...struct_path import append_path, extend_path
+from ..definitions import SerializeError
+from .definitions import OutputExtractionGen, VarBinder
 
 
 class BuiltinOutputExtractionGen(OutputExtractionGen):

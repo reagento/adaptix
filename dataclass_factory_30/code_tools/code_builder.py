@@ -1,6 +1,6 @@
 import contextlib
 from textwrap import dedent
-from typing import List, Sequence, Iterable
+from typing import Iterable, List, Sequence
 
 
 class CodeBuilder:

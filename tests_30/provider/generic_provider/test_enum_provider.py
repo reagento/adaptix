@@ -2,18 +2,18 @@ from enum import Enum, IntEnum
 
 import pytest
 
-from dataclass_factory_30.common import Serializer, Parser
+from dataclass_factory_30.common import Parser, Serializer
 from dataclass_factory_30.provider import (
-    EnumNameProvider,
+    CannotProvide,
     EnumExactValueProvider,
+    EnumNameProvider,
     EnumValueProvider,
+    Mediator,
+    ParseError,
     ParserRequest,
     SerializerRequest,
-    ParseError,
-    as_serializer,
     as_parser,
-    CannotProvide,
-    Mediator
+    as_serializer
 )
 from dataclass_factory_30.provider.generic_provider import BaseEnumProvider
 from tests_30.provider.conftest import TestFactory, parametrize_bool, raises_instance

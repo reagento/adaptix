@@ -1,21 +1,25 @@
 import inspect
 from dataclasses import replace
-from typing import Any, Callable, Optional, Iterable, Container, cast
+from typing import Any, Callable, Container, Iterable, Optional, cast
 
-from .definitions import (
-    InputFigureRequest, OutputFigureRequest,
-)
-from ..essential import Mediator, CannotProvide, Provider, Request
-from ..static_provider import StaticProvider, static_provision_action
 from ...common import TypeHint
 from ...model_tools import (
-    InputFigure, OutputFigure,
-    get_named_tuple_input_figure, get_named_tuple_output_figure,
-    get_typed_dict_input_figure, get_typed_dict_output_figure,
-    get_dataclass_input_figure, get_dataclass_output_figure,
-    get_class_init_input_figure, IntrospectionError,
-    OutputField, DescriptorAccessor,
+    DescriptorAccessor,
+    InputFigure,
+    IntrospectionError,
+    OutputField,
+    OutputFigure,
+    get_class_init_input_figure,
+    get_dataclass_input_figure,
+    get_dataclass_output_figure,
+    get_named_tuple_input_figure,
+    get_named_tuple_output_figure,
+    get_typed_dict_input_figure,
+    get_typed_dict_output_figure
 )
+from ..essential import CannotProvide, Mediator, Provider, Request
+from ..static_provider import StaticProvider, static_provision_action
+from .definitions import InputFigureRequest, OutputFigureRequest
 
 
 class FigureProvider(Provider):

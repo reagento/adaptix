@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import NamedTuple, TypeVar, Generic, Tuple
+from typing import Generic, NamedTuple, Tuple, TypeVar
 
 from dataclass_factory_30.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
 
@@ -28,8 +28,7 @@ def test_is_named_tuple_class():
 
 
 def test_is_protocol():
-    from typing import Protocol, runtime_checkable
-    from typing import SupportsInt
+    from typing import Protocol, SupportsInt, runtime_checkable
 
     class Proto(Protocol):
         def foo(self) -> bool:

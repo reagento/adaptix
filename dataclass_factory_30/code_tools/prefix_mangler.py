@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable, overload, Any, Optional
+from typing import Any, Callable, Optional, overload
 
 
 class MangledConstant:

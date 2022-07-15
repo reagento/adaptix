@@ -1,15 +1,4 @@
-from typing import (
-    Generic,
-    TypeVar,
-    Optional,
-    Dict,
-    Type,
-    Tuple,
-    Collection,
-    Iterator,
-    Hashable,
-    AbstractSet,
-)
+from typing import AbstractSet, Collection, Dict, Generic, Hashable, Iterator, Optional, Tuple, Type, TypeVar
 
 K_co = TypeVar('K_co', covariant=True, bound=Hashable)
 V = TypeVar('V')

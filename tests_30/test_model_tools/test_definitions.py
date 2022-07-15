@@ -1,9 +1,14 @@
 import pytest
 
 from dataclass_factory_30.model_tools import (
-    ParamKind, InputFigure, InputField,
-    NoDefault, OutputFigure, OutputField,
-    AttrAccessor, ExtraTargets
+    AttrAccessor,
+    ExtraTargets,
+    InputField,
+    InputFigure,
+    NoDefault,
+    OutputField,
+    OutputFigure,
+    ParamKind
 )
 
 

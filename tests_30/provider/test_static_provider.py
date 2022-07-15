@@ -2,12 +2,7 @@ from abc import ABC, abstractmethod
 
 import pytest
 
-from dataclass_factory_30.provider import (
-    Mediator,
-    Request,
-    StaticProvider,
-    static_provision_action
-)
+from dataclass_factory_30.provider import Mediator, Request, StaticProvider, static_provision_action
 from dataclass_factory_30.provider.static_provider import RequestDispatcher
 
 

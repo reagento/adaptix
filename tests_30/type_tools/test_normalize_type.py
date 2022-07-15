@@ -5,12 +5,25 @@ from collections import abc as c_abc
 from collections import defaultdict
 from dataclasses import InitVar
 from typing import (
-    Any, Union, List, Optional,
-    Tuple, Callable, NoReturn,
-    Type, ClassVar, TypeVar,
-    Dict, NewType, Set,
-    FrozenSet, DefaultDict, Generic,
-    Match, Pattern, cast
+    Any,
+    Callable,
+    ClassVar,
+    DefaultDict,
+    Dict,
+    FrozenSet,
+    Generic,
+    List,
+    Match,
+    NewType,
+    NoReturn,
+    Optional,
+    Pattern,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast
 )
 
 import pytest
@@ -19,11 +32,12 @@ from dataclass_factory_30.common import TypeHint
 from dataclass_factory_30.feature_requirement import has_annotated, has_std_classes_generics
 from dataclass_factory_30.type_tools import NormType, normalize_type
 from dataclass_factory_30.type_tools.normalize_type import (
-    NormTV,
     BaseNormType,
-    _create_norm_literal,
     Bound,
-    Constraints, NotSubscribedError
+    Constraints,
+    NormTV,
+    NotSubscribedError,
+    _create_norm_literal
 )
 
 

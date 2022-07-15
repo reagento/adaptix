@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
 from dataclass_factory_30.factory.basic_factory import IncrementalRecipe
-from dataclass_factory_30.provider import Provider, Mediator, Request
-from dataclass_factory_30.provider.essential import T, CannotProvide
+from dataclass_factory_30.provider import Mediator, Provider, Request
+from dataclass_factory_30.provider.essential import CannotProvide, T
 
 
 @dataclass

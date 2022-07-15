@@ -1,6 +1,6 @@
-from .definitions import InputFigure, InputCreationGen, VarBinder
 from ...code_tools import CodeBuilder, ContextNamespace
-from ...model_tools import ExtraTargets, ExtraKwargs, ExtraSaturate, InputField, ParamKind
+from ...model_tools import ExtraKwargs, ExtraSaturate, ExtraTargets, InputField, ParamKind
+from .definitions import InputCreationGen, InputFigure, VarBinder
 
 
 class BuiltinInputCreationGen(InputCreationGen):

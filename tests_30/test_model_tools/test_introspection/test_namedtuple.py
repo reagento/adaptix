@@ -3,10 +3,16 @@ from types import MappingProxyType
 from typing import Any, NamedTuple
 
 from dataclass_factory_30.model_tools import (
-    InputFigure, InputField, NoDefault, ParamKind,
-    OutputField, AttrAccessor, OutputFigure, DefaultValue,
+    AttrAccessor,
+    DefaultValue,
+    InputField,
+    InputFigure,
+    NoDefault,
+    OutputField,
+    OutputFigure,
+    ParamKind,
     get_named_tuple_input_figure,
-    get_named_tuple_output_figure,
+    get_named_tuple_output_figure
 )
 
 FooAB = namedtuple('FooAB', 'a b')

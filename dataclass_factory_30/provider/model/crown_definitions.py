@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Dict, List, Union, Callable, Any, Collection
+from typing import Any, Callable, Collection, Dict, Generic, List, TypeVar, Union
 
-from ..essential import Request, Mediator
+from ...common import VarTuple
+from ...model_tools import BaseFigure, DefaultFactory, DefaultValue, InputFigure, OutputFigure
+from ...utils import SingletonMeta
+from ..essential import Mediator, Request
 from ..request_cls import TypeHintRM
 from ..static_provider import StaticProvider, static_provision_action
-from ...common import VarTuple
-from ...model_tools import DefaultValue, DefaultFactory, BaseFigure, InputFigure, OutputFigure
-from ...utils import SingletonMeta
 
 T = TypeVar('T')
 

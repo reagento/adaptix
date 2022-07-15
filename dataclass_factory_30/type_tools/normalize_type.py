@@ -1,24 +1,34 @@
 import collections
 import re
 from abc import ABC, abstractmethod
-from collections import defaultdict, abc as c_abc
+from collections import abc as c_abc
+from collections import defaultdict
 from dataclasses import InitVar, dataclass
 from enum import Enum
 from typing import (
-    Any, Optional, List,
-    Dict, ClassVar, Final, Literal,
-    Union, TypeVar, Tuple, Iterable,
-    Hashable, Callable, Type, NewType,
-    overload, NoReturn, get_args,
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Final,
+    Hashable,
+    Iterable,
+    List,
+    Literal,
+    NewType,
+    NoReturn,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    get_args,
+    overload
 )
 
-from .basic_utils import (
-    is_annotated, is_new_type,
-    is_subclass_soft, create_union,
-    is_user_defined_generic, strip_alias,
-)
 from ..common import TypeHint, VarTuple
 from ..feature_requirement import has_annotated
+from .basic_utils import create_union, is_annotated, is_new_type, is_subclass_soft, is_user_defined_generic, strip_alias
 
 
 class BaseNormType(Hashable, ABC):

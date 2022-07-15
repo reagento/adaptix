@@ -1,15 +1,20 @@
 import contextlib
-from typing import Optional, NamedTuple, Dict
+from typing import Dict, NamedTuple, Optional
 
+from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr
+from ...model_tools import DefaultFactory, DefaultValue, OutputField
 from .crown_definitions import (
-    RootOutCrown, FldPathElem, OutDictCrown,
-    OutCrown, OutFieldCrown, OutNoneCrown,
-    OutListCrown, Sieve,
+    FldPathElem,
+    OutCrown,
+    OutDictCrown,
+    OutFieldCrown,
+    OutListCrown,
+    OutNoneCrown,
+    RootOutCrown,
+    Sieve
 )
-from .definitions import VarBinder, OutputCreationGen, OutputFigure
+from .definitions import OutputCreationGen, OutputFigure, VarBinder
 from .input_extraction_gen import Path
-from ...code_tools import ContextNamespace, CodeBuilder, get_literal_expr
-from ...model_tools import DefaultValue, DefaultFactory, OutputField
 
 
 class GenState:

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Iterable
+from typing import Iterable, List
 
 from ..common import TypeHint
 

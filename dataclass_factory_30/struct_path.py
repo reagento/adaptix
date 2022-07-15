@@ -1,6 +1,6 @@
 from collections import deque
 from dataclasses import dataclass
-from typing import Union, Any, Optional, Sequence, Reversible
+from typing import Any, Optional, Reversible, Sequence, Union
 
 
 class PathElementMarker:

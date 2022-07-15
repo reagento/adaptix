@@ -1,16 +1,16 @@
 import re
 from binascii import a2b_base64, b2a_base64
 from dataclasses import dataclass, replace
-from datetime import datetime, date, time, timedelta
-from typing import Union, Type
+from datetime import date, datetime, time, timedelta
+from typing import Type, Union
 
+from ..common import Parser, Serializer
+from ..type_tools import normalize_type
 from .definitions import ParseError
 from .essential import Mediator
 from .provider_basics import ExactTypeRC, foreign_parser
-from .provider_template import ParserProvider, SerializerProvider, for_type, ProviderWithRC
+from .provider_template import ParserProvider, ProviderWithRC, SerializerProvider, for_type
 from .request_cls import ParserRequest, SerializerRequest
-from ..common import Parser, Serializer
-from ..type_tools import normalize_type
 
 
 def stub(arg):
