@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from inspect import isabstract
@@ -141,7 +142,7 @@ class XorRequestChecker(NoInstanceCheckRC):
 
 
 @dataclass
-class FieldNameRC(RequestChecker):
+class ExactFieldNameRC(RequestChecker):
     field_name: str
 
     def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
@@ -151,6 +152,22 @@ class FieldNameRC(RequestChecker):
         if self.field_name == request.name:
             return
         raise CannotProvide(f'field_name must be a {self.field_name!r}')
+
+
+@dataclass
+class ReFieldNameRC(RequestChecker):
+    pattern: str
+
+    def __post_init__(self):
+        self.compiled_pattern = re.compile(self.pattern)
+
+    def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
+        return (FieldRM,)
+
+    def _check_request(self, request: FieldRM) -> None:
+        if self.compiled_pattern.fullmatch(request.name):
+            return
+        raise CannotProvide(f'field_name must be matched by {self.pattern!r}')
 
 
 @dataclass
@@ -214,7 +231,9 @@ def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
 
 def create_req_checker(pred: Union[TypeHint, str, RequestChecker]) -> RequestChecker:
     if isinstance(pred, str):
-        return FieldNameRC(pred)
+        if pred.isidentifier():
+            return ExactFieldNameRC(pred)  # this is only an optimization
+        return ReFieldNameRC(pred)
 
     if isinstance(pred, RequestChecker):
         return pred

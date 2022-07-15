@@ -56,9 +56,10 @@ from .name_mapper import NameMapper
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import (
     BoundingProvider,
+    ExactFieldNameRC,
     FactoryProvider,
-    FieldNameRC,
     NextProvider,
+    ReFieldNameRC,
     RequestChecker,
     SubclassRC,
     ValueProvider,
