@@ -1,3 +1,19 @@
 [build-system]
 requires = ["wheel", "setuptools"]
 build-backend = "setuptools.build_meta"
+
+
+[tool.isort]
+multi_line_output = 5
+line_length = 120
+
+[tool.pytest.ini_options]
+python_classes = 'WeDoNotUseClassTestCase'
+testpaths = 'tests_30'
+
+[tool.bandit]
+skips = ['B102']
+
+[tool.vulture]
+min_confidence = 60
+ignore_decorators = ['@_aspect_storage.add', '@overload', '@abstractmethod']
