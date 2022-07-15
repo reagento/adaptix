@@ -369,7 +369,7 @@ def test_union():
         ]
     )
 
-    # Union[int] == int   # normalization does not need
+    # because Union[int] == int   # normalization does not need
 
 
 def test_optional():

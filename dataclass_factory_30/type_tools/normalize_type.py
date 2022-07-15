@@ -355,7 +355,7 @@ class TypeNormalizer:
     @_aspect_storage.add
     def _norm_init_var(self, tp, origin, args):
         if isinstance(origin, InitVar):
-            # origin is InitVar[T]
+            # this origin is InitVar[T]
             return NormType(
                 InitVar,
                 (self.normalize(origin.type),),
@@ -377,10 +377,8 @@ class TypeNormalizer:
                     source=tp
                 )
 
-            # >>> Tuple[()].__args__
-            # ((),)
-            # >>> tuple[()].__args__
-            # ()
+            # >>> Tuple[()].__args__ == ((),)
+            # >>> tuple[()].__args__ == ()
             if not args or args == ((),):
                 return NormType(tuple, (), source=tp)
 

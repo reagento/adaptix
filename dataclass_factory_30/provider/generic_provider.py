@@ -65,7 +65,7 @@ class LiteralProvider(ParserProvider, SerializerProvider):
                 [(type(el), el) for el in norm.args]
             )
 
-            # True == 1 and False == 0
+            # since True == 1 and False == 0
             def literal_parser_tc(data):
                 if (type(data), data) in allowed_values:
                     return data
@@ -441,7 +441,7 @@ class EnumExactValueProvider(BaseEnumProvider):
         enum = request.type
 
         def enum_exact_parser(data):
-            # MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
+            # since MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
             if isinstance(data, enum):
                 raise ParseError
             return enum(data)
