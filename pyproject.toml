@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 
 [tool.isort]
-multi_line_output = 5
+multi_line_output = 3
 line_length = 120
 
 [tool.pytest.ini_options]
