@@ -21,5 +21,3 @@ sphinx
 sphinx_rtd_theme
 
 tox
-
--r requirements_test.txt

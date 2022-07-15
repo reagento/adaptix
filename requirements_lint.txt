@@ -1,3 +1,5 @@
+-r requirements_test.txt
+
 pre-commit
 bandit
 
@@ -29,6 +31,5 @@ pycodestyle
 dodgy
 
 radon
-
 
 # https://github.com/tonybaloney/pycharm-security
