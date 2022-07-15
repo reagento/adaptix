@@ -225,6 +225,7 @@ def inp_request(fields: List[MapField], extra: InpFigureExtra = None):
                     is_required=field.is_required,
                     metadata={},
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name=field.name,
                 )
                 for field in fields
             ),

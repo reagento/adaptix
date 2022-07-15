@@ -37,6 +37,7 @@ def test_inconsistent_fields_order(first, second):
                     is_required=True,
                     metadata={},
                     param_kind=first,
+                    param_name='a',
                 ),
                 InputField(
                     name="a",
@@ -45,6 +46,7 @@ def test_inconsistent_fields_order(first, second):
                     is_required=True,
                     metadata={},
                     param_kind=second,
+                    param_name='a',
                 ),
             ),
         )
@@ -62,6 +64,7 @@ def _make_triple_iff(first, second, third):
                 is_required=True,
                 metadata={},
                 param_kind=first,
+                param_name='a',
             ),
             InputField(
                 name="b",
@@ -70,6 +73,7 @@ def _make_triple_iff(first, second, third):
                 is_required=False,
                 metadata={},
                 param_kind=second,
+                param_name='b',
             ),
             InputField(
                 name="c",
@@ -78,6 +82,7 @@ def _make_triple_iff(first, second, third):
                 is_required=True,
                 metadata={},
                 param_kind=third,
+                param_name='c',
             ),
         ),
     )
@@ -124,6 +129,7 @@ def test_name_duplicates():
                     is_required=True,
                     metadata={},
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='a1',
                 ),
                 InputField(
                     name="a",
@@ -132,6 +138,33 @@ def test_name_duplicates():
                     is_required=True,
                     metadata={},
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='a2',
+                ),
+            )
+        )
+
+    with pytest.raises(ValueError):
+        InputFigure(
+            constructor=stub_constructor,
+            extra=None,
+            fields=(
+                InputField(
+                    name="a1",
+                    type=int,
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata={},
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
+                ),
+                InputField(
+                    name="a2",
+                    type=int,
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata={},
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
                 ),
             )
         )
@@ -171,6 +204,7 @@ def test_wild_targets():
                     is_required=True,
                     metadata={},
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
                 ),
             )
         )

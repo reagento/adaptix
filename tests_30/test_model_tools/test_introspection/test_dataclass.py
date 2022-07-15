@@ -50,6 +50,7 @@ def test_input():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
                 ),
                 InputField(
                     type=InitVarInt,
@@ -58,6 +59,7 @@ def test_input():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='b',
                 ),
                 InputField(
                     type=InitVarInt,
@@ -66,6 +68,7 @@ def test_input():
                     is_required=False,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='c',
                 ),
                 InputField(
                     type=str,
@@ -74,6 +77,7 @@ def test_input():
                     is_required=False,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='d',
                 ),
                 InputField(
                     type=list,
@@ -82,6 +86,7 @@ def test_input():
                     is_required=False,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='e',
                 ),
                 InputField(
                     type=int,
@@ -90,6 +95,7 @@ def test_input():
                     is_required=False,
                     metadata=MappingProxyType({'meta': 'data'}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='i',
                 ),
             ),
         )
@@ -168,6 +174,7 @@ def test_inheritance():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
                 ),
                 InputField(
                     type=int,
@@ -176,6 +183,7 @@ def test_inheritance():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='b',
                 ),
             ),
         )

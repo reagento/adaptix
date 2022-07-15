@@ -34,6 +34,7 @@ def test_order_ab():
                     is_required=True,
                     param_kind=ParamKind.POS_OR_KW,
                     metadata=MappingProxyType({}),
+                    param_name='a',
                 ),
                 InputField(
                     type=Any,
@@ -42,6 +43,7 @@ def test_order_ab():
                     is_required=True,
                     param_kind=ParamKind.POS_OR_KW,
                     metadata=MappingProxyType({}),
+                    param_name='b',
                 ),
             ),
         )
@@ -87,6 +89,7 @@ def test_order_ba():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='b',
                 ),
                 InputField(
                     type=Any,
@@ -95,6 +98,7 @@ def test_order_ba():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
                 ),
             ),
         )
@@ -147,6 +151,7 @@ def test_defaults():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
                 ),
                 InputField(
                     type=Any,
@@ -155,6 +160,7 @@ def test_defaults():
                     is_required=False,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='b',
                 ),
                 InputField(
                     type=Any,
@@ -163,6 +169,7 @@ def test_defaults():
                     is_required=False,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='c',
                 ),
             ),
         )
@@ -218,6 +225,7 @@ def test_class_hinted_namedtuple():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
                 ),
                 InputField(
                     type=str,
@@ -226,6 +234,7 @@ def test_class_hinted_namedtuple():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='b',
                 ),
             ),
         )
@@ -278,6 +287,7 @@ def test_hinted_namedtuple():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
                 ),
                 InputField(
                     type=str,
@@ -286,6 +296,7 @@ def test_hinted_namedtuple():
                     is_required=False,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='b',
                 ),
             ),
         )

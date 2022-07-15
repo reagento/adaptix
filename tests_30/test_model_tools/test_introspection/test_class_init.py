@@ -40,6 +40,7 @@ VALID_FIELDS = (
         is_required=True,
         metadata=MappingProxyType({}),
         param_kind=ParamKind.POS_OR_KW,
+        param_name='a',
     ),
     InputField(
         type=int,
@@ -48,6 +49,7 @@ VALID_FIELDS = (
         is_required=True,
         metadata=MappingProxyType({}),
         param_kind=ParamKind.POS_OR_KW,
+        param_name='b',
     ),
     InputField(
         type=str,
@@ -56,6 +58,7 @@ VALID_FIELDS = (
         is_required=False,
         metadata=MappingProxyType({}),
         param_kind=ParamKind.POS_OR_KW,
+        param_name='c',
     ),
     InputField(
         type=Any,
@@ -64,6 +67,7 @@ VALID_FIELDS = (
         is_required=True,
         metadata=MappingProxyType({}),
         param_kind=ParamKind.KW_ONLY,
+        param_name='d',
     ),
 )
 
@@ -112,6 +116,7 @@ def test_pos_only():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_ONLY,
+                    param_name='a',
                 ),
                 InputField(
                     type=Any,
@@ -120,6 +125,7 @@ def test_pos_only():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.POS_OR_KW,
+                    param_name='b',
                 ),
             ),
         )

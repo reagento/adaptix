@@ -39,6 +39,7 @@ def test_total_input():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.KW_ONLY,
+                    param_name='a',
                 ),
                 InputField(
                     type=str,
@@ -47,6 +48,7 @@ def test_total_input():
                     is_required=True,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.KW_ONLY,
+                    param_name='b',
                 ),
             ),
         )
@@ -94,6 +96,7 @@ def test_non_total_input():
                     is_required=False,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.KW_ONLY,
+                    param_name='a',
                 ),
                 InputField(
                     type=str,
@@ -102,6 +105,7 @@ def test_non_total_input():
                     is_required=False,
                     metadata=MappingProxyType({}),
                     param_kind=ParamKind.KW_ONLY,
+                    param_name='b',
                 ),
             ),
         )

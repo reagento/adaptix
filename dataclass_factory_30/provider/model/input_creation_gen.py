@@ -39,7 +39,7 @@ class BuiltinInputCreationGen(InputCreationGen):
                     continue
 
                 if field.param_kind == ParamKind.KW_ONLY:
-                    builder(f"{field.name}={value},")
+                    builder(f"{field.param_name}={value},")
                 else:
                     builder(f"{value},")
 

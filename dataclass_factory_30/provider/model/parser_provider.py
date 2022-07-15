@@ -165,6 +165,7 @@ class FieldsParserProvider(ParserProvider):
                     metadata=field.metadata,
                     name=field.name,
                     param_kind=field.param_kind,
+                    param_name=field.param_name,
                 )
             )
             for field in processed_figure.fields

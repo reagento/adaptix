@@ -73,6 +73,7 @@ def params_to_input_figure(constructor: Callable, params: Iterable[Parameter]) -
                 default=NoDefault() if _is_empty(param.default) else DefaultValue(param.default),
                 metadata=MappingProxyType({}),
                 param_kind=_PARAM_KIND_CONV[param.kind],
+                param_name=param.name,
             )
             for param in params
             if param.kind != Parameter.VAR_KEYWORD
@@ -147,6 +148,7 @@ def get_typed_dict_input_figure(tp) -> InputFigure:
                 is_required=are_required,
                 metadata=MappingProxyType({}),
                 param_kind=ParamKind.KW_ONLY,
+                param_name=name,
             )
             for name, tp in get_type_hints(tp).items()
         ),
@@ -201,6 +203,7 @@ def create_inp_field_from_dc_fields(dc_field: DCField):
         is_required=default == NoDefault(),
         metadata=dc_field.metadata,
         param_kind=ParamKind.POS_OR_KW,
+        param_name=dc_field.name,
     )
 
 

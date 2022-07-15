@@ -120,7 +120,7 @@ class BaseField:
 
     def __post_init__(self):
         if not self.name.isidentifier():
-            raise ValueError("Name of field must be python identifier")
+            raise ValueError("name of field must be python identifier, now it is a {self.param_name!r}")
 
 
 class ParamKind(Enum):
@@ -133,10 +133,16 @@ class ParamKind(Enum):
 class InputField(BaseField):
     is_required: bool
     param_kind: ParamKind
+    param_name: str
 
     @property
     def is_optional(self):
         return not self.is_required
+
+    def __post_init__(self):
+        super().__post_init__()
+        if not self.param_name.isidentifier():
+            raise ValueError(f"param_name must be python identifier, now it is a {self.param_name!r}")
 
 
 @dataclass(frozen=True)
@@ -223,6 +229,16 @@ class InputFigure(BaseFigure, Generic[T]):
     constructor: Callable[..., T]
 
     def _validate(self):
+        super()._validate()
+
+        param_names = {fld.param_name for fld in self.fields}
+        if len(param_names) != len(self.fields):
+            duplicates = {
+                fld.param_name for fld in self.fields
+                if fld.param_name in param_names
+            }
+            raise ValueError(f"Param names {duplicates} are duplicated")
+
         for past, current in pairs(self.fields):
             if past.param_kind.value > current.param_kind.value:
                 raise ValueError(
@@ -239,8 +255,6 @@ class InputFigure(BaseFigure, Generic[T]):
                     f"All not required fields must be after required ones"
                     f" except {ParamKind.KW_ONLY} fields"
                 )
-
-        super()._validate()
 
 
 OutFigureExtra = Union[None, ExtraTargets, ExtraExtract[T]]
