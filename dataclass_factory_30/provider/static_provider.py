@@ -24,31 +24,31 @@ def static_provision_action() -> Callable[[SPA[P, R, T]], SPA[P, R, T]]:
 
 
 @overload
-def static_provision_action(__request_cls: Type[Request]) -> Callable[[SPA[P, R, T]], SPA[P, R, T]]:
+def static_provision_action(request_cls: Type[Request], /) -> Callable[[SPA[P, R, T]], SPA[P, R, T]]:
     pass
 
 
 @overload
-def static_provision_action(__func: SPA[P, R, T]) -> SPA[P, R, T]:
+def static_provision_action(func: SPA[P, R, T], /) -> SPA[P, R, T]:
     pass
 
 
-def static_provision_action(__arg=None):
+def static_provision_action(arg=None):
     """Marks method as @static_provision_action
     See :class StaticProvider: for details
     """
 
-    if __arg is None:
+    if arg is None:
         return static_provision_action
 
-    if is_subclass_soft(__arg, Request):
-        return _make_spa_decorator(__arg)
+    if is_subclass_soft(arg, Request):
+        return _make_spa_decorator(arg)
 
-    if isfunction(__arg):
-        return _make_spa_decorator(_infer_rc(__arg))(__arg)
+    if isfunction(arg):
+        return _make_spa_decorator(_infer_rc(arg))(arg)
 
-    if hasattr(__arg, '__func__'):
-        return _make_spa_decorator(_infer_rc(__arg.__func__))(__arg)
+    if hasattr(arg, '__func__'):
+        return _make_spa_decorator(_infer_rc(arg.__func__))(arg)
 
     raise TypeError(
         "static_provision_action must be applied"
