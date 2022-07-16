@@ -26,10 +26,17 @@ class ExtraForbid(metaclass=SingletonMeta):
 
 
 class ExtraCollect(metaclass=SingletonMeta):
-    """Collect extra data and pass it to constructor"""
+    """Collect extra data and pass it to object"""
 
 
 # --------  Base classes for crown -------- #
+
+# Crown defines mapping of fields to structure of lists and dicts
+# as well as the policy of extra data processing.
+# This structure is named in honor of the crown of the tree.
+#
+# NoneCrown-s represent element that do not map to any field
+
 
 @dataclass
 class BaseDictCrown(Generic[T]):
@@ -88,7 +95,8 @@ RootInpCrown = Union[InpDictCrown, InpListCrown]
 
 # --------  Output Crown -------- #
 
-
+# Sieve takes raw field value and determines if skip field.
+# True indicates to put field, False to skip.
 Sieve = Callable[[Any], bool]
 
 

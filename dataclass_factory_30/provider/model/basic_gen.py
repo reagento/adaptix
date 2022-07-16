@@ -1,7 +1,7 @@
 import itertools
 import string
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Dict, Iterable, List, Set, Tuple, TypeVar
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, Tuple, TypeVar
 
 from ...code_tools import ClosureCompiler, CodeBuilder
 from ...model_tools import ExtraTargets
@@ -26,19 +26,21 @@ def stub_code_gen_hook(data: CodeGenHookData):
 
 @dataclass(frozen=True)
 class CodeGenHookRequest(Request[CodeGenHook]):
-    initial_request: Request
+    pass
 
 
 class CodeGenAccumulator(StaticProvider):
     """Accumulates all generated code. It may be useful for debugging"""
 
     def __init__(self):
-        self.list: List[Tuple[Request, CodeGenHookData]] = []
+        self.list: List[Tuple[Sequence[Request], CodeGenHookData]] = []
 
     @static_provision_action
     def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
+        request_stack = mediator.request_stack
+
         def hook(data: CodeGenHookData):
-            self.list.append((request.initial_request, data))
+            self.list.append((request_stack, data))
 
         return hook
 

@@ -150,7 +150,7 @@ class FieldsParserProvider(ParserProvider):
         )
 
         try:
-            code_gen_hook = mediator.provide(CodeGenHookRequest(initial_request=request))
+            code_gen_hook = mediator.provide(CodeGenHookRequest())
         except CannotProvide:
             code_gen_hook = stub_code_gen_hook
 
