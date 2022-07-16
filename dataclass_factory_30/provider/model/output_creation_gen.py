@@ -4,7 +4,7 @@ from typing import Dict, NamedTuple, Optional
 from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr
 from ...model_tools import DefaultFactory, DefaultValue, OutputField
 from .crown_definitions import (
-    FldPathElem,
+    CrownPathElem,
     OutCrown,
     OutDictCrown,
     OutFieldCrown,
@@ -14,7 +14,7 @@ from .crown_definitions import (
     Sieve
 )
 from .definitions import OutputCreationGen, OutputFigure, VarBinder
-from .input_extraction_gen import Path
+from .input_extraction_gen import CrownPath
 
 
 class GenState:
@@ -23,14 +23,14 @@ class GenState:
         self.ctx_namespace = ctx_namespace
         self._name_to_field = name_to_field
 
-        self.field_name2path: Dict[str, Path] = {}
-        self.path2suffix: Dict[Path, str] = {}
+        self.field_name2path: Dict[str, CrownPath] = {}
+        self.path2suffix: Dict[CrownPath, str] = {}
 
         self._last_path_idx = 0
-        self._path: Path = ()
-        self._parent_path: Optional[Path] = None
+        self._path: CrownPath = ()
+        self._parent_path: Optional[CrownPath] = None
 
-    def _get_path_idx(self, path: Path) -> str:
+    def _get_path_idx(self, path: CrownPath) -> str:
         try:
             return self.path2suffix[path]
         except KeyError:
@@ -44,20 +44,20 @@ class GenState:
         return self._path
 
     @contextlib.contextmanager
-    def add_key(self, key: FldPathElem):
+    def add_key(self, key: CrownPathElem):
         past = self._path
 
         self._path += (key,)
         yield
         self._path = past
 
-    def crown_var(self, key: FldPathElem) -> str:
+    def crown_var(self, key: CrownPathElem) -> str:
         return self._crown_var_for_path(self._path + (key,))
 
     def crown_var_self(self) -> str:
         return self._crown_var_for_path(self._path)
 
-    def _crown_var_for_path(self, path: Path) -> str:
+    def _crown_var_for_path(self, path: CrownPath) -> str:
         if not path:
             return "result"
 
@@ -69,7 +69,7 @@ class GenState:
 
         return f'filler_' + self._get_path_idx(self._path)
 
-    def sieve(self, key: FldPathElem) -> str:
+    def sieve(self, key: CrownPathElem) -> str:
         path = self._path + (key,)
         if not path:
             return "sieve"
@@ -138,7 +138,7 @@ class BuiltinOutputCreationGen(OutputCreationGen):
             return False
         return True
 
-    def _gen_crown_dispatch(self, builder: CodeBuilder, state: GenState, sub_crown: OutCrown, key: FldPathElem):
+    def _gen_crown_dispatch(self, builder: CodeBuilder, state: GenState, sub_crown: OutCrown, key: CrownPathElem):
         with state.add_key(key):
             if self._gen_root_crown_dispatch(builder, state, sub_crown):
                 return
@@ -151,7 +151,7 @@ class BuiltinOutputCreationGen(OutputCreationGen):
 
             raise TypeError
 
-    def _gen_crown_link_expr(self, state: GenState, key: FldPathElem, crown: OutCrown) -> LinkExpr:
+    def _gen_crown_link_expr(self, state: GenState, key: CrownPathElem, crown: OutCrown) -> LinkExpr:
         if isinstance(crown, OutNoneCrown):
             if isinstance(crown.filler, DefaultFactory):
                 state.ctx_namespace.add(state.filler(), crown.filler)

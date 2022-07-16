@@ -11,8 +11,8 @@ from ..static_provider import StaticProvider, static_provision_action
 
 T = TypeVar('T')
 
-FldPathElem = Union[str, int]
-Path = VarTuple[FldPathElem]  # subset of struct_path.Path
+CrownPathElem = Union[str, int]
+CrownPath = VarTuple[CrownPathElem]  # subset of struct_path.Path
 
 
 # Policies how to process extra data

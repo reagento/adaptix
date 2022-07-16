@@ -16,15 +16,15 @@ from ...provider.definitions import (
 )
 from ...struct_path import append_path, extend_path
 from .crown_definitions import (
+    CrownPath,
+    CrownPathElem,
     ExtraCollect,
     ExtraForbid,
-    FldPathElem,
     InpCrown,
     InpDictCrown,
     InpFieldCrown,
     InpListCrown,
     InpNoneCrown,
-    Path,
     RootInpCrown
 )
 from .definitions import InputExtractionGen, VarBinder
@@ -38,15 +38,15 @@ class GenState:
         self.ctx_namespace = ctx_namespace
         self._name_to_field = name_to_field
 
-        self.field_name2path: Dict[str, Path] = {}
-        self.path2suffix: Dict[Path, str] = {}
-        self.path2known_fields: Dict[Path, Set[str]] = {}
+        self.field_name2path: Dict[str, CrownPath] = {}
+        self.path2suffix: Dict[CrownPath, str] = {}
+        self.path2known_fields: Dict[CrownPath, Set[str]] = {}
 
         self._last_path_idx = 0
-        self._path: Path = ()
-        self._parent_path: Optional[Path] = None
+        self._path: CrownPath = ()
+        self._parent_path: Optional[CrownPath] = None
 
-    def _get_path_idx(self, path: Path) -> str:
+    def _get_path_idx(self, path: CrownPath) -> str:
         try:
             return self.path2suffix[path]
         except KeyError:
@@ -83,7 +83,7 @@ class GenState:
         return self._path
 
     @contextlib.contextmanager
-    def add_key(self, key: FldPathElem):
+    def add_key(self, key: CrownPathElem):
         past = self._path
         past_parent = self._parent_path
 
@@ -205,7 +205,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
             return False
         return True
 
-    def _gen_crown_dispatch(self, builder: CodeBuilder, state: GenState, sub_crown: InpCrown, key: FldPathElem):
+    def _gen_crown_dispatch(self, builder: CodeBuilder, state: GenState, sub_crown: InpCrown, key: CrownPathElem):
         with state.add_key(key):
             if self._gen_root_crown_dispatch(builder, state, sub_crown):
                 return
@@ -218,7 +218,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
 
             raise TypeError
 
-    def _get_path_literal(self, path: Path) -> str:
+    def _get_path_literal(self, path: CrownPath) -> str:
         return repr(deque(path)) if self._debug_path and len(path) > 0 else ""
 
     def _gen_var_assigment_from_data(
