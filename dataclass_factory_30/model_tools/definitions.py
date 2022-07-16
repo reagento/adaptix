@@ -120,7 +120,7 @@ class BaseField:
 
     def __post_init__(self):
         if not self.name.isidentifier():
-            raise ValueError("name of field must be python identifier, now it is a {self.param_name!r}")
+            raise ValueError(f"name of field must be python identifier, now it is a {self.name!r}")
 
 
 class ParamKind(Enum):
@@ -182,6 +182,9 @@ BaseFigureExtra = Union[None, ExtraKwargs, ExtraTargets, ExtraSaturate[T], Extra
 
 @dataclass(frozen=True)
 class BaseFigure:
+    """Signature of class. Divided into 2 parts: input and output.
+    See doc :class InputFigure: and :class OutputFigure: for more details
+    """
     fields: VarTuple[BaseField]
     extra: BaseFigureExtra
 
@@ -214,15 +217,15 @@ InpFigureExtra = Union[None, ExtraKwargs, ExtraTargets, ExtraSaturate[T]]
 
 @dataclass(frozen=True)
 class InputFigure(BaseFigure, Generic[T]):
-    """InputFigure describes how to create desired object.
-    `constructor` field contains a callable that produces an instance of the class.
-    `fields` field contains parameters of the constructor.
+    """Description of desired object creation
 
-    `extra` field contains the way of passing extra data (data that does not map to any field)
-    None means that constructor can not take any extra data.
-    ExtraKwargs means that all extra data could be passed as additional keyword parameters
-    ExtraTargets means that all extra data could be passed to corresponding fields.
-    ExtraSaturate means that after constructing object specified function will be applied
+    :param constructor: callable that produces an instance of the class.
+    :param fields: parameters of the constructor
+    :param extra: the way of passing extra data (data that does not map to any field)
+        None means that constructor can not take any extra data.
+        ExtraKwargs means that all extra data could be passed as additional keyword parameters
+        ExtraTargets means that all extra data could be passed to corresponding fields.
+        ExtraSaturate means that after constructing object specified function will be applied
     """
     fields: VarTuple[InputField]
     extra: InpFigureExtra[T]
@@ -262,6 +265,14 @@ OutFigureExtra = Union[None, ExtraTargets, ExtraExtract[T]]
 
 @dataclass(frozen=True)
 class OutputFigure(BaseFigure):
+    """Description of extraction data from an object
+
+    :param fields: fields (can be not only attributes) of object
+    :param extra: the way of extracting extra data (data that does not map to any field)
+        None means that there is no way to get extra data
+        ExtraTargets means extra data will be extracted from corresponding fields and will be merged
+        ExtraExtract means that extra data will be taken by applying a specified function
+    """
     fields: VarTuple[OutputField]
     extra: OutFigureExtra
 
