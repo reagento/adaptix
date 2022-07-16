@@ -5,13 +5,8 @@ from typing import Dict, Iterable, List, Mapping
 import pytest
 
 from dataclass_factory_30.facade import parser, serializer
-from dataclass_factory_30.provider import (
-    CannotProvide,
-    CoercionLimiter,
-    IterableProvider,
-    ParserRequest,
-    SerializerRequest
-)
+from dataclass_factory_30.factory.operating_factory import NoSuitableProvider
+from dataclass_factory_30.provider import CoercionLimiter, IterableProvider, ParserRequest, SerializerRequest
 from dataclass_factory_30.provider.definitions import ExcludedTypeParseError, TypeParseError
 from tests_30.provider.conftest import TestFactory, parametrize_bool, raises_instance
 
@@ -29,7 +24,7 @@ def factory():
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_mapping_providing(factory, strict_coercion, debug_path):
-    with pytest.raises(CannotProvide):
+    with pytest.raises(NoSuitableProvider):
         factory.provide(
             ParserRequest(
                 type=dict,
@@ -38,7 +33,7 @@ def test_mapping_providing(factory, strict_coercion, debug_path):
             )
         )
 
-    with pytest.raises(CannotProvide):
+    with pytest.raises(NoSuitableProvider):
         factory.provide(
             ParserRequest(
                 type=Dict,
@@ -47,7 +42,7 @@ def test_mapping_providing(factory, strict_coercion, debug_path):
             )
         )
 
-    with pytest.raises(CannotProvide):
+    with pytest.raises(NoSuitableProvider):
         factory.provide(
             ParserRequest(
                 type=Mapping,
@@ -56,7 +51,7 @@ def test_mapping_providing(factory, strict_coercion, debug_path):
             )
         )
 
-    with pytest.raises(CannotProvide):
+    with pytest.raises(NoSuitableProvider):
         factory.provide(
             ParserRequest(
                 type=collections.Counter,

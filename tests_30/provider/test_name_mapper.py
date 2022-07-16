@@ -3,6 +3,7 @@ from typing import Iterable, List, Set
 
 import pytest
 
+from dataclass_factory_30.factory import NoSuitableProvider
 from dataclass_factory_30.model_tools import (
     AttrAccessor,
     ExtraTargets,
@@ -15,7 +16,7 @@ from dataclass_factory_30.model_tools import (
     OutputFigure,
     ParamKind
 )
-from dataclass_factory_30.provider import CannotProvide, InputNameMappingRequest, NameMapper, NameStyle, ValueProvider
+from dataclass_factory_30.provider import InputNameMappingRequest, NameMapper, NameStyle, ValueProvider
 from dataclass_factory_30.provider.model.crown_definitions import (
     CfgExtraPolicy,
     ExtraSkip,
@@ -432,7 +433,7 @@ def test_name_mapping_extra_targets_skip(factory):
 
 
 def test_name_mapping_error_on_required_field_skip(factory):
-    with pytest.raises(CannotProvide):
+    with pytest.raises(NoSuitableProvider):
         factory.provide(
             inp_request(
                 fields=[
@@ -449,7 +450,7 @@ def test_name_mapping_error_on_required_field_skip(factory):
             )
         )
 
-    with pytest.raises(CannotProvide):
+    with pytest.raises(NoSuitableProvider):
         factory.provide(
             inp_request(
                 fields=[

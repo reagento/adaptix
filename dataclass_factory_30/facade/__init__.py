@@ -1,4 +1,4 @@
-from .factory import BuiltinFactory, Factory, NoSuitableProvider
+from .factory import BuiltinFactory, Factory
 from .provider import (
     add_property,
     bound,

@@ -243,8 +243,8 @@ def create_req_checker(pred: Union[TypeHint, str, RequestChecker]) -> RequestChe
 
 
 class NextProvider(Provider):
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        return mediator.provide_from_next(request)
+    def apply_provider(self, mediator: Mediator[T], request: Request[T]) -> T:
+        return mediator.provide_from_next()
 
 
 NEXT_PROVIDER = NextProvider()

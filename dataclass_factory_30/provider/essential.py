@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Generic, Iterable, Optional, Sequence, Type, TypeVar
+from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
 
 from ..common import VarTuple
 
@@ -55,7 +55,7 @@ class CannotProvide(Exception):
         return f"{type(self).__name__}({content})"
 
 
-class Mediator(ABC):
+class Mediator(ABC, Generic[T]):
     """Mediator is an object that gives provider access to other providers
     and that stores state of the current search.
 
@@ -72,18 +72,25 @@ class Mediator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def provide_from_next(self, request: Request[T]) -> T:
-        """Same as :method provide: but it skips themself
-        and providers already tested at this iteration.
+    def provide_from_next(self) -> T:
+        """Forward current request to providers
+        that placed after current provider at the recipe.
         """
         raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def request_stack(self) -> Sequence[Request[Any]]:
+        """Call stack, but consisting of requests.
+        Last element of request_stack is current request.
+        """
 
 
 class Provider(ABC):
     """An object that can process Request instances"""
 
     @abstractmethod
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+    def apply_provider(self, mediator: Mediator[T], request: Request[T]) -> T:
         """Handle request instance and return a value of type required by request.
         Behavior must be the same during the provider object lifetime
 

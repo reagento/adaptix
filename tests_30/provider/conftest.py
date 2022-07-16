@@ -4,7 +4,7 @@ import pytest
 
 from dataclass_factory_30.common import EllipsisType
 from dataclass_factory_30.factory import OperatingFactory
-from dataclass_factory_30.provider import Provider
+from dataclass_factory_30.provider import Provider, Request
 from dataclass_factory_30.struct_path import get_path
 
 T = TypeVar("T")
@@ -17,7 +17,7 @@ class TestFactory(OperatingFactory):
     def _get_config_recipe(self) -> List[Provider]:
         return []
 
-    provide = OperatingFactory._provide_from_recipe
+    provide = OperatingFactory._facade_provide
 
 
 def raises_instance(exp_exc: Exception, func, *, path: Union[list, None, EllipsisType] = Ellipsis):

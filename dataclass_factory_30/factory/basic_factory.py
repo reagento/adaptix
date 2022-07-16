@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar, List, Optional, TypeVar
+from typing import ClassVar, List, Optional, Sequence, TypeVar
 
 from ..provider import Mediator, Provider, Request
 from .mediator import BuiltinMediator, RawRecipeSearcher, RecipeSearcher, RecursionResolving
@@ -71,16 +71,16 @@ class ProvidingFromRecipe(FullRecipeGetter, ABC):
     def _get_recursion_resolving(self) -> RecursionResolving:
         pass
 
-    def _create_mediator(self) -> Mediator:
+    def _create_mediator(self, request_stack: Sequence[Request]) -> Mediator:
         searcher = self._get_searcher()
         recursion_resolving = self._get_recursion_resolving()
-        return BuiltinMediator(searcher, recursion_resolving)
+        return BuiltinMediator(searcher, recursion_resolving, request_stack)
 
-    def _provide_from_recipe(self, request: Request[T]) -> T:
+    def _provide_from_recipe(self, request: Request[T], request_stack: Sequence[Request]) -> T:
         """Process request iterating over the result of _get_full_recipe()
         :param request:
         :return: request result
         :raise CannotProvide: request did not processed
         """
-        mediator = self._create_mediator()
+        mediator = self._create_mediator(request_stack)
         return mediator.provide(request)

@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from datetime import date, datetime, time
 from decimal import Decimal
 from fractions import Fraction
@@ -23,7 +22,6 @@ from ..provider import (
     BuiltinOutputExtractionImageProvider,
     BytearrayBase64Provider,
     BytesBase64Provider,
-    CannotProvide,
     CfgExtraPolicy,
     CoercionLimiter,
     DictProvider,
@@ -34,7 +32,6 @@ from ..provider import (
     IsoFormatProvider,
     IterableProvider,
     LiteralProvider,
-    Mediator,
     NameMapper,
     NameSanitizer,
     NewTypeUnwrappingProvider,
@@ -151,16 +148,8 @@ T = TypeVar('T')
 RequestTV = TypeVar('RequestTV', bound=Request)
 
 
-@dataclass
-class NoSuitableProvider(Exception):
-    important_error: Optional[CannotProvide]
-
-    def __str__(self):
-        return repr(self.important_error)
-
-
 # TODO: Add JsonSchemaFactory with new API
-class Factory(BuiltinFactory, Provider):
+class Factory(BuiltinFactory):
     def __init__(
         self,
         recipe: Optional[List[Provider]] = None,
@@ -181,16 +170,6 @@ class Factory(BuiltinFactory, Provider):
         return [
             FactoryProvider(CfgExtraPolicy, lambda: self._extra_policy),
         ]
-
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        return self._provide_from_recipe(request)
-
-    def _facade_provide(self, request: Request[T]) -> T:
-        try:
-            return self._provide_from_recipe(request)
-        except CannotProvide as e:
-            important_error = e if e.is_important() else None
-            raise NoSuitableProvider(important_error=important_error)
 
     def parser(self, tp: Type[T]) -> Parser[T]:
         try:

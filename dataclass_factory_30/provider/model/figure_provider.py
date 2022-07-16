@@ -90,8 +90,8 @@ class PropertyAdder(StaticProvider):
             )
 
     @static_provision_action
-    def provide_output_figure(self, mediator: Mediator, request: OutputFigureRequest) -> OutputFigure:
-        figure: OutputFigure = mediator.provide_from_next(request)
+    def provide_output_figure(self, mediator: Mediator[OutputFigure], request: OutputFigureRequest) -> OutputFigure:
+        figure = mediator.provide_from_next()
 
         additional_fields = tuple(
             replace(field, type=self._infer_property_type(request.type, self._get_attr_name(field)))

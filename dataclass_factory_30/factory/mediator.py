@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import islice
-from typing import Any, Callable, Dict, Generic, Iterable, List, Set, Tuple, TypeVar
+from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Tuple, TypeVar
 
 from ..provider import CannotProvide, ClassDispatcher, Mediator, Provider, Request
 
@@ -47,47 +47,51 @@ class BuiltinMediator(Mediator):
     def __init__(
         self,
         searcher: RecipeSearcher,
-        recursion_resolving: RecursionResolving
+        recursion_resolving: RecursionResolving,
+        request_stack: Sequence[Request[Any]],
     ):
         self.searcher = searcher
         self.recursion_resolving = recursion_resolving
 
-        self.provided_request: Set[Request] = set()
+        self._request_stack = list(request_stack)
         self.next_offset = 0
         self.recursion_stubs: Dict[Request, Any] = {}
 
     def provide(self, request: Request[T]) -> T:
-        return self._provide(request, 0)
-
-    def provide_from_next(self, request: Request[T]) -> T:
-        return self._provide(request, self.next_offset)
-
-    def _get_resolver(self, request: Request) -> StubsRecursionResolver:
-        return self.recursion_resolving.dispatch(type(request))
-
-    def _provide(self, request: Request[T], search_offset: int) -> T:
-        if request in self.provided_request:
+        if request in self._request_stack:  # maybe we need to lookup in set for large request_stack
             resolver = self._get_resolver(request)
             stub = resolver.get_stub(request)
             self.recursion_stubs[request] = stub
             return stub
 
-        else:
-            result = self._provide_non_recursive(request, search_offset)
+        self._request_stack.append(request)
+        try:
+            result = self._provide_non_recursive(request, 0)
+        finally:
+            self._request_stack.pop(-1)
 
-            if request in self.recursion_stubs:
-                resolver = self._get_resolver(request)
-                stub = self.recursion_stubs.pop(request)
-                resolver.saturate_stub(result, stub)
+        if request in self.recursion_stubs:
+            resolver = self._get_resolver(request)
+            stub = self.recursion_stubs.pop(request)
+            resolver.saturate_stub(result, stub)
 
-            return result
+        return result
+
+    def provide_from_next(self) -> Any:
+        return self._provide_non_recursive(self._request_stack[-1], self.next_offset)
+
+    @property
+    def request_stack(self) -> Sequence[Request[Any]]:
+        return self._request_stack
+
+    def _get_resolver(self, request: Request) -> StubsRecursionResolver:
+        return self.recursion_resolving.dispatch(type(request))
 
     def _provide_non_recursive(self, request: Request[T], search_offset: int) -> T:
         init_next_offset = self.next_offset
         for provide_callable, next_offset in self.searcher.search_candidates(
             search_offset, request
         ):
-            self.provided_request.add(request)  # request mustn't be in set
             self.next_offset = next_offset
             try:
                 result = provide_callable(self, request)
@@ -95,8 +99,6 @@ class BuiltinMediator(Mediator):
                 if e.is_important():
                     raise
                 continue
-            finally:
-                self.provided_request.remove(request)
 
             self.next_offset = init_next_offset
             return result
