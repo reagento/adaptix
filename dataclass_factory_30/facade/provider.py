@@ -1,6 +1,4 @@
-import operator
 from enum import Enum, EnumMeta
-from functools import reduce
 from types import MappingProxyType
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Type, TypeVar, Union, overload
 
@@ -14,6 +12,7 @@ from ..provider import (
     InputFigureRequest,
     NameMapper,
     NameStyle,
+    OrRequestChecker,
     ParserRequest,
     PropertyAdder,
     Provider,
@@ -248,8 +247,8 @@ def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider):
         raise ValueError(f"Can not apply enum rules to {Enum}")
 
     return BoundingProvider(
-        reduce(operator.or_, [create_req_checker(pred) for pred in preds]),
-        provider
+        OrRequestChecker([create_req_checker(pred) for pred in preds]),
+        provider,
     )
 
 

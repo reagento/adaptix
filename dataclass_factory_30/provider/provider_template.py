@@ -15,7 +15,7 @@ T = TypeVar('T')
 
 
 class ProviderWithRC(StaticProvider):
-    def _check_request(self, request: Request) -> None:
+    def _check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         pass
 
 
@@ -42,7 +42,7 @@ class ParserProvider(ProviderWithRC, ABC):
     @final
     @static_provision_action
     def _outer_provide_parser(self, mediator: Mediator, request: ParserRequest):
-        self._check_request(request)
+        self._check_request(mediator, request)
         return self._provide_parser(mediator, request)
 
     @abstractmethod
@@ -54,7 +54,7 @@ class SerializerProvider(ProviderWithRC, ABC):
     @final
     @static_provision_action
     def _outer_provide_serializer(self, mediator: Mediator, request: SerializerRequest):
-        self._check_request(request)
+        self._check_request(mediator, request)
         return self._provide_serializer(mediator, request)
 
     @abstractmethod

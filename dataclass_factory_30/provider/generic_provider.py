@@ -341,7 +341,7 @@ class DictProvider(ParserProvider, SerializerProvider):
 
 
 class BaseEnumProvider(ParserProvider, SerializerProvider, ABC):
-    def _check_request(self, request: Request) -> None:
+    def _check_request(self, mediator: Mediator, request: Request) -> None:
         if not isinstance(request, TypeHintRM):
             raise CannotProvide
 

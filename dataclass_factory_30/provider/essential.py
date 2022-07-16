@@ -48,7 +48,7 @@ class CannotProvide(Exception):
 
     # TODO: maybe add checking of __cause__ and __context__
     def is_important(self) -> bool:
-        return self._is_important or any(error.is_important for error in self.sub_errors)
+        return self._is_important or any(error.is_important() for error in self.sub_errors)
 
     def __repr__(self):
         content = f"msg={self.msg!r}, sub_errors={self.sub_errors!r}, is_important={self._is_important!r}"

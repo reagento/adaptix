@@ -56,14 +56,18 @@ from .model.figure_provider import PropertyAdder
 from .name_mapper import NameMapper
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import (
+    AndRequestChecker,
     BoundingProvider,
     ExactFieldNameRC,
     FactoryProvider,
+    NegRequestChecker,
     NextProvider,
+    OrRequestChecker,
     ReFieldNameRC,
     RequestChecker,
     SubclassRC,
     ValueProvider,
+    XorRequestChecker,
     create_req_checker,
     foreign_parser
 )
