@@ -2,7 +2,7 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from inspect import isabstract
-from typing import Any, Callable, Generic, Type, TypeVar, Union
+from typing import Any, Callable, Generic, Pattern, Type, TypeVar, Union
 
 from ..common import Parser, TypeHint, VarTuple
 from ..type_tools import is_protocol, is_subclass_soft, normalize_type
@@ -156,17 +156,15 @@ class ExactFieldNameRC(RequestChecker):
 
 @dataclass
 class ReFieldNameRC(RequestChecker):
-    pattern: str
-
-    def __post_init__(self):
-        self.compiled_pattern = re.compile(self.pattern)
+    pattern: Pattern[str]
 
     def get_allowed_request_classes(self) -> VarTuple[Type[Request]]:
         return (FieldRM,)
 
     def _check_request(self, request: FieldRM) -> None:
-        if self.compiled_pattern.fullmatch(request.name):
+        if self.pattern.fullmatch(request.name):
             return
+
         raise CannotProvide(f'field_name must be matched by {self.pattern!r}')
 
 
@@ -233,6 +231,9 @@ def create_req_checker(pred: Union[TypeHint, str, RequestChecker]) -> RequestChe
     if isinstance(pred, str):
         if pred.isidentifier():
             return ExactFieldNameRC(pred)  # this is only an optimization
+        return ReFieldNameRC(re.compile(pred))
+
+    if isinstance(pred, re.Pattern):
         return ReFieldNameRC(pred)
 
     if isinstance(pred, RequestChecker):
