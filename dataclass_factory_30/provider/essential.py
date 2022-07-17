@@ -36,6 +36,7 @@ class CannotProvide(Exception):
         self.msg = msg
         self.sub_errors = sub_errors
         self._is_important = is_important
+        super().__init__()
 
     def __eq__(self, other):
         if isinstance(other, CannotProvide):

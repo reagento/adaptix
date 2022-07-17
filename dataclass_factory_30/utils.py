@@ -23,7 +23,10 @@ T = TypeVar('T')
 
 def pairs(iterable: Iterable[T]) -> Iterable[Tuple[T, T]]:
     it = iter(iterable)
-    past = next(it)
+    try:
+        past = next(it)
+    except StopIteration:
+        return
 
     for current in it:
         yield past, current

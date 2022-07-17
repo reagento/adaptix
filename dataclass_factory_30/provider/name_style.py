@@ -75,10 +75,10 @@ SNAKE_SPLITTER = re.compile(r'(_*)([^_]+)(.*?)(_*)$')
 REST_SUB = re.compile(r'(_+)|([^_]+)')
 
 
-def rest_sub_func(conv: StyleConversion, m: re.Match):
-    if m[1] is None:
-        return conv.other(m[2])
-    return m[1].replace('_', conv.sep)
+def rest_sub(conv: StyleConversion, match_: re.Match):
+    if match_[1] is None:
+        return conv.other(match_[2])
+    return match_[1].replace('_', conv.sep)
 
 
 def convert_snake_style(name: str, style: NameStyle) -> str:
@@ -93,6 +93,6 @@ def convert_snake_style(name: str, style: NameStyle) -> str:
     conv = STYLE_CONVERSIONS[style]
 
     first = conv.first(raw_first)
-    rest = REST_SUB.sub(partial(rest_sub_func, conv), raw_rest)
+    rest = REST_SUB.sub(partial(rest_sub, conv), raw_rest)
 
     return front_us + first + rest + trailing_us

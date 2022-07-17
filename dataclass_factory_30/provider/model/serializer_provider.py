@@ -99,8 +99,7 @@ class BuiltinOutputCreationImageProvider(StaticProvider, DirectFieldsCollectorMi
                         "OutListCrown cannot contain OutFieldCrown of optional field",
                         is_important=True,
                     )
-                else:
-                    self._check_optional_field_at_list_crown(fields_dict, crown)
+                self._check_optional_field_at_list_crown(fields_dict, crown)
         elif not isinstance(crown, (OutFieldCrown, OutNoneCrown)):
             raise TypeError
 

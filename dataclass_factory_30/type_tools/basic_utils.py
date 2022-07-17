@@ -1,3 +1,4 @@
+#pylint: disable=import-outside-toplevel
 import types
 from typing import Generic, Iterable, TypedDict, Union, get_origin
 
@@ -69,4 +70,5 @@ def is_protocol(tp):
 
 
 def create_union(args: tuple):
+    # pylint: disable=unnecessary-dunder-call
     return Union.__getitem__(args)

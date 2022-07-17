@@ -113,7 +113,7 @@ class StaticProvider(Provider):
         own_spa = _collect_class_own_rc_dict(cls)
 
         parent_rd_dicts = [
-            parent._sp_cls_request_dispatcher.to_dict()
+            parent._sp_cls_request_dispatcher.to_dict()  # pylint: disable=no-member
             for parent in cls.__bases__
             if issubclass(parent, StaticProvider)
         ]
@@ -174,10 +174,10 @@ def _merge_rc_dicts(cls: type, dict_iter: Iterable[_RcDict]) -> _RcDict:
     rc_to_name: _RcDict = {}
     for dct in dict_iter:
         for rc, name in dct.items():
-            if rc in rc_to_name.keys():
+            if rc in rc_to_name:
                 raise _rc_attached_to_several_spa(cls, rc_to_name[rc], name, rc)
 
-            if name in name_to_rc.keys() and rc != name_to_rc[name]:
+            if name in name_to_rc and rc != name_to_rc[name]:
                 raise _spa_has_different_rc(cls, name, name_to_rc[name], rc)
 
             rc_to_name[rc] = name

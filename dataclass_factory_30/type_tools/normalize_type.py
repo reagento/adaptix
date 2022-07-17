@@ -1,3 +1,4 @@
+# pylint: disable=inconsistent-return-statements,import-outside-toplevel,comparison-with-callable
 import collections
 import re
 from abc import ABC, abstractmethod
@@ -234,7 +235,7 @@ def _create_norm_literal(args: Iterable):
     dedup_args = tuple(_dedup(args))
     return NormType(
         Literal, dedup_args,
-        source=Literal.__getitem__(
+        source=Literal.__getitem__(  # pylint: disable=unnecessary-dunder-call
             dedup_args  # type: ignore
         )
     )
@@ -264,7 +265,7 @@ class NotSubscribedError(ValueError):
     pass
 
 
-T_Norm = TypeVar('T_Norm', bound=BaseNormType)
+N = TypeVar('N', bound=BaseNormType)
 
 
 class TypeNormalizer:
@@ -415,8 +416,8 @@ class TypeNormalizer:
 
             return NormType(origin, args, source=tp)
 
-    def _unfold_union_args(self, norm_args: Iterable[T_Norm]) -> List[T_Norm]:
-        result: List[T_Norm] = []
+    def _unfold_union_args(self, norm_args: Iterable[N]) -> List[N]:
+        result: List[N] = []
         for norm in norm_args:
             if norm.origin == Union:
                 result.extend(norm.args)
@@ -445,9 +446,9 @@ class TypeNormalizer:
             for d_arg, sources in zip(result, args_source)
         ]
 
-    def _merge_literals(self, args: Iterable[T_Norm]) -> List[T_Norm]:
+    def _merge_literals(self, args: Iterable[N]) -> List[N]:
         result = []
-        lit_args: List[T_Norm] = []
+        lit_args: List[N] = []
         for norm in args:
             if norm.origin == Literal:
                 lit_args.extend(norm.args)

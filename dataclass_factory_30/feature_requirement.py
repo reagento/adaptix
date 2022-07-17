@@ -24,6 +24,7 @@ class PythonVersionRequirement:
         self.__bool__ = _true if self.is_meet else _false
 
     def __call__(self, func):
+        # pylint: disable=import-outside-toplevel
         import pytest
 
         ver_str = '.'.join(map(str, self.ver))

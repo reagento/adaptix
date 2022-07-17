@@ -32,7 +32,7 @@ class BasicClosureCompiler(ClosureCompiler):
         code_obj = compile(source, filename, "exec")
 
         local_namespace: Dict[str, Any] = {}
-        exec(code_obj, namespace, local_namespace)  # noqa
+        exec(code_obj, namespace, local_namespace)  # noqa  # pylint: disable=exec-used
 
         return local_namespace["_closure_maker"]()
 

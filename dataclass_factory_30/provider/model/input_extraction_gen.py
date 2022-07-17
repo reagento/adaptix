@@ -98,6 +98,7 @@ class GenState:
         return self._name_to_field[crown.name]
 
     def with_parent_path(self) -> "GenState":
+        # pylint: disable=protected-access
         if self._parent_path is None:
             raise ValueError
 

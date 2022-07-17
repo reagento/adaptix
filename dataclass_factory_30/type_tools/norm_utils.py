@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel
 from dataclasses import InitVar
 from typing import Callable, ClassVar, Final, Tuple
 

@@ -1,3 +1,4 @@
+# pylint: disable=invalid-overridden-method,arguments-differ
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
@@ -51,6 +52,7 @@ class Accessor(Hashable, ABC):
 
 
 class DescriptorAccessor(Accessor, ABC):
+    # pylint: disable=invalid-overridden-method,arguments-differ
     # Dataclasses delete all field() attributes if there is no default value.
     # So, if setup it as abstract property,
     # constructor can not set value to attribute due property has no setter

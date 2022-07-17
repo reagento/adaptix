@@ -67,7 +67,7 @@ class GenState:
         if not self._path:
             return "filler"
 
-        return f'filler_' + self._get_path_idx(self._path)
+        return 'filler_' + self._get_path_idx(self._path)
 
     def sieve(self, key: CrownPathElem) -> str:
         path = self._path + (key,)

@@ -66,7 +66,7 @@ ignored-modules=
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use, and will cap the count on Windows to
 # avoid hangs.
-jobs=1
+jobs=0
 
 # Control the amount of potential inferred values when inferring a single
 # object. This can help the performance when dealing with large functions or
@@ -151,7 +151,17 @@ disable=raw-checker-failed,
         suppressed-message,
         useless-suppression,
         deprecated-pragma,
-        use-symbolic-message-instead
+        use-symbolic-message-instead,
+        missing-function-docstring,
+        missing-class-docstring,
+        missing-module-docstring,
+        too-few-public-methods,
+        unused-argument,
+        too-many-ancestors,
+        too-many-instance-attributes,
+        too-many-arguments,
+        fixme,
+        raise-missing-from,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -194,7 +204,7 @@ single-line-if-stmt=no
 
 # List of modules that can be imported at any level, not just the top level
 # one.
-allow-any-import-level=
+allow-any-import-level=typing
 
 # Allow wildcard imports from modules that define __all__.
 allow-wildcard-with-all=no
@@ -331,7 +341,7 @@ exclude-protected=_asdict,
 valid-classmethod-first-arg=cls
 
 # List of valid names for the first argument in a metaclass class method.
-valid-metaclass-classmethod-first-arg=cls
+valid-metaclass-classmethod-first-arg=mcs
 
 
 [VARIABLES]
@@ -345,6 +355,9 @@ allow-global-unused-variables=yes
 
 # List of names allowed to shadow builtins
 allowed-redefined-builtins=
+  map,
+# allow redefine this builtin for name_mapping
+
 
 # List of strings which can identify a callback function by name. A callback
 # name must start or end with one of those strings.
@@ -470,7 +483,8 @@ argument-naming-style=snake_case
 # Regular expression matching correct argument names. Overrides argument-
 # naming-style. If left empty, argument names will be checked with the set
 # naming style.
-#argument-rgx=
+argument-rgx=[a-z_][a-z0-9_]{1,30}$
+# default regex does not allow two letter names
 
 # Naming style matching correct attribute names.
 attr-naming-style=snake_case
@@ -478,7 +492,8 @@ attr-naming-style=snake_case
 # Regular expression matching correct attribute names. Overrides attr-naming-
 # style. If left empty, attribute names will be checked with the set naming
 # style.
-#attr-rgx=
+attr-rgx=[a-z_][a-z0-9_]{1,30}$
+# default regex does not allow two letter names
 
 # Bad variable names which should always be refused, separated by a comma.
 bad-names=foo,
@@ -539,8 +554,9 @@ function-naming-style=snake_case
 good-names=i,
            j,
            k,
+           v,
+           e,
            ex,
-           Run,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,
@@ -587,7 +603,8 @@ property-classes=abc.abstractproperty
 
 # Regular expression matching correct type variable names. If left empty, type
 # variable names will be checked with the set naming style.
-#typevar-rgx=
+typevar-rgx=_{0,2}(?:[A-Z_][a-zA-Z0-9]*)(?:_co(?:ntra)?)?$
+# default regex does not match CapWords
 
 # Naming style matching correct variable names.
 variable-naming-style=snake_case
@@ -595,8 +612,8 @@ variable-naming-style=snake_case
 # Regular expression matching correct variable names. Overrides variable-
 # naming-style. If left empty, variable names will be checked with the set
 # naming style.
-#variable-rgx=
-
+variable-rgx=[a-z_][a-z0-9_]{1,30}$
+# default regex does not allow two letter names
 
 [REFACTORING]
 

@@ -37,6 +37,7 @@ def _parenthesize(parentheses: str, elements) -> str:
 
 
 def _get_complex_literal_expr(obj: object) -> Optional[str]:
+    # pylint: disable=unidiomatic-typecheck,too-many-return-statements
     if type(obj) == list:
         return _parenthesize("[]", obj)
 
@@ -55,11 +56,11 @@ def _get_complex_literal_expr(obj: object) -> Optional[str]:
 
     if type(obj) == slice:
         parts = (obj.start, obj.step, obj.stop)  # type: ignore[attr-defined]
-        return f"slice" + _parenthesize("()", parts)
+        return "slice" + _parenthesize("()", parts)
 
     if type(obj) == range:
         parts = (obj.start, obj.step, obj.stop)  # type: ignore[attr-defined]
-        return f"range" + _parenthesize("()", parts)
+        return "range" + _parenthesize("()", parts)
 
     if type(obj) == dict:
         body = ", ".join(

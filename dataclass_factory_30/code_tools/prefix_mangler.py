@@ -25,7 +25,7 @@ class MangledConstant:
         return self._value
 
     def __set__(self, instance, value):
-        raise AttributeError(f"Can not rewrite MangledConstant at instance")
+        raise AttributeError("Can not rewrite MangledConstant at instance")
 
 
 def mangling_method(prefix: str):
@@ -34,6 +34,7 @@ def mangling_method(prefix: str):
         def wrapped_method(self, *args, **kwargs):
             return prefix + func(self, *args, **kwargs)
 
+        # pylint: disable=protected-access
         wrapped_method._mangling_method_prefix = prefix  # type: ignore[attr-defined]
         return wrapped_method
 

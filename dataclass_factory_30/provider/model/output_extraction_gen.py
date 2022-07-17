@@ -35,6 +35,8 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
             ctx_namespace.add(self._serializer(name_to_fields[field_name]), serializer)
 
         for field in self._figure.fields:
+            # pylint: disable=cell-var-from-loop
+            # closure lifetime bound to one loop iteration
             if not self._is_extra_target(field):
                 self._gen_field_extraction(
                     builder, binder, ctx_namespace, field,
@@ -225,6 +227,8 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
 
         elif all(field.is_required for field in name_to_fields.values()):
             for field_name in self._extra_targets:
+                # pylint: disable=cell-var-from-loop
+                # closure lifetime bound to one loop iteration
                 field = name_to_fields[field_name]
 
                 self._gen_required_field_extraction(

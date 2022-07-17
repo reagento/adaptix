@@ -24,6 +24,7 @@ Path = Sequence[PathElement]
 
 
 def append_path(obj: object, path_element: PathElement) -> None:
+    # pylint: disable=protected-access
     """Append path element to object. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, do nothing.
     Element inserting to start of the path (it is build in reverse order)
@@ -41,6 +42,7 @@ def append_path(obj: object, path_element: PathElement) -> None:
 
 
 def extend_path(obj: object, sub_path: Reversible[PathElement]) -> None:
+    # pylint: disable=protected-access
     """Extend path with sub path. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, do nothing.
     Sub path inserting to start of the path (it is build in reverse order)
@@ -58,6 +60,7 @@ def extend_path(obj: object, sub_path: Reversible[PathElement]) -> None:
 
 
 def get_path(obj: object) -> Optional[Path]:
+    # pylint: disable=protected-access
     """Retrieve path from object. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, returns None.
 
@@ -89,7 +92,7 @@ def get_path_unchecked(obj: object) -> Path:
     """
     try:
         # noinspection PyProtectedMember
-        path = obj._df_struct_path  # type: ignore[attr-defined]
+        path = obj._df_struct_path  # type: ignore[attr-defined]  # pylint: disable=protected-access
     except AttributeError:
         return deque()
     return path

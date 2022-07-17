@@ -40,7 +40,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
 
 
 def _is_exact_zero_or_one(arg):
-    return type(arg) == int and (arg == 0 or arg == 1)
+    return type(arg) == int and arg in (0, 1)  # pylint: disable=unidiomatic-typecheck
 
 
 @dataclass
@@ -51,8 +51,7 @@ class LiteralProvider(ParserProvider, SerializerProvider):
     def _get_container(self, args: Collection) -> Container:
         if len(args) > self.tuple_size_limit:
             return set(args)
-        else:
-            return tuple(args)
+        return tuple(args)
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         norm = normalize_type(request.type)
@@ -109,16 +108,15 @@ class UnionProvider(ParserProvider):
 
             return union_parser_dp
 
-        else:
-            def union_parser(value):
-                for prs in parsers:
-                    try:
-                        return prs(value)
-                    except ParseError:
-                        pass
-                raise ParseError
+        def union_parser(value):
+            for prs in parsers:
+                try:
+                    return prs(value)
+                except ParseError:
+                    pass
+            raise ParseError
 
-            return union_parser
+        return union_parser
 
 
 CollectionsMapping = collections.abc.Mapping
@@ -146,10 +144,9 @@ class IterableProvider(ParserProvider, SerializerProvider):
     def _get_iter_factory(self, origin) -> Callable[[Iterable], Iterable]:
         if isabstract(origin):
             return self._get_abstract_impl(origin)
-        elif callable(origin):
+        if callable(origin):
             return origin
-        else:
-            raise CannotProvide
+        raise CannotProvide
 
     def _fetch_norm_and_arg(self, request: TypeHintRM):
         try:
@@ -313,7 +310,7 @@ class DictProvider(ParserProvider, SerializerProvider):
 
             result = {}
             for k, v in items_method():
-                result[key_parser(k)] = value_parser(k)
+                result[key_parser(k)] = value_parser(v)
 
             return result
 
@@ -333,7 +330,7 @@ class DictProvider(ParserProvider, SerializerProvider):
         def dict_serializer(data: Mapping):
             result = {}
             for k, v in data.items():
-                result[key_serializer(k)] = value_serializer(k)
+                result[key_serializer(k)] = value_serializer(v)
 
             return result
 

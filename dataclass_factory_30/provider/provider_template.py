@@ -24,6 +24,7 @@ def attach_request_checker(checker: RequestChecker, cls: Type[ProviderWithRC]):
         raise TypeError(f"Only {ProviderWithRC} child is allowed")
 
     # noinspection PyProtectedMember
+    # pylint: disable=protected-access
     if cls._check_request is not ProviderWithRC._check_request:
         raise RuntimeError("Can not attach request checker twice")
 
@@ -86,7 +87,7 @@ class CoercionLimiter(ParserProvider):
             origin = next(iter(self.allowed_strict_origins))
 
             def strict_coercion_parser_1_origin(value):
-                if type(value) == origin:
+                if type(value) == origin:  # pylint: disable=unidiomatic-typecheck
                     return parser(value)
                 raise TypeParseError(origin)
 
