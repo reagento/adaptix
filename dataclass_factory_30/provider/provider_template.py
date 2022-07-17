@@ -115,7 +115,7 @@ class ABCProxy(Provider):
         if not isinstance(request, (ParserRequest, SerializerRequest)):
             raise CannotProvide
 
-        norm = normalize_type(request.type)
+        norm = normalize_type(request.type)  # type: ignore[attr-defined]
 
         if norm.origin != self._abstract:
             raise CannotProvide
