@@ -32,17 +32,17 @@ def bound(pred: Any, provider: Provider, /) -> Provider:
 
 
 @overload
-def parser(func_or_pred: Type[T], func: Parser[T], /) -> Provider:
+def parser(pred: Type[T], func: Parser[T], /) -> Provider:
     pass
 
 
 @overload
-def parser(func_or_pred: Any, func: Parser, /) -> Provider:
+def parser(pred: Any, func: Parser, /) -> Provider:
     pass
 
 
 @overload
-def parser(func_or_pred: Union[type, Parser], /) -> Provider:
+def parser(type_or_class_method: Union[type, Parser], /) -> Provider:
     pass
 
 
@@ -76,17 +76,17 @@ def serializer(pred, func):
 
 
 @overload
-def constructor(func_or_pred: Type[T], func: Callable[..., T], /) -> Provider:
+def constructor(pred: Type[T], func: Callable[..., T], /) -> Provider:
     pass
 
 
 @overload
-def constructor(func_or_pred: Any, func: Callable, /) -> Provider:
+def constructor(pred: Any, func: Callable, /) -> Provider:
     pass
 
 
 @overload
-def constructor(func_or_pred: Callable, /) -> Provider:
+def constructor(type_or_class_method: Callable, /) -> Provider:
     pass
 
 
