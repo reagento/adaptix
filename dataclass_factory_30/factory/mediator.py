@@ -82,7 +82,7 @@ class BuiltinMediator(Mediator):
 
     @property
     def request_stack(self) -> Sequence[Request[Any]]:
-        return self._request_stack
+        return self._request_stack.copy()
 
     def _get_resolver(self, request: Request) -> StubsRecursionResolver:
         return self.recursion_resolving.dispatch(type(request))

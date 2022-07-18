@@ -24,11 +24,11 @@ Path = Sequence[PathElement]
 
 
 def append_path(obj: object, path_element: PathElement) -> None:
-    # pylint: disable=protected-access
     """Append path element to object. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, do nothing.
     Element inserting to start of the path (it is build in reverse order)
     """
+    # pylint: disable=protected-access
     try:
         # noinspection PyProtectedMember
         path = obj._df_struct_path  # type: ignore[attr-defined]
@@ -42,11 +42,11 @@ def append_path(obj: object, path_element: PathElement) -> None:
 
 
 def extend_path(obj: object, sub_path: Reversible[PathElement]) -> None:
-    # pylint: disable=protected-access
     """Extend path with sub path. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, do nothing.
     Sub path inserting to start of the path (it is build in reverse order)
     """
+    # pylint: disable=protected-access
     try:
         # noinspection PyProtectedMember
         path = obj._df_struct_path  # type: ignore[attr-defined]
@@ -60,7 +60,6 @@ def extend_path(obj: object, sub_path: Reversible[PathElement]) -> None:
 
 
 def get_path(obj: object) -> Optional[Path]:
-    # pylint: disable=protected-access
     """Retrieve path from object. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, returns None.
 
@@ -69,6 +68,7 @@ def get_path(obj: object) -> Optional[Path]:
     So it tests this trying to set value (!!!) for special attribute.
     If you do not want to mutate object use :function get_path_unchecked:
     """
+    # pylint: disable=protected-access
     try:
         # noinspection PyProtectedMember
         path = obj._df_struct_path  # type: ignore[attr-defined]

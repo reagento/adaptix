@@ -10,9 +10,11 @@ from typing import (
     ClassVar,
     DefaultDict,
     Dict,
+    Final,
     FrozenSet,
     Generic,
     List,
+    Literal,
     Match,
     NewType,
     NoReturn,
@@ -264,8 +266,6 @@ def n_lit(*args):
 
 
 def test_literal():
-    from typing import Literal
-
     with pytest.raises(ValueError):
         normalize_type(Literal)
 
@@ -307,8 +307,6 @@ def test_literal():
 
 
 def test_final():
-    from typing import Final
-
     with pytest.raises(ValueError):
         assert normalize_type(Final)
 

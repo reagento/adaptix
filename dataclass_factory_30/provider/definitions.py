@@ -9,6 +9,9 @@ PARSER_COMPAT_EXCEPTIONS = (
     AssertionError, ArithmeticError, AttributeError,
 )
 
+# __init__ of these classes do not call super().__init__,
+# but it's ok! BaseException.__init__ do nothing useful
+
 
 @dataclass
 class ParseError(Exception):
