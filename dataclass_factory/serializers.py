@@ -11,7 +11,7 @@ from .fields import (
 from .exceptions import InvalidFieldError
 from .generics import fix_generic_alias
 from .path_utils import CleanKey, CleanPath, init_structure
-from .schema import RuleForUnknown, Schema, Unknown
+from .schema import Schema, Unknown
 from .type_detection import (
     hasargs, is_any, is_iterable, is_dict, is_enum, is_generic_concrete,
     is_newtype, is_optional, is_tuple, is_type_var, is_typeddict, is_union,
@@ -64,10 +64,16 @@ def get_complex_serializer(
     schema: Schema[T],
     fields: Sequence[FieldInfo],
     getter: Callable[[Any, Any], Any],
-    unknown: RuleForUnknown,
     debug_path: bool,
+    omit_missing: bool,
 ) -> Serializer[T]:
+    """
+    :param getter: functions used to get data for each field (attribute, key and so on)
+    :param omit_missing: omit special MISSING values retrieved from getter. Is applied when all defaults are MISSING.
+    """
     has_default = schema.omit_default and any(f.default != MISSING for f in fields)
+    if omit_missing:
+        has_default = has_default or all(f.default == MISSING for f in fields)
     field_info = tuple(
         (f.field_name, factory.serializer(f.type), f.data_name, f.default)
         for f in fields
@@ -78,6 +84,7 @@ def get_complex_serializer(
             for field_name, serializer, data_name, default in field_info
         )
 
+    unknown=schema.unknown
     if isinstance(unknown, Unknown):
         unpack_unknown = False
     elif isinstance(unknown, str):
@@ -90,7 +97,10 @@ def get_complex_serializer(
         paths = tuple(to_path(f.data_name) for f in fields)
         pickled = dumps(init_structure(paths))
         if has_default:
-            raise ValueError("Cannot use `omit_default` option with flattening schema")
+            if schema.omit_default:
+                raise ValueError("Cannot use `omit_default` option with flattening schema")
+            else:
+                raise ValueError("Cannot omit missing values with flattening schema")
 
         def complex_serialize(data):
             container, field_containers = loads(pickled)
@@ -257,7 +267,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             schema,
             get_dataclass_fields(schema, class_),
             getattr,
-            schema.unknown,
+            omit_missing=False,
             debug_path=debug_path,
         )
     if is_namedtuple(class_):
@@ -266,18 +276,28 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             schema,
             get_namedtuple_fields(schema, class_),
             getattr,
-            schema.unknown,
+            omit_missing=False,
             debug_path=debug_path,
         )
     if is_typeddict(class_) or (is_generic_concrete(class_) and is_typeddict(class_.__origin__)):
-        return get_complex_serializer(
-            factory,
-            schema,
-            get_typeddict_fields(schema, class_),
-            getitem,
-            schema.unknown,
-            debug_path=debug_path,
-        )
+        if class_.__total__:
+            return get_complex_serializer(
+                factory,
+                schema,
+                get_typeddict_fields(schema, class_),
+                getitem,
+                omit_missing=False,
+                debug_path=debug_path,
+            )
+        else:
+            return get_complex_serializer(
+                factory,
+                schema,
+                get_typeddict_fields(schema, class_),
+                lambda obj, key: obj.get(key, MISSING),
+                omit_missing=True,
+                debug_path=debug_path,
+            )
     if is_any(class_):
         return get_lazy_serializer(factory)
     if class_ in (str, bytearray, bytes, int, float, complex, bool):

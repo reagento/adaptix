@@ -26,8 +26,8 @@ class TestTypedDict(TestCase):
             "name": "hello",
             "year": 1,
         }
-        expected = dict(name="hello", year=1)
-        self.assertEqual(expected, factory.load(data, Book))
+        self.assertEqual(data, factory.load(data, Book))
+        self.assertEqual(data, factory.dump(data, Book))
 
     @params(*TYPED_DICTS)
     def test_total(self, typed_dict):
@@ -51,12 +51,12 @@ class TestTypedDict(TestCase):
         data = {
             "name": "hello",
         }
-        expected = dict(name="hello")
-        self.assertEqual(expected, factory.load(data, Book))
+        self.assertEqual(data, factory.load(data, Book))
+        self.assertEqual(data, factory.dump(data, Book))
 
     @params(*TYPED_DICTS)
     def test_complex(self, typed_dict):
-        class MyDict(typed_dict, total=False):
+        class MyDict(typed_dict, total=True):
             python_name: str
             other: str
 
