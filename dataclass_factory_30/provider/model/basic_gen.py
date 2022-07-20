@@ -60,43 +60,44 @@ def _merge_iters(args: Iterable[Iterable[T]]) -> Iterable[T]:
     return list(itertools.chain.from_iterable(args))
 
 
-class SkippedFieldsGetterMixin:
-    def _inner_collect_used_direct_fields(self, crown: BaseCrown) -> Iterable[str]:
-        if isinstance(crown, BaseDictCrown):
-            return _merge_iters(
-                self._inner_collect_used_direct_fields(sub_crown)
-                for sub_crown in crown.map.values()
-            )
-        if isinstance(crown, BaseListCrown):
-            return _merge_iters(
-                self._inner_collect_used_direct_fields(sub_crown)
-                for sub_crown in crown.map
-            )
-        if isinstance(crown, BaseFieldCrown):
-            return [crown.name]
-        if isinstance(crown, BaseNoneCrown):
-            return []
-        raise TypeError
+def _inner_collect_used_direct_fields(crown: BaseCrown) -> Iterable[str]:
+    if isinstance(crown, BaseDictCrown):
+        return _merge_iters(
+            _inner_collect_used_direct_fields(sub_crown)
+            for sub_crown in crown.map.values()
+        )
+    if isinstance(crown, BaseListCrown):
+        return _merge_iters(
+            _inner_collect_used_direct_fields(sub_crown)
+            for sub_crown in crown.map
+        )
+    if isinstance(crown, BaseFieldCrown):
+        return [crown.name]
+    if isinstance(crown, BaseNoneCrown):
+        return []
+    raise TypeError
 
-    def _collect_used_direct_fields(self, crown: BaseCrown) -> Set[str]:
-        lst = self._inner_collect_used_direct_fields(crown)
 
-        used_set = set()
-        for f_name in lst:
-            if f_name in used_set:
-                raise ValueError(f"Field {f_name!r} is duplicated at crown")
-            used_set.add(f_name)
+def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
+    lst = _inner_collect_used_direct_fields(crown)
 
-        return used_set
+    used_set = set()
+    for f_name in lst:
+        if f_name in used_set:
+            raise ValueError(f"Field {f_name!r} is duplicated at crown")
+        used_set.add(f_name)
 
-    def _get_skipped_fields(self, name_mapping: BaseNameMapping, figure: BaseFigure) -> Collection[str]:
-        used_direct_fields = self._collect_used_direct_fields(name_mapping.crown)
-        skipped_direct_fields = [
-            field.name for field in figure.fields
-            if field.name not in used_direct_fields
-        ]
+    return used_set
 
-        return skipped_direct_fields + list(name_mapping.skipped_extra_targets)
+
+def get_skipped_fields(figure: BaseFigure, name_mapping: BaseNameMapping) -> Collection[str]:
+    used_direct_fields = _collect_used_direct_fields(name_mapping.crown)
+    skipped_direct_fields = [
+        field.name for field in figure.fields
+        if field.name not in used_direct_fields
+    ]
+
+    return skipped_direct_fields + list(name_mapping.skipped_extra_targets)
 
 
 Fig = TypeVar('Fig', bound=BaseFigure)

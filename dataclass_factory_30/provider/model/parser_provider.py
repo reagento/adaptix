@@ -10,8 +10,8 @@ from ...provider.request_cls import ParserFieldRequest, ParserRequest
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
-    SkippedFieldsGetterMixin,
     compile_closure_with_globals_capturing,
+    get_skipped_fields,
     strip_figure,
     stub_code_gen_hook
 )
@@ -38,7 +38,7 @@ class InputCreationMaker(Protocol):
         pass
 
 
-class BuiltinInputExtractionMaker(InputExtractionMaker, SkippedFieldsGetterMixin):
+class BuiltinInputExtractionMaker(InputExtractionMaker):
     def __call__(self, mediator: Mediator, request: ParserRequest) -> Tuple[CodeGenerator, InputFigure]:
         figure: InputFigure = mediator.provide(
             InputFigureRequest(type=request.type)
@@ -75,7 +75,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker, SkippedFieldsGetterMixin
         return extraction_gen, figure
 
     def _process_figure(self, figure: InputFigure, name_mapping: InputNameMapping) -> InputFigure:
-        skipped_fields = self._get_skipped_fields(name_mapping, figure)
+        skipped_fields = get_skipped_fields(figure, name_mapping)
 
         skipped_required_fields = [
             field.name

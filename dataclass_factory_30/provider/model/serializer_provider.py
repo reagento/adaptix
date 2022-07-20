@@ -10,8 +10,8 @@ from ...provider.request_cls import SerializerFieldRequest, SerializerRequest
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
-    SkippedFieldsGetterMixin,
     compile_closure_with_globals_capturing,
+    get_skipped_fields,
     strip_figure,
     stub_code_gen_hook
 )
@@ -60,7 +60,7 @@ def make_output_extraction(mediator: Mediator, request: SerializerRequest, figur
     )
 
 
-class BuiltinOutputCreationMaker(OutputCreationMaker, SkippedFieldsGetterMixin):
+class BuiltinOutputCreationMaker(OutputCreationMaker):
     def __call__(self, mediator: Mediator, request: SerializerRequest) -> Tuple[CodeGenerator, OutputFigure]:
         figure: OutputFigure = mediator.provide(
             OutputFigureRequest(type=request.type)
@@ -80,9 +80,7 @@ class BuiltinOutputCreationMaker(OutputCreationMaker, SkippedFieldsGetterMixin):
     def _process_figure(self, figure: OutputFigure, name_mapping: OutputNameMapping) -> OutputFigure:
         fields_dict = {field.name: field for field in figure.fields}
         self._check_optional_field_at_list_crown(fields_dict, name_mapping.crown)
-
-        skipped_fields = self._get_skipped_fields(name_mapping, figure)
-        return strip_figure(figure, skipped_fields)
+        return strip_figure(figure, get_skipped_fields(figure, name_mapping))
 
     def _create_creation_gen(
         self,
@@ -134,6 +132,7 @@ class ModelSerializerProvider(SerializerProvider):
 
         binder = self._get_binder()
         ctx_namespace = BuiltinContextNamespace()
+
         extraction_code_builder = extraction_gen(binder, ctx_namespace)
         creation_code_builder = creation_gen(binder, ctx_namespace)
 
