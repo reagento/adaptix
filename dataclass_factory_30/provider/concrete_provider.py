@@ -2,15 +2,17 @@ import re
 from binascii import a2b_base64, b2a_base64
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
-from typing import Type, Union
+from typing import Type, TypeVar, Union
 
 from ..common import Parser, Serializer
 from ..type_tools import normalize_type
 from .definitions import ParseError
-from .essential import Mediator
+from .essential import Mediator, Request
 from .provider_basics import ExactTypeRC, foreign_parser
 from .provider_template import ParserProvider, ProviderWithRC, SerializerProvider, for_type
 from .request_cls import ParserRequest, SerializerRequest
+
+T = TypeVar('T')
 
 
 def stub(arg):
@@ -22,7 +24,10 @@ class ForAnyDateTime(ProviderWithRC):
     cls: Type[Union[date, time]]
 
     def __post_init__(self):
-        self._check_request = ExactTypeRC(normalize_type(self.cls))
+        self._request_checker = ExactTypeRC(normalize_type(self.cls))
+
+    def _check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
+        self._request_checker.check_request(mediator, request)
 
 
 @dataclass

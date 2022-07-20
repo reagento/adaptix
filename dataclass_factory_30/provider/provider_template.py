@@ -28,7 +28,7 @@ def attach_request_checker(checker: RequestChecker, cls: Type[ProviderWithRC]):
     if cls._check_request is not ProviderWithRC._check_request:
         raise RuntimeError("Can not attach request checker twice")
 
-    cls._check_request = checker  # type: ignore
+    cls._check_request = checker.check_request  # type: ignore
     return cls
 
 

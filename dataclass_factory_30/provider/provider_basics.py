@@ -16,7 +16,7 @@ T = TypeVar('T')
 
 class RequestChecker(ABC):
     @abstractmethod
-    def __call__(self, mediator: Mediator[T], request: Request[T]) -> None:
+    def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         """Raise CannotProvide if the request does not meet the conditions"""
 
     def __or__(self, other: 'RequestChecker') -> 'RequestChecker':
@@ -36,12 +36,12 @@ class OrRequestChecker(RequestChecker):
     def __init__(self, request_checkers: Iterable[RequestChecker]):
         self._request_checkers = request_checkers
 
-    def __call__(self, mediator: Mediator[T], request: Request[T]) -> None:
+    def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         sub_errors = []
 
         for checker in self._request_checkers:
             try:
-                checker(mediator, request)
+                checker.check_request(mediator, request)
             except CannotProvide as e:
                 sub_errors.append(e)
             else:
@@ -54,18 +54,18 @@ class AndRequestChecker(RequestChecker):
     def __init__(self, request_checkers: Iterable[RequestChecker]):
         self._request_checkers = request_checkers
 
-    def __call__(self, mediator: Mediator[T], request: Request[T]) -> None:
+    def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         for checker in self._request_checkers:
-            checker(mediator, request)
+            checker.check_request(mediator, request)
 
 
 class NegRequestChecker(RequestChecker):
     def __init__(self, rc: RequestChecker):
         self._rc = rc
 
-    def __call__(self, mediator: Mediator[T], request: Request[T]) -> None:
+    def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         try:
-            self._rc(mediator, request)
+            self._rc.check_request(mediator, request)
         except CannotProvide:
             return
         else:
@@ -77,16 +77,16 @@ class XorRequestChecker(RequestChecker):
         self._left = left
         self._right = right
 
-    def __call__(self, mediator: Mediator[T], request: Request[T]) -> None:
+    def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         exceptions = []
 
         try:
-            self._left(mediator, request)
+            self._left.check_request(mediator, request)
         except CannotProvide as exc:
             exceptions.append(exc)
 
         try:
-            self._right(mediator, request)
+            self._right.check_request(mediator, request)
         except CannotProvide as exc:
             exceptions.append(exc)
 
@@ -100,14 +100,14 @@ class XorRequestChecker(RequestChecker):
 class BoundedRequestChecker(RequestChecker, ABC):
     BOUND: ClassVar[Type[Request]]
 
-    def __call__(self, mediator: Mediator[T], request: Request[T]) -> None:
+    def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         if isinstance(request, self.BOUND):
-            self._check_request(mediator, request)
+            self._check_bounded_request(mediator, request)
         else:
             raise CannotProvide(f'Only instances of {self.BOUND} is allowed')
 
     @abstractmethod
-    def _check_request(self, mediator: Mediator, request: Any) -> None:
+    def _check_bounded_request(self, mediator: Mediator, request: Any) -> None:
         pass
 
 
@@ -116,7 +116,7 @@ class ExactFieldNameRC(BoundedRequestChecker):
     BOUND = FieldRM
     field_name: str
 
-    def _check_request(self, mediator: Mediator, request: FieldRM) -> None:
+    def _check_bounded_request(self, mediator: Mediator, request: FieldRM) -> None:
         if self.field_name == request.name:
             return
         raise CannotProvide(f'field_name must be a {self.field_name!r}')
@@ -127,7 +127,7 @@ class ReFieldNameRC(BoundedRequestChecker):
     BOUND = FieldRM
     pattern: Pattern[str]
 
-    def _check_request(self, mediator: Mediator, request: FieldRM) -> None:
+    def _check_bounded_request(self, mediator: Mediator, request: FieldRM) -> None:
         if self.pattern.fullmatch(request.name):
             return
 
@@ -139,7 +139,7 @@ class ExactTypeRC(BoundedRequestChecker):
     BOUND = TypeHintRM
     norm: BaseNormType
 
-    def _check_request(self, mediator: Mediator, request: TypeHintRM) -> None:
+    def _check_bounded_request(self, mediator: Mediator, request: TypeHintRM) -> None:
         if normalize_type(request.type) == self.norm:
             return
         raise CannotProvide(f'{request.type} must be a equal to {self.norm.source}')
@@ -150,7 +150,7 @@ class SubclassRC(BoundedRequestChecker):
     BOUND = TypeHintRM
     type_: type
 
-    def _check_request(self, mediator: Mediator, request: TypeHintRM) -> None:
+    def _check_bounded_request(self, mediator: Mediator, request: TypeHintRM) -> None:
         norm = normalize_type(request.type)
         if is_subclass_soft(norm.origin, self.type_):
             return
@@ -162,7 +162,7 @@ class ExactOriginRC(BoundedRequestChecker):
     BOUND = TypeHintRM
     origin: Any
 
-    def _check_request(self, mediator: Mediator, request: TypeHintRM) -> None:
+    def _check_bounded_request(self, mediator: Mediator, request: TypeHintRM) -> None:
         if normalize_type(request.type).origin == self.origin:
             return
         raise CannotProvide(f'{request.type} must have origin {self.origin}')
@@ -172,7 +172,7 @@ class ExactOriginRC(BoundedRequestChecker):
 class StackEndRC(RequestChecker):
     request_checkers: Sequence[RequestChecker]
 
-    def __call__(self, mediator: Mediator[T], request: Request[T]) -> None:
+    def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         stack = mediator.request_stack
         offset = len(stack) - len(self.request_checkers)
 
@@ -180,7 +180,12 @@ class StackEndRC(RequestChecker):
             raise CannotProvide("Request stack is too small")
 
         for checker, stack_request in zip(self.request_checkers, stack[offset:]):
-            checker(mediator, stack_request)
+            checker.check_request(mediator, stack_request)
+
+
+class AnyRequestChecker(RequestChecker):
+    def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
+        return
 
 
 def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
@@ -231,7 +236,7 @@ class BoundingProvider(Provider):
         self._provider = provider
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        self._request_checker(mediator, request)
+        self._request_checker.check_request(mediator, request)
         return self._provider.apply_provider(mediator, request)
 
     def __repr__(self):
