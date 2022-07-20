@@ -34,17 +34,7 @@ from .crown_definitions import (
     RootOutCrown,
     Sieve
 )
-from .definitions import (
-    InputCreationGen,
-    InputCreationImage,
-    InputCreationImageRequest,
-    InputExtractionGen,
-    InputExtractionImage,
-    InputExtractionImageRequest,
-    InputFigureRequest,
-    OutputFigureRequest,
-    VarBinder
-)
+from .definitions import InputFigureRequest, OutputFigureRequest, VarBinder
 from .figure_provider import (
     CLASS_INIT_FIGURE_PROVIDER,
     DATACLASS_FIGURE_PROVIDER,
@@ -54,12 +44,16 @@ from .figure_provider import (
 )
 from .input_creation_gen import BuiltinInputCreationGen
 from .parser_provider import (
-    BuiltinInputCreationImageProvider,
-    BuiltinInputExtractionImageProvider,
-    FieldsParserProvider
+    BuiltinInputExtractionMaker,
+    InputCreationMaker,
+    InputExtractionMaker,
+    ModelParserProvider,
+    make_input_creation
 )
 from .serializer_provider import (
-    BuiltinOutputCreationImageProvider,
-    BuiltinOutputExtractionImageProvider,
-    FieldsSerializerProvider
+    BuiltinOutputCreationMaker,
+    ModelSerializerProvider,
+    OutputCreationMaker,
+    OutputExtractionMaker,
+    make_output_extraction
 )

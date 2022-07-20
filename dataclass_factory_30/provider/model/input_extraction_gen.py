@@ -27,7 +27,7 @@ from .crown_definitions import (
     InpNoneCrown,
     RootInpCrown
 )
-from .definitions import InputExtractionGen, VarBinder
+from .definitions import CodeGenerator, VarBinder
 
 
 class GenState:
@@ -108,7 +108,7 @@ class GenState:
         return cp
 
 
-class BuiltinInputExtractionGen(InputExtractionGen):
+class BuiltinInputExtractionGen(CodeGenerator):
     """BuiltinInputExtractionGen generates code that extracts raw values from input data,
     calls parsers and stores results at variables.
     """
@@ -119,6 +119,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
         crown: RootInpCrown,
         debug_path: bool,
         strict_coercion: bool,
+        field_parsers: Mapping[str, Parser],
     ):
         self._figure = figure
         self._root_crown = crown
@@ -127,6 +128,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
         self._name_to_field: Dict[str, InputField] = {
             field.name: field for field in self._figure.fields
         }
+        self._field_parsers = field_parsers
 
     def _is_extra_target(self, field: InputField):
         return (
@@ -138,12 +140,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
     def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
         return GenState(binder, ctx_namespace, self._name_to_field)
 
-    def generate_input_extraction(
-        self,
-        binder: VarBinder,
-        ctx_namespace: ContextNamespace,
-        field_parsers: Mapping[str, Parser],
-    ) -> CodeBuilder:
+    def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         for exception in [
             ExtraFieldsError, ExtraItemsError,
             TypeParseError, NoRequiredFieldsError,
@@ -157,7 +154,7 @@ class BuiltinInputExtractionGen(InputExtractionGen):
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
 
-        for field_name, parser in field_parsers.items():
+        for field_name, parser in self._field_parsers.items():
             state.ctx_namespace.add(state.field_parser(field_name), parser)
 
         if not self._gen_root_crown_dispatch(crown_builder, state, self._root_crown):

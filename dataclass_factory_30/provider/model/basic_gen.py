@@ -1,14 +1,22 @@
 import itertools
 import string
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, Tuple, TypeVar
+from typing import Any, Callable, Collection, Dict, Iterable, List, Sequence, Set, Tuple, TypeVar
 
 from ...code_tools import ClosureCompiler, CodeBuilder
 from ...model_tools import ExtraTargets
 from ..essential import Mediator, Request
 from ..static_provider import StaticProvider, static_provision_action
-from .crown_definitions import BaseCrown, BaseDictCrown, BaseFieldCrown, BaseFigure, BaseListCrown, BaseNoneCrown
-from .definitions import VarBinder, WithSkippedFields
+from .crown_definitions import (
+    BaseCrown,
+    BaseDictCrown,
+    BaseFieldCrown,
+    BaseFigure,
+    BaseListCrown,
+    BaseNameMapping,
+    BaseNoneCrown
+)
+from .definitions import VarBinder
 
 
 @dataclass
@@ -52,7 +60,7 @@ def _merge_iters(args: Iterable[Iterable[T]]) -> Iterable[T]:
     return list(itertools.chain.from_iterable(args))
 
 
-class DirectFieldsCollectorMixin:
+class SkippedFieldsGetterMixin:
     def _inner_collect_used_direct_fields(self, crown: BaseCrown) -> Iterable[str]:
         if isinstance(crown, BaseDictCrown):
             return _merge_iters(
@@ -81,17 +89,26 @@ class DirectFieldsCollectorMixin:
 
         return used_set
 
+    def _get_skipped_fields(self, name_mapping: BaseNameMapping, figure: BaseFigure) -> Collection[str]:
+        used_direct_fields = self._collect_used_direct_fields(name_mapping.crown)
+        skipped_direct_fields = [
+            field.name for field in figure.fields
+            if field.name not in used_direct_fields
+        ]
+
+        return skipped_direct_fields + list(name_mapping.skipped_extra_targets)
+
 
 Fig = TypeVar('Fig', bound=BaseFigure)
 
 
-def strip_figure(figure: Fig, skipped_fields_container: WithSkippedFields) -> Fig:
+def strip_figure(figure: Fig, skipped_fields: Collection[str]) -> Fig:
     extra = figure.extra
     if isinstance(extra, ExtraTargets):
         extra = ExtraTargets(
             tuple(
                 field_name for field_name in extra.fields
-                if field_name not in skipped_fields_container.skipped_fields
+                if field_name not in skipped_fields
             )
         )
 
@@ -99,7 +116,7 @@ def strip_figure(figure: Fig, skipped_fields_container: WithSkippedFields) -> Fi
         figure,
         fields=tuple(
             field for field in figure.fields
-            if field.name not in skipped_fields_container.skipped_fields
+            if field.name not in skipped_fields
         ),
         extra=extra,
     )

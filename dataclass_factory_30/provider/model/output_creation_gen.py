@@ -13,7 +13,7 @@ from .crown_definitions import (
     RootOutCrown,
     Sieve
 )
-from .definitions import OutputCreationGen, OutputFigure, VarBinder
+from .definitions import CodeGenerator, OutputFigure, VarBinder
 from .input_extraction_gen import CrownPath
 
 
@@ -82,7 +82,7 @@ class LinkExpr(NamedTuple):
     is_atomic: bool
 
 
-class BuiltinOutputCreationGen(OutputCreationGen):
+class BuiltinOutputCreationGen(CodeGenerator):
     def __init__(self, figure: OutputFigure, crown: RootOutCrown, debug_path: bool):
         self._figure = figure
         self._root_crown = crown
@@ -108,11 +108,7 @@ class BuiltinOutputCreationGen(OutputCreationGen):
     def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
         return GenState(binder, ctx_namespace, self._name_to_field)
 
-    def generate_output_creation(
-        self,
-        binder: VarBinder,
-        ctx_namespace: ContextNamespace,
-    ) -> CodeBuilder:
+    def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
 

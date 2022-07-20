@@ -5,25 +5,21 @@ from ...common import Serializer
 from ...model_tools import AttrAccessor, ExtraExtract, ExtraTargets, ItemAccessor, OutputField, OutputFigure
 from ...struct_path import append_path, extend_path
 from ..definitions import SerializeError
-from .definitions import OutputExtractionGen, VarBinder
+from .definitions import CodeGenerator, VarBinder
 
 
-class BuiltinOutputExtractionGen(OutputExtractionGen):
-    def __init__(self, figure: OutputFigure, debug_path: bool):
+class BuiltinOutputExtractionGen(CodeGenerator):
+    def __init__(self, figure: OutputFigure, debug_path: bool, field_serializers: Mapping[str, Serializer]):
         self._figure = figure
         self._debug_path = debug_path
+        self._field_serializers = field_serializers
         self._extra_targets = (
             self._figure.extra.fields
             if isinstance(self._figure.extra, ExtraTargets)
             else ()
         )
 
-    def generate_output_extraction(
-        self,
-        binder: VarBinder,
-        ctx_namespace: ContextNamespace,
-        field_serializers: Mapping[str, Serializer],
-    ) -> CodeBuilder:
+    def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         builder = CodeBuilder()
 
         ctx_namespace.add("SerializeError", SerializeError)
@@ -31,7 +27,7 @@ class BuiltinOutputExtractionGen(OutputExtractionGen):
         ctx_namespace.add("extend_path", extend_path)
         name_to_fields = {field.name: field for field in self._figure.fields}
 
-        for field_name, serializer in field_serializers.items():
+        for field_name, serializer in self._field_serializers.items():
             ctx_namespace.add(self._serializer(name_to_fields[field_name]), serializer)
 
         for field in self._figure.fields:

@@ -16,10 +16,8 @@ from ..provider import (
     NAMED_TUPLE_FIGURE_PROVIDER,
     TYPED_DICT_FIGURE_PROVIDER,
     ABCProxy,
-    BuiltinInputCreationImageProvider,
-    BuiltinInputExtractionImageProvider,
-    BuiltinOutputCreationImageProvider,
-    BuiltinOutputExtractionImageProvider,
+    BuiltinInputExtractionMaker,
+    BuiltinOutputCreationMaker,
     BytearrayBase64Provider,
     BytesBase64Provider,
     CfgExtraPolicy,
@@ -27,11 +25,11 @@ from ..provider import (
     DictProvider,
     EnumExactValueProvider,
     FactoryProvider,
-    FieldsParserProvider,
-    FieldsSerializerProvider,
     IsoFormatProvider,
     IterableProvider,
     LiteralProvider,
+    ModelParserProvider,
+    ModelSerializerProvider,
     NameMapper,
     NameSanitizer,
     NewTypeUnwrappingProvider,
@@ -45,7 +43,7 @@ from ..provider import (
     UnionProvider,
     ValueProvider
 )
-from ..provider.model import ExtraPolicy, ExtraSkip
+from ..provider.model import ExtraPolicy, ExtraSkip, make_input_creation, make_output_extraction
 from .provider import bound, parser, serializer
 
 
@@ -120,13 +118,9 @@ class BuiltinFactory(OperatingFactory, ABC):
         ABCProxy(MutableMapping, dict),
         ABCProxy(ByteString, bytes),
 
-        FieldsParserProvider(NameSanitizer()),
-        BuiltinInputExtractionImageProvider(),
-        BuiltinInputCreationImageProvider(),
+        ModelParserProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
+        ModelSerializerProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
 
-        FieldsSerializerProvider(NameSanitizer()),
-        BuiltinOutputExtractionImageProvider(),
-        BuiltinOutputCreationImageProvider(),
 
         NameMapper(),
 

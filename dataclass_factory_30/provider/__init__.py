@@ -38,19 +38,23 @@ from .model import (
     NAMED_TUPLE_FIGURE_PROVIDER,
     TYPED_DICT_FIGURE_PROVIDER,
     BaseNameMappingRequest,
-    BuiltinInputCreationImageProvider,
-    BuiltinInputExtractionImageProvider,
-    BuiltinOutputCreationImageProvider,
-    BuiltinOutputExtractionImageProvider,
+    BuiltinInputExtractionMaker,
+    BuiltinOutputCreationMaker,
     CfgExtraPolicy,
-    FieldsParserProvider,
-    FieldsSerializerProvider,
+    InputCreationMaker,
+    InputExtractionMaker,
     InputFigureRequest,
     InputNameMappingRequest,
+    ModelParserProvider,
+    ModelSerializerProvider,
     NameMappingProvider,
     NameSanitizer,
+    OutputCreationMaker,
+    OutputExtractionMaker,
     OutputFigureRequest,
-    OutputNameMappingRequest
+    OutputNameMappingRequest,
+    make_input_creation,
+    make_output_extraction
 )
 from .model.figure_provider import PropertyAdder
 from .name_mapper import NameMapper
