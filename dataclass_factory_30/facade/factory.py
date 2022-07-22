@@ -121,7 +121,6 @@ class BuiltinFactory(OperatingFactory, ABC):
         ModelParserProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
         ModelSerializerProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
 
-
         NameMapper(),
 
         NAMED_TUPLE_FIGURE_PROVIDER,

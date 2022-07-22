@@ -53,6 +53,13 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
 
         processed_figure = self._process_figure(figure, name_mapping)
 
+        if processed_figure.extra is None and self._has_collect_policy(name_mapping.crown):
+            raise CannotProvide(
+                "Cannot create parser that collect extra data"
+                " if InputFigure does not take extra data",
+                is_important=True,
+            )
+
         field_parsers = {
             field.name: mediator.provide(
                 ParserFieldRequest(
@@ -101,7 +108,6 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
             figure=figure,
             crown=name_mapping.crown,
             debug_path=request.debug_path,
-            strict_coercion=request.strict_coercion,
             field_parsers=field_parsers,
         )
 

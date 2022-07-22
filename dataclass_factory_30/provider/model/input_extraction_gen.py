@@ -118,13 +118,11 @@ class BuiltinInputExtractionGen(CodeGenerator):
         figure: InputFigure,
         crown: RootInpCrown,
         debug_path: bool,
-        strict_coercion: bool,
         field_parsers: Mapping[str, Parser],
     ):
         self._figure = figure
         self._root_crown = crown
         self._debug_path = debug_path
-        self._strict_coercion = strict_coercion
         self._name_to_field: Dict[str, InputField] = {
             field.name: field for field in self._figure.fields
         }
@@ -160,17 +158,16 @@ class BuiltinInputExtractionGen(CodeGenerator):
         if not self._gen_root_crown_dispatch(crown_builder, state, self._root_crown):
             raise TypeError
 
+        builder = CodeBuilder()
+        self._gen_header(builder, state)
+
         has_opt_fields = any(
             fld.is_optional and not self._is_extra_target(fld)
             for fld in self._figure.fields
         )
 
-        builder = CodeBuilder()
-
         if has_opt_fields:
             builder += f"{binder.opt_fields} = {{}}"
-
-        self._gen_header(builder, state)
 
         builder.extend(crown_builder)
 

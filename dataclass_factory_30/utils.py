@@ -8,6 +8,7 @@ def _singleton_repr(self):
 class SingletonMeta(type):
     def __new__(mcs, name, bases, namespace, **kwargs):
         namespace.setdefault("__repr__", _singleton_repr)
+        namespace.setdefault("__str__", _singleton_repr)
         cls = super().__new__(mcs, name, bases, namespace, **kwargs)
 
         instance = super().__call__(cls)
