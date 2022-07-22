@@ -102,24 +102,6 @@ def constructor(func_or_pred, func=None):
     )
 
 
-@overload
-def name_mapping(
-    pred: Type[T],
-    /,
-    *,
-    skip: Optional[List[str]] = None,
-    only_mapped: bool = False,
-    only: Optional[List[str]] = None,
-    skip_internal: bool = True,
-    map: Optional[Dict[str, str]] = None,
-    trim_trailing_underscore: bool = True,
-    name_style: Optional[NameStyle] = None,
-    omit_default: bool = True,
-) -> Provider:
-    pass
-
-
-@overload
 def name_mapping(
     pred: Any,
     /,
@@ -133,21 +115,7 @@ def name_mapping(
     name_style: Optional[NameStyle] = None,
     omit_default: bool = True,
 ) -> Provider:
-    pass
-
-
-def name_mapping(
-    pred: Any,
-    skip: Optional[List[str]] = None,
-    only_mapped: bool = False,
-    only: Optional[List[str]] = None,
-    skip_internal: bool = True,
-    map: Optional[Dict[str, str]] = None,
-    trim_trailing_underscore: bool = True,
-    name_style: Optional[NameStyle] = None,
-    omit_default: bool = True,
-) -> Provider:
-    opt_mut_args = {
+    opt_mut_params = {
         k: v for k, v in {'skip': skip, 'map': map}.items()
         if v is not None
     }
@@ -161,7 +129,7 @@ def name_mapping(
             trim_trailing_underscore=trim_trailing_underscore,
             name_style=name_style,
             omit_default=omit_default,
-            **opt_mut_args,  # type: ignore[arg-type]
+            **opt_mut_params,  # type: ignore[arg-type]
         )
     )
 
