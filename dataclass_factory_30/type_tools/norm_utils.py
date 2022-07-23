@@ -2,7 +2,7 @@
 from dataclasses import InitVar
 from typing import Callable, ClassVar, Final, Tuple
 
-from ..feature_requirement import has_annotated
+from ..feature_requirement import HAS_ANNOTATED
 from .normalize_type import BaseNormType, NormTV
 
 
@@ -13,7 +13,7 @@ def strip_tags(norm: BaseNormType) -> BaseNormType:
     if norm.origin == Final:
         return strip_tags(norm.args[0])
 
-    if has_annotated:
+    if HAS_ANNOTATED:
         from typing import Annotated
 
         if norm.origin == Annotated:

@@ -9,6 +9,8 @@ from ...model_tools import (
     IntrospectionError,
     OutputField,
     OutputFigure,
+    get_attrs_input_figure,
+    get_attrs_output_figure,
     get_class_init_input_figure,
     get_dataclass_input_figure,
     get_dataclass_output_figure,
@@ -68,6 +70,11 @@ DATACLASS_FIGURE_PROVIDER = FigureProvider(
 
 CLASS_INIT_FIGURE_PROVIDER = FigureProvider(
     get_class_init_input_figure,
+)
+
+ATTRS_FIGURE_PROVIDER = FigureProvider(
+    get_attrs_input_figure,
+    get_attrs_output_figure,
 )
 
 

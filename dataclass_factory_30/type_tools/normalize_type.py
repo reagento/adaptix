@@ -28,7 +28,7 @@ from typing import (
 )
 
 from ..common import TypeHint, VarTuple
-from ..feature_requirement import has_annotated
+from ..feature_requirement import HAS_ANNOTATED
 from .basic_utils import create_union, is_annotated, is_new_type, is_subclass_soft, is_user_defined_generic, strip_alias
 
 
@@ -301,7 +301,7 @@ class TypeNormalizer:
         Union, Optional, InitVar,
     ]
 
-    if has_annotated:
+    if HAS_ANNOTATED:
         from typing import Annotated
         MUST_SUBSCRIBED_ORIGINS.append(Annotated)
 
@@ -318,7 +318,7 @@ class TypeNormalizer:
         if origin is None or origin is NoneType:
             return NormType(None, (), source=tp)
 
-    if has_annotated:
+    if HAS_ANNOTATED:
         @_aspect_storage.add
         def _norm_annotated(self, tp, origin, args):
             from typing import Annotated

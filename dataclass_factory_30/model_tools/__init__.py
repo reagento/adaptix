@@ -19,6 +19,7 @@ from .definitions import (
     IntrospectionError,
     ItemAccessor,
     NoDefault,
+    NoTargetPackage,
     OutFigureExtra,
     OutputField,
     OutputFigure,
@@ -27,6 +28,8 @@ from .definitions import (
     PropertyAccessor
 )
 from .introspection import (
+    get_attrs_input_figure,
+    get_attrs_output_figure,
     get_class_init_input_figure,
     get_dataclass_input_figure,
     get_dataclass_output_figure,

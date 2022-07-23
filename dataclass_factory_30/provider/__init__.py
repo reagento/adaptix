@@ -33,6 +33,7 @@ from .generic_provider import (
     UnionProvider
 )
 from .model import (
+    ATTRS_FIGURE_PROVIDER,
     CLASS_INIT_FIGURE_PROVIDER,
     DATACLASS_FIGURE_PROVIDER,
     NAMED_TUPLE_FIGURE_PROVIDER,

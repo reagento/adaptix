@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel
 import inspect
 from dataclasses import MISSING as DC_MISSING
 from dataclasses import Field as DCField
@@ -7,9 +8,12 @@ from inspect import Parameter, Signature
 from types import MappingProxyType
 from typing import Any, Callable, Dict, Iterable, get_type_hints
 
+from ..common import TypeHint
+from ..feature_requirement import HAS_ATTRS_PKG
 from ..type_tools import is_named_tuple_class, is_typed_dict_class
 from .definitions import (
     AttrAccessor,
+    BaseField,
     Default,
     DefaultFactory,
     DefaultValue,
@@ -19,6 +23,7 @@ from .definitions import (
     IntrospectionError,
     ItemAccessor,
     NoDefault,
+    NoTargetPackage,
     OutputField,
     OutputFigure,
     ParamKind
@@ -274,4 +279,131 @@ def get_class_init_input_figure(tp) -> InputFigure:
     return replace(
         input_figure,
         constructor=tp,
+    )
+
+# =================
+#       Attrs
+# =================
+
+
+def _get_attrs_default(field) -> Default:
+    import attrs
+
+    default: Any = field.default
+
+    if isinstance(default, attrs.Factory):  # type: ignore
+        if default.takes_self:  # type: ignore
+            # TODO: add support
+            raise ValueError("Factory with self parameter does not supported yet")
+        return DefaultFactory(default.factory)  # type: ignore
+
+    if default is attrs.NOTHING:
+        return NoDefault()
+
+    return DefaultValue(default)
+
+
+def _get_attrs_fields(tp, type_hints: Dict[str, TypeHint]) -> Iterable[BaseField]:
+    import attrs
+
+    try:
+        fields_iterator = attrs.fields(tp)
+    except (TypeError, attrs.exceptions.NotAnAttrsClassError):
+        raise IntrospectionError
+
+    return [
+        BaseField(
+            # if field is not annotated, type attribute will store None value
+            type=type_hints.get(field.name, Any) if field.type is None else field.type,
+            default=_get_attrs_default(field),
+            metadata=field.metadata,
+            name=field.name,
+        )
+        for field in fields_iterator
+    ]
+
+
+NoneType = type(None)
+
+
+def _process_attr_input_field(field: InputField, base_fields_dict: Dict[str, BaseField], has_custom_init: bool):
+    import attrs
+
+    try:
+        base_field = base_fields_dict[field.name]
+    except KeyError:
+        return field
+
+    # When input figure is generating we rely on __init__ signature,
+    # but when field type is None attrs thinks that there is no type hint,
+    # so if there is no custom __init__ (that can do not set type for this attribute),
+    # we should use NoneType as type of field
+    if not has_custom_init and field.type == Any and base_field.type == NoneType:
+        field = replace(field, type=NoneType)
+
+    return replace(
+        field,
+        default=(
+            base_field.default
+            if isinstance(field.default, DefaultValue) and field.default.value is attrs.NOTHING else
+            field.default
+        ),
+        metadata=base_field.metadata,
+        name=base_field.name,
+    )
+
+
+def _get_attr_param_name(field):
+    return (
+        field.name[1:]
+        if field.name.startswith("_") and not field.name.startswith("__") else
+        field.name
+    )
+
+
+def get_attrs_input_figure(tp) -> InputFigure:
+    if not HAS_ATTRS_PKG:
+        raise NoTargetPackage
+
+    type_hints = get_type_hints(tp)
+
+    base_fields_dict = {
+        _get_attr_param_name(field): field
+        for field in _get_attrs_fields(tp, type_hints)
+    }
+
+    has_custom_init = hasattr(tp, '__attrs_init__')
+
+    figure = get_class_init_input_figure(tp)
+    return replace(
+        figure,
+        fields=tuple(
+            _process_attr_input_field(field, base_fields_dict, has_custom_init)
+            for field in figure.fields
+        )
+    )
+
+
+def get_attrs_output_figure(tp) -> OutputFigure:
+    if not HAS_ATTRS_PKG:
+        raise NoTargetPackage
+
+    type_hints = get_type_hints(tp)
+
+    input_fields_dict = {
+        field.name: field for field in get_attrs_input_figure(tp).fields
+    }
+
+    return OutputFigure(
+        fields=tuple(
+            OutputField(
+                name=field.name,
+                type=field.type,
+                default=input_fields_dict[field.name].default if field.name in input_fields_dict else NoDefault(),
+                metadata=field.metadata,
+                accessor=AttrAccessor(field.name, is_required=True),
+            )
+            for field in _get_attrs_fields(tp, type_hints)
+        ),
+        extra=None,
     )

@@ -281,3 +281,7 @@ class OutputFigure(BaseFigure):
 
 class IntrospectionError(Exception):
     pass
+
+
+class NoTargetPackage(IntrospectionError):
+    pass

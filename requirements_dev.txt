@@ -4,3 +4,4 @@ tox
 
 -r requirements_test.txt
 -r requirements_lint.txt
+-r requirements_test_extra_new.txt

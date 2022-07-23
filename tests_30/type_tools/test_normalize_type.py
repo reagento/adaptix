@@ -31,7 +31,7 @@ from typing import (
 import pytest
 
 from dataclass_factory_30.common import TypeHint
-from dataclass_factory_30.feature_requirement import has_annotated, has_std_classes_generics
+from dataclass_factory_30.feature_requirement import HAS_STD_CLASSES_GENERICS
 from dataclass_factory_30.type_tools import NormType, normalize_type
 from dataclass_factory_30.type_tools.normalize_type import (
     BaseNormType,
@@ -41,6 +41,7 @@ from dataclass_factory_30.type_tools.normalize_type import (
     NotSubscribedError,
     _create_norm_literal
 )
+from tests_30.helpers import requires_annotated
 
 
 def nt_zero(origin):
@@ -112,7 +113,7 @@ def test_generic_concrete_one_arg(tp, alias):
         alias,
         tp, [nt_zero(Any)]
     )
-    if has_std_classes_generics:
+    if HAS_STD_CLASSES_GENERICS:
         assert_normalize(
             tp[int],
             tp, [nt_zero(int)]
@@ -141,7 +142,7 @@ def test_generic_concrete_two_args(tp, alias):
         alias,
         tp, [nt_zero(Any), nt_zero(Any)]
     )
-    if has_std_classes_generics:
+    if HAS_STD_CLASSES_GENERICS:
         assert_normalize(
             tp[int, str],
             tp, [nt_zero(int), nt_zero(str)]
@@ -161,7 +162,7 @@ def test_special_generics():
         Tuple,
         tuple, [nt_zero(Any), ...]
     )
-    if has_std_classes_generics:
+    if HAS_STD_CLASSES_GENERICS:
         assert_normalize(
             tuple[int],
             tuple, [nt_zero(int)]
@@ -170,7 +171,7 @@ def test_special_generics():
         Tuple[int],
         tuple, [nt_zero(int)]
     )
-    if has_std_classes_generics:
+    if HAS_STD_CLASSES_GENERICS:
         assert_normalize(
             tuple[int, ...],
             tuple, [nt_zero(int), ...]
@@ -180,7 +181,7 @@ def test_special_generics():
         tuple, [nt_zero(int), ...]
     )
 
-    if has_std_classes_generics:
+    if HAS_STD_CLASSES_GENERICS:
         assert_normalize(tuple[()], tuple, [])
     assert_normalize(Tuple[()], tuple, [])
 
@@ -316,7 +317,7 @@ def test_final():
     )
 
 
-@has_annotated
+@requires_annotated
 def test_annotated():
     from typing import Annotated
 

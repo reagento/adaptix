@@ -11,6 +11,7 @@ from uuid import UUID
 from ..common import Parser, Serializer, TypeHint
 from ..factory import OperatingFactory
 from ..provider import (
+    ATTRS_FIGURE_PROVIDER,
     CLASS_INIT_FIGURE_PROVIDER,
     DATACLASS_FIGURE_PROVIDER,
     NAMED_TUPLE_FIGURE_PROVIDER,
@@ -127,6 +128,7 @@ class BuiltinFactory(OperatingFactory, ABC):
         TYPED_DICT_FIGURE_PROVIDER,
         DATACLASS_FIGURE_PROVIDER,
         CLASS_INIT_FIGURE_PROVIDER,
+        ATTRS_FIGURE_PROVIDER,
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),

@@ -36,6 +36,7 @@ from .crown_definitions import (
 )
 from .definitions import InputFigureRequest, OutputFigureRequest, VarBinder
 from .figure_provider import (
+    ATTRS_FIGURE_PROVIDER,
     CLASS_INIT_FIGURE_PROVIDER,
     DATACLASS_FIGURE_PROVIDER,
     NAMED_TUPLE_FIGURE_PROVIDER,
