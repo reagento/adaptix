@@ -11,7 +11,7 @@ from dataclass_factory_30.provider import (
     SerializerRequest,
     TimedeltaProvider
 )
-from tests_30.provider.conftest import TestFactory, parametrize_bool, raises_instance
+from tests_30.test_helpers import TestFactory, parametrize_bool, raises_instance
 
 
 def check_any_dt(parser):

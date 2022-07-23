@@ -41,7 +41,7 @@ from dataclass_factory_30.type_tools.normalize_type import (
     NotSubscribedError,
     _create_norm_literal
 )
-from tests_30.helpers import requires_annotated
+from tests_30.test_helpers import requires_annotated
 
 
 def nt_zero(origin):
