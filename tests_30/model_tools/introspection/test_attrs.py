@@ -505,3 +505,49 @@ def test_none_attr():
         )
     )
 
+
+@define
+class NoneAttrCustomInit:
+    a: None
+
+    def __init__(self, a):
+        self.__attrs_init__(a)
+
+
+def test_none_attr_custom_init():
+    assert (
+        get_attrs_input_figure(NoneAttrCustomInit)
+        ==
+        InputFigure(
+            constructor=NoneAttrCustomInit,
+            extra=None,
+            fields=(
+                InputField(
+                    type=Any,
+                    name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
+                ),
+            ),
+        )
+    )
+
+    assert (
+        get_attrs_output_figure(NoneAttrCustomInit)
+        ==
+        OutputFigure(
+            extra=None,
+            fields=(
+                OutputField(
+                    type=type(None),
+                    name='a',
+                    default=NoDefault(),
+                    accessor=AttrAccessor('a', is_required=True),
+                    metadata=MappingProxyType({}),
+                ),
+            ),
+        )
+    )
