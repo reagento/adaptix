@@ -1,6 +1,7 @@
 sphinx
 sphinx_rtd_theme
 tox
+coverage
 
 -r requirements_test.txt
 -r requirements_lint.txt
