@@ -15,6 +15,6 @@ Catchable = Union[Type[BaseException], VarTuple[Type[BaseException]]]
 
 # https://github.com/python/typing/issues/684#issuecomment-548203158
 if TYPE_CHECKING:
-    EllipsisType = ellipsis  # pylint: disable=undefined-variable
+    EllipsisType = ellipsis  # pylint: disable=undefined-variable  # noqa: F821
 else:
     EllipsisType = type(Ellipsis)

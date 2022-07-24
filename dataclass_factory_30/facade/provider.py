@@ -110,7 +110,7 @@ def name_mapping(
     only_mapped: bool = False,
     only: Optional[List[str]] = None,
     skip_internal: bool = True,
-    map: Optional[Dict[str, str]] = None,
+    map: Optional[Dict[str, str]] = None,  # noqa: A002
     trim_trailing_underscore: bool = True,
     name_style: Optional[NameStyle] = None,
     omit_default: bool = True,

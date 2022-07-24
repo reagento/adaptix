@@ -1,4 +1,4 @@
-#pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 import types
 from typing import Generic, Iterable, TypedDict, Union, get_origin
 

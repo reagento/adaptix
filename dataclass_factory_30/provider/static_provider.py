@@ -79,9 +79,7 @@ def _infer_rc(func) -> Type[Request]:
 def _make_spa_decorator(request_cls: Type[R]):
     def spa_decorator(func: Callable[[P, Mediator, R], T]):
         if hasattr(func, _SPA_RC_STORAGE):
-            raise ValueError(
-                "@static_provision_action decorator cannot be applied twice"
-            )
+            raise ValueError("@static_provision_action decorator cannot be applied twice")
 
         setattr(func, _SPA_RC_STORAGE, request_cls)
         return func

@@ -87,7 +87,7 @@ class LiteralProvider(ParserProvider, SerializerProvider):
 
 @for_type(Union)
 class UnionProvider(ParserProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:  # noqa: CCR001
         norm = normalize_type(request.type)
 
         parsers = tuple(
@@ -256,7 +256,7 @@ class DictProvider(ParserProvider, SerializerProvider):
         norm = normalize_type(request.type)
         return norm.args  # type: ignore
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:  # noqa: C901, CCR001
         key, value = self._fetch_key_value(request)
 
         key_parser = mediator.provide(

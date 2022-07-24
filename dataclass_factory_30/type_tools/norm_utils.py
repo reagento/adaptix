@@ -8,7 +8,7 @@ from .normalize_type import BaseNormType, NormTV
 
 def strip_tags(norm: BaseNormType) -> BaseNormType:
     """Removes type hints that does not represent type
-     and that only indicates metadata
+    and that only indicates metadata
     """
     if norm.origin == Final:
         return strip_tags(norm.args[0])

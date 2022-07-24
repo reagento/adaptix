@@ -1,4 +1,5 @@
-from typing import Callable, Dict, Mapping
+from string import Template
+from typing import Dict, Mapping
 
 from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr
 from ...common import Serializer
@@ -31,14 +32,12 @@ class BuiltinOutputExtractionGen(CodeGenerator):
             ctx_namespace.add(self._serializer(name_to_fields[field_name]), serializer)
 
         for field in self._figure.fields:
-            # pylint: disable=cell-var-from-loop
-            # closure lifetime bound to one loop iteration
             if not self._is_extra_target(field):
                 self._gen_field_extraction(
                     builder, binder, ctx_namespace, field,
                     on_access_error="pass",
-                    on_access_ok_req=lambda expr: f"{binder.field(field)} = {expr}",  # NOSONAR
-                    on_access_ok_opt=lambda expr: f"{binder.opt_fields}[{field.name!r}] = {expr}",  # NOSONAR
+                    on_access_ok_req=f"{binder.field(field)} = $expr",
+                    on_access_ok_opt=f"{binder.opt_fields}[{field.name!r}] = $expr",
                 )
 
         self._gen_extra_extraction(
@@ -90,13 +89,13 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         ctx_namespace: ContextNamespace,
         field: OutputField,
         *,
-        on_access_ok: Callable[[str], str],
+        on_access_ok: str,
     ):
         raw_access_expr = self._gen_access_expr(binder, ctx_namespace, field)
         path_element_expr = self._gen_path_element_expr(ctx_namespace, field)
 
         serializer = self._serializer(field)
-        on_access_ok_stmt = on_access_ok(f"{serializer}({raw_access_expr})")
+        on_access_ok_stmt = Template(on_access_ok).substitute(expr=f"{serializer}({raw_access_expr})")
 
         if self._debug_path:
             builder += f"""
@@ -122,7 +121,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         field: OutputField,
         *,
         on_access_error: str,
-        on_access_ok: Callable[[str], str],
+        on_access_ok: str,
     ):
         raw_access_expr = self._gen_access_expr(binder, ctx_namespace, field)
         path_element_expr = self._gen_path_element_expr(ctx_namespace, field)
@@ -130,7 +129,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         serializer = self._serializer(field)
         raw_field = self._raw_field(field)
 
-        on_access_ok_stmt = on_access_ok(f"{serializer}({raw_field})")
+        on_access_ok_stmt = Template(on_access_ok).substitute(expr=f"{serializer}({raw_field})")
 
         access_error = field.accessor.access_error
         access_error_var = get_literal_expr(access_error)
@@ -170,8 +169,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         ctx_namespace: ContextNamespace,
         field: OutputField,
         *,
-        on_access_ok_req: Callable[[str], str],
-        on_access_ok_opt: Callable[[str], str],
+        on_access_ok_req: str,
+        on_access_ok_opt: str,
         on_access_error: str,
     ):
         if field.is_required:
@@ -217,8 +216,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
             self._gen_field_extraction(
                 builder, binder, ctx_namespace, field,
                 on_access_error=f"{binder.extra} = {{}}",
-                on_access_ok_req=lambda expr: f"{binder.extra} = {expr}",
-                on_access_ok_opt=lambda expr: f"{binder.extra} = {expr}",
+                on_access_ok_req=f"{binder.extra} = $expr",
+                on_access_ok_opt=f"{binder.extra} = $expr",
             )
 
         elif all(field.is_required for field in name_to_fields.values()):
@@ -229,7 +228,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
 
                 self._gen_required_field_extraction(
                     builder, binder, ctx_namespace, field,
-                    on_access_ok=lambda expr: f"{binder.field(field_name)} = {expr}",  # NOSONAR
+                    on_access_ok=f"{binder.field(field_name)} = $expr",
                 )
 
             builder += f'{binder.extra} = {{'
@@ -245,8 +244,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
 
                 self._gen_field_extraction(
                     builder, binder, ctx_namespace, field,
-                    on_access_ok_req=lambda expr: f"{extra_stack}.append({expr})",
-                    on_access_ok_opt=lambda expr: f"{extra_stack}.append({expr})",
+                    on_access_ok_req=f"{extra_stack}.append($expr)",
+                    on_access_ok_opt=f"{extra_stack}.append($expr)",
                     on_access_error="pass",
                 )
 
