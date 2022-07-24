@@ -8,7 +8,7 @@ from dataclass_factory_30.model_tools import (
     NoDefault,
     OutputField,
     OutputFigure,
-    ParamKind
+    ParamKind,
 )
 
 

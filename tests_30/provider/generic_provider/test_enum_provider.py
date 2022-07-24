@@ -6,7 +6,7 @@ from dataclass_factory_30.provider import (
     EnumNameProvider,
     ParseError,
     ParserRequest,
-    SerializerRequest
+    SerializerRequest,
 )
 from tests_30.test_helpers import TestFactory, parametrize_bool, raises_instance
 

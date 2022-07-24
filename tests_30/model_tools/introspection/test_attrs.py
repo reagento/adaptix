@@ -15,7 +15,7 @@ from dataclass_factory_30.model_tools import (
     OutputFigure,
     ParamKind,
     get_attrs_input_figure,
-    get_attrs_output_figure
+    get_attrs_output_figure,
 )
 
 pytest.importorskip("attrs")

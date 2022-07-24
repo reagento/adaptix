@@ -12,7 +12,7 @@ from dataclass_factory_30.model_tools import (
     OutputFigure,
     ParamKind,
     get_named_tuple_input_figure,
-    get_named_tuple_output_figure
+    get_named_tuple_output_figure,
 )
 
 FooAB = namedtuple('FooAB', 'a b')

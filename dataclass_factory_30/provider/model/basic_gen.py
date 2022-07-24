@@ -14,7 +14,7 @@ from .crown_definitions import (
     BaseFigure,
     BaseListCrown,
     BaseNameMapping,
-    BaseNoneCrown
+    BaseNoneCrown,
 )
 from .definitions import VarBinder
 

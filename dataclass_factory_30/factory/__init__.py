@@ -5,6 +5,6 @@ from .mediator import (
     RecipeSearcher,
     RecursionResolving,
     SearchResult,
-    StubsRecursionResolver
+    StubsRecursionResolver,
 )
 from .operating_factory import FuncRecursionResolver, FuncWrapper, NoSuitableProvider, OperatingFactory

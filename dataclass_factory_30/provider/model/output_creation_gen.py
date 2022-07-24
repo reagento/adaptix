@@ -11,7 +11,7 @@ from .crown_definitions import (
     OutListCrown,
     OutNoneCrown,
     RootOutCrown,
-    Sieve
+    Sieve,
 )
 from .definitions import CodeGenerator, OutputFigure, VarBinder
 from .input_extraction_gen import CrownPath

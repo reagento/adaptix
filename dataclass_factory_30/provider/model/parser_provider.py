@@ -13,7 +13,7 @@ from .basic_gen import (
     compile_closure_with_globals_capturing,
     get_skipped_fields,
     strip_figure,
-    stub_code_gen_hook
+    stub_code_gen_hook,
 )
 from .crown_definitions import (
     ExtraCollect,
@@ -23,7 +23,7 @@ from .crown_definitions import (
     InpListCrown,
     InpNoneCrown,
     InputNameMapping,
-    InputNameMappingRequest
+    InputNameMappingRequest,
 )
 from .input_creation_gen import BuiltinInputCreationGen
 

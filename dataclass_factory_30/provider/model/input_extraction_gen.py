@@ -12,7 +12,7 @@ from ...provider.definitions import (
     NoRequiredFieldsError,
     NoRequiredItemsError,
     ParseError,
-    TypeParseError
+    TypeParseError,
 )
 from ...struct_path import append_path, extend_path
 from .crown_definitions import (
@@ -25,7 +25,7 @@ from .crown_definitions import (
     InpFieldCrown,
     InpListCrown,
     InpNoneCrown,
-    RootInpCrown
+    RootInpCrown,
 )
 from .definitions import CodeGenerator, VarBinder
 

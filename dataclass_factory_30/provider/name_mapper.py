@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from dataclasses import field as dc_field
+from dataclasses import dataclass, field as dc_field
 from typing import Collection, Dict, List, Optional, cast
 
 # TODO: Add support for path in map
@@ -36,7 +35,7 @@ from .model import (
     OutputNameMappingRequest,
     RootInpCrown,
     RootOutCrown,
-    Sieve
+    Sieve,
 )
 from .name_style import NameStyle, convert_snake_style
 

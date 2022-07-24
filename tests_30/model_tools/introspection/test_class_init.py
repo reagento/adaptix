@@ -11,7 +11,7 @@ from dataclass_factory_30.model_tools import (
     IntrospectionError,
     NoDefault,
     ParamKind,
-    get_class_init_input_figure
+    get_class_init_input_figure,
 )
 
 

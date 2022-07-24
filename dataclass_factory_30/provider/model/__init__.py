@@ -32,7 +32,7 @@ from .crown_definitions import (
     OutputNameMappingRequest,
     RootInpCrown,
     RootOutCrown,
-    Sieve
+    Sieve,
 )
 from .definitions import InputFigureRequest, OutputFigureRequest, VarBinder
 from .figure_provider import (
@@ -41,7 +41,7 @@ from .figure_provider import (
     DATACLASS_FIGURE_PROVIDER,
     NAMED_TUPLE_FIGURE_PROVIDER,
     TYPED_DICT_FIGURE_PROVIDER,
-    FigureProvider
+    FigureProvider,
 )
 from .input_creation_gen import BuiltinInputCreationGen
 from .parser_provider import (
@@ -49,12 +49,12 @@ from .parser_provider import (
     InputCreationMaker,
     InputExtractionMaker,
     ModelParserProvider,
-    make_input_creation
+    make_input_creation,
 )
 from .serializer_provider import (
     BuiltinOutputCreationMaker,
     ModelSerializerProvider,
     OutputCreationMaker,
     OutputExtractionMaker,
-    make_output_extraction
+    make_output_extraction,
 )

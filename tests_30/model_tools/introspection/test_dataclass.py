@@ -13,7 +13,7 @@ from dataclass_factory_30.model_tools import (
     OutputFigure,
     ParamKind,
     get_dataclass_input_figure,
-    get_dataclass_output_figure
+    get_dataclass_output_figure,
 )
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()

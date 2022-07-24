@@ -1,9 +1,6 @@
 # pylint: disable=import-outside-toplevel
 import inspect
-from dataclasses import MISSING as DC_MISSING
-from dataclasses import Field as DCField
-from dataclasses import fields as dc_fields
-from dataclasses import is_dataclass, replace
+from dataclasses import MISSING as DC_MISSING, Field as DCField, fields as dc_fields, is_dataclass, replace
 from inspect import Parameter, Signature
 from types import MappingProxyType
 from typing import Any, Callable, Dict, Iterable, get_type_hints
@@ -26,7 +23,7 @@ from .definitions import (
     NoTargetPackage,
     OutputField,
     OutputFigure,
-    ParamKind
+    ParamKind,
 )
 
 # ======================

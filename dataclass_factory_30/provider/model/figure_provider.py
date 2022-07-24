@@ -17,7 +17,7 @@ from ...model_tools import (
     get_named_tuple_input_figure,
     get_named_tuple_output_figure,
     get_typed_dict_input_figure,
-    get_typed_dict_output_figure
+    get_typed_dict_output_figure,
 )
 from ..essential import CannotProvide, Mediator, Provider, Request
 from ..static_provider import StaticProvider, static_provision_action

@@ -9,7 +9,7 @@ from dataclass_factory_30.provider import (
     ParseError,
     ParserRequest,
     SerializerRequest,
-    TimedeltaProvider
+    TimedeltaProvider,
 )
 from tests_30.test_helpers import TestFactory, parametrize_bool, raises_instance
 

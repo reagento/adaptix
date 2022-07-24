@@ -13,7 +13,7 @@ from .basic_gen import (
     compile_closure_with_globals_capturing,
     get_skipped_fields,
     strip_figure,
-    stub_code_gen_hook
+    stub_code_gen_hook,
 )
 from .crown_definitions import (
     OutCrown,
@@ -22,7 +22,7 @@ from .crown_definitions import (
     OutListCrown,
     OutNoneCrown,
     OutputNameMapping,
-    OutputNameMappingRequest
+    OutputNameMappingRequest,
 )
 from .output_creation_gen import BuiltinOutputCreationGen
 from .output_extraction_gen import BuiltinOutputExtractionGen

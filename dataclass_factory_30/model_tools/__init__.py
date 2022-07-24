@@ -25,7 +25,7 @@ from .definitions import (
     OutputFigure,
     ParamKind,
     PathElement,
-    PropertyAccessor
+    PropertyAccessor,
 )
 from .introspection import (
     get_attrs_input_figure,
@@ -38,5 +38,5 @@ from .introspection import (
     get_named_tuple_output_figure,
     get_typed_dict_input_figure,
     get_typed_dict_output_figure,
-    params_to_input_figure
+    params_to_input_figure,
 )

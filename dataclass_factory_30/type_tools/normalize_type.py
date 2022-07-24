@@ -2,8 +2,7 @@
 import collections
 import re
 from abc import ABC, abstractmethod
-from collections import abc as c_abc
-from collections import defaultdict
+from collections import abc as c_abc, defaultdict
 from dataclasses import InitVar, dataclass
 from enum import Enum
 from typing import (
@@ -24,7 +23,7 @@ from typing import (
     TypeVar,
     Union,
     get_args,
-    overload
+    overload,
 )
 
 from ..common import TypeHint, VarTuple

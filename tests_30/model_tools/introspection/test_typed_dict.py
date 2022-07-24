@@ -10,7 +10,7 @@ from dataclass_factory_30.model_tools import (
     OutputFigure,
     ParamKind,
     get_typed_dict_input_figure,
-    get_typed_dict_output_figure
+    get_typed_dict_output_figure,
 )
 
 

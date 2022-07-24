@@ -14,7 +14,7 @@ from dataclass_factory_30.model_tools import (
     OutFigureExtra,
     OutputField,
     OutputFigure,
-    ParamKind
+    ParamKind,
 )
 from dataclass_factory_30.provider import InputNameMappingRequest, NameMapper, NameStyle, ValueProvider
 from dataclass_factory_30.provider.model.crown_definitions import (
@@ -26,7 +26,7 @@ from dataclass_factory_30.provider.model.crown_definitions import (
     OutDictCrown,
     OutFieldCrown,
     OutputNameMapping,
-    OutputNameMappingRequest
+    OutputNameMappingRequest,
 )
 from tests_30.test_helpers import TestFactory
 

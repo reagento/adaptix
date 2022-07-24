@@ -42,7 +42,7 @@ from ..provider import (
     TimedeltaProvider,
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
-    ValueProvider
+    ValueProvider,
 )
 from ..provider.model import ExtraPolicy, ExtraSkip, make_input_creation, make_output_extraction
 from .provider import bound, parser, serializer

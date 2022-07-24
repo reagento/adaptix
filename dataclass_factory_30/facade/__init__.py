@@ -7,5 +7,5 @@ from .provider import (
     enum_by_name,
     enum_by_value,
     parser,
-    serializer
+    serializer,
 )

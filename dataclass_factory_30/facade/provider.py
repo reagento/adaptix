@@ -19,7 +19,7 @@ from ..provider import (
     SerializerRequest,
     ValueProvider,
     create_req_checker,
-    foreign_parser
+    foreign_parser,
 )
 from .utils import resolve_pred_and_value
 

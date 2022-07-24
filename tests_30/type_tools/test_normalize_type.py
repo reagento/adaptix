@@ -1,8 +1,7 @@
 import collections
 import re
 import typing
-from collections import abc as c_abc
-from collections import defaultdict
+from collections import abc as c_abc, defaultdict
 from dataclasses import InitVar
 from typing import (
     Any,
@@ -25,7 +24,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast
+    cast,
 )
 
 import pytest
@@ -39,7 +38,7 @@ from dataclass_factory_30.type_tools.normalize_type import (
     Constraints,
     NormTV,
     NotSubscribedError,
-    _create_norm_literal
+    _create_norm_literal,
 )
 from tests_30.test_helpers import requires_annotated
 
