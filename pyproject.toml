@@ -6,6 +6,9 @@ build-backend = "setuptools.build_meta"
 [tool.isort]
 multi_line_output = 3
 line_length = 120
+include_trailing_comma = true
+combine_as_imports = true
+remove_redundant_aliases = true
 
 [tool.pytest.ini_options]
 python_classes = 'WeDoNotUseClassTestCase'
