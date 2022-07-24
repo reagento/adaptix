@@ -2,7 +2,7 @@
 import types
 from typing import Generic, Iterable, TypedDict, Union, get_origin
 
-from dataclass_factory_30.common import TypeHint
+from ..common import TypeHint
 
 TYPED_DICT_MCS = type(types.new_class("_TypedDictSample", (TypedDict,), {}))
 

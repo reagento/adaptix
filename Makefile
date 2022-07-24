@@ -35,5 +35,5 @@ cov:
 
 setup:
 	pip install -e .
-	pip install -r requirements_dev.txt
+	pip install -r requirements.txt
 	pre-commit install
