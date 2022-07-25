@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from dataclass_factory import Factory, Schema as DSchema
 from dataclass_factory_30.facade.factory import Factory as NewFactory
+from dataclass_factory_30.facade.provider import name_mapping
 
 
 @dataclass
@@ -82,11 +83,11 @@ todos = [{
 } for i in range(10)]
 
 
-def do1():
+def df_old():
     return parser(todos)
 
 
-def do1_debug():
+def df_old_debug():
     return parser_debug(todos)
 
 
@@ -98,31 +99,42 @@ def do3():
     return TodoList.parse_obj(todos)
 
 
-def do4():
+def mashum():
     return [MashumaroTodo.from_dict(x) for x in todos]
 
 
-assert do1() == do2()
+assert df_old() == do2()
 
 
-@dataclass
-class TodoDesc:
-    id: int
-    title: str
-    description: str
+new_factory = NewFactory(
+    strict_coercion=False,
+    debug_path=False,
+    recipe=[name_mapping(Todo, map={"desc": "description"})]
+)
+new_parser = new_factory.parser(List[Todo])
 
 
-new_factory = NewFactory(strict_coercion=False, debug_path=True)
-new_parser = new_factory.parser(List[TodoDesc])
+new_factory_debug = NewFactory(
+    strict_coercion=False,
+    debug_path=True,
+    recipe=[name_mapping(Todo, map={"desc": "description"})]
+)
+new_parser_debug = new_factory_debug.parser(List[Todo])
 
 
-def do5():
+def df_new():
     return new_parser(todos)
 
 
-print("my-new   ", timeit("do()", globals={"do": do5}, number=100000))  #
-print("my       ", timeit("do()", globals={"do": do1}, number=100000))  # 1.5959172130096704
-#print("my debug ", timeit("do()", globals={"do": do1_debug}, number=100000))  # 2.087571810989175
-print("mashumaro", timeit("do()", globals={"do": do4}, number=100000))  # 1.459100882988423
-#print("marsh    ", timeit("do()", globals={"do": do2}, number=100000))  # 21.77947078004945
-print("mpydantic", timeit("do()", globals={"do": do3}, number=100000))  # 7.471431287995074
+def df_new_debug():
+    return new_parser_debug(todos)
+
+
+if __name__ == '__main__':
+    print("my-new      ", timeit("do()", globals={"do": df_new}, number=100000))  # 0.8271589210489765
+    print("my-new debug", timeit("do()", globals={"do": df_new_debug}, number=100000))  # 0.9333962750388309
+    print("my          ", timeit("do()", globals={"do": df_old}, number=100000))  # 1.1393319150665775
+    print("my debug    ", timeit("do()", globals={"do": df_old_debug}, number=100000))  # 1.4068040259880945
+    print("mashumaro   ", timeit("do()", globals={"do": mashum}, number=100000))  # 0.9388460679911077
+    print("marsh       ", timeit("do()", globals={"do": do2}, number=100000))  # 15.152756247087382
+    print("mpydantic   ", timeit("do()", globals={"do": do3}, number=100000))  # 7.089421317912638
