@@ -182,12 +182,17 @@ class IterableProvider(ParserProvider, SerializerProvider):
         return foreign_parser(parser)
 
     def _make_debug_path_parser(self, iter_factory, arg_parser, strict_coercion: bool):
-        def element_parser_dp(idx_and_elem):
-            try:
-                return arg_parser(idx_and_elem[1])
-            except Exception as e:
-                append_path(e, idx_and_elem[0])
-                raise e
+        def iter_mapper(iterator):
+            idx = 0
+
+            for el in iterator:
+                try:
+                    yield arg_parser(el)
+                except Exception as e:
+                    append_path(e, idx)
+                    raise e
+
+                idx += 1
 
         if strict_coercion:
             def iter_parser_dp_sc(value):
@@ -195,21 +200,21 @@ class IterableProvider(ParserProvider, SerializerProvider):
                     raise ExcludedTypeParseError(Mapping)
 
                 try:
-                    enum_iter = enumerate(value)
+                    value_iter = iter(value)
                 except TypeError:
                     raise TypeParseError(Iterable)
 
-                return iter_factory(map(element_parser_dp, enum_iter))
+                return iter_factory(iter_mapper(value_iter))
 
             return iter_parser_dp_sc
 
         def iter_parser_dp(value):
             try:
-                enum_iter = enumerate(value)
+                value_iter = iter(value)
             except TypeError:
                 raise TypeParseError(Iterable)
 
-            return iter_factory(map(element_parser_dp, enum_iter))
+            return iter_factory(iter_mapper(value_iter))
 
         return iter_parser_dp
 
