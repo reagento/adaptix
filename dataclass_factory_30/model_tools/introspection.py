@@ -71,7 +71,7 @@ def params_to_input_figure(constructor: Callable, params: Iterable[Parameter]) -
             InputField(
                 type=Any if _is_empty(param.annotation) else param.annotation,
                 name=param.name,
-                is_required=_is_empty(param.default),
+                is_required=_is_empty(param.default) or param.kind == Parameter.POSITIONAL_ONLY,
                 default=NoDefault() if _is_empty(param.default) else DefaultValue(param.default),
                 metadata=MappingProxyType({}),
                 param_kind=_PARAM_KIND_CONV[param.kind],

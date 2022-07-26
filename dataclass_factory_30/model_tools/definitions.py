@@ -146,6 +146,9 @@ class InputField(BaseField):
         if not self.param_name.isidentifier():
             raise ValueError(f"param_name must be python identifier, now it is a {self.param_name!r}")
 
+        if self.param_kind == ParamKind.POS_ONLY and not self.is_required:
+            raise ValueError(f"{type(self)} can not be positional only and optional")
+
 
 @dataclass(frozen=True)
 class OutputField(BaseField):

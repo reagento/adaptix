@@ -91,8 +91,6 @@ def _make_triple_iff(first, second, third):
 @pytest.mark.parametrize(
     ["first", "second", "third"],
     [
-        (ParamKind.POS_ONLY, ParamKind.POS_ONLY, ParamKind.POS_ONLY),
-        (ParamKind.POS_ONLY, ParamKind.POS_ONLY, ParamKind.POS_OR_KW),
         (ParamKind.POS_ONLY, ParamKind.POS_OR_KW, ParamKind.POS_OR_KW),
         (ParamKind.POS_OR_KW, ParamKind.POS_OR_KW, ParamKind.POS_OR_KW),
     ]
@@ -105,7 +103,6 @@ def test_bad_non_required_field_order(first, second, third):
 @pytest.mark.parametrize(
     ["first", "second", "third"],
     [
-        (ParamKind.POS_ONLY, ParamKind.POS_ONLY, ParamKind.KW_ONLY),
         (ParamKind.POS_ONLY, ParamKind.POS_OR_KW, ParamKind.KW_ONLY),
         (ParamKind.POS_OR_KW, ParamKind.POS_OR_KW, ParamKind.KW_ONLY),
         (ParamKind.POS_ONLY, ParamKind.KW_ONLY, ParamKind.KW_ONLY),
@@ -221,4 +218,17 @@ def test_wild_targets():
                     metadata={},
                 ),
             )
+        )
+
+
+def test_optional_and_positional_only():
+    with pytest.raises(ValueError):
+        InputField(
+            name="a",
+            type=int,
+            default=NoDefault(),
+            is_required=False,
+            metadata={},
+            param_kind=ParamKind.POS_ONLY,
+            param_name='a',
         )

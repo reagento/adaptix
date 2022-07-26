@@ -131,6 +131,40 @@ def test_pos_only():
         )
     )
 
+    class HasPosOnlyWithDefault:
+        def __init__(self, a=None, b=None, /):
+            self.a = a
+            self.b = b
+
+    assert (
+        get_class_init_input_figure(HasPosOnlyWithDefault)
+        ==
+        InputFigure(
+            constructor=HasPosOnlyWithDefault,
+            extra=None,
+            fields=(
+                InputField(
+                    type=Any,
+                    name='a',
+                    default=DefaultValue(None),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_ONLY,
+                    param_name='a',
+                ),
+                InputField(
+                    type=Any,
+                    name='b',
+                    default=DefaultValue(None),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_ONLY,
+                    param_name='b',
+                ),
+            ),
+        )
+    )
+
 
 def test_var_arg():
     class HasVarArg:
