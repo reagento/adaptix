@@ -11,20 +11,14 @@ from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
     compile_closure_with_globals_capturing,
+    get_extra_targets_at_crown,
+    get_optional_fields_at_list_crown,
     get_skipped_fields,
+    has_collect_policy,
     strip_figure,
     stub_code_gen_hook,
 )
-from .crown_definitions import (
-    ExtraCollect,
-    InpCrown,
-    InpDictCrown,
-    InpFieldCrown,
-    InpListCrown,
-    InpNoneCrown,
-    InputNameMapping,
-    InputNameMappingRequest,
-)
+from .crown_definitions import InputNameMapping, InputNameMappingRequest
 from .input_creation_gen import BuiltinInputCreationGen
 
 
@@ -52,13 +46,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         )
 
         processed_figure = self._process_figure(figure, name_mapping)
-
-        if processed_figure.extra is None and self._has_collect_policy(name_mapping.crown):
-            raise CannotProvide(
-                "Cannot create parser that collect extra data"
-                " if InputFigure does not take extra data",
-                is_important=True,
-            )
+        self._validate_params(figure, processed_figure, name_mapping)
 
         field_parsers = {
             field.name: mediator.provide(
@@ -97,6 +85,28 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
 
         return strip_figure(figure, skipped_fields)
 
+    def _validate_params(self, figure: InputFigure, processed_figure: InputFigure, name_mapping: InputNameMapping):
+        if figure.extra is None and has_collect_policy(name_mapping.crown):
+            raise ValueError(
+                "Cannot create parser that collect extra data"
+                " if InputFigure does not take extra data",
+            )
+
+        extra_targets_at_crown = get_extra_targets_at_crown(figure, name_mapping)
+        if extra_targets_at_crown:
+            raise ValueError(
+                f"Extra targets {extra_targets_at_crown} are found at crown"
+            )
+
+        optional_fields_at_list_crown = get_optional_fields_at_list_crown(
+            {field.name: field for field in processed_figure.fields},
+            name_mapping.crown,
+        )
+        if optional_fields_at_list_crown:
+            raise ValueError(
+                f"Optional fields {optional_fields_at_list_crown} are found at list crown"
+            )
+
     def _create_extraction_gen(
         self,
         request: ParserRequest,
@@ -110,21 +120,6 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
             debug_path=request.debug_path,
             field_parsers=field_parsers,
         )
-
-    def _has_collect_policy(self, crown: InpCrown) -> bool:
-        if isinstance(crown, InpDictCrown):
-            return crown.extra == ExtraCollect() or any(
-                self._has_collect_policy(sub_crown)
-                for sub_crown in crown.map.values()
-            )
-        if isinstance(crown, InpListCrown):
-            return any(
-                self._has_collect_policy(sub_crown)
-                for sub_crown in crown.map
-            )
-        if isinstance(crown, (InpFieldCrown, InpNoneCrown)):
-            return False
-        raise TypeError
 
 
 def make_input_creation(mediator: Mediator, request: ParserRequest, figure: InputFigure) -> CodeGenerator:

@@ -1,5 +1,4 @@
 import contextlib
-from collections import deque
 from copy import copy
 from typing import Dict, Mapping, Optional, Set
 
@@ -20,6 +19,7 @@ from .crown_definitions import (
     CrownPathElem,
     ExtraCollect,
     ExtraForbid,
+    ExtraSkip,
     InpCrown,
     InpDictCrown,
     InpFieldCrown,
@@ -128,6 +128,10 @@ class BuiltinInputExtractionGen(CodeGenerator):
         }
         self._field_parsers = field_parsers
 
+    @property
+    def _can_collect_extra(self) -> bool:
+        return self._figure.extra is not None
+
     def _is_extra_target(self, field: InputField):
         return (
             isinstance(self._figure.extra, ExtraTargets)
@@ -141,8 +145,8 @@ class BuiltinInputExtractionGen(CodeGenerator):
     def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         for exception in [
             ExtraFieldsError, ExtraItemsError,
-            TypeParseError, NoRequiredFieldsError,
-            ParseError
+            NoRequiredFieldsError, NoRequiredItemsError,
+            TypeParseError, ParseError,
         ]:
             ctx_namespace.add(exception.__name__, exception)
 
@@ -213,8 +217,14 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
             raise TypeError
 
-    def _get_path_literal(self, path: CrownPath) -> str:
-        return repr(deque(path)) if self._debug_path and len(path) > 0 else ""
+    def _wrap_error(self, error_expr: str, path: CrownPath) -> str:
+        if self._debug_path:
+            if len(path) == 0:
+                return error_expr
+            if len(path) == 1:
+                return f"append_path({error_expr}, {path[0]!r})"
+            return f"extend_path({error_expr}, {path!r})"
+        return error_expr
 
     def _gen_var_assigment_from_data(
         self,
@@ -226,32 +236,33 @@ class BuiltinInputExtractionGen(CodeGenerator):
     ):
         last_path_el = state.path[-1]
         parent_state = state.with_parent_path()
-        before_path = parent_state.path
+        data = parent_state.get_data_var_name()
 
         if isinstance(last_path_el, str):
-            error = KeyError.__name__
-            parse_error = NoRequiredFieldsError.__name__
+            if ignore_lookup_error:
+                on_error = "pass"
+            else:
+                error_expr = f"NoRequiredFieldsError([{last_path_el!r}])"
+                on_error = "raise " + self._wrap_error(error_expr, parent_state.path)
+
+            builder(
+                f"""
+                try:
+                    {assign_to} = {data}[{last_path_el!r}]
+                except KeyError:
+                    {on_error}
+                """,
+            )
         else:
-            error = IndexError.__name__
-            parse_error = NoRequiredItemsError.__name__
+            builder(f"{assign_to} = {data}[{last_path_el!r}]")
 
-        path_lit = self._get_path_literal(before_path)
-        data = parent_state.get_data_var_name()
-        last_path_el = repr(last_path_el)
+    def _add_self_extra_to_parent_extra(self, builder: CodeBuilder, state: GenState):
+        if not state.path:
+            return
 
-        if ignore_lookup_error:
-            on_error = "pass"
-        else:
-            on_error = f"raise {parse_error}([{last_path_el}], {path_lit})"
-
-        builder(
-            f"""
-            try:
-                {assign_to} = {data}[{last_path_el}]
-            except {error}:
-                {on_error}
-            """,
-        )
+        extra = state.get_extra_var_name()
+        parent_extra = state.with_parent_path().get_extra_var_name()
+        builder(f"{parent_extra}[{state.path[-1]!r}] = {extra}")
 
     def _gen_dict_crown(self, builder: CodeBuilder, state: GenState, crown: InpDictCrown):
         known_fields = state.get_known_fields_var_name()
@@ -261,7 +272,6 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
         data = state.get_data_var_name()
         extra = state.get_extra_var_name()
-        path_lit = self._get_path_literal(state.path)
 
         if state.path:
             self._gen_var_assigment_from_data(
@@ -271,16 +281,17 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
         builder += f"""
             if not isinstance({data}, dict):
-                raise TypeParseError(dict, {path_lit})
+                raise {self._wrap_error("TypeParseError(dict)", state.path)}
         """
 
         builder.empty_line()
 
         if crown.extra == ExtraForbid():
+            error_expr = self._wrap_error(f"ExtraFieldsError({extra}_set)", state.path)
             builder += f"""
-                {extra} = set({data}) - {known_fields}
-                if {extra}:
-                    raise ExtraFieldsError({extra}, {path_lit})
+                {extra}_set = set({data}) - {known_fields}
+                if {extra}_set:
+                    raise {error_expr}
             """
             builder.empty_line()
 
@@ -292,13 +303,18 @@ class BuiltinInputExtractionGen(CodeGenerator):
             """
             builder.empty_line()
 
+        if self._can_collect_extra:
+            if crown.extra in (ExtraSkip(), ExtraForbid()):
+                builder(f"{extra} = {{}}")
+
+            self._add_self_extra_to_parent_extra(builder, state)
+
         for key, value in crown.map.items():
             self._gen_crown_dispatch(builder, state, value, key)
 
     def _gen_list_crown(self, builder: CodeBuilder, state: GenState, crown: InpListCrown):
         data = state.get_data_var_name()
-        path_lit = self._get_path_literal(state.path)
-        list_len = str(crown.list_len)
+        list_len = len(crown.map)
 
         if state.path:
             self._gen_var_assigment_from_data(
@@ -306,22 +322,36 @@ class BuiltinInputExtractionGen(CodeGenerator):
             )
             builder.empty_line()
 
-        builder += f"""
-            if not isinstance({data}, list):
-                raise TypeParseError(list, {path_lit})
-        """
-
-        builder.empty_line()
+        no_required_items_error = self._wrap_error(f"NoRequiredItemsError({list_len})", state.path)
 
         if crown.extra == ExtraForbid():
-            builder += f"""
-                if len({data}) > {list_len}:
-                    raise ExtraItemsError({list_len}, {path_lit})
-            """
-            builder.empty_line()
+            on_extra_items = "raise " + self._wrap_error(f"ExtraItemsError({list_len})", state.path)
+        else:
+            on_extra_items = ""
+
+        builder += f"""
+            if not isinstance({data}, list):
+                raise {self._wrap_error("TypeParseError(list)", state.path)}
+
+            if len({data}) != {list_len}:
+                if len({data}) < {list_len}:
+                    raise {no_required_items_error}
+                {on_extra_items}
+        """
+
+        if self._can_collect_extra:
+            extra = state.get_extra_var_name()
+            list_literal: list = [
+                {} if isinstance(sub_crown, (InpFieldCrown, InpNoneCrown)) else None
+                for sub_crown in crown.map
+            ]
+            builder(f"{extra} = {list_literal!r}")
 
         for key, value in enumerate(crown.map):
             self._gen_crown_dispatch(builder, state, value, key)
+
+        if self._can_collect_extra:
+            self._add_self_extra_to_parent_extra(builder, state)
 
     def _gen_field_crown(self, builder: CodeBuilder, state: GenState, crown: InpFieldCrown):
         field = state.get_field(crown)
@@ -371,15 +401,12 @@ class BuiltinInputExtractionGen(CodeGenerator):
         field_parser = state.field_parser(field_name)
 
         if self._debug_path and state.path:
-            last_path_el = repr(state.path[-1])
-
             builder(
                 f"""
                 try:
                     {field_left_value} = {field_parser}({data_for_parser})
                 except Exception as e:
-                    append_path(e, {last_path_el})
-                    raise e
+                    raise {self._wrap_error('e', state.path)}
                 """
             )
         else:

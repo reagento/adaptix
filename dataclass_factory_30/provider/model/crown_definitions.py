@@ -47,10 +47,6 @@ class BaseDictCrown(Generic[T]):
 class BaseListCrown(Generic[T]):
     map: List[T]
 
-    @property
-    def list_len(self):
-        return len(self.map)
-
 
 @dataclass
 class BaseNoneCrown:

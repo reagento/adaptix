@@ -1,6 +1,6 @@
 from collections import deque
 from dataclasses import dataclass
-from typing import Any, Optional, Reversible, Sequence, Union
+from typing import Any, Optional, Reversible, Sequence, TypeVar, Union
 
 
 class PathElementMarker:
@@ -22,8 +22,10 @@ class Attr(PathElementMarker):
 PathElement = Union[str, int, Any, PathElementMarker]
 Path = Sequence[PathElement]
 
+T = TypeVar('T')
 
-def append_path(obj: object, path_element: PathElement) -> None:
+
+def append_path(obj: T, path_element: PathElement) -> T:
     """Append path element to object. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, do nothing.
     Element inserting to start of the path (it is build in reverse order)
@@ -39,9 +41,10 @@ def append_path(obj: object, path_element: PathElement) -> None:
             pass
     else:
         path.appendleft(path_element)
+    return obj
 
 
-def extend_path(obj: object, sub_path: Reversible[PathElement]) -> None:
+def extend_path(obj: T, sub_path: Reversible[PathElement]) -> T:
     """Extend path with sub path. Path stores in special attribute,
     if object does not allow to add 3rd-party attributes, do nothing.
     Sub path inserting to start of the path (it is build in reverse order)
@@ -57,6 +60,7 @@ def extend_path(obj: object, sub_path: Reversible[PathElement]) -> None:
             pass
     else:
         path.extendleft(reversed(sub_path))
+    return obj
 
 
 def get_path(obj: object) -> Optional[Path]:

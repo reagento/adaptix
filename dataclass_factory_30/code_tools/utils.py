@@ -14,7 +14,7 @@ def get_literal_expr(obj: object) -> Optional[str]:
 
     try:
         b_obj, name = _BUILTINS_DICT[obj]
-    except KeyError:
+    except (KeyError, TypeError):
         try:
             return _get_complex_literal_expr(obj)
         except ValueError:

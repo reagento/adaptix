@@ -1,8 +1,7 @@
-from typing import Dict, Protocol, Tuple
+from typing import Protocol, Tuple
 
 from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
 from ...common import Serializer
-from ...model_tools import OutputField
 from ...provider.essential import CannotProvide, Mediator
 from ...provider.model.definitions import CodeGenerator, OutputFigure, OutputFigureRequest, VarBinder
 from ...provider.provider_template import SerializerProvider
@@ -11,19 +10,12 @@ from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
     compile_closure_with_globals_capturing,
+    get_optional_fields_at_list_crown,
     get_skipped_fields,
     strip_figure,
     stub_code_gen_hook,
 )
-from .crown_definitions import (
-    OutCrown,
-    OutDictCrown,
-    OutFieldCrown,
-    OutListCrown,
-    OutNoneCrown,
-    OutputNameMapping,
-    OutputNameMappingRequest,
-)
+from .crown_definitions import OutputNameMapping, OutputNameMappingRequest
 from .output_creation_gen import BuiltinOutputCreationGen
 from .output_extraction_gen import BuiltinOutputExtractionGen
 
@@ -78,8 +70,15 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
         return creation_gen, processed_figure
 
     def _process_figure(self, figure: OutputFigure, name_mapping: OutputNameMapping) -> OutputFigure:
-        fields_dict = {field.name: field for field in figure.fields}
-        self._check_optional_field_at_list_crown(fields_dict, name_mapping.crown)
+        optional_fields_at_list_crown = get_optional_fields_at_list_crown(
+            {field.name: field for field in figure.fields},
+            name_mapping.crown,
+        )
+        if optional_fields_at_list_crown:
+            raise ValueError(
+                f"Optional fields {optional_fields_at_list_crown} are found at list crown"
+            )
+
         return strip_figure(figure, get_skipped_fields(figure, name_mapping))
 
     def _create_creation_gen(
@@ -93,21 +92,6 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
             crown=name_mapping.crown,
             debug_path=request.debug_path,
         )
-
-    def _check_optional_field_at_list_crown(self, fields_dict: Dict[str, OutputField], crown: OutCrown):
-        if isinstance(crown, OutDictCrown):
-            for sub_crown in crown.map.values():
-                self._check_optional_field_at_list_crown(fields_dict, sub_crown)
-        elif isinstance(crown, OutListCrown):
-            for sub_crown in crown.map:
-                if isinstance(sub_crown, OutFieldCrown) and fields_dict[sub_crown.name].is_optional:
-                    raise CannotProvide(
-                        "OutListCrown cannot contain OutFieldCrown of optional field",
-                        is_important=True,
-                    )
-                self._check_optional_field_at_list_crown(fields_dict, crown)
-        elif not isinstance(crown, (OutFieldCrown, OutNoneCrown)):
-            raise TypeError
 
 
 class ModelSerializerProvider(SerializerProvider):

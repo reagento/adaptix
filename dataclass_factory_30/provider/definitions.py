@@ -40,7 +40,7 @@ class NoRequiredFieldsError(ParseError):
 
 @dataclass
 class NoRequiredItemsError(ParseError):
-    indexes: Iterable[int]
+    list_len: int
 
 
 @dataclass

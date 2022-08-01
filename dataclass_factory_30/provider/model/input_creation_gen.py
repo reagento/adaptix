@@ -31,9 +31,7 @@ class BuiltinInputCreationGen(CodeGenerator):
         with builder("constructor("):
             for field in self._figure.fields:
 
-                if self._is_extra_target(field):
-                    value = binder.extra
-                elif field.is_required:
+                if field.is_required or self._is_extra_target(field):
                     value = binder.field(field)
                 else:
                     continue
@@ -44,10 +42,10 @@ class BuiltinInputCreationGen(CodeGenerator):
                     builder(f"{value},")
 
             if has_opt_fields:
-                builder(f"**{binder.opt_fields}")
+                builder(f"**{binder.opt_fields},")
 
             if self._figure.extra == ExtraKwargs():
-                builder(f"**{binder.extra}")
+                builder(f"**{binder.extra},")
 
         builder += ")"
 
@@ -56,6 +54,7 @@ class BuiltinInputCreationGen(CodeGenerator):
 
             out_builder = CodeBuilder() + 'result = ' << builder.string()
             out_builder += f"saturator(result, {binder.extra})"
+            out_builder += "return result"
             return out_builder
 
         return CodeBuilder() << "return " << builder.string()

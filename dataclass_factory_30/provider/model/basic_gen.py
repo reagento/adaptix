@@ -1,10 +1,24 @@
 import itertools
 import string
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Collection, Dict, Iterable, List, Sequence, Set, Tuple, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Container,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Sequence,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
-from ...code_tools import ClosureCompiler, CodeBuilder
-from ...model_tools import ExtraTargets
+from ...code_tools import ClosureCompiler, CodeBuilder, get_literal_expr
+from ...model_tools import ExtraTargets, InputField, OutputField
 from ..essential import Mediator, Request
 from ..static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
@@ -15,6 +29,12 @@ from .crown_definitions import (
     BaseListCrown,
     BaseNameMapping,
     BaseNoneCrown,
+    ExtraCollect,
+    InpCrown,
+    InpDictCrown,
+    InpFieldCrown,
+    InpListCrown,
+    InpNoneCrown,
 )
 from .definitions import VarBinder
 
@@ -56,7 +76,7 @@ class CodeGenAccumulator(StaticProvider):
 T = TypeVar('T')
 
 
-def _merge_iters(args: Iterable[Iterable[T]]) -> Iterable[T]:
+def _merge_iters(args: Iterable[Iterable[T]]) -> Collection[T]:
     return list(itertools.chain.from_iterable(args))
 
 
@@ -92,12 +112,68 @@ def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
 
 def get_skipped_fields(figure: BaseFigure, name_mapping: BaseNameMapping) -> Collection[str]:
     used_direct_fields = _collect_used_direct_fields(name_mapping.crown)
+
+    if isinstance(figure.extra, ExtraTargets):
+        extra_targets = figure.extra.fields
+    else:
+        extra_targets = ()
+
     skipped_direct_fields = [
         field.name for field in figure.fields
-        if field.name not in used_direct_fields
+        if field.name not in used_direct_fields and field.name not in extra_targets
     ]
 
     return skipped_direct_fields + list(name_mapping.skipped_extra_targets)
+
+
+def _inner_get_extra_targets_at_crown(extra_targets: Container[str], crown: BaseCrown) -> Collection[str]:
+    if isinstance(crown, BaseDictCrown):
+        return _merge_iters(
+            _inner_get_extra_targets_at_crown(extra_targets, sub_crown)
+            for sub_crown in crown.map.values()
+        )
+    if isinstance(crown, BaseListCrown):
+        return _merge_iters(
+            _inner_get_extra_targets_at_crown(extra_targets, sub_crown)
+            for sub_crown in crown.map
+        )
+    if isinstance(crown, BaseFieldCrown):
+        return [crown.name] if crown.name in extra_targets else []
+    if isinstance(crown, BaseNoneCrown):
+        return []
+    raise TypeError
+
+
+def get_extra_targets_at_crown(figure: BaseFigure, name_mapping: BaseNameMapping) -> Collection[str]:
+    if not isinstance(figure.extra, ExtraTargets):
+        return []
+
+    return _inner_get_extra_targets_at_crown(figure.extra.fields, name_mapping.crown)
+
+
+def get_optional_fields_at_list_crown(
+    fields_map: Mapping[str, Union[InputField, OutputField]],
+    crown: BaseCrown,
+) -> Collection[str]:
+    if isinstance(crown, BaseDictCrown):
+        return _merge_iters(
+            get_optional_fields_at_list_crown(fields_map, sub_crown)
+            for sub_crown in crown.map.values()
+        )
+    if isinstance(crown, BaseListCrown):
+        return _merge_iters(
+            (
+                [sub_crown.name]
+                if fields_map[sub_crown.name].is_optional else
+                []
+            )
+            if isinstance(sub_crown, BaseFieldCrown) else
+            get_optional_fields_at_list_crown(fields_map, sub_crown)
+            for sub_crown in crown.map
+        )
+    if isinstance(crown, (BaseFieldCrown, BaseNoneCrown)):
+        return []
+    raise TypeError
 
 
 Fig = TypeVar('Fig', bound=BaseFigure)
@@ -156,9 +232,13 @@ def compile_closure_with_globals_capturing(
 
     global_namespace_dict = {}
     for name, value in namespace.items():
-        global_name = f"g_{name}"
-        global_namespace_dict[global_name] = value
-        builder += f"{name} = {global_name}"
+        value_literal = get_literal_expr(value)
+        if value_literal is None:
+            global_name = f"g_{name}"
+            global_namespace_dict[global_name] = value
+            builder += f"{name} = {global_name}"
+        else:
+            builder += f"{name} = {value_literal}"
 
     builder.empty_line()
 
@@ -180,3 +260,19 @@ def compile_closure_with_globals_capturing(
         file_name,
         global_namespace_dict,
     )
+
+
+def has_collect_policy(crown: InpCrown) -> bool:
+    if isinstance(crown, InpDictCrown):
+        return crown.extra == ExtraCollect() or any(
+            has_collect_policy(sub_crown)
+            for sub_crown in crown.map.values()
+        )
+    if isinstance(crown, InpListCrown):
+        return any(
+            has_collect_policy(sub_crown)
+            for sub_crown in crown.map
+        )
+    if isinstance(crown, (InpFieldCrown, InpNoneCrown)):
+        return False
+    raise TypeError
