@@ -16,7 +16,6 @@ from .definitions import (
     NoRequiredFieldsError,
     NoRequiredItemsError,
     ParseError,
-    SerializeError,
     TypeParseError,
     UnionParseError,
 )

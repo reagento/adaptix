@@ -5,7 +5,6 @@ from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr
 from ...common import Serializer
 from ...model_tools import AttrAccessor, ExtraExtract, ExtraTargets, ItemAccessor, OutputField, OutputFigure
 from ...struct_path import append_path, extend_path
-from ..definitions import SerializeError
 from .definitions import CodeGenerator, VarBinder
 
 
@@ -23,7 +22,6 @@ class BuiltinOutputExtractionGen(CodeGenerator):
     def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         builder = CodeBuilder()
 
-        ctx_namespace.add("SerializeError", SerializeError)
         ctx_namespace.add("append_path", append_path)
         ctx_namespace.add("extend_path", extend_path)
         name_to_fields = {field.name: field for field in self._figure.fields}

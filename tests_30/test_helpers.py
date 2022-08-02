@@ -1,3 +1,4 @@
+from dataclasses import asdict, is_dataclass
 from typing import List, TypeVar, Union
 
 import pytest
@@ -40,7 +41,11 @@ class TestFactory(OperatingFactory):
 def raises_instance(exp_exc: Exception, func, *, path: Union[list, None, EllipsisType] = Ellipsis):
     with pytest.raises(type(exp_exc)) as exc:
         func()
-    assert exc.value == exp_exc
+
+    if is_dataclass(exp_exc):
+        assert asdict(exc.value) == asdict(exp_exc)  # noqa
+    else:
+        raise TypeError("Can compare only dataclass instances")
 
     if not isinstance(path, EllipsisType):
         extracted_path = get_path(exc.value)

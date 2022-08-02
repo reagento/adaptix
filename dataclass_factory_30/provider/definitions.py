@@ -13,51 +13,46 @@ PARSER_COMPAT_EXCEPTIONS = (
 # but it's ok! BaseException.__init__ do nothing useful
 
 
-@dataclass
+@dataclass(eq=False)
 class ParseError(Exception):
     pass
 
 
-@dataclass
+@dataclass(eq=False)
 class MsgError(ParseError):
     msg: str
 
 
-@dataclass
+@dataclass(eq=False)
 class ExtraFieldsError(ParseError):
     fields: Iterable[str]
 
 
-@dataclass
+@dataclass(eq=False)
 class ExtraItemsError(ParseError):
     list_len: int
 
 
-@dataclass
+@dataclass(eq=False)
 class NoRequiredFieldsError(ParseError):
     fields: Iterable[str]
 
 
-@dataclass
+@dataclass(eq=False)
 class NoRequiredItemsError(ParseError):
     list_len: int
 
 
-@dataclass
+@dataclass(eq=False)
 class TypeParseError(ParseError):
     expected_type: TypeHint
 
 
-@dataclass
+@dataclass(eq=False)
 class ExcludedTypeParseError(ParseError):
     excluded_type: TypeHint
 
 
-@dataclass
+@dataclass(eq=False)
 class UnionParseError(ParseError):
     sub_errors: List[ParseError]
-
-
-@dataclass
-class SerializeError(Exception):
-    pass
