@@ -30,10 +30,10 @@ class BasicClosureCompiler(ClosureCompiler):
         return main_builder
 
     def _compile(self, source: str, filename: str, namespace: Dict[str, Any]):
-        code_obj = compile(source, filename, "exec")
+        code_obj = compile(source, filename, "exec")  # noqa: DUO110
 
         local_namespace: Dict[str, Any] = {}
-        exec(code_obj, namespace, local_namespace)  # noqa
+        exec(code_obj, namespace, local_namespace)  # noqa: DUO105
 
         return local_namespace["_closure_maker"]()
 

@@ -1,34 +1,29 @@
 -r requirements_test_extra_new.txt
 
-pre-commit
-bandit
+pre-commit==2.20.0
+bandit==1.7.4
 
-mypy
+mypy==0.971
 
-isort
+vulture==2.5
 
-vulture
+pylint==2.14.5
 
-pylint
+flake8==4.0.1
 
-flake8
-
-flake8-comprehensions
-flake8-debugger
-
-flake8-bugbear
-flake8-builtins
-flake8-cognitive-complexity
-
-flake8-mutable
-flake8-polyfill
-
-flake8-noqa
+flake8-comprehensions==3.10.0
+flake8-debugger==4.1.2
+flake8-bugbear==22.7.1
+flake8-builtins==1.5.3
+flake8-cognitive-complexity==0.1.0
+flake8-mutable==1.2.0
+flake8-polyfill==1.0.2
+flake8-noqa==1.2.8
+radon==5.1.0
+dlint==0.12.0
 
 # flake8-docstrings
 # pycodestyle
 # darglint
-
-radon
 
 # https://github.com/tonybaloney/pycharm-security
