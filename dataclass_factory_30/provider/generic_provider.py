@@ -181,7 +181,7 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         return foreign_parser(parser)
 
-    def _make_debug_path_parser(self, iter_factory, arg_parser, strict_coercion: bool):
+    def _make_debug_path_parser(self, iter_factory, arg_parser, strict_coercion: bool):  # noqa: C901,CCR001
         def iter_mapper(iterator):
             idx = 0
 

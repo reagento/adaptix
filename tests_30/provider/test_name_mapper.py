@@ -1,9 +1,9 @@
+import re
 from dataclasses import dataclass
 from typing import Iterable, List, Set
 
 import pytest
 
-from dataclass_factory_30.factory import NoSuitableProvider
 from dataclass_factory_30.model_tools import (
     AttrAccessor,
     ExtraTargets,
@@ -433,7 +433,12 @@ def test_name_mapping_extra_targets_skip(factory):
 
 
 def test_name_mapping_error_on_required_field_skip(factory):
-    with pytest.raises(NoSuitableProvider):
+    string_to_match = re.escape(
+        "Can not create name mapping for type <class 'provider.test_name_mapper.Stub'>"
+        " that skips required fields ['c']"
+    )
+
+    with pytest.raises(ValueError, match=string_to_match):
         factory.provide(
             inp_request(
                 fields=[
@@ -450,7 +455,7 @@ def test_name_mapping_error_on_required_field_skip(factory):
             )
         )
 
-    with pytest.raises(NoSuitableProvider):
+    with pytest.raises(ValueError, match=string_to_match):
         factory.provide(
             inp_request(
                 fields=[

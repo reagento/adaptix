@@ -23,7 +23,6 @@ class CannotProvide(Exception):
         self,
         msg: Optional[str] = None,
         sub_errors: Optional[Sequence['CannotProvide']] = None,
-        is_important: bool = False,
     ):
         """
         :param msg: Human-oriented description of error
@@ -35,25 +34,15 @@ class CannotProvide(Exception):
             sub_errors = []
         self.msg = msg
         self.sub_errors = sub_errors
-        self._is_important = is_important
-        super().__init__(self.msg, self.sub_errors, self.is_important())
+        super().__init__(self.msg, self.sub_errors)
 
     def __eq__(self, other):
         if isinstance(other, CannotProvide):
-            return (
-                self.msg == other.msg
-                and self.sub_errors == other.sub_errors
-                and self._is_important == other._is_important
-            )
+            return self.msg == other.msg and self.sub_errors == other.sub_errors
         return NotImplemented
 
-    # TODO: maybe add checking of __cause__ and __context__
-    def is_important(self) -> bool:
-        return self._is_important or any(error.is_important() for error in self.sub_errors)
-
     def __repr__(self):
-        content = f"msg={self.msg!r}, sub_errors={self.sub_errors!r}, is_important={self._is_important!r}"
-        return f"{type(self).__name__}({content})"
+        return f"{type(self).__name__}(msg={self.msg!r}, sub_errors={self.sub_errors!r})"
 
 
 class Mediator(ABC, Generic[T]):

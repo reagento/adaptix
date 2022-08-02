@@ -95,9 +95,7 @@ class BuiltinMediator(Mediator):
             self.next_offset = next_offset
             try:
                 result = provide_callable(self, request)
-            except CannotProvide as e:
-                if e.is_important():
-                    raise
+            except CannotProvide:
                 continue
 
             self.next_offset = init_next_offset

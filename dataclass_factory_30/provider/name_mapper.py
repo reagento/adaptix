@@ -3,7 +3,7 @@ from typing import Collection, Dict, List, Optional, cast
 
 # TODO: Add support for path in map
 from ..model_tools import BaseFigure, DefaultFactory, DefaultValue, ExtraTargets, NoDefault, OutputField
-from .essential import CannotProvide, Mediator
+from .essential import Mediator
 from .model import (
     BaseCrown,
     BaseDictCrown,
@@ -196,10 +196,9 @@ class NameMapper(NameMappingProvider):
 
         if skipped_required_fields:
             sr_field_names = [field.name for field in skipped_required_fields]
-            raise CannotProvide(
+            raise ValueError(
                 f"Can not create name mapping for type {request.type}"
                 f" that skips required fields {sr_field_names}",
-                is_important=True,
             )
 
         base_name_mapping = self._provide_name_mapping(mediator, request)

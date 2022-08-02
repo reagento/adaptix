@@ -1,6 +1,5 @@
 from abc import ABC
-from dataclasses import dataclass
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from ..provider import CannotProvide, Mediator, ParserRequest, Provider, Request, SerializerRequest
 from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
@@ -25,12 +24,8 @@ class FuncRecursionResolver(StubsRecursionResolver):
         stub.set_func(actual)
 
 
-@dataclass
 class NoSuitableProvider(Exception):
-    important_error: Optional[CannotProvide]
-
-    def __str__(self):
-        return repr(self.important_error)
+    pass
 
 
 T = TypeVar('T')
@@ -45,9 +40,8 @@ class OperatingFactory(IncrementalRecipe, ProvidingFromRecipe, Provider, ABC):
     def _facade_provide(self, request: Request[T]) -> T:
         try:
             return self._provide_from_recipe(request, [])
-        except CannotProvide as e:
-            important_error = e if e.is_important() else None
-            raise NoSuitableProvider(important_error=important_error)
+        except CannotProvide:
+            raise NoSuitableProvider
 
     def _get_recursion_resolving(self) -> RecursionResolving:
         return RecursionResolving(
