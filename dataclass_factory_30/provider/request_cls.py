@@ -17,18 +17,25 @@ class TypeHintRM(Request[T], Generic[T]):
 
 
 @dataclass(frozen=True)
-class FieldRM(TypeHintRM[T], BaseField, Generic[T]):
-    pass
+class FieldRM(TypeHintRM[T], Generic[T]):
+    field: BaseField
+
+    def __post_init__(self):
+        self._validate()
+
+    def _validate(self):
+        if self.type != self.field.type:
+            raise ValueError("Type attribute and type of field must be equal")
 
 
 @dataclass(frozen=True)
-class InputFieldRM(FieldRM[T], InputField, Generic[T]):
-    pass
+class InputFieldRM(FieldRM[T], Generic[T]):
+    field: InputField
 
 
 @dataclass(frozen=True)
-class OutputFieldRM(FieldRM[T], OutputField, Generic[T]):
-    pass
+class OutputFieldRM(FieldRM[T], Generic[T]):
+    field: OutputField
 
 
 @dataclass(frozen=True)

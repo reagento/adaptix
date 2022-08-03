@@ -34,12 +34,9 @@ def make_output_extraction(mediator: Mediator, request: SerializerRequest, figur
     field_serializers = {
         field.name: mediator.provide(
             SerializerFieldRequest(
-                type=field.type,
                 debug_path=request.debug_path,
-                default=field.default,
-                accessor=field.accessor,
-                metadata=field.metadata,
-                name=field.name,
+                field=field,
+                type=field.type,
             )
         )
         for field in figure.fields

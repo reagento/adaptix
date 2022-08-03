@@ -117,7 +117,7 @@ class ExactFieldNameRC(BoundedRequestChecker):
     field_name: str
 
     def _check_bounded_request(self, mediator: Mediator, request: FieldRM) -> None:
-        if self.field_name == request.name:
+        if self.field_name == request.field.name:
             return
         raise CannotProvide(f'field_name must be a {self.field_name!r}')
 
@@ -128,7 +128,7 @@ class ReFieldNameRC(BoundedRequestChecker):
     pattern: Pattern[str]
 
     def _check_bounded_request(self, mediator: Mediator, request: FieldRM) -> None:
-        if self.pattern.fullmatch(request.name):
+        if self.pattern.fullmatch(request.field.name):
             return
 
         raise CannotProvide(f'field_name must be matched by {self.pattern!r}')

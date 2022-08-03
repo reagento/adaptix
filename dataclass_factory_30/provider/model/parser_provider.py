@@ -51,15 +51,10 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         field_parsers = {
             field.name: mediator.provide(
                 ParserFieldRequest(
-                    type=field.type,
                     strict_coercion=request.strict_coercion,
                     debug_path=request.debug_path,
-                    default=field.default,
-                    is_required=field.is_required,
-                    metadata=field.metadata,
-                    name=field.name,
-                    param_kind=field.param_kind,
-                    param_name=field.param_name,
+                    field=field,
+                    type=field.type,
                 )
             )
             for field in processed_figure.fields
