@@ -27,19 +27,12 @@ class CannotProvide(Exception):
         """
         :param msg: Human-oriented description of error
         :param sub_errors: Errors caused this error
-        :param is_important: if the error is important,
-            it will be propagated above and the following providers will not be tested
         """
         if sub_errors is None:
             sub_errors = []
         self.msg = msg
         self.sub_errors = sub_errors
         super().__init__(self.msg, self.sub_errors)
-
-    def __eq__(self, other):
-        if isinstance(other, CannotProvide):
-            return self.msg == other.msg and self.sub_errors == other.sub_errors
-        return NotImplemented
 
     def __repr__(self):
         return f"{type(self).__name__}(msg={self.msg!r}, sub_errors={self.sub_errors!r})"
