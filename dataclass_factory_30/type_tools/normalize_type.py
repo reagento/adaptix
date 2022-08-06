@@ -1,15 +1,17 @@
-# pylint: disable=inconsistent-return-statements,import-outside-toplevel,comparison-with-callable
+# pylint: disable=inconsistent-return-statements,comparison-with-callable
 import collections
 import re
+import types
+import typing
 from abc import ABC, abstractmethod
 from collections import abc as c_abc, defaultdict
 from dataclasses import InitVar, dataclass
-from enum import Enum
+from enum import Enum, EnumMeta
 from typing import (
     Any,
     Callable,
     ClassVar,
-    Dict,
+    DefaultDict,
     Final,
     Hashable,
     Iterable,
@@ -27,8 +29,8 @@ from typing import (
 )
 
 from ..common import TypeHint, VarTuple
-from ..feature_requirement import HAS_ANNOTATED
-from .basic_utils import create_union, is_annotated, is_new_type, is_subclass_soft, is_user_defined_generic, strip_alias
+from ..feature_requirement import HAS_ANNOTATED, HAS_TYPE_UNION_OP
+from .basic_utils import create_union, is_new_type, is_subclass_soft, is_user_defined_generic, strip_alias
 
 
 class BaseNormType(Hashable, ABC):
@@ -51,16 +53,44 @@ class BaseNormType(Hashable, ABC):
 T = TypeVar('T')
 
 
-class NormType(BaseNormType):
+class _BasicNormType(BaseNormType, ABC):
+    __slots__ = ('_source', '_args')
+
+    def __init__(self, args: VarTuple[Any], *, source: TypeHint):
+        self._source = source
+        self._args = args
+
+    @property
+    def args(self) -> VarTuple[Any]:
+        return self._args
+
+    @property
+    def source(self) -> TypeHint:
+        return self._source
+
+    def __hash__(self):
+        return hash((self.origin, self._args))
+
+    def __eq__(self, other):
+        if isinstance(other, _BasicNormType):
+            return (
+                self.origin == other.origin
+                and
+                self._args == other._args
+            )
+        if isinstance(other, BaseNormType):
+            return False
+        return NotImplemented
+
+    def __repr__(self):
+        args_str = f" {list(self.args)}," if self.args else ""
+        return f'<{type(self).__name__}({self.origin},{args_str} source={self._source})>'
+
+
+class _NormType(BaseNormType):
     __slots__ = ('_source', '_origin', '_args')
 
-    def __init__(
-        self,
-        origin: TypeHint,
-        args: VarTuple[Hashable],
-        *,
-        source: TypeHint
-    ):
+    def __init__(self, origin: TypeHint, args: VarTuple[Any], *, source: TypeHint):
         self._source = source
         self._origin = origin
         self._args = args
@@ -81,7 +111,7 @@ class NormType(BaseNormType):
         return hash((self._origin, self._args))
 
     def __eq__(self, other):
-        if isinstance(other, NormType):
+        if isinstance(other, _NormType):
             return (
                 self._origin == other._origin
                 and
@@ -96,6 +126,108 @@ class NormType(BaseNormType):
         return f'<{type(self).__name__}({self.origin},{args_str} source={self._source})>'
 
 
+class _UnionNormType(_BasicNormType):
+    def __init__(self, args: VarTuple[Any], *, source: TypeHint):
+        super().__init__(self._order_args(args), source=source)
+
+    @property
+    def origin(self) -> Any:
+        return Union
+
+    # ensure stable order of args during one interpreter session
+    def _make_orderable(self, obj: object) -> str:
+        if isinstance(obj, BaseNormType):
+            return f"{obj.origin} {[self._make_orderable(arg) for arg in obj.args]}"
+        return str(obj)
+
+    def _order_args(self, args: VarTuple[BaseNormType]) -> VarTuple[BaseNormType]:
+        args_list = list(args)
+        args_list.sort(key=self._make_orderable)
+        return tuple(args_list)
+
+
+def _type_and_value_iter(args):
+    return [(type(arg), arg) for arg in args]
+
+
+LiteralArg = Union[str, int, bytes, Enum]
+
+
+class _LiteralNormType(_BasicNormType):
+    def __init__(self, args: VarTuple[Any], *, source: TypeHint):
+        super().__init__(self._order_args(args), source=source)
+
+    @property
+    def origin(self) -> Any:
+        return Literal
+
+    # ensure stable order of args during one interpreter session
+    def _make_orderable(self, obj: LiteralArg) -> str:
+        return f"{type(obj)}{obj.name}" if isinstance(obj, Enum) else repr(obj)
+
+    def _order_args(self, args: VarTuple[LiteralArg]) -> VarTuple[LiteralArg]:
+        args_list = list(args)
+        args_list.sort(key=self._make_orderable)
+        return tuple(args_list)
+
+    def __eq__(self, other):
+        if isinstance(other, _LiteralNormType):
+            return _type_and_value_iter(self._args) == _type_and_value_iter(other._args)
+        if isinstance(other, BaseNormType):
+            return False
+        return NotImplemented
+
+    __hash__ = _BasicNormType.__hash__
+
+
+class _AnnotatedNormType(_BasicNormType):
+    @property
+    def origin(self) -> Any:
+        return typing.Annotated
+
+    __slots__ = _BasicNormType.__slots__ + ('_hash',)
+
+    def __init__(self, args: VarTuple[Hashable], *, source: TypeHint):
+        super().__init__(args, source=source)
+        self._hash = self._calc_hash()
+
+    # calculate hash even if one of Annotated metadata is not hashable
+    def _calc_hash(self) -> int:
+        lst = [self.origin]
+        for arg in self._args:
+            try:
+                arg_hash = hash(arg)
+            except TypeError:
+                pass
+            else:
+                lst.append(arg_hash)
+        return hash(tuple(lst))
+
+    def __hash__(self):
+        return self._hash
+
+
+def make_norm_type(
+    origin: TypeHint,
+    args: VarTuple[Hashable],
+    *,
+    source: TypeHint
+):
+    if origin == Union:
+        if not all(isinstance(arg, BaseNormType) for arg in args):
+            raise TypeError
+        return _UnionNormType(args, source=source)  # type: ignore
+    if origin == Literal:
+        if not all(type(arg) in [int, bool, str, bytes] or isinstance(type(arg), EnumMeta) for arg in args):
+            raise TypeError
+        return _LiteralNormType(args, source=source)  # type: ignore
+    if HAS_ANNOTATED and origin == typing.Annotated:
+        return _AnnotatedNormType(args, source=source)
+    if isinstance(origin, TypeVar):
+        raise TypeError
+    return _NormType(origin, args, source=source)
+
+
 class Variance(Enum):
     INVARIANT = 0
     COVARIANT = 1
@@ -104,12 +236,12 @@ class Variance(Enum):
 
 @dataclass
 class Bound:
-    value: NormType
+    value: BaseNormType
 
 
 @dataclass
 class Constraints:
-    value: VarTuple[NormType]
+    value: VarTuple[BaseNormType]
 
 
 TVLimit = Union[Bound, Constraints]
@@ -167,7 +299,7 @@ class NormTV(BaseNormType):
 
 
 NoneType = type(None)
-ANY_NT = NormType(Any, (), source=Any)
+ANY_NT = _NormType(Any, (), source=Any)
 
 
 class ImplicitParamsFiller:
@@ -187,13 +319,12 @@ class ImplicitParamsFiller:
         **{el: 1 for el in ONE_ANY_STR_PARAM}
     }
 
-    NORM_ANY_STR_PARAM = NormType(
-        Union,
-        (NormType(bytes, (), source=bytes), NormType(str, (), source=str)),
+    NORM_ANY_STR_PARAM = _UnionNormType(
+        (_NormType(bytes, (), source=bytes), _NormType(str, (), source=str)),
         source=Union[bytes, str],
     )
 
-    def get_implicit_params(self, origin, normalizer: "TypeNormalizer") -> VarTuple[NormType]:
+    def get_implicit_params(self, origin, normalizer: "TypeNormalizer") -> VarTuple[BaseNormType]:
         if origin in self.ONE_ANY_STR_PARAM:
             return (self.NORM_ANY_STR_PARAM,)
 
@@ -202,7 +333,7 @@ class ImplicitParamsFiller:
             limits = [normalizer.normalize(p).limit for p in params]
 
             return tuple(
-                _create_n_union(lim.value)
+                _create_norm_union(lim.value)
                 if isinstance(lim, Constraints) else
                 lim.value
                 for lim in limits
@@ -213,11 +344,8 @@ class ImplicitParamsFiller:
         return tuple(ANY_NT for _ in range(count))
 
 
-def _create_n_union(args: VarTuple[BaseNormType]) -> NormType:
-    return NormType(
-        Union, args,
-        source=create_union(tuple(a.source for a in args))
-    )
+def _create_norm_union(args: VarTuple[BaseNormType]) -> BaseNormType:
+    return _UnionNormType(args, source=create_union(tuple(a.source for a in args)))
 
 
 def _dedup(inp: Iterable) -> List:
@@ -232,16 +360,16 @@ def _dedup(inp: Iterable) -> List:
 
 def _create_norm_literal(args: Iterable):
     dedup_args = tuple(_dedup(args))
-    return NormType(
-        Literal, dedup_args,
+    return _LiteralNormType(
+        dedup_args,
         source=Literal.__getitem__(  # pylint: disable=unnecessary-dunder-call
             dedup_args  # type: ignore
         )
     )
 
 
-def _replace_source_with_union(norm: NormType, sources: list) -> NormType:
-    return NormType(
+def _replace_source_with_union(norm: _NormType, sources: list) -> _NormType:
+    return make_norm_type(
         origin=norm.origin,
         args=norm.args,
         source=create_union(tuple(sources))
@@ -301,8 +429,7 @@ class TypeNormalizer:
     ]
 
     if HAS_ANNOTATED:
-        from typing import Annotated
-        MUST_SUBSCRIBED_ORIGINS.append(Annotated)
+        MUST_SUBSCRIBED_ORIGINS.append(typing.Annotated)
 
     @_aspect_storage.add
     def _check_bad_input(self, tp, origin, args):
@@ -315,16 +442,13 @@ class TypeNormalizer:
     @_aspect_storage.add
     def _norm_none(self, tp, origin, args):
         if origin is None or origin is NoneType:
-            return NormType(None, (), source=tp)
+            return _NormType(None, (), source=tp)
 
     if HAS_ANNOTATED:
         @_aspect_storage.add
         def _norm_annotated(self, tp, origin, args):
-            from typing import Annotated
-
-            if is_annotated(tp):
-                return NormType(
-                    Annotated,
+            if origin == typing.Annotated:
+                return _AnnotatedNormType(
                     (self.normalize(args[0]), *args[1:]),
                     source=tp
                 )
@@ -356,7 +480,7 @@ class TypeNormalizer:
     def _norm_init_var(self, tp, origin, args):
         if isinstance(origin, InitVar):
             # this origin is InitVar[T]
-            return NormType(
+            return _NormType(
                 InitVar,
                 (self.normalize(origin.type),),
                 source=tp
@@ -365,13 +489,13 @@ class TypeNormalizer:
     @_aspect_storage.add
     def _norm_new_type(self, tp, origin, args):
         if is_new_type(tp):
-            return NormType(tp, (), source=tp)
+            return _NormType(tp, (), source=tp)
 
     @_aspect_storage.add
     def _norm_tuple(self, tp, origin, args):
-        if is_subclass_soft(origin, tuple):
+        if origin == tuple:
             if tp in (tuple, Tuple):  # not subscribed values
-                return NormType(
+                return _NormType(
                     tuple,
                     (ANY_NT, ...),
                     source=tp
@@ -380,40 +504,52 @@ class TypeNormalizer:
             # >>> Tuple[()].__args__ == ((),)
             # >>> tuple[()].__args__ == ()
             if not args or args == ((),):
-                return NormType(tuple, (), source=tp)
+                return _NormType(tuple, (), source=tp)
 
             is_var_args = args[-1] is ...
             if is_var_args:
-                return NormType(
-                    origin, (*self._norm_iter(args[:-1]), ...),
+                return _NormType(
+                    tuple, (*self._norm_iter(args[:-1]), ...),
                     source=tp,
                 )
 
-            return NormType(origin, self._norm_iter(args), source=tp)
+            return _NormType(tuple, self._norm_iter(args), source=tp)
 
     @_aspect_storage.add
     def _norm_callable(self, tp, origin, args):
         if origin == c_abc.Callable:
             if not args:
-                return NormType(
-                    origin, (..., ANY_NT), source=tp
+                return _NormType(
+                    c_abc.Callable, (..., ANY_NT), source=tp
                 )
 
             if args[0] is ...:
                 call_args = ...
             else:
                 call_args = tuple(map(normalize_type, args[0]))
-            return NormType(
-                origin, (call_args, self.normalize(args[-1])), source=tp
+            return _NormType(
+                c_abc.Callable, (call_args, self.normalize(args[-1])), source=tp
             )
 
     @_aspect_storage.add
     def _norm_literal(self, tp, origin, args):
         if origin == Literal:
             if args == (None,):  # Literal[None] converted to None
-                return NormType(None, (), source=tp)
+                return _NormType(None, (), source=tp)
 
-            return NormType(origin, args, source=tp)
+            if None in args:
+                args_without_none = list(args)
+                args_without_none.remove(None)
+
+                return _UnionNormType(
+                    (
+                        _NormType(None, (), source=Literal[None]),
+                        _create_norm_literal(args_without_none),
+                    ),
+                    source=tp
+                )
+
+            return _LiteralNormType(args, source=tp)
 
     def _unfold_union_args(self, norm_args: Iterable[N]) -> List[N]:
         result: List[N] = []
@@ -425,24 +561,16 @@ class TypeNormalizer:
         return result
 
     def _dedup_union_args(self, args: Iterable[BaseNormType]) -> Iterable[BaseNormType]:
-        arg_to_pos: Dict[BaseNormType, int] = {}
-        result: List[BaseNormType] = []
-        args_source: List[List[TypeHint]] = []
+        args_to_sources: DefaultDict[BaseNormType, List[Any]] = defaultdict(list)
 
-        for item in args:
-            if item in arg_to_pos:
-                pos = arg_to_pos[item]
-                args_source[pos].append(item.source)
-            else:
-                result.append(item)
-                args_source.append([item.source])
-                arg_to_pos[item] = len(result) - 1
+        for arg in args:
+            args_to_sources[arg].append(arg.source)
 
         return [
-            _replace_source_with_union(d_arg, sources)
-            if len(sources) != 1 and isinstance(d_arg, NormType)
-            else d_arg
-            for d_arg, sources in zip(result, args_source)
+            _replace_source_with_union(arg, sources)
+            if len(sources) != 1 and isinstance(arg, _NormType)
+            else arg
+            for arg, sources in args_to_sources.items()
         ]
 
     def _merge_literals(self, args: Iterable[N]) -> List[N]:
@@ -452,24 +580,20 @@ class TypeNormalizer:
             if norm.origin == Literal:
                 lit_args.extend(norm.args)
             else:
-                if lit_args:
-                    result.append(
-                        _create_norm_literal(lit_args)
-                    )
-                    lit_args = []
-
                 result.append(norm)
 
         if lit_args:
-            result.append(
-                _create_norm_literal(lit_args)
-            )
-
+            result.append(_create_norm_literal(lit_args))
         return result
+
+    _UNION_ORIGINS: List[Any] = [Union]
+
+    if HAS_TYPE_UNION_OP:
+        _UNION_ORIGINS.append(types.UnionType)
 
     @_aspect_storage.add
     def _norm_union(self, tp, origin, args):
-        if origin == Union:
+        if origin in self._UNION_ORIGINS:
             norm_args = self._norm_iter(args)
             unfolded_n_args = self._unfold_union_args(norm_args)
             unique_n_args = self._dedup_union_args(unfolded_n_args)
@@ -477,8 +601,8 @@ class TypeNormalizer:
 
             if len(merged_n_args) == 1:
                 arg = merged_n_args[0]
-                return NormType(origin=arg.origin, args=arg.args, source=tp)
-            return NormType(origin, tuple(merged_n_args), source=tp)
+                return make_norm_type(origin=arg.origin, args=arg.args, source=tp)
+            return _UnionNormType(tuple(merged_n_args), source=tp)
 
     @_aspect_storage.add
     def _norm_type(self, tp, origin, args):
@@ -486,10 +610,9 @@ class TypeNormalizer:
             norm = self.normalize(args[0])
 
             if norm.origin == Union:
-                return NormType(
-                    Union,
+                return _UnionNormType(
                     tuple(
-                        NormType(type, (arg,), source=Type[arg.source])
+                        _NormType(type, (arg,), source=Type[arg.source])
                         for arg in norm.args
                     ),
                     source=tp
@@ -502,7 +625,7 @@ class TypeNormalizer:
     @_aspect_storage.add
     def _norm_other(self, tp, origin, args):
         if args:
-            return NormType(origin, self._norm_iter(args), source=tp)
+            return _NormType(origin, self._norm_iter(args), source=tp)
 
         params = self.imp_params_filler.get_implicit_params(
             origin, self
@@ -515,7 +638,7 @@ class TypeNormalizer:
         ):
             raise ValueError(f'Can not normalize {tp}')
 
-        return NormType(
+        return _NormType(
             origin,
             params,
             source=tp,

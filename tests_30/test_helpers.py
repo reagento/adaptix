@@ -5,7 +5,7 @@ import pytest
 
 from dataclass_factory_30.common import EllipsisType
 from dataclass_factory_30.factory import OperatingFactory
-from dataclass_factory_30.feature_requirement import HAS_ANNOTATED, PythonVersionRequirement
+from dataclass_factory_30.feature_requirement import HAS_ANNOTATED, HAS_TYPE_UNION_OP, PythonVersionRequirement
 from dataclass_factory_30.provider import Provider
 from dataclass_factory_30.struct_path import get_path
 
@@ -23,6 +23,9 @@ class PytestVersionMarker:
             not self.requirement,
             reason=f'Need Python >= {ver_str}'
         )(func)
+
+    def __bool__(self):
+        raise NotImplementedError
 
 
 requires_annotated = PytestVersionMarker(HAS_ANNOTATED)

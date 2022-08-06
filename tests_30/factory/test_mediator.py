@@ -50,7 +50,7 @@ ASSERTER_LIST = [
     'order',
     [
         pytest.param(order, id=str(order))
-        for order in permutations([1, 2, 3], 3)
+        for order in permutations([1, 2, 3])
     ],
 )
 def test_request_stack(order):

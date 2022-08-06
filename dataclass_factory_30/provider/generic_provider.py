@@ -56,6 +56,7 @@ class LiteralProvider(ParserProvider, SerializerProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         norm = normalize_type(request.type)
 
+        # TODO: add support for enum
         if request.strict_coercion and any(
             isinstance(arg, bool) or _is_exact_zero_or_one(arg)
             for arg in norm.args
