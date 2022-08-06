@@ -29,7 +29,7 @@ from typing import (
 )
 
 from ..common import TypeHint, VarTuple
-from ..feature_requirement import HAS_ANNOTATED, HAS_TYPE_UNION_OP
+from ..feature_requirement import HAS_ANNOTATED, HAS_PARAM_SPEC, HAS_TYPE_ALIAS, HAS_TYPE_GUARD, HAS_TYPE_UNION_OP
 from .basic_utils import create_union, is_new_type, is_subclass_soft, is_user_defined_generic, strip_alias
 
 
@@ -207,6 +207,9 @@ class _AnnotatedNormType(_BasicNormType):
         return self._hash
 
 
+_PARAM_SPEC_MARKER_TYPES = (typing.ParamSpecArgs, typing.ParamSpecKwargs) if HAS_PARAM_SPEC else ()
+
+
 def make_norm_type(
     origin: TypeHint,
     args: VarTuple[Hashable],
@@ -224,6 +227,10 @@ def make_norm_type(
     if HAS_ANNOTATED and origin == typing.Annotated:
         return _AnnotatedNormType(args, source=source)
     if isinstance(origin, TypeVar):
+        raise TypeError
+    if HAS_PARAM_SPEC and (
+        isinstance(origin, _PARAM_SPEC_MARKER_TYPES) or isinstance(source, _PARAM_SPEC_MARKER_TYPES)
+    ):
         raise TypeError
     return _NormType(origin, args, source=source)
 
@@ -250,18 +257,18 @@ TVLimit = Union[Bound, Constraints]
 class NormTV(BaseNormType):
     __slots__ = ('_var', '_limit', '_variance')
 
-    def __init__(self, type_var: TypeVar, limit: TVLimit):
-        self._var = type_var
+    def __init__(self, var: Any, limit: TVLimit):
+        self._var = var
         self._limit = limit
 
-        if type_var.__covariant__:
+        if var.__covariant__:  # type: ignore[attr-defined]
             self._variance = Variance.COVARIANT
-        if type_var.__contravariant__:
+        if var.__contravariant__:  # type: ignore[attr-defined]
             self._variance = Variance.CONTRAVARIANT
         self._variance = Variance.INVARIANT
 
     @property
-    def origin(self) -> TypeVar:
+    def origin(self) -> Any:
         return self._var
 
     @property
@@ -298,6 +305,48 @@ class NormTV(BaseNormType):
         return NotImplemented
 
 
+class NormParamSpecMarker(BaseNormType, ABC):
+    __slots__ = ('_param_spec', '_source')
+
+    def __init__(self, param_spec: Any, *, source: TypeHint):
+        self._param_spec = param_spec
+        self._source = source
+
+    @property
+    def param_spec(self) -> NormTV:
+        return self._param_spec
+
+    @property
+    def args(self) -> Tuple[()]:
+        return ()
+
+    @property
+    def source(self) -> TypeHint:
+        return self._source
+
+    def __hash__(self):
+        return hash((self.origin, self.param_spec))
+
+    def __eq__(self, other):
+        if isinstance(other, NormParamSpecMarker):
+            return self.origin == other.origin and self._param_spec == other._param_spec
+        if isinstance(other, BaseNormType):
+            return False
+        return NotImplemented
+
+
+class _NormParamSpecArgs(NormParamSpecMarker, ABC):
+    @property
+    def origin(self) -> Any:
+        return typing.ParamSpecArgs
+
+
+class _NormParamSpecKwargs(NormParamSpecMarker, ABC):
+    @property
+    def origin(self) -> Any:
+        return typing.ParamSpecKwargs
+
+
 NoneType = type(None)
 ANY_NT = _NormType(Any, (), source=Any)
 
@@ -324,6 +373,13 @@ class ImplicitParamsFiller:
         source=Union[bytes, str],
     )
 
+    def _convert_generic_element(self, limit: TVLimit, param):
+        if HAS_PARAM_SPEC and isinstance(param, typing.ParamSpec):
+            return ...
+        if isinstance(limit, Constraints):
+            return _create_norm_union(limit.value)
+        return limit.value
+
     def get_implicit_params(self, origin, normalizer: "TypeNormalizer") -> VarTuple[BaseNormType]:
         if origin in self.ONE_ANY_STR_PARAM:
             return (self.NORM_ANY_STR_PARAM,)
@@ -333,10 +389,8 @@ class ImplicitParamsFiller:
             limits = [normalizer.normalize(p).limit for p in params]
 
             return tuple(
-                _create_norm_union(lim.value)
-                if isinstance(lim, Constraints) else
-                lim.value
-                for lim in limits
+                self._convert_generic_element(limit, param)
+                for limit, param in zip(limits, params)
             )
 
         count = self.TYPE_PARAM_CNT.get(origin, 0)
@@ -431,6 +485,9 @@ class TypeNormalizer:
     if HAS_ANNOTATED:
         MUST_SUBSCRIBED_ORIGINS.append(typing.Annotated)
 
+    if HAS_TYPE_GUARD:
+        MUST_SUBSCRIBED_ORIGINS.append(typing.TypeGuard)
+
     @_aspect_storage.add
     def _check_bad_input(self, tp, origin, args):
         if tp in self.MUST_SUBSCRIBED_ORIGINS:
@@ -453,28 +510,35 @@ class TypeNormalizer:
                     source=tp
                 )
 
+    def _get_bound(self, origin) -> Bound:
+        return Bound(ANY_NT) if origin.__bound__ is None else Bound(self.normalize(origin.__bound__))
+
     @_aspect_storage.add
     def _norm_type_var(self, tp, origin, args):
         if isinstance(origin, TypeVar):
-            limit: TVLimit
-
-            if origin.__constraints__:
-                limit = Constraints(
-                    tuple(  # type: ignore
-                        self._dedup_union_args(
-                            self._norm_iter(origin.__constraints__)
-                        )
+            limit = (
+                Constraints(
+                    tuple(
+                        self._dedup_union_args(self._norm_iter(origin.__constraints__))
                     )
                 )
-            elif origin.__bound__ is None:
-                limit = Bound(ANY_NT)
-            else:
-                limit = Bound(self.normalize(origin.__bound__))  # type: ignore
-
-            return NormTV(
-                type_var=origin,
-                limit=limit,
+                if origin.__constraints__ else
+                self._get_bound(origin)
             )
+
+            return NormTV(var=origin, limit=limit)
+
+    if HAS_PARAM_SPEC:
+        @_aspect_storage.add
+        def _norm_param_spec(self, tp, origin, args):
+            if isinstance(tp, typing.ParamSpecArgs):
+                return _NormParamSpecArgs(param_spec=self.normalize(origin), source=tp)
+
+            if isinstance(tp, typing.ParamSpecKwargs):
+                return _NormParamSpecKwargs(param_spec=self.normalize(origin), source=tp)
+
+            if isinstance(origin, typing.ParamSpec):
+                return NormTV(var=origin, limit=self._get_bound(origin))
 
     @_aspect_storage.add
     def _norm_init_var(self, tp, origin, args):
@@ -525,8 +589,10 @@ class TypeNormalizer:
 
             if args[0] is ...:
                 call_args = ...
-            else:
+            elif isinstance(args[0], list):
                 call_args = tuple(map(normalize_type, args[0]))
+            else:
+                call_args = normalize_type(args[0])
             return _NormType(
                 c_abc.Callable, (call_args, self.normalize(args[-1])), source=tp
             )
@@ -622,10 +688,24 @@ class TypeNormalizer:
         Any, NoReturn,
     }
 
+    if HAS_TYPE_ALIAS:
+        ALLOWED_ZERO_PARAMS_ORIGINS.add(typing.TypeAlias)
+
+    def _norm_generic_element(self, element):
+        if element is Ellipsis:
+            return Ellipsis
+        if isinstance(element, tuple):
+            return self._norm_iter(element)
+        return self.normalize(element)
+
     @_aspect_storage.add
     def _norm_other(self, tp, origin, args):
         if args:
-            return _NormType(origin, self._norm_iter(args), source=tp)
+            return _NormType(
+                origin,
+                tuple(self._norm_generic_element(el) for el in args),
+                source=tp
+            )
 
         params = self.imp_params_filler.get_implicit_params(
             origin, self

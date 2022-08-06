@@ -55,5 +55,8 @@ HAS_STD_CLASSES_GENERICS = HAS_PY_39
 
 HAS_PY_310 = PythonVersionRequirement((3, 10))
 HAS_TYPE_UNION_OP = HAS_PY_310
+HAS_TYPE_GUARD = HAS_PY_310
+HAS_TYPE_ALIAS = HAS_PY_310
+HAS_PARAM_SPEC = HAS_PY_310
 
 HAS_ATTRS_PKG = PackageRequirement('attrs', 'from attrs import fields')

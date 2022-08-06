@@ -1,30 +1,26 @@
 # pylint: disable=import-outside-toplevel
+import typing
 from dataclasses import InitVar
 from typing import Callable, ClassVar, Final, Tuple
 
-from ..feature_requirement import HAS_ANNOTATED
+from ..feature_requirement import HAS_ANNOTATED, HAS_TYPE_GUARD
 from .normalize_type import BaseNormType, NormTV
+
+_TYPE_TAGS = {Final, ClassVar, InitVar}
+
+if HAS_ANNOTATED:
+    _TYPE_TAGS.add(typing.Annotated)
+
+if HAS_TYPE_GUARD:
+    _TYPE_TAGS.add(typing.TypeGuard)
 
 
 def strip_tags(norm: BaseNormType) -> BaseNormType:
     """Removes type hints that does not represent type
     and that only indicates metadata
     """
-    if norm.origin == Final:
+    if norm.origin in _TYPE_TAGS:
         return strip_tags(norm.args[0])
-
-    if HAS_ANNOTATED:
-        from typing import Annotated
-
-        if norm.origin == Annotated:
-            return strip_tags(norm.args[0])
-
-    if norm.origin == ClassVar:
-        return strip_tags(norm.args[0])
-
-    if norm.origin == InitVar:
-        return strip_tags(norm.args[0])
-
     return norm
 
 
