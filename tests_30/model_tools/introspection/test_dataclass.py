@@ -1,3 +1,4 @@
+import typing
 from dataclasses import InitVar, dataclass, field
 from types import MappingProxyType
 from typing import ClassVar
@@ -15,6 +16,7 @@ from dataclass_factory_30.model_tools import (
     get_dataclass_input_figure,
     get_dataclass_output_figure,
 )
+from tests_30.test_helpers import requires_annotated
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 
@@ -207,6 +209,152 @@ def test_inheritance():
                     name='b',
                     default=NoDefault(),
                     accessor=AttrAccessor('b', is_required=True),
+                    metadata=MappingProxyType({}),
+                ),
+            ),
+        )
+    )
+
+
+@dataclass
+class FRParent:
+    fr_field: 'int'
+
+
+@dataclass
+class FRChild(FRParent):
+    some_field: str
+
+
+def test_forward_ref():
+    assert (
+        get_dataclass_input_figure(FRParent)
+        ==
+        InputFigure(
+            constructor=FRParent,
+            extra=None,
+            fields=(
+                InputField(
+                    type=int,
+                    name='fr_field',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='fr_field',
+                ),
+            ),
+        )
+    )
+
+    assert (
+        get_dataclass_output_figure(FRParent)
+        ==
+        OutputFigure(
+            extra=None,
+            fields=(
+                OutputField(
+                    type=int,
+                    name='fr_field',
+                    default=NoDefault(),
+                    accessor=AttrAccessor('fr_field', is_required=True),
+                    metadata=MappingProxyType({}),
+                ),
+            ),
+        )
+    )
+
+    assert (
+        get_dataclass_input_figure(FRChild)
+        ==
+        InputFigure(
+            constructor=FRChild,
+            extra=None,
+            fields=(
+                InputField(
+                    type=int,
+                    name='fr_field',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='fr_field',
+                ),
+                InputField(
+                    type=str,
+                    name='some_field',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='some_field',
+                ),
+            ),
+        )
+    )
+
+    assert (
+        get_dataclass_output_figure(FRChild)
+        ==
+        OutputFigure(
+            extra=None,
+            fields=(
+                OutputField(
+                    type=int,
+                    name='fr_field',
+                    default=NoDefault(),
+                    accessor=AttrAccessor('fr_field', is_required=True),
+                    metadata=MappingProxyType({}),
+                ),
+                OutputField(
+                    type=str,
+                    name='some_field',
+                    default=NoDefault(),
+                    accessor=AttrAccessor('some_field', is_required=True),
+                    metadata=MappingProxyType({}),
+                ),
+            ),
+        )
+    )
+
+
+@requires_annotated
+def test_annotated():
+    @dataclass
+    class WithAnnotated:
+        annotated_field: typing.Annotated[int, 'metadata']
+
+    assert (
+        get_dataclass_input_figure(WithAnnotated)
+        ==
+        InputFigure(
+            constructor=WithAnnotated,
+            extra=None,
+            fields=(
+                InputField(
+                    type=typing.Annotated[int, 'metadata'],
+                    name='annotated_field',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='annotated_field',
+                ),
+            ),
+        )
+    )
+
+    assert (
+        get_dataclass_output_figure(WithAnnotated)
+        ==
+        OutputFigure(
+            extra=None,
+            fields=(
+                OutputField(
+                    type=typing.Annotated[int, 'metadata'],
+                    name='annotated_field',
+                    default=NoDefault(),
+                    accessor=AttrAccessor('annotated_field', is_required=True),
                     metadata=MappingProxyType({}),
                 ),
             ),

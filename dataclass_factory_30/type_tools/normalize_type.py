@@ -207,34 +207,6 @@ class _AnnotatedNormType(_BasicNormType):
         return self._hash
 
 
-_PARAM_SPEC_MARKER_TYPES = (typing.ParamSpecArgs, typing.ParamSpecKwargs) if HAS_PARAM_SPEC else ()
-
-
-def make_norm_type(
-    origin: TypeHint,
-    args: VarTuple[Hashable],
-    *,
-    source: TypeHint
-):
-    if origin == Union:
-        if not all(isinstance(arg, BaseNormType) for arg in args):
-            raise TypeError
-        return _UnionNormType(args, source=source)  # type: ignore
-    if origin == Literal:
-        if not all(type(arg) in [int, bool, str, bytes] or isinstance(type(arg), EnumMeta) for arg in args):
-            raise TypeError
-        return _LiteralNormType(args, source=source)  # type: ignore
-    if HAS_ANNOTATED and origin == typing.Annotated:
-        return _AnnotatedNormType(args, source=source)
-    if isinstance(origin, TypeVar):
-        raise TypeError
-    if HAS_PARAM_SPEC and (
-        isinstance(origin, _PARAM_SPEC_MARKER_TYPES) or isinstance(source, _PARAM_SPEC_MARKER_TYPES)
-    ):
-        raise TypeError
-    return _NormType(origin, args, source=source)
-
-
 class Variance(Enum):
     INVARIANT = 0
     COVARIANT = 1
@@ -345,6 +317,34 @@ class _NormParamSpecKwargs(NormParamSpecMarker, ABC):
     @property
     def origin(self) -> Any:
         return typing.ParamSpecKwargs
+
+
+_PARAM_SPEC_MARKER_TYPES = (typing.ParamSpecArgs, typing.ParamSpecKwargs) if HAS_PARAM_SPEC else ()
+
+
+def make_norm_type(  # noqa: CCR001
+    origin: TypeHint,
+    args: VarTuple[Hashable],
+    *,
+    source: TypeHint
+):
+    if origin == Union:
+        if not all(isinstance(arg, BaseNormType) for arg in args):
+            raise TypeError
+        return _UnionNormType(args, source=source)  # type: ignore
+    if origin == Literal:
+        if not all(type(arg) in [int, bool, str, bytes] or isinstance(type(arg), EnumMeta) for arg in args):
+            raise TypeError
+        return _LiteralNormType(args, source=source)  # type: ignore
+    if HAS_ANNOTATED and origin == typing.Annotated:
+        return _AnnotatedNormType(args, source=source)
+    if isinstance(origin, TypeVar):
+        raise TypeError
+    if HAS_PARAM_SPEC and (
+        isinstance(origin, _PARAM_SPEC_MARKER_TYPES) or isinstance(source, _PARAM_SPEC_MARKER_TYPES)
+    ):
+        raise TypeError
+    return _NormType(origin, args, source=source)
 
 
 NoneType = type(None)

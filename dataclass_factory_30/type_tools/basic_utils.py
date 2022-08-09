@@ -1,8 +1,8 @@
-# pylint: disable=import-outside-toplevel
 import types
-from typing import Generic, Iterable, TypedDict, Union, get_origin
+from typing import Generic, Iterable, Protocol, TypedDict, Union, get_origin, get_type_hints
 
 from ..common import TypeHint
+from ..feature_requirement import HAS_ANNOTATED
 
 TYPED_DICT_MCS = type(types.new_class("_TypedDictSample", (TypedDict,), {}))
 
@@ -33,10 +33,6 @@ def is_new_type(tp) -> bool:
     return has_attrs(tp, ['__supertype__', '__name__'])
 
 
-def is_annotated(tp) -> bool:
-    return has_attrs(tp, ['__metadata__', '__origin__'])
-
-
 def is_typed_dict_class(tp) -> bool:
     return isinstance(tp, TYPED_DICT_MCS)
 
@@ -61,8 +57,6 @@ def is_user_defined_generic(tp) -> bool:
 
 
 def is_protocol(tp):
-    from typing import Protocol
-
     if not isinstance(tp, type):
         return False
 
@@ -72,3 +66,10 @@ def is_protocol(tp):
 def create_union(args: tuple):
     # pylint: disable=unnecessary-dunder-call
     return Union.__getitem__(args)
+
+
+if HAS_ANNOTATED:
+    def get_all_type_hints(obj, globalns=None, localns=None):
+        return get_type_hints(obj, globalns, localns, include_extras=True)
+else:
+    get_all_type_hints = get_type_hints

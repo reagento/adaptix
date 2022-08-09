@@ -1,5 +1,6 @@
 from .basic_utils import (
     create_union,
+    get_all_type_hints,
     is_named_tuple_class,
     is_new_type,
     is_protocol,

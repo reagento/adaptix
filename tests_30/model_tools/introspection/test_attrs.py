@@ -1,3 +1,4 @@
+import typing
 from types import MappingProxyType
 from typing import Any
 
@@ -17,6 +18,7 @@ from dataclass_factory_30.model_tools import (
     get_attrs_input_figure,
     get_attrs_output_figure,
 )
+from tests_30.test_helpers import requires_annotated
 
 pytest.importorskip("attrs")
 
@@ -35,6 +37,7 @@ class NewStyle:
     f: int = field(default=2)
     g: list = field(factory=list)
     h: str = field(default='', metadata={'meta': 'data'})
+    i: 'int' = field(default=3)
 
 
 def test_new_style_input():
@@ -98,6 +101,15 @@ def test_new_style_input():
                     metadata=MappingProxyType({'meta': 'data'}),
                     param_kind=ParamKind.POS_OR_KW,
                     param_name='h',
+                ),
+                InputField(
+                    type=int,
+                    name='i',
+                    default=DefaultValue(3),
+                    is_required=False,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='i',
                 ),
                 InputField(
                     type=int,
@@ -175,6 +187,13 @@ def test_new_style_output():
                     default=DefaultValue(''),
                     accessor=AttrAccessor('h', is_required=True),
                     metadata=MappingProxyType({'meta': 'data'}),
+                ),
+                OutputField(
+                    type=int,
+                    name='i',
+                    default=DefaultValue(3),
+                    accessor=AttrAccessor('i', is_required=True),
+                    metadata=MappingProxyType({}),
                 ),
             ),
         )
@@ -551,3 +570,48 @@ def test_none_attr_custom_init():
             ),
         )
     )
+
+
+@requires_annotated
+def test_annotated():
+    @define
+    class WithAnnotated:
+        a: typing.Annotated[int, 'metadata']
+
+    assert (
+        get_attrs_input_figure(WithAnnotated)
+        ==
+        InputFigure(
+            constructor=WithAnnotated,
+            extra=None,
+            fields=(
+                InputField(
+                    type=typing.Annotated[int, 'metadata'],
+                    name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
+                ),
+            ),
+        )
+    )
+
+    assert (
+        get_attrs_output_figure(WithAnnotated)
+        ==
+        OutputFigure(
+            extra=None,
+            fields=(
+                OutputField(
+                    type=typing.Annotated[int, 'metadata'],
+                    name='a',
+                    default=NoDefault(),
+                    accessor=AttrAccessor('a', is_required=True),
+                    metadata=MappingProxyType({}),
+                ),
+            ),
+        )
+    )
+

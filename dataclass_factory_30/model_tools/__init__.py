@@ -38,5 +38,4 @@ from .introspection import (
     get_named_tuple_output_figure,
     get_typed_dict_input_figure,
     get_typed_dict_output_figure,
-    params_to_input_figure,
 )

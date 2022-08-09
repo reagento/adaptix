@@ -1,3 +1,4 @@
+import typing
 from types import MappingProxyType
 from typing import Any
 
@@ -13,6 +14,7 @@ from dataclass_factory_30.model_tools import (
     ParamKind,
     get_class_init_input_figure,
 )
+from tests_30.test_helpers import requires_annotated
 
 
 class Valid1:
@@ -175,3 +177,30 @@ def test_var_arg():
 
     with pytest.raises(IntrospectionError):
         get_class_init_input_figure(HasVarArg)
+
+
+@requires_annotated
+def test_annotated():
+    class WithAnnotated:
+        def __init__(self, a: typing.Annotated[int, 'metadata']):
+            pass
+
+    assert (
+        get_class_init_input_figure(WithAnnotated)
+        ==
+        InputFigure(
+            constructor=WithAnnotated,
+            extra=None,
+            fields=(
+                InputField(
+                    type=typing.Annotated[int, 'metadata'],
+                    name='a',
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
+                ),
+            ),
+        )
+    )
