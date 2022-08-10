@@ -22,6 +22,8 @@ flake8-noqa==1.2.8
 radon==5.1.0
 dlint==0.12.0
 
+astpath[xpath]==0.9.0
+
 # flake8-docstrings
 # pycodestyle
 # darglint
