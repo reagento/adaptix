@@ -13,6 +13,7 @@ remove_redundant_aliases = true
 [tool.pytest.ini_options]
 python_classes = 'WeDoNotUseClassTestCase'
 testpaths = 'tests_30'
+filterwarnings = ['ignore::dataclass_factory_30.model_tools.introspection.TypedDictAt38Warning']
 
 [tool.bandit]
 skips = ['B102']

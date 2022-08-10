@@ -1,5 +1,6 @@
 # pylint: disable=import-outside-toplevel
 import inspect
+import warnings
 from dataclasses import MISSING as DC_MISSING, Field as DCField, fields as dc_fields, is_dataclass, replace
 from inspect import Parameter, Signature
 from types import MappingProxyType
@@ -140,12 +141,21 @@ def get_named_tuple_output_figure(tp) -> OutputFigure:
 # =====================
 
 
+class TypedDictAt38Warning(UserWarning):
+    def __str__(self):
+        return (
+            "Runtime introspection of TypedDict at python3.8 does not support inheritance."
+            " Please, update python or consider limitations suppressing this warning"
+        )
+
+
 if HAS_PY_39:
     def _td_make_requirement_determinant(tp):
         required_fields = tp.__required_keys__
         return lambda name: name in required_fields
 else:
     def _td_make_requirement_determinant(tp):
+        warnings.warn(TypedDictAt38Warning(), stacklevel=3)
         is_total = tp.__total__
         return lambda name: is_total
 
