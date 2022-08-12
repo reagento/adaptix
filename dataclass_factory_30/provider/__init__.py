@@ -6,6 +6,7 @@ from .concrete_provider import (
     DatetimeFormatProvider,
     IsoFormatProvider,
     NoneProvider,
+    RegexPatternProvider,
     TimedeltaProvider,
 )
 from .definitions import (

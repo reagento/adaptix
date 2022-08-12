@@ -56,3 +56,8 @@ class ExcludedTypeParseError(ParseError):
 @dataclass(eq=False)
 class UnionParseError(ParseError):
     sub_errors: List[ParseError]
+
+
+@dataclass(eq=False)
+class ValueParseError(MsgError):
+    pass

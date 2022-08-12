@@ -6,7 +6,7 @@ from typing import Type, TypeVar, Union
 
 from ..common import Parser, Serializer
 from ..type_tools import normalize_type
-from .definitions import ParseError
+from .definitions import ParseError, TypeParseError, ValueParseError
 from .essential import Mediator, Request
 from .provider_basics import ExactTypeRC, foreign_parser
 from .provider_template import ParserProvider, ProviderWithRC, SerializerProvider, for_type
@@ -123,3 +123,31 @@ class BytearrayBase64Provider(ParserProvider, Base64SerializerMixin):
             return bytearray(bytes_parser(data))
 
         return bytearray_base64_parser
+
+
+def _regex_serializer(data: re.Pattern):
+    return data.pattern
+
+
+@for_type(re.Pattern)
+class RegexPatternProvider(ParserProvider, SerializerProvider):
+    def __init__(self, flags: re.RegexFlag = re.RegexFlag(0)):
+        self.flags = flags
+
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+        flags = self.flags
+        re_compile = re.compile
+
+        def regex_parser(data):
+            if not isinstance(data, str):
+                raise TypeParseError(str)
+
+            try:
+                return re_compile(data, flags)
+            except re.error as e:
+                raise ValueParseError(str(e))
+
+        return regex_parser
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+        return _regex_serializer

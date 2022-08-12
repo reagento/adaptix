@@ -37,6 +37,7 @@ from ..provider import (
     NoneProvider,
     ParserRequest,
     Provider,
+    RegexPatternProvider,
     Request,
     SerializerRequest,
     TimedeltaProvider,
@@ -114,6 +115,7 @@ class BuiltinFactory(OperatingFactory, ABC):
         UnionProvider(),
         IterableProvider(),
         DictProvider(),
+        RegexPatternProvider(),
 
         ABCProxy(Mapping, dict),
         ABCProxy(MutableMapping, dict),

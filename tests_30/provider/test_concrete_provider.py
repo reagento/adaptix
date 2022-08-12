@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, time, timedelta, timezone
 
 from dataclass_factory_30.provider import (
@@ -8,9 +9,11 @@ from dataclass_factory_30.provider import (
     NoneProvider,
     ParseError,
     ParserRequest,
+    RegexPatternProvider,
     SerializerRequest,
     TimedeltaProvider,
 )
+from dataclass_factory_30.provider.definitions import TypeParseError, ValueParseError
 from tests_30.test_helpers import TestFactory, parametrize_bool, raises_instance
 
 
@@ -248,3 +251,35 @@ def test_bytearray_provider(strict_coercion, debug_path):
     )
 
     assert serializer(bytearray(b'abcd')) == 'YWJjZA=='
+
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_regex_provider(strict_coercion, debug_path):
+    factory = TestFactory(
+        recipe=[RegexPatternProvider()]
+    )
+
+    parser = factory.provide(
+        ParserRequest(
+            type=re.Pattern,
+            strict_coercion=strict_coercion,
+            debug_path=debug_path,
+        )
+    )
+
+    assert parser(r'\w') == re.compile(r'\w')
+
+    raises_instance(
+        TypeParseError(str),
+        lambda: parser(10)
+    )
+    raises_instance(
+        ValueParseError("bad escape (end of pattern) at position 0"),
+        lambda: parser('\\')
+    )
+
+    serializer = factory.provide(
+        SerializerRequest(type=re.Pattern, debug_path=debug_path)
+    )
+
+    assert serializer(re.compile(r'\w')) == r'\w'
