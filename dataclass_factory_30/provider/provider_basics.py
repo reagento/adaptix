@@ -19,18 +19,6 @@ class RequestChecker(ABC):
     def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         """Raise CannotProvide if the request does not meet the conditions"""
 
-    def __or__(self, other: 'RequestChecker') -> 'RequestChecker':
-        return OrRequestChecker([self, other])
-
-    def __and__(self, other: 'RequestChecker') -> 'RequestChecker':
-        return AndRequestChecker([self, other])
-
-    def __xor__(self, other: 'RequestChecker') -> 'RequestChecker':
-        return XorRequestChecker(self, other)
-
-    def __neg__(self) -> 'RequestChecker':
-        return NegRequestChecker(self)
-
 
 class OrRequestChecker(RequestChecker):
     def __init__(self, request_checkers: Iterable[RequestChecker]):
