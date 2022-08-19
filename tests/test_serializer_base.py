@@ -18,7 +18,6 @@ class D:
     b: int = field(init=False, default=1)
     c: str = "def_value"
 
-
 @dataclass
 class ListD:
     data: List[D]

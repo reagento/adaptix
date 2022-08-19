@@ -308,7 +308,6 @@ def get_literal_parser(factory, values: Sequence[Any]) -> Parser:
 
     return literal_parser
 
-
 def get_lazy_parser(factory, class_: Type) -> Parser:
     def lazy_parser(data):
         return factory.load(data, class_)
