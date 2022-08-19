@@ -10,6 +10,7 @@ from operator import attrgetter
 from pathlib import Path
 from typing import Type, Dict, Any, Generic, cast, Callable
 from uuid import UUID
+from re import Pattern, compile as regex_compile
 
 from .common import T, AbstractFactory, Parser
 from .schema import Schema
@@ -35,6 +36,11 @@ try:
     COMMON_SCHEMAS[time] = isotime_schema
 except AttributeError:
     pass
+
+COMMON_SCHEMAS[Pattern] = Schema[Pattern](
+    parser=regex_compile,
+    serializer=lambda x: x.pattern
+)
 
 timedelta_schema = Schema[timedelta](
     parser=lambda x: timedelta(seconds=x),

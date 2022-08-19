@@ -6,7 +6,6 @@ from typing import (
     List, Optional, Sequence, Set, Tuple, Type, Union, Iterable,
     MutableSequence, MutableSet, Reversible,
 )
-from re import Pattern, compile as regex_compile
 
 from .common import AbstractFactory, Parser, T
 from .exceptions import InvalidFieldError, UnionParseError, UnknownFieldsError
@@ -345,8 +344,6 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         return get_literal_parser(factory, cls.__values__)
     if is_optional(cls):
         return get_optional_parser(factory.parser(cls.__args__[0]))
-    if cls is Pattern:
-        return regex_compile
     if cls in (str, bytearray, bytes):
         return get_parser_with_check(cls)
     if cls in (int, float, complex, bool):
