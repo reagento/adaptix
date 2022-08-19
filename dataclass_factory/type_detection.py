@@ -1,8 +1,9 @@
+from collections import defaultdict
 from enum import Enum
 import inspect
 from typing import (
     Any, Collection, Dict, Generic, List, Optional, Tuple, Type, TypeVar,
-    Union, get_type_hints, Iterable,
+    Union, get_type_hints, Iterable, DefaultDict,
 )
 
 LITERAL_TYPES: List[Any] = []
@@ -21,6 +22,11 @@ try:
     LITERAL_TYPES.append(CompatLiteral)
 except ImportError:
     CompatLiteral = None
+
+try:
+    from types import UnionType  # type: ignore
+except ImportError:
+    UnionType = None  # type: ignore
 
 try:
     from typing import TypedDict as PyTypedDict  # type: ignore
@@ -129,7 +135,10 @@ def is_union(type_: Type) -> bool:
     try:
         return issubclass_safe(type_.__origin__, Union)
     except AttributeError:
-        return False
+        pass
+    if UnionType is not None:
+        return isinstance(type_, UnionType)
+    return False
 
 
 def is_any(type_: Type) -> bool:
@@ -151,7 +160,7 @@ def is_generic(type_: Type) -> bool:
 
 
 def is_none(type_: Type) -> bool:
-    return type_ is type(None)  # noqa E721 because of https://github.com/python/mypy/issues/3060
+    return type_ in (None, type(None))  # noqa E721 because of https://github.com/python/mypy/issues/3060
 
 
 def is_enum(cls: Type) -> bool:
@@ -182,7 +191,7 @@ def is_literal36(cls) -> bool:
 
 def is_dict(cls) -> bool:
     try:
-        dicts = (dict, Dict)
+        dicts = (dict, Dict, defaultdict, DefaultDict)
         return cls in dicts or cls.__origin__ in dicts
     except AttributeError:
         return False

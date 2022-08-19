@@ -1,3 +1,4 @@
+from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -112,3 +113,18 @@ class TestSerializer(unittest.TestCase):
     def test_enum(self):
         self.assertEqual(self.factory.dump(State.one), "1")
         self.assertEqual(self.factory.dump(State.two, State), "two")
+
+    def test_defaultdict(self):
+        data = defaultdict()
+        data["x"]="y"
+        self.assertEqual(self.factory.dump(data), {"x": "y"})
+
+    def test_none(self):
+        @dataclass
+        class Data:
+            x: None
+        self.assertEqual(self.factory.dump(Data(None)), {"x": None})
+        with self.assertRaises(ValueError):
+            self.factory.dump(Data("xxx"))
+        with self.assertRaises(ValueError):
+            self.factory.serializer(None)("xxx")

@@ -11,7 +11,7 @@ from .fields import (
 )
 from .generics import fix_generic_alias
 from .path_utils import CleanKey, CleanPath, init_structure
-from .schema import RuleForUnknown, Schema, Unknown
+from .schema import Schema, Unknown
 from .type_detection import (
     hasargs, is_any, is_iterable, is_dict, is_enum, is_generic_concrete,
     is_newtype, is_optional, is_tuple, is_type_var, is_typeddict, is_union,
@@ -30,16 +30,25 @@ def unpack_fields(dest, fields):
         dest.update(dest.pop(f, {}))
 
 
-def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
-                           schema: Schema[T],
-                           fields: Sequence[FieldInfo],
-                           getter: Callable[[Any, Any], Any],
-                           unknown: RuleForUnknown) -> Serializer[T]:
+def get_complex_serializer(
+    factory: AbstractFactory,  # noqa C901,CCR001
+    schema: Schema[T],
+    fields: Sequence[FieldInfo],
+    getter: Callable[[Any, Any], Any],
+    omit_missing: bool,
+) -> Serializer[T]:
+    """
+    :param getter: functions used to get data for each field (attribute, key and so on)
+    :param omit_missing: omit special MISSING values retrieved from getter. Is applied when all defaults are MISSING.
+    """
     has_default = schema.omit_default and any(f.default != MISSING for f in fields)
+    if omit_missing:
+        has_default = has_default or all(f.default == MISSING for f in fields)
     field_info = tuple(
         (f.field_name, factory.serializer(f.type), f.data_name, f.default)
         for f in fields
     )
+    unknown=schema.unknown
     if isinstance(unknown, Unknown):
         unpack_unknown = False
     elif isinstance(unknown, str):
@@ -52,7 +61,10 @@ def get_complex_serializer(factory: AbstractFactory,  # noqa C901,CCR001
         paths = tuple(to_path(f.data_name) for f in fields)
         pickled = dumps(init_structure(paths))
         if has_default:
-            raise ValueError("Cannot use `omit_default` option with flattening schema")
+            if schema.omit_default:
+                raise ValueError("Cannot use `omit_default` option with flattening schema")
+            else:
+                raise ValueError("Cannot omit missing values with flattening schema")
 
         def serialize(data):
             container, field_containers = loads(pickled)
@@ -118,6 +130,11 @@ def get_vars_serializer(factory) -> Serializer:
     return vars_serializer
 
 
+def serialize_none(data: Any) -> None:
+    if data is not None:
+        raise ValueError("None expected")
+
+
 def stub_serializer(data: T) -> T:
     return data
 
@@ -171,8 +188,8 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
     class_ = fix_generic_alias(class_)
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
         return stub_serializer
-    if class_ is Pattern:
-        return regex_serializer
+    if is_none(class_):
+        return serialize_none
     if is_literal(class_) or is_literal36(class_) or is_none(class_):
         return stub_serializer
     if is_newtype(class_):
@@ -185,7 +202,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             schema,
             get_dataclass_fields(schema, class_),
             getattr,
-            schema.unknown,
+            False,
         )
     if is_namedtuple(class_):
         return get_complex_serializer(
@@ -193,16 +210,25 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             schema,
             get_namedtuple_fields(schema, class_),
             getattr,
-            schema.unknown,
+            False,
         )
     if is_typeddict(class_) or (is_generic_concrete(class_) and is_typeddict(class_.__origin__)):
-        return get_complex_serializer(
-            factory,
-            schema,
-            get_typeddict_fields(schema, class_),
-            getitem,
-            schema.unknown,
-        )
+        if class_.__total__:
+            return get_complex_serializer(
+                factory,
+                schema,
+                get_typeddict_fields(schema, class_),
+                getitem,
+                False,
+            )
+        else:
+            return get_complex_serializer(
+                factory,
+                schema,
+                get_typeddict_fields(schema, class_),
+                lambda obj, key: obj.get(key, MISSING),
+                True,
+            )
     if is_any(class_):
         return get_lazy_serializer(factory)
     if class_ in (str, bytearray, bytes, int, float, complex, bool):
@@ -215,10 +241,17 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
     if is_enum(class_):
         return attrgetter("value")
     if is_union(class_):
-        # create serializers:
-        for type_ in class_.__args__:
-            factory.serializer(type_)
-        return get_lazy_serializer(factory)
+        # also, check if Union can be converted to Optional[...] or Optional[Union[...]]
+        serializers = tuple(factory.serializer(x) for x in class_.__args__ if not is_none(x))
+        if len(serializers) == 0:
+            return serialize_none
+        if len(serializers) == 1:
+            serializer = serializers[0]
+        else:
+            serializer = get_lazy_serializer(factory)
+        if len(serializers) < len(class_.__args__):
+            return get_optional_serializer(serializer)
+        return serializer
     if is_tuple(class_):
         if not hasargs(class_):
             return get_collection_any_serializer()

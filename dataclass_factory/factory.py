@@ -2,7 +2,7 @@ from copy import copy
 from typing import Any, Dict, Optional, Type, TypeVar
 
 from .common import AbstractFactory, Parser, Serializer
-from .jsonschema import create_schema
+from .jsonschema import create_schema, need_ref
 from .naming import NameStyle
 from .parsers import create_parser, get_lazy_parser
 from .schema import merge_schema, Schema, Unknown
@@ -64,10 +64,13 @@ class Factory(AbstractFactory):
     """
     Facade class for all data conversion operations
     """
-    def __init__(self,
-                 default_schema: Optional[Schema] = None,
-                 schemas: Optional[Dict[Type, Schema]] = None,
-                 debug_path: bool = False):
+    def __init__(
+        self,
+        default_schema: Optional[Schema] = None,
+        schemas: Optional[Dict[Type, Schema]] = None,
+        debug_path: bool = False,
+        json_schema_definitions_path: str = "/definitions",
+    ):
         """
 
         :param default_schema: schema used if no specific schema is provided
@@ -76,6 +79,9 @@ class Factory(AbstractFactory):
                         will be used if they are not set in more specific one
         :param debug_path: show path to broken field in parsing exceptions
                            (InvalidFieldError will be raised)
+        :param json_schema_definitions_path: path to definitions of jsonschemas
+                       in overall schema, used by $ref
+
         """
         self.debug_path = debug_path
         self.default_schema = default_schema
@@ -87,6 +93,7 @@ class Factory(AbstractFactory):
             })
         self.json_schemas: Dict[str, Dict] = {}
         self.json_schema_names: Dict[str, Type] = {}
+        self.json_schema_definitions_path = json_schema_definitions_path
 
     def schema(self, class_: Type[T]) -> Schema[T]:
         """
@@ -151,7 +158,6 @@ class Factory(AbstractFactory):
                              f"{self.json_schema_names[name]}. "
                              f"Please, specify another name for {class_} "
                              f"in schema or rename class itself")
-        schema.name = name
         stacked_factory.json_schema(class_)
         return name
 
@@ -169,11 +175,10 @@ class Factory(AbstractFactory):
         Note: it is filled only with schemas which are requested at least
         once and their references
         """
+
         return {
-            "definitions": {
-                k: v
-                for k, v in self.json_schemas.items()
-            },
+            k: v
+            for k, v in self.json_schemas.items()
         }
 
     def _json_schema_with_stack(self, class_: Type[T], stacked_factory: StackedFactory) -> Dict[str, Any]:
@@ -181,8 +186,12 @@ class Factory(AbstractFactory):
         name = self._json_schema_ref_name_with_stack(class_, stacked_factory)
         if name in self.json_schemas:
             return self.json_schemas[name]
-        json_schema = create_schema(stacked_factory, schema, class_)
-        self.json_schemas[name] = json_schema
+        json_schema = create_schema(
+            stacked_factory, schema, class_, self.json_schema_definitions_path,
+        )
+        # we store schema only fot those types that can be referenced
+        if need_ref(class_):
+            self.json_schemas[name] = json_schema
         return json_schema
 
     def serializer(self, class_: Type[T]) -> Serializer[T]:
