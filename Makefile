@@ -8,6 +8,9 @@ SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = docs
 BUILDDIR      = build
 
+L_RED = \033[1;31m
+NC = \033[0m
+
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
@@ -40,4 +43,5 @@ setup:
 	pre-commit install
 
 deps-compile:
-	for file in requirements/raw/*; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q; done
+	@for file in requirements/raw/*; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q; done
+	@echo "\n     ${L_RED}DO NOT FORGET TO FIX ABSOLUTE PATHS AT COMPILED FILES${NC}\n"

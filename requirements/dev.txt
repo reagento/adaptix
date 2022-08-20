@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements/dev.txt requirements/raw/dev.txt
 #
--e file:///home/pavel/PycharmProjects/new_dataclass_factory/tests_helpers
+-e ./tests_helpers
     # via -r requirements/raw/test_extra_none.txt
 alabaster==0.7.12
     # via sphinx

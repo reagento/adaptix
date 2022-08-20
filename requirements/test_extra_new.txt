@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements/test_extra_new.txt requirements/raw/test_extra_new.txt
 #
--e file:///home/pavel/PycharmProjects/new_dataclass_factory/tests_helpers
+-e ./tests_helpers
     # via -r requirements/raw/test_extra_none.txt
 attrs==21.4.0
     # via

@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements/lint.txt requirements/raw/lint.txt
 #
--e file:///home/pavel/PycharmProjects/new_dataclass_factory/tests_helpers
+-e ./tests_helpers
     # via -r requirements/raw/test_extra_none.txt
 astpath[xpath]==0.9.0
     # via -r requirements/raw/lint.txt
