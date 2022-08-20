@@ -1,6 +1,35 @@
 [build-system]
-requires = ["wheel", "setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ['wheel==0.37.1', 'setuptools==65.1.0']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'dataclass_factory'
+version = '3.0.0-alpha.1'
+description = 'An utility class for creating instances of dataclasses'
+readme = 'README.md'
+requires-python = '>=3.8'
+
+classifiers = [
+    'Operating System :: OS Independent',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: Apache Software License',
+    'Programming Language :: Python :: 3',
+]
+
+[project.urls]
+'Homepage' = 'https://github.com/tishka17/dataclass_factory'
+'Bug Tracker' = 'https://github.com/tishka17/dataclass_factory/issues'
+
+[tool.setuptools]
+packages = ['dataclass_factory', 'dataclass_factory_30']
+
+[tool.setuptools.package-data]
+dataclass_factory = ['py.typed']
+dataclass_factory_30 = ['py.typed']
+
+[[project.authors]]
+name = 'A. Tikhonov'
+email = '17@itishka.org'
 
 
 [tool.isort]
@@ -12,7 +41,7 @@ remove_redundant_aliases = true
 
 [tool.pytest.ini_options]
 python_classes = 'WeDoNotUseClassTestCase'
-testpaths = 'tests_30'
+testpaths = ['tests_30']
 filterwarnings = ['ignore::dataclass_factory_30.model_tools.introspection.TypedDictAt38Warning']
 
 [tool.bandit]

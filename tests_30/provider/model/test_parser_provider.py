@@ -43,8 +43,7 @@ from dataclass_factory_30.provider.model import (
     InpNoneCrown,
     InputNameMapping,
 )
-from tests_30.provider.model.common import DebugCtx
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
+from tests_helpers import DebugCtx, TestFactory, parametrize_bool, raises_path
 
 
 @dataclass

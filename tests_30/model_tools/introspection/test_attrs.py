@@ -18,7 +18,7 @@ from dataclass_factory_30.model_tools import (
     get_attrs_input_figure,
     get_attrs_output_figure,
 )
-from tests_30.test_helpers import requires_annotated
+from tests_helpers import requires_annotated
 
 pytest.importorskip("attrs")
 

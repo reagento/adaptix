@@ -28,7 +28,7 @@ from dataclass_factory_30.provider.model.crown_definitions import (
     OutputNameMapping,
     OutputNameMappingRequest,
 )
-from tests_30.test_helpers import TestFactory
+from tests_helpers import TestFactory
 
 
 def check_name_mapper(mapper: NameMapper, source: Set[str], target: Set[str]):

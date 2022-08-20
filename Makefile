@@ -36,4 +36,5 @@ cov:
 setup:
 	pip install -e .
 	pip install -r requirements.txt
+	mypy --install-types
 	pre-commit install

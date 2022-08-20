@@ -8,7 +8,7 @@ from dataclass_factory_30.provider import (
     ParserRequest,
     SerializerRequest,
 )
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
+from tests_helpers import TestFactory, parametrize_bool, raises_path
 
 
 class MyEnum(Enum):

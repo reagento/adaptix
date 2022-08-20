@@ -14,7 +14,7 @@ from dataclass_factory_30.model_tools import (
     ParamKind,
     get_class_init_input_figure,
 )
-from tests_30.test_helpers import requires_annotated
+from tests_helpers import requires_annotated
 
 
 class Valid1:

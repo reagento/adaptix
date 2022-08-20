@@ -56,7 +56,7 @@ from dataclass_factory_30.type_tools.normalize_type import (
     _NormType,
     make_norm_type,
 )
-from tests_30.test_helpers import requires_annotated, requires_param_spec, requires_type_alias
+from tests_helpers import requires_annotated, requires_param_spec, requires_type_alias
 
 MISSING = object()
 

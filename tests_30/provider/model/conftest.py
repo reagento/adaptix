@@ -1,7 +1,7 @@
 import pytest
 
 from dataclass_factory_30.provider.model.basic_gen import CodeGenAccumulator
-from tests_30.provider.model.common import DebugCtx
+from tests_helpers import DebugCtx
 
 
 @pytest.fixture

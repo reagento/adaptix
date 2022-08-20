@@ -40,8 +40,7 @@ from dataclass_factory_30.provider.model import (
 )
 from dataclass_factory_30.struct_path import Attr, PathElement, PathElementMarker
 from dataclass_factory_30.utils import SingletonMeta
-from tests_30.provider.model.common import DebugCtx
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
+from tests_helpers import DebugCtx, TestFactory, parametrize_bool, raises_path
 
 
 def field(name: str, accessor: Accessor):

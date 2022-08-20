@@ -1,4 +1,4 @@
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, is_dataclass, dataclass
 from typing import Any, Callable, List, Optional, Type, TypeVar, Union
 
 import pytest
@@ -12,6 +12,7 @@ from dataclass_factory_30.feature_requirement import (
     PythonVersionRequirement,
 )
 from dataclass_factory_30.provider import Provider
+from dataclass_factory_30.provider.model.basic_gen import CodeGenAccumulator
 from dataclass_factory_30.struct_path import get_path
 
 T = TypeVar("T")
@@ -81,3 +82,16 @@ def parametrize_bool(param: str, *params: str):
         return func
 
     return decorator
+
+
+@dataclass
+class DebugCtx:
+    accum: CodeGenAccumulator
+
+    @property
+    def source(self):
+        return self.accum.list[-1][1].source
+
+    @property
+    def source_namespace(self):
+        return self.accum.list[-1][1].namespace

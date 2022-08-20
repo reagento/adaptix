@@ -8,7 +8,7 @@ from dataclass_factory_30.facade import parser, serializer
 from dataclass_factory_30.factory.operating_factory import NoSuitableProvider
 from dataclass_factory_30.provider import CoercionLimiter, IterableProvider, ParserRequest, SerializerRequest
 from dataclass_factory_30.provider.definitions import ExcludedTypeParseError, TypeParseError
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
+from tests_helpers import TestFactory, parametrize_bool, raises_path
 
 
 @pytest.fixture

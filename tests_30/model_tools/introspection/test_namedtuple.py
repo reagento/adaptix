@@ -15,7 +15,7 @@ from dataclass_factory_30.model_tools import (
     get_named_tuple_input_figure,
     get_named_tuple_output_figure,
 )
-from tests_30.test_helpers import requires_annotated
+from tests_helpers import requires_annotated
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')

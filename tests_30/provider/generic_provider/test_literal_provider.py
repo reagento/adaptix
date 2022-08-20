@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 
 from dataclass_factory_30.provider import LiteralProvider, ParseError, ParserRequest
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
+from tests_helpers import TestFactory, parametrize_bool, raises_path
 
 
 @pytest.fixture

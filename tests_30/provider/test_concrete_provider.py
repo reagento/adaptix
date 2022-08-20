@@ -14,7 +14,7 @@ from dataclass_factory_30.provider import (
     TimedeltaProvider,
 )
 from dataclass_factory_30.provider.definitions import TypeParseError, ValueParseError
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
+from tests_helpers import TestFactory, parametrize_bool, raises_path
 
 
 def check_any_dt(parser):
