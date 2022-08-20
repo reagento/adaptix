@@ -12,7 +12,7 @@ BUILDDIR      = build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help Makefile lint test-all test cov setup
+.PHONY: help Makefile lint test-all test cov setup deps-compile
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
@@ -35,6 +35,9 @@ cov:
 
 setup:
 	pip install -e .
-	pip install -r requirements.txt
+	pip install -r requirements/dev.txt
 	mypy --install-types
 	pre-commit install
+
+deps-compile:
+	for file in requirements/raw/*; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q; done

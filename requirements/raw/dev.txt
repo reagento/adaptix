@@ -1,0 +1,8 @@
+sphinx
+sphinx_rtd_theme
+tox
+coverage
+pip-tools
+
+-r lint.txt
+-r test_extra_new.txt

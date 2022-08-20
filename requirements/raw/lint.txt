@@ -1,4 +1,4 @@
--r requirements_test_extra_new.txt
+-r test_extra_new.txt
 
 pre-commit==2.20.0
 bandit==1.7.4

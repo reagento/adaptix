@@ -1,5 +1,5 @@
 from dataclasses import asdict, is_dataclass, dataclass
-from typing import Any, Callable, List, Optional, Type, TypeVar, Union
+from typing import List, Type, TypeVar, Union
 
 import pytest
 

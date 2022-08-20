@@ -1,2 +1,0 @@
--r requirements_test.txt
-attrs==19.2.0
