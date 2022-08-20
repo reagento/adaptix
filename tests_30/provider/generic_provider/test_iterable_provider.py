@@ -8,7 +8,7 @@ from dataclass_factory_30.facade import parser, serializer
 from dataclass_factory_30.factory.operating_factory import NoSuitableProvider
 from dataclass_factory_30.provider import CoercionLimiter, IterableProvider, ParserRequest, SerializerRequest
 from dataclass_factory_30.provider.definitions import ExcludedTypeParseError, TypeParseError
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_instance
+from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
 
 
 @pytest.fixture
@@ -75,7 +75,7 @@ def test_parsing(factory, strict_coercion, debug_path):
     assert parser(("a", "b", "c")) == ["a", "b", "c"]
     assert parser(deque(["a", "b", "c"])) == ["a", "b", "c"]
 
-    raises_instance(
+    raises_path(
         TypeParseError(Iterable),
         lambda: parser(123)
     )
@@ -86,12 +86,12 @@ def test_parsing(factory, strict_coercion, debug_path):
         assert parser(collections.ChainMap({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
 
     if strict_coercion:
-        raises_instance(
+        raises_path(
             ExcludedTypeParseError(Mapping),
             lambda: parser({"a": 0, "b": 0, "c": 0})
         )
 
-        raises_instance(
+        raises_path(
             ExcludedTypeParseError(Mapping),
             lambda: parser(collections.ChainMap({"a": 0, "b": 0, "c": 0}))
         )
@@ -103,13 +103,13 @@ def test_parsing(factory, strict_coercion, debug_path):
             path1 = []
             path2 = []
 
-        raises_instance(
+        raises_path(
             TypeParseError(str),
             lambda: parser([1, 2, 3]),
             path=path1,
         )
 
-        raises_instance(
+        raises_path(
             TypeParseError(str),
             lambda: parser(["1", 2, 3]),
             path=path2,

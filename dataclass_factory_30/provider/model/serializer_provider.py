@@ -10,6 +10,7 @@ from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
     compile_closure_with_globals_capturing,
+    get_extra_targets_at_crown,
     get_optional_fields_at_list_crown,
     get_skipped_fields,
     strip_figure,
@@ -74,6 +75,12 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
         if optional_fields_at_list_crown:
             raise ValueError(
                 f"Optional fields {optional_fields_at_list_crown} are found at list crown"
+            )
+
+        extra_targets_at_crown = get_extra_targets_at_crown(figure, name_mapping)
+        if extra_targets_at_crown:
+            raise ValueError(
+                f"Extra targets {extra_targets_at_crown} are found at crown"
             )
 
         return strip_figure(figure, get_skipped_fields(figure, name_mapping))

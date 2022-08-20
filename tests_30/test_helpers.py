@@ -1,5 +1,5 @@
 from dataclasses import asdict, is_dataclass
-from typing import List, TypeVar, Union
+from typing import Any, Callable, List, Optional, Type, TypeVar, Union
 
 import pytest
 
@@ -48,17 +48,20 @@ class TestFactory(OperatingFactory):
     provide = OperatingFactory._facade_provide
 
 
-def raises_instance(exp_exc: Exception, func, *, path: Union[list, None, EllipsisType] = Ellipsis):
-    with pytest.raises(type(exp_exc)) as exc:
+def raises_path(exc: Union[Type[Exception], Exception], func, *, path: Union[list, None, EllipsisType] = Ellipsis):
+    exc_type = exc if isinstance(exc, type) else type(exc)
+
+    with pytest.raises(exc_type) as exc_info:
         func()
 
-    if is_dataclass(exp_exc):
-        assert asdict(exc.value) == asdict(exp_exc)  # noqa
-    else:
-        raise TypeError("Can compare only dataclass instances")
+    if not isinstance(exc, type):
+        if is_dataclass(exc):
+            assert asdict(exc_info.value) == asdict(exc)  # noqa
+        else:
+            raise TypeError("Can compare only dataclass instances")
 
     if not isinstance(path, EllipsisType):
-        extracted_path = get_path(exc.value)
+        extracted_path = get_path(exc_info.value)
         if path is None:
             assert extracted_path is None
         else:

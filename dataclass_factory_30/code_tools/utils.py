@@ -1,5 +1,5 @@
 import builtins
-from typing import Optional
+from typing import Any, Dict, Optional
 
 _BUILTINS_DICT = {
     getattr(builtins, name): (getattr(builtins, name), name)
@@ -70,3 +70,19 @@ def _get_complex_literal_expr(obj: object) -> Optional[str]:
         return "{" + body + "}"
 
     return None
+
+
+_CLS_TO_LITERAL_FACTORY: Dict[Any, str] = {
+    list: '[]',
+    dict: '{}',
+    tuple: '()',
+    str: '""',
+    bytes: 'b""',
+}
+
+
+def get_literal_factory(obj: object) -> Optional[str]:
+    try:
+        return _CLS_TO_LITERAL_FACTORY.get(obj, None)
+    except TypeError:
+        return None

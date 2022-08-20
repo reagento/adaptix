@@ -29,6 +29,10 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         for field_name, serializer in self._field_serializers.items():
             ctx_namespace.add(self._serializer(name_to_fields[field_name]), serializer)
 
+        if any(field.is_optional for field in self._figure.fields):
+            builder(f"{binder.opt_fields} = {{}}")
+            builder.empty_line()
+
         for field in self._figure.fields:
             if not self._is_extra_target(field):
                 self._gen_field_extraction(
@@ -127,7 +131,9 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         serializer = self._serializer(field)
         raw_field = self._raw_field(field)
 
-        on_access_ok_stmt = Template(on_access_ok).substitute(expr=f"{serializer}({raw_field})")
+        on_access_ok_stmt = Template(on_access_ok).substitute(
+            expr=f"{serializer}({raw_field})"
+        )
 
         access_error = field.accessor.access_error
         access_error_var = get_literal_expr(access_error)
@@ -152,7 +158,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
             builder += f"""
                 try:
                     {raw_field} = {raw_access_expr}
-                except {field.accessor.access_error}:
+                except {access_error_var}:
                     {on_access_error}
                 else:
                     {on_access_ok_stmt}
@@ -220,17 +226,18 @@ class BuiltinOutputExtractionGen(CodeGenerator):
 
         elif all(field.is_required for field in name_to_fields.values()):
             for field_name in self._extra_targets:
-                # pylint: disable=cell-var-from-loop
-                # closure lifetime bound to one loop iteration
                 field = name_to_fields[field_name]
 
                 self._gen_required_field_extraction(
                     builder, binder, ctx_namespace, field,
-                    on_access_ok=f"{binder.field(field_name)} = $expr",
+                    on_access_ok=f"{binder.field(field)} = $expr",
                 )
 
             builder += f'{binder.extra} = {{'
-            builder <<= ", ".join("**" + binder.field(field_name) for field_name in self._extra_targets)
+            builder <<= ", ".join(
+                "**" + binder.field(name_to_fields[field_name])
+                for field_name in self._extra_targets
+            )
             builder <<= '}'
         else:
             extra_stack = self._get_extra_stack_name()

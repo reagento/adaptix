@@ -12,7 +12,7 @@ class Attr(PathElementMarker):
     name: str
 
     def __repr__(self):
-        return f"{type(self)}({self.name!r})"
+        return f"{type(self).__name__}({self.name!r})"
 
 
 # PathElement describes how to extract next object from the source.

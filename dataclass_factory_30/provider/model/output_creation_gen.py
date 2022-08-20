@@ -1,7 +1,8 @@
 import contextlib
+from string import Template
 from typing import Dict, NamedTuple, Optional
 
-from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr
+from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr, get_literal_factory
 from ...model_tools import DefaultFactory, DefaultValue, OutputField
 from .crown_definitions import (
     CrownPathElem,
@@ -51,8 +52,8 @@ class GenState:
         yield
         self._path = past
 
-    def crown_var(self, key: CrownPathElem) -> str:
-        return self._crown_var_for_path(self._path + (key,))
+    def crown_var(self) -> str:
+        return self._crown_var_for_path(self._path)
 
     def crown_var_self(self) -> str:
         return self._crown_var_for_path(self._path)
@@ -77,9 +78,9 @@ class GenState:
         return 'sieve_' + self._get_path_idx(path)
 
 
-class LinkExpr(NamedTuple):
+class ElementExpr(NamedTuple):
     expr: str
-    is_atomic: bool
+    can_inline: bool
 
 
 class BuiltinOutputCreationGen(CodeGenerator):
@@ -88,7 +89,7 @@ class BuiltinOutputCreationGen(CodeGenerator):
         self._root_crown = crown
         self._debug_path = debug_path
 
-        self._name_to_field = {field.name: field for field in self._figure.fields}
+        self._name_to_field: Dict[str, OutputField] = {field.name: field for field in self._figure.fields}
 
     def _gen_header(self, builder: CodeBuilder, state: GenState):
         if state.path2suffix:
@@ -115,7 +116,13 @@ class BuiltinOutputCreationGen(CodeGenerator):
         if not self._gen_root_crown_dispatch(crown_builder, state, self._root_crown):
             raise TypeError
 
-        crown_builder += f"return {state.crown_var_self()}"
+        if self._figure.extra is None:
+            crown_builder += f"return {state.crown_var_self()}"
+        else:
+            crown_builder += Template("return {**$var_self, **$extra}").substitute(
+                var_self=state.crown_var_self(),
+                extra=binder.extra,
+            )
 
         builder = CodeBuilder()
 
@@ -147,28 +154,42 @@ class BuiltinOutputCreationGen(CodeGenerator):
 
             raise TypeError
 
-    def _gen_crown_link_expr(self, state: GenState, key: CrownPathElem, crown: OutCrown) -> LinkExpr:
-        if isinstance(crown, OutNoneCrown):
-            if isinstance(crown.filler, DefaultFactory):
-                state.ctx_namespace.add(state.filler(), crown.filler)
-                return LinkExpr(state.filler() + '()', is_atomic=False)
-            if isinstance(crown.filler, DefaultValue):
-                literal_expr = get_literal_expr(crown.filler)
-                if literal_expr is not None:
-                    return LinkExpr(literal_expr, is_atomic=True)
+    def _get_element_expr_for_none_crown(self, state: GenState, key: CrownPathElem, crown: OutNoneCrown) -> ElementExpr:
+        if isinstance(crown.filler, DefaultFactory):
+            literal_expr = get_literal_factory(crown.filler.factory)
+            if literal_expr is not None:
+                return ElementExpr(literal_expr, can_inline=True)
 
-                state.ctx_namespace.add(state.filler(), crown.filler)
-                return LinkExpr(state.filler(), is_atomic=True)
+            state.ctx_namespace.add(state.filler(), crown.filler.factory)
+            return ElementExpr(state.filler() + '()', can_inline=False)
 
-            raise TypeError
+        if isinstance(crown.filler, DefaultValue):
+            literal_expr = get_literal_expr(crown.filler.value)
+            if literal_expr is not None:
+                return ElementExpr(literal_expr, can_inline=True)
 
-        if isinstance(crown, OutFieldCrown):
-            return LinkExpr(state.binder.field(self._name_to_field[crown.name]), is_atomic=True)
-
-        if isinstance(crown, (OutDictCrown, OutListCrown)):
-            return LinkExpr(state.crown_var(key), is_atomic=True)
+            state.ctx_namespace.add(state.filler(), crown.filler.value)
+            return ElementExpr(state.filler(), can_inline=True)
 
         raise TypeError
+
+    def _get_element_expr(self, state: GenState, key: CrownPathElem, crown: OutCrown) -> ElementExpr:
+        with state.add_key(key):
+            if isinstance(crown, OutNoneCrown):
+                return self._get_element_expr_for_none_crown(state, key, crown)
+
+            if isinstance(crown, OutFieldCrown):
+                field = self._name_to_field[crown.name]
+                if field.is_required:
+                    field_expr = state.binder.field(field)
+                else:
+                    raise ValueError("Can not generate ElementExpr for optional field")
+                return ElementExpr(field_expr, can_inline=True)
+
+            if isinstance(crown, (OutDictCrown, OutListCrown)):
+                return ElementExpr(state.crown_var(), can_inline=True)
+
+            raise TypeError
 
     def _is_required_crown(self, crown: OutCrown) -> bool:
         if not isinstance(crown, OutFieldCrown):
@@ -182,69 +203,81 @@ class BuiltinOutputCreationGen(CodeGenerator):
 
         required_keys = [
             key for key, sub_crown in crown.map.items()
-            if key not in crown.sieves and self._is_required_crown(crown)
+            if key not in crown.sieves and self._is_required_crown(sub_crown)
         ]
 
         self_var = state.crown_var_self()
 
-        with builder(f"{self_var} = {{"):
-            for key in required_keys:
-                builder += f"{key!r}: {self._gen_crown_link_expr(state, key, crown.map[key]).expr},"
+        if required_keys:
+            with builder(f"{self_var} = {{"):
+                for key in required_keys:
+                    builder += f"{key!r}: {self._get_element_expr(state, key, crown.map[key]).expr},"
 
-        builder += "}"
+            builder += "}"
+        else:
+            builder += f"{self_var} = {{}}"
 
         for key, sub_crown in crown.map.items():
             if key in required_keys:
                 continue
 
-            if key in crown.sieves:
-                sieve = crown.sieves[key]
+            self._gen_dict_optional_crown_fragment(builder, state, crown, key, sub_crown)
 
-                self._gen_opt_dict_sub_crown_append(
-                    builder, state, sieve, key, sub_crown
-                )
+        if not crown.map:
+            builder.empty_line()
 
-        builder.empty_line()
-
-    def _gen_opt_dict_sub_crown_append(
+    def _gen_dict_optional_crown_fragment(
         self,
         builder: CodeBuilder,
         state: GenState,
-        sieve_obj: Sieve,
+        crown: OutDictCrown,
         key: str,
-        sub_crown: OutCrown,
+        sub_crown: OutCrown
+    ):
+        if isinstance(sub_crown, OutFieldCrown) and self._name_to_field[sub_crown.name].is_optional:
+            builder += f"""
+                try:
+                    value = {state.binder.opt_fields}[{sub_crown.name!r}]
+                except KeyError:
+                    pass
+                else:
+            """
+            with builder:
+                if key in crown.sieves:
+                    self._gen_dict_sieved_append(
+                        builder, state, crown.sieves[key], key,
+                        element_expr=ElementExpr('value', can_inline=True)
+                    )
+                else:
+                    self_var = state.crown_var_self()
+                    builder(f"{self_var}[{key!r}] = value")
+        else:
+            element_expr = self._get_element_expr(state, key, sub_crown)
+            self._gen_dict_sieved_append(
+                builder, state, crown.sieves[key], key, element_expr
+            )
+
+    def _gen_dict_sieved_append(
+        self,
+        builder: CodeBuilder,
+        state: GenState,
+        sieve: Sieve,
+        key: str,
+        element_expr: ElementExpr,
     ):
         self_var = state.crown_var_self()
+        sieve_var = state.sieve(key)
+        state.ctx_namespace.add(sieve_var, sieve)
 
-        sieve = state.sieve(key)
-        state.ctx_namespace.add(sieve, sieve_obj)
-
-        if isinstance(sub_crown, OutFieldCrown):
-            field = self._name_to_field[sub_crown.name]
-
-            if field.is_optional:
-                builder += f"""
-                    try:
-                        value = {state.binder.opt_fields}[{field.name!r}]
-                    except KeyError:
-                        pass
-                    else:
-                        if {sieve}(value):
-                            {self_var}[{key!r}] = value
-                """
-                builder.empty_line()
-                return
-
-        link_expr = self._gen_crown_link_expr(state, key, sub_crown)
-        if link_expr.is_atomic:
+        if element_expr.can_inline:
             builder += f"""
-                if {sieve}({link_expr.expr}):
-                    {self_var}[{key!r}] = {link_expr.expr}
+                if {sieve_var}({element_expr.expr}):
+                    {self_var}[{key!r}] = {element_expr.expr}
             """
         else:
             builder += f"""
-                value = {link_expr.expr}
-                if {sieve}(value):
+                value = {element_expr.expr}
+                if {sieve_var}(value):
                     {self_var}[{key!r}] = value
             """
 
@@ -256,7 +289,7 @@ class BuiltinOutputCreationGen(CodeGenerator):
 
         with builder(f"{state.crown_var_self()} = ["):
             for i, sub_crown in enumerate(crown.map):
-                builder += self._gen_crown_link_expr(state, i, sub_crown).expr + ","
+                builder += self._get_element_expr(state, i, sub_crown).expr + ","
 
         builder += "]"
 

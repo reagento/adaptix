@@ -15,7 +15,7 @@ class CodeBuilder:
 
     @property
     def lines(self) -> Sequence[str]:
-        return self._lines
+        return self._lines.copy()
 
     def _extract_lines(self, line_or_text: str) -> List[str]:
         if "\n" in line_or_text:

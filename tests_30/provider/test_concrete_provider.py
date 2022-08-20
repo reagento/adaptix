@@ -14,31 +14,31 @@ from dataclass_factory_30.provider import (
     TimedeltaProvider,
 )
 from dataclass_factory_30.provider.definitions import TypeParseError, ValueParseError
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_instance
+from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
 
 
 def check_any_dt(parser):
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser(None)
     )
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser(10)
     )
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser("some string")
     )
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser(datetime(2011, 11, 4, 0, 0))
     )
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser(date(2019, 12, 4))
     )
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser(time(4, 23, 1))
     )
@@ -191,7 +191,7 @@ def test_none_provider(strict_coercion, debug_path):
 
     assert parser(None) is None
 
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser(10)
     )
@@ -213,7 +213,7 @@ def test_bytes_provider(strict_coercion, debug_path):
 
     assert parser('YWJjZA==') == b'abcd'
 
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser('YWJjZA')
     )
@@ -241,7 +241,7 @@ def test_bytearray_provider(strict_coercion, debug_path):
 
     assert parser('YWJjZA==') == bytearray(b'abcd')
 
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser('YWJjZA')
     )
@@ -269,11 +269,11 @@ def test_regex_provider(strict_coercion, debug_path):
 
     assert parser(r'\w') == re.compile(r'\w')
 
-    raises_instance(
+    raises_path(
         TypeParseError(str),
         lambda: parser(10)
     )
-    raises_instance(
+    raises_path(
         ValueParseError("bad escape (end of pattern) at position 0"),
         lambda: parser('\\')
     )

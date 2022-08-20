@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 
 from dataclass_factory_30.provider import LiteralProvider, ParseError, ParserRequest
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_instance
+from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def test_parser_base(factory, strict_coercion, debug_path):
     assert parser("b") == "b"
     assert parser(10) == 10
 
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser("c")
     )
@@ -66,11 +66,11 @@ def test_strict_coercion(factory, debug_path):
     assert _is_exact_zero(parser_int(0))
     assert _is_exact_one(parser_int(1))
 
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser_int(False)
     )
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser_int(True)
     )
@@ -86,11 +86,11 @@ def test_strict_coercion(factory, debug_path):
     assert parser_bool(False) is False
     assert parser_bool(True) is True
 
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser_bool(0)
     )
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser_bool(1)
     )

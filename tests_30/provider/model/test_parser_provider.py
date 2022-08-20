@@ -44,7 +44,7 @@ from dataclass_factory_30.provider.model import (
     InputNameMapping,
 )
 from tests_30.provider.model.common import DebugCtx
-from tests_30.test_helpers import TestFactory, parametrize_bool, raises_instance
+from tests_30.test_helpers import TestFactory, parametrize_bool, raises_path
 
 
 @dataclass
@@ -116,11 +116,6 @@ def make_parser_getter(
     return getter
 
 
-@pytest.fixture(params=[False, True], ids=['debug_path=False', 'debug_path=True'])
-def debug_path(request):
-    return request.param
-
-
 @pytest.fixture(params=[ExtraSkip(), ExtraForbid(), ExtraCollect()])
 def extra_policy(request):
     return request.param
@@ -159,25 +154,25 @@ def test_direct(debug_ctx, debug_path, extra_policy):
     if extra_policy == ExtraSkip():
         assert parser({'a': 1, 'b': 2, 'c': 3}) == gauge(1, 2)
     if extra_policy == ExtraForbid():
-        raises_instance(
+        raises_path(
             ExtraFieldsError({'c'}),
             lambda: parser({'a': 1, 'b': 2, 'c': 3}),
             path=[],
         )
 
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser({'a': 1, 'b': ParseError()}),
         path=['b'] if debug_path else [],
     )
 
-    raises_instance(
+    raises_path(
         NoRequiredFieldsError(['b']),
         lambda: parser({'a': 1}),
         path=[],
     )
 
-    raises_instance(
+    raises_path(
         TypeParseError(dict),
         lambda: parser("bad input value"),
         path=[],
@@ -213,19 +208,19 @@ def test_direct_list(debug_ctx, debug_path, extra_policy):
         assert parser([1, 2, 3]) == gauge(1, 2)
 
     if extra_policy == ExtraForbid():
-        raises_instance(
+        raises_path(
             ExtraItemsError(2),
             lambda: parser([1, 2, 3]),
             path=[],
         )
 
-    raises_instance(
+    raises_path(
         NoRequiredItemsError(2),
         lambda: parser([10]),
         path=[],
     )
 
-    raises_instance(
+    raises_path(
         TypeParseError(list),
         lambda: parser("bad input value"),
         path=[],
@@ -255,12 +250,12 @@ def test_extra_forbid(debug_ctx, debug_path):
 
     parser = parser_getter()
 
-    raises_instance(
+    raises_path(
         ExtraFieldsError({'c'}),
         lambda: parser({'a': 1, 'b': 2, 'c': 3}),
         path=[],
     )
-    raises_instance(
+    raises_path(
         ExtraFieldsError({'c', 'd'}),
         lambda: parser({'a': 1, 'b': 2, 'c': 3, 'd': 4}),
         path=[],
@@ -427,7 +422,7 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
     )
     parser = parser_getter()
 
-    raises_instance(
+    raises_path(
         NoRequiredFieldsError(['m_a']),
         lambda: parser({'a': 1, 'b': 2}),
         path=[],
@@ -599,7 +594,7 @@ def test_flat_mapping(debug_ctx, debug_path, is_required):
     )
     parser = parser_getter()
 
-    raises_instance(
+    raises_path(
         NoRequiredFieldsError(['m_a']),
         lambda: parser({'a': 1, 'b': 2}),
         path=[],
@@ -711,7 +706,7 @@ def test_structure_flattening(debug_ctx, debug_path):
         }
     )
 
-    raises_instance(
+    raises_path(
         TypeParseError(dict),
         lambda: parser(
             {
@@ -727,7 +722,7 @@ def test_structure_flattening(debug_ctx, debug_path):
         path=['z'] if debug_path else []
     )
 
-    raises_instance(
+    raises_path(
         TypeParseError(list),
         lambda: parser(
             {
@@ -791,7 +786,7 @@ def test_error_path_at_complex_structure(debug_ctx, debug_path, error_path):
 
     _replace_value_by_path(data, error_path, ParseError())
 
-    raises_instance(
+    raises_path(
         ParseError(),
         lambda: parser(data),
         path=error_path if debug_path else []
@@ -830,7 +825,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
         assert parser({'a': 1, 'b': 2, 'c': 3}) == gauge(1, extra={'c': 3})
 
     if extra_policy == ExtraForbid():
-        raises_instance(
+        raises_path(
             ExtraFieldsError({'c'}),
             lambda: parser({'a': 1, 'b': 2, 'c': 3}),
             path=[],
@@ -862,7 +857,7 @@ def test_none_crown_at_list_crown(debug_ctx, debug_path, extra_policy):
 
     assert parser([1, 2, 3]) == gauge(2)
 
-    raises_instance(
+    raises_path(
         NoRequiredItemsError(3),
         lambda: parser([1, 2]),
         path=[],
@@ -872,7 +867,7 @@ def test_none_crown_at_list_crown(debug_ctx, debug_path, extra_policy):
         assert parser([1, 2, 3, 4]) == gauge(2)
 
     if extra_policy == ExtraForbid():
-        raises_instance(
+        raises_path(
             ExtraItemsError(3),
             lambda: parser([1, 2, 3, 4]),
             path=[],
