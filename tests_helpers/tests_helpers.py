@@ -1,4 +1,4 @@
-from dataclasses import asdict, is_dataclass, dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from typing import List, Type, TypeVar, Union
 
 import pytest
@@ -8,6 +8,7 @@ from dataclass_factory_30.factory import OperatingFactory
 from dataclass_factory_30.feature_requirement import (
     HAS_ANNOTATED,
     HAS_PARAM_SPEC,
+    HAS_STD_CLASSES_GENERICS,
     HAS_TYPE_ALIAS,
     PythonVersionRequirement,
 )
@@ -35,6 +36,7 @@ class PytestVersionMarker:
 
 
 requires_annotated = PytestVersionMarker(HAS_ANNOTATED)
+requires_std_classes_generics = PytestVersionMarker(HAS_STD_CLASSES_GENERICS)
 requires_type_alias = PytestVersionMarker(HAS_TYPE_ALIAS)
 requires_param_spec = PytestVersionMarker(HAS_PARAM_SPEC)
 

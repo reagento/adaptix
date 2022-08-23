@@ -1,4 +1,4 @@
-files: '(dataclass_factory_30/.*)|(tests_30/.*)'
+files: '(dataclass_factory_30/.*)|(tests_30/.*)|(tests_helpers/.*)'
 default_stages:
   - commit
   - push

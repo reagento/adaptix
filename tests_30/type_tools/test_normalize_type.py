@@ -56,7 +56,7 @@ from dataclass_factory_30.type_tools.normalize_type import (
     _NormType,
     make_norm_type,
 )
-from tests_helpers import requires_annotated, requires_param_spec, requires_type_alias
+from tests_helpers import requires_annotated, requires_param_spec, requires_std_classes_generics, requires_type_alias
 
 MISSING = object()
 
@@ -797,4 +797,24 @@ def test_type_alias():
     assert_normalize(
         typing.TypeAlias,
         typing.TypeAlias, [],
+    )
+
+
+@requires_std_classes_generics
+def test_types_generic_alias():
+    from types import GenericAlias
+
+    assert_normalize(
+        GenericAlias(list, (int,)),
+        list, [nt_zero(int)],
+    )
+
+    assert_normalize(
+        GenericAlias(dict, (str, int)),
+        dict, [nt_zero(str), nt_zero(int)],
+    )
+
+    assert_normalize(
+        GenericAlias,
+        GenericAlias, [],
     )
