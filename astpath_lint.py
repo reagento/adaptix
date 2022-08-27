@@ -67,10 +67,6 @@ RULES = [
 ]
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('targets', help="files to lint", nargs='+',)
-
-
 def analyze_file(filename: str, rule_matches: List[RuleMatch]) -> None:
     xml_ast = file_to_xml_ast(filename)
 
@@ -88,7 +84,10 @@ def analyze_file(filename: str, rule_matches: List[RuleMatch]) -> None:
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('targets', help="files to lint", nargs='+', )
     args = parser.parse_args()
+
     rule_matches: List[RuleMatch] = []
 
     for target in args.targets:

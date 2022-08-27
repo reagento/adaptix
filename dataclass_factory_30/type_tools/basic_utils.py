@@ -1,5 +1,5 @@
 import types
-from typing import Generic, Iterable, Protocol, TypedDict, Union, get_origin, get_type_hints
+from typing import Generic, Iterable, Protocol, TypedDict, Union, get_args, get_origin, get_type_hints
 
 from ..common import TypeHint
 from ..feature_requirement import HAS_ANNOTATED
@@ -73,3 +73,7 @@ if HAS_ANNOTATED:
         return get_type_hints(obj, globalns, localns, include_extras=True)
 else:
     get_all_type_hints = get_type_hints
+
+
+def is_parametrized(tp: TypeHint) -> bool:
+    return bool(get_args(tp))

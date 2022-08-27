@@ -1,7 +1,9 @@
 from collections import namedtuple
-from typing import Generic, NamedTuple, Tuple, TypeVar
+from typing import Generic, List, NamedTuple, Protocol, SupportsInt, Tuple, TypeVar, Union, runtime_checkable
 
+from dataclass_factory_30.feature_requirement import HAS_STD_CLASSES_GENERICS
 from dataclass_factory_30.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
+from dataclass_factory_30.type_tools.basic_utils import is_parametrized
 
 
 class NTParent(NamedTuple):
@@ -27,39 +29,42 @@ def test_is_named_tuple_class():
     assert is_named_tuple_class(DynNTChild)
 
 
+class FooProto(Protocol):
+    def foo(self) -> bool:
+        pass
+
+
+@runtime_checkable
+class RtFooProto(Protocol):
+    def foo(self) -> bool:
+        pass
+
+
+class ImplFooProto:
+    def foo(self) -> bool:
+        pass
+
+
+class InheritedImplFooProto(FooProto):
+    def foo(self) -> bool:
+        pass
+
+
+class InheritedImplRtFooProto(RtFooProto):
+    def foo(self) -> bool:
+        pass
+
+
 def test_is_protocol():
-    from typing import Protocol, SupportsInt, runtime_checkable
-
-    class Proto(Protocol):
-        def foo(self) -> bool:
-            pass
-
-    @runtime_checkable
-    class RtProto(Protocol):
-        def foo(self) -> bool:
-            pass
-
-    class ImplProto:
-        def foo(self) -> bool:
-            pass
-
-    class InheritedImplProto(Proto):
-        def foo(self) -> bool:
-            pass
-
-    class InheritedImplRtProto(RtProto):
-        def foo(self) -> bool:
-            pass
-
     assert not is_protocol(Protocol)
     assert is_protocol(Proto)
-    assert is_protocol(RtProto)
+    assert is_protocol(RtFooProto)
     assert is_protocol(SupportsInt)
 
-    assert not is_protocol(InheritedImplProto)
-    assert not is_protocol(InheritedImplRtProto)
+    assert not is_protocol(InheritedImplFooProto)
+    assert not is_protocol(InheritedImplRtFooProto)
 
-    assert not is_protocol(ImplProto)
+    assert not is_protocol(ImplFooProto)
     assert not is_protocol(int)
     assert not is_protocol(type)
     assert not is_protocol(object)
@@ -121,24 +126,27 @@ def test_is_user_defined_generic():
     assert not is_user_defined_generic(Tuple[int])
 
 
+class Proto(Protocol[T]):
+    pass
+
+
+class ProtoChildImplicit(Proto):
+    pass
+
+
+class ProtoChildExplicit(Proto[int]):
+    pass
+
+
+class ProtoChildExplicitTypeVar(Proto[T]):
+    pass
+
+
+class ProtoProto(Proto[int], Protocol[T]):
+    pass
+
+
 def test_is_user_defined_generic_protocol():
-    from typing import Protocol
-
-    class Proto(Protocol[T]):
-        pass
-
-    class ProtoChildImplicit(Proto):
-        pass
-
-    class ProtoChildExplicit(Proto[int]):
-        pass
-
-    class ProtoChildExplicitTypeVar(Proto[T]):
-        pass
-
-    class ProtoProto(Proto[int], Protocol[T]):
-        pass
-
     assert is_user_defined_generic(Proto)
     assert is_user_defined_generic(Proto[V])
     assert not is_user_defined_generic(Proto[int])
@@ -153,3 +161,21 @@ def test_is_user_defined_generic_protocol():
     assert is_user_defined_generic(ProtoProto)
     assert is_user_defined_generic(ProtoProto[V])
     assert not is_user_defined_generic(ProtoProto[int])
+
+
+def test_is_parametrized():
+    assert not is_parametrized(int)
+    assert not is_parametrized(List)
+    assert not is_parametrized(list)
+
+    assert is_parametrized(List[int])
+    assert is_parametrized(List[T])
+
+    if HAS_STD_CLASSES_GENERICS:
+        assert is_parametrized(list[int])
+        assert is_parametrized(list[T])
+
+    assert not is_parametrized(Union)
+    assert is_parametrized(Union[int, str])
+
+    # do not test all special cases of typing like Annotated, rely on get_args

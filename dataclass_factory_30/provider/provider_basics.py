@@ -5,7 +5,7 @@ from inspect import isabstract
 from typing import Any, Callable, ClassVar, Generic, Iterable, Pattern, Sequence, Type, TypeVar, Union
 
 from ..common import Parser, TypeHint
-from ..type_tools import is_protocol, is_subclass_soft, normalize_type
+from ..type_tools import is_parametrized, is_protocol, is_subclass_soft, normalize_type
 from ..type_tools.normalize_type import BaseNormType, NormTV, NotSubscribedError
 from .definitions import PARSER_COMPAT_EXCEPTIONS, ParseError
 from .essential import CannotProvide, Mediator, Provider, Request
@@ -188,6 +188,21 @@ class AnyRequestChecker(RequestChecker):
         return
 
 
+def match_origin(tp: TypeHint) -> RequestChecker:
+    if is_parametrized(tp):
+        raise ValueError("Origin must be not parametrized")
+
+    try:
+        origin = normalize_type(tp).origin
+    except NotSubscribedError:
+        origin = tp
+
+    if is_protocol(origin) or isabstract(origin):
+        return SubclassRC(origin)
+
+    return ExactOriginRC(origin)
+
+
 def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
     try:
         norm = normalize_type(tp)
@@ -198,11 +213,6 @@ def create_type_hint_req_checker(tp: TypeHint) -> RequestChecker:
 
     if isinstance(norm, NormTV):
         raise ValueError(f'Can not create RequestChecker from {tp}')
-
-    origin = norm.origin
-
-    if is_protocol(origin) or isabstract(origin):
-        return SubclassRC(tp)
 
     return ExactTypeRC(norm)
 

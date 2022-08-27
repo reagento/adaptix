@@ -7,7 +7,7 @@ from ..common import Parser, Serializer, TypeHint
 from ..type_tools import create_union, normalize_type
 from .definitions import TypeParseError
 from .essential import CannotProvide, Mediator, Provider, Request
-from .provider_basics import RequestChecker, create_type_hint_req_checker
+from .provider_basics import RequestChecker, match_origin
 from .request_cls import ParserRequest, SerializerRequest
 from .static_provider import StaticProvider, static_provision_action
 
@@ -32,10 +32,10 @@ def attach_request_checker(checker: RequestChecker, cls: Type[ProviderWithRC]):
     return cls
 
 
-def for_type(tp: TypeHint):
+def for_origin(tp: TypeHint):
     return partial(
         attach_request_checker,
-        create_type_hint_req_checker(tp)
+        match_origin(tp)
     )
 
 

@@ -6,13 +6,13 @@ from typing import Callable, ClassVar, Final, Tuple
 from ..feature_requirement import HAS_ANNOTATED, HAS_TYPE_GUARD
 from .normalize_type import BaseNormType, NormTV
 
-_TYPE_TAGS = {Final, ClassVar, InitVar}
+_TYPE_TAGS = [Final, ClassVar, InitVar]
 
 if HAS_ANNOTATED:
-    _TYPE_TAGS.add(typing.Annotated)
+    _TYPE_TAGS.append(typing.Annotated)
 
 if HAS_TYPE_GUARD:
-    _TYPE_TAGS.add(typing.TypeGuard)
+    _TYPE_TAGS.append(typing.TypeGuard)
 
 
 def strip_tags(norm: BaseNormType) -> BaseNormType:

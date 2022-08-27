@@ -75,8 +75,9 @@ from .provider_basics import (
     XorRequestChecker,
     create_req_checker,
     foreign_parser,
+    match_origin,
 )
-from .provider_template import ABCProxy, CoercionLimiter, ParserProvider, SerializerProvider, for_type
+from .provider_template import ABCProxy, CoercionLimiter, ParserProvider, SerializerProvider, for_origin
 from .request_cls import (
     FieldRM,
     ParserFieldRequest,

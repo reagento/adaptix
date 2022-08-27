@@ -7,11 +7,11 @@ from typing import Callable, Collection, Container, Dict, Iterable, Literal, Map
 
 from ..common import Parser, Serializer, TypeHint
 from ..struct_path import append_path
-from ..type_tools import BaseNormType, is_new_type, normalize_type, strip_tags
+from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
 from .definitions import ExcludedTypeParseError, ParseError, TypeParseError, UnionParseError
 from .essential import CannotProvide, Mediator, Request
 from .provider_basics import foreign_parser
-from .provider_template import ParserProvider, SerializerProvider, for_type
+from .provider_template import ParserProvider, SerializerProvider, for_origin
 from .request_cls import ParserRequest, SerializerRequest, TypeHintRM
 from .static_provider import StaticProvider, static_provision_action
 
@@ -44,7 +44,7 @@ def _is_exact_zero_or_one(arg):
 
 
 @dataclass
-@for_type(Literal)
+@for_origin(Literal)
 class LiteralProvider(ParserProvider, SerializerProvider):
     tuple_size_limit: int = 4
 
@@ -86,9 +86,9 @@ class LiteralProvider(ParserProvider, SerializerProvider):
         return stub
 
 
-@for_type(Union)
-class UnionProvider(ParserProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:  # noqa: CCR001
+@for_origin(Union)
+class UnionProvider(ParserProvider, SerializerProvider):
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         norm = normalize_type(request.type)
 
         parsers = tuple(
@@ -97,33 +97,88 @@ class UnionProvider(ParserProvider):
         )
 
         if request.debug_path:
-            def union_parser_dp(value):
-                errors = []
-                for prs in parsers:
-                    try:
-                        return prs(value)
-                    except ParseError as e:
-                        errors.append(e)
+            return self._get_parser_dp(parsers)
 
-                raise UnionParseError(sub_errors=errors)
+        return self._get_parser_non_dp(parsers)
 
-            return union_parser_dp
-
-        def union_parser(value):
+    def _get_parser_dp(self, parsers: Iterable[Parser]) -> Parser:
+        def union_parser_dp(data):
+            errors = []
             for prs in parsers:
                 try:
-                    return prs(value)
+                    return prs(data)
+                except ParseError as e:
+                    errors.append(e)
+
+            raise UnionParseError(errors)
+
+        return union_parser_dp
+
+    def _get_parser_non_dp(self, parsers: Iterable[Parser]) -> Parser:
+        def union_parser(data):
+            for prs in parsers:
+                try:
+                    return prs(data)
                 except ParseError:
                     pass
             raise ParseError
 
         return union_parser
 
+    def _is_single_optional(self, norm: BaseNormType) -> bool:
+        return len(norm.args) == 2 and None in [case.origin for case in norm.args]
+
+    def _is_class_origin(self, origin) -> bool:
+        return (origin is None or isinstance(origin, type)) and not is_subclass_soft(origin, collections.abc.Callable)
+
+    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+        norm = normalize_type(request.type)
+
+        # TODO: allow use Literal[..., None] with non single optional
+
+        if self._is_single_optional(norm):
+            non_optional = next(case for case in norm.args if case.origin is not None)
+            non_optional_serializer = mediator.provide(replace(request, type=non_optional.source))
+            return self._get_single_optional_serializer(non_optional_serializer)
+
+        non_class_origins = [case.source for case in norm.args if not self._is_class_origin(case.origin)]
+        if non_class_origins:
+            raise ValueError(
+                f"Can not create serializer for {request.type}."
+                f" All cases of union must be class, but found {non_class_origins}"
+            )
+
+        serializers = tuple(
+            mediator.provide(replace(request, type=tp.source))
+            for tp in norm.args
+        )
+
+        serializer_type_map = {case.origin: serializer for case, serializer in zip(norm.args, serializers)}
+
+        return self._get_serializer(serializer_type_map)
+
+    def _get_serializer(self, serializer_type_map: Mapping[type, Serializer]) -> Serializer:
+        def union_serializer(data):
+            return serializer_type_map[type(data)](data)
+
+        return union_serializer
+
+    def _get_single_optional_serializer(self, serializer: Serializer) -> Serializer:
+        # This behavior is slightly different from the generic serializer.
+        # If data contains value of invalid type and main serializer does not raise an error,
+        # generic serializer will raise exception, but this serializer skips problem
+        def union_so_serializer(data):
+            if data is None:
+                return None
+            return serializer(data)
+
+        return union_so_serializer
+
 
 CollectionsMapping = collections.abc.Mapping
 
 
-@for_type(Iterable)
+@for_origin(Iterable)
 class IterableProvider(ParserProvider, SerializerProvider):
     ABC_TO_IMPL = {
         collections.abc.Iterable: tuple,
@@ -173,42 +228,38 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         iter_factory = self._get_iter_factory(norm.origin)
         arg_parser = mediator.provide(replace(request, type=arg))
-        strict_coercion = request.strict_coercion
+        return self._make_parser(request, iter_factory, arg_parser)
 
-        if request.debug_path:
-            parser = self._make_debug_path_parser(iter_factory, arg_parser, strict_coercion)
-        else:
-            parser = self._make_non_dp_parser(iter_factory, arg_parser, strict_coercion)
-
-        return foreign_parser(parser)
-
-    def _make_debug_path_parser(self, iter_factory, arg_parser, strict_coercion: bool):  # noqa: C901,CCR001
-        def iter_mapper(iterator):
+    def _create_debug_path_iter_mapper(self, converter):
+        def iter_mapper(iterable):
             idx = 0
 
-            for el in iterator:
+            for el in iterable:
                 try:
-                    yield arg_parser(el)
+                    yield converter(el)
                 except Exception as e:
                     append_path(e, idx)
                     raise e
 
                 idx += 1
 
-        if strict_coercion:
-            def iter_parser_dp_sc(value):
-                if isinstance(value, CollectionsMapping):
-                    raise ExcludedTypeParseError(Mapping)
+        return iter_mapper
 
-                try:
-                    value_iter = iter(value)
-                except TypeError:
-                    raise TypeParseError(Iterable)
+    def _make_parser(self, request: ParserRequest, iter_factory, arg_parser):
+        if request.debug_path:
+            iter_mapper = self._create_debug_path_iter_mapper(arg_parser)
 
-                return iter_factory(iter_mapper(value_iter))
+            if request.strict_coercion:
+                return self._get_dp_sc_parser(iter_factory, iter_mapper)
 
-            return iter_parser_dp_sc
+            return self._get_dp_non_sc_parser(iter_factory, iter_mapper)
 
+        if request.strict_coercion:
+            return self._get_non_dp_sc_parser(iter_factory, arg_parser)
+
+        return self._get_non_dp_non_sc_parser(iter_factory, arg_parser)
+
+    def _get_dp_non_sc_parser(self, iter_factory, iter_mapper):
         def iter_parser_dp(value):
             try:
                 value_iter = iter(value)
@@ -219,21 +270,35 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         return iter_parser_dp
 
-    def _make_non_dp_parser(self, iter_factory, arg_parser, strict_coercion: bool):
-        if strict_coercion:
-            def iter_parser_sc(value):
-                if isinstance(value, CollectionsMapping):
-                    raise ExcludedTypeParseError(Mapping)
+    def _get_dp_sc_parser(self, iter_factory, iter_mapper):
+        def iter_parser_dp_sc(value):
+            if isinstance(value, CollectionsMapping):
+                raise ExcludedTypeParseError(Mapping)
 
-                try:
-                    map_iter = map(arg_parser, value)
-                except TypeError:
-                    raise TypeParseError(Iterable)
+            try:
+                value_iter = iter(value)
+            except TypeError:
+                raise TypeParseError(Iterable)
 
-                return iter_factory(map_iter)
+            return iter_factory(iter_mapper(value_iter))
 
-            return iter_parser_sc
+        return iter_parser_dp_sc
 
+    def _get_non_dp_sc_parser(self, iter_factory, arg_parser):
+        def iter_parser_sc(value):
+            if isinstance(value, CollectionsMapping):
+                raise ExcludedTypeParseError(Mapping)
+
+            try:
+                map_iter = map(arg_parser, value)
+            except TypeError:
+                raise TypeParseError(Iterable)
+
+            return iter_factory(map_iter)
+
+        return iter_parser_sc
+
+    def _get_non_dp_non_sc_parser(self, iter_factory, arg_parser):
         def iter_parser(value):
             try:
                 map_iter = map(arg_parser, value)
@@ -249,21 +314,36 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         iter_factory = self._get_iter_factory(norm.origin)
         arg_serializer = mediator.provide(replace(request, type=arg))
+        return self._make_serializer(request, iter_factory, arg_serializer)
 
-        def iter_serializer(value):
-            return iter_factory(map(arg_serializer, value))
+    def _make_serializer(self, request: SerializerRequest, iter_factory, arg_serializer):
+        if request.debug_path:
+            iter_mapper = self._create_debug_path_iter_mapper(arg_serializer)
+            return self._get_dp_serializer(iter_factory, iter_mapper)
+
+        return self._get_non_dp_serializer(iter_factory, arg_serializer)
+
+    def _get_dp_serializer(self, iter_factory, iter_mapper):
+        def iter_dp_serializer(data):
+            return iter_factory(iter_mapper(data))
+
+        return iter_dp_serializer
+
+    def _get_non_dp_serializer(self, iter_factory, arg_serializer: Serializer):
+        def iter_serializer(data):
+            return iter_factory(map(arg_serializer, data))
 
         return iter_serializer
 
 
-@for_type(Dict)
+@for_origin(Dict)
 class DictProvider(ParserProvider, SerializerProvider):
-    def _fetch_key_value(self, request: TypeHintRM) -> Tuple[BaseNormType, BaseNormType]:
+    def _extract_key_value(self, request: TypeHintRM) -> Tuple[BaseNormType, BaseNormType]:
         norm = normalize_type(request.type)
         return norm.args  # type: ignore
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:  # noqa: C901, CCR001
-        key, value = self._fetch_key_value(request)
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+        key, value = self._extract_key_value(request)
 
         key_parser = mediator.provide(
             ParserRequest(
@@ -281,38 +361,48 @@ class DictProvider(ParserProvider, SerializerProvider):
             )
         )
 
+        return self._make_parser(request, key_parser=key_parser, value_parser=value_parser)
+
+    def _make_parser(self, request: ParserRequest, key_parser: Parser, value_parser: Parser):
         if request.debug_path:
-            def dict_parser_dp(data):
+            return self._get_parser_dp(
+                key_parser=key_parser,
+                value_parser=value_parser,
+            )
+
+        return self._get_parser_non_dp(
+            key_parser=key_parser,
+            value_parser=value_parser,
+        )
+
+    def _get_parser_dp(self, key_parser: Parser, value_parser: Parser):
+        def dict_parser_dp(data):
+            try:
+                items_method = data.items
+            except AttributeError:
+                raise TypeParseError(CollectionsMapping)
+
+            result = {}
+            for k, v in items_method():
                 try:
-                    items_method = data.items
-                except AttributeError:
-                    raise TypeParseError(Mapping)
+                    parsed_key = key_parser(k)
+                    parsed_value = value_parser(v)
+                except Exception as e:
+                    append_path(e, k)
+                    raise e
 
-                result = {}
-                for k, v in items_method():
-                    try:
-                        parsed_key = key_parser(k)
-                    except Exception as e:
-                        append_path(e, k)
-                        raise e
+                result[parsed_key] = parsed_value
 
-                    try:
-                        parsed_value = value_parser(v)
-                    except Exception as e:
-                        append_path(e, k)  # yes, it's a key
-                        raise e
+            return result
 
-                    result[parsed_key] = parsed_value
+        return dict_parser_dp
 
-                return result
-
-            return dict_parser_dp
-
+    def _get_parser_non_dp(self, key_parser: Parser, value_parser: Parser):
         def dict_parser(data):
             try:
                 items_method = data.items
             except AttributeError:
-                raise TypeParseError(Mapping)
+                raise TypeParseError(CollectionsMapping)
 
             result = {}
             for k, v in items_method():
@@ -323,7 +413,7 @@ class DictProvider(ParserProvider, SerializerProvider):
         return dict_parser
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
-        key, value = self._fetch_key_value(request)
+        key, value = self._extract_key_value(request)
 
         key_serializer = mediator.provide(
             replace(request, type=key.source),
@@ -333,6 +423,35 @@ class DictProvider(ParserProvider, SerializerProvider):
             replace(request, type=value.source),
         )
 
+        return self._make_serializer(request, key_serializer=key_serializer, value_serializer=value_serializer)
+
+    def _make_serializer(self, request: SerializerRequest, key_serializer: Serializer, value_serializer: Serializer):
+        if request.debug_path:
+            return self._get_serializer_dp(
+                key_serializer=key_serializer,
+                value_serializer=value_serializer,
+            )
+
+        return self._get_serializer_non_dp(
+            key_serializer=key_serializer,
+            value_serializer=value_serializer,
+        )
+
+    def _get_serializer_dp(self, key_serializer, value_serializer):
+        def dict_serializer_dp(data: Mapping):
+            result = {}
+            for k, v in data.items():
+                try:
+                    result[key_serializer(k)] = value_serializer(v)
+                except Exception as e:
+                    append_path(e, k)
+                    raise e
+
+            return result
+
+        return dict_serializer_dp
+
+    def _get_serializer_non_dp(self, key_serializer, value_serializer):
         def dict_serializer(data: Mapping):
             result = {}
             for k, v in data.items():

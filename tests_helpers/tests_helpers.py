@@ -1,5 +1,5 @@
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import List, Type, TypeVar, Union
+from typing import Any, Callable, List, Optional, Type, TypeVar, Union
 
 import pytest
 
@@ -51,10 +51,19 @@ class TestFactory(OperatingFactory):
     provide = OperatingFactory._facade_provide
 
 
-def raises_path(exc: Union[Type[Exception], Exception], func, *, path: Union[list, None, EllipsisType] = Ellipsis):
+E = TypeVar('E', bound=Exception)
+
+
+def raises_path(
+    exc: Union[Type[E], E],
+    func: Callable[[], Any],
+    *,
+    path: Union[list, None, EllipsisType] = Ellipsis,
+    match: Optional[str] = None,
+) -> E:
     exc_type = exc if isinstance(exc, type) else type(exc)
 
-    with pytest.raises(exc_type) as exc_info:
+    with pytest.raises(exc_type, match=match) as exc_info:
         func()
 
     if not isinstance(exc, type):
@@ -70,6 +79,8 @@ def raises_path(exc: Union[Type[Exception], Exception], func, *, path: Union[lis
         else:
             assert extracted_path is not None
             assert list(extracted_path) == list(path)
+
+    return exc_info.value
 
 
 def parametrize_bool(param: str, *params: str):

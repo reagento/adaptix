@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Generic, Iterable, TypeVar
 
 from ..common import Parser, Serializer, TypeHint
@@ -21,11 +21,9 @@ class FieldRM(TypeHintRM[T], Generic[T]):
     field: BaseField
 
     def __post_init__(self):
-        self._validate()
-
-    def _validate(self):
+        # This behavior allows using replace() in code that knows nothing about fields
         if self.type != self.field.type:
-            raise ValueError("Type attribute and type of field must be equal")
+            super().__setattr__('field', replace(self.field, type=self.type))
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,20 @@
 import collections
+import collections.abc
 from collections import deque
-from typing import Dict, Iterable, List, Mapping
+from typing import (
+    AbstractSet,
+    Collection,
+    Dict,
+    FrozenSet,
+    Iterable,
+    List,
+    Mapping,
+    MutableSequence,
+    MutableSet,
+    Reversible,
+    Sequence,
+    Set,
+)
 
 import pytest
 
@@ -11,13 +25,19 @@ from dataclass_factory_30.provider.definitions import ExcludedTypeParseError, Ty
 from tests_helpers import TestFactory, parametrize_bool, raises_path
 
 
+def string_serializer(data):
+    if isinstance(data, str):
+        return data
+    raise TypeError
+
+
 @pytest.fixture
 def factory():
     return TestFactory(
         recipe=[
             IterableProvider(),
             CoercionLimiter(parser(str), [str]),
-            serializer(str, str),  # this serializer differ from a builtin one
+            serializer(str, string_serializer),
         ]
     )
 
@@ -77,7 +97,8 @@ def test_parsing(factory, strict_coercion, debug_path):
 
     raises_path(
         TypeParseError(Iterable),
-        lambda: parser(123)
+        lambda: parser(123),
+        path=[],
     )
 
     if not strict_coercion:
@@ -88,32 +109,74 @@ def test_parsing(factory, strict_coercion, debug_path):
     if strict_coercion:
         raises_path(
             ExcludedTypeParseError(Mapping),
-            lambda: parser({"a": 0, "b": 0, "c": 0})
+            lambda: parser({"a": 0, "b": 0, "c": 0}),
+            path=[],
         )
 
         raises_path(
             ExcludedTypeParseError(Mapping),
-            lambda: parser(collections.ChainMap({"a": 0, "b": 0, "c": 0}))
+            lambda: parser(collections.ChainMap({"a": 0, "b": 0, "c": 0})),
+            path=[],
         )
-
-        if debug_path:
-            path1 = [0]
-            path2 = [1]
-        else:
-            path1 = []
-            path2 = []
 
         raises_path(
             TypeParseError(str),
             lambda: parser([1, 2, 3]),
-            path=path1,
+            path=[0] if debug_path else [],
         )
 
         raises_path(
             TypeParseError(str),
             lambda: parser(["1", 2, 3]),
-            path=path2,
+            path=[1] if debug_path else [],
         )
+
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_abc_impl(factory, strict_coercion, debug_path):
+    for tp in [Iterable, Reversible, Collection, Sequence]:
+        parser = factory.provide(
+            ParserRequest(
+                type=tp[str],
+                strict_coercion=strict_coercion,
+                debug_path=debug_path,
+            )
+        )
+
+        assert parser(["a", "b", "c"]) == ("a", "b", "c")
+
+    for tp in [MutableSequence, List]:
+        parser = factory.provide(
+            ParserRequest(
+                type=tp[str],
+                strict_coercion=strict_coercion,
+                debug_path=debug_path,
+            )
+        )
+
+        assert parser(["a", "b", "c"]) == ["a", "b", "c"]
+
+    for tp in [AbstractSet, FrozenSet]:
+        parser = factory.provide(
+            ParserRequest(
+                type=tp[str],
+                strict_coercion=strict_coercion,
+                debug_path=debug_path,
+            )
+        )
+
+        assert parser(["a", "b", "c"]) == frozenset(["a", "b", "c"])
+
+    for tp in [MutableSet, Set]:
+        parser = factory.provide(
+            ParserRequest(
+                type=tp[str],
+                strict_coercion=strict_coercion,
+                debug_path=debug_path,
+            )
+        )
+
+        assert parser(["a", "b", "c"]) == {"a", "b", "c"}
 
 
 @parametrize_bool('debug_path')
@@ -126,7 +189,7 @@ def test_serializing(factory, debug_path):
     )
 
     assert list_serializer(["a", "b"]) == ["a", "b"]
-    assert list_serializer([1, 2]) == ["1", "2"]
+    assert list_serializer({'a': 1, 'b': 2}) == ['a', 'b']
 
     iterable_serializer = factory.provide(
         SerializerRequest(
@@ -137,5 +200,17 @@ def test_serializing(factory, debug_path):
 
     assert iterable_serializer(["a", "b"]) == ("a", "b")
     assert iterable_serializer(("a", "b")) == ("a", "b")
-    assert iterable_serializer([1, 2]) == ("1", "2")
+    assert iterable_serializer(['1', '2']) == ("1", "2")
     assert iterable_serializer({"a": 0, "b": 0}) == ("a", "b")
+
+    raises_path(
+        TypeError,
+        lambda: iterable_serializer([10, '20']),
+        path=[0] if debug_path else [],
+    )
+
+    raises_path(
+        TypeError,
+        lambda: iterable_serializer(['10', 20]),
+        path=[1] if debug_path else [],
+    )

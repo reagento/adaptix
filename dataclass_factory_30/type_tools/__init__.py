@@ -3,6 +3,7 @@ from .basic_utils import (
     get_all_type_hints,
     is_named_tuple_class,
     is_new_type,
+    is_parametrized,
     is_protocol,
     is_subclass_soft,
     is_typed_dict_class,

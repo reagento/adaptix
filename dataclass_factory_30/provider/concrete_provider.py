@@ -9,7 +9,7 @@ from ..type_tools import normalize_type
 from .definitions import ParseError, TypeParseError, ValueParseError
 from .essential import Mediator, Request
 from .provider_basics import ExactTypeRC, foreign_parser
-from .provider_template import ParserProvider, ProviderWithRC, SerializerProvider, for_type
+from .provider_template import ParserProvider, ProviderWithRC, SerializerProvider, for_origin
 from .request_cls import ParserRequest, SerializerRequest
 
 T = TypeVar('T')
@@ -40,7 +40,7 @@ class IsoFormatProvider(ForAnyDateTime, ParserProvider, SerializerProvider):
 
 
 @dataclass
-@for_type(datetime)
+@for_origin(datetime)
 class DatetimeFormatProvider(ParserProvider, SerializerProvider):
     format: str
 
@@ -61,7 +61,7 @@ class DatetimeFormatProvider(ParserProvider, SerializerProvider):
         return datetime_format_serializer
 
 
-@for_type(timedelta)
+@for_origin(timedelta)
 class TimedeltaProvider(ParserProvider, SerializerProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         def timedelta_parser(value):
@@ -73,7 +73,7 @@ class TimedeltaProvider(ParserProvider, SerializerProvider):
         return timedelta.total_seconds
 
 
-@for_type(None)
+@for_origin(None)
 class NoneProvider(ParserProvider, SerializerProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         def none_parser(data):
@@ -98,7 +98,7 @@ class Base64SerializerMixin(SerializerProvider):
 B64_PATTERN = re.compile(b'[A-Za-z0-9+/]*={0,2}')
 
 
-@for_type(bytes)
+@for_origin(bytes)
 class BytesBase64Provider(ParserProvider, Base64SerializerMixin):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         def bytes_base64_parser(data):
@@ -110,7 +110,7 @@ class BytesBase64Provider(ParserProvider, Base64SerializerMixin):
         return foreign_parser(bytes_base64_parser)
 
 
-@for_type(bytearray)
+@for_origin(bytearray)
 class BytearrayBase64Provider(ParserProvider, Base64SerializerMixin):
     _BYTES_PROVIDER = BytesBase64Provider()
 
@@ -129,7 +129,7 @@ def _regex_serializer(data: re.Pattern):
     return data.pattern
 
 
-@for_type(re.Pattern)
+@for_origin(re.Pattern)
 class RegexPatternProvider(ParserProvider, SerializerProvider):
     def __init__(self, flags: re.RegexFlag = re.RegexFlag(0)):
         self.flags = flags

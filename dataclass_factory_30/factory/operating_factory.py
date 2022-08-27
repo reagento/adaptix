@@ -41,7 +41,8 @@ class OperatingFactory(IncrementalRecipe, ProvidingFromRecipe, Provider, ABC):
         try:
             return self._provide_from_recipe(request, [])
         except CannotProvide:
-            raise NoSuitableProvider
+            # Attaching to traceback only last CannotProvide is very discouraging
+            raise NoSuitableProvider from None
 
     def _get_recursion_resolving(self) -> RecursionResolving:
         return RecursionResolving(
