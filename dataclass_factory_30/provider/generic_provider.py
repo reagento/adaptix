@@ -1,7 +1,7 @@
 import collections.abc
 from abc import ABC
 from dataclasses import dataclass, replace
-from enum import EnumMeta
+from enum import EnumMeta, Flag
 from inspect import isabstract
 from typing import Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, Union
 
@@ -482,6 +482,9 @@ class EnumNameProvider(BaseEnumProvider):
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         enum = request.type
+
+        if issubclass(enum, Flag):
+            raise ValueError(f"Can not use {type(self).__name__} with Flag subclass {enum}")
 
         def enum_parser(data):
             return enum[data]

@@ -45,3 +45,7 @@ setup:
 deps-compile:
 	@for file in requirements/raw/*; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q; done
 	@echo "\n     ${L_RED}DO NOT FORGET TO FIX ABSOLUTE PATHS AT COMPILED FILES${NC}\n"
+
+venv-sync:
+	@pip-sync requirements/dev.txt
+	@pip install -e .
