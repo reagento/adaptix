@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Generic, Iterable, Optional, Sequence, Type, TypeVar
-
-from ..common import VarTuple
+from typing import Any, Generic, Optional, Sequence, TypeVar
 
 T = TypeVar('T')
 
@@ -80,46 +78,3 @@ class Provider(ABC):
         :raise CannotProvide: provider cannot process passed request
         """
         raise NotImplementedError
-
-    def __or__(self, other: 'Provider') -> 'Pipeline':
-        if isinstance(other, Pipeline):
-            return Pipeline((self,) + other.elements)
-        return Pipeline((self, other))
-
-
-class PipelineEvalMixin(Request[T], Generic[T]):
-    """A special mixin for Request that allows to eval pipeline.
-    Subclass should implement :method:`eval_pipeline`
-    """
-
-    @classmethod
-    @abstractmethod
-    def eval_pipeline(
-        cls: Type[Request[T]],
-        providers: Iterable[Provider],
-        mediator: Mediator,
-        request: Request[T]
-    ) -> T:
-        pass
-
-
-class Pipeline(Provider):
-    def __init__(self, elements: VarTuple[Provider]):
-        self._elements = elements
-
-    @property
-    def elements(self) -> VarTuple[Provider]:
-        return self._elements
-
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        if not isinstance(request, PipelineEvalMixin):
-            raise CannotProvide
-
-        return request.eval_pipeline(
-            list(self._elements), mediator, request
-        )
-
-    def __or__(self, other: Provider):
-        if isinstance(other, Pipeline):
-            return Pipeline(self._elements + other._elements)
-        return Pipeline(self._elements + (other,))

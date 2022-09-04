@@ -6,6 +6,8 @@ from ..common import Catchable, Parser, Serializer, TypeHint
 from ..model_tools import Default, NoDefault, OutputField, PropertyAccessor, get_func_input_figure
 from ..provider import (
     BoundingProvider,
+    Chain,
+    ChainingProvider,
     EnumExactValueProvider,
     EnumNameProvider,
     EnumValueProvider,
@@ -13,15 +15,17 @@ from ..provider import (
     NameMapper,
     NameStyle,
     OrRequestChecker,
+    ParseError,
     ParserRequest,
     PropertyAdder,
     Provider,
     SerializerRequest,
+    ValidationError,
     ValueProvider,
     create_req_checker,
     foreign_parser,
 )
-from .utils import resolve_pred_and_value
+from .utils import resolve_pred_value_chain
 
 T = TypeVar('T')
 _OMITTED = object()
@@ -31,36 +35,46 @@ def bound(pred: Any, provider: Provider, /) -> Provider:
     return BoundingProvider(create_req_checker(pred), provider)
 
 
+def chained(chain: Optional[Chain], provider: Provider, /) -> Provider:
+    if chain is None:
+        return provider
+
+    return ChainingProvider(chain, provider)
+
+
 @overload
-def parser(pred: Type[T], func: Parser[T], /) -> Provider:
+def parser(pred: Type[T], func: Parser[T], chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
 @overload
-def parser(pred: Any, func: Parser, /) -> Provider:
+def parser(pred: Any, func: Parser, chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
 @overload
-def parser(type_or_class_method: Union[type, Parser], /) -> Provider:
+def parser(type_or_class_method: Union[type, Parser], chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
-def parser(func_or_pred, func=None):
-    pred, func = resolve_pred_and_value(func_or_pred, func)
+def parser(func_or_pred, func_or_chain=None, maybe_chain=None):
+    pred, func, chain = resolve_pred_value_chain(func_or_pred, func_or_chain, maybe_chain)
     return bound(
         pred,
-        ValueProvider(ParserRequest, foreign_parser(func))
+        chained(
+            chain,
+            ValueProvider(ParserRequest, foreign_parser(func))
+        )
     )
 
 
 @overload
-def serializer(pred: Type[T], func: Serializer[T], /) -> Provider:
+def serializer(pred: Type[T], func: Serializer[T], chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
 @overload
-def serializer(pred: Any, func: Serializer, /) -> Provider:
+def serializer(pred: Any, func: Serializer, chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
@@ -68,10 +82,13 @@ def serializer(pred: Any, func: Serializer, /) -> Provider:
 # because at class level it is a simple function.
 # There is rare case when method is WrapperDescriptorType,
 # nevertheless one arg signature was removed
-def serializer(pred, func):
+def serializer(pred, func, chain=None):
     return bound(
         pred,
-        ValueProvider(SerializerRequest, func)
+        chained(
+            chain,
+            ValueProvider(SerializerRequest, func),
+        ),
     )
 
 
@@ -91,14 +108,17 @@ def constructor(type_or_class_method: Callable, /) -> Provider:
 
 
 def constructor(func_or_pred, func=None):
-    pred, func = resolve_pred_and_value(func_or_pred, func)
+    pred, func, _ = resolve_pred_value_chain(func_or_pred, func, None)
 
     return bound(
         pred,
         ValueProvider(
             InputFigureRequest,
-            get_func_input_figure(func, slice(1, None))
-        )
+            get_func_input_figure(
+                func,
+                slice(0 if func else 1, None),
+            )
+        ),
     )
 
 
@@ -230,3 +250,58 @@ def enum_by_exact_value(*preds: EnumPred) -> Provider:
 
 def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Provider:
     return _wrap_enum_provider([first_pred, *preds], EnumValueProvider(tp))
+
+
+@overload
+def validator(
+    pred: Any,
+    function: Callable[[Any], bool],
+    error: Union[str, Callable[[Any], ParseError], None] = None,
+    chain: Chain = Chain.LAST,
+    /,
+) -> Provider:
+    pass
+
+
+@overload
+def validator(
+    pred: Any,
+    function: Callable[[Any], bool],
+    chain: Chain,
+    /,
+) -> Provider:
+    pass
+
+
+def validator(
+    pred: Any,
+    function: Callable[[Any], bool],
+    error_or_chain: Union[str, Callable[[Any], ParseError], None, Chain] = None,
+    chain: Optional[Chain] = None,
+    /,
+):
+    if isinstance(error_or_chain, Chain):
+        if chain is None:
+            raise ValueError
+        error = None
+        p_chain = error_or_chain
+    elif chain is None:
+        error = error_or_chain
+        p_chain = Chain.LAST
+    else:
+        error = error_or_chain
+        p_chain = chain
+
+    # pylint: disable=C3001
+    error_func = (
+        lambda x: ValidationError(error)
+        if error is None or isinstance(error, str) else
+        error
+    )
+
+    def validator_parser(data):
+        if function(data):
+            return data
+        raise error_func(data)
+
+    return parser(pred, validator_parser, p_chain)

@@ -192,7 +192,7 @@ def test_none_provider(strict_coercion, debug_path):
     assert parser(None) is None
 
     raises_path(
-        ParseError(),
+        TypeParseError(None),
         lambda: parser(10)
     )
 

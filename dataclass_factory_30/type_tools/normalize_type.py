@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from collections import abc as c_abc, defaultdict
 from dataclasses import InitVar, dataclass
 from enum import Enum, EnumMeta
+from functools import lru_cache
 from typing import (
     Any,
     Callable,
@@ -726,7 +727,13 @@ class TypeNormalizer:
 
 
 _STD_NORMALIZER = TypeNormalizer(ImplicitParamsFiller())
+_cached_normalize = lru_cache(maxsize=128)(_STD_NORMALIZER.normalize)
 
 
 def normalize_type(tp: TypeHint) -> BaseNormType:
-    return _STD_NORMALIZER.normalize(tp)
+    try:
+        hash(tp)
+    except TypeError:
+        return _STD_NORMALIZER.normalize(tp)
+
+    return _cached_normalize(tp)

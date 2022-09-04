@@ -35,7 +35,7 @@ class OperatingFactory(IncrementalRecipe, ProvidingFromRecipe, Provider, ABC):
     """A factory that can operate as Factory but have no predefined providers"""
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        return self._provide_from_recipe(request, mediator.request_stack)
+        return self._provide_from_recipe(request, mediator.request_stack[:-1])
 
     def _facade_provide(self, request: Request[T]) -> T:
         try:

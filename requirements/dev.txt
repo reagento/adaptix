@@ -126,6 +126,8 @@ pbr==5.10.0
     # via stevedore
 pep517==0.13.0
     # via build
+phonenumbers==8.12.54
+    # via -r requirements/raw/test_extra_none.txt
 pip-tools==6.8.0
     # via -r requirements/raw/dev.txt
 platformdirs==2.5.2

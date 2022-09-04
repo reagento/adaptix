@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 from ..common import TypeHint
 
@@ -20,7 +20,7 @@ class ParseError(Exception):
 
 @dataclass(eq=False)
 class MsgError(ParseError):
-    msg: str
+    msg: Optional[str]
 
 
 @dataclass(eq=False)
@@ -60,4 +60,9 @@ class UnionParseError(ParseError):
 
 @dataclass(eq=False)
 class ValueParseError(MsgError):
+    pass
+
+
+@dataclass(eq=False)
+class ValidationError(MsgError):
     pass

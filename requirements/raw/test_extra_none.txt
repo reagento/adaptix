@@ -1,3 +1,5 @@
 pytest
 pytest-cov
 -e ./tests_helpers
+
+phonenumbers==8.12.54

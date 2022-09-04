@@ -79,7 +79,7 @@ class NoneProvider(ParserProvider, SerializerProvider):
         def none_parser(data):
             if data is None:
                 return None
-            raise ParseError
+            raise TypeParseError(None)
 
         return none_parser
 
