@@ -3,48 +3,13 @@ from decimal import Decimal
 from typing import Any, List, Union
 
 import phonenumbers
-from phonenumbers import PhoneNumber
-
-from dataclass_factory_30.facade import parser
-from dataclass_factory_30.facade.provider import ValidationError, bound, validator
-from dataclass_factory_30.provider import (
-    Chain,
-    ExtraFieldsError,
-    ParseError,
-    TypeParseError,
-    UnionParseError,
-    ValueParseError,
-)
-from dataclass_factory_30.provider.model import ExtraForbid
-from tests_helpers import raises_path
-
-from create_model import BaseFactory, forbid_version_key, outer_phonenumber_parser, string_cp866_mutator
+from factory import INNER_RECEIPT_FACTORY, OUTER_RECEIPT_FACTORY
 from models import NotifyEmail, NotifyPhone, Receipt, ReceiptType, RecItem, Taxation
-from money import Money, rubles
+from money import rubles
 
-
-class BaseOuterFactory(BaseFactory):
-    recipe = [
-        parser(PhoneNumber, outer_phonenumber_parser),
-        parser(str, string_cp866_mutator, Chain.LAST),
-    ]
-
-
-OUTER_REC_ITEM_FACTORY = BaseOuterFactory(
-    recipe=[
-        validator('quantity', lambda x: x > Decimal(0), 'Value must be > 0'),
-        validator('price', lambda x: x >= Money(0), 'Value must be >= 0'),
-    ],
-    extra_policy=ExtraForbid(),
-)
-OUTER_RECEIPT_FACTORY = BaseOuterFactory(
-    recipe=[
-        validator(List[RecItem], lambda x: len(x) > 0, 'At least one item must be presented'),
-        bound(RecItem, OUTER_REC_ITEM_FACTORY),
-        parser(Receipt, forbid_version_key, Chain.FIRST),
-    ],
-    extra_policy=ExtraForbid(),
-)
+from dataclass_factory_30.facade.provider import ValidationError
+from dataclass_factory_30.provider import ExtraFieldsError, ParseError, TypeParseError, UnionParseError, ValueParseError
+from tests_helpers import raises_path
 
 
 def change(data, path: List[Union[str, int]], new_value: Any):
@@ -187,3 +152,41 @@ def test_outer_receipt_item_validation():
         taxation=Taxation.USN_MINUS,
         notify=[NotifyEmail(value="mail@example.com")],
     )
+
+
+def test_inner():
+    receipt_parser = INNER_RECEIPT_FACTORY.parser(Receipt)
+    receipt_serializer = INNER_RECEIPT_FACTORY.serializer(Receipt)
+
+    data = {
+        "type": "INCOME",
+        "items": [
+            {
+                "name": "Matchbox",
+                "price": Decimal("10.0"),
+                "quantity": Decimal("3.0"),
+            }
+        ],
+        "taxation": 4,
+        "notify": [
+            {"type": "email", "value": "mail@example.com"}
+        ],
+        "version": 1,
+    }
+
+    receipt = Receipt(
+        type=ReceiptType.INCOME,
+        items=[
+            RecItem(
+                name="Matchbox",
+                price=rubles("10"),
+                quantity=Decimal(3),
+            )
+        ],
+        taxation=Taxation.USN_MINUS,
+        notify=[NotifyEmail("mail@example.com")],
+    )
+
+    assert receipt_parser(data) == receipt
+    serialized_data = receipt_serializer(receipt)
+    assert serialized_data == data

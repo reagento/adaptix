@@ -1,13 +1,15 @@
 from decimal import Decimal
+from typing import List
 
 import phonenumbers
+from models import Receipt, ReceiptType, RecItem
+from money import Money, TooPreciseAmount
 from phonenumbers import PhoneNumber
 
 from dataclass_factory_30.facade import Factory, enum_by_name, parser, serializer
-from dataclass_factory_30.provider import ExtraFieldsError, ValueParseError
-
-from models import ReceiptType
-from money import Money, TooPreciseAmount
+from dataclass_factory_30.facade.provider import NameMapper, bound, validator
+from dataclass_factory_30.provider import Chain, ExtraFieldsError, ValueParseError
+from dataclass_factory_30.provider.model import ExtraForbid, ExtraSkip
 
 
 def serialize_phone_number(num_obj: PhoneNumber):
@@ -65,3 +67,37 @@ class BaseFactory(Factory):
         serializer(Decimal, lambda x: x),
         enum_by_name(ReceiptType),
     ]
+
+
+class BaseOuterFactory(BaseFactory):
+    recipe = [
+        parser(PhoneNumber, outer_phonenumber_parser),
+        parser(str, string_cp866_mutator, Chain.LAST),
+    ]
+
+
+INNER_RECEIPT_FACTORY = BaseFactory(
+    recipe=[
+        NameMapper(omit_default=False),
+    ],
+    extra_policy=ExtraSkip(),
+)
+
+
+OUTER_REC_ITEM_FACTORY = BaseOuterFactory(
+    recipe=[
+        validator('quantity', lambda x: x > Decimal(0), 'Value must be > 0'),
+        validator('price', lambda x: x >= Money(0), 'Value must be >= 0'),
+    ],
+    extra_policy=ExtraForbid(),
+)
+
+
+OUTER_RECEIPT_FACTORY = BaseOuterFactory(
+    recipe=[
+        validator(List[RecItem], lambda x: len(x) > 0, 'At least one item must be presented'),
+        bound(RecItem, OUTER_REC_ITEM_FACTORY),
+        parser(Receipt, forbid_version_key, Chain.FIRST),
+    ],
+    extra_policy=ExtraForbid(),
+)
