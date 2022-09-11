@@ -37,9 +37,9 @@ cov:
 	@coverage xml
 
 setup:
+	pip install -r requirements/pre.txt
 	pip install -e .
 	pip install -r requirements/dev.txt
-	mypy --install-types
 	pre-commit install
 
 deps-compile:
@@ -47,5 +47,5 @@ deps-compile:
 	@echo "\n     ${L_RED}DO NOT FORGET TO FIX ABSOLUTE PATHS AT COMPILED FILES${NC}\n"
 
 venv-sync:
-	@pip-sync requirements/dev.txt
+	@pip-sync requirements/pre.txt requirements/dev.txt
 	@pip install -e .
