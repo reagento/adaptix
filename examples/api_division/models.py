@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, Union
 
 from phonenumbers import PhoneNumber
 
-from money import Money
+from .money import Money
 
 
 class ReceiptType(Enum):

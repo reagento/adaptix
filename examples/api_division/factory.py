@@ -2,8 +2,8 @@ from decimal import Decimal
 from typing import List
 
 import phonenumbers
-from models import Receipt, ReceiptType, RecItem
-from money import Money, TooPreciseAmount
+from .models import Receipt, ReceiptType, RecItem
+from .money import Money, TooPreciseAmount
 from phonenumbers import PhoneNumber
 
 from dataclass_factory_30.facade import Factory, enum_by_name, parser, serializer
