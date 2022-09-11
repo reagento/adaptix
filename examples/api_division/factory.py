@@ -2,14 +2,15 @@ from decimal import Decimal
 from typing import List
 
 import phonenumbers
-from .models import Receipt, ReceiptType, RecItem
-from .money import Money, TooPreciseAmount
 from phonenumbers import PhoneNumber
 
 from dataclass_factory_30.facade import Factory, enum_by_name, parser, serializer
 from dataclass_factory_30.facade.provider import NameMapper, bound, validator
 from dataclass_factory_30.provider import Chain, ExtraFieldsError, ValueParseError
 from dataclass_factory_30.provider.model import ExtraForbid, ExtraSkip
+
+from .models import Receipt, ReceiptType, RecItem
+from .money import Money, TooPreciseAmount
 
 
 def serialize_phone_number(num_obj: PhoneNumber):
@@ -24,7 +25,7 @@ def string_cp866_mutator(data: str):
     try:
         t_data.encode("cp866", "strict")
     except UnicodeEncodeError as e:
-        bad_char = e.object[e.start: e.end]
+        bad_char = e.object[e.start: e.end]  # pylint: disable=unsubscriptable-object
         raise ValueParseError(f'Char {bad_char!r} can not be represented at CP866')
     return t_data
 

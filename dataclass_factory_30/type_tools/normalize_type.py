@@ -308,13 +308,13 @@ class NormParamSpecMarker(BaseNormType, ABC):
         return NotImplemented
 
 
-class _NormParamSpecArgs(NormParamSpecMarker, ABC):
+class _NormParamSpecArgs(NormParamSpecMarker):
     @property
     def origin(self) -> Any:
         return typing.ParamSpecArgs
 
 
-class _NormParamSpecKwargs(NormParamSpecMarker, ABC):
+class _NormParamSpecKwargs(NormParamSpecMarker):
     @property
     def origin(self) -> Any:
         return typing.ParamSpecKwargs

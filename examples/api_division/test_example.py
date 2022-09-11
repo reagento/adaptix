@@ -3,13 +3,14 @@ from decimal import Decimal
 from typing import Any, List, Union
 
 import phonenumbers
-from .factory import INNER_RECEIPT_FACTORY, OUTER_RECEIPT_FACTORY
-from .models import NotifyEmail, NotifyPhone, Receipt, ReceiptType, RecItem, Taxation
-from .money import rubles
 
 from dataclass_factory_30.facade.provider import ValidationError
 from dataclass_factory_30.provider import ExtraFieldsError, ParseError, TypeParseError, UnionParseError, ValueParseError
 from tests_helpers import raises_path
+
+from .factory import INNER_RECEIPT_FACTORY, OUTER_RECEIPT_FACTORY
+from .models import NotifyEmail, NotifyPhone, Receipt, ReceiptType, RecItem, Taxation
+from .money import rubles
 
 
 def change(data, path: List[Union[str, int]], new_value: Any):
@@ -133,7 +134,7 @@ def test_outer_receipt_item_validation():
     bad_name_data = change(outer_sample_data, ["items", 0, "name"], 'Matchbox 🔥')
 
     raises_path(
-        ValueParseError(f"Char '🔥' can not be represented at CP866"),
+        ValueParseError("Char '🔥' can not be represented at CP866"),
         lambda: outer_receipt_parser(bad_name_data),
         path=["items", 0, "name"],
     )

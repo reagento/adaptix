@@ -48,6 +48,9 @@ filterwarnings = ['ignore::dataclass_factory_30.model_tools.introspection.TypedD
 [tool.bandit]
 skips = ['B102']
 
+[tool.bandit.assert_used]
+skips = ['*/test_*.py', '*/*_test.py']
+
 [tool.vulture]
 min_confidence = 60
 ignore_decorators = ['@_aspect_storage.add', '@overload', '@abstractmethod']
