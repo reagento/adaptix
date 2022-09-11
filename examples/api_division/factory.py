@@ -70,13 +70,6 @@ class BaseFactory(Factory):
     ]
 
 
-class BaseOuterFactory(BaseFactory):
-    recipe = [
-        parser(PhoneNumber, outer_phonenumber_parser),
-        parser(str, string_cp866_mutator, Chain.LAST),
-    ]
-
-
 INNER_RECEIPT_FACTORY = BaseFactory(
     recipe=[
         NameMapper(omit_default=False),
@@ -85,20 +78,26 @@ INNER_RECEIPT_FACTORY = BaseFactory(
 )
 
 
-OUTER_REC_ITEM_FACTORY = BaseOuterFactory(
+_OUTER_BASE_FACTORY = BaseFactory(
     recipe=[
-        validator('quantity', lambda x: x > Decimal(0), 'Value must be > 0'),
-        validator('price', lambda x: x >= Money(0), 'Value must be >= 0'),
+        parser(PhoneNumber, outer_phonenumber_parser),
+        parser(str, string_cp866_mutator, Chain.LAST),
     ],
     extra_policy=ExtraForbid(),
 )
 
+_OUTER_REC_ITEM_FACTORY = _OUTER_BASE_FACTORY.extend(
+    recipe=[
+        validator('quantity', lambda x: x > Decimal(0), 'Value must be > 0'),
+        validator('price', lambda x: x >= Money(0), 'Value must be >= 0'),
+    ],
+)
 
-OUTER_RECEIPT_FACTORY = BaseOuterFactory(
+
+OUTER_RECEIPT_FACTORY = _OUTER_BASE_FACTORY.extend(
     recipe=[
         validator(List[RecItem], lambda x: len(x) > 0, 'At least one item must be presented'),
-        bound(RecItem, OUTER_REC_ITEM_FACTORY),
+        bound(RecItem, _OUTER_REC_ITEM_FACTORY),
         parser(Receipt, forbid_version_key, Chain.FIRST),
     ],
-    extra_policy=ExtraForbid(),
 )

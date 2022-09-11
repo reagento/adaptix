@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from copy import copy
 from datetime import date, datetime, time
 from decimal import Decimal
 from fractions import Fraction
@@ -143,12 +144,13 @@ class BuiltinFactory(OperatingFactory, ABC):
 
 T = TypeVar('T')
 RequestTV = TypeVar('RequestTV', bound=Request)
+F = TypeVar('F', bound='Factory')
 
 
-# TODO: Add JsonSchemaFactory with new API
 class Factory(BuiltinFactory):
     def __init__(
         self,
+        *,
         recipe: Optional[List[Provider]] = None,
         strict_coercion: bool = True,
         debug_path: bool = True,
@@ -162,6 +164,42 @@ class Factory(BuiltinFactory):
         self._serializers_cache: Dict[TypeHint, Serializer] = {}
 
         super().__init__(recipe)
+
+    def replace(
+        self,
+        *,
+        strict_coercion: Optional[bool] = None,
+        debug_path: Optional[bool] = None,
+        extra_policy: Optional[ExtraPolicy] = None,
+    ):
+        # pylint: disable=protected-access
+        clone = self._clone()
+
+        if strict_coercion is not None:
+            clone._strict_coercion = strict_coercion
+
+        if debug_path is not None:
+            clone._debug_path = debug_path
+
+        if extra_policy is not None:
+            clone._extra_policy = extra_policy
+
+        return clone
+
+    def extend(self, *, recipe: List[Provider]):
+        # pylint: disable=protected-access
+        clone = self._clone()
+        clone._inc_instance_recipe = recipe + clone._inc_instance_recipe
+        return clone
+
+    def _after_clone(self):
+        self.clear_cache()
+
+    def _clone(self: F) -> F:
+        # pylint: disable=protected-access
+        self_copy = copy(self)
+        self_copy._after_clone()
+        return self_copy
 
     def _get_config_recipe(self) -> List[Provider]:
         return [
