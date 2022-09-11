@@ -166,12 +166,12 @@ class Factory(BuiltinFactory):
         super().__init__(recipe)
 
     def replace(
-        self,
+        self: F,
         *,
         strict_coercion: Optional[bool] = None,
         debug_path: Optional[bool] = None,
         extra_policy: Optional[ExtraPolicy] = None,
-    ):
+    ) -> F:
         # pylint: disable=protected-access
         clone = self._clone()
 
@@ -186,7 +186,7 @@ class Factory(BuiltinFactory):
 
         return clone
 
-    def extend(self, *, recipe: List[Provider]):
+    def extend(self: F, *, recipe: List[Provider]) -> F:
         # pylint: disable=protected-access
         clone = self._clone()
         clone._inc_instance_recipe = recipe + clone._inc_instance_recipe
