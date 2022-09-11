@@ -38,7 +38,5 @@ class Money:
         return cls(int(kopek))
 
 
-def rubles(value: Union[int, str, Decimal]):
-    if isinstance(value, int):
-        return Money(value)
+def rubles(value: Union[int, str, Decimal]) -> Money:
     return Money.from_decimal_rubles(Decimal(value))
