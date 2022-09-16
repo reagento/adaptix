@@ -12,7 +12,7 @@ from dataclass_factory_30.feature_requirement import (
     HAS_TYPE_ALIAS,
     PythonVersionRequirement,
 )
-from dataclass_factory_30.provider import Provider
+from dataclass_factory_30.provider import CannotProvide, Mediator, Provider, Request
 from dataclass_factory_30.provider.model.basic_gen import CodeGenAccumulator
 from dataclass_factory_30.struct_path import get_path
 
@@ -108,3 +108,11 @@ class DebugCtx:
     @property
     def source_namespace(self):
         return self.accum.list[-1][1].namespace
+
+
+@dataclass
+class PlaceholderProvider(Provider):
+    value: int
+
+    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
+        raise CannotProvide
