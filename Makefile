@@ -43,8 +43,9 @@ setup:
 	pre-commit install
 
 deps-compile:
-	@for file in requirements/raw/*; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q; done
-	@echo "\n     ${L_RED}DO NOT FORGET TO FIX ABSOLUTE PATHS AT COMPILED FILES${NC}\n"
+	@for file in requirements/raw/*.txt; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q; done
+	@# pip-compile saves local packages by absolute path, fix it
+	@for file in requirements/*.txt; do sed -i -E "s/-e file:.+\/tests_helpers/-e .\/tests_helpers/" "$${file}"; done
 
 venv-sync:
 	@pip-sync requirements/pre.txt requirements/dev.txt
