@@ -2,7 +2,7 @@ import typing
 from types import MappingProxyType
 from typing import TypedDict
 
-from dataclass_factory_30.feature_requirement import HAS_PY_39
+from dataclass_factory_30.feature_requirement import HAS_ANNOTATED, HAS_PY_39
 from dataclass_factory_30.model_tools import (
     InputField,
     InputFigure,
@@ -14,7 +14,7 @@ from dataclass_factory_30.model_tools import (
     get_typed_dict_input_figure,
     get_typed_dict_output_figure,
 )
-from tests_helpers import requires_annotated
+from tests_helpers import requires
 
 
 class Foo(TypedDict, total=True):
@@ -353,7 +353,7 @@ def test_inheritance_third():
     )
 
 
-@requires_annotated
+@requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotatedTotal(TypedDict):
         annotated_field: typing.Annotated[int, 'metadata']

@@ -3,6 +3,7 @@ from dataclasses import InitVar, dataclass, field
 from types import MappingProxyType
 from typing import ClassVar
 
+from dataclass_factory_30.feature_requirement import HAS_ANNOTATED
 from dataclass_factory_30.model_tools import (
     AttrAccessor,
     DefaultFactory,
@@ -16,7 +17,7 @@ from dataclass_factory_30.model_tools import (
     get_dataclass_input_figure,
     get_dataclass_output_figure,
 )
-from tests_helpers import requires_annotated
+from tests_helpers import requires
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 
@@ -318,7 +319,7 @@ def test_forward_ref():
     )
 
 
-@requires_annotated
+@requires(HAS_ANNOTATED)
 def test_annotated():
     @dataclass
     class WithAnnotated:

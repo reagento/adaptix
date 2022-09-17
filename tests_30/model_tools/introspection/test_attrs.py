@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 
+from dataclass_factory_30.feature_requirement import HAS_ANNOTATED
 from dataclass_factory_30.model_tools import (
     AttrAccessor,
     DefaultFactory,
@@ -18,7 +19,7 @@ from dataclass_factory_30.model_tools import (
     get_attrs_input_figure,
     get_attrs_output_figure,
 )
-from tests_helpers import requires_annotated
+from tests_helpers import requires
 
 pytest.importorskip("attrs")
 
@@ -572,7 +573,7 @@ def test_none_attr_custom_init():
     )
 
 
-@requires_annotated
+@requires(HAS_ANNOTATED)
 def test_annotated():
     @define
     class WithAnnotated:

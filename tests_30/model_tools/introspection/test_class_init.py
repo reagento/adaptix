@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 
+from dataclass_factory_30.feature_requirement import HAS_ANNOTATED
 from dataclass_factory_30.model_tools import (
     DefaultValue,
     ExtraKwargs,
@@ -14,7 +15,7 @@ from dataclass_factory_30.model_tools import (
     ParamKind,
     get_class_init_input_figure,
 )
-from tests_helpers import requires_annotated
+from tests_helpers import requires
 
 
 class Valid1:
@@ -179,7 +180,7 @@ def test_var_arg():
         get_class_init_input_figure(HasVarArg)
 
 
-@requires_annotated
+@requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotated:
         def __init__(self, a: typing.Annotated[int, 'metadata']):

@@ -3,6 +3,7 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
+from dataclass_factory_30.feature_requirement import HAS_ANNOTATED
 from dataclass_factory_30.model_tools import (
     AttrAccessor,
     DefaultValue,
@@ -15,7 +16,7 @@ from dataclass_factory_30.model_tools import (
     get_named_tuple_input_figure,
     get_named_tuple_output_figure,
 )
-from tests_helpers import requires_annotated
+from tests_helpers import requires
 
 FooAB = namedtuple('FooAB', 'a b')
 FooBA = namedtuple('FooBA', 'b a')
@@ -483,7 +484,7 @@ def test_inheritance():
     )
 
 
-@requires_annotated
+@requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotated(NamedTuple):
         annotated_field: typing.Annotated[int, 'metadata']

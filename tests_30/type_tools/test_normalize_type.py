@@ -37,8 +37,10 @@ import pytest
 
 from dataclass_factory_30.common import TypeHint
 from dataclass_factory_30.feature_requirement import (
+    HAS_ANNOTATED,
     HAS_PARAM_SPEC,
     HAS_STD_CLASSES_GENERICS,
+    HAS_TYPE_ALIAS,
     HAS_TYPE_GUARD,
     HAS_TYPE_UNION_OP,
 )
@@ -56,7 +58,7 @@ from dataclass_factory_30.type_tools.normalize_type import (
     _NormType,
     make_norm_type,
 )
-from tests_helpers import requires_annotated, requires_param_spec, requires_std_classes_generics, requires_type_alias
+from tests_helpers import requires
 
 MISSING = object()
 
@@ -403,7 +405,7 @@ def test_final():
     )
 
 
-@requires_annotated
+@requires(HAS_ANNOTATED)
 def test_annotated():
     from typing import Annotated
 
@@ -684,7 +686,7 @@ def test_generic(make_union):
         assert_normalize(gen[T1, T1, T1], gen, [any_tv(T1), any_tv(T1), any_tv(T1)])
 
 
-@requires_param_spec
+@requires(HAS_PARAM_SPEC)
 def test_generic_and_protocol_with_param_spec():
     from typing import Concatenate, ParamSpec
 
@@ -749,7 +751,7 @@ def test_generic_and_protocol_with_param_spec():
         )
 
 
-@requires_param_spec
+@requires(HAS_PARAM_SPEC)
 def test_param_spec_args_and_kwargs():
     from typing import ParamSpec, ParamSpecArgs, ParamSpecKwargs
 
@@ -792,7 +794,7 @@ def test_user_class():
     )
 
 
-@requires_type_alias
+@requires(HAS_TYPE_ALIAS)
 def test_type_alias():
     assert_normalize(
         typing.TypeAlias,
@@ -800,7 +802,7 @@ def test_type_alias():
     )
 
 
-@requires_std_classes_generics
+@requires(HAS_STD_CLASSES_GENERICS)
 def test_types_generic_alias():
     from types import GenericAlias
 

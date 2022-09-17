@@ -19,26 +19,16 @@ from dataclass_factory_30.struct_path import get_path
 T = TypeVar("T")
 
 
-class PytestVersionMarker:
-    def __init__(self, requirement: PythonVersionRequirement):
-        self.requirement = requirement
+def requires(requirement: PythonVersionRequirement):
+    ver_str = '.'.join(map(str, requirement.min_version))
 
-    def __call__(self, func):
-        ver_str = '.'.join(map(str, self.requirement.min_version))
-
+    def wrapper(func):
         return pytest.mark.skipif(
-            not self.requirement,
+            not requirement,
             reason=f'Need Python >= {ver_str}'
         )(func)
 
-    def __bool__(self):
-        raise NotImplementedError
-
-
-requires_annotated = PytestVersionMarker(HAS_ANNOTATED)
-requires_std_classes_generics = PytestVersionMarker(HAS_STD_CLASSES_GENERICS)
-requires_type_alias = PytestVersionMarker(HAS_TYPE_ALIAS)
-requires_param_spec = PytestVersionMarker(HAS_PARAM_SPEC)
+    return wrapper
 
 
 class TestFactory(OperatingFactory):
