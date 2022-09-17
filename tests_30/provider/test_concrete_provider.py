@@ -1,5 +1,6 @@
 import re
 from datetime import date, datetime, time, timedelta, timezone
+from decimal import Decimal
 
 from dataclass_factory_30.provider import (
     BytearrayBase64Provider,
@@ -7,39 +8,35 @@ from dataclass_factory_30.provider import (
     DatetimeFormatProvider,
     IsoFormatProvider,
     NoneProvider,
-    ParseError,
     ParserRequest,
     RegexPatternProvider,
+    SecondsTimedeltaProvider,
     SerializerRequest,
-    TimedeltaProvider,
 )
+from dataclass_factory_30.provider.concrete_provider import DatetimeFormatMismatch
 from dataclass_factory_30.provider.definitions import TypeParseError, ValueParseError
 from tests_helpers import TestFactory, parametrize_bool, raises_path
 
 
 def check_any_dt(parser):
     raises_path(
-        ParseError(),
+        TypeParseError(str),
         lambda: parser(None)
     )
     raises_path(
-        ParseError(),
+        TypeParseError(str),
         lambda: parser(10)
     )
     raises_path(
-        ParseError(),
-        lambda: parser("some string")
-    )
-    raises_path(
-        ParseError(),
+        TypeParseError(str),
         lambda: parser(datetime(2011, 11, 4, 0, 0))
     )
     raises_path(
-        ParseError(),
+        TypeParseError(str),
         lambda: parser(date(2019, 12, 4))
     )
     raises_path(
-        ParseError(),
+        TypeParseError(str),
         lambda: parser(time(4, 23, 1))
     )
 
@@ -67,6 +64,11 @@ def test_iso_format_provider_datetime(strict_coercion, debug_path):
 
     check_any_dt(parser)
 
+    raises_path(
+        ValueParseError("Invalid isoformat string"),
+        lambda: parser("some string")
+    )
+
     serializer = factory.provide(
         SerializerRequest(type=datetime, debug_path=debug_path)
     )
@@ -90,6 +92,11 @@ def test_iso_format_provider_date(strict_coercion, debug_path):
 
     assert parser('2019-12-04') == date(2019, 12, 4)
     check_any_dt(parser)
+
+    raises_path(
+        ValueParseError("Invalid isoformat string"),
+        lambda: parser("some string")
+    )
 
     serializer = factory.provide(
         SerializerRequest(type=date, debug_path=debug_path)
@@ -119,6 +126,11 @@ def test_iso_format_provider_time(strict_coercion, debug_path):
     )
     check_any_dt(parser)
 
+    raises_path(
+        ValueParseError("Invalid isoformat string"),
+        lambda: parser("some string")
+    )
+
     serializer = factory.provide(
         SerializerRequest(type=time, debug_path=debug_path)
     )
@@ -144,6 +156,11 @@ def test_datetime_format_provider(strict_coercion, debug_path):
 
     check_any_dt(parser)
 
+    raises_path(
+        DatetimeFormatMismatch("%Y-%m-%d"),
+        lambda: parser("some string")
+    )
+
     serializer = factory.provide(
         SerializerRequest(type=datetime, debug_path=debug_path)
     )
@@ -152,9 +169,9 @@ def test_datetime_format_provider(strict_coercion, debug_path):
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
-def test_timedelta_provider(strict_coercion, debug_path):
+def test_seconds_timedelta_provider(strict_coercion, debug_path):
     factory = TestFactory(
-        recipe=[TimedeltaProvider()]
+        recipe=[SecondsTimedeltaProvider()]
     )
 
     parser = factory.provide(
@@ -167,6 +184,8 @@ def test_timedelta_provider(strict_coercion, debug_path):
 
     assert parser(10) == timedelta(seconds=10)
     assert parser(600) == timedelta(minutes=10)
+    assert parser(0.123) == timedelta(milliseconds=123)
+    assert parser(Decimal('0.123')) == timedelta(milliseconds=123)
 
     serializer = factory.provide(
         SerializerRequest(type=timedelta, debug_path=debug_path)
@@ -214,8 +233,26 @@ def test_bytes_provider(strict_coercion, debug_path):
     assert parser('YWJjZA==') == b'abcd'
 
     raises_path(
-        ParseError(),
-        lambda: parser('YWJjZA')
+        ValueParseError('Bad base64 string'),
+        lambda: parser('Hello, world'),
+    )
+
+    raises_path(
+        ValueParseError(
+            'Invalid base64-encoded string: number of data characters (5)'
+            ' cannot be 1 more than a multiple of 4'
+        ),
+        lambda: parser('aaaaa='),
+    )
+
+    raises_path(
+        ValueParseError('Incorrect padding'),
+        lambda: parser('YWJjZA'),
+    )
+
+    raises_path(
+        TypeParseError(str),
+        lambda: parser(108),
     )
 
     serializer = factory.provide(
@@ -242,8 +279,26 @@ def test_bytearray_provider(strict_coercion, debug_path):
     assert parser('YWJjZA==') == bytearray(b'abcd')
 
     raises_path(
-        ParseError(),
-        lambda: parser('YWJjZA')
+        ValueParseError('Bad base64 string'),
+        lambda: parser('Hello, world'),
+    )
+
+    raises_path(
+        ValueParseError(
+            'Invalid base64-encoded string: number of data characters (5)'
+            ' cannot be 1 more than a multiple of 4'
+        ),
+        lambda: parser('aaaaa='),
+    )
+
+    raises_path(
+        ValueParseError('Incorrect padding'),
+        lambda: parser('YWJjZA'),
+    )
+
+    raises_path(
+        TypeParseError(str),
+        lambda: parser(108),
     )
 
     serializer = factory.provide(

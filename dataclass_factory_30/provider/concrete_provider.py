@@ -1,14 +1,16 @@
+import binascii
 import re
 from binascii import a2b_base64, b2a_base64
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from typing import Type, TypeVar, Union
 
 from ..common import Parser, Serializer
 from ..type_tools import normalize_type
 from .definitions import ParseError, TypeParseError, ValueParseError
 from .essential import Mediator, Request
-from .provider_basics import ExactTypeRC, foreign_parser
+from .provider_basics import ExactTypeRC
 from .provider_template import ParserProvider, ProviderWithRC, SerializerProvider, for_origin
 from .request_cls import ParserRequest, SerializerRequest
 
@@ -33,10 +35,25 @@ class ForAnyDateTime(ProviderWithRC):
 @dataclass
 class IsoFormatProvider(ForAnyDateTime, ParserProvider, SerializerProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        return foreign_parser(self.cls.fromisoformat)
+        raw_parser = self.cls.fromisoformat
+
+        def isoformat_parser(data):
+            try:
+                return raw_parser(data)
+            except TypeError:
+                raise TypeParseError(str)
+            except ValueError:
+                raise ValueParseError("Invalid isoformat string")
+
+        return isoformat_parser
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         return self.cls.isoformat
+
+
+@dataclass(eq=False)
+class DatetimeFormatMismatch(ParseError):
+    format: str
 
 
 @dataclass
@@ -48,9 +65,14 @@ class DatetimeFormatProvider(ParserProvider, SerializerProvider):
         fmt = self.format
 
         def datetime_format_parser(value):
-            return datetime.strptime(value, fmt)
+            try:
+                return datetime.strptime(value, fmt)
+            except ValueError:
+                raise DatetimeFormatMismatch(fmt)
+            except TypeError:
+                raise TypeParseError(str)
 
-        return foreign_parser(datetime_format_parser)
+        return datetime_format_parser
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         fmt = self.format
@@ -62,12 +84,18 @@ class DatetimeFormatProvider(ParserProvider, SerializerProvider):
 
 
 @for_origin(timedelta)
-class TimedeltaProvider(ParserProvider, SerializerProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        def timedelta_parser(value):
-            return timedelta(seconds=value)
+class SecondsTimedeltaProvider(ParserProvider, SerializerProvider):
+    _OK_TYPES = (int, float, Decimal)
 
-        return foreign_parser(timedelta_parser)
+    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+        ok_types = self._OK_TYPES
+
+        def timedelta_parser(data):
+            if type(data) not in ok_types:
+                raise TypeParseError(float)
+            return timedelta(seconds=int(data), microseconds=int(data % 1 * 10 ** 6))
+
+        return timedelta_parser
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         return timedelta.total_seconds
@@ -102,12 +130,20 @@ B64_PATTERN = re.compile(b'[A-Za-z0-9+/]*={0,2}')
 class BytesBase64Provider(ParserProvider, Base64SerializerMixin):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         def bytes_base64_parser(data):
-            encoded = data.encode('ascii')
-            if B64_PATTERN.fullmatch(encoded):
-                return a2b_base64(encoded)
-            raise ParseError
+            try:
+                encoded = data.encode('ascii')
+            except AttributeError:
+                raise TypeParseError(str)
 
-        return foreign_parser(bytes_base64_parser)
+            if not B64_PATTERN.fullmatch(encoded):
+                raise ValueParseError('Bad base64 string')
+
+            try:
+                return a2b_base64(encoded)
+            except binascii.Error as e:
+                raise ValueParseError(str(e))
+
+        return bytes_base64_parser
 
 
 @for_origin(bytearray)

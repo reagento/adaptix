@@ -75,14 +75,13 @@ def get_path(obj: object) -> Optional[Path]:
     # pylint: disable=protected-access
     try:
         # noinspection PyProtectedMember
-        path = obj._df_struct_path  # type: ignore[attr-defined]
+        return obj._df_struct_path  # type: ignore[attr-defined]
     except AttributeError:
         try:
             obj._df_struct_path = deque()  # type: ignore[attr-defined]
         except AttributeError:
             return None
         return deque()
-    return path
 
 
 def get_path_unchecked(obj: object) -> Path:
@@ -96,7 +95,6 @@ def get_path_unchecked(obj: object) -> Path:
     """
     try:
         # noinspection PyProtectedMember
-        path = obj._df_struct_path  # type: ignore[attr-defined]  # pylint: disable=protected-access
+        return obj._df_struct_path  # type: ignore[attr-defined]  # pylint: disable=protected-access
     except AttributeError:
         return deque()
-    return path

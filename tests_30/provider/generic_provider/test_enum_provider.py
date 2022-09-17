@@ -8,6 +8,7 @@ from dataclass_factory_30.provider import (
     ParserRequest,
     SerializerRequest,
 )
+from dataclass_factory_30.provider.definitions import BadVariantError, MsgError
 from tests_helpers import TestFactory, parametrize_bool, raises_path
 
 
@@ -38,17 +39,17 @@ def test_name_provider(strict_coercion, debug_path):
     assert parser("V1") == MyEnum.V1
 
     raises_path(
-        ParseError(),
+        BadVariantError(['V1']),
         lambda: parser("1")
     )
 
     raises_path(
-        ParseError(),
+        BadVariantError(['V1']),
         lambda: parser(1)
     )
 
     raises_path(
-        ParseError(),
+        BadVariantError(['V1']),
         lambda: parser(MyEnum.V1)
     )
 
@@ -81,17 +82,17 @@ def test_exact_value_provider(strict_coercion, debug_path):
     assert parser("1") == MyEnum.V1
 
     raises_path(
-        ParseError(),
+        BadVariantError(['1']),
         lambda: parser("V1")
     )
 
     raises_path(
-        ParseError(),
+        BadVariantError(['1']),
         lambda: parser(1)
     )
 
     raises_path(
-        ParseError(),
+        BadVariantError(['1']),
         lambda: parser(MyEnum.V1)
     )
 
@@ -115,12 +116,12 @@ def test_exact_value_provider(strict_coercion, debug_path):
     assert int_enum_parser(1) == MyIntEnum.V1
 
     raises_path(
-        ParseError(),
-        lambda: int_enum_parser(MyEnum.V1)
+        BadVariantError([1]),
+        lambda: int_enum_parser(MyEnum.V1),
     )
 
     raises_path(
-        ParseError(),
+        BadVariantError([1]),
         lambda: int_enum_parser("V1")
     )
 
@@ -151,12 +152,12 @@ def test_value_provider(strict_coercion, debug_path):
     assert enum_parser(1) == MyEnum.V1
 
     raises_path(
-        ParseError(),
+        MsgError('Bad enum value'),
         lambda: enum_parser("V1")
     )
 
     raises_path(
-        ParseError(),
+        MsgError('Bad enum value'),
         lambda: enum_parser(MyEnum.V1)
     )
 

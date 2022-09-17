@@ -23,7 +23,6 @@ from ..provider import (
     ValidationError,
     ValueProvider,
     create_req_checker,
-    foreign_parser,
 )
 from .utils import resolve_pred_value_chain
 
@@ -35,7 +34,7 @@ def bound(pred: Any, provider: Provider, /) -> Provider:
     return BoundingProvider(create_req_checker(pred), provider)
 
 
-def chained(chain: Optional[Chain], provider: Provider, /) -> Provider:
+def make_chain(chain: Optional[Chain], provider: Provider, /) -> Provider:
     if chain is None:
         return provider
 
@@ -61,9 +60,9 @@ def parser(func_or_pred, func_or_chain=None, maybe_chain=None):
     pred, func, chain = resolve_pred_value_chain(func_or_pred, func_or_chain, maybe_chain)
     return bound(
         pred,
-        chained(
+        make_chain(
             chain,
-            ValueProvider(ParserRequest, foreign_parser(func))
+            ValueProvider(ParserRequest, func)
         )
     )
 
@@ -85,7 +84,7 @@ def serializer(pred: Any, func: Serializer, chain: Optional[Chain] = None, /) ->
 def serializer(pred, func, chain=None):
     return bound(
         pred,
-        chained(
+        make_chain(
             chain,
             ValueProvider(SerializerRequest, func),
         ),

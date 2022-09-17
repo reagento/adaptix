@@ -6,6 +6,7 @@ import phonenumbers
 
 from dataclass_factory_30.facade.provider import ValidationError
 from dataclass_factory_30.provider import ExtraFieldsError, ParseError, TypeParseError, UnionParseError, ValueParseError
+from dataclass_factory_30.provider.definitions import BadVariantError
 from tests_helpers import raises_path
 
 from .factory import INNER_RECEIPT_FACTORY, OUTER_RECEIPT_FACTORY
@@ -100,7 +101,7 @@ def test_outer_parsing():
     bad_receipt_type_data = change(outer_sample_data, ["type"], "BAD_TYPE")
 
     raises_path(
-        ParseError(),
+        BadVariantError(['INCOME', 'INCOME_REFUND']),
         lambda: outer_receipt_parser(bad_receipt_type_data),
         path=['type'],
     )

@@ -66,6 +66,8 @@ def raises_path(
     with pytest.raises(exc_type, match=match) as exc_info:
         func()
 
+    assert exc_type == exc_info.type
+
     if not isinstance(exc, type):
         if is_dataclass(exc):
             assert asdict(exc_info.value) == asdict(exc)  # noqa

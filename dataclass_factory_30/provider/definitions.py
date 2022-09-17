@@ -1,13 +1,7 @@
 from dataclasses import dataclass
-from typing import Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 
 from ..common import TypeHint
-
-# Parser calling foreign functions should convert these exceptions to ParseError
-PARSER_COMPAT_EXCEPTIONS = (
-    ValueError, TypeError, LookupError,
-    AssertionError, ArithmeticError, AttributeError,
-)
 
 # __init__ of these classes do not call super().__init__,
 # but it's ok! BaseException.__init__ do nothing useful
@@ -66,3 +60,8 @@ class ValueParseError(MsgError):
 @dataclass(eq=False)
 class ValidationError(MsgError):
     pass
+
+
+@dataclass(eq=False)
+class BadVariantError(ParseError):
+    allowed_values: Iterable[Any]

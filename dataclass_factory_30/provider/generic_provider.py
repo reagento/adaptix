@@ -8,9 +8,8 @@ from typing import Callable, Collection, Container, Dict, Iterable, Literal, Map
 from ..common import Parser, Serializer, TypeHint
 from ..struct_path import append_path
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
-from .definitions import ExcludedTypeParseError, ParseError, TypeParseError, UnionParseError
+from .definitions import BadVariantError, ExcludedTypeParseError, MsgError, ParseError, TypeParseError, UnionParseError
 from .essential import CannotProvide, Mediator, Request
-from .provider_basics import foreign_parser
 from .provider_template import ParserProvider, SerializerProvider, for_origin
 from .request_cls import ParserRequest, SerializerRequest, TypeHintRM
 from .static_provider import StaticProvider, static_provision_action
@@ -486,10 +485,17 @@ class EnumNameProvider(BaseEnumProvider):
         if issubclass(enum, Flag):
             raise ValueError(f"Can not use {type(self).__name__} with Flag subclass {enum}")
 
-        def enum_parser(data):
-            return enum[data]
+        variants = [case.name for case in enum]
 
-        return foreign_parser(enum_parser)
+        def enum_parser(data):
+            try:
+                return enum[data]
+            except KeyError:
+                raise BadVariantError(variants)
+            except TypeError:
+                raise BadVariantError(variants)
+
+        return enum_parser
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         return _enum_name_serializer
@@ -514,9 +520,13 @@ class EnumValueProvider(BaseEnumProvider):
         value_parser = mediator.provide(replace(request, type=self._value_type))
 
         def enum_parser(data):
-            return enum(value_parser(data))
+            parsed_value = value_parser(data)
+            try:
+                return enum(parsed_value)
+            except ValueError:
+                raise MsgError("Bad enum value")
 
-        return foreign_parser(enum_parser)
+        return enum_parser
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         value_serializer = mediator.provide(replace(request, type=self._value_type))
@@ -538,14 +548,19 @@ class EnumExactValueProvider(BaseEnumProvider):
 
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
         enum = request.type
+        variants = [case.value for case in enum]
 
         def enum_exact_parser(data):
             # since MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
             if isinstance(data, enum):
-                raise ParseError
-            return enum(data)
+                raise BadVariantError(variants)
 
-        return foreign_parser(enum_exact_parser)
+            try:
+                return enum(data)
+            except ValueError:
+                raise BadVariantError(variants)
+
+        return enum_exact_parser
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
         return _enum_exact_value_serializer

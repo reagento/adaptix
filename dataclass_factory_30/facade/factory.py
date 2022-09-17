@@ -40,14 +40,13 @@ from ..provider import (
     Provider,
     RegexPatternProvider,
     Request,
+    SecondsTimedeltaProvider,
     SerializerRequest,
-    TimedeltaProvider,
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
-    ValueProvider,
 )
 from ..provider.model import ExtraPolicy, ExtraSkip, make_input_creation, make_output_extraction
-from .provider import bound, parser, serializer
+from .provider import parser, serializer
 
 
 def stub(arg):
@@ -58,38 +57,33 @@ def _as_is_parser(tp: type) -> Provider:
     return CoercionLimiter(parser(tp, stub), [tp])
 
 
-def _stub_serializer(tp: type) -> Provider:
-    return serializer(tp, stub)
-
-
 class BuiltinFactory(OperatingFactory, ABC):
     """A factory contains builtin providers"""
 
     recipe = [
         NoneProvider(),
 
-        # omit wrapping with foreign_parser
-        bound(Any, ValueProvider(ParserRequest, stub)),
+        parser(Any, stub),
         serializer(Any, stub),
 
         IsoFormatProvider(datetime),
         IsoFormatProvider(date),
         IsoFormatProvider(time),
-        TimedeltaProvider(),
+        SecondsTimedeltaProvider(),
 
         EnumExactValueProvider(),  # it has higher priority than int for IntEnum
 
         CoercionLimiter(parser(int), [int]),
-        _stub_serializer(int),
+        serializer(int, stub),
 
         CoercionLimiter(parser(float), [float, int]),
-        _stub_serializer(float),
+        serializer(float, stub),
 
         _as_is_parser(str),
-        _stub_serializer(str),
+        serializer(str, stub),
 
         _as_is_parser(bool),
-        _stub_serializer(bool),
+        serializer(bool, stub),
 
         CoercionLimiter(parser(Decimal), [str, Decimal]),
         serializer(Decimal, Decimal.__str__),
@@ -222,7 +216,12 @@ class Factory(BuiltinFactory):
         try:
             return self._serializers_cache[tp]
         except KeyError:
-            return self._facade_provide(SerializerRequest(tp, debug_path=self._debug_path))
+            return self._facade_provide(
+                SerializerRequest(
+                    tp,
+                    debug_path=self._debug_path
+                )
+            )
 
     def clear_cache(self):
         self._parser_cache = {}

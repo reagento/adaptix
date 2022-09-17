@@ -2,14 +2,12 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from functools import wraps
 from inspect import isabstract
 from typing import Any, Callable, ClassVar, Generic, Iterable, Pattern, Sequence, Type, TypeVar, Union
 
-from ..common import Parser, TypeHint
+from ..common import TypeHint
 from ..type_tools import is_parametrized, is_protocol, is_subclass_soft, normalize_type
 from ..type_tools.normalize_type import BaseNormType, NormTV, NotSubscribedError
-from .definitions import PARSER_COMPAT_EXCEPTIONS, ParseError
 from .essential import CannotProvide, Mediator, Provider, Request
 from .request_cls import FieldRM, TypeHintRM
 
@@ -245,17 +243,6 @@ class BoundingProvider(Provider):
 
     def __repr__(self):
         return f"{type(self).__name__}({self._request_checker}, {self._provider})"
-
-
-def foreign_parser(func: Callable[[Any], T]) -> Parser[T]:
-    @wraps(func)
-    def foreign_parser_wrapper(arg):
-        try:
-            return func(arg)
-        except PARSER_COMPAT_EXCEPTIONS as e:
-            raise ParseError() from e
-
-    return foreign_parser_wrapper
 
 
 class ValueProvider(Provider, Generic[T]):

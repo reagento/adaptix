@@ -176,11 +176,18 @@ def test_literal(strict_coercion, debug_path):
     assert parser('a') == 'a'
     assert parser(None) is None
 
-    raises_path(
-        ParseError,
-        lambda: parser('b'),
-        path=[],
-    )
+    if debug_path:
+        raises_path(
+            UnionParseError([TypeParseError(type(None)), ParseError()]),
+            lambda: parser('b'),
+            path=[],
+        )
+    else:
+        raises_path(
+            ParseError(),
+            lambda: parser('b'),
+            path=[],
+        )
 
     serializer = factory.provide(
         SerializerRequest(
