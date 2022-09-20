@@ -14,7 +14,7 @@ from dataclass_factory_30.provider import (
     SerializerRequest,
 )
 from dataclass_factory_30.provider.concrete_provider import DatetimeFormatMismatch
-from dataclass_factory_30.provider.definitions import TypeParseError, ValueParseError
+from dataclass_factory_30.provider.errors import TypeParseError, ValueParseError
 from tests_helpers import TestFactory, parametrize_bool, raises_path
 
 

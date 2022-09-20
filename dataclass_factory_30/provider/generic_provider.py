@@ -8,7 +8,7 @@ from typing import Callable, Collection, Container, Dict, Iterable, Literal, Map
 from ..common import Parser, Serializer, TypeHint
 from ..struct_path import append_path
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
-from .definitions import BadVariantError, ExcludedTypeParseError, MsgError, ParseError, TypeParseError, UnionParseError
+from .errors import BadVariantError, ExcludedTypeParseError, MsgError, ParseError, TypeParseError, UnionParseError
 from .essential import CannotProvide, Mediator, Request
 from .provider_template import ParserProvider, SerializerProvider, for_origin
 from .request_cls import ParserRequest, SerializerRequest, TypeHintRM
@@ -163,9 +163,6 @@ class UnionProvider(ParserProvider, SerializerProvider):
         return union_serializer
 
     def _get_single_optional_serializer(self, serializer: Serializer) -> Serializer:
-        # This behavior is slightly different from the generic serializer.
-        # If data contains value of invalid type and main serializer does not raise an error,
-        # generic serializer will raise exception, but this serializer skips problem
         def union_so_serializer(data):
             if data is None:
                 return None

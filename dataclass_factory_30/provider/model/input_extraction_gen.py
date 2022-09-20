@@ -5,7 +5,7 @@ from typing import Dict, Mapping, Optional, Set
 from ...code_tools import CodeBuilder, ContextNamespace
 from ...common import Parser
 from ...model_tools import ExtraTargets, InputField, InputFigure
-from ...provider.definitions import (
+from ...provider.errors import (
     ExtraFieldsError,
     ExtraItemsError,
     NoRequiredFieldsError,

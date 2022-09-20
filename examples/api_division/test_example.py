@@ -6,7 +6,7 @@ import phonenumbers
 
 from dataclass_factory_30.facade.provider import ValidationError
 from dataclass_factory_30.provider import ExtraFieldsError, ParseError, TypeParseError, UnionParseError, ValueParseError
-from dataclass_factory_30.provider.definitions import BadVariantError
+from dataclass_factory_30.provider.errors import BadVariantError
 from tests_helpers import raises_path
 
 from .factory import INNER_RECEIPT_FACTORY, OUTER_RECEIPT_FACTORY

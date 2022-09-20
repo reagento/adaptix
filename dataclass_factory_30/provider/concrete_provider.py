@@ -8,7 +8,7 @@ from typing import Type, TypeVar, Union
 
 from ..common import Parser, Serializer
 from ..type_tools import normalize_type
-from .definitions import ParseError, TypeParseError, ValueParseError
+from .errors import ParseError, TypeParseError, ValueParseError
 from .essential import Mediator, Request
 from .provider_basics import ExactTypeRC
 from .provider_template import ParserProvider, ProviderWithRC, SerializerProvider, for_origin

@@ -10,7 +10,7 @@ from .concrete_provider import (
     RegexPatternProvider,
     SecondsTimedeltaProvider,
 )
-from .definitions import (
+from .errors import (
     ExcludedTypeParseError,
     ExtraFieldsError,
     ExtraItemsError,

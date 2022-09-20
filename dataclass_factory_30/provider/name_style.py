@@ -27,7 +27,7 @@ class NameStyle(Enum):
     UPPER_DOT = "UPPER.DOT"
 
 
-@dataclass
+@dataclass(frozen=True)
 class StyleConversion:
     sep: str
     first: Callable[[str], str]

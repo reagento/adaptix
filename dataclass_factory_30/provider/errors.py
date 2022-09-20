@@ -9,7 +9,9 @@ from ..common import TypeHint
 
 @dataclass(eq=False)
 class ParseError(Exception):
-    pass
+    """The base class for the exceptions that are raised
+    when the parser gets invalid input data
+    """
 
 
 @dataclass(eq=False)

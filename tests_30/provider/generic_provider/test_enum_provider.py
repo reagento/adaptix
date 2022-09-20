@@ -8,7 +8,7 @@ from dataclass_factory_30.provider import (
     ParserRequest,
     SerializerRequest,
 )
-from dataclass_factory_30.provider.definitions import BadVariantError, MsgError
+from dataclass_factory_30.provider.errors import BadVariantError, MsgError
 from tests_helpers import TestFactory, parametrize_bool, raises_path
 
 

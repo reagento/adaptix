@@ -275,7 +275,7 @@ class FactoryProvider(Provider, Generic[T]):
         return f"{type(self).__name__}({self._req_cls}, {self._factory})"
 
 
-class MergingProvider(Provider):
+class ConcatProvider(Provider):
     def __init__(self, *providers: Provider):
         self._providers = providers
 

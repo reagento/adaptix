@@ -5,7 +5,7 @@ from typing import Collection, Type, TypeVar, final
 
 from ..common import Parser, Serializer, TypeHint
 from ..type_tools import create_union, normalize_type
-from .definitions import TypeParseError
+from .errors import TypeParseError
 from .essential import CannotProvide, Mediator, Provider, Request
 from .provider_basics import RequestChecker, match_origin
 from .request_cls import ParserRequest, SerializerRequest
