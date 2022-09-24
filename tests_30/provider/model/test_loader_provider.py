@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, Optional
 
 import pytest
 
-from dataclass_factory_30.common import Parser, VarTuple
+from dataclass_factory_30.common import Loader, VarTuple
 from dataclass_factory_30.facade import bound
 from dataclass_factory_30.model_tools import (
     ExtraKwargs,
@@ -23,13 +23,13 @@ from dataclass_factory_30.provider import (
     ExtraItemsError,
     InputFigureRequest,
     InputNameMappingRequest,
-    ModelParserProvider,
+    LoaderRequest,
+    LoadError,
+    ModelLoaderProvider,
     NameSanitizer,
     NoRequiredFieldsError,
     NoRequiredItemsError,
-    ParseError,
-    ParserRequest,
-    TypeParseError,
+    TypeLoadError,
     ValueProvider,
     make_input_creation,
 )
@@ -43,7 +43,7 @@ from dataclass_factory_30.provider.model import (
     InpNoneCrown,
     InputNameMapping,
 )
-from tests_helpers import DebugCtx, TestFactory, parametrize_bool, raises_path
+from tests_helpers import DebugCtx, TestRetort, parametrize_bool, raises_path
 
 
 @dataclass
@@ -84,33 +84,33 @@ def figure(*fields: InputField, extra: InpFigureExtra):
     )
 
 
-def int_parser(data):
+def int_loader(data):
     if isinstance(data, BaseException):
         raise data
     return data
 
 
-def make_parser_getter(
+def make_loader_getter(
     fig: InputFigure,
     name_mapping: InputNameMapping,
     debug_path: bool,
     debug_ctx: DebugCtx,
-) -> Callable[[], Parser]:
+) -> Callable[[], Loader]:
     def getter():
-        factory = TestFactory(
+        retort = TestRetort(
             recipe=[
                 ValueProvider(InputFigureRequest, fig),
                 ValueProvider(InputNameMappingRequest, name_mapping),
-                bound(int, ValueProvider(ParserRequest, int_parser)),
-                ModelParserProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
+                bound(int, ValueProvider(LoaderRequest, int_loader)),
+                ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
                 debug_ctx.accum,
             ]
         )
 
-        parser = factory.provide(
-            ParserRequest(type=Gauge, debug_path=debug_path, strict_coercion=False)
+        loader = retort.provide(
+            LoaderRequest(type=Gauge, debug_path=debug_path, strict_coercion=False)
         )
-        return parser
+        return loader
 
     return getter
 
@@ -121,7 +121,7 @@ def extra_policy(request):
 
 
 def test_direct(debug_ctx, debug_path, extra_policy):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
@@ -142,45 +142,45 @@ def test_direct(debug_ctx, debug_path, extra_policy):
     )
 
     if extra_policy == ExtraCollect():
-        pytest.raises(ValueError, parser_getter).match(
-            "Cannot create parser that collect extra data if InputFigure does not take extra data"
+        pytest.raises(ValueError, loader_getter).match(
+            "Cannot create loader that collect extra data if InputFigure does not take extra data"
         )
         return
 
-    parser = parser_getter()
-    assert parser({'a': 1, 'b': 2}) == gauge(1, 2)
+    loader = loader_getter()
+    assert loader({'a': 1, 'b': 2}) == gauge(1, 2)
 
     if extra_policy == ExtraSkip():
-        assert parser({'a': 1, 'b': 2, 'c': 3}) == gauge(1, 2)
+        assert loader({'a': 1, 'b': 2, 'c': 3}) == gauge(1, 2)
     if extra_policy == ExtraForbid():
         raises_path(
             ExtraFieldsError({'c'}),
-            lambda: parser({'a': 1, 'b': 2, 'c': 3}),
+            lambda: loader({'a': 1, 'b': 2, 'c': 3}),
             path=[],
         )
 
     raises_path(
-        ParseError(),
-        lambda: parser({'a': 1, 'b': ParseError()}),
+        LoadError(),
+        lambda: loader({'a': 1, 'b': LoadError()}),
         path=['b'] if debug_path else [],
     )
 
     raises_path(
         NoRequiredFieldsError(['b']),
-        lambda: parser({'a': 1}),
+        lambda: loader({'a': 1}),
         path=[],
     )
 
     raises_path(
-        TypeParseError(dict),
-        lambda: parser("bad input value"),
+        TypeLoadError(dict),
+        lambda: loader("bad input value"),
         path=[],
     )
 
 
 @pytest.mark.parametrize('extra_policy', [ExtraSkip(), ExtraForbid()])
 def test_direct_list(debug_ctx, debug_path, extra_policy):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
@@ -200,34 +200,34 @@ def test_direct_list(debug_ctx, debug_path, extra_policy):
         debug_ctx=debug_ctx,
     )
 
-    parser = parser_getter()
-    assert parser([1, 2]) == gauge(1, 2)
+    loader = loader_getter()
+    assert loader([1, 2]) == gauge(1, 2)
 
     if extra_policy == ExtraSkip():
-        assert parser([1, 2, 3]) == gauge(1, 2)
+        assert loader([1, 2, 3]) == gauge(1, 2)
 
     if extra_policy == ExtraForbid():
         raises_path(
             ExtraItemsError(2),
-            lambda: parser([1, 2, 3]),
+            lambda: loader([1, 2, 3]),
             path=[],
         )
 
     raises_path(
         NoRequiredItemsError(2),
-        lambda: parser([10]),
+        lambda: loader([10]),
         path=[],
     )
 
     raises_path(
-        TypeParseError(list),
-        lambda: parser("bad input value"),
+        TypeLoadError(list),
+        lambda: loader("bad input value"),
         path=[],
     )
 
 
 def test_extra_forbid(debug_ctx, debug_path):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
@@ -247,22 +247,22 @@ def test_extra_forbid(debug_ctx, debug_path):
         debug_ctx=debug_ctx,
     )
 
-    parser = parser_getter()
+    loader = loader_getter()
 
     raises_path(
         ExtraFieldsError({'c'}),
-        lambda: parser({'a': 1, 'b': 2, 'c': 3}),
+        lambda: loader({'a': 1, 'b': 2, 'c': 3}),
         path=[],
     )
     raises_path(
         ExtraFieldsError({'c', 'd'}),
-        lambda: parser({'a': 1, 'b': 2, 'c': 3, 'd': 4}),
+        lambda: loader({'a': 1, 'b': 2, 'c': 3, 'd': 4}),
         path=[],
     )
 
 
 def test_creation(debug_ctx, debug_path, extra_policy):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_ONLY, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
@@ -287,13 +287,13 @@ def test_creation(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
-    assert parser({'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}) == gauge(1, 2, c=3, d=4, e=5)
+    assert loader({'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5}) == gauge(1, 2, c=3, d=4, e=5)
 
 
 def test_extra_kwargs(debug_ctx, debug_path):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_ONLY, is_required=True),
             extra=ExtraKwargs()
@@ -310,15 +310,15 @@ def test_extra_kwargs(debug_ctx, debug_path):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
-    assert parser({'a': 1}) == gauge(1)
-    assert parser({'a': 1, 'b': 2}) == gauge(1, b=2)
+    assert loader({'a': 1}) == gauge(1)
+    assert loader({'a': 1, 'b': 2}) == gauge(1, b=2)
 
 
 @parametrize_bool('is_required')
 def test_extra_targets_one(debug_ctx, debug_path, is_required):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=is_required),
@@ -336,17 +336,17 @@ def test_extra_targets_one(debug_ctx, debug_path, is_required):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
-    assert parser({'a': 1}) == gauge(1, {})
-    assert parser({'a': 1, 'c': 2}) == gauge(1, {'c': 2})
-    assert parser({'a': 1, 'b': 2}) == gauge(1, {'b': 2})
-    assert parser({'a': 1, 'b': 2, 'c': 3}) == gauge(1, {'b': 2, 'c': 3})
+    assert loader({'a': 1}) == gauge(1, {})
+    assert loader({'a': 1, 'c': 2}) == gauge(1, {'c': 2})
+    assert loader({'a': 1, 'b': 2}) == gauge(1, {'b': 2})
+    assert loader({'a': 1, 'b': 2, 'c': 3}) == gauge(1, {'b': 2, 'c': 3})
 
 
 @parametrize_bool('is_required_first', 'is_required_second')
 def test_extra_targets_two(debug_ctx, debug_path, is_required_first, is_required_second):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=is_required_first),
@@ -365,18 +365,18 @@ def test_extra_targets_two(debug_ctx, debug_path, is_required_first, is_required
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
-    assert parser({'a': 1}) == gauge(1, {}, c={})
-    assert parser({'a': 1, 'd': 2}) == gauge(1, {'d': 2}, c={'d': 2})
-    assert parser({'a': 1, 'b': 2}) == gauge(1, {'b': 2}, c={'b': 2})
-    assert parser({'a': 1, 'c': 2}) == gauge(1, {'c': 2}, c={'c': 2})
-    assert parser({'a': 1, 'b': 2, 'c': 3}) == gauge(1, {'b': 2, 'c': 3}, c={'b': 2, 'c': 3})
-    assert parser({'a': 1, 'b': 2, 'c': 3, 'd': 4}) == gauge(1, {'b': 2, 'c': 3, 'd': 4}, c={'b': 2, 'c': 3, 'd': 4})
+    assert loader({'a': 1}) == gauge(1, {}, c={})
+    assert loader({'a': 1, 'd': 2}) == gauge(1, {'d': 2}, c={'d': 2})
+    assert loader({'a': 1, 'b': 2}) == gauge(1, {'b': 2}, c={'b': 2})
+    assert loader({'a': 1, 'c': 2}) == gauge(1, {'c': 2}, c={'c': 2})
+    assert loader({'a': 1, 'b': 2, 'c': 3}) == gauge(1, {'b': 2, 'c': 3}, c={'b': 2, 'c': 3})
+    assert loader({'a': 1, 'b': 2, 'c': 3, 'd': 4}) == gauge(1, {'b': 2, 'c': 3, 'd': 4}, c={'b': 2, 'c': 3, 'd': 4})
 
 
 def test_extra_saturate(debug_ctx, debug_path):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_ONLY, is_required=True),
             extra=ExtraSaturate(Gauge.saturate)
@@ -393,14 +393,14 @@ def test_extra_saturate(debug_ctx, debug_path):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
-    assert parser({'a': 1}) == gauge(1).with_extra({})
-    assert parser({'a': 1, 'b': 2}) == gauge(1).with_extra({'b': 2})
+    assert loader({'a': 1}) == gauge(1).with_extra({})
+    assert loader({'a': 1, 'b': 2}) == gauge(1).with_extra({'b': 2})
 
 
 def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
@@ -419,23 +419,23 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
     raises_path(
         NoRequiredFieldsError(['m_a']),
-        lambda: parser({'a': 1, 'b': 2}),
+        lambda: loader({'a': 1, 'b': 2}),
         path=[],
     )
 
-    assert parser({'m_a': 1, 'b': 'this value is not parsed'}) == gauge(1, b='this value is not parsed')
-    assert parser({'m_a': 1, 'm_b': 2}) == gauge(1, b=2)
+    assert loader({'m_a': 1, 'b': 'this value is not loaded'}) == gauge(1, b='this value is not loaded')
+    assert loader({'m_a': 1, 'm_b': 2}) == gauge(1, b=2)
     pytest.raises(
-        TypeError, lambda: parser({'m_a': 1, 'm_b': 2, 'b': 3}),
+        TypeError, lambda: loader({'m_a': 1, 'm_b': 2, 'b': 3}),
     ).match("got multiple values for keyword argument 'b'")
 
 
 def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
@@ -453,9 +453,9 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    pytest.raises(ValueError, parser_getter).match(re.escape("Required fields ['b'] are skipped"))
+    pytest.raises(ValueError, loader_getter).match(re.escape("Required fields ['b'] are skipped"))
 
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
@@ -473,9 +473,9 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser_getter()
+    loader_getter()
 
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
@@ -493,11 +493,11 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    pytest.raises(ValueError, parser_getter).match(re.escape("Required fields ['b'] are skipped"))
+    pytest.raises(ValueError, loader_getter).match(re.escape("Required fields ['b'] are skipped"))
 
 
 def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
@@ -516,11 +516,11 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    pytest.raises(ValueError, parser_getter).match(
+    pytest.raises(ValueError, loader_getter).match(
         re.escape("Extra targets ['b'] are found at crown")
     )
 
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
@@ -539,13 +539,13 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    pytest.raises(ValueError, parser_getter).match(
+    pytest.raises(ValueError, loader_getter).match(
         re.escape("Extra targets ['b'] are found at crown")
     )
 
 
 def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
@@ -564,14 +564,14 @@ def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    pytest.raises(ValueError, parser_getter).match(
+    pytest.raises(ValueError, loader_getter).match(
         re.escape("Optional fields ['b'] are found at list crown")
     )
 
 
 @parametrize_bool('is_required')
 def test_flat_mapping(debug_ctx, debug_path, is_required):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
@@ -591,17 +591,17 @@ def test_flat_mapping(debug_ctx, debug_path, is_required):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
     raises_path(
         NoRequiredFieldsError(['m_a']),
-        lambda: parser({'a': 1, 'b': 2}),
+        lambda: loader({'a': 1, 'b': 2}),
         path=[],
     )
 
-    assert parser({'m_a': 1, 'b': 2}) == gauge(1, e={'b': 2})
-    assert parser({'m_a': 1, 'm_b': 2}) == gauge(1, b=2, e={})
-    assert parser({'m_a': 1, 'm_b': 2, 'b': 3}) == gauge(1, b=2, e={'b': 3})
+    assert loader({'m_a': 1, 'b': 2}) == gauge(1, e={'b': 2})
+    assert loader({'m_a': 1, 'm_b': 2}) == gauge(1, b=2, e={})
+    assert loader({'m_a': 1, 'm_b': 2, 'b': 3}) == gauge(1, b=2, e={'b': 3})
 
 
 COMPLEX_STRUCTURE_FIGURE = figure(
@@ -649,7 +649,7 @@ COMPLEX_STRUCTURE_CROWN = InpDictCrown(
 
 
 def test_structure_flattening(debug_ctx, debug_path):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=COMPLEX_STRUCTURE_FIGURE,
         name_mapping=InputNameMapping(
             crown=COMPLEX_STRUCTURE_CROWN,
@@ -658,9 +658,9 @@ def test_structure_flattening(debug_ctx, debug_path):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
-    assert parser(
+    assert loader(
         {
             'z': {
                 'y': 1,
@@ -681,7 +681,7 @@ def test_structure_flattening(debug_ctx, debug_path):
         }
     )
 
-    assert parser(
+    assert loader(
         {
             'z': {
                 'y': 1,
@@ -706,8 +706,8 @@ def test_structure_flattening(debug_ctx, debug_path):
     )
 
     raises_path(
-        TypeParseError(dict),
-        lambda: parser(
+        TypeLoadError(dict),
+        lambda: loader(
             {
                 'z': 'this is not a dict',
                 'w': 3,
@@ -722,8 +722,8 @@ def test_structure_flattening(debug_ctx, debug_path):
     )
 
     raises_path(
-        TypeParseError(list),
-        lambda: parser(
+        TypeLoadError(list),
+        lambda: loader(
             {
                 'z': {
                     'y': 1,
@@ -759,7 +759,7 @@ def _replace_value_by_path(data, path, new_value):
     ],
 )
 def test_error_path_at_complex_structure(debug_ctx, debug_path, error_path):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=COMPLEX_STRUCTURE_FIGURE,
         name_mapping=InputNameMapping(
             crown=COMPLEX_STRUCTURE_CROWN,
@@ -768,7 +768,7 @@ def test_error_path_at_complex_structure(debug_ctx, debug_path, error_path):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
     data = {
         'z': {
@@ -783,17 +783,17 @@ def test_error_path_at_complex_structure(debug_ctx, debug_path, error_path):
         ],
     }
 
-    _replace_value_by_path(data, error_path, ParseError())
+    _replace_value_by_path(data, error_path, LoadError())
 
     raises_path(
-        ParseError(),
-        lambda: parser(data),
+        LoadError(),
+        lambda: loader(data),
         path=error_path if debug_path else []
     )
 
 
 def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('extra', ParamKind.KW_ONLY, is_required=True),
@@ -812,28 +812,28 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
-    assert parser({'a': 1}) == gauge(1, extra={})
-    assert parser({'a': 1, 'b': 2}) == gauge(1, extra={})
+    assert loader({'a': 1}) == gauge(1, extra={})
+    assert loader({'a': 1, 'b': 2}) == gauge(1, extra={})
 
     if extra_policy == ExtraSkip():
-        assert parser({'a': 1, 'b': 2, 'c': 3}) == gauge(1, extra={})
+        assert loader({'a': 1, 'b': 2, 'c': 3}) == gauge(1, extra={})
 
     if extra_policy == ExtraCollect():
-        assert parser({'a': 1, 'b': 2, 'c': 3}) == gauge(1, extra={'c': 3})
+        assert loader({'a': 1, 'b': 2, 'c': 3}) == gauge(1, extra={'c': 3})
 
     if extra_policy == ExtraForbid():
         raises_path(
             ExtraFieldsError({'c'}),
-            lambda: parser({'a': 1, 'b': 2, 'c': 3}),
+            lambda: loader({'a': 1, 'b': 2, 'c': 3}),
             path=[],
         )
 
 
 @pytest.mark.parametrize('extra_policy', [ExtraSkip(), ExtraForbid()])
 def test_none_crown_at_list_crown(debug_ctx, debug_path, extra_policy):
-    parser_getter = make_parser_getter(
+    loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             extra=None,
@@ -852,22 +852,22 @@ def test_none_crown_at_list_crown(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    parser = parser_getter()
+    loader = loader_getter()
 
-    assert parser([1, 2, 3]) == gauge(2)
+    assert loader([1, 2, 3]) == gauge(2)
 
     raises_path(
         NoRequiredItemsError(3),
-        lambda: parser([1, 2]),
+        lambda: loader([1, 2]),
         path=[],
     )
 
     if extra_policy == ExtraSkip():
-        assert parser([1, 2, 3, 4]) == gauge(2)
+        assert loader([1, 2, 3, 4]) == gauge(2)
 
     if extra_policy == ExtraForbid():
         raises_path(
             ExtraItemsError(3),
-            lambda: parser([1, 2, 3, 4]),
+            lambda: loader([1, 2, 3, 4]),
             path=[],
         )

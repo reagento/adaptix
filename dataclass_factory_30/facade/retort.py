@@ -6,11 +6,10 @@ from fractions import Fraction
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from pathlib import Path
-from typing import Any, ByteString, Dict, List, Mapping, MutableMapping, Optional, Type, TypeVar
+from typing import Any, ByteString, Dict, List, Mapping, MutableMapping, Optional, Type, TypeVar, overload
 from uuid import UUID
 
-from ..common import Parser, Serializer, TypeHint
-from ..factory import OperatingFactory
+from ..common import Dumper, Loader, TypeHint
 from ..provider import (
     ATTRS_FIGURE_PROVIDER,
     CLASS_INIT_FIGURE_PROVIDER,
@@ -25,42 +24,43 @@ from ..provider import (
     CfgExtraPolicy,
     CoercionLimiter,
     DictProvider,
+    DumperRequest,
     EnumExactValueProvider,
     FactoryProvider,
     IsoFormatProvider,
     IterableProvider,
     LiteralProvider,
-    ModelParserProvider,
-    ModelSerializerProvider,
+    LoaderRequest,
+    ModelDumperProvider,
+    ModelLoaderProvider,
     NameMapper,
     NameSanitizer,
     NewTypeUnwrappingProvider,
     NoneProvider,
-    ParserRequest,
     Provider,
     RegexPatternProvider,
     Request,
     SecondsTimedeltaProvider,
-    SerializerRequest,
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
 from ..provider.model import ExtraPolicy, ExtraSkip, make_input_creation, make_output_extraction
-from .provider import parser, serializer
+from ..retort import OperatingRetort
+from .provider import dumper, loader
 
 
 def stub(arg):
     return arg
 
 
-class BuiltinFactory(OperatingFactory, ABC):
-    """A factory contains builtin providers"""
+class BuiltinRetort(OperatingRetort, ABC):
+    """A retort contains builtin providers"""
 
     recipe = [
         NoneProvider(),
 
-        parser(Any, stub),
-        serializer(Any, stub),
+        loader(Any, stub),
+        dumper(Any, stub),
 
         IsoFormatProvider(datetime),
         IsoFormatProvider(date),
@@ -69,30 +69,30 @@ class BuiltinFactory(OperatingFactory, ABC):
 
         EnumExactValueProvider(),  # it has higher priority than int for IntEnum
 
-        CoercionLimiter(parser(int), [int]),
-        serializer(int, stub),
+        CoercionLimiter(loader(int), [int]),
+        dumper(int, stub),
 
-        CoercionLimiter(parser(float), [float, int]),
-        serializer(float, stub),
+        CoercionLimiter(loader(float), [float, int]),
+        dumper(float, stub),
 
-        CoercionLimiter(parser(str, stub), [str]),
-        serializer(str, stub),
+        CoercionLimiter(loader(str, stub), [str]),
+        dumper(str, stub),
 
-        CoercionLimiter(parser(bool, stub), [bool]),
-        serializer(bool, stub),
+        CoercionLimiter(loader(bool, stub), [bool]),
+        dumper(bool, stub),
 
-        CoercionLimiter(parser(Decimal), [str, Decimal]),
-        serializer(Decimal, Decimal.__str__),
-        CoercionLimiter(parser(Fraction), [str, Fraction]),
-        serializer(Fraction, Fraction.__str__),
+        CoercionLimiter(loader(Decimal), [str, Decimal]),
+        dumper(Decimal, Decimal.__str__),
+        CoercionLimiter(loader(Fraction), [str, Fraction]),
+        dumper(Fraction, Fraction.__str__),
 
         BytesBase64Provider(),
         BytearrayBase64Provider(),
 
         *chain.from_iterable(
             (
-                parser(tp),
-                serializer(tp, tp.__str__),  # type: ignore[arg-type]
+                loader(tp),
+                dumper(tp, tp.__str__),  # type: ignore[arg-type]
             )
             for tp in [
                 UUID, Path,
@@ -112,8 +112,8 @@ class BuiltinFactory(OperatingFactory, ABC):
         ABCProxy(MutableMapping, dict),
         ABCProxy(ByteString, bytes),
 
-        ModelParserProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
-        ModelSerializerProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
+        ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
+        ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
 
         NameMapper(),
 
@@ -134,10 +134,10 @@ class BuiltinFactory(OperatingFactory, ABC):
 
 T = TypeVar('T')
 RequestTV = TypeVar('RequestTV', bound=Request)
-F = TypeVar('F', bound='Factory')
+R = TypeVar('R', bound='Retort')
 
 
-class Factory(BuiltinFactory):
+class Retort(BuiltinRetort):
     def __init__(
         self,
         *,
@@ -150,18 +150,18 @@ class Factory(BuiltinFactory):
         self._debug_path = debug_path
         self._extra_policy = extra_policy
 
-        self._parser_cache: Dict[TypeHint, Parser] = {}
-        self._serializers_cache: Dict[TypeHint, Serializer] = {}
+        self._loader_cache: Dict[TypeHint, Loader] = {}
+        self._dumper_cache: Dict[TypeHint, Dumper] = {}
 
         super().__init__(recipe)
 
     def replace(
-        self: F,
+        self: R,
         *,
         strict_coercion: Optional[bool] = None,
         debug_path: Optional[bool] = None,
         extra_policy: Optional[ExtraPolicy] = None,
-    ) -> F:
+    ) -> R:
         # pylint: disable=protected-access
         clone = self._clone()
 
@@ -176,7 +176,7 @@ class Factory(BuiltinFactory):
 
         return clone
 
-    def extend(self: F, *, recipe: List[Provider]) -> F:
+    def extend(self: R, *, recipe: List[Provider]) -> R:
         # pylint: disable=protected-access
         clone = self._clone()
         clone._inc_instance_recipe = recipe + clone._inc_instance_recipe
@@ -185,7 +185,7 @@ class Factory(BuiltinFactory):
     def _after_clone(self):
         self.clear_cache()
 
-    def _clone(self: F) -> F:
+    def _clone(self: R) -> R:
         # pylint: disable=protected-access
         self_copy = copy(self)
         self_copy._after_clone()
@@ -196,29 +196,53 @@ class Factory(BuiltinFactory):
             FactoryProvider(CfgExtraPolicy, lambda: self._extra_policy),
         ]
 
-    def parser(self, tp: Type[T]) -> Parser[T]:
+    def get_loader(self, tp: Type[T]) -> Loader[T]:
         try:
-            return self._parser_cache[tp]
+            return self._loader_cache[tp]
         except KeyError:
             return self._facade_provide(
-                ParserRequest(
+                LoaderRequest(
                     tp,
                     strict_coercion=self._strict_coercion,
                     debug_path=self._debug_path
                 )
             )
 
-    def serializer(self, tp: Type[T]) -> Serializer[T]:
+    def get_dumper(self, tp: Type[T]) -> Dumper[T]:
         try:
-            return self._serializers_cache[tp]
+            return self._dumper_cache[tp]
         except KeyError:
             return self._facade_provide(
-                SerializerRequest(
+                DumperRequest(
                     tp,
                     debug_path=self._debug_path
                 )
             )
 
+    @overload
+    def load(self, data: Any, tp: Type[T], /) -> T:
+        ...
+
+    @overload
+    def load(self, data: Any, tp: TypeHint, /) -> Any:
+        ...
+
+    def load(self, data: Any, tp: TypeHint, /):
+        return self.get_loader(tp)(data)
+
+    @overload
+    def dump(self, data: T, tp: Type[T], /) -> Any:
+        ...
+
+    @overload
+    def dump(self, data: Any, tp: Optional[TypeHint] = None, /) -> Any:
+        ...
+
+    def dump(self, data: Any, tp: Optional[TypeHint] = None, /) -> Any:
+        if tp is None:
+            tp = type(data)
+        return self.get_dumper(tp)(data)
+
     def clear_cache(self):
-        self._parser_cache = {}
-        self._serializers_cache = {}
+        self._loader_cache = {}
+        self._dumper_cache = {}

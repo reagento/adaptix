@@ -4,16 +4,10 @@ from typing import Any, Callable, List, Optional, Type, TypeVar, Union
 import pytest
 
 from dataclass_factory_30.common import EllipsisType
-from dataclass_factory_30.factory import OperatingFactory
-from dataclass_factory_30.feature_requirement import (
-    HAS_ANNOTATED,
-    HAS_PARAM_SPEC,
-    HAS_STD_CLASSES_GENERICS,
-    HAS_TYPE_ALIAS,
-    PythonVersionRequirement,
-)
+from dataclass_factory_30.feature_requirement import PythonVersionRequirement
 from dataclass_factory_30.provider import CannotProvide, Mediator, Provider, Request
 from dataclass_factory_30.provider.model.basic_gen import CodeGenAccumulator
+from dataclass_factory_30.retort import OperatingRetort
 from dataclass_factory_30.struct_path import get_path
 
 T = TypeVar("T")
@@ -31,14 +25,14 @@ def requires(requirement: PythonVersionRequirement):
     return wrapper
 
 
-class TestFactory(OperatingFactory):
+class TestRetort(OperatingRetort):
     def __init__(self, recipe: List[Provider]):
         super().__init__(recipe)
 
     def _get_config_recipe(self) -> List[Provider]:
         return []
 
-    provide = OperatingFactory._facade_provide
+    provide = OperatingRetort._facade_provide
 
 
 E = TypeVar('E', bound=Exception)

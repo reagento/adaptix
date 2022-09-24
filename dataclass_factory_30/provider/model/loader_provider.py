@@ -1,12 +1,12 @@
 from typing import Mapping, Protocol, Tuple
 
 from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
-from ...common import Parser
+from ...common import Loader
 from ...provider.essential import CannotProvide, Mediator
 from ...provider.model.definitions import CodeGenerator, InputFigure, InputFigureRequest, VarBinder
 from ...provider.model.input_extraction_gen import BuiltinInputExtractionGen
-from ...provider.provider_template import ParserProvider
-from ...provider.request_cls import ParserFieldRequest, ParserRequest
+from ...provider.provider_template import LoaderProvider
+from ...provider.request_cls import LoaderFieldRequest, LoaderRequest
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -23,17 +23,17 @@ from .input_creation_gen import BuiltinInputCreationGen
 
 
 class InputExtractionMaker(Protocol):
-    def __call__(self, mediator: Mediator, request: ParserRequest) -> Tuple[CodeGenerator, InputFigure]:
+    def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure]:
         pass
 
 
 class InputCreationMaker(Protocol):
-    def __call__(self, mediator: Mediator, request: ParserRequest, figure: InputFigure) -> CodeGenerator:
+    def __call__(self, mediator: Mediator, request: LoaderRequest, figure: InputFigure) -> CodeGenerator:
         pass
 
 
 class BuiltinInputExtractionMaker(InputExtractionMaker):
-    def __call__(self, mediator: Mediator, request: ParserRequest) -> Tuple[CodeGenerator, InputFigure]:
+    def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure]:
         figure: InputFigure = mediator.provide(
             InputFigureRequest(type=request.type)
         )
@@ -48,9 +48,9 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         processed_figure = self._process_figure(figure, name_mapping)
         self._validate_params(figure, processed_figure, name_mapping)
 
-        field_parsers = {
+        field_loaders = {
             field.name: mediator.provide(
-                ParserFieldRequest(
+                LoaderFieldRequest(
                     strict_coercion=request.strict_coercion,
                     debug_path=request.debug_path,
                     field=field,
@@ -60,7 +60,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
             for field in processed_figure.fields
         }
 
-        extraction_gen = self._create_extraction_gen(request, figure, name_mapping, field_parsers)
+        extraction_gen = self._create_extraction_gen(request, figure, name_mapping, field_loaders)
 
         return extraction_gen, figure
 
@@ -83,7 +83,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
     def _validate_params(self, figure: InputFigure, processed_figure: InputFigure, name_mapping: InputNameMapping):
         if figure.extra is None and has_collect_policy(name_mapping.crown):
             raise ValueError(
-                "Cannot create parser that collect extra data"
+                "Cannot create loader that collect extra data"
                 " if InputFigure does not take extra data",
             )
 
@@ -104,24 +104,24 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
 
     def _create_extraction_gen(
         self,
-        request: ParserRequest,
+        request: LoaderRequest,
         figure: InputFigure,
         name_mapping: InputNameMapping,
-        field_parsers: Mapping[str, Parser],
+        field_loaders: Mapping[str, Loader],
     ) -> CodeGenerator:
         return BuiltinInputExtractionGen(
             figure=figure,
             crown=name_mapping.crown,
             debug_path=request.debug_path,
-            field_parsers=field_parsers,
+            field_loaders=field_loaders,
         )
 
 
-def make_input_creation(mediator: Mediator, request: ParserRequest, figure: InputFigure) -> CodeGenerator:
+def make_input_creation(mediator: Mediator, request: LoaderRequest, figure: InputFigure) -> CodeGenerator:
     return BuiltinInputCreationGen(figure=figure)
 
 
-class ModelParserProvider(ParserProvider):
+class ModelLoaderProvider(LoaderProvider):
     def __init__(
         self,
         name_sanitizer: NameSanitizer,
@@ -132,7 +132,7 @@ class ModelParserProvider(ParserProvider):
         self._extraction_maker = extraction_maker
         self._creation_maker = creation_maker
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         extraction_gen, figure = self._extraction_maker(mediator, request)
         creation_gen = self._creation_maker(mediator, request, figure)
 
@@ -160,7 +160,7 @@ class ModelParserProvider(ParserProvider):
             file_name=self._get_file_name(request),
         )
 
-    def _get_closure_name(self, request: ParserRequest) -> str:
+    def _get_closure_name(self, request: LoaderRequest) -> str:
         tp = request.type
         if isinstance(tp, type):
             name = tp.__name__
@@ -170,9 +170,9 @@ class ModelParserProvider(ParserProvider):
         s_name = self._name_sanitizer.sanitize(name)
         if s_name != "":
             s_name = "_" + s_name
-        return "model_parser" + s_name
+        return "model_loader" + s_name
 
-    def _get_file_name(self, request: ParserRequest) -> str:
+    def _get_file_name(self, request: LoaderRequest) -> str:
         return self._get_closure_name(request)
 
     def _get_compiler(self):

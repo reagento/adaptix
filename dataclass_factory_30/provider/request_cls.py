@@ -1,7 +1,7 @@
 from dataclasses import dataclass, replace
 from typing import Generic, TypeVar
 
-from ..common import Parser, Serializer, TypeHint
+from ..common import Dumper, Loader, TypeHint
 from ..model_tools import BaseField, InputField, OutputField
 from .essential import Request
 
@@ -37,21 +37,21 @@ class OutputFieldRM(FieldRM[T], Generic[T]):
 
 
 @dataclass(frozen=True)
-class ParserRequest(TypeHintRM[Parser]):
+class LoaderRequest(TypeHintRM[Loader]):
     strict_coercion: bool
     debug_path: bool
 
 
 @dataclass(frozen=True)
-class ParserFieldRequest(ParserRequest, InputFieldRM[Parser]):
+class LoaderFieldRequest(LoaderRequest, InputFieldRM[Loader]):
     pass
 
 
 @dataclass(frozen=True)
-class SerializerRequest(TypeHintRM[Serializer]):
+class DumperRequest(TypeHintRM[Dumper]):
     debug_path: bool
 
 
 @dataclass(frozen=True)
-class SerializerFieldRequest(SerializerRequest, OutputFieldRM[Serializer]):
+class DumperFieldRequest(DumperRequest, OutputFieldRM[Dumper]):
     pass

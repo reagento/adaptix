@@ -3,8 +3,8 @@ from typing import Any
 
 import pytest
 
-from dataclass_factory_30.facade import Factory
-from dataclass_factory_30.provider.errors import TypeParseError
+from dataclass_factory_30.facade import Retort
+from dataclass_factory_30.provider.errors import TypeLoadError
 from dataclass_factory_30.struct_path import get_path
 
 
@@ -15,13 +15,13 @@ class ExampleAny:
 
 
 def test_simple(accum):
-    factory = Factory(recipe=[accum])
+    retort = Retort(recipe=[accum])
 
-    parser = factory.parser(ExampleAny)
-    assert parser({'field1': 1, 'field2': 1}) == ExampleAny(field1=1, field2=1)
+    loader = retort.get_loader(ExampleAny)
+    assert loader({'field1': 1, 'field2': 1}) == ExampleAny(field1=1, field2=1)
 
-    serializer = factory.serializer(ExampleAny)
-    assert serializer(ExampleAny(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
+    dumper = retort.get_dumper(ExampleAny)
+    assert dumper(ExampleAny(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
 
 
 @dataclass
@@ -31,39 +31,39 @@ class ExampleInt:
 
 
 def test_simple_int(accum):
-    factory = Factory(recipe=[accum])
+    retort = Retort(recipe=[accum])
 
-    parser = factory.parser(ExampleInt)
+    loader = retort.get_loader(ExampleInt)
 
-    assert parser({'field1': 1, 'field2': 1}) == ExampleInt(field1=1, field2=1)
+    assert loader({'field1': 1, 'field2': 1}) == ExampleInt(field1=1, field2=1)
 
-    with pytest.raises(TypeParseError) as exc_info:
-        parser({'field1': 1, 'field2': '1'})
+    with pytest.raises(TypeLoadError) as exc_info:
+        loader({'field1': 1, 'field2': '1'})
 
     assert list(get_path(exc_info.value)) == ['field2']
 
-    serializer = factory.serializer(ExampleInt)
-    assert serializer(ExampleInt(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
+    dumper = retort.get_dumper(ExampleInt)
+    assert dumper(ExampleInt(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
 
 
 def test_simple_int_lax_coercion(accum):
-    factory = Factory(recipe=[accum], strict_coercion=False)
-    parser = factory.parser(ExampleInt)
+    retort = Retort(recipe=[accum], strict_coercion=False)
+    loader = retort.get_loader(ExampleInt)
 
-    assert parser({'field1': 1, 'field2': 1}) == ExampleInt(field1=1, field2=1)
-    assert parser({'field1': 1, 'field2': '1'}) == ExampleInt(field1=1, field2=1)
+    assert loader({'field1': 1, 'field2': 1}) == ExampleInt(field1=1, field2=1)
+    assert loader({'field1': 1, 'field2': '1'}) == ExampleInt(field1=1, field2=1)
 
 
 def test_simple_int_no_debug_path(accum):
-    factory = Factory(recipe=[accum], debug_path=False)
-    parser = factory.parser(ExampleInt)
+    retort = Retort(recipe=[accum], debug_path=False)
+    loader = retort.get_loader(ExampleInt)
 
-    assert parser({'field1': 1, 'field2': 1}) == ExampleInt(field1=1, field2=1)
+    assert loader({'field1': 1, 'field2': 1}) == ExampleInt(field1=1, field2=1)
 
-    with pytest.raises(TypeParseError) as exc_info:
-        parser({'field1': 1, 'field2': '1'})
+    with pytest.raises(TypeLoadError) as exc_info:
+        loader({'field1': 1, 'field2': '1'})
 
     assert list(get_path(exc_info.value)) == []
 
-    serializer = factory.serializer(ExampleInt)
-    assert serializer(ExampleInt(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
+    dumper = retort.get_dumper(ExampleInt)
+    assert dumper(ExampleInt(field1=1, field2=1)) == {'field1': 1, 'field2': 1}

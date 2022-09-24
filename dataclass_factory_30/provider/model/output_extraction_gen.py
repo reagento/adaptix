@@ -2,17 +2,17 @@ from string import Template
 from typing import Dict, Mapping
 
 from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr
-from ...common import Serializer
+from ...common import Dumper
 from ...model_tools import AttrAccessor, ExtraExtract, ExtraTargets, ItemAccessor, OutputField, OutputFigure
 from ...struct_path import append_path, extend_path
 from .definitions import CodeGenerator, VarBinder
 
 
 class BuiltinOutputExtractionGen(CodeGenerator):
-    def __init__(self, figure: OutputFigure, debug_path: bool, field_serializers: Mapping[str, Serializer]):
+    def __init__(self, figure: OutputFigure, debug_path: bool, field_dumpers: Mapping[str, Dumper]):
         self._figure = figure
         self._debug_path = debug_path
-        self._field_serializers = field_serializers
+        self._field_dumpers = field_dumpers
         self._extra_targets = (
             self._figure.extra.fields
             if isinstance(self._figure.extra, ExtraTargets)
@@ -26,8 +26,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         ctx_namespace.add("extend_path", extend_path)
         name_to_fields = {field.name: field for field in self._figure.fields}
 
-        for field_name, serializer in self._field_serializers.items():
-            ctx_namespace.add(self._serializer(name_to_fields[field_name]), serializer)
+        for field_name, dumper in self._field_dumpers.items():
+            ctx_namespace.add(self._dumper(name_to_fields[field_name]), dumper)
 
         if any(field.is_optional for field in self._figure.fields):
             builder(f"{binder.opt_fields} = {{}}")
@@ -51,8 +51,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
     def _is_extra_target(self, field: OutputField) -> bool:
         return field.name in self._extra_targets
 
-    def _serializer(self, field: OutputField) -> str:
-        return f"serializer_{field.name}"
+    def _dumper(self, field: OutputField) -> str:
+        return f"dumper_{field.name}"
 
     def _raw_field(self, field: OutputField) -> str:
         return f"r_{field.name}"
@@ -96,8 +96,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         raw_access_expr = self._gen_access_expr(binder, ctx_namespace, field)
         path_element_expr = self._gen_path_element_expr(ctx_namespace, field)
 
-        serializer = self._serializer(field)
-        on_access_ok_stmt = Template(on_access_ok).substitute(expr=f"{serializer}({raw_access_expr})")
+        dumper = self._dumper(field)
+        on_access_ok_stmt = Template(on_access_ok).substitute(expr=f"{dumper}({raw_access_expr})")
 
         if self._debug_path:
             builder += f"""
@@ -128,11 +128,11 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         raw_access_expr = self._gen_access_expr(binder, ctx_namespace, field)
         path_element_expr = self._gen_path_element_expr(ctx_namespace, field)
 
-        serializer = self._serializer(field)
+        dumper = self._dumper(field)
         raw_field = self._raw_field(field)
 
         on_access_ok_stmt = Template(on_access_ok).substitute(
-            expr=f"{serializer}({raw_field})"
+            expr=f"{dumper}({raw_field})"
         )
 
         access_error = field.accessor.access_error

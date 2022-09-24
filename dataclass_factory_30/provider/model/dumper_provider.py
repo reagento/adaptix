@@ -1,11 +1,11 @@
 from typing import Protocol, Tuple
 
 from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
-from ...common import Serializer
+from ...common import Dumper
 from ...provider.essential import CannotProvide, Mediator
 from ...provider.model.definitions import CodeGenerator, OutputFigure, OutputFigureRequest, VarBinder
-from ...provider.provider_template import SerializerProvider
-from ...provider.request_cls import SerializerFieldRequest, SerializerRequest
+from ...provider.provider_template import DumperProvider
+from ...provider.request_cls import DumperFieldRequest, DumperRequest
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -22,19 +22,19 @@ from .output_extraction_gen import BuiltinOutputExtractionGen
 
 
 class OutputExtractionMaker(Protocol):
-    def __call__(self, mediator: Mediator, request: SerializerRequest, figure: OutputFigure) -> CodeGenerator:
+    def __call__(self, mediator: Mediator, request: DumperRequest, figure: OutputFigure) -> CodeGenerator:
         pass
 
 
 class OutputCreationMaker(Protocol):
-    def __call__(self, mediator: Mediator, request: SerializerRequest) -> Tuple[CodeGenerator, OutputFigure]:
+    def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure]:
         pass
 
 
-def make_output_extraction(mediator: Mediator, request: SerializerRequest, figure: OutputFigure) -> CodeGenerator:
-    field_serializers = {
+def make_output_extraction(mediator: Mediator, request: DumperRequest, figure: OutputFigure) -> CodeGenerator:
+    field_dumpers = {
         field.name: mediator.provide(
-            SerializerFieldRequest(
+            DumperFieldRequest(
                 debug_path=request.debug_path,
                 field=field,
                 type=field.type,
@@ -46,12 +46,12 @@ def make_output_extraction(mediator: Mediator, request: SerializerRequest, figur
     return BuiltinOutputExtractionGen(
         figure=figure,
         debug_path=request.debug_path,
-        field_serializers=field_serializers,
+        field_dumpers=field_dumpers,
     )
 
 
 class BuiltinOutputCreationMaker(OutputCreationMaker):
-    def __call__(self, mediator: Mediator, request: SerializerRequest) -> Tuple[CodeGenerator, OutputFigure]:
+    def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure]:
         figure: OutputFigure = mediator.provide(
             OutputFigureRequest(type=request.type)
         )
@@ -87,7 +87,7 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
 
     def _create_creation_gen(
         self,
-        request: SerializerRequest,
+        request: DumperRequest,
         figure: OutputFigure,
         name_mapping: OutputNameMapping,
     ) -> CodeGenerator:
@@ -98,7 +98,7 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
         )
 
 
-class ModelSerializerProvider(SerializerProvider):
+class ModelDumperProvider(DumperProvider):
     def __init__(
         self,
         name_sanitizer: NameSanitizer,
@@ -109,7 +109,7 @@ class ModelSerializerProvider(SerializerProvider):
         self._extraction_maker = extraction_maker
         self._creation_maker = creation_maker
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         creation_gen, figure = self._creation_maker(mediator, request)
         extraction_gen = self._extraction_maker(mediator, request, figure)
 
@@ -137,7 +137,7 @@ class ModelSerializerProvider(SerializerProvider):
             file_name=self._get_file_name(request),
         )
 
-    def _get_closure_name(self, request: SerializerRequest) -> str:
+    def _get_closure_name(self, request: DumperRequest) -> str:
         tp = request.type
         if isinstance(tp, type):
             name = tp.__name__
@@ -147,9 +147,9 @@ class ModelSerializerProvider(SerializerProvider):
         s_name = self._name_sanitizer.sanitize(name)
         if s_name != "":
             s_name = "_" + s_name
-        return "model_serializer" + s_name
+        return "model_dumper" + s_name
 
-    def _get_file_name(self, request: SerializerRequest) -> str:
+    def _get_file_name(self, request: DumperRequest) -> str:
         return self._get_closure_name(request)
 
     def _get_compiler(self):

@@ -18,35 +18,35 @@ from typing import (
 
 import pytest
 
-from dataclass_factory_30.facade import parser, serializer
-from dataclass_factory_30.factory.operating_factory import NoSuitableProvider
-from dataclass_factory_30.provider import CoercionLimiter, IterableProvider, ParserRequest, SerializerRequest
-from dataclass_factory_30.provider.errors import ExcludedTypeParseError, TypeParseError
-from tests_helpers import TestFactory, parametrize_bool, raises_path
+from dataclass_factory_30.facade import dumper, loader
+from dataclass_factory_30.provider import CoercionLimiter, DumperRequest, IterableProvider, LoaderRequest
+from dataclass_factory_30.provider.errors import ExcludedTypeLoadError, TypeLoadError
+from dataclass_factory_30.retort.operating_retort import NoSuitableProvider
+from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 
-def string_serializer(data):
+def string_dumper(data):
     if isinstance(data, str):
         return data
     raise TypeError
 
 
 @pytest.fixture
-def factory():
-    return TestFactory(
+def retort():
+    return TestRetort(
         recipe=[
             IterableProvider(),
-            CoercionLimiter(parser(str), [str]),
-            serializer(str, string_serializer),
+            CoercionLimiter(loader(str), [str]),
+            dumper(str, string_dumper),
         ]
     )
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
-def test_mapping_providing(factory, strict_coercion, debug_path):
+def test_mapping_providing(retort, strict_coercion, debug_path):
     with pytest.raises(NoSuitableProvider):
-        factory.provide(
-            ParserRequest(
+        retort.provide(
+            LoaderRequest(
                 type=dict,
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
@@ -54,8 +54,8 @@ def test_mapping_providing(factory, strict_coercion, debug_path):
         )
 
     with pytest.raises(NoSuitableProvider):
-        factory.provide(
-            ParserRequest(
+        retort.provide(
+            LoaderRequest(
                 type=Dict,
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
@@ -63,8 +63,8 @@ def test_mapping_providing(factory, strict_coercion, debug_path):
         )
 
     with pytest.raises(NoSuitableProvider):
-        factory.provide(
-            ParserRequest(
+        retort.provide(
+            LoaderRequest(
                 type=Mapping,
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
@@ -72,8 +72,8 @@ def test_mapping_providing(factory, strict_coercion, debug_path):
         )
 
     with pytest.raises(NoSuitableProvider):
-        factory.provide(
-            ParserRequest(
+        retort.provide(
+            LoaderRequest(
                 type=collections.Counter,
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
@@ -82,135 +82,135 @@ def test_mapping_providing(factory, strict_coercion, debug_path):
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
-def test_parsing(factory, strict_coercion, debug_path):
-    parser = factory.provide(
-        ParserRequest(
+def test_loading(retort, strict_coercion, debug_path):
+    loader = retort.provide(
+        LoaderRequest(
             type=List[str],
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser(["a", "b", "c"]) == ["a", "b", "c"]
-    assert parser(("a", "b", "c")) == ["a", "b", "c"]
-    assert parser(deque(["a", "b", "c"])) == ["a", "b", "c"]
+    assert loader(["a", "b", "c"]) == ["a", "b", "c"]
+    assert loader(("a", "b", "c")) == ["a", "b", "c"]
+    assert loader(deque(["a", "b", "c"])) == ["a", "b", "c"]
 
     raises_path(
-        TypeParseError(Iterable),
-        lambda: parser(123),
+        TypeLoadError(Iterable),
+        lambda: loader(123),
         path=[],
     )
 
     if not strict_coercion:
-        assert parser({"a": 0, "b": 0, "c": 0}) == ["a", "b", "c"]
-        assert parser(collections.OrderedDict({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
-        assert parser(collections.ChainMap({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
+        assert loader({"a": 0, "b": 0, "c": 0}) == ["a", "b", "c"]
+        assert loader(collections.OrderedDict({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
+        assert loader(collections.ChainMap({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
 
     if strict_coercion:
         raises_path(
-            ExcludedTypeParseError(Mapping),
-            lambda: parser({"a": 0, "b": 0, "c": 0}),
+            ExcludedTypeLoadError(Mapping),
+            lambda: loader({"a": 0, "b": 0, "c": 0}),
             path=[],
         )
 
         raises_path(
-            ExcludedTypeParseError(Mapping),
-            lambda: parser(collections.ChainMap({"a": 0, "b": 0, "c": 0})),
+            ExcludedTypeLoadError(Mapping),
+            lambda: loader(collections.ChainMap({"a": 0, "b": 0, "c": 0})),
             path=[],
         )
 
         raises_path(
-            TypeParseError(str),
-            lambda: parser([1, 2, 3]),
+            TypeLoadError(str),
+            lambda: loader([1, 2, 3]),
             path=[0] if debug_path else [],
         )
 
         raises_path(
-            TypeParseError(str),
-            lambda: parser(["1", 2, 3]),
+            TypeLoadError(str),
+            lambda: loader(["1", 2, 3]),
             path=[1] if debug_path else [],
         )
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
-def test_abc_impl(factory, strict_coercion, debug_path):
+def test_abc_impl(retort, strict_coercion, debug_path):
     for tp in [Iterable, Reversible, Collection, Sequence]:
-        parser = factory.provide(
-            ParserRequest(
+        loader = retort.provide(
+            LoaderRequest(
                 type=tp[str],
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
         )
 
-        assert parser(["a", "b", "c"]) == ("a", "b", "c")
+        assert loader(["a", "b", "c"]) == ("a", "b", "c")
 
     for tp in [MutableSequence, List]:
-        parser = factory.provide(
-            ParserRequest(
+        loader = retort.provide(
+            LoaderRequest(
                 type=tp[str],
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
         )
 
-        assert parser(["a", "b", "c"]) == ["a", "b", "c"]
+        assert loader(["a", "b", "c"]) == ["a", "b", "c"]
 
     for tp in [AbstractSet, FrozenSet]:
-        parser = factory.provide(
-            ParserRequest(
+        loader = retort.provide(
+            LoaderRequest(
                 type=tp[str],
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
         )
 
-        assert parser(["a", "b", "c"]) == frozenset(["a", "b", "c"])
+        assert loader(["a", "b", "c"]) == frozenset(["a", "b", "c"])
 
     for tp in [MutableSet, Set]:
-        parser = factory.provide(
-            ParserRequest(
+        loader = retort.provide(
+            LoaderRequest(
                 type=tp[str],
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
         )
 
-        assert parser(["a", "b", "c"]) == {"a", "b", "c"}
+        assert loader(["a", "b", "c"]) == {"a", "b", "c"}
 
 
 @parametrize_bool('debug_path')
-def test_serializing(factory, debug_path):
-    list_serializer = factory.provide(
-        SerializerRequest(
+def test_serializing(retort, debug_path):
+    list_dumper = retort.provide(
+        DumperRequest(
             type=List[str],
             debug_path=debug_path,
         )
     )
 
-    assert list_serializer(["a", "b"]) == ["a", "b"]
-    assert list_serializer({'a': 1, 'b': 2}) == ['a', 'b']
+    assert list_dumper(["a", "b"]) == ["a", "b"]
+    assert list_dumper({'a': 1, 'b': 2}) == ['a', 'b']
 
-    iterable_serializer = factory.provide(
-        SerializerRequest(
+    iterable_dumper = retort.provide(
+        DumperRequest(
             type=Iterable[str],
             debug_path=debug_path,
         )
     )
 
-    assert iterable_serializer(["a", "b"]) == ("a", "b")
-    assert iterable_serializer(("a", "b")) == ("a", "b")
-    assert iterable_serializer(['1', '2']) == ("1", "2")
-    assert iterable_serializer({"a": 0, "b": 0}) == ("a", "b")
+    assert iterable_dumper(["a", "b"]) == ("a", "b")
+    assert iterable_dumper(("a", "b")) == ("a", "b")
+    assert iterable_dumper(['1', '2']) == ("1", "2")
+    assert iterable_dumper({"a": 0, "b": 0}) == ("a", "b")
 
     raises_path(
         TypeError,
-        lambda: iterable_serializer([10, '20']),
+        lambda: iterable_dumper([10, '20']),
         path=[0] if debug_path else [],
     )
 
     raises_path(
         TypeError,
-        lambda: iterable_serializer(['10', 20]),
+        lambda: iterable_dumper(['10', 20]),
         path=[1] if debug_path else [],
     )

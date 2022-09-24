@@ -28,7 +28,7 @@ from dataclass_factory_30.provider.model.crown_definitions import (
     OutputNameMapping,
     OutputNameMappingRequest,
 )
-from tests_helpers import TestFactory
+from tests_helpers import TestRetort
 
 
 def check_name_mapper(mapper: NameMapper, source: Set[str], target: Set[str]):
@@ -257,8 +257,8 @@ def out_request(fields: Iterable[MapField], extra: OutFigureExtra = None):
 
 
 @pytest.fixture
-def factory():
-    return TestFactory(
+def retort():
+    return TestRetort(
         [
             NameMapper(skip=['c'], map={'d': 'z'}),
             ValueProvider(CfgExtraPolicy, ExtraSkip()),
@@ -266,7 +266,7 @@ def factory():
     )
 
 
-def test_name_mapping_simple(factory):
+def test_name_mapping_simple(retort):
     fields = [
         MapField(
             name="a",
@@ -278,7 +278,7 @@ def test_name_mapping_simple(factory):
         ),
     ]
 
-    inp_name_mapping = factory.provide(
+    inp_name_mapping = retort.provide(
         inp_request(fields=fields)
     )
 
@@ -293,7 +293,7 @@ def test_name_mapping_simple(factory):
         skipped_extra_targets=[],
     )
 
-    out_name_mapping = factory.provide(
+    out_name_mapping = retort.provide(
         out_request(fields=fields)
     )
 
@@ -309,7 +309,7 @@ def test_name_mapping_simple(factory):
     )
 
 
-def test_name_mapping_skipping(factory):
+def test_name_mapping_skipping(retort):
     fields = [
         MapField(
             name="a",
@@ -321,7 +321,7 @@ def test_name_mapping_skipping(factory):
         ),
     ]
 
-    inp_name_mapping = factory.provide(
+    inp_name_mapping = retort.provide(
         inp_request(fields)
     )
 
@@ -335,7 +335,7 @@ def test_name_mapping_skipping(factory):
         skipped_extra_targets=[],
     )
 
-    out_name_mapping = factory.provide(
+    out_name_mapping = retort.provide(
         out_request(fields)
     )
 
@@ -350,7 +350,7 @@ def test_name_mapping_skipping(factory):
     )
 
 
-def test_name_mapping_extra_targets(factory):
+def test_name_mapping_extra_targets(retort):
     fields = [
         MapField(
             name="a",
@@ -362,7 +362,7 @@ def test_name_mapping_extra_targets(factory):
         ),
     ]
 
-    inp_name_mapping = factory.provide(
+    inp_name_mapping = retort.provide(
         inp_request(fields, extra=ExtraTargets(('b',)))
     )
 
@@ -376,7 +376,7 @@ def test_name_mapping_extra_targets(factory):
         skipped_extra_targets=[],
     )
 
-    out_name_mapping = factory.provide(
+    out_name_mapping = retort.provide(
         out_request(fields, extra=ExtraTargets(('b',)))
     )
 
@@ -391,7 +391,7 @@ def test_name_mapping_extra_targets(factory):
     )
 
 
-def test_name_mapping_extra_targets_skip(factory):
+def test_name_mapping_extra_targets_skip(retort):
     fields = [
         MapField(
             name="a",
@@ -403,7 +403,7 @@ def test_name_mapping_extra_targets_skip(factory):
         ),
     ]
 
-    inp_name_mapping = factory.provide(
+    inp_name_mapping = retort.provide(
         inp_request(fields, extra=ExtraTargets(('c',)))
     )
 
@@ -417,7 +417,7 @@ def test_name_mapping_extra_targets_skip(factory):
         skipped_extra_targets=['c'],
     )
 
-    out_name_mapping = factory.provide(
+    out_name_mapping = retort.provide(
         out_request(fields, extra=ExtraTargets(('c',)))
     )
 
@@ -432,14 +432,14 @@ def test_name_mapping_extra_targets_skip(factory):
     )
 
 
-def test_name_mapping_error_on_required_field_skip(factory):
+def test_name_mapping_error_on_required_field_skip(retort):
     string_to_match = re.escape(
         "Can not create name mapping for type <class 'provider.test_name_mapper.Stub'>"
         " that skips required fields ['c']"
     )
 
     with pytest.raises(ValueError, match=string_to_match):
-        factory.provide(
+        retort.provide(
             inp_request(
                 fields=[
                     MapField(
@@ -456,7 +456,7 @@ def test_name_mapping_error_on_required_field_skip(factory):
         )
 
     with pytest.raises(ValueError, match=string_to_match):
-        factory.provide(
+        retort.provide(
             inp_request(
                 fields=[
                     MapField(

@@ -22,7 +22,7 @@ class IncrementalRecipe(FullRecipeGetter, ABC):
     Instance recipe is setting up at `recipe` constructor parameter.
 
     Config recipe is creating with :method:`_get_config_recipe()`.
-    It can be used to passing factory config attributes to recipe.
+    It can be used to passing retort config attributes to recipe.
 
     Class recipe is a sum of `recipe` attribute of class and class recipe of mro parents.
     """

@@ -4,16 +4,16 @@ from typing import List
 import phonenumbers
 from phonenumbers import PhoneNumber
 
-from dataclass_factory_30.facade import Factory, enum_by_name, parser, serializer
+from dataclass_factory_30.facade import Retort, dumper, enum_by_name, loader
 from dataclass_factory_30.facade.provider import NameMapper, bound, validator
-from dataclass_factory_30.provider import Chain, ExtraFieldsError, ValueParseError
+from dataclass_factory_30.provider import Chain, ExtraFieldsError, ValueLoadError
 from dataclass_factory_30.provider.model import ExtraForbid, ExtraSkip
 
 from .models import Receipt, ReceiptType, RecItem
 from .money import Money, TooPreciseAmount
 
 
-def serialize_phone_number(num_obj: PhoneNumber):
+def load_phone_number(num_obj: PhoneNumber):
     return phonenumbers.format_number(num_obj, phonenumbers.PhoneNumberFormat.E164)
 
 
@@ -26,29 +26,29 @@ def string_cp866_mutator(data: str):
         t_data.encode("cp866", "strict")
     except UnicodeEncodeError as e:
         bad_char = e.object[e.start: e.end]  # pylint: disable=unsubscriptable-object
-        raise ValueParseError(f'Char {bad_char!r} can not be represented at CP866')
+        raise ValueLoadError(f'Char {bad_char!r} can not be represented at CP866')
     return t_data
 
 
-def outer_phonenumber_parser(data: str):
+def outer_phonenumber_loader(data: str):
     try:
         phone_number = phonenumbers.parse(data)
     except phonenumbers.NumberParseException:
-        raise ValueParseError('Bad phone number')
+        raise ValueLoadError('Bad phone number')
 
     expected = phonenumbers.format_number(phone_number, phonenumbers.PhoneNumberFormat.E164)
 
     if data != expected:
-        raise ValueParseError('Bad phone number')
+        raise ValueLoadError('Bad phone number')
 
     return phone_number
 
 
-def money_parser(data):
+def money_loader(data):
     try:
         return Money.from_decimal_rubles(data)
     except TooPreciseAmount:
-        raise ValueParseError("Rubles cannot have more than 2 decimal places")
+        raise ValueLoadError("Rubles cannot have more than 2 decimal places")
 
 
 def forbid_version_key(data):
@@ -57,20 +57,20 @@ def forbid_version_key(data):
     return data
 
 
-class BaseFactory(Factory):
+class BaseRetort(Retort):
     recipe = [
-        parser(Money, money_parser),
-        serializer(Money, Money.rubles),
+        loader(Money, money_loader),
+        dumper(Money, Money.rubles),
 
-        parser(PhoneNumber, phonenumbers.parse),
-        serializer(PhoneNumber, serialize_phone_number),
+        loader(PhoneNumber, phonenumbers.parse),
+        dumper(PhoneNumber, load_phone_number),
 
-        serializer(Decimal, lambda x: x),
+        dumper(Decimal, lambda x: x),
         enum_by_name(ReceiptType),
     ]
 
 
-INNER_RECEIPT_FACTORY = BaseFactory(
+INNER_RECEIPT_RETORT = BaseRetort(
     recipe=[
         NameMapper(omit_default=False),
     ],
@@ -78,15 +78,15 @@ INNER_RECEIPT_FACTORY = BaseFactory(
 )
 
 
-_OUTER_BASE_FACTORY = BaseFactory(
+_OUTER_BASE_RETORT = BaseRetort(
     recipe=[
-        parser(PhoneNumber, outer_phonenumber_parser),
-        parser(str, string_cp866_mutator, Chain.LAST),
+        loader(PhoneNumber, outer_phonenumber_loader),
+        loader(str, string_cp866_mutator, Chain.LAST),
     ],
     extra_policy=ExtraForbid(),
 )
 
-_OUTER_REC_ITEM_FACTORY = _OUTER_BASE_FACTORY.extend(
+_OUTER_REC_ITEM_RETORT = _OUTER_BASE_RETORT.extend(
     recipe=[
         validator('quantity', lambda x: x > Decimal(0), 'Value must be > 0'),
         validator('price', lambda x: x >= Money(0), 'Value must be >= 0'),
@@ -94,10 +94,10 @@ _OUTER_REC_ITEM_FACTORY = _OUTER_BASE_FACTORY.extend(
 )
 
 
-OUTER_RECEIPT_FACTORY = _OUTER_BASE_FACTORY.extend(
+OUTER_RECEIPT_RETORT = _OUTER_BASE_RETORT.extend(
     recipe=[
         validator(List[RecItem], lambda x: len(x) > 0, 'At least one item must be presented'),
-        bound(RecItem, _OUTER_REC_ITEM_FACTORY),
-        parser(Receipt, forbid_version_key, Chain.FIRST),
+        bound(RecItem, _OUTER_REC_ITEM_RETORT),
+        loader(Receipt, forbid_version_key, Chain.FIRST),
     ],
 )

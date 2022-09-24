@@ -1,8 +1,8 @@
 from abc import ABC
 from typing import TypeVar
 
-from ..provider import CannotProvide, Mediator, ParserRequest, Provider, Request, SerializerRequest
-from .basic_factory import IncrementalRecipe, ProvidingFromRecipe
+from ..provider import CannotProvide, DumperRequest, LoaderRequest, Mediator, Provider, Request
+from .basic_retort import IncrementalRecipe, ProvidingFromRecipe
 from .mediator import RecursionResolving, StubsRecursionResolver
 
 
@@ -31,8 +31,8 @@ class NoSuitableProvider(Exception):
 T = TypeVar('T')
 
 
-class OperatingFactory(IncrementalRecipe, ProvidingFromRecipe, Provider, ABC):
-    """A factory that can operate as Factory but have no predefined providers"""
+class OperatingRetort(IncrementalRecipe, ProvidingFromRecipe, Provider, ABC):
+    """A retort that can operate as Retort but have no predefined providers"""
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         return self._provide_from_recipe(request, mediator.request_stack[:-1])
@@ -47,7 +47,7 @@ class OperatingFactory(IncrementalRecipe, ProvidingFromRecipe, Provider, ABC):
     def _get_recursion_resolving(self) -> RecursionResolving:
         return RecursionResolving(
             {
-                ParserRequest: FuncRecursionResolver(),
-                SerializerRequest: FuncRecursionResolver(),
+                LoaderRequest: FuncRecursionResolver(),
+                DumperRequest: FuncRecursionResolver(),
             }
         )

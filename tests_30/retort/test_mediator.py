@@ -4,8 +4,8 @@ from typing import Optional, Sequence, Type
 
 import pytest
 
-from dataclass_factory_30.factory import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 from dataclass_factory_30.provider import CannotProvide, Mediator, Provider, Request
+from dataclass_factory_30.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 
 
 @dataclass(frozen=True)

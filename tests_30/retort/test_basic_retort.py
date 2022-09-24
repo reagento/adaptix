@@ -1,4 +1,4 @@
-from dataclass_factory_30.factory.basic_factory import IncrementalRecipe
+from dataclass_factory_30.retort.basic_retort import IncrementalRecipe
 from tests_helpers import PlaceholderProvider
 
 

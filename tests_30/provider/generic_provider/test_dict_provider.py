@@ -4,30 +4,24 @@ from typing import Dict
 
 import pytest
 
-from dataclass_factory_30.facade import parser, serializer
-from dataclass_factory_30.provider import (
-    CoercionLimiter,
-    DictProvider,
-    ParserRequest,
-    SerializerRequest,
-    TypeParseError,
-)
-from tests_helpers import TestFactory, parametrize_bool, raises_path
+from dataclass_factory_30.facade import dumper, loader
+from dataclass_factory_30.provider import CoercionLimiter, DictProvider, DumperRequest, LoaderRequest, TypeLoadError
+from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 
-def string_serializer(data):
+def string_dumper(data):
     if isinstance(data, str):
         return data
     raise TypeError
 
 
 @pytest.fixture
-def factory():
-    return TestFactory(
+def retort():
+    return TestRetort(
         recipe=[
             DictProvider(),
-            CoercionLimiter(parser(str), [str]),
-            serializer(str, string_serializer),
+            CoercionLimiter(loader(str), [str]),
+            dumper(str, string_dumper),
         ]
     )
 
@@ -41,63 +35,63 @@ class MyMapping:
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
-def test_parsing(factory, strict_coercion, debug_path):
-    parser = factory.provide(
-        ParserRequest(
+def test_loading(retort, strict_coercion, debug_path):
+    loader = retort.provide(
+        LoaderRequest(
             type=Dict[str, str],
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser({'a': 'b', 'c': 'd'}) == {'a': 'b', 'c': 'd'}
-    assert parser(MyMapping({'a': 'b', 'c': 'd'})) == {'a': 'b', 'c': 'd'}
+    assert loader({'a': 'b', 'c': 'd'}) == {'a': 'b', 'c': 'd'}
+    assert loader(MyMapping({'a': 'b', 'c': 'd'})) == {'a': 'b', 'c': 'd'}
 
     raises_path(
-        TypeParseError(collections.abc.Mapping),
-        lambda: parser(123),
+        TypeLoadError(collections.abc.Mapping),
+        lambda: loader(123),
         path=[],
     )
 
     raises_path(
-        TypeParseError(collections.abc.Mapping),
-        lambda: parser(['a', 'b', 'c']),
+        TypeLoadError(collections.abc.Mapping),
+        lambda: loader(['a', 'b', 'c']),
         path=[],
     )
 
     if strict_coercion:
         raises_path(
-            TypeParseError(str),
-            lambda: parser({'a': 'b', 'c': 0}),
+            TypeLoadError(str),
+            lambda: loader({'a': 'b', 'c': 0}),
             path=['c'] if debug_path else [],
         )
 
         raises_path(
-            TypeParseError(str),
-            lambda: parser({'a': 'b', 0: 'd'}),
+            TypeLoadError(str),
+            lambda: loader({'a': 'b', 0: 'd'}),
             path=[0] if debug_path else [],
         )
 
 
 @parametrize_bool('debug_path')
-def test_serializing(factory, debug_path):
-    serializer = factory.provide(
-        SerializerRequest(
+def test_serializing(retort, debug_path):
+    dumper = retort.provide(
+        DumperRequest(
             type=Dict[str, str],
             debug_path=debug_path,
         )
     )
 
-    assert serializer({'a': 'b', 'c': 'd'}) == {'a': 'b', 'c': 'd'}
+    assert dumper({'a': 'b', 'c': 'd'}) == {'a': 'b', 'c': 'd'}
 
     raises_path(
         TypeError,
-        lambda: serializer({'a': 'b', 'c': 0}),
+        lambda: dumper({'a': 'b', 'c': 0}),
         path=['c'] if debug_path else [],
     )
 
     raises_path(
         TypeError,
-        lambda: serializer({'a': 'b', 0: 'd'}),
+        lambda: dumper({'a': 'b', 0: 'd'}),
         path=[0] if debug_path else [],
     )

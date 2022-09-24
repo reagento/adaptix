@@ -7,4 +7,4 @@ from .mediator import (
     SearchResult,
     StubsRecursionResolver,
 )
-from .operating_factory import FuncRecursionResolver, FuncWrapper, NoSuitableProvider, OperatingFactory
+from .operating_retort import FuncRecursionResolver, FuncWrapper, NoSuitableProvider, OperatingRetort

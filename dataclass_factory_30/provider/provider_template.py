@@ -3,12 +3,12 @@ from dataclasses import replace
 from functools import partial
 from typing import Collection, Type, TypeVar, final
 
-from ..common import Parser, Serializer, TypeHint
+from ..common import Dumper, Loader, TypeHint
 from ..type_tools import create_union, normalize_type
-from .errors import TypeParseError
+from .errors import TypeLoadError
 from .essential import CannotProvide, Mediator, Provider, Request
 from .provider_basics import RequestChecker, match_origin
-from .request_cls import ParserRequest, SerializerRequest
+from .request_cls import DumperRequest, LoaderRequest
 from .static_provider import StaticProvider, static_provision_action
 
 T = TypeVar('T')
@@ -39,71 +39,71 @@ def for_origin(tp: TypeHint):
     )
 
 
-class ParserProvider(ProviderWithRC, ABC):
+class LoaderProvider(ProviderWithRC, ABC):
     @final
     @static_provision_action
-    def _outer_provide_parser(self, mediator: Mediator, request: ParserRequest):
+    def _outer_provide_loader(self, mediator: Mediator, request: LoaderRequest):
         self._check_request(mediator, request)
-        return self._provide_parser(mediator, request)
+        return self._provide_loader(mediator, request)
 
     @abstractmethod
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         pass
 
 
-class SerializerProvider(ProviderWithRC, ABC):
+class DumperProvider(ProviderWithRC, ABC):
     @final
     @static_provision_action
-    def _outer_provide_serializer(self, mediator: Mediator, request: SerializerRequest):
+    def _outer_provide_dumper(self, mediator: Mediator, request: DumperRequest):
         self._check_request(mediator, request)
-        return self._provide_serializer(mediator, request)
+        return self._provide_dumper(mediator, request)
 
     @abstractmethod
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         pass
 
 
-class CoercionLimiter(ParserProvider):
-    def __init__(self, parser_provider: Provider, allowed_strict_origins: Collection[type]):
-        self.parser_provider = parser_provider
+class CoercionLimiter(LoaderProvider):
+    def __init__(self, loader_provider: Provider, allowed_strict_origins: Collection[type]):
+        self.loader_provider = loader_provider
 
         if isinstance(allowed_strict_origins, list):
             allowed_strict_origins = tuple(allowed_strict_origins)
 
         self.allowed_strict_origins = allowed_strict_origins
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        parser = self.parser_provider.apply_provider(mediator, request)
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        loader = self.loader_provider.apply_provider(mediator, request)
 
         if not request.strict_coercion:
-            return parser
+            return loader
 
         allowed_strict_origins = self.allowed_strict_origins
 
         if len(allowed_strict_origins) == 0:
-            return parser
+            return loader
 
         if len(allowed_strict_origins) == 1:
             origin = next(iter(self.allowed_strict_origins))
 
-            def strict_coercion_parser_1_origin(value):
+            def strict_coercion_loader_1_origin(value):
                 if type(value) == origin:  # pylint: disable=unidiomatic-typecheck
-                    return parser(value)
-                raise TypeParseError(origin)
+                    return loader(value)
+                raise TypeLoadError(origin)
 
-            return strict_coercion_parser_1_origin
+            return strict_coercion_loader_1_origin
 
         union = create_union(tuple(allowed_strict_origins))
 
-        def strict_coercion_parser(value):
+        def strict_coercion_loader(value):
             if type(value) in allowed_strict_origins:
-                return parser(value)
-            raise TypeParseError(union)
+                return loader(value)
+            raise TypeLoadError(union)
 
-        return strict_coercion_parser
+        return strict_coercion_loader
 
     def __repr__(self):
-        return f"{type(self).__name__}({self.parser_provider}, {self.allowed_strict_origins})"
+        return f"{type(self).__name__}({self.loader_provider}, {self.allowed_strict_origins})"
 
 
 class ABCProxy(Provider):
@@ -112,7 +112,7 @@ class ABCProxy(Provider):
         self._impl = impl
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        if not isinstance(request, (ParserRequest, SerializerRequest)):
+        if not isinstance(request, (LoaderRequest, DumperRequest)):
             raise CannotProvide
 
         norm = normalize_type(request.type)  # type: ignore[attr-defined]

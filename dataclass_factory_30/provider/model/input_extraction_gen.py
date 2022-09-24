@@ -3,15 +3,15 @@ from copy import copy
 from typing import Dict, Mapping, Optional, Set
 
 from ...code_tools import CodeBuilder, ContextNamespace
-from ...common import Parser
+from ...common import Loader
 from ...model_tools import ExtraTargets, InputField, InputFigure
 from ...provider.errors import (
     ExtraFieldsError,
     ExtraItemsError,
+    LoadError,
     NoRequiredFieldsError,
     NoRequiredItemsError,
-    ParseError,
-    TypeParseError,
+    TypeLoadError,
 )
 from ...struct_path import append_path, extend_path
 from .crown_definitions import (
@@ -72,8 +72,8 @@ class GenState:
 
         return self.binder.extra + '_' + self._get_path_idx(self._path)
 
-    def field_parser(self, field_name: str) -> str:
-        return f"parser_{field_name}"
+    def field_loader(self, field_name: str) -> str:
+        return f"loader_{field_name}"
 
     def raw_field(self, field: InputField) -> str:
         return f"r_{field.name}"
@@ -110,7 +110,7 @@ class GenState:
 
 class BuiltinInputExtractionGen(CodeGenerator):
     """BuiltinInputExtractionGen generates code that extracts raw values from input data,
-    calls parsers and stores results at variables.
+    calls loaders and stores results at variables.
     """
 
     def __init__(
@@ -118,7 +118,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
         figure: InputFigure,
         crown: RootInpCrown,
         debug_path: bool,
-        field_parsers: Mapping[str, Parser],
+        field_loaders: Mapping[str, Loader],
     ):
         self._figure = figure
         self._root_crown = crown
@@ -126,7 +126,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
         self._name_to_field: Dict[str, InputField] = {
             field.name: field for field in self._figure.fields
         }
-        self._field_parsers = field_parsers
+        self._field_loaders = field_loaders
 
     @property
     def _can_collect_extra(self) -> bool:
@@ -146,7 +146,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
         for exception in [
             ExtraFieldsError, ExtraItemsError,
             NoRequiredFieldsError, NoRequiredItemsError,
-            TypeParseError, ParseError,
+            TypeLoadError, LoadError,
         ]:
             ctx_namespace.add(exception.__name__, exception)
 
@@ -156,8 +156,8 @@ class BuiltinInputExtractionGen(CodeGenerator):
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
 
-        for field_name, parser in self._field_parsers.items():
-            state.ctx_namespace.add(state.field_parser(field_name), parser)
+        for field_name, loader in self._field_loaders.items():
+            state.ctx_namespace.add(state.field_loader(field_name), loader)
 
         if not self._gen_root_crown_dispatch(crown_builder, state, self._root_crown):
             raise TypeError
@@ -281,7 +281,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
         builder += f"""
             if not isinstance({data}, dict):
-                raise {self._wrap_error("TypeParseError(dict)", state.path)}
+                raise {self._wrap_error("TypeLoadError(dict)", state.path)}
         """
 
         builder.empty_line()
@@ -331,7 +331,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
         builder += f"""
             if not isinstance({data}, list):
-                raise {self._wrap_error("TypeParseError(list)", state.path)}
+                raise {self._wrap_error("TypeLoadError(list)", state.path)}
 
             if len({data}) != {list_len}:
                 if len({data}) < {list_len}:
@@ -367,7 +367,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
             assign_to=state.raw_field(field),
             ignore_lookup_error=field.is_optional,
         )
-        data_for_parser = state.raw_field(field)
+        data_for_loader = state.raw_field(field)
 
         if field.is_required:
             builder.empty_line()
@@ -375,7 +375,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                 builder,
                 field_left_value,
                 field.name,
-                data_for_parser,
+                data_for_loader,
                 state,
             )
         else:
@@ -384,7 +384,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                     builder,
                     field_left_value,
                     field.name,
-                    data_for_parser,
+                    data_for_loader,
                     state,
                 )
 
@@ -395,28 +395,28 @@ class BuiltinInputExtractionGen(CodeGenerator):
         builder: CodeBuilder,
         field_left_value: str,
         field_name: str,
-        data_for_parser: str,
+        data_for_loader: str,
         state: GenState,
     ):
-        field_parser = state.field_parser(field_name)
+        field_loader = state.field_loader(field_name)
 
         if self._debug_path and state.path:
             builder(
                 f"""
                 try:
-                    {field_left_value} = {field_parser}({data_for_parser})
+                    {field_left_value} = {field_loader}({data_for_loader})
                 except Exception as e:
                     raise {self._wrap_error('e', state.path)}
                 """
             )
         else:
             builder(
-                f"{field_left_value} = {field_parser}({data_for_parser})"
+                f"{field_left_value} = {field_loader}({data_for_loader})"
             )
 
     def _gen_extra_targets_assigment(self, builder: CodeBuilder, state: GenState):
         # Saturate extra targets with data.
-        # If extra data is not collected, parser of required field will get empty dict
+        # If extra data is not collected, loader of required field will get empty dict
         if not isinstance(self._figure.extra, ExtraTargets):
             return
 
@@ -428,7 +428,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                     builder,
                     field_left_value=state.binder.field(field),
                     field_name=target,
-                    data_for_parser=state.get_extra_var_name(),
+                    data_for_loader=state.get_extra_var_name(),
                     state=state,
                 )
         else:
@@ -440,7 +440,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                         builder,
                         field_left_value=state.binder.field(field),
                         field_name=target,
-                        data_for_parser="{}",
+                        data_for_loader="{}",
                         state=state,
                     )
 

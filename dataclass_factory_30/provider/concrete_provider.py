@@ -6,13 +6,13 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Type, TypeVar, Union
 
-from ..common import Parser, Serializer
+from ..common import Dumper, Loader
 from ..type_tools import normalize_type
-from .errors import ParseError, TypeParseError, ValueParseError
+from .errors import LoadError, TypeLoadError, ValueLoadError
 from .essential import Mediator, Request
 from .provider_basics import ExactTypeRC
-from .provider_template import ParserProvider, ProviderWithRC, SerializerProvider, for_origin
-from .request_cls import ParserRequest, SerializerRequest
+from .provider_template import DumperProvider, LoaderProvider, ProviderWithRC, for_origin
+from .request_cls import DumperRequest, LoaderRequest
 
 T = TypeVar('T')
 
@@ -33,158 +33,158 @@ class ForAnyDateTime(ProviderWithRC):
 
 
 @dataclass
-class IsoFormatProvider(ForAnyDateTime, ParserProvider, SerializerProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        raw_parser = self.cls.fromisoformat
+class IsoFormatProvider(ForAnyDateTime, LoaderProvider, DumperProvider):
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        raw_loader = self.cls.fromisoformat
 
-        def isoformat_parser(data):
+        def isoformat_loader(data):
             try:
-                return raw_parser(data)
+                return raw_loader(data)
             except TypeError:
-                raise TypeParseError(str)
+                raise TypeLoadError(str)
             except ValueError:
-                raise ValueParseError("Invalid isoformat string")
+                raise ValueLoadError("Invalid isoformat string")
 
-        return isoformat_parser
+        return isoformat_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return self.cls.isoformat
 
 
 @dataclass(eq=False)
-class DatetimeFormatMismatch(ParseError):
+class DatetimeFormatMismatch(LoadError):
     format: str
 
 
 @dataclass
 @for_origin(datetime)
-class DatetimeFormatProvider(ParserProvider, SerializerProvider):
+class DatetimeFormatProvider(LoaderProvider, DumperProvider):
     format: str
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         fmt = self.format
 
-        def datetime_format_parser(value):
+        def datetime_format_loader(value):
             try:
                 return datetime.strptime(value, fmt)
             except ValueError:
                 raise DatetimeFormatMismatch(fmt)
             except TypeError:
-                raise TypeParseError(str)
+                raise TypeLoadError(str)
 
-        return datetime_format_parser
+        return datetime_format_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         fmt = self.format
 
-        def datetime_format_serializer(value: datetime):
+        def datetime_format_dumper(value: datetime):
             return value.strftime(fmt)
 
-        return datetime_format_serializer
+        return datetime_format_dumper
 
 
 @for_origin(timedelta)
-class SecondsTimedeltaProvider(ParserProvider, SerializerProvider):
+class SecondsTimedeltaProvider(LoaderProvider, DumperProvider):
     _OK_TYPES = (int, float, Decimal)
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         ok_types = self._OK_TYPES
 
-        def timedelta_parser(data):
+        def timedelta_loader(data):
             if type(data) not in ok_types:
-                raise TypeParseError(float)
+                raise TypeLoadError(float)
             return timedelta(seconds=int(data), microseconds=int(data % 1 * 10 ** 6))
 
-        return timedelta_parser
+        return timedelta_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return timedelta.total_seconds
 
 
-def none_parser(data):
+def none_loader(data):
     if data is None:
         return None
-    raise TypeParseError(None)
+    raise TypeLoadError(None)
 
 
 @for_origin(None)
-class NoneProvider(ParserProvider, SerializerProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        return none_parser
+class NoneProvider(LoaderProvider, DumperProvider):
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return none_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return stub
 
 
-class Base64SerializerMixin(SerializerProvider):
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
-        def bytes_base64_serializer(data):
+class Base64DumperMixin(DumperProvider):
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        def bytes_base64_dumper(data):
             return b2a_base64(data, newline=False).decode('ascii')
 
-        return bytes_base64_serializer
+        return bytes_base64_dumper
 
 
 B64_PATTERN = re.compile(b'[A-Za-z0-9+/]*={0,2}')
 
 
 @for_origin(bytes)
-class BytesBase64Provider(ParserProvider, Base64SerializerMixin):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        def bytes_base64_parser(data):
+class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        def bytes_base64_loader(data):
             try:
                 encoded = data.encode('ascii')
             except AttributeError:
-                raise TypeParseError(str)
+                raise TypeLoadError(str)
 
             if not B64_PATTERN.fullmatch(encoded):
-                raise ValueParseError('Bad base64 string')
+                raise ValueLoadError('Bad base64 string')
 
             try:
                 return a2b_base64(encoded)
             except binascii.Error as e:
-                raise ValueParseError(str(e))
+                raise ValueLoadError(str(e))
 
-        return bytes_base64_parser
+        return bytes_base64_loader
 
 
 @for_origin(bytearray)
-class BytearrayBase64Provider(ParserProvider, Base64SerializerMixin):
+class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
     _BYTES_PROVIDER = BytesBase64Provider()
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        bytes_parser = self._BYTES_PROVIDER.apply_provider(
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        bytes_loader = self._BYTES_PROVIDER.apply_provider(
             mediator, replace(request, type=bytes)
         )
 
-        def bytearray_base64_parser(data):
-            return bytearray(bytes_parser(data))
+        def bytearray_base64_loader(data):
+            return bytearray(bytes_loader(data))
 
-        return bytearray_base64_parser
+        return bytearray_base64_loader
 
 
-def _regex_serializer(data: re.Pattern):
+def _regex_dumper(data: re.Pattern):
     return data.pattern
 
 
 @for_origin(re.Pattern)
-class RegexPatternProvider(ParserProvider, SerializerProvider):
+class RegexPatternProvider(LoaderProvider, DumperProvider):
     def __init__(self, flags: re.RegexFlag = re.RegexFlag(0)):
         self.flags = flags
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         flags = self.flags
         re_compile = re.compile
 
-        def regex_parser(data):
+        def regex_loader(data):
             if not isinstance(data, str):
-                raise TypeParseError(str)
+                raise TypeLoadError(str)
 
             try:
                 return re_compile(data, flags)
             except re.error as e:
-                raise ValueParseError(str(e))
+                raise ValueLoadError(str(e))
 
-        return regex_parser
+        return regex_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
-        return _regex_serializer
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return _regex_dumper

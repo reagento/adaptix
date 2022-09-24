@@ -78,7 +78,7 @@ class NameMapper(NameMappingProvider):
     trim_trailing_underscore: bool = True
     name_style: Optional[NameStyle] = None
 
-    omit_default: bool = True  # TODO: may be ask factory for this parameter
+    omit_default: bool = True  # TODO: may be ask retort for this parameter
 
     def _should_skip(self, name: str) -> bool:
         if name in self.skip:

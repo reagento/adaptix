@@ -6,335 +6,335 @@ from dataclass_factory_30.provider import (
     BytearrayBase64Provider,
     BytesBase64Provider,
     DatetimeFormatProvider,
+    DumperRequest,
     IsoFormatProvider,
+    LoaderRequest,
     NoneProvider,
-    ParserRequest,
     RegexPatternProvider,
     SecondsTimedeltaProvider,
-    SerializerRequest,
 )
 from dataclass_factory_30.provider.concrete_provider import DatetimeFormatMismatch
-from dataclass_factory_30.provider.errors import TypeParseError, ValueParseError
-from tests_helpers import TestFactory, parametrize_bool, raises_path
+from dataclass_factory_30.provider.errors import TypeLoadError, ValueLoadError
+from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 
-def check_any_dt(parser):
+def check_any_dt(loader):
     raises_path(
-        TypeParseError(str),
-        lambda: parser(None)
+        TypeLoadError(str),
+        lambda: loader(None)
     )
     raises_path(
-        TypeParseError(str),
-        lambda: parser(10)
+        TypeLoadError(str),
+        lambda: loader(10)
     )
     raises_path(
-        TypeParseError(str),
-        lambda: parser(datetime(2011, 11, 4, 0, 0))
+        TypeLoadError(str),
+        lambda: loader(datetime(2011, 11, 4, 0, 0))
     )
     raises_path(
-        TypeParseError(str),
-        lambda: parser(date(2019, 12, 4))
+        TypeLoadError(str),
+        lambda: loader(date(2019, 12, 4))
     )
     raises_path(
-        TypeParseError(str),
-        lambda: parser(time(4, 23, 1))
+        TypeLoadError(str),
+        lambda: loader(time(4, 23, 1))
     )
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_iso_format_provider_datetime(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[IsoFormatProvider(datetime)]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=datetime,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser('2011-11-04') == datetime(2011, 11, 4, 0, 0)
-    assert parser('2011-11-04T00:05:23') == datetime(2011, 11, 4, 0, 5, 23)
-    assert parser('2011-11-04T00:05:23+04:00') == datetime(
+    assert loader('2011-11-04') == datetime(2011, 11, 4, 0, 0)
+    assert loader('2011-11-04T00:05:23') == datetime(2011, 11, 4, 0, 5, 23)
+    assert loader('2011-11-04T00:05:23+04:00') == datetime(
         2011, 11, 4, 0, 5, 23,
         tzinfo=timezone(timedelta(seconds=14400))
     )
 
-    check_any_dt(parser)
+    check_any_dt(loader)
 
     raises_path(
-        ValueParseError("Invalid isoformat string"),
-        lambda: parser("some string")
+        ValueLoadError("Invalid isoformat string"),
+        lambda: loader("some string")
     )
 
-    serializer = factory.provide(
-        SerializerRequest(type=datetime, debug_path=debug_path)
+    dumper = retort.provide(
+        DumperRequest(type=datetime, debug_path=debug_path)
     )
 
-    assert serializer(datetime(2011, 11, 4, 0, 0)) == '2011-11-04T00:00:00'
+    assert dumper(datetime(2011, 11, 4, 0, 0)) == '2011-11-04T00:00:00'
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_iso_format_provider_date(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[IsoFormatProvider(date)]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=date,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser('2019-12-04') == date(2019, 12, 4)
-    check_any_dt(parser)
+    assert loader('2019-12-04') == date(2019, 12, 4)
+    check_any_dt(loader)
 
     raises_path(
-        ValueParseError("Invalid isoformat string"),
-        lambda: parser("some string")
+        ValueLoadError("Invalid isoformat string"),
+        lambda: loader("some string")
     )
 
-    serializer = factory.provide(
-        SerializerRequest(type=date, debug_path=debug_path)
+    dumper = retort.provide(
+        DumperRequest(type=date, debug_path=debug_path)
     )
 
-    assert serializer(date(2019, 12, 4)) == '2019-12-04'
+    assert dumper(date(2019, 12, 4)) == '2019-12-04'
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_iso_format_provider_time(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[IsoFormatProvider(time)]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=time,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser('04:23:01') == time(4, 23, 1)
-    assert parser('04:23:01+04:00') == time(
+    assert loader('04:23:01') == time(4, 23, 1)
+    assert loader('04:23:01+04:00') == time(
         4, 23, 1,
         tzinfo=timezone(timedelta(seconds=14400))
     )
-    check_any_dt(parser)
+    check_any_dt(loader)
 
     raises_path(
-        ValueParseError("Invalid isoformat string"),
-        lambda: parser("some string")
+        ValueLoadError("Invalid isoformat string"),
+        lambda: loader("some string")
     )
 
-    serializer = factory.provide(
-        SerializerRequest(type=time, debug_path=debug_path)
+    dumper = retort.provide(
+        DumperRequest(type=time, debug_path=debug_path)
     )
 
-    assert serializer(time(4, 23, 1)) == '04:23:01'
+    assert dumper(time(4, 23, 1)) == '04:23:01'
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_datetime_format_provider(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[DatetimeFormatProvider("%Y-%m-%d")]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=datetime,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser("3045-02-13") == datetime(year=3045, month=2, day=13)
+    assert loader("3045-02-13") == datetime(year=3045, month=2, day=13)
 
-    check_any_dt(parser)
+    check_any_dt(loader)
 
     raises_path(
         DatetimeFormatMismatch("%Y-%m-%d"),
-        lambda: parser("some string")
+        lambda: loader("some string")
     )
 
-    serializer = factory.provide(
-        SerializerRequest(type=datetime, debug_path=debug_path)
+    dumper = retort.provide(
+        DumperRequest(type=datetime, debug_path=debug_path)
     )
 
-    assert serializer(datetime(year=3045, month=2, day=13)) == "3045-02-13"
+    assert dumper(datetime(year=3045, month=2, day=13)) == "3045-02-13"
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_seconds_timedelta_provider(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[SecondsTimedeltaProvider()]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=timedelta,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser(10) == timedelta(seconds=10)
-    assert parser(600) == timedelta(minutes=10)
-    assert parser(0.123) == timedelta(milliseconds=123)
-    assert parser(Decimal('0.123')) == timedelta(milliseconds=123)
+    assert loader(10) == timedelta(seconds=10)
+    assert loader(600) == timedelta(minutes=10)
+    assert loader(0.123) == timedelta(milliseconds=123)
+    assert loader(Decimal('0.123')) == timedelta(milliseconds=123)
 
-    serializer = factory.provide(
-        SerializerRequest(type=timedelta, debug_path=debug_path)
+    dumper = retort.provide(
+        DumperRequest(type=timedelta, debug_path=debug_path)
     )
 
-    assert serializer(timedelta(minutes=10)) == 600
+    assert dumper(timedelta(minutes=10)) == 600
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_none_provider(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[NoneProvider()]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=None,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser(None) is None
+    assert loader(None) is None
 
     raises_path(
-        TypeParseError(None),
-        lambda: parser(10)
+        TypeLoadError(None),
+        lambda: loader(10)
     )
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_bytes_provider(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[BytesBase64Provider()]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=bytes,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser('YWJjZA==') == b'abcd'
+    assert loader('YWJjZA==') == b'abcd'
 
     raises_path(
-        ValueParseError('Bad base64 string'),
-        lambda: parser('Hello, world'),
+        ValueLoadError('Bad base64 string'),
+        lambda: loader('Hello, world'),
     )
 
     raises_path(
-        ValueParseError(
+        ValueLoadError(
             'Invalid base64-encoded string: number of data characters (5)'
             ' cannot be 1 more than a multiple of 4'
         ),
-        lambda: parser('aaaaa='),
+        lambda: loader('aaaaa='),
     )
 
     raises_path(
-        ValueParseError('Incorrect padding'),
-        lambda: parser('YWJjZA'),
+        ValueLoadError('Incorrect padding'),
+        lambda: loader('YWJjZA'),
     )
 
     raises_path(
-        TypeParseError(str),
-        lambda: parser(108),
+        TypeLoadError(str),
+        lambda: loader(108),
     )
 
-    serializer = factory.provide(
-        SerializerRequest(type=bytes, debug_path=debug_path)
+    dumper = retort.provide(
+        DumperRequest(type=bytes, debug_path=debug_path)
     )
 
-    assert serializer(b'abcd') == 'YWJjZA=='
+    assert dumper(b'abcd') == 'YWJjZA=='
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_bytearray_provider(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[BytearrayBase64Provider()]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=bytearray,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser('YWJjZA==') == bytearray(b'abcd')
+    assert loader('YWJjZA==') == bytearray(b'abcd')
 
     raises_path(
-        ValueParseError('Bad base64 string'),
-        lambda: parser('Hello, world'),
+        ValueLoadError('Bad base64 string'),
+        lambda: loader('Hello, world'),
     )
 
     raises_path(
-        ValueParseError(
+        ValueLoadError(
             'Invalid base64-encoded string: number of data characters (5)'
             ' cannot be 1 more than a multiple of 4'
         ),
-        lambda: parser('aaaaa='),
+        lambda: loader('aaaaa='),
     )
 
     raises_path(
-        ValueParseError('Incorrect padding'),
-        lambda: parser('YWJjZA'),
+        ValueLoadError('Incorrect padding'),
+        lambda: loader('YWJjZA'),
     )
 
     raises_path(
-        TypeParseError(str),
-        lambda: parser(108),
+        TypeLoadError(str),
+        lambda: loader(108),
     )
 
-    serializer = factory.provide(
-        SerializerRequest(type=bytearray, debug_path=debug_path)
+    dumper = retort.provide(
+        DumperRequest(type=bytearray, debug_path=debug_path)
     )
 
-    assert serializer(bytearray(b'abcd')) == 'YWJjZA=='
+    assert dumper(bytearray(b'abcd')) == 'YWJjZA=='
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_regex_provider(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[RegexPatternProvider()]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=re.Pattern,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser(r'\w') == re.compile(r'\w')
+    assert loader(r'\w') == re.compile(r'\w')
 
     raises_path(
-        TypeParseError(str),
-        lambda: parser(10)
+        TypeLoadError(str),
+        lambda: loader(10)
     )
     raises_path(
-        ValueParseError("bad escape (end of pattern) at position 0"),
-        lambda: parser('\\')
+        ValueLoadError("bad escape (end of pattern) at position 0"),
+        lambda: loader('\\')
     )
 
-    serializer = factory.provide(
-        SerializerRequest(type=re.Pattern, debug_path=debug_path)
+    dumper = retort.provide(
+        DumperRequest(type=re.Pattern, debug_path=debug_path)
     )
 
-    assert serializer(re.compile(r'\w')) == r'\w'
+    assert dumper(re.compile(r'\w')) == r'\w'

@@ -8,54 +8,54 @@ from ..common import TypeHint
 
 
 @dataclass(eq=False)
-class ParseError(Exception):
+class LoadError(Exception):
     """The base class for the exceptions that are raised
-    when the parser gets invalid input data
+    when the loader gets invalid input data
     """
 
 
 @dataclass(eq=False)
-class MsgError(ParseError):
+class MsgError(LoadError):
     msg: Optional[str]
 
 
 @dataclass(eq=False)
-class ExtraFieldsError(ParseError):
+class ExtraFieldsError(LoadError):
     fields: Iterable[str]
 
 
 @dataclass(eq=False)
-class ExtraItemsError(ParseError):
+class ExtraItemsError(LoadError):
     list_len: int
 
 
 @dataclass(eq=False)
-class NoRequiredFieldsError(ParseError):
+class NoRequiredFieldsError(LoadError):
     fields: Iterable[str]
 
 
 @dataclass(eq=False)
-class NoRequiredItemsError(ParseError):
+class NoRequiredItemsError(LoadError):
     list_len: int
 
 
 @dataclass(eq=False)
-class TypeParseError(ParseError):
+class TypeLoadError(LoadError):
     expected_type: TypeHint
 
 
 @dataclass(eq=False)
-class ExcludedTypeParseError(ParseError):
+class ExcludedTypeLoadError(LoadError):
     excluded_type: TypeHint
 
 
 @dataclass(eq=False)
-class UnionParseError(ParseError):
-    sub_errors: List[ParseError]
+class UnionLoadError(LoadError):
+    sub_errors: List[LoadError]
 
 
 @dataclass(eq=False)
-class ValueParseError(MsgError):
+class ValueLoadError(MsgError):
     pass
 
 
@@ -65,5 +65,5 @@ class ValidationError(MsgError):
 
 
 @dataclass(eq=False)
-class BadVariantError(ParseError):
+class BadVariantError(LoadError):
     allowed_values: Iterable[Any]

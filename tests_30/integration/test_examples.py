@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from dataclass_factory_30.facade import Factory
+from dataclass_factory_30.facade import Retort
 
 
 @dataclass
@@ -16,8 +16,8 @@ def test_readme(accum):
         "price": 100,
     }
 
-    factory = Factory(recipe=[accum])
-    book = factory.parser(Book)(data)
+    retort = Retort(recipe=[accum])
+    book = retort.load(data, Book)
     assert book == Book(title="Fahrenheit 451", price=100)
-    serialized = factory.serializer(Book)(book)
-    assert serialized == data
+    dumped = retort.dump(book)
+    assert dumped == data

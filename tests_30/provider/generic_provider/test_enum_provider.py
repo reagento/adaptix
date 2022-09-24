@@ -1,15 +1,9 @@
 from enum import Enum, IntEnum
 
-from dataclass_factory_30.facade import enum_by_value, parser, serializer
-from dataclass_factory_30.provider import (
-    EnumExactValueProvider,
-    EnumNameProvider,
-    ParseError,
-    ParserRequest,
-    SerializerRequest,
-)
+from dataclass_factory_30.facade import dumper, enum_by_value, loader
+from dataclass_factory_30.provider import DumperRequest, EnumExactValueProvider, EnumNameProvider, LoaderRequest
 from dataclass_factory_30.provider.errors import BadVariantError, MsgError
-from tests_helpers import TestFactory, parametrize_bool, raises_path
+from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 
 class MyEnum(Enum):
@@ -22,150 +16,150 @@ class MyIntEnum(IntEnum):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_name_provider(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[
             EnumNameProvider(),
         ]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=MyEnum,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser("V1") == MyEnum.V1
+    assert loader("V1") == MyEnum.V1
 
     raises_path(
         BadVariantError(['V1']),
-        lambda: parser("1")
+        lambda: loader("1")
     )
 
     raises_path(
         BadVariantError(['V1']),
-        lambda: parser(1)
+        lambda: loader(1)
     )
 
     raises_path(
         BadVariantError(['V1']),
-        lambda: parser(MyEnum.V1)
+        lambda: loader(MyEnum.V1)
     )
 
-    serializer = factory.provide(
-        SerializerRequest(
+    dumper = retort.provide(
+        DumperRequest(
             type=MyEnum,
             debug_path=debug_path,
         )
     )
 
-    assert serializer(MyEnum.V1) == "V1"
+    assert dumper(MyEnum.V1) == "V1"
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_exact_value_provider(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[
             EnumExactValueProvider(),
         ]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=MyEnum,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser("1") == MyEnum.V1
+    assert loader("1") == MyEnum.V1
 
     raises_path(
         BadVariantError(['1']),
-        lambda: parser("V1")
+        lambda: loader("V1")
     )
 
     raises_path(
         BadVariantError(['1']),
-        lambda: parser(1)
+        lambda: loader(1)
     )
 
     raises_path(
         BadVariantError(['1']),
-        lambda: parser(MyEnum.V1)
+        lambda: loader(MyEnum.V1)
     )
 
-    serializer = factory.provide(
-        SerializerRequest(
+    dumper = retort.provide(
+        DumperRequest(
             type=MyEnum,
             debug_path=debug_path,
         )
     )
 
-    assert serializer(MyEnum.V1) == "1"
+    assert dumper(MyEnum.V1) == "1"
 
-    int_enum_parser = factory.provide(
-        ParserRequest(
+    int_enum_loader = retort.provide(
+        LoaderRequest(
             type=MyIntEnum,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert int_enum_parser(1) == MyIntEnum.V1
+    assert int_enum_loader(1) == MyIntEnum.V1
 
     raises_path(
         BadVariantError([1]),
-        lambda: int_enum_parser(MyEnum.V1),
+        lambda: int_enum_loader(MyEnum.V1),
     )
 
     raises_path(
         BadVariantError([1]),
-        lambda: int_enum_parser("V1")
+        lambda: int_enum_loader("V1")
     )
 
 
-def custom_string_serializer(value: str):
+def custom_string_dumper(value: str):
     return "PREFIX " + value
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_value_provider(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[
             enum_by_value(MyEnum, tp=str),
-            parser(str),
-            serializer(str, custom_string_serializer),
+            loader(str),
+            dumper(str, custom_string_dumper),
         ]
     )
 
-    enum_parser = factory.provide(
-        ParserRequest(
+    enum_loader = retort.provide(
+        LoaderRequest(
             type=MyEnum,
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert enum_parser("1") == MyEnum.V1
-    assert enum_parser(1) == MyEnum.V1
+    assert enum_loader("1") == MyEnum.V1
+    assert enum_loader(1) == MyEnum.V1
 
     raises_path(
         MsgError('Bad enum value'),
-        lambda: enum_parser("V1")
+        lambda: enum_loader("V1")
     )
 
     raises_path(
         MsgError('Bad enum value'),
-        lambda: enum_parser(MyEnum.V1)
+        lambda: enum_loader(MyEnum.V1)
     )
 
-    enum_serializer = factory.provide(
-        SerializerRequest(
+    enum_dumper = retort.provide(
+        DumperRequest(
             type=MyEnum,
             debug_path=debug_path,
         )
     )
 
-    assert enum_serializer(MyEnum.V1) == "PREFIX 1"
+    assert enum_dumper(MyEnum.V1) == "PREFIX 1"

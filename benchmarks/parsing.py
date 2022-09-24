@@ -111,7 +111,7 @@ new_factory = NewFactory(
     debug_path=False,
     recipe=[name_mapping(Todo, map={"desc": "description"})]
 )
-new_parser = new_factory.parser(List[Todo])
+new_parser = new_factory.get_loader(List[Todo])
 
 
 new_factory_debug = NewFactory(
@@ -119,7 +119,7 @@ new_factory_debug = NewFactory(
     debug_path=True,
     recipe=[name_mapping(Todo, map={"desc": "description"})]
 )
-new_parser_debug = new_factory_debug.parser(List[Todo])
+new_parser_debug = new_factory_debug.get_loader(List[Todo])
 
 
 def df_new():

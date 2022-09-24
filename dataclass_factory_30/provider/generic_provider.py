@@ -5,13 +5,13 @@ from enum import EnumMeta, Flag
 from inspect import isabstract
 from typing import Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, Union
 
-from ..common import Parser, Serializer, TypeHint
+from ..common import Dumper, Loader, TypeHint
 from ..struct_path import append_path
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
-from .errors import BadVariantError, ExcludedTypeParseError, MsgError, ParseError, TypeParseError, UnionParseError
+from .errors import BadVariantError, ExcludedTypeLoadError, LoadError, MsgError, TypeLoadError, UnionLoadError
 from .essential import CannotProvide, Mediator, Request
-from .provider_template import ParserProvider, SerializerProvider, for_origin
-from .request_cls import ParserRequest, SerializerRequest, TypeHintRM
+from .provider_template import DumperProvider, LoaderProvider, for_origin
+from .request_cls import DumperRequest, LoaderRequest, TypeHintRM
 from .static_provider import StaticProvider, static_provision_action
 
 
@@ -21,7 +21,7 @@ def stub(arg):
 
 class NewTypeUnwrappingProvider(StaticProvider):
     @static_provision_action
-    def _provide_unwrapping(self, mediator: Mediator, request: TypeHintRM) -> Parser:
+    def _provide_unwrapping(self, mediator: Mediator, request: TypeHintRM) -> Loader:
         if not is_new_type(request.type):
             raise CannotProvide
 
@@ -30,7 +30,7 @@ class NewTypeUnwrappingProvider(StaticProvider):
 
 class TypeHintTagsUnwrappingProvider(StaticProvider):
     @static_provision_action
-    def _provide_unwrapping(self, mediator: Mediator, request: TypeHintRM) -> Parser:
+    def _provide_unwrapping(self, mediator: Mediator, request: TypeHintRM) -> Loader:
         unwrapped = strip_tags(normalize_type(request.type))
         if unwrapped.source == request.type:  # type has not changed, continue search
             raise CannotProvide
@@ -44,7 +44,7 @@ def _is_exact_zero_or_one(arg):
 
 @dataclass
 @for_origin(Literal)
-class LiteralProvider(ParserProvider, SerializerProvider):
+class LiteralProvider(LoaderProvider, DumperProvider):
     tuple_size_limit: int = 4
 
     def _get_container(self, args: Collection) -> Container:
@@ -52,7 +52,7 @@ class LiteralProvider(ParserProvider, SerializerProvider):
             return set(args)
         return tuple(args)
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = normalize_type(request.type)
 
         # TODO: add support for enum
@@ -65,64 +65,64 @@ class LiteralProvider(ParserProvider, SerializerProvider):
             )
 
             # since True == 1 and False == 0
-            def literal_parser_tc(data):
+            def literal_loader_sc(data):
                 if (type(data), data) in allowed_values:
                     return data
-                raise ParseError
+                raise LoadError
 
-            return literal_parser_tc
+            return literal_loader_sc
 
         allowed_values = self._get_container(norm.args)
 
-        def literal_parser(data):
+        def literal_loader(data):
             if data in allowed_values:
                 return data
-            raise ParseError
+            raise LoadError
 
-        return literal_parser
+        return literal_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return stub
 
 
 @for_origin(Union)
-class UnionProvider(ParserProvider, SerializerProvider):
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+class UnionProvider(LoaderProvider, DumperProvider):
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = normalize_type(request.type)
 
-        parsers = tuple(
+        loaders = tuple(
             mediator.provide(replace(request, type=tp.source))
             for tp in norm.args
         )
 
         if request.debug_path:
-            return self._get_parser_dp(parsers)
+            return self._get_loader_dp(loaders)
 
-        return self._get_parser_non_dp(parsers)
+        return self._get_loader_non_dp(loaders)
 
-    def _get_parser_dp(self, parsers: Iterable[Parser]) -> Parser:
-        def union_parser_dp(data):
+    def _get_loader_dp(self, loader_iter: Iterable[Loader]) -> Loader:
+        def union_loader_dp(data):
             errors = []
-            for prs in parsers:
+            for loader in loader_iter:
                 try:
-                    return prs(data)
-                except ParseError as e:
+                    return loader(data)
+                except LoadError as e:
                     errors.append(e)
 
-            raise UnionParseError(errors)
+            raise UnionLoadError(errors)
 
-        return union_parser_dp
+        return union_loader_dp
 
-    def _get_parser_non_dp(self, parsers: Iterable[Parser]) -> Parser:
-        def union_parser(data):
-            for prs in parsers:
+    def _get_loader_non_dp(self, loader_iter: Iterable[Loader]) -> Loader:
+        def union_loader(data):
+            for loader in loader_iter:
                 try:
-                    return prs(data)
-                except ParseError:
+                    return loader(data)
+                except LoadError:
                     pass
-            raise ParseError
+            raise LoadError
 
-        return union_parser
+        return union_loader
 
     def _is_single_optional(self, norm: BaseNormType) -> bool:
         return len(norm.args) == 2 and None in [case.origin for case in norm.args]
@@ -130,52 +130,52 @@ class UnionProvider(ParserProvider, SerializerProvider):
     def _is_class_origin(self, origin) -> bool:
         return (origin is None or isinstance(origin, type)) and not is_subclass_soft(origin, collections.abc.Callable)
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm = normalize_type(request.type)
 
         # TODO: allow use Literal[..., None] with non single optional
 
         if self._is_single_optional(norm):
             non_optional = next(case for case in norm.args if case.origin is not None)
-            non_optional_serializer = mediator.provide(replace(request, type=non_optional.source))
-            return self._get_single_optional_serializer(non_optional_serializer)
+            non_optional_dumper = mediator.provide(replace(request, type=non_optional.source))
+            return self._get_single_optional_dumper(non_optional_dumper)
 
         non_class_origins = [case.source for case in norm.args if not self._is_class_origin(case.origin)]
         if non_class_origins:
             raise ValueError(
-                f"Can not create serializer for {request.type}."
+                f"Can not create dumper for {request.type}."
                 f" All cases of union must be class, but found {non_class_origins}"
             )
 
-        serializers = tuple(
+        dumpers = tuple(
             mediator.provide(replace(request, type=tp.source))
             for tp in norm.args
         )
 
-        serializer_type_map = {case.origin: serializer for case, serializer in zip(norm.args, serializers)}
+        dumper_type_map = {case.origin: dumper for case, dumper in zip(norm.args, dumpers)}
 
-        return self._get_serializer(serializer_type_map)
+        return self._get_dumper(dumper_type_map)
 
-    def _get_serializer(self, serializer_type_map: Mapping[type, Serializer]) -> Serializer:
-        def union_serializer(data):
-            return serializer_type_map[type(data)](data)
+    def _get_dumper(self, dumper_type_map: Mapping[type, Dumper]) -> Dumper:
+        def union_dumper(data):
+            return dumper_type_map[type(data)](data)
 
-        return union_serializer
+        return union_dumper
 
-    def _get_single_optional_serializer(self, serializer: Serializer) -> Serializer:
-        def union_so_serializer(data):
+    def _get_single_optional_dumper(self, dumper: Dumper) -> Dumper:
+        def union_so_dumper(data):
             if data is None:
                 return None
-            return serializer(data)
+            return dumper(data)
 
-        return union_so_serializer
+        return union_so_dumper
 
 
 CollectionsMapping = collections.abc.Mapping
 
 
 @for_origin(Iterable)
-class IterableProvider(ParserProvider, SerializerProvider):
+class IterableProvider(LoaderProvider, DumperProvider):
     ABC_TO_IMPL = {
         collections.abc.Iterable: tuple,
         collections.abc.Reversible: tuple,
@@ -219,12 +219,12 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         return norm, arg
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
-        arg_parser = mediator.provide(replace(request, type=arg))
-        return self._make_parser(request, iter_factory, arg_parser)
+        arg_loader = mediator.provide(replace(request, type=arg))
+        return self._make_loader(request, iter_factory, arg_loader)
 
     def _create_debug_path_iter_mapper(self, converter):
         def iter_mapper(iterable):
@@ -241,224 +241,224 @@ class IterableProvider(ParserProvider, SerializerProvider):
 
         return iter_mapper
 
-    def _make_parser(self, request: ParserRequest, iter_factory, arg_parser):
+    def _make_loader(self, request: LoaderRequest, iter_factory, arg_loader):
         if request.debug_path:
-            iter_mapper = self._create_debug_path_iter_mapper(arg_parser)
+            iter_mapper = self._create_debug_path_iter_mapper(arg_loader)
 
             if request.strict_coercion:
-                return self._get_dp_sc_parser(iter_factory, iter_mapper)
+                return self._get_dp_sc_loader(iter_factory, iter_mapper)
 
-            return self._get_dp_non_sc_parser(iter_factory, iter_mapper)
+            return self._get_dp_non_sc_loader(iter_factory, iter_mapper)
 
         if request.strict_coercion:
-            return self._get_non_dp_sc_parser(iter_factory, arg_parser)
+            return self._get_non_dp_sc_loader(iter_factory, arg_loader)
 
-        return self._get_non_dp_non_sc_parser(iter_factory, arg_parser)
+        return self._get_non_dp_non_sc_loader(iter_factory, arg_loader)
 
-    def _get_dp_non_sc_parser(self, iter_factory, iter_mapper):
-        def iter_parser_dp(value):
+    def _get_dp_non_sc_loader(self, iter_factory, iter_mapper):
+        def iter_loader_dp(value):
             try:
                 value_iter = iter(value)
             except TypeError:
-                raise TypeParseError(Iterable)
+                raise TypeLoadError(Iterable)
 
             return iter_factory(iter_mapper(value_iter))
 
-        return iter_parser_dp
+        return iter_loader_dp
 
-    def _get_dp_sc_parser(self, iter_factory, iter_mapper):
-        def iter_parser_dp_sc(value):
+    def _get_dp_sc_loader(self, iter_factory, iter_mapper):
+        def iter_loader_dp_sc(value):
             if isinstance(value, CollectionsMapping):
-                raise ExcludedTypeParseError(Mapping)
+                raise ExcludedTypeLoadError(Mapping)
 
             try:
                 value_iter = iter(value)
             except TypeError:
-                raise TypeParseError(Iterable)
+                raise TypeLoadError(Iterable)
 
             return iter_factory(iter_mapper(value_iter))
 
-        return iter_parser_dp_sc
+        return iter_loader_dp_sc
 
-    def _get_non_dp_sc_parser(self, iter_factory, arg_parser):
-        def iter_parser_sc(value):
+    def _get_non_dp_sc_loader(self, iter_factory, arg_loader):
+        def iter_loader_sc(value):
             if isinstance(value, CollectionsMapping):
-                raise ExcludedTypeParseError(Mapping)
+                raise ExcludedTypeLoadError(Mapping)
 
             try:
-                map_iter = map(arg_parser, value)
+                map_iter = map(arg_loader, value)
             except TypeError:
-                raise TypeParseError(Iterable)
+                raise TypeLoadError(Iterable)
 
             return iter_factory(map_iter)
 
-        return iter_parser_sc
+        return iter_loader_sc
 
-    def _get_non_dp_non_sc_parser(self, iter_factory, arg_parser):
-        def iter_parser(value):
+    def _get_non_dp_non_sc_loader(self, iter_factory, arg_loader):
+        def iter_loader(value):
             try:
-                map_iter = map(arg_parser, value)
+                map_iter = map(arg_loader, value)
             except TypeError:
-                raise TypeParseError(Iterable)
+                raise TypeLoadError(Iterable)
 
             return iter_factory(map_iter)
 
-        return iter_parser
+        return iter_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
-        arg_serializer = mediator.provide(replace(request, type=arg))
-        return self._make_serializer(request, iter_factory, arg_serializer)
+        arg_dumper = mediator.provide(replace(request, type=arg))
+        return self._make_dumper(request, iter_factory, arg_dumper)
 
-    def _make_serializer(self, request: SerializerRequest, iter_factory, arg_serializer):
+    def _make_dumper(self, request: DumperRequest, iter_factory, arg_dumper):
         if request.debug_path:
-            iter_mapper = self._create_debug_path_iter_mapper(arg_serializer)
-            return self._get_dp_serializer(iter_factory, iter_mapper)
+            iter_mapper = self._create_debug_path_iter_mapper(arg_dumper)
+            return self._get_dp_dumper(iter_factory, iter_mapper)
 
-        return self._get_non_dp_serializer(iter_factory, arg_serializer)
+        return self._get_non_dp_dumper(iter_factory, arg_dumper)
 
-    def _get_dp_serializer(self, iter_factory, iter_mapper):
-        def iter_dp_serializer(data):
+    def _get_dp_dumper(self, iter_factory, iter_mapper):
+        def iter_dp_dumper(data):
             return iter_factory(iter_mapper(data))
 
-        return iter_dp_serializer
+        return iter_dp_dumper
 
-    def _get_non_dp_serializer(self, iter_factory, arg_serializer: Serializer):
-        def iter_serializer(data):
-            return iter_factory(map(arg_serializer, data))
+    def _get_non_dp_dumper(self, iter_factory, arg_dumper: Dumper):
+        def iter_dumper(data):
+            return iter_factory(map(arg_dumper, data))
 
-        return iter_serializer
+        return iter_dumper
 
 
 @for_origin(Dict)
-class DictProvider(ParserProvider, SerializerProvider):
+class DictProvider(LoaderProvider, DumperProvider):
     def _extract_key_value(self, request: TypeHintRM) -> Tuple[BaseNormType, BaseNormType]:
         norm = normalize_type(request.type)
         return norm.args  # type: ignore
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         key, value = self._extract_key_value(request)
 
-        key_parser = mediator.provide(
-            ParserRequest(
+        key_loader = mediator.provide(
+            LoaderRequest(
                 type=key.source,
                 strict_coercion=request.strict_coercion,
                 debug_path=request.debug_path
             )
         )
 
-        value_parser = mediator.provide(
-            ParserRequest(
+        value_loader = mediator.provide(
+            LoaderRequest(
                 type=value.source,
                 strict_coercion=request.strict_coercion,
                 debug_path=request.debug_path
             )
         )
 
-        return self._make_parser(request, key_parser=key_parser, value_parser=value_parser)
+        return self._make_loader(request, key_loader=key_loader, value_loader=value_loader)
 
-    def _make_parser(self, request: ParserRequest, key_parser: Parser, value_parser: Parser):
+    def _make_loader(self, request: LoaderRequest, key_loader: Loader, value_loader: Loader):
         if request.debug_path:
-            return self._get_parser_dp(
-                key_parser=key_parser,
-                value_parser=value_parser,
+            return self._get_loader_dp(
+                key_loader=key_loader,
+                value_loader=value_loader,
             )
 
-        return self._get_parser_non_dp(
-            key_parser=key_parser,
-            value_parser=value_parser,
+        return self._get_loader_non_dp(
+            key_loader=key_loader,
+            value_loader=value_loader,
         )
 
-    def _get_parser_dp(self, key_parser: Parser, value_parser: Parser):
-        def dict_parser_dp(data):
+    def _get_loader_dp(self, key_loader: Loader, value_loader: Loader):
+        def dict_loader_dp(data):
             try:
                 items_method = data.items
             except AttributeError:
-                raise TypeParseError(CollectionsMapping)
+                raise TypeLoadError(CollectionsMapping)
 
             result = {}
             for k, v in items_method():
                 try:
-                    parsed_key = key_parser(k)
-                    parsed_value = value_parser(v)
+                    loaded_key = key_loader(k)
+                    loaded_value = value_loader(v)
                 except Exception as e:
                     append_path(e, k)
                     raise e
 
-                result[parsed_key] = parsed_value
+                result[loaded_key] = loaded_value
 
             return result
 
-        return dict_parser_dp
+        return dict_loader_dp
 
-    def _get_parser_non_dp(self, key_parser: Parser, value_parser: Parser):
-        def dict_parser(data):
+    def _get_loader_non_dp(self, key_loader: Loader, value_loader: Loader):
+        def dict_loader(data):
             try:
                 items_method = data.items
             except AttributeError:
-                raise TypeParseError(CollectionsMapping)
+                raise TypeLoadError(CollectionsMapping)
 
             result = {}
             for k, v in items_method():
-                result[key_parser(k)] = value_parser(v)
+                result[key_loader(k)] = value_loader(v)
 
             return result
 
-        return dict_parser
+        return dict_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
 
-        key_serializer = mediator.provide(
+        key_dumper = mediator.provide(
             replace(request, type=key.source),
         )
 
-        value_serializer = mediator.provide(
+        value_dumper = mediator.provide(
             replace(request, type=value.source),
         )
 
-        return self._make_serializer(request, key_serializer=key_serializer, value_serializer=value_serializer)
+        return self._make_dumper(request, key_dumper=key_dumper, value_dumper=value_dumper)
 
-    def _make_serializer(self, request: SerializerRequest, key_serializer: Serializer, value_serializer: Serializer):
+    def _make_dumper(self, request: DumperRequest, key_dumper: Dumper, value_dumper: Dumper):
         if request.debug_path:
-            return self._get_serializer_dp(
-                key_serializer=key_serializer,
-                value_serializer=value_serializer,
+            return self._get_dumper_dp(
+                key_dumper=key_dumper,
+                value_dumper=value_dumper,
             )
 
-        return self._get_serializer_non_dp(
-            key_serializer=key_serializer,
-            value_serializer=value_serializer,
+        return self._get_dumper_non_dp(
+            key_dumper=key_dumper,
+            value_dumper=value_dumper,
         )
 
-    def _get_serializer_dp(self, key_serializer, value_serializer):
-        def dict_serializer_dp(data: Mapping):
+    def _get_dumper_dp(self, key_dumper, value_dumper):
+        def dict_dumper_dp(data: Mapping):
             result = {}
             for k, v in data.items():
                 try:
-                    result[key_serializer(k)] = value_serializer(v)
+                    result[key_dumper(k)] = value_dumper(v)
                 except Exception as e:
                     append_path(e, k)
                     raise e
 
             return result
 
-        return dict_serializer_dp
+        return dict_dumper_dp
 
-    def _get_serializer_non_dp(self, key_serializer, value_serializer):
-        def dict_serializer(data: Mapping):
+    def _get_dumper_non_dp(self, key_dumper, value_dumper):
+        def dict_dumper(data: Mapping):
             result = {}
             for k, v in data.items():
-                result[key_serializer(k)] = value_serializer(v)
+                result[key_dumper(k)] = value_dumper(v)
 
             return result
 
-        return dict_serializer
+        return dict_dumper
 
 
-class BaseEnumProvider(ParserProvider, SerializerProvider, ABC):
+class BaseEnumProvider(LoaderProvider, DumperProvider, ABC):
     def _check_request(self, mediator: Mediator, request: Request) -> None:
         if not isinstance(request, TypeHintRM):
             raise CannotProvide
@@ -469,14 +469,14 @@ class BaseEnumProvider(ParserProvider, SerializerProvider, ABC):
             raise CannotProvide
 
 
-def _enum_name_serializer(data):
+def _enum_name_dumper(data):
     return data.name
 
 
 class EnumNameProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world by their name"""
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = request.type
 
         if issubclass(enum, Flag):
@@ -484,7 +484,7 @@ class EnumNameProvider(BaseEnumProvider):
 
         variants = [case.name for case in enum]
 
-        def enum_parser(data):
+        def enum_loader(data):
             try:
                 return enum[data]
             except KeyError:
@@ -492,49 +492,49 @@ class EnumNameProvider(BaseEnumProvider):
             except TypeError:
                 raise BadVariantError(variants)
 
-        return enum_parser
+        return enum_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
-        return _enum_name_serializer
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return _enum_name_dumper
 
 
 class EnumValueProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world by their value.
     Input data will be parsed and then interpreted as one of enum member value.
-    At serializing value of enum member will be serialized.
+    At serializing value of enum member will be dumped.
     """
 
     def __init__(self, value_type: TypeHint):
         """Create value provider for Enum.
 
         :param value_type: Type of enum member value
-            that will be used to create parser and serializer of member value
+            that will be used to create loader and dumper of member value
         """
         self._value_type = value_type
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = request.type
-        value_parser = mediator.provide(replace(request, type=self._value_type))
+        value_loader = mediator.provide(replace(request, type=self._value_type))
 
-        def enum_parser(data):
-            parsed_value = value_parser(data)
+        def enum_loader(data):
+            loaded_value = value_loader(data)
             try:
-                return enum(parsed_value)
+                return enum(loaded_value)
             except ValueError:
                 raise MsgError("Bad enum value")
 
-        return enum_parser
+        return enum_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
-        value_serializer = mediator.provide(replace(request, type=self._value_type))
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        value_dumper = mediator.provide(replace(request, type=self._value_type))
 
-        def enum_serializer(data):
-            return value_serializer(data.value)
+        def enum_dumper(data):
+            return value_dumper(data.value)
 
-        return enum_serializer
+        return enum_dumper
 
 
-def _enum_exact_value_serializer(data):
+def _enum_exact_value_dumper(data):
     return data.value
 
 
@@ -543,11 +543,11 @@ class EnumExactValueProvider(BaseEnumProvider):
     by their value without any processing
     """
 
-    def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = request.type
         variants = [case.value for case in enum]
 
-        def enum_exact_parser(data):
+        def enum_exact_loader(data):
             # since MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
             if isinstance(data, enum):
                 raise BadVariantError(variants)
@@ -557,7 +557,7 @@ class EnumExactValueProvider(BaseEnumProvider):
             except ValueError:
                 raise BadVariantError(variants)
 
-        return enum_exact_parser
+        return enum_exact_loader
 
-    def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:
-        return _enum_exact_value_serializer
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return _enum_exact_value_dumper

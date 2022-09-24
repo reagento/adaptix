@@ -5,13 +5,13 @@ from typing import Any, List, Union
 import phonenumbers
 
 from dataclass_factory_30.facade.provider import ValidationError
-from dataclass_factory_30.provider import ExtraFieldsError, ParseError, TypeParseError, UnionParseError, ValueParseError
+from dataclass_factory_30.provider import ExtraFieldsError, LoadError, TypeLoadError, UnionLoadError, ValueLoadError
 from dataclass_factory_30.provider.errors import BadVariantError
 from tests_helpers import raises_path
 
-from .factory import INNER_RECEIPT_FACTORY, OUTER_RECEIPT_FACTORY
 from .models import NotifyEmail, NotifyPhone, Receipt, ReceiptType, RecItem, Taxation
 from .money import rubles
+from .retort import INNER_RECEIPT_RETORT, OUTER_RECEIPT_RETORT
 
 
 def change(data, path: List[Union[str, int]], new_value: Any):
@@ -40,11 +40,11 @@ outer_sample_data = {
     ],
 }
 
-outer_receipt_parser = OUTER_RECEIPT_FACTORY.parser(Receipt)
+outer_receipt_loader = OUTER_RECEIPT_RETORT.get_loader(Receipt)
 
 
 def test_outer_parsing():
-    assert outer_receipt_parser(outer_sample_data) == Receipt(
+    assert outer_receipt_loader(outer_sample_data) == Receipt(
         type=ReceiptType.INCOME,
         items=[
             RecItem(
@@ -61,13 +61,13 @@ def test_outer_parsing():
 
     raises_path(
         ValidationError('At least one item must be presented'),
-        lambda: outer_receipt_parser(no_rec_items_data),
+        lambda: outer_receipt_loader(no_rec_items_data),
         path=['items'],
     )
 
     phone_data = change(outer_sample_data, ["notify", 0], {"type": "phone", "value": "+14155552671"})
 
-    assert outer_receipt_parser(phone_data) == Receipt(
+    assert outer_receipt_loader(phone_data) == Receipt(
         type=ReceiptType.INCOME,
         items=[
             RecItem(
@@ -83,18 +83,18 @@ def test_outer_parsing():
     bad_phone_data = change(outer_sample_data, ["notify", 0], {"type": "phone", "value": "+1-541-754-3010"})
 
     raises_path(
-        UnionParseError(
+        UnionLoadError(
             [
-                UnionParseError(
+                UnionLoadError(
                     [
-                        ParseError(),
-                        ValueParseError(msg='Bad phone number')
+                        LoadError(),
+                        ValueLoadError(msg='Bad phone number')
                     ]
                 ),
-                TypeParseError(expected_type=None)
+                TypeLoadError(expected_type=None)
             ]
         ),
-        lambda: outer_receipt_parser(bad_phone_data),
+        lambda: outer_receipt_loader(bad_phone_data),
         path=['notify'],  # I do not know how to fix that
     )
 
@@ -102,7 +102,7 @@ def test_outer_parsing():
 
     raises_path(
         BadVariantError(['INCOME', 'INCOME_REFUND']),
-        lambda: outer_receipt_parser(bad_receipt_type_data),
+        lambda: outer_receipt_loader(bad_receipt_type_data),
         path=['type'],
     )
 
@@ -110,7 +110,7 @@ def test_outer_parsing():
 
     raises_path(
         ExtraFieldsError(['version']),
-        lambda: outer_receipt_parser(with_version_data),
+        lambda: outer_receipt_loader(with_version_data),
         path=[],
     )
 
@@ -120,7 +120,7 @@ def test_outer_receipt_item_validation():
 
     raises_path(
         ValidationError('Value must be > 0'),
-        lambda: outer_receipt_parser(bad_quantity_data),
+        lambda: outer_receipt_loader(bad_quantity_data),
         path=["items", 0, "quantity"],
     )
 
@@ -128,21 +128,21 @@ def test_outer_receipt_item_validation():
 
     raises_path(
         ValidationError('Value must be >= 0'),
-        lambda: outer_receipt_parser(bad_price_data),
+        lambda: outer_receipt_loader(bad_price_data),
         path=["items", 0, "price"],
     )
 
     bad_name_data = change(outer_sample_data, ["items", 0, "name"], 'Matchbox 🔥')
 
     raises_path(
-        ValueParseError("Char '🔥' can not be represented at CP866"),
-        lambda: outer_receipt_parser(bad_name_data),
+        ValueLoadError("Char '🔥' can not be represented at CP866"),
+        lambda: outer_receipt_loader(bad_name_data),
         path=["items", 0, "name"],
     )
 
     replace_name_data = change(outer_sample_data, ["items", 0, "name"], 'Matchbox «Dry Fire»')
 
-    assert outer_receipt_parser(replace_name_data) == Receipt(
+    assert outer_receipt_loader(replace_name_data) == Receipt(
         type=ReceiptType.INCOME,
         items=[
             RecItem(
@@ -157,9 +157,6 @@ def test_outer_receipt_item_validation():
 
 
 def test_inner():
-    receipt_parser = INNER_RECEIPT_FACTORY.parser(Receipt)
-    receipt_serializer = INNER_RECEIPT_FACTORY.serializer(Receipt)
-
     data = {
         "type": "INCOME",
         "items": [
@@ -188,7 +185,7 @@ def test_inner():
         taxation=Taxation.USN_MINUS,
         notify=[NotifyEmail("mail@example.com")],
     )
-
-    assert receipt_parser(data) == receipt
-    serialized_data = receipt_serializer(receipt)
-    assert serialized_data == data
+    loaded_data = INNER_RECEIPT_RETORT.load(data, Receipt)
+    assert loaded_data == receipt
+    dumped_data = INNER_RECEIPT_RETORT.dump(receipt)
+    assert dumped_data == data

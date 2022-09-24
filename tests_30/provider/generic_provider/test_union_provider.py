@@ -4,17 +4,17 @@ from typing import Callable, List, Literal, Optional, Union
 
 import pytest
 
-from dataclass_factory_30.facade import Factory, parser, serializer
+from dataclass_factory_30.facade import Retort, dumper, loader
 from dataclass_factory_30.provider import (
+    DumperRequest,
     LiteralProvider,
-    ParseError,
-    ParserRequest,
-    SerializerRequest,
-    TypeParseError,
-    UnionParseError,
+    LoaderRequest,
+    LoadError,
+    TypeLoadError,
+    UnionLoadError,
     UnionProvider,
 )
-from tests_helpers import TestFactory, parametrize_bool, raises_path
+from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 
 @dataclass
@@ -23,132 +23,122 @@ class Book:
     author: Union[str, List[str]]
 
 
-def test_union_at_field():
-    data = {
-        "price": 123,
-        "author": "meow"
-    }
-
-    factory = Factory()
-    factory.parser(Book)(data)
-
-
-def make_parser(tp: type):
-    def tp_parser(data):
+def make_loader(tp: type):
+    def tp_loader(data):
         if isinstance(data, tp):
             return data
-        raise TypeParseError(tp)
+        raise TypeLoadError(tp)
 
-    return parser(tp, tp_parser)
+    return loader(tp, tp_loader)
 
 
-def make_serializer(tp: type):
-    def tp_serializer(data):
+def make_dumper(tp: type):
+    def tp_dumper(data):
         if isinstance(data, tp):
             return data
         raise TypeError(type(data))
 
-    return serializer(tp, tp_serializer)
+    return dumper(tp, tp_dumper)
 
 
 @pytest.fixture
-def factory():
-    return TestFactory(
+def retort():
+    return TestRetort(
         recipe=[
             UnionProvider(),
-            make_parser(str),
-            make_parser(int),
-            make_serializer(str),
-            make_serializer(int),
-            make_serializer(type(None)),
+            make_loader(str),
+            make_loader(int),
+            make_dumper(str),
+            make_dumper(int),
+            make_dumper(type(None)),
         ]
     )
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
-def test_parsing(factory, strict_coercion, debug_path):
-    parser = factory.provide(
-        ParserRequest(
+def test_loading(retort, strict_coercion, debug_path):
+    loader = retort.provide(
+        LoaderRequest(
             type=Union[int, str],
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser(1) == 1
-    assert parser('a') == 'a'
+    assert loader(1) == 1
+    assert loader('a') == 'a'
 
     if debug_path:
         raises_path(
-            UnionParseError,
-            lambda: parser([]),
+            UnionLoadError,
+            lambda: loader([]),
             path=[],
             match=re.escape(
-                "[TypeParseError(expected_type=<class 'int'>), TypeParseError(expected_type=<class 'str'>)]"
+                "[TypeLoadError(expected_type=<class 'int'>), TypeLoadError(expected_type=<class 'str'>)]"
             ),
         )
     else:
         raises_path(
-            ParseError,
-            lambda: parser([]),
+            LoadError,
+            lambda: loader([]),
             path=[],
             match='',
         )
 
 
 @parametrize_bool('debug_path')
-def test_serializing(factory, debug_path):
-    serializer = factory.provide(
-        SerializerRequest(
+def test_serializing(retort, debug_path):
+    dumper = retort.provide(
+        DumperRequest(
             type=Union[int, str],
             debug_path=debug_path,
         )
     )
 
-    assert serializer(1) == 1
-    assert serializer('a') == 'a'
+    assert dumper(1) == 1
+    assert dumper('a') == 'a'
 
     raises_path(
         KeyError,
-        lambda: serializer([]),
+        lambda: dumper([]),
         path=[],
         match=re.escape("<class 'list'>"),
     )
 
 
 @parametrize_bool('debug_path')
-def test_opt_serializing(factory, debug_path):
-    opt_serializer = factory.provide(
-        SerializerRequest(
+def test_opt_serializing(retort, debug_path):
+    opt_dumper = retort.provide(
+        DumperRequest(
             type=Optional[str],
             debug_path=debug_path,
         )
     )
 
-    assert opt_serializer('a') == 'a'
-    assert opt_serializer(None) is None
+    assert opt_dumper('a') == 'a'
+    assert opt_dumper(None) is None
 
     raises_path(
         TypeError,
-        lambda: opt_serializer([]),
+        lambda: opt_dumper([]),
         path=[],
         match=re.escape("<class 'list'>"),
     )
 
 
 @parametrize_bool('debug_path')
-def test_bad_opt_serializing(factory, debug_path):
+def test_bad_opt_serializing(retort, debug_path):
     raises_path(
         ValueError,
-        lambda: factory.provide(
-            SerializerRequest(
+        lambda: retort.provide(
+            DumperRequest(
                 type=Union[int, Callable[[int], str]],
                 debug_path=debug_path,
             )
         ),
         path=[],
         match=re.escape(
-            "Can not create serializer for typing.Union[int, typing.Callable[[int], str]]."
+            "Can not create dumper for typing.Union[int, typing.Callable[[int], str]]."
             " All cases of union must be class, but found [typing.Callable[[int], str]]"
         ),
     )
@@ -156,46 +146,46 @@ def test_bad_opt_serializing(factory, debug_path):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_literal(strict_coercion, debug_path):
-    factory = TestFactory(
+    retort = TestRetort(
         recipe=[
             LiteralProvider(),
             UnionProvider(),
-            make_parser(type(None)),
-            make_serializer(type(None)),
+            make_loader(type(None)),
+            make_dumper(type(None)),
         ]
     )
 
-    parser = factory.provide(
-        ParserRequest(
+    loader = retort.provide(
+        LoaderRequest(
             type=Literal['a', None],
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
     )
 
-    assert parser('a') == 'a'
-    assert parser(None) is None
+    assert loader('a') == 'a'
+    assert loader(None) is None
 
     if debug_path:
         raises_path(
-            UnionParseError([TypeParseError(type(None)), ParseError()]),
-            lambda: parser('b'),
+            UnionLoadError([TypeLoadError(type(None)), LoadError()]),
+            lambda: loader('b'),
             path=[],
         )
     else:
         raises_path(
-            ParseError(),
-            lambda: parser('b'),
+            LoadError(),
+            lambda: loader('b'),
             path=[],
         )
 
-    serializer = factory.provide(
-        SerializerRequest(
+    dumper = retort.provide(
+        DumperRequest(
             type=Literal['a', None],
             debug_path=debug_path,
         )
     )
 
-    assert serializer('a') == 'a'
-    assert serializer(None) is None
-    assert serializer('b') == 'b'
+    assert dumper('a') == 'a'
+    assert dumper(None) is None
+    assert dumper('b') == 'b'

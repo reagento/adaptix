@@ -2,24 +2,24 @@ from enum import Enum, EnumMeta
 from types import MappingProxyType
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Type, TypeVar, Union, overload
 
-from ..common import Catchable, Parser, Serializer, TypeHint
+from ..common import Catchable, Dumper, Loader, TypeHint
 from ..model_tools import Default, NoDefault, OutputField, PropertyAccessor, get_func_input_figure
 from ..provider import (
     BoundingProvider,
     Chain,
     ChainingProvider,
+    DumperRequest,
     EnumExactValueProvider,
     EnumNameProvider,
     EnumValueProvider,
     InputFigureRequest,
+    LoaderRequest,
+    LoadError,
     NameMapper,
     NameStyle,
     OrRequestChecker,
-    ParseError,
-    ParserRequest,
     PropertyAdder,
     Provider,
-    SerializerRequest,
     ValidationError,
     ValueProvider,
     create_req_checker,
@@ -42,38 +42,38 @@ def make_chain(chain: Optional[Chain], provider: Provider, /) -> Provider:
 
 
 @overload
-def parser(pred: Type[T], func: Parser[T], chain: Optional[Chain] = None, /) -> Provider:
+def loader(pred: Type[T], func: Loader[T], chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
 @overload
-def parser(pred: Any, func: Parser, chain: Optional[Chain] = None, /) -> Provider:
+def loader(pred: Any, func: Loader, chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
 @overload
-def parser(type_or_class_method: Union[type, Parser], chain: Optional[Chain] = None, /) -> Provider:
+def loader(type_or_class_method: Union[type, Loader], chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
-def parser(func_or_pred, func_or_chain=None, maybe_chain=None):
+def loader(func_or_pred, func_or_chain=None, maybe_chain=None):
     pred, func, chain = resolve_pred_value_chain(func_or_pred, func_or_chain, maybe_chain)
     return bound(
         pred,
         make_chain(
             chain,
-            ValueProvider(ParserRequest, func)
+            ValueProvider(LoaderRequest, func)
         )
     )
 
 
 @overload
-def serializer(pred: Type[T], func: Serializer[T], chain: Optional[Chain] = None, /) -> Provider:
+def dumper(pred: Type[T], func: Dumper[T], chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
 @overload
-def serializer(pred: Any, func: Serializer, chain: Optional[Chain] = None, /) -> Provider:
+def dumper(pred: Any, func: Dumper, chain: Optional[Chain] = None, /) -> Provider:
     pass
 
 
@@ -81,12 +81,12 @@ def serializer(pred: Any, func: Serializer, chain: Optional[Chain] = None, /) ->
 # because at class level it is a simple function.
 # There is rare case when method is WrapperDescriptorType,
 # nevertheless one arg signature was removed
-def serializer(pred, func, chain=None):
+def dumper(pred, func, chain=None):
     return bound(
         pred,
         make_chain(
             chain,
-            ValueProvider(SerializerRequest, func),
+            ValueProvider(DumperRequest, func),
         ),
     )
 
@@ -255,7 +255,7 @@ def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Pr
 def validator(
     pred: Any,
     function: Callable[[Any], bool],
-    error: Union[str, Callable[[Any], ParseError], None] = None,
+    error: Union[str, Callable[[Any], LoadError], None] = None,
     chain: Chain = Chain.LAST,
     /,
 ) -> Provider:
@@ -275,7 +275,7 @@ def validator(
 def validator(
     pred: Any,
     function: Callable[[Any], bool],
-    error_or_chain: Union[str, Callable[[Any], ParseError], None, Chain] = None,
+    error_or_chain: Union[str, Callable[[Any], LoadError], None, Chain] = None,
     chain: Optional[Chain] = None,
     /,
 ):
@@ -298,9 +298,9 @@ def validator(
         error
     )
 
-    def validator_parser(data):
+    def validating_loader(data):
         if function(data):
             return data
         raise error_func(data)
 
-    return parser(pred, validator_parser, p_chain)
+    return loader(pred, validating_loader, p_chain)
