@@ -176,9 +176,9 @@ class NameMappingProvider(StaticProvider, ABC):
     @abstractmethod
     @static_provision_action
     def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> InputNameMapping:
-        pass
+        ...
 
     @abstractmethod
     @static_provision_action
     def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> OutputNameMapping:
-        pass
+        ...

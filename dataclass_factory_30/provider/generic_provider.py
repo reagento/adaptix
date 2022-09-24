@@ -500,7 +500,7 @@ class EnumNameProvider(BaseEnumProvider):
 
 class EnumValueProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world by their value.
-    Input data will be parsed and then interpreted as one of enum member value.
+    Input data will be loaded and then interpreted as one of enum member value.
     At serializing value of enum member will be dumped.
     """
 

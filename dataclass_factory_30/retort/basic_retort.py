@@ -8,7 +8,7 @@ from .mediator import BuiltinMediator, RawRecipeSearcher, RecipeSearcher, Recurs
 class FullRecipeGetter(ABC):
     @abstractmethod
     def _get_full_recipe(self) -> List[Provider]:
-        pass
+        ...
 
 
 def _get_own_attr(obj, attr_name: str, default):
@@ -48,7 +48,7 @@ class IncrementalRecipe(FullRecipeGetter, ABC):
 
     @abstractmethod
     def _get_config_recipe(self) -> List[Provider]:
-        pass
+        ...
 
     def _get_full_recipe(self) -> List[Provider]:
         return (
@@ -69,7 +69,7 @@ class ProvidingFromRecipe(FullRecipeGetter, ABC):
 
     @abstractmethod
     def _get_recursion_resolving(self) -> RecursionResolving:
-        pass
+        ...
 
     def _create_mediator(self, request_stack: Sequence[Request]) -> Mediator:
         searcher = self._get_searcher()

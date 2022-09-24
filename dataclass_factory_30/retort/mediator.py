@@ -10,11 +10,11 @@ T = TypeVar('T')
 class StubsRecursionResolver(ABC, Generic[T]):
     @abstractmethod
     def get_stub(self, request: Request[T]) -> T:
-        pass
+        ...
 
     @abstractmethod
     def saturate_stub(self, actual: T, stub: T) -> None:
-        pass
+        ...
 
 
 ProvideCallable = Callable[[Mediator, Request[T]], T]
@@ -29,15 +29,15 @@ class RecipeSearcher(ABC):
 
     @abstractmethod
     def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
-        pass
+        ...
 
     @abstractmethod
     def get_max_offset(self) -> int:
-        pass
+        ...
 
     @abstractmethod
     def clear_cache(self):
-        pass
+        ...
 
 
 RecursionResolving = ClassDispatcher[Request, StubsRecursionResolver]

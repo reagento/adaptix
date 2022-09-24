@@ -20,17 +20,17 @@ _SPA_RC_STORAGE = '_spa_request_cls'
 
 @overload
 def static_provision_action() -> Callable[[SPA[P, R, T]], SPA[P, R, T]]:
-    pass
+    ...
 
 
 @overload
 def static_provision_action(request_cls: Type[Request], /) -> Callable[[SPA[P, R, T]], SPA[P, R, T]]:
-    pass
+    ...
 
 
 @overload
 def static_provision_action(func: SPA[P, R, T], /) -> SPA[P, R, T]:
-    pass
+    ...
 
 
 def static_provision_action(arg=None):

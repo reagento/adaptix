@@ -108,7 +108,7 @@ class BoundedRequestChecker(RequestChecker, ABC):
 
     @abstractmethod
     def _check_bounded_request(self, mediator: Mediator, request: Any) -> None:
-        pass
+        ...
 
 
 @dataclass

@@ -38,17 +38,17 @@ class Accessor(Hashable, ABC):
     @property
     @abstractmethod
     def getter(self) -> Callable[[Any], Any]:
-        pass
+        ...
 
     @property
     @abstractmethod
     def access_error(self) -> Optional[Catchable]:
-        pass
+        ...
 
     @property
     @abstractmethod
     def path_element(self) -> PathElement:
-        pass
+        ...
 
 
 class DescriptorAccessor(Accessor, ABC):

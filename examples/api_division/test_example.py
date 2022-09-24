@@ -43,7 +43,7 @@ outer_sample_data = {
 outer_receipt_loader = OUTER_RECEIPT_RETORT.get_loader(Receipt)
 
 
-def test_outer_parsing():
+def test_outer_loading():
     assert outer_receipt_loader(outer_sample_data) == Receipt(
         type=ReceiptType.INCOME,
         items=[

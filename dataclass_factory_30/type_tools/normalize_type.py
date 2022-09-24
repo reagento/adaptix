@@ -38,17 +38,17 @@ class BaseNormType(Hashable, ABC):
     @property
     @abstractmethod
     def origin(self) -> Any:
-        pass
+        ...
 
     @property
     @abstractmethod
     def args(self) -> VarTuple[Any]:
-        pass
+        ...
 
     @property
     @abstractmethod
     def source(self) -> TypeHint:
-        pass
+        ...
 
 
 T = TypeVar('T')
@@ -456,11 +456,11 @@ class TypeNormalizer:
 
     @overload
     def normalize(self, tp: TypeVar) -> NormTV:
-        pass
+        ...
 
     @overload
     def normalize(self, tp: TypeHint) -> BaseNormType:
-        pass
+        ...
 
     def normalize(self, tp: TypeHint) -> BaseNormType:
         origin = strip_alias(tp)

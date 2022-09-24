@@ -129,7 +129,7 @@ class BuiltinRetort(OperatingRetort, ABC):
 
     @abstractmethod
     def clear_cache(self):
-        pass
+        ...
 
 
 T = TypeVar('T')

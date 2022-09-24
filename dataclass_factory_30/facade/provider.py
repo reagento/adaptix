@@ -43,17 +43,17 @@ def make_chain(chain: Optional[Chain], provider: Provider, /) -> Provider:
 
 @overload
 def loader(pred: Type[T], func: Loader[T], chain: Optional[Chain] = None, /) -> Provider:
-    pass
+    ...
 
 
 @overload
 def loader(pred: Any, func: Loader, chain: Optional[Chain] = None, /) -> Provider:
-    pass
+    ...
 
 
 @overload
 def loader(type_or_class_method: Union[type, Loader], chain: Optional[Chain] = None, /) -> Provider:
-    pass
+    ...
 
 
 def loader(func_or_pred, func_or_chain=None, maybe_chain=None):
@@ -69,12 +69,12 @@ def loader(func_or_pred, func_or_chain=None, maybe_chain=None):
 
 @overload
 def dumper(pred: Type[T], func: Dumper[T], chain: Optional[Chain] = None, /) -> Provider:
-    pass
+    ...
 
 
 @overload
 def dumper(pred: Any, func: Dumper, chain: Optional[Chain] = None, /) -> Provider:
-    pass
+    ...
 
 
 # We can not extract origin class from method
@@ -93,17 +93,17 @@ def dumper(pred, func, chain=None):
 
 @overload
 def constructor(pred: Type[T], func: Callable[..., T], /) -> Provider:
-    pass
+    ...
 
 
 @overload
 def constructor(pred: Any, func: Callable, /) -> Provider:
-    pass
+    ...
 
 
 @overload
 def constructor(type_or_class_method: Callable, /) -> Provider:
-    pass
+    ...
 
 
 def constructor(func_or_pred, func=None):
@@ -166,7 +166,7 @@ def add_property(
     access_error: Optional[Catchable] = None,
     metadata: Mapping[Any, Any] = MappingProxyType({}),
 ):
-    pass
+    ...
 
 
 @overload
@@ -180,7 +180,7 @@ def add_property(
     access_error: Optional[Catchable] = None,
     metadata: Mapping[Any, Any] = MappingProxyType({}),
 ):
-    pass
+    ...
 
 
 def add_property(
@@ -259,7 +259,7 @@ def validator(
     chain: Chain = Chain.LAST,
     /,
 ) -> Provider:
-    pass
+    ...
 
 
 @overload
@@ -269,7 +269,7 @@ def validator(
     chain: Chain,
     /,
 ) -> Provider:
-    pass
+    ...
 
 
 def validator(

@@ -48,7 +48,7 @@ class LoaderProvider(ProviderWithRC, ABC):
 
     @abstractmethod
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        pass
+        ...
 
 
 class DumperProvider(ProviderWithRC, ABC):
@@ -60,7 +60,7 @@ class DumperProvider(ProviderWithRC, ABC):
 
     @abstractmethod
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        pass
+        ...
 
 
 class CoercionLimiter(LoaderProvider):

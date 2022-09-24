@@ -24,12 +24,12 @@ from .input_creation_gen import BuiltinInputCreationGen
 
 class InputExtractionMaker(Protocol):
     def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure]:
-        pass
+        ...
 
 
 class InputCreationMaker(Protocol):
     def __call__(self, mediator: Mediator, request: LoaderRequest, figure: InputFigure) -> CodeGenerator:
-        pass
+        ...
 
 
 class BuiltinInputExtractionMaker(InputExtractionMaker):

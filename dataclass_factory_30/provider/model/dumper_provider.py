@@ -23,12 +23,12 @@ from .output_extraction_gen import BuiltinOutputExtractionGen
 
 class OutputExtractionMaker(Protocol):
     def __call__(self, mediator: Mediator, request: DumperRequest, figure: OutputFigure) -> CodeGenerator:
-        pass
+        ...
 
 
 class OutputCreationMaker(Protocol):
     def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure]:
-        pass
+        ...
 
 
 def make_output_extraction(mediator: Mediator, request: DumperRequest, figure: OutputFigure) -> CodeGenerator:

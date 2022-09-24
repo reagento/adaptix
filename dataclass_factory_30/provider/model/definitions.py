@@ -30,4 +30,4 @@ class VarBinder(PrefixManglerBase):
 
 class CodeGenerator(Protocol):
     def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
-        pass
+        ...
