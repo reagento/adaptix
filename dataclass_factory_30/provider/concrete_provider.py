@@ -101,14 +101,15 @@ class SecondsTimedeltaProvider(ParserProvider, SerializerProvider):
         return timedelta.total_seconds
 
 
+def none_parser(data):
+    if data is None:
+        return None
+    raise TypeParseError(None)
+
+
 @for_origin(None)
 class NoneProvider(ParserProvider, SerializerProvider):
     def _provide_parser(self, mediator: Mediator, request: ParserRequest) -> Parser:
-        def none_parser(data):
-            if data is None:
-                return None
-            raise TypeParseError(None)
-
         return none_parser
 
     def _provide_serializer(self, mediator: Mediator, request: SerializerRequest) -> Serializer:

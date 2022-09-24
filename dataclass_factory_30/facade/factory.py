@@ -53,10 +53,6 @@ def stub(arg):
     return arg
 
 
-def _as_is_parser(tp: type) -> Provider:
-    return CoercionLimiter(parser(tp, stub), [tp])
-
-
 class BuiltinFactory(OperatingFactory, ABC):
     """A factory contains builtin providers"""
 
@@ -79,10 +75,10 @@ class BuiltinFactory(OperatingFactory, ABC):
         CoercionLimiter(parser(float), [float, int]),
         serializer(float, stub),
 
-        _as_is_parser(str),
+        CoercionLimiter(parser(str, stub), [str]),
         serializer(str, stub),
 
-        _as_is_parser(bool),
+        CoercionLimiter(parser(bool, stub), [bool]),
         serializer(bool, stub),
 
         CoercionLimiter(parser(Decimal), [str, Decimal]),

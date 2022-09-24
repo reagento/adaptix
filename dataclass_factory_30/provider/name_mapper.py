@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field as dc_field
+from dataclasses import dataclass, field
 from typing import Collection, Dict, List, Optional, cast
 
 # TODO: Add support for path in map
@@ -69,12 +69,12 @@ class NameMapper(NameMappingProvider):
     class will raise error
     """
 
-    skip: List[str] = dc_field(default_factory=list)
+    skip: List[str] = field(default_factory=list)
     only_mapped: bool = False
     only: Optional[List[str]] = None
     skip_internal: bool = True
 
-    map: Dict[str, str] = dc_field(default_factory=dict)
+    map: Dict[str, str] = field(default_factory=dict)
     trim_trailing_underscore: bool = True
     name_style: Optional[NameStyle] = None
 
