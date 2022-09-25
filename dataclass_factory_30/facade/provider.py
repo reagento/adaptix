@@ -106,8 +106,8 @@ def constructor(type_or_class_method: Callable, /) -> Provider:
     ...
 
 
-def constructor(func_or_pred, func=None):
-    pred, func, _ = resolve_pred_value_chain(func_or_pred, func, None)
+def constructor(func_or_pred, opt_func=None):
+    pred, func, _ = resolve_pred_value_chain(func_or_pred, opt_func, None)
 
     return bound(
         pred,
@@ -115,14 +115,14 @@ def constructor(func_or_pred, func=None):
             InputFigureRequest,
             get_func_input_figure(
                 func,
-                slice(0 if func else 1, None),
+                slice(0 if opt_func else 1, None),
             )
         ),
     )
 
 
 def name_mapping(
-    pred: Any,
+    pred: Any = _OMITTED,
     /,
     *,
     skip: Optional[List[str]] = None,
@@ -139,18 +139,17 @@ def name_mapping(
         if v is not None
     }
 
-    return bound(
-        pred,
-        NameMapper(
-            only_mapped=only_mapped,
-            only=only,
-            skip_internal=skip_internal,
-            trim_trailing_underscore=trim_trailing_underscore,
-            name_style=name_style,
-            omit_default=omit_default,
-            **opt_mut_params,  # type: ignore[arg-type]
-        )
+    name_mapper = NameMapper(
+        only_mapped=only_mapped,
+        only=only,
+        skip_internal=skip_internal,
+        trim_trailing_underscore=trim_trailing_underscore,
+        name_style=name_style,
+        omit_default=omit_default,
+        **opt_mut_params,  # type: ignore[arg-type]
     )
+
+    return name_mapper if pred is _OMITTED else bound(pred, name_mapper)
 
 
 NameOrProp = Union[str, property]

@@ -1,68 +1,63 @@
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from typing import ClassVar, List, Optional, Sequence, TypeVar
 
 from ..provider import Mediator, Provider, Request
 from .mediator import BuiltinMediator, RawRecipeSearcher, RecipeSearcher, RecursionResolving
+from .utils import Cloneable, ForbiddingDescriptor
 
 
-class FullRecipeGetter(ABC):
-    @abstractmethod
-    def _get_full_recipe(self) -> List[Provider]:
-        ...
+class RetortMeta(ABCMeta):  # inherits from ABCMeta to be compatible with ABC
+    _own_class_recipe: List[Provider]
+    recipe = ForbiddingDescriptor()
+
+    def __new__(mcs, name, bases, namespace, **kwargs):
+        _cls_recipe = namespace.get('recipe', [])
+
+        if not isinstance(_cls_recipe, list) or not all(isinstance(el, Provider) for el in _cls_recipe):
+            raise TypeError("Recipe attributes must be List[Provider]")
+
+        namespace['_own_class_recipe'] = _cls_recipe.copy()
+        namespace['recipe'] = ForbiddingDescriptor()
+        return super().__new__(mcs, name, bases, namespace, **kwargs)
 
 
-def _get_own_attr(obj, attr_name: str, default):
-    return vars(obj).get(attr_name, default)
+T = TypeVar('T')
 
 
-class IncrementalRecipe(FullRecipeGetter, ABC):
-    """A base class defining building of full recipe.
-    Full recipe is sum of instance recipe, config recipe and class recipe.
-
-    Instance recipe is setting up at `recipe` constructor parameter.
-
-    Config recipe is creating with :method:`_get_config_recipe()`.
-    It can be used to passing retort config attributes to recipe.
-
-    Class recipe is a sum of `recipe` attribute of class and class recipe of mro parents.
-    """
+class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
     recipe: List[Provider] = []
-    _inc_class_recipe: ClassVar[List[Provider]] = []
+    _full_class_recipe: ClassVar[List[Provider]]
 
     def __init_subclass__(cls, **kwargs):
+        # noinspection PyProtectedMember
         recipe_sum = sum(
             (
-                _get_own_attr(parent, 'recipe', [])
-                for parent in cls.__mro__
-                if issubclass(parent, IncrementalRecipe)
+                parent._own_class_recipe  # pylint: disable=E1101
+                for parent in cls.mro()
+                if isinstance(parent, RetortMeta)
             ),
             start=[],
         )
-
-        cls._inc_class_recipe = recipe_sum
+        cls._full_class_recipe = recipe_sum
 
     def __init__(self, recipe: Optional[List[Provider]]):
-        if recipe is None:
-            recipe = []
-        self._inc_instance_recipe = recipe
+        self._inc_instance_recipe = recipe or []
+        self._calculate_derived()
 
     @abstractmethod
     def _get_config_recipe(self) -> List[Provider]:
         ...
 
     def _get_full_recipe(self) -> List[Provider]:
-        return (
+        return self._full_recipe
+
+    def _calculate_derived(self):
+        super()._calculate_derived()
+        self._full_recipe = (
             self._inc_instance_recipe
             + self._get_config_recipe()
-            + self._inc_class_recipe
+            + self._full_class_recipe
         )
-
-
-T = TypeVar('T')
-
-
-class ProvidingFromRecipe(FullRecipeGetter, ABC):
-    """A base class defining providing process from full recipe"""
 
     def _get_searcher(self) -> RecipeSearcher:
         return RawRecipeSearcher(recipe=self._get_full_recipe())

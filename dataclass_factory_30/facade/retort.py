@@ -1,12 +1,11 @@
-from abc import ABC, abstractmethod
-from copy import copy
+from abc import ABC
 from datetime import date, datetime, time
 from decimal import Decimal
 from fractions import Fraction
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from pathlib import Path
-from typing import Any, ByteString, Dict, List, Mapping, MutableMapping, Optional, Type, TypeVar, overload
+from typing import Any, ByteString, List, Mapping, MutableMapping, Optional, Type, TypeVar, overload
 from uuid import UUID
 
 from ..common import Dumper, Loader, TypeHint
@@ -26,7 +25,6 @@ from ..provider import (
     DictProvider,
     DumperRequest,
     EnumExactValueProvider,
-    FactoryProvider,
     IsoFormatProvider,
     IterableProvider,
     LiteralProvider,
@@ -43,6 +41,7 @@ from ..provider import (
     SecondsTimedeltaProvider,
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
+    ValueProvider,
 )
 from ..provider.model import ExtraPolicy, ExtraSkip, make_input_creation, make_output_extraction
 from ..retort import OperatingRetort
@@ -53,7 +52,7 @@ def stub(arg):
     return arg
 
 
-class BuiltinRetort(OperatingRetort, ABC):
+class FilledRetort(OperatingRetort, ABC):
     """A retort contains builtin providers"""
 
     recipe = [
@@ -127,17 +126,15 @@ class BuiltinRetort(OperatingRetort, ABC):
         TypeHintTagsUnwrappingProvider(),
     ]
 
-    @abstractmethod
-    def clear_cache(self):
-        ...
-
 
 T = TypeVar('T')
 RequestTV = TypeVar('RequestTV', bound=Request)
-R = TypeVar('R', bound='Retort')
+R = TypeVar('R', bound='AdornedRetort')
 
 
-class Retort(BuiltinRetort):
+class AdornedRetort(OperatingRetort):
+    """A retort implementing high-level user interface"""
+
     def __init__(
         self,
         *,
@@ -149,11 +146,11 @@ class Retort(BuiltinRetort):
         self._strict_coercion = strict_coercion
         self._debug_path = debug_path
         self._extra_policy = extra_policy
-
-        self._loader_cache: Dict[TypeHint, Loader] = {}
-        self._dumper_cache: Dict[TypeHint, Dumper] = {}
-
         super().__init__(recipe)
+
+    def _calculate_derived(self):
+        super()._calculate_derived()
+        self.clear_cache()
 
     def replace(
         self: R,
@@ -163,61 +160,56 @@ class Retort(BuiltinRetort):
         extra_policy: Optional[ExtraPolicy] = None,
     ) -> R:
         # pylint: disable=protected-access
-        clone = self._clone()
+        with self._clone() as clone:
+            if strict_coercion is not None:
+                clone._strict_coercion = strict_coercion
 
-        if strict_coercion is not None:
-            clone._strict_coercion = strict_coercion
+            if debug_path is not None:
+                clone._debug_path = debug_path
 
-        if debug_path is not None:
-            clone._debug_path = debug_path
-
-        if extra_policy is not None:
-            clone._extra_policy = extra_policy
+            if extra_policy is not None:
+                clone._extra_policy = extra_policy
 
         return clone
 
     def extend(self: R, *, recipe: List[Provider]) -> R:
         # pylint: disable=protected-access
-        clone = self._clone()
-        clone._inc_instance_recipe = recipe + clone._inc_instance_recipe
+        with self._clone() as clone:
+            clone._inc_instance_recipe = recipe + clone._inc_instance_recipe
+
         return clone
-
-    def _after_clone(self):
-        self.clear_cache()
-
-    def _clone(self: R) -> R:
-        # pylint: disable=protected-access
-        self_copy = copy(self)
-        self_copy._after_clone()
-        return self_copy
 
     def _get_config_recipe(self) -> List[Provider]:
         return [
-            FactoryProvider(CfgExtraPolicy, lambda: self._extra_policy),
+            ValueProvider(CfgExtraPolicy, self._extra_policy),
         ]
 
     def get_loader(self, tp: Type[T]) -> Loader[T]:
         try:
             return self._loader_cache[tp]
         except KeyError:
-            return self._facade_provide(
+            loader_ = self._facade_provide(
                 LoaderRequest(
-                    tp,
+                    type=tp,
                     strict_coercion=self._strict_coercion,
                     debug_path=self._debug_path
                 )
             )
+            self._loader_cache[tp] = loader_
+            return loader_
 
     def get_dumper(self, tp: Type[T]) -> Dumper[T]:
         try:
             return self._dumper_cache[tp]
         except KeyError:
-            return self._facade_provide(
+            dumper_ = self._facade_provide(
                 DumperRequest(
-                    tp,
+                    type=tp,
                     debug_path=self._debug_path
                 )
             )
+            self._dumper_cache[tp] = dumper_
+            return dumper_
 
     @overload
     def load(self, data: Any, tp: Type[T], /) -> T:
@@ -243,6 +235,12 @@ class Retort(BuiltinRetort):
             tp = type(data)
         return self.get_dumper(tp)(data)
 
+    # noinspection PyAttributeOutsideInit
     def clear_cache(self):
+        # pylint: disable=attribute-defined-outside-init
         self._loader_cache = {}
         self._dumper_cache = {}
+
+
+class Retort(FilledRetort, AdornedRetort):
+    pass

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from inspect import isabstract
-from typing import Any, Callable, ClassVar, Generic, Iterable, Pattern, Sequence, Type, TypeVar, Union
+from typing import Any, ClassVar, Generic, Iterable, Pattern, Sequence, Type, TypeVar, Union
 
 from ..common import TypeHint
 from ..type_tools import is_parametrized, is_protocol, is_subclass_soft, normalize_type
@@ -258,21 +258,6 @@ class ValueProvider(Provider, Generic[T]):
 
     def __repr__(self):
         return f"{type(self).__name__}({self._req_cls}, {self._value})"
-
-
-class FactoryProvider(Provider, Generic[T]):
-    def __init__(self, req_cls: Type[Request[T]], factory: Callable[[], T]):
-        self._req_cls = req_cls
-        self._factory = factory
-
-    def apply_provider(self, mediator: Mediator, request: Request):
-        if not isinstance(request, self._req_cls):
-            raise CannotProvide
-
-        return self._factory()
-
-    def __repr__(self):
-        return f"{type(self).__name__}({self._req_cls}, {self._factory})"
 
 
 class ConcatProvider(Provider):

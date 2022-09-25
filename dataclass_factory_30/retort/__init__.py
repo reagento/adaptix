@@ -1,3 +1,4 @@
+from .base_retort import BaseRetort
 from .mediator import (
     BuiltinMediator,
     ProvideCallable,

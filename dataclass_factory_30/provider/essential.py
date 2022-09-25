@@ -50,14 +50,12 @@ class Mediator(ABC, Generic[T]):
         :return: Result of the request processing
         :raise CannotProvide: A provider able to process the request does not found
         """
-        raise NotImplementedError
 
     @abstractmethod
     def provide_from_next(self) -> T:
         """Forward current request to providers
         that placed after current provider at the recipe.
         """
-        raise NotImplementedError
 
     @property
     @abstractmethod
@@ -77,4 +75,3 @@ class Provider(ABC):
 
         :raise CannotProvide: provider cannot process passed request
         """
-        raise NotImplementedError

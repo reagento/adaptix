@@ -4,8 +4,7 @@ from typing import List
 import phonenumbers
 from phonenumbers import PhoneNumber
 
-from dataclass_factory_30.facade import Retort, dumper, enum_by_name, loader
-from dataclass_factory_30.facade.provider import NameMapper, bound, validator
+from dataclass_factory_30.facade import Retort, bound, dumper, enum_by_name, loader, name_mapping, validator
 from dataclass_factory_30.provider import Chain, ExtraFieldsError, ValueLoadError
 from dataclass_factory_30.provider.model import ExtraForbid, ExtraSkip
 
@@ -57,7 +56,7 @@ def forbid_version_key(data):
     return data
 
 
-class BaseRetort(Retort):
+class ParentRetort(Retort):
     recipe = [
         loader(Money, money_loader),
         dumper(Money, Money.rubles),
@@ -70,15 +69,15 @@ class BaseRetort(Retort):
     ]
 
 
-INNER_RECEIPT_RETORT = BaseRetort(
+INNER_RECEIPT_RETORT = ParentRetort(
     recipe=[
-        NameMapper(omit_default=False),
+        name_mapping(omit_default=False),
     ],
     extra_policy=ExtraSkip(),
 )
 
 
-_OUTER_BASE_RETORT = BaseRetort(
+_OUTER_BASE_RETORT = ParentRetort(
     recipe=[
         loader(PhoneNumber, outer_phonenumber_loader),
         loader(str, string_cp866_mutator, Chain.LAST),

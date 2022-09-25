@@ -217,14 +217,14 @@ class NameMapper(NameMappingProvider):
             skipped_extra_targets=base_name_mapping.skipped_extra_targets,
         )
 
-    def _create_sieve(self, field: OutputField) -> Sieve:
-        if isinstance(field.default, DefaultValue):
-            default_value = field.default.value
+    def _create_sieve(self, field_: OutputField) -> Sieve:
+        if isinstance(field_.default, DefaultValue):
+            default_value = field_.default.value
 
             return lambda x: x != default_value
 
-        if isinstance(field.default, DefaultFactory):
-            default_factory = field.default.factory
+        if isinstance(field_.default, DefaultFactory):
+            default_factory = field_.default.factory
 
             return lambda x: x != default_factory()
 

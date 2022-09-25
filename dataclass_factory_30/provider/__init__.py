@@ -69,7 +69,6 @@ from .provider_basics import (
     Chain,
     ChainingProvider,
     ExactFieldNameRC,
-    FactoryProvider,
     NegRequestChecker,
     OrRequestChecker,
     ReFieldNameRC,

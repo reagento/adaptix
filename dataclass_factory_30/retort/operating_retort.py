@@ -1,9 +1,9 @@
 from abc import ABC
 from typing import TypeVar
 
-from ..provider import CannotProvide, DumperRequest, LoaderRequest, Mediator, Provider, Request
-from .basic_retort import IncrementalRecipe, ProvidingFromRecipe
-from .mediator import RecursionResolving, StubsRecursionResolver
+from dataclass_factory_30.provider import CannotProvide, DumperRequest, LoaderRequest, Mediator, Provider, Request
+from dataclass_factory_30.retort.base_retort import BaseRetort
+from dataclass_factory_30.retort.mediator import RecursionResolving, StubsRecursionResolver
 
 
 class FuncWrapper:
@@ -31,8 +31,8 @@ class NoSuitableProvider(Exception):
 T = TypeVar('T')
 
 
-class OperatingRetort(IncrementalRecipe, ProvidingFromRecipe, Provider, ABC):
-    """A retort that can operate as Retort but have no predefined providers"""
+class OperatingRetort(BaseRetort, Provider, ABC):
+    """A retort that can operate as Retort but have no predefined providers and no high-level user interface"""
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         return self._provide_from_recipe(request, mediator.request_stack[:-1])
