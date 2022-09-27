@@ -150,7 +150,8 @@ class AdornedRetort(OperatingRetort):
 
     def _calculate_derived(self):
         super()._calculate_derived()
-        self.clear_cache()
+        self._loader_cache = {}
+        self._dumper_cache = {}
 
     def replace(
         self: R,
@@ -234,12 +235,6 @@ class AdornedRetort(OperatingRetort):
         if tp is None:
             tp = type(data)
         return self.get_dumper(tp)(data)
-
-    # noinspection PyAttributeOutsideInit
-    def clear_cache(self):
-        # pylint: disable=attribute-defined-outside-init
-        self._loader_cache = {}
-        self._dumper_cache = {}
 
 
 class Retort(FilledRetort, AdornedRetort):

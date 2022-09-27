@@ -1,9 +1,9 @@
 from abc import ABC
 from typing import TypeVar
 
-from dataclass_factory_30.provider import CannotProvide, DumperRequest, LoaderRequest, Mediator, Provider, Request
-from dataclass_factory_30.retort.base_retort import BaseRetort
-from dataclass_factory_30.retort.mediator import RecursionResolving, StubsRecursionResolver
+from ..provider import CannotProvide, DumperRequest, LoaderRequest, Mediator, Provider, Request
+from .base_retort import BaseRetort
+from .mediator import RecursionResolving, StubsRecursionResolver
 
 
 class FuncWrapper:

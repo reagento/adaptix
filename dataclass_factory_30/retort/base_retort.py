@@ -2,8 +2,8 @@ from abc import ABC, ABCMeta, abstractmethod
 from typing import ClassVar, List, Optional, Sequence, TypeVar
 
 from ..provider import Mediator, Provider, Request
+from ..utils import Cloneable, ForbiddingDescriptor
 from .mediator import BuiltinMediator, RawRecipeSearcher, RecipeSearcher, RecursionResolving
-from .utils import Cloneable, ForbiddingDescriptor
 
 
 class RetortMeta(ABCMeta):  # inherits from ABCMeta to be compatible with ABC
