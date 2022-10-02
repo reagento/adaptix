@@ -84,6 +84,8 @@ class FilledRetort(OperatingRetort, ABC):
         dumper(Decimal, Decimal.__str__),
         CoercionLimiter(loader(Fraction), [str, Fraction]),
         dumper(Fraction, Fraction.__str__),
+        CoercionLimiter(loader(complex), [str, complex]),
+        dumper(complex, complex.__str__),
 
         BytesBase64Provider(),
         BytearrayBase64Provider(),
