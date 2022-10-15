@@ -1,22 +1,26 @@
 from abc import ABC, ABCMeta, abstractmethod
-from typing import ClassVar, List, Optional, Sequence, TypeVar
+from typing import ClassVar, Iterable, Optional, Sequence, TypeVar
 
+from ..common import VarTuple
 from ..provider import Mediator, Provider, Request
 from ..utils import Cloneable, ForbiddingDescriptor
 from .mediator import BuiltinMediator, RawRecipeSearcher, RecipeSearcher, RecursionResolving
 
 
 class RetortMeta(ABCMeta):  # inherits from ABCMeta to be compatible with ABC
-    _own_class_recipe: List[Provider]
+    _own_class_recipe: VarTuple[Provider]
     recipe = ForbiddingDescriptor()
 
     def __new__(mcs, name, bases, namespace, **kwargs):
-        _cls_recipe = namespace.get('recipe', [])
+        try:
+            _cls_recipe = tuple(namespace.get('recipe', []))
+        except TypeError:
+            raise TypeError("Recipe attributes must be Iterable[Provider]") from None
 
-        if not isinstance(_cls_recipe, list) or not all(isinstance(el, Provider) for el in _cls_recipe):
-            raise TypeError("Recipe attributes must be List[Provider]")
+        if not all(isinstance(el, Provider) for el in _cls_recipe):
+            raise TypeError("Recipe attributes must be Iterable[Provider]")
 
-        namespace['_own_class_recipe'] = _cls_recipe.copy()
+        namespace['_own_class_recipe'] = _cls_recipe
         namespace['recipe'] = ForbiddingDescriptor()
         return super().__new__(mcs, name, bases, namespace, **kwargs)
 
@@ -25,8 +29,8 @@ T = TypeVar('T')
 
 
 class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
-    recipe: List[Provider] = []
-    _full_class_recipe: ClassVar[List[Provider]]
+    recipe: Iterable[Provider] = []
+    _full_class_recipe: ClassVar[VarTuple[Provider]]
 
     def __init_subclass__(cls, **kwargs):
         # noinspection PyProtectedMember
@@ -36,19 +40,19 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
                 for parent in cls.mro()
                 if isinstance(parent, RetortMeta)
             ),
-            start=[],
+            start=(),
         )
         cls._full_class_recipe = recipe_sum
 
-    def __init__(self, recipe: Optional[List[Provider]]):
-        self._inc_instance_recipe = recipe or []
+    def __init__(self, recipe: Optional[Iterable[Provider]]):
+        self._inc_instance_recipe = () if recipe is None else tuple(recipe)
         self._calculate_derived()
 
     @abstractmethod
-    def _get_config_recipe(self) -> List[Provider]:
+    def _get_config_recipe(self) -> VarTuple[Provider]:
         ...
 
-    def _get_full_recipe(self) -> List[Provider]:
+    def _get_full_recipe(self) -> Sequence[Provider]:
         return self._full_recipe
 
     def _calculate_derived(self):

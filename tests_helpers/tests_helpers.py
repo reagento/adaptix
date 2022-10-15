@@ -1,9 +1,9 @@
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Callable, List, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Iterable, List, Optional, Type, TypeVar, Union
 
 import pytest
 
-from dataclass_factory_30.common import EllipsisType
+from dataclass_factory_30.common import EllipsisType, VarTuple
 from dataclass_factory_30.feature_requirement import PythonVersionRequirement
 from dataclass_factory_30.provider import CannotProvide, Mediator, Provider, Request
 from dataclass_factory_30.provider.model.basic_gen import CodeGenAccumulator
@@ -26,11 +26,11 @@ def requires(requirement: PythonVersionRequirement):
 
 
 class TestRetort(OperatingRetort):
-    def __init__(self, recipe: List[Provider]):
+    def __init__(self, recipe: Iterable[Provider]):
         super().__init__(recipe)
 
-    def _get_config_recipe(self) -> List[Provider]:
-        return []
+    def _get_config_recipe(self) -> VarTuple[Provider]:
+        return ()
 
     provide = OperatingRetort._facade_provide
 

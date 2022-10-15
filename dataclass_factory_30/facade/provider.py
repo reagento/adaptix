@@ -164,7 +164,7 @@ def add_property(
     default: Default = NoDefault(),
     access_error: Optional[Catchable] = None,
     metadata: Mapping[Any, Any] = MappingProxyType({}),
-):
+) -> Provider:
     ...
 
 
@@ -178,7 +178,7 @@ def add_property(
     default: Default = NoDefault(),
     access_error: Optional[Catchable] = None,
     metadata: Mapping[Any, Any] = MappingProxyType({}),
-):
+) -> Provider:
     ...
 
 
@@ -191,7 +191,7 @@ def add_property(
     default: Default = NoDefault(),
     access_error: Optional[Catchable] = None,
     metadata: Mapping[Any, Any] = MappingProxyType({}),
-):
+) -> Provider:
     attr_name = _ensure_attr_name(prop)
 
     field = OutputField(
@@ -225,7 +225,7 @@ def _ensure_attr_name(prop: NameOrProp) -> str:
 EnumPred = Union[TypeHint, str, EnumMeta]
 
 
-def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider):
+def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provider:
     if len(preds) == 0:
         return provider
 
@@ -277,7 +277,7 @@ def validator(
     error_or_chain: Union[str, Callable[[Any], LoadError], None, Chain] = None,
     chain: Optional[Chain] = None,
     /,
-):
+) -> Provider:
     if isinstance(error_or_chain, Chain):
         if chain is None:
             raise ValueError

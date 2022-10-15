@@ -5,10 +5,10 @@ from fractions import Fraction
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from pathlib import Path
-from typing import Any, ByteString, List, Mapping, MutableMapping, Optional, Type, TypeVar, overload
+from typing import Any, ByteString, Iterable, List, Mapping, MutableMapping, Optional, Type, TypeVar, overload
 from uuid import UUID
 
-from ..common import Dumper, Loader, TypeHint
+from ..common import Dumper, Loader, TypeHint, VarTuple
 from ..provider import (
     ATTRS_FIGURE_PROVIDER,
     CLASS_INIT_FIGURE_PROVIDER,
@@ -175,17 +175,19 @@ class AdornedRetort(OperatingRetort):
 
         return clone
 
-    def extend(self: R, *, recipe: List[Provider]) -> R:
+    def extend(self: R, *, recipe: Iterable[Provider]) -> R:
         # pylint: disable=protected-access
         with self._clone() as clone:
-            clone._inc_instance_recipe = recipe + clone._inc_instance_recipe
+            clone._inc_instance_recipe = (
+                tuple(recipe) + clone._inc_instance_recipe
+            )
 
         return clone
 
-    def _get_config_recipe(self) -> List[Provider]:
-        return [
+    def _get_config_recipe(self) -> VarTuple[Provider]:
+        return (
             ValueProvider(CfgExtraPolicy, self._extra_policy),
-        ]
+        )
 
     def get_loader(self, tp: Type[T]) -> Loader[T]:
         try:

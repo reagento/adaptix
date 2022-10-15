@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import islice
-from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Tuple, TypeVar
+from typing import Any, Callable, Dict, Generic, Iterable, Sequence, Tuple, TypeVar
 
 from ..provider import CannotProvide, ClassDispatcher, Mediator, Provider, Request
 
@@ -105,7 +105,7 @@ class BuiltinMediator(Mediator):
 
 
 class RawRecipeSearcher(RecipeSearcher):
-    def __init__(self, recipe: List[Provider]):
+    def __init__(self, recipe: Sequence[Provider]):
         self.recipe = recipe
 
     def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:

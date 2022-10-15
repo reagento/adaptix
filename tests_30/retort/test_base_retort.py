@@ -11,24 +11,24 @@ def test_incremental_recipe_empty():
     class ChildNone(BaseRetort):
         pass
 
-    assert ChildNone._full_class_recipe == []
+    assert ChildNone._full_class_recipe == ()
 
     class ChildEmpty(BaseRetort):
         recipe = []
 
-    assert ChildEmpty._full_class_recipe == []
+    assert ChildEmpty._full_class_recipe == ()
 
 
 def test_incremental_recipe_single_inheritance():
     class Child1(BaseRetort):
-        recipe = [PlaceholderProvider(1)]
+        recipe = (PlaceholderProvider(1), )
 
-    assert Child1._full_class_recipe == [PlaceholderProvider(1)]
+    assert Child1._full_class_recipe == (PlaceholderProvider(1), )
 
     class Child2(Child1):
         recipe = [PlaceholderProvider(2)]
 
-    assert Child2._full_class_recipe == [PlaceholderProvider(2), PlaceholderProvider(1)]
+    assert Child2._full_class_recipe == (PlaceholderProvider(2), PlaceholderProvider(1))
 
 
 def test_incremental_recipe_diamond_inheritance():
@@ -47,19 +47,19 @@ def test_incremental_recipe_diamond_inheritance():
     class Diamond32(Diamond3, Diamond2):
         recipe = [PlaceholderProvider(32)]
 
-    assert Diamond23._full_class_recipe == [
+    assert Diamond23._full_class_recipe == (
         PlaceholderProvider(23),
         PlaceholderProvider(2),
         PlaceholderProvider(3),
         PlaceholderProvider(1),
-    ]
+    )
 
-    assert Diamond32._full_class_recipe == [
+    assert Diamond32._full_class_recipe == (
         PlaceholderProvider(32),
         PlaceholderProvider(3),
         PlaceholderProvider(2),
         PlaceholderProvider(1),
-    ]
+    )
 
 
 def test_recipe_access():
@@ -90,11 +90,7 @@ def test_recipe_access():
 
 
 def test_bad_recipe():
-    with pytest.raises(TypeError, match=re.escape("Recipe attributes must be List[Provider]")):
-        class DictRecipe(BaseRetort):
-            recipe = {}
-
-    with pytest.raises(TypeError, match=re.escape("Recipe attributes must be List[Provider]")):
+    with pytest.raises(TypeError, match=re.escape("Recipe attributes must be Iterable[Provider]")):
         class StringItemRecipe(BaseRetort):
             recipe = [
                 'hello',
