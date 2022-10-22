@@ -15,16 +15,18 @@ from .definitions import (
     Default,
     DefaultFactory,
     DefaultValue,
-    ExtraKwargs,
+    Figure,
+    FullFigure,
     InputField,
     InputFigure,
-    IntrospectionError,
+    IntrospectionImpossible,
     ItemAccessor,
     NoDefault,
     NoTargetPackage,
     OutputField,
     OutputFigure,
     ParamKind,
+    ParamKwargs,
 )
 
 # ======================
@@ -42,7 +44,7 @@ def _is_empty(value):
     return value is Signature.empty
 
 
-def get_func_input_figure(func, params_slice=slice(0, None)) -> InputFigure:
+def get_func_figure(func, params_slice=slice(0, None)) -> Figure[InputFigure, None]:
     if isinstance(func, type):
         raise TypeError("classes are not accepted here")
 
@@ -53,36 +55,41 @@ def get_func_input_figure(func, params_slice=slice(0, None)) -> InputFigure:
     kinds = [p.kind for p in params]
 
     if Parameter.VAR_POSITIONAL in kinds:
-        raise IntrospectionError(
+        raise IntrospectionImpossible(
             f'Can not create InputFigure'
             f' from the function that has {Parameter.VAR_POSITIONAL}'
             f' parameter'
         )
 
-    extra = (
-        ExtraKwargs()
-        if Parameter.VAR_KEYWORD in kinds else
-        None
+    param_kwargs = next(
+        (
+            ParamKwargs(Any if _is_empty(param.annotation) else param.annotation)
+            for param in params if param.kind == Parameter.VAR_KEYWORD
+        ),
+        None,
     )
 
     type_hints = get_all_type_hints(func)
 
-    return InputFigure(
-        constructor=func,
-        fields=tuple(
-            InputField(
-                type=type_hints.get(param.name, Any),
-                name=param.name,
-                is_required=_is_empty(param.default) or param.kind == Parameter.POSITIONAL_ONLY,
-                default=NoDefault() if _is_empty(param.default) else DefaultValue(param.default),
-                metadata=MappingProxyType({}),
-                param_kind=_PARAM_KIND_CONV[param.kind],
-                param_name=param.name,
-            )
-            for param in params
-            if param.kind != Parameter.VAR_KEYWORD
+    return Figure(
+        input=InputFigure(
+            constructor=func,
+            fields=tuple(
+                InputField(
+                    type=type_hints.get(param.name, Any),
+                    name=param.name,
+                    is_required=_is_empty(param.default) or param.kind == Parameter.POSITIONAL_ONLY,
+                    default=NoDefault() if _is_empty(param.default) else DefaultValue(param.default),
+                    metadata=MappingProxyType({}),
+                    param_kind=_PARAM_KIND_CONV[param.kind],
+                    param_name=param.name,
+                )
+                for param in params
+                if param.kind != Parameter.VAR_KEYWORD
+            ),
+            kwargs=param_kwargs,
         ),
-        extra=extra,
+        output=None,
     )
 
 
@@ -90,17 +97,17 @@ def get_func_input_figure(func, params_slice=slice(0, None)) -> InputFigure:
 #       NamedTuple
 # ======================
 
-def get_named_tuple_input_figure(tp) -> InputFigure:
+def get_named_tuple_figure(tp) -> FullFigure:
     # pylint: disable=protected-access
     if not is_named_tuple_class(tp):
-        raise IntrospectionError
+        raise IntrospectionImpossible
 
     type_hints = get_all_type_hints(tp)
 
     # noinspection PyProtectedMember
-    return InputFigure(
+    input_figure = InputFigure(
         constructor=tp,
-        extra=None,
+        kwargs=None,
         fields=tuple(
             InputField(
                 name=field_name,
@@ -119,20 +126,20 @@ def get_named_tuple_input_figure(tp) -> InputFigure:
         )
     )
 
-
-def get_named_tuple_output_figure(tp) -> OutputFigure:
-    return OutputFigure(
-        fields=tuple(
-            OutputField(
-                name=fld.name,
-                type=fld.type,
-                default=fld.default,
-                metadata=fld.metadata,
-                accessor=AttrAccessor(attr_name=fld.name, is_required=True),
-            )
-            for fld in get_named_tuple_input_figure(tp).fields
-        ),
-        extra=None,
+    return Figure(
+        input=input_figure,
+        output=OutputFigure(
+            fields=tuple(
+                OutputField(
+                    name=fld.name,
+                    type=fld.type,
+                    default=fld.default,
+                    metadata=fld.metadata,
+                    accessor=AttrAccessor(attr_name=fld.name, is_required=True),
+                )
+                for fld in input_figure.fields
+            ),
+        )
     )
 
 
@@ -166,48 +173,41 @@ def _get_td_hints(tp):
     return elements
 
 
-def get_typed_dict_input_figure(tp) -> InputFigure:
+def get_typed_dict_figure(tp) -> FullFigure:
     if not is_typed_dict_class(tp):
-        raise IntrospectionError
+        raise IntrospectionImpossible
 
     requirement_determinant = _td_make_requirement_determinant(tp)
 
-    return InputFigure(
-        constructor=tp,
-        fields=tuple(
-            InputField(
-                type=tp,
-                name=name,
-                default=NoDefault(),
-                is_required=requirement_determinant(name),
-                metadata=MappingProxyType({}),
-                param_kind=ParamKind.KW_ONLY,
-                param_name=name,
-            )
-            for name, tp in _get_td_hints(tp)
+    return Figure(
+        input=InputFigure(
+            constructor=tp,
+            fields=tuple(
+                InputField(
+                    type=tp,
+                    name=name,
+                    default=NoDefault(),
+                    is_required=requirement_determinant(name),
+                    metadata=MappingProxyType({}),
+                    param_kind=ParamKind.KW_ONLY,
+                    param_name=name,
+                )
+                for name, tp in _get_td_hints(tp)
+            ),
+            kwargs=None,
         ),
-        extra=None,
-    )
-
-
-def get_typed_dict_output_figure(tp) -> OutputFigure:
-    if not is_typed_dict_class(tp):
-        raise IntrospectionError
-
-    requirement_determinant = _td_make_requirement_determinant(tp)
-
-    return OutputFigure(
-        fields=tuple(
-            OutputField(
-                type=tp,
-                name=name,
-                default=NoDefault(),
-                accessor=ItemAccessor(name, requirement_determinant(name)),
-                metadata=MappingProxyType({}),
-            )
-            for name, tp in _get_td_hints(tp)
+        output=OutputFigure(
+            fields=tuple(
+                OutputField(
+                    type=tp,
+                    name=name,
+                    default=NoDefault(),
+                    accessor=ItemAccessor(name, requirement_determinant(name)),
+                    metadata=MappingProxyType({}),
+                )
+                for name, tp in _get_td_hints(tp)
+            ),
         ),
-        extra=None,
     )
 
 
@@ -244,8 +244,8 @@ def create_inp_field_from_dc_fields(dc_field: DCField, type_hints):
     )
 
 
-def get_dataclass_input_figure(tp) -> InputFigure:
-    """This provider does not work properly if __init__ signature differs from
+def get_dataclass_figure(tp) -> FullFigure:
+    """This function does not work properly if __init__ signature differs from
     that would be created by dataclass decorator.
 
     It happens because we can not distinguish __init__ that generated
@@ -256,7 +256,7 @@ def get_dataclass_input_figure(tp) -> InputFigure:
     """
 
     if not is_dataclass(tp):
-        raise IntrospectionError
+        raise IntrospectionImpossible
 
     name_to_dc_field = all_dc_fields(tp)
 
@@ -266,35 +266,27 @@ def get_dataclass_input_figure(tp) -> InputFigure:
 
     type_hints = get_all_type_hints(tp)
 
-    return InputFigure(
-        constructor=tp,
-        fields=tuple(
-            create_inp_field_from_dc_fields(name_to_dc_field[field_name], type_hints)
-            for field_name in init_params
+    return Figure(
+        input=InputFigure(
+            constructor=tp,
+            fields=tuple(
+                create_inp_field_from_dc_fields(name_to_dc_field[field_name], type_hints)
+                for field_name in init_params
+            ),
+            kwargs=None,
         ),
-        extra=None,
-    )
-
-
-def get_dataclass_output_figure(tp) -> OutputFigure:
-    if not is_dataclass(tp):
-        raise IntrospectionError
-
-    name_to_dc_field = all_dc_fields(tp)
-    type_hints = get_all_type_hints(tp)
-
-    return OutputFigure(
-        fields=tuple(
-            OutputField(
-                type=type_hints[field.name],
-                name=field.name,
-                default=get_dc_default(name_to_dc_field[field.name]),
-                accessor=AttrAccessor(field.name, True),
-                metadata=field.metadata,
-            )
-            for field in dc_fields(tp)
-        ),
-        extra=None,
+        output=OutputFigure(
+            fields=tuple(
+                OutputField(
+                    type=type_hints[field.name],
+                    name=field.name,
+                    default=get_dc_default(name_to_dc_field[field.name]),
+                    accessor=AttrAccessor(field.name, True),
+                    metadata=field.metadata,
+                )
+                for field in dc_fields(tp)
+            ),
+        )
     )
 
 
@@ -302,18 +294,21 @@ def get_dataclass_output_figure(tp) -> OutputFigure:
 #       ClassInit
 # ======================
 
-def get_class_init_input_figure(tp) -> InputFigure:
+def get_class_init_figure(tp) -> Figure[InputFigure, None]:
     if not isinstance(tp, type):
-        raise IntrospectionError
+        raise IntrospectionImpossible
 
-    input_figure = get_func_input_figure(
+    figure = get_func_figure(
         tp.__init__,  # type: ignore[misc]
         slice(1, None)
     )
 
     return replace(
-        input_figure,
-        constructor=tp,
+        figure,
+        input=replace(
+            figure.input,
+            constructor=tp,
+        )
     )
 
 # =================
@@ -351,7 +346,7 @@ def _get_attrs_fields(tp, type_hints: Dict[str, TypeHint]) -> Iterable[BaseField
     try:
         fields_iterator = attrs.fields(tp)
     except (TypeError, attrs.exceptions.NotAnAttrsClassError):
-        raise IntrospectionError
+        raise IntrospectionImpossible
 
     return [
         BaseField(
@@ -403,7 +398,7 @@ def _get_attr_param_name(field):
     )
 
 
-def get_attrs_input_figure(tp) -> InputFigure:
+def get_attrs_figure(tp) -> FullFigure:
     if not HAS_ATTRS_PKG:
         raise NoTargetPackage
 
@@ -416,36 +411,32 @@ def get_attrs_input_figure(tp) -> InputFigure:
 
     has_custom_init = hasattr(tp, '__attrs_init__')
 
-    figure = get_class_init_input_figure(tp)
-    return replace(
-        figure,
+    figure = get_class_init_figure(tp)
+
+    input_figure = replace(
+        figure.input,
         fields=tuple(
             _process_attr_input_field(field, base_fields_dict, has_custom_init)
-            for field in figure.fields
+            for field in figure.input.fields
         )
     )
 
-
-def get_attrs_output_figure(tp) -> OutputFigure:
-    if not HAS_ATTRS_PKG:
-        raise NoTargetPackage
-
-    type_hints = get_all_type_hints(tp)
-
-    input_fields_dict = {
-        field.name: field for field in get_attrs_input_figure(tp).fields
-    }
-
-    return OutputFigure(
-        fields=tuple(
-            OutputField(
-                name=field.name,
-                type=_get_attrs_field_type(field, type_hints),
-                default=input_fields_dict[field.name].default if field.name in input_fields_dict else NoDefault(),
-                metadata=field.metadata,
-                accessor=AttrAccessor(field.name, is_required=True),
-            )
-            for field in _get_attrs_fields(tp, type_hints)
+    return Figure(
+        input=input_figure,
+        output=OutputFigure(
+            fields=tuple(
+                OutputField(
+                    name=field.name,
+                    type=_get_attrs_field_type(field, type_hints),
+                    default=(
+                        input_figure.fields_dict[field.name].default
+                        if field.name in input_figure.fields_dict else
+                        NoDefault()
+                    ),
+                    metadata=field.metadata,
+                    accessor=AttrAccessor(field.name, is_required=True),
+                )
+                for field in _get_attrs_fields(tp, type_hints)
+            ),
         ),
-        extra=None,
     )

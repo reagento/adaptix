@@ -1,9 +1,9 @@
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Type, TypeVar, Union, overload
+from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Sequence, Type, TypeVar, Union, overload
 
 from ..common import Catchable, Dumper, Loader, TypeHint
-from ..model_tools import Default, NoDefault, OutputField, PropertyAccessor, get_func_input_figure
+from ..model_tools import Default, DescriptorAccessor, NoDefault, OutputField, get_func_figure
 from ..provider import (
     BoundingProvider,
     Chain,
@@ -12,6 +12,8 @@ from ..provider import (
     EnumExactValueProvider,
     EnumNameProvider,
     EnumValueProvider,
+    ExtraIn,
+    ExtraOut,
     InputFigureRequest,
     LoaderRequest,
     LoadError,
@@ -24,6 +26,7 @@ from ..provider import (
     ValueProvider,
     create_req_checker,
 )
+from ..provider.model import ExtraSkip
 from .utils import resolve_pred_value_chain
 
 T = TypeVar('T')
@@ -113,7 +116,7 @@ def constructor(func_or_pred, opt_func=None):
         pred,
         ValueProvider(
             InputFigureRequest,
-            get_func_input_figure(
+            get_func_figure(
                 func,
                 slice(0 if opt_func else 1, None),
             )
@@ -125,27 +128,32 @@ def name_mapping(
     pred: Any = _OMITTED,
     /,
     *,
-    skip: Optional[List[str]] = None,
+    skip: Optional[Iterable[str]] = None,
     only_mapped: bool = False,
-    only: Optional[List[str]] = None,
+    only: Optional[Iterable[str]] = None,
     skip_internal: bool = True,
     map: Optional[Dict[str, str]] = None,  # noqa: A002
     trim_trailing_underscore: bool = True,
     name_style: Optional[NameStyle] = None,
     omit_default: bool = True,
+    extra_in: ExtraIn = ExtraSkip(),
+    extra_out: ExtraOut = ExtraSkip(),
 ) -> Provider:
-    opt_mut_params = {
-        k: v for k, v in {'skip': skip, 'map': map}.items()
-        if v is not None
-    }
+    opt_mut_params: Dict[str, Any] = {}
+    if skip is not None:
+        opt_mut_params['skip'] = list(skip)
+    if map is not None:
+        opt_mut_params['map'] = map
 
     name_mapper = NameMapper(
         only_mapped=only_mapped,
-        only=only,
+        only=None if only is None else list(only),
         skip_internal=skip_internal,
         trim_trailing_underscore=trim_trailing_underscore,
         name_style=name_style,
         omit_default=omit_default,
+        extra_in=extra_in,
+        extra_out=extra_out,
         **opt_mut_params,  # type: ignore[arg-type]
     )
 
@@ -197,7 +205,7 @@ def add_property(
     field = OutputField(
         name=attr_name,
         type=tp,
-        accessor=PropertyAccessor(attr_name, access_error),
+        accessor=DescriptorAccessor(attr_name, access_error),
         default=default,
         metadata=metadata,
     )

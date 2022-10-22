@@ -18,7 +18,7 @@ from typing import (
 )
 
 from ...code_tools import ClosureCompiler, CodeBuilder, get_literal_expr
-from ...model_tools import ExtraTargets, InputField, OutputField
+from ...model_tools import InputField, OutputField
 from ..essential import Mediator, Request
 from ..static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
@@ -30,11 +30,14 @@ from .crown_definitions import (
     BaseNameMapping,
     BaseNoneCrown,
     ExtraCollect,
+    ExtraTargets,
     InpCrown,
     InpDictCrown,
+    InpExtraMove,
     InpFieldCrown,
     InpListCrown,
     InpNoneCrown,
+    OutExtraMove,
 )
 from .definitions import VarBinder
 
@@ -76,18 +79,18 @@ class CodeGenAccumulator(StaticProvider):
 T = TypeVar('T')
 
 
-def _merge_iters(args: Iterable[Iterable[T]]) -> Collection[T]:
+def _concatenate_iters(args: Iterable[Iterable[T]]) -> Collection[T]:
     return list(itertools.chain.from_iterable(args))
 
 
 def _inner_collect_used_direct_fields(crown: BaseCrown) -> Iterable[str]:
     if isinstance(crown, BaseDictCrown):
-        return _merge_iters(
+        return _concatenate_iters(
             _inner_collect_used_direct_fields(sub_crown)
             for sub_crown in crown.map.values()
         )
     if isinstance(crown, BaseListCrown):
-        return _merge_iters(
+        return _concatenate_iters(
             _inner_collect_used_direct_fields(sub_crown)
             for sub_crown in crown.map
         )
@@ -112,28 +115,25 @@ def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
 
 def get_skipped_fields(figure: BaseFigure, name_mapping: BaseNameMapping) -> Collection[str]:
     used_direct_fields = _collect_used_direct_fields(name_mapping.crown)
-
-    if isinstance(figure.extra, ExtraTargets):
-        extra_targets = figure.extra.fields
+    if isinstance(name_mapping.extra_move, ExtraTargets):
+        extra_targets = name_mapping.extra_move.fields
     else:
         extra_targets = ()
 
-    skipped_direct_fields = [
+    return [
         field.name for field in figure.fields
         if field.name not in used_direct_fields and field.name not in extra_targets
     ]
 
-    return skipped_direct_fields + list(name_mapping.skipped_extra_targets)
-
 
 def _inner_get_extra_targets_at_crown(extra_targets: Container[str], crown: BaseCrown) -> Collection[str]:
     if isinstance(crown, BaseDictCrown):
-        return _merge_iters(
+        return _concatenate_iters(
             _inner_get_extra_targets_at_crown(extra_targets, sub_crown)
             for sub_crown in crown.map.values()
         )
     if isinstance(crown, BaseListCrown):
-        return _merge_iters(
+        return _concatenate_iters(
             _inner_get_extra_targets_at_crown(extra_targets, sub_crown)
             for sub_crown in crown.map
         )
@@ -144,11 +144,11 @@ def _inner_get_extra_targets_at_crown(extra_targets: Container[str], crown: Base
     raise TypeError
 
 
-def get_extra_targets_at_crown(figure: BaseFigure, name_mapping: BaseNameMapping) -> Collection[str]:
-    if not isinstance(figure.extra, ExtraTargets):
+def get_extra_targets_at_crown(name_mapping: BaseNameMapping) -> Collection[str]:
+    if not isinstance(name_mapping.extra_move, ExtraTargets):
         return []
 
-    return _inner_get_extra_targets_at_crown(figure.extra.fields, name_mapping.crown)
+    return _inner_get_extra_targets_at_crown(name_mapping.extra_move.fields, name_mapping.crown)
 
 
 def get_optional_fields_at_list_crown(
@@ -156,12 +156,12 @@ def get_optional_fields_at_list_crown(
     crown: BaseCrown,
 ) -> Collection[str]:
     if isinstance(crown, BaseDictCrown):
-        return _merge_iters(
+        return _concatenate_iters(
             get_optional_fields_at_list_crown(fields_map, sub_crown)
             for sub_crown in crown.map.values()
         )
     if isinstance(crown, BaseListCrown):
-        return _merge_iters(
+        return _concatenate_iters(
             (
                 [sub_crown.name]
                 if fields_map[sub_crown.name].is_optional else
@@ -176,29 +176,27 @@ def get_optional_fields_at_list_crown(
     raise TypeError
 
 
+def get_wild_extra_targets(figure: BaseFigure, extra_move: Union[InpExtraMove, OutExtraMove]) -> Collection[str]:
+    if not isinstance(extra_move, ExtraTargets):
+        return []
+
+    return [
+        target for target in extra_move.fields
+        if target not in figure.fields_dict.keys()
+    ]
+
+
 Fig = TypeVar('Fig', bound=BaseFigure)
 
 
-def strip_figure(figure: Fig, skipped_fields: Collection[str]) -> Fig:
-    extra = figure.extra
-    if isinstance(extra, ExtraTargets):
-        extra = ExtraTargets(
-            tuple(
-                field_name for field_name in extra.fields
-                if field_name not in skipped_fields
-            )
-        )
-
-    new_figure = replace(
+def strip_figure_fields(figure: Fig, skipped_fields: Collection[str]) -> Fig:
+    return replace(
         figure,
         fields=tuple(
             field for field in figure.fields
             if field.name not in skipped_fields
         ),
-        extra=extra,
     )
-
-    return new_figure
 
 
 class NameSanitizer:
@@ -264,7 +262,7 @@ def compile_closure_with_globals_capturing(
 
 def has_collect_policy(crown: InpCrown) -> bool:
     if isinstance(crown, InpDictCrown):
-        return crown.extra == ExtraCollect() or any(
+        return crown.extra_policy == ExtraCollect() or any(
             has_collect_policy(sub_crown)
             for sub_crown in crown.map.values()
         )

@@ -2,7 +2,7 @@ import contextlib
 from string import Template
 from typing import Dict, NamedTuple, Optional
 
-from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr, get_literal_factory
+from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr, get_literal_from_factory
 from ...model_tools import DefaultFactory, DefaultValue, OutputField
 from .crown_definitions import (
     CrownPathElem,
@@ -11,7 +11,7 @@ from .crown_definitions import (
     OutFieldCrown,
     OutListCrown,
     OutNoneCrown,
-    RootOutCrown,
+    OutputNameMapping,
     Sieve,
 )
 from .definitions import CodeGenerator, OutputFigure, VarBinder
@@ -84,9 +84,9 @@ class ElementExpr(NamedTuple):
 
 
 class BuiltinOutputCreationGen(CodeGenerator):
-    def __init__(self, figure: OutputFigure, crown: RootOutCrown, debug_path: bool):
+    def __init__(self, figure: OutputFigure, name_mapping: OutputNameMapping, debug_path: bool):
         self._figure = figure
-        self._root_crown = crown
+        self._name_mapping = name_mapping
         self._debug_path = debug_path
 
         self._name_to_field: Dict[str, OutputField] = {field.name: field for field in self._figure.fields}
@@ -113,10 +113,10 @@ class BuiltinOutputCreationGen(CodeGenerator):
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
 
-        if not self._gen_root_crown_dispatch(crown_builder, state, self._root_crown):
+        if not self._gen_root_crown_dispatch(crown_builder, state, self._name_mapping.crown):
             raise TypeError
 
-        if self._figure.extra is None:
+        if self._name_mapping.extra_move is None:
             crown_builder += f"return {state.crown_var_self()}"
         else:
             crown_builder += Template("return {**$var_self, **$extra}").substitute(
@@ -156,7 +156,7 @@ class BuiltinOutputCreationGen(CodeGenerator):
 
     def _get_element_expr_for_none_crown(self, state: GenState, key: CrownPathElem, crown: OutNoneCrown) -> ElementExpr:
         if isinstance(crown.filler, DefaultFactory):
-            literal_expr = get_literal_factory(crown.filler.factory)
+            literal_expr = get_literal_from_factory(crown.filler.factory)
             if literal_expr is not None:
                 return ElementExpr(literal_expr, can_inline=True)
 

@@ -9,16 +9,16 @@ from dataclass_factory_30.model_tools import (
     AttrAccessor,
     DefaultFactory,
     DefaultValue,
-    ExtraKwargs,
+    Figure,
     InputField,
     InputFigure,
     NoDefault,
     OutputField,
     OutputFigure,
     ParamKind,
-    get_attrs_input_figure,
-    get_attrs_output_figure,
+    get_attrs_figure,
 )
+from dataclass_factory_30.model_tools.definitions import ParamKwargs
 from tests_helpers import requires
 
 pytest.importorskip("attrs")
@@ -41,160 +41,154 @@ class NewStyle:
     i: 'int' = field(default=3)
 
 
-def test_new_style_input():
+def test_new_style():
     assert (
-        get_attrs_input_figure(NewStyle)
+        get_attrs_figure(NewStyle)
         ==
-        InputFigure(
-            constructor=NewStyle,
-            extra=None,
-            fields=(
-                InputField(
-                    type=int,
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
-                ),
-                InputField(
-                    type=str,
-                    name='_b',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='b',
-                ),
-                InputField(
-                    type=int,
-                    name='e',
-                    default=DefaultValue(1),
-                    is_required=False,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='e',
-                ),
-                InputField(
-                    type=int,
-                    name='f',
-                    default=DefaultValue(2),
-                    is_required=False,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='f',
-                ),
-                InputField(
-                    type=list,
-                    name='g',
-                    default=DefaultFactory(list),
-                    is_required=False,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='g',
-                ),
-                InputField(
-                    type=str,
-                    name='h',
-                    default=DefaultValue(''),
-                    is_required=False,
-                    metadata=MappingProxyType({'meta': 'data'}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='h',
-                ),
-                InputField(
-                    type=int,
-                    name='i',
-                    default=DefaultValue(3),
-                    is_required=False,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='i',
-                ),
-                InputField(
-                    type=int,
-                    name='d',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.KW_ONLY,
-                    param_name='d',
+        Figure(
+            input=InputFigure(
+                constructor=NewStyle,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=str,
+                        name='_b',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='b',
+                    ),
+                    InputField(
+                        type=int,
+                        name='e',
+                        default=DefaultValue(1),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='e',
+                    ),
+                    InputField(
+                        type=int,
+                        name='f',
+                        default=DefaultValue(2),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='f',
+                    ),
+                    InputField(
+                        type=list,
+                        name='g',
+                        default=DefaultFactory(list),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='g',
+                    ),
+                    InputField(
+                        type=str,
+                        name='h',
+                        default=DefaultValue(''),
+                        is_required=False,
+                        metadata=MappingProxyType({'meta': 'data'}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='h',
+                    ),
+                    InputField(
+                        type=int,
+                        name='i',
+                        default=DefaultValue(3),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='i',
+                    ),
+                    InputField(
+                        type=int,
+                        name='d',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.KW_ONLY,
+                        param_name='d',
+                    ),
                 ),
             ),
-        )
-    )
-
-
-def test_new_style_output():
-    assert (
-        get_attrs_output_figure(NewStyle)
-        ==
-        OutputFigure(
-            extra=None,
-            fields=(
-                OutputField(
-                    type=int,
-                    name='a',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('a', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-                OutputField(
-                    type=str,
-                    name='_b',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('_b', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-                OutputField(
-                    type=str,
-                    name='c',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('c', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-                OutputField(
-                    type=int,
-                    name='d',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('d', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-                OutputField(
-                    type=int,
-                    name='e',
-                    default=DefaultValue(1),
-                    accessor=AttrAccessor('e', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-                OutputField(
-                    type=int,
-                    name='f',
-                    default=DefaultValue(2),
-                    accessor=AttrAccessor('f', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-                OutputField(
-                    type=list,
-                    name='g',
-                    default=DefaultFactory(list),
-                    accessor=AttrAccessor('g', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-                OutputField(
-                    type=str,
-                    name='h',
-                    default=DefaultValue(''),
-                    accessor=AttrAccessor('h', is_required=True),
-                    metadata=MappingProxyType({'meta': 'data'}),
-                ),
-                OutputField(
-                    type=int,
-                    name='i',
-                    default=DefaultValue(3),
-                    accessor=AttrAccessor('i', is_required=True),
-                    metadata=MappingProxyType({}),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=str,
+                        name='_b',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('_b', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=str,
+                        name='c',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('c', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='d',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('d', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='e',
+                        default=DefaultValue(1),
+                        accessor=AttrAccessor('e', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='f',
+                        default=DefaultValue(2),
+                        accessor=AttrAccessor('f', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=list,
+                        name='g',
+                        default=DefaultFactory(list),
+                        accessor=AttrAccessor('g', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=str,
+                        name='h',
+                        default=DefaultValue(''),
+                        accessor=AttrAccessor('h', is_required=True),
+                        metadata=MappingProxyType({'meta': 'data'}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='i',
+                        default=DefaultValue(3),
+                        accessor=AttrAccessor('i', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
                 ),
             ),
         )
@@ -208,57 +202,51 @@ class OldStyle:
     c: int
 
 
-def test_old_style_input():
+def test_old_style():
     assert (
-        get_attrs_input_figure(OldStyle)
+        get_attrs_figure(OldStyle)
         ==
-        InputFigure(
-            constructor=OldStyle,
-            extra=None,
-            fields=(
-                InputField(
-                    type=Any,
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
-                ),
-                InputField(
-                    type=int,
-                    name='b',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='b',
+        Figure(
+            input=InputFigure(
+                constructor=OldStyle,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=Any,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=int,
+                        name='b',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='b',
+                    ),
                 ),
             ),
-        )
-    )
-
-
-def test_old_style_output():
-    assert (
-        get_attrs_output_figure(OldStyle)
-        ==
-        OutputFigure(
-            extra=None,
-            fields=(
-                OutputField(
-                    type=Any,
-                    name='a',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('a', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-                OutputField(
-                    type=int,
-                    name='b',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('b', is_required=True),
-                    metadata=MappingProxyType({}),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=Any,
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='b',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('b', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
                 ),
             ),
         )
@@ -280,82 +268,76 @@ class CustomInit:
         self.__attrs_init__(int(a), int(b), int(c))
 
 
-def test_custom_init_input():
+def test_custom_init():
     assert (
-        get_attrs_input_figure(CustomInit)
+        get_attrs_figure(CustomInit)
         ==
-        InputFigure(
-            constructor=CustomInit,
-            extra=None,
-            fields=(
-                InputField(
-                    type=str,
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
-                ),
-                InputField(
-                    type=str,
-                    name='b',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({'meta': 'data'}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='b',
-                ),
-                InputField(
-                    type=Any,
-                    name='_c',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='c',
+        Figure(
+            input=InputFigure(
+                constructor=CustomInit,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=str,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=str,
+                        name='b',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({'meta': 'data'}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='b',
+                    ),
+                    InputField(
+                        type=Any,
+                        name='_c',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='c',
+                    ),
                 ),
             ),
-        )
-    )
-
-
-def test_custom_init_output():
-    assert (
-        get_attrs_output_figure(CustomInit)
-        ==
-        OutputFigure(
-            extra=None,
-            fields=(
-                OutputField(
-                    type=int,
-                    name='a',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('a', is_required=True),
-                    metadata=MappingProxyType({}),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='b',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('b', is_required=True),
+                        metadata=MappingProxyType({'meta': 'data'}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='_c',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('_c', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='d',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('d', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
                 ),
-                OutputField(
-                    type=int,
-                    name='b',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('b', is_required=True),
-                    metadata=MappingProxyType({'meta': 'data'}),
-                ),
-                OutputField(
-                    type=int,
-                    name='_c',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('_c', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-                OutputField(
-                    type=int,
-                    name='d',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('d', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-            ),
+            )
         )
     )
 
@@ -369,68 +351,62 @@ class CustomInitUnknownParams:
         self.__attrs_init__(a, {'b': b, 'c': c})
 
 
-def test_custom_init_unknown_params_input():
+def test_custom_init_unknown_params():
     assert (
-        get_attrs_input_figure(CustomInitUnknownParams)
+        get_attrs_figure(CustomInitUnknownParams)
         ==
-        InputFigure(
-            constructor=CustomInitUnknownParams,
-            extra=None,
-            fields=(
-                InputField(
-                    type=int,
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
-                ),
-                InputField(
-                    type=str,
-                    name='b',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='b',
-                ),
-                InputField(
-                    type=bytes,
-                    name='c',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='c',
+        Figure(
+            input=InputFigure(
+                constructor=CustomInitUnknownParams,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=str,
+                        name='b',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='b',
+                    ),
+                    InputField(
+                        type=bytes,
+                        name='c',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='c',
+                    ),
                 ),
             ),
-        )
-    )
-
-
-def test_custom_init_unknown_params_output():
-    assert (
-        get_attrs_output_figure(CustomInitUnknownParams)
-        ==
-        OutputFigure(
-            extra=None,
-            fields=(
-                OutputField(
-                    type=int,
-                    name='a',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('a', is_required=True),
-                    metadata=MappingProxyType({}),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=dict,
+                        name='other',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('other', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
                 ),
-                OutputField(
-                    type=dict,
-                    name='other',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('other', is_required=True),
-                    metadata=MappingProxyType({}),
-                ),
-            ),
+            )
         )
     )
 
@@ -443,39 +419,76 @@ class CustomInitKwargs:
         self.__attrs_init__(a)
 
 
+@define
+class CustomInitKwargsTyped:
+    a: int
+
+    def __init__(self, a: int, **kwargs: str):
+        self.__attrs_init__(a)
+
+
 def test_custom_init_kwargs():
     assert (
-        get_attrs_input_figure(CustomInitKwargs)
+        get_attrs_figure(CustomInitKwargs)
         ==
-        InputFigure(
-            constructor=CustomInitKwargs,
-            extra=ExtraKwargs(),
-            fields=(
-                InputField(
-                    type=int,
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
+        Figure(
+            input=InputFigure(
+                constructor=CustomInitKwargs,
+                kwargs=ParamKwargs(Any),
+                fields=(
+                    InputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                ),
+            ),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
                 ),
             ),
         )
     )
 
     assert (
-        get_attrs_output_figure(CustomInitKwargs)
+        get_attrs_figure(CustomInitKwargsTyped)
         ==
-        OutputFigure(
-            extra=None,
-            fields=(
-                OutputField(
-                    type=int,
-                    name='a',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('a', is_required=True),
-                    metadata=MappingProxyType({}),
+        Figure(
+            input=InputFigure(
+                constructor=CustomInitKwargsTyped,
+                kwargs=ParamKwargs(str),
+                fields=(
+                    InputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                ),
+            ),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
                 ),
             ),
         )
@@ -489,37 +502,33 @@ class NoneAttr:
 
 def test_none_attr():
     assert (
-        get_attrs_input_figure(NoneAttr)
+        get_attrs_figure(NoneAttr)
         ==
-        InputFigure(
-            constructor=NoneAttr,
-            extra=None,
-            fields=(
-                InputField(
-                    type=type(None),
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
+        Figure(
+            input=InputFigure(
+                constructor=NoneAttr,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=type(None),
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
                 ),
             ),
-        )
-    )
-
-    assert (
-        get_attrs_output_figure(NoneAttr)
-        ==
-        OutputFigure(
-            extra=None,
-            fields=(
-                OutputField(
-                    type=type(None),
-                    name='a',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('a', is_required=True),
-                    metadata=MappingProxyType({}),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=type(None),
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
                 ),
             ),
         )
@@ -536,39 +545,35 @@ class NoneAttrCustomInit:
 
 def test_none_attr_custom_init():
     assert (
-        get_attrs_input_figure(NoneAttrCustomInit)
+        get_attrs_figure(NoneAttrCustomInit)
         ==
-        InputFigure(
-            constructor=NoneAttrCustomInit,
-            extra=None,
-            fields=(
-                InputField(
-                    type=Any,
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
+        Figure(
+            input=InputFigure(
+                constructor=NoneAttrCustomInit,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=Any,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
                 ),
             ),
-        )
-    )
-
-    assert (
-        get_attrs_output_figure(NoneAttrCustomInit)
-        ==
-        OutputFigure(
-            extra=None,
-            fields=(
-                OutputField(
-                    type=type(None),
-                    name='a',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('a', is_required=True),
-                    metadata=MappingProxyType({}),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=type(None),
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
                 ),
-            ),
+            )
         )
     )
 
@@ -580,39 +585,34 @@ def test_annotated():
         a: typing.Annotated[int, 'metadata']
 
     assert (
-        get_attrs_input_figure(WithAnnotated)
+        get_attrs_figure(WithAnnotated)
         ==
-        InputFigure(
-            constructor=WithAnnotated,
-            extra=None,
-            fields=(
-                InputField(
-                    type=typing.Annotated[int, 'metadata'],
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
+        Figure(
+            input=InputFigure(
+                constructor=WithAnnotated,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=typing.Annotated[int, 'metadata'],
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
                 ),
             ),
-        )
-    )
-
-    assert (
-        get_attrs_output_figure(WithAnnotated)
-        ==
-        OutputFigure(
-            extra=None,
-            fields=(
-                OutputField(
-                    type=typing.Annotated[int, 'metadata'],
-                    name='a',
-                    default=NoDefault(),
-                    accessor=AttrAccessor('a', is_required=True),
-                    metadata=MappingProxyType({}),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=typing.Annotated[int, 'metadata'],
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
                 ),
-            ),
+            )
         )
     )
-

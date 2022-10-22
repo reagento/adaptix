@@ -2,7 +2,6 @@ import pytest
 
 from dataclass_factory_30.model_tools import (
     AttrAccessor,
-    ExtraTargets,
     InputField,
     InputFigure,
     NoDefault,
@@ -28,7 +27,7 @@ def test_inconsistent_fields_order(first, second):
     with pytest.raises(ValueError):
         InputFigure(
             constructor=stub_constructor,
-            extra=None,
+            kwargs=None,
             fields=(
                 InputField(
                     name="a",
@@ -55,7 +54,7 @@ def test_inconsistent_fields_order(first, second):
 def _make_triple_iff(first, second, third):
     return InputFigure(
         constructor=stub_constructor,
-        extra=None,
+        kwargs=None,
         fields=(
             InputField(
                 name="a",
@@ -117,7 +116,7 @@ def test_name_duplicates():
     with pytest.raises(ValueError):
         InputFigure(
             constructor=stub_constructor,
-            extra=None,
+            kwargs=None,
             fields=(
                 InputField(
                     name="a",
@@ -143,7 +142,7 @@ def test_name_duplicates():
     with pytest.raises(ValueError):
         InputFigure(
             constructor=stub_constructor,
-            extra=None,
+            kwargs=None,
             fields=(
                 InputField(
                     name="a1",
@@ -168,7 +167,6 @@ def test_name_duplicates():
 
     with pytest.raises(ValueError):
         OutputFigure(
-            extra=None,
             fields=(
                 OutputField(
                     name="a",
@@ -177,39 +175,6 @@ def test_name_duplicates():
                     accessor=AttrAccessor("a", is_required=True),
                     metadata={},
                 ),
-                OutputField(
-                    name="a",
-                    type=int,
-                    default=NoDefault(),
-                    accessor=AttrAccessor("a", is_required=True),
-                    metadata={},
-                ),
-            )
-        )
-
-
-def test_wild_targets():
-    with pytest.raises(ValueError):
-        InputFigure(
-            constructor=stub_constructor,
-            extra=ExtraTargets(("b",)),
-            fields=(
-                InputField(
-                    name="a",
-                    type=int,
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata={},
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
-                ),
-            )
-        )
-
-    with pytest.raises(ValueError):
-        OutputFigure(
-            extra=ExtraTargets(("b",)),
-            fields=(
                 OutputField(
                     name="a",
                     type=int,

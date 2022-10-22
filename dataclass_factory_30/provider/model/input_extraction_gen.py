@@ -4,7 +4,7 @@ from typing import Dict, Mapping, Optional, Set
 
 from ...code_tools import CodeBuilder, ContextNamespace
 from ...common import Loader
-from ...model_tools import ExtraTargets, InputField, InputFigure
+from ...model_tools import InputField, InputFigure
 from ...provider.errors import (
     ExtraFieldsError,
     ExtraItemsError,
@@ -20,12 +20,13 @@ from .crown_definitions import (
     ExtraCollect,
     ExtraForbid,
     ExtraSkip,
+    ExtraTargets,
     InpCrown,
     InpDictCrown,
     InpFieldCrown,
     InpListCrown,
     InpNoneCrown,
-    RootInpCrown,
+    InputNameMapping,
 )
 from .definitions import CodeGenerator, VarBinder
 
@@ -110,18 +111,18 @@ class GenState:
 
 class BuiltinInputExtractionGen(CodeGenerator):
     """BuiltinInputExtractionGen generates code that extracts raw values from input data,
-    calls loaders and stores results at variables.
+    calls loaders and stores results to variables.
     """
 
     def __init__(
         self,
         figure: InputFigure,
-        crown: RootInpCrown,
+        name_mapping: InputNameMapping,
         debug_path: bool,
         field_loaders: Mapping[str, Loader],
     ):
         self._figure = figure
-        self._root_crown = crown
+        self._name_mapping = name_mapping
         self._debug_path = debug_path
         self._name_to_field: Dict[str, InputField] = {
             field.name: field for field in self._figure.fields
@@ -130,13 +131,13 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
     @property
     def _can_collect_extra(self) -> bool:
-        return self._figure.extra is not None
+        return self._name_mapping.extra_move is not None
 
     def _is_extra_target(self, field: InputField):
         return (
-            isinstance(self._figure.extra, ExtraTargets)
+            isinstance(self._name_mapping.extra_move, ExtraTargets)
             and
-            field.name in self._figure.extra.fields
+            field.name in self._name_mapping.extra_move.fields
         )
 
     def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
@@ -159,7 +160,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
         for field_name, loader in self._field_loaders.items():
             state.ctx_namespace.add(state.field_loader(field_name), loader)
 
-        if not self._gen_root_crown_dispatch(crown_builder, state, self._root_crown):
+        if not self._gen_root_crown_dispatch(crown_builder, state, self._name_mapping.crown):
             raise TypeError
 
         builder = CodeBuilder()
@@ -267,7 +268,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
     def _gen_dict_crown(self, builder: CodeBuilder, state: GenState, crown: InpDictCrown):
         known_fields = state.get_known_fields_var_name()
 
-        if crown.extra in (ExtraForbid(), ExtraCollect()):
+        if crown.extra_policy in (ExtraForbid(), ExtraCollect()):
             state.ctx_namespace.add(known_fields, set(crown.map.keys()))
 
         data = state.get_data_var_name()
@@ -286,7 +287,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
         builder.empty_line()
 
-        if crown.extra == ExtraForbid():
+        if crown.extra_policy == ExtraForbid():
             error_expr = self._wrap_error(f"ExtraFieldsError({extra}_set)", state.path)
             builder += f"""
                 {extra}_set = set({data}) - {known_fields}
@@ -295,7 +296,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
             """
             builder.empty_line()
 
-        elif crown.extra == ExtraCollect():
+        elif crown.extra_policy == ExtraCollect():
             builder += f"""
                 {extra} = {{}}
                 for key in set({data}) - {known_fields}:
@@ -304,7 +305,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
             builder.empty_line()
 
         if self._can_collect_extra:
-            if crown.extra in (ExtraSkip(), ExtraForbid()):
+            if crown.extra_policy in (ExtraSkip(), ExtraForbid()):
                 builder(f"{extra} = {{}}")
 
             self._add_self_extra_to_parent_extra(builder, state)
@@ -324,7 +325,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
         no_required_items_error = self._wrap_error(f"NoRequiredItemsError({list_len})", state.path)
 
-        if crown.extra == ExtraForbid():
+        if crown.extra_policy == ExtraForbid():
             on_extra_items = "raise " + self._wrap_error(f"ExtraItemsError({list_len})", state.path)
         else:
             on_extra_items = ""
@@ -417,11 +418,13 @@ class BuiltinInputExtractionGen(CodeGenerator):
     def _gen_extra_targets_assigment(self, builder: CodeBuilder, state: GenState):
         # Saturate extra targets with data.
         # If extra data is not collected, loader of required field will get empty dict
-        if not isinstance(self._figure.extra, ExtraTargets):
+        extra_move = self._name_mapping.extra_move
+
+        if not isinstance(extra_move, ExtraTargets):
             return
 
-        if self._root_crown.extra == ExtraCollect():
-            for target in self._figure.extra.fields:
+        if self._name_mapping.crown.extra_policy == ExtraCollect():
+            for target in extra_move.fields:
                 field = self._name_to_field[target]
 
                 self._gen_field_assigment(
@@ -432,7 +435,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                     state=state,
                 )
         else:
-            for target in self._figure.extra.fields:
+            for target in extra_move.fields:
                 field = self._name_to_field[target]
 
                 if field.is_required:

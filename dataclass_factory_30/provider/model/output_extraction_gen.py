@@ -3,19 +3,27 @@ from typing import Dict, Mapping
 
 from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr
 from ...common import Dumper
-from ...model_tools import AttrAccessor, ExtraExtract, ExtraTargets, ItemAccessor, OutputField, OutputFigure
+from ...model_tools import AttrAccessor, ItemAccessor, OutputField, OutputFigure
 from ...struct_path import append_path, extend_path
+from .crown_definitions import ExtraExtract, ExtraTargets, OutExtraMove
 from .definitions import CodeGenerator, VarBinder
 
 
 class BuiltinOutputExtractionGen(CodeGenerator):
-    def __init__(self, figure: OutputFigure, debug_path: bool, field_dumpers: Mapping[str, Dumper]):
+    def __init__(
+        self,
+        figure: OutputFigure,
+        extra_move: OutExtraMove,
+        debug_path: bool,
+        fields_dumpers: Mapping[str, Dumper],
+    ):
         self._figure = figure
+        self._extra_move = extra_move
         self._debug_path = debug_path
-        self._field_dumpers = field_dumpers
+        self._fields_dumpers = fields_dumpers
         self._extra_targets = (
-            self._figure.extra.fields
-            if isinstance(self._figure.extra, ExtraTargets)
+            self._extra_move.fields
+            if isinstance(self._extra_move, ExtraTargets)
             else ()
         )
 
@@ -26,7 +34,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         ctx_namespace.add("extend_path", extend_path)
         name_to_fields = {field.name: field for field in self._figure.fields}
 
-        for field_name, dumper in self._field_dumpers.items():
+        for field_name, dumper in self._fields_dumpers.items():
             ctx_namespace.add(self._dumper(name_to_fields[field_name]), dumper)
 
         if any(field.is_optional for field in self._figure.fields):
@@ -63,7 +71,9 @@ class BuiltinOutputExtractionGen(CodeGenerator):
     def _gen_access_expr(self, binder: VarBinder, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         accessor = field.accessor
         if isinstance(accessor, AttrAccessor):
-            return f"{binder.data}.{accessor.attr_name}"
+            if accessor.attr_name.isidentifier():
+                return f"{binder.data}.{accessor.attr_name}"
+            return f"getattr({binder.data}, {accessor.attr_name!r})"
         if isinstance(accessor, ItemAccessor):
             return f"{binder.data}[{accessor.item_name!r}]"
 
@@ -196,12 +206,11 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         ctx_namespace: ContextNamespace,
         name_to_fields: Dict[str, OutputField],
     ):
-        extra = self._figure.extra
-        if isinstance(extra, ExtraTargets):
+        if isinstance(self._extra_move, ExtraTargets):
             self._gen_extra_target_extraction(builder, binder, ctx_namespace, name_to_fields)
-        elif isinstance(extra, ExtraExtract):
-            self._gen_extra_extract_extraction(builder, binder, ctx_namespace, extra)
-        elif extra is not None:
+        elif isinstance(self._extra_move, ExtraExtract):
+            self._gen_extra_extract_extraction(builder, binder, ctx_namespace, self._extra_move)
+        elif self._extra_move is not None:
             raise ValueError
 
     def _get_extra_stack_name(self):
@@ -265,9 +274,9 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         builder: CodeBuilder,
         binder: VarBinder,
         ctx_namespace: ContextNamespace,
-        extra: ExtraExtract,
+        extra_move: ExtraExtract,
     ):
-        ctx_namespace.add('extractor', extra.func)
+        ctx_namespace.add('extractor', extra_move.func)
 
         builder += f"{binder.extra} = extractor({binder.data})"
         builder.empty_line()

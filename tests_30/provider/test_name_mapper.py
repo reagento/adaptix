@@ -1,24 +1,21 @@
 import re
 from dataclasses import dataclass
-from typing import Iterable, List, Set
+from typing import Iterable, List, Optional, Set
 
 import pytest
 
 from dataclass_factory_30.model_tools import (
     AttrAccessor,
-    ExtraTargets,
-    InpFigureExtra,
     InputField,
     InputFigure,
     NoDefault,
-    OutFigureExtra,
     OutputField,
     OutputFigure,
     ParamKind,
+    ParamKwargs,
 )
 from dataclass_factory_30.provider import InputNameMappingRequest, NameMapper, NameStyle, ValueProvider
 from dataclass_factory_30.provider.model.crown_definitions import (
-    CfgExtraPolicy,
     ExtraSkip,
     InpDictCrown,
     InpFieldCrown,
@@ -212,12 +209,12 @@ class MapField:
     is_required: bool
 
 
-def inp_request(fields: List[MapField], extra: InpFigureExtra = None):
+def inp_request(fields: List[MapField], kwargs: Optional[ParamKwargs] = None):
     return InputNameMappingRequest(
         type=Stub,
         figure=InputFigure(
             constructor=Stub,
-            extra=extra,
+            kwargs=kwargs,
             fields=tuple(
                 InputField(
                     type=int,
@@ -234,11 +231,10 @@ def inp_request(fields: List[MapField], extra: InpFigureExtra = None):
     )
 
 
-def out_request(fields: Iterable[MapField], extra: OutFigureExtra = None):
+def out_request(fields: Iterable[MapField]):
     return OutputNameMappingRequest(
         type=Stub,
         figure=OutputFigure(
-            extra=extra,
             fields=tuple(
                 OutputField(
                     type=int,
@@ -260,8 +256,11 @@ def out_request(fields: Iterable[MapField], extra: OutFigureExtra = None):
 def retort():
     return TestRetort(
         [
-            NameMapper(skip=['c'], map={'d': 'z'}),
-            ValueProvider(CfgExtraPolicy, ExtraSkip()),
+            NameMapper(
+                skip=['c'],
+                map={'d': 'z'},
+                extra_in=ExtraSkip(),
+            ),
         ]
     )
 
@@ -288,9 +287,9 @@ def test_name_mapping_simple(retort):
                 'a': InpFieldCrown('a'),
                 'b': InpFieldCrown('b'),
             },
-            extra=ExtraSkip(),
+            extra_policy=ExtraSkip(),
         ),
-        skipped_extra_targets=[],
+        extra_move=None,
     )
 
     out_name_mapping = retort.provide(
@@ -305,7 +304,7 @@ def test_name_mapping_simple(retort):
             },
             sieves={},
         ),
-        skipped_extra_targets=[],
+        extra_move=None,
     )
 
 
@@ -330,9 +329,9 @@ def test_name_mapping_skipping(retort):
             {
                 'a': InpFieldCrown('a'),
             },
-            extra=ExtraSkip(),
+            extra_policy=ExtraSkip(),
         ),
-        skipped_extra_targets=[],
+        extra_move=None,
     )
 
     out_name_mapping = retort.provide(
@@ -346,89 +345,7 @@ def test_name_mapping_skipping(retort):
             },
             sieves={},
         ),
-        skipped_extra_targets=[],
-    )
-
-
-def test_name_mapping_extra_targets(retort):
-    fields = [
-        MapField(
-            name="a",
-            is_required=True,
-        ),
-        MapField(
-            name="b",
-            is_required=False,
-        ),
-    ]
-
-    inp_name_mapping = retort.provide(
-        inp_request(fields, extra=ExtraTargets(('b',)))
-    )
-
-    assert inp_name_mapping == InputNameMapping(
-        crown=InpDictCrown(
-            {
-                'a': InpFieldCrown('a'),
-            },
-            extra=ExtraSkip(),
-        ),
-        skipped_extra_targets=[],
-    )
-
-    out_name_mapping = retort.provide(
-        out_request(fields, extra=ExtraTargets(('b',)))
-    )
-
-    assert out_name_mapping == OutputNameMapping(
-        crown=OutDictCrown(
-            {
-                'a': OutFieldCrown('a'),
-            },
-            sieves={},
-        ),
-        skipped_extra_targets=[],
-    )
-
-
-def test_name_mapping_extra_targets_skip(retort):
-    fields = [
-        MapField(
-            name="a",
-            is_required=True,
-        ),
-        MapField(
-            name="c",
-            is_required=False,
-        ),
-    ]
-
-    inp_name_mapping = retort.provide(
-        inp_request(fields, extra=ExtraTargets(('c',)))
-    )
-
-    assert inp_name_mapping == InputNameMapping(
-        crown=InpDictCrown(
-            {
-                'a': InpFieldCrown('a'),
-            },
-            extra=ExtraSkip(),
-        ),
-        skipped_extra_targets=['c'],
-    )
-
-    out_name_mapping = retort.provide(
-        out_request(fields, extra=ExtraTargets(('c',)))
-    )
-
-    assert out_name_mapping == OutputNameMapping(
-        crown=OutDictCrown(
-            {
-                'a': OutFieldCrown('a'),
-            },
-            sieves={},
-        ),
-        skipped_extra_targets=['c'],
+        extra_move=None,
     )
 
 
@@ -451,23 +368,5 @@ def test_name_mapping_error_on_required_field_skip(retort):
                         is_required=True,
                     ),
                 ],
-                extra=None,
-            )
-        )
-
-    with pytest.raises(ValueError, match=string_to_match):
-        retort.provide(
-            inp_request(
-                fields=[
-                    MapField(
-                        name="a",
-                        is_required=True,
-                    ),
-                    MapField(
-                        name="c",
-                        is_required=True,
-                    ),
-                ],
-                extra=ExtraTargets(("c",))
             )
         )

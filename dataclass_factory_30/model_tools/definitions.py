@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Generic, Hashable, Mapping, MutableMapping, Optional, TypeVar, Union
+from typing import Any, Callable, Generic, Hashable, Mapping, Optional, TypeVar, Union
 
 from ..common import Catchable, TypeHint, VarTuple
 from ..struct_path import Attr, PathElement
@@ -52,41 +52,49 @@ class Accessor(Hashable, ABC):
 
 
 class DescriptorAccessor(Accessor, ABC):
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    # Dataclasses delete all field() attributes if there is no default value.
-    # So, if setup it as abstract property,
-    # constructor can not set value to attribute due property has no setter
-    attr_name: str
+    def __init__(self, attr_name: str, access_error: Optional[Catchable]):
+        self._attr_name = attr_name
+        self._access_error = access_error
 
     # noinspection PyMethodOverriding
     def getter(self, obj):
-        return getattr(obj, self.attr_name)
+        return getattr(obj, self._attr_name)
+
+    @property
+    def access_error(self) -> Optional[Catchable]:
+        return self._access_error
 
     @property
     def path_element(self) -> PathElement:
         return Attr(self.attr_name)
 
+    @property
+    def attr_name(self) -> str:
+        return self._attr_name
 
-@dataclass(frozen=True)
-class PropertyAccessor(DescriptorAccessor):  # TODO: make up more appropriate name
-    attr_name: str
-    access_error: Optional[Catchable] = field(default=None)
+    def __eq__(self, other):
+        if isinstance(other, DescriptorAccessor):
+            return self._attr_name == other._attr_name and self._access_error == other._access_error
+        return NotImplemented
 
     def __hash__(self):
-        return hash((self.attr_name, self.access_error))
+        return hash((self._attr_name, self._access_error))
+
+    def __repr__(self):
+        return f"{type(self)}(attr_name={self.attr_name}, access_error={self.access_error})"
 
 
-@dataclass(frozen=True)
 class AttrAccessor(DescriptorAccessor):
-    attr_name: str
-    is_required: bool
+    def __init__(self, attr_name: str, is_required: bool):
+        access_error = None if is_required else AttributeError
+        super().__init__(attr_name, access_error)
 
     @property
-    def access_error(self) -> Optional[Catchable]:
-        return None if self.is_required else AttributeError
+    def is_required(self) -> bool:
+        return self.access_error is None
 
-    def __hash__(self):
-        return hash((self.attr_name, self.is_required))
+    def __repr__(self):
+        return f"{type(self)}(attr_name={self.attr_name}, is_required={self.is_required})"
 
 
 @dataclass(frozen=True)
@@ -163,35 +171,13 @@ class OutputField(BaseField):
         return self.accessor.access_error is None
 
 
-class ExtraKwargs(metaclass=SingletonMeta):
-    pass
-
-
-@dataclass(frozen=True)
-class ExtraTargets:
-    fields: VarTuple[str]
-
-
-@dataclass(frozen=True)
-class ExtraSaturate(Generic[T]):
-    func: Callable[[T, MutableMapping[str, Any]], None]
-
-
-@dataclass(frozen=True)
-class ExtraExtract(Generic[T]):
-    func: Callable[[T], Mapping[str, Any]]
-
-
-BaseFigureExtra = Union[None, ExtraKwargs, ExtraTargets, ExtraSaturate[T], ExtraExtract[T]]
-
-
 @dataclass(frozen=True)
 class BaseFigure:
     """Signature of class. Divided into 2 parts: input and output.
     See doc :class InputFigure: and :class OutputFigure: for more details
     """
     fields: VarTuple[BaseField]
-    extra: BaseFigureExtra
+    fields_dict: Mapping[str, BaseField] = field(init=False, hash=False, repr=False, compare=False)
 
     def _validate(self):
         field_names = {fld.name for fld in self.fields}
@@ -202,22 +188,14 @@ class BaseFigure:
             }
             raise ValueError(f"Field names {duplicates} are duplicated")
 
-        if isinstance(self.extra, ExtraTargets):
-            wild_targets = [
-                target for target in self.extra.fields
-                if target not in field_names
-            ]
-
-            if wild_targets:
-                raise ValueError(
-                    f"ExtraTargets {wild_targets} are attached to non-existing fields"
-                )
-
     def __post_init__(self):
         self._validate()
+        super().__setattr__('fields_dict', {fld.name: fld for fld in self.fields})
 
 
-InpFigureExtra = Union[None, ExtraKwargs, ExtraTargets, ExtraSaturate[T]]
+@dataclass(frozen=True)
+class ParamKwargs:
+    type: TypeHint
 
 
 @dataclass(frozen=True)
@@ -226,15 +204,15 @@ class InputFigure(BaseFigure, Generic[T]):
 
     :param constructor: callable that produces an instance of the class.
     :param fields: parameters of the constructor
-    :param extra: the way of passing extra data (data that does not map to any field)
-        None means that constructor can not take any extra data.
-        ExtraKwargs means that all extra data could be passed as additional keyword parameters
-        ExtraTargets means that all extra data could be passed to corresponding fields.
-        ExtraSaturate means that after constructing object specified function will be applied
     """
     fields: VarTuple[InputField]
-    extra: InpFigureExtra[T]
+    kwargs: Optional[ParamKwargs]
     constructor: Callable[..., T]
+    fields_dict: Mapping[str, InputField] = field(init=False, hash=False, repr=False, compare=False)
+
+    @property
+    def allow_kwargs(self) -> bool:
+        return self.kwargs is not None
 
     def _validate(self):
         super()._validate()
@@ -265,26 +243,34 @@ class InputFigure(BaseFigure, Generic[T]):
                 )
 
 
-OutFigureExtra = Union[None, ExtraTargets, ExtraExtract[T]]
-
-
 @dataclass(frozen=True)
 class OutputFigure(BaseFigure):
     """Description of extraction data from an object
 
     :param fields: fields (can be not only attributes) of object
-    :param extra: the way of extracting extra data (data that does not map to any field)
-        None means that there is no way to get extra data
-        ExtraTargets means extra data will be extracted from corresponding fields and will be merged
-        ExtraExtract means that extra data will be taken by applying a specified function
     """
     fields: VarTuple[OutputField]
-    extra: OutFigureExtra
+    fields_dict: Mapping[str, OutputField] = field(init=False, hash=False, repr=False, compare=False)
 
 
-class IntrospectionError(Exception):
+Inp = TypeVar('Inp', bound=Optional[InputFigure])
+Out = TypeVar('Out', bound=Optional[OutputFigure])
+
+
+@dataclass
+class Figure(Generic[Inp, Out]):
+    input: Inp
+    output: Out
+
+
+FullFigure = Figure[InputFigure, OutputFigure]
+
+FigureIntrospector = Callable[[Any], Figure]
+
+
+class IntrospectionImpossible(Exception):
     pass
 
 
-class NoTargetPackage(IntrospectionError):
+class NoTargetPackage(IntrospectionImpossible):
     pass

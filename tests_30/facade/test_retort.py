@@ -16,12 +16,6 @@ def test_retort_replace():
     assert replaced_retort2._strict_coercion is True
     assert not replaced_retort2._loader_cache and not replaced_retort2._dumper_cache
 
-    retort3 = Retort(extra_policy=ExtraSkip())
-    replaced_retort3 = retort3.replace(extra_policy=ExtraForbid())
-
-    assert replaced_retort3._extra_policy is ExtraForbid()
-    assert not replaced_retort3._loader_cache and not replaced_retort3._dumper_cache
-
 
 def test_retort_extend():
     retort = Retort(recipe=[PlaceholderProvider(1)])

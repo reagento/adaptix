@@ -7,16 +7,7 @@ import pytest
 
 from dataclass_factory_30.common import Loader, VarTuple
 from dataclass_factory_30.facade import bound
-from dataclass_factory_30.model_tools import (
-    ExtraKwargs,
-    ExtraSaturate,
-    ExtraTargets,
-    InpFigureExtra,
-    InputField,
-    InputFigure,
-    NoDefault,
-    ParamKind,
-)
+from dataclass_factory_30.model_tools import InputField, InputFigure, NoDefault, ParamKind, ParamKwargs
 from dataclass_factory_30.provider import (
     BuiltinInputExtractionMaker,
     ExtraFieldsError,
@@ -43,6 +34,7 @@ from dataclass_factory_30.provider.model import (
     InpNoneCrown,
     InputNameMapping,
 )
+from dataclass_factory_30.provider.model.crown_definitions import ExtraKwargs, ExtraSaturate, ExtraTargets
 from tests_helpers import DebugCtx, TestRetort, parametrize_bool, raises_path
 
 
@@ -76,11 +68,11 @@ def field(name: str, param_kind: ParamKind, is_required: bool):
     )
 
 
-def figure(*fields: InputField, extra: InpFigureExtra):
+def figure(*fields: InputField, kwargs: Optional[ParamKwargs] = None):
     return InputFigure(
         fields=fields,
         constructor=gauge,
-        extra=extra,
+        kwargs=kwargs,
     )
 
 
@@ -125,7 +117,6 @@ def test_direct(debug_ctx, debug_path, extra_policy):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
-            extra=None
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
@@ -133,9 +124,9 @@ def test_direct(debug_ctx, debug_path, extra_policy):
                     'a': InpFieldCrown('a'),
                     'b': InpFieldCrown('b'),
                 },
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=[],
+            extra_move=None,
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -184,7 +175,6 @@ def test_direct_list(debug_ctx, debug_path, extra_policy):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
-            extra=None
         ),
         name_mapping=InputNameMapping(
             crown=InpListCrown(
@@ -192,9 +182,9 @@ def test_direct_list(debug_ctx, debug_path, extra_policy):
                     InpFieldCrown('a'),
                     InpFieldCrown('b'),
                 ],
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=[],
+            extra_move=None,
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -231,7 +221,6 @@ def test_extra_forbid(debug_ctx, debug_path):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
-            extra=None
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
@@ -239,9 +228,9 @@ def test_extra_forbid(debug_ctx, debug_path):
                     'a': InpFieldCrown('a'),
                     'b': InpFieldCrown('b'),
                 },
-                extra=ExtraForbid(),
+                extra_policy=ExtraForbid(),
             ),
-            skipped_extra_targets=[],
+            extra_move=None,
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -269,7 +258,6 @@ def test_creation(debug_ctx, debug_path, extra_policy):
             field('c', ParamKind.POS_OR_KW, is_required=False),
             field('d', ParamKind.KW_ONLY, is_required=True),
             field('e', ParamKind.KW_ONLY, is_required=False),
-            extra=ExtraKwargs()
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
@@ -280,9 +268,9 @@ def test_creation(debug_ctx, debug_path, extra_policy):
                     'd': InpFieldCrown('d'),
                     'e': InpFieldCrown('e'),
                 },
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraKwargs(),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -296,16 +284,16 @@ def test_extra_kwargs(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_ONLY, is_required=True),
-            extra=ExtraKwargs()
+            kwargs=ParamKwargs(Any),
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
                 },
-                extra=ExtraCollect(),
+                extra_policy=ExtraCollect(),
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraKwargs(),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -316,22 +304,44 @@ def test_extra_kwargs(debug_ctx, debug_path):
     assert loader({'a': 1, 'b': 2}) == gauge(1, b=2)
 
 
-@parametrize_bool('is_required')
-def test_extra_targets_one(debug_ctx, debug_path, is_required):
+def test_wild_extra_targets(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=is_required),
-            extra=ExtraTargets(('b',))
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
                 },
-                extra=ExtraCollect(),
+                extra_policy=ExtraCollect(),
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraTargets(('b',)),
+        ),
+        debug_path=debug_path,
+        debug_ctx=debug_ctx,
+    )
+
+    pytest.raises(ValueError, loader_getter).match(
+        re.escape("ExtraTargets ['b'] are attached to non-existing fields")
+    )
+
+
+@parametrize_bool('is_required')
+def test_extra_targets_one(debug_ctx, debug_path, is_required):
+    loader_getter = make_loader_getter(
+        fig=figure(
+            field('a', ParamKind.POS_OR_KW, is_required=True),
+            field('b', ParamKind.POS_OR_KW, is_required=is_required),
+        ),
+        name_mapping=InputNameMapping(
+            crown=InpDictCrown(
+                {
+                    'a': InpFieldCrown('a'),
+                },
+                extra_policy=ExtraCollect(),
+            ),
+            extra_move=ExtraTargets(('b',)),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -351,16 +361,15 @@ def test_extra_targets_two(debug_ctx, debug_path, is_required_first, is_required
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=is_required_first),
             field('c', ParamKind.KW_ONLY, is_required=is_required_second),
-            extra=ExtraTargets(('b', 'c'))
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
                 },
-                extra=ExtraCollect(),
+                extra_policy=ExtraCollect(),
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraTargets(('b', 'c')),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -379,16 +388,15 @@ def test_extra_saturate(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_ONLY, is_required=True),
-            extra=ExtraSaturate(Gauge.saturate)
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
                 },
-                extra=ExtraCollect(),
+                extra_policy=ExtraCollect(),
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraSaturate(Gauge.saturate),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -404,7 +412,7 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
-            extra=ExtraKwargs(),
+            kwargs=ParamKwargs(Any),
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
@@ -412,9 +420,9 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
                     'm_a': InpFieldCrown('a'),
                     'm_b': InpFieldCrown('b'),
                 },
-                extra=ExtraCollect(),
+                extra_policy=ExtraCollect(),
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraKwargs(),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -439,16 +447,15 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
-            extra=None,
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
                 {
                     'm_a': InpFieldCrown('a'),
                 },
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=[],
+            extra_move=None,
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -459,41 +466,20 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
-            extra=ExtraTargets(('b',)),
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
                 {
                     'm_a': InpFieldCrown('a'),
                 },
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraTargets(('b',)),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
     loader_getter()
-
-    loader_getter = make_loader_getter(
-        fig=figure(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=True),
-            extra=ExtraTargets(('b',)),
-        ),
-        name_mapping=InputNameMapping(
-            crown=InpDictCrown(
-                {
-                    'm_a': InpFieldCrown('a'),
-                },
-                extra=extra_policy,
-            ),
-            skipped_extra_targets=['b'],
-        ),
-        debug_path=debug_path,
-        debug_ctx=debug_ctx,
-    )
-    pytest.raises(ValueError, loader_getter).match(re.escape("Required fields ['b'] are skipped"))
 
 
 def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
@@ -501,7 +487,6 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
-            extra=ExtraTargets(('b',)),
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
@@ -509,9 +494,9 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
                     'm_a': InpFieldCrown('a'),
                     'm_b': InpFieldCrown('b'),
                 },
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraTargets(('b',)),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -524,7 +509,6 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
-            extra=ExtraTargets(('b',)),
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
@@ -532,9 +516,9 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
                     'm_a': InpFieldCrown('a'),
                     'm_b': InpFieldCrown('b'),
                 },
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=['b'],
+            extra_move=ExtraTargets(('b',)),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -549,7 +533,6 @@ def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
-            extra=None,
         ),
         name_mapping=InputNameMapping(
             crown=InpListCrown(
@@ -557,9 +540,9 @@ def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
                     InpFieldCrown('a'),
                     InpFieldCrown('b'),
                 ],
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=[],
+            extra_move=None,
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -576,7 +559,6 @@ def test_flat_mapping(debug_ctx, debug_path, is_required):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
             field('e', ParamKind.KW_ONLY, is_required=is_required),
-            extra=ExtraTargets(('e',)),
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
@@ -584,9 +566,9 @@ def test_flat_mapping(debug_ctx, debug_path, is_required):
                     'm_a': InpFieldCrown('a'),
                     'm_b': InpFieldCrown('b'),
                 },
-                extra=ExtraCollect(),
+                extra_policy=ExtraCollect(),
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraTargets(('e',)),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -612,7 +594,6 @@ COMPLEX_STRUCTURE_FIGURE = figure(
     field('e', ParamKind.KW_ONLY, is_required=True),
     field('f', ParamKind.KW_ONLY, is_required=True),
     field('extra', ParamKind.KW_ONLY, is_required=True),
-    extra=ExtraTargets(('extra',)),
 )
 
 COMPLEX_STRUCTURE_CROWN = InpDictCrown(
@@ -622,7 +603,7 @@ COMPLEX_STRUCTURE_CROWN = InpDictCrown(
                 'y': InpFieldCrown('a'),
                 'x': InpFieldCrown('b'),
             },
-            extra=ExtraCollect(),
+            extra_policy=ExtraCollect(),
         ),
         'w': InpFieldCrown('c'),
         'v': InpListCrown(
@@ -632,19 +613,19 @@ COMPLEX_STRUCTURE_CROWN = InpDictCrown(
                     {
                         'u': InpFieldCrown('e'),
                     },
-                    extra=ExtraCollect(),
+                    extra_policy=ExtraCollect(),
                 ),
                 InpListCrown(
                     [
                         InpFieldCrown('f')
                     ],
-                    extra=ExtraForbid(),
+                    extra_policy=ExtraForbid(),
                 )
             ],
-            extra=ExtraForbid(),
+            extra_policy=ExtraForbid(),
         ),
     },
-    extra=ExtraCollect(),
+    extra_policy=ExtraCollect(),
 )
 
 
@@ -653,7 +634,7 @@ def test_structure_flattening(debug_ctx, debug_path):
         fig=COMPLEX_STRUCTURE_FIGURE,
         name_mapping=InputNameMapping(
             crown=COMPLEX_STRUCTURE_CROWN,
-            skipped_extra_targets=[],
+            extra_move=ExtraTargets(('extra',)),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -763,7 +744,7 @@ def test_error_path_at_complex_structure(debug_ctx, debug_path, error_path):
         fig=COMPLEX_STRUCTURE_FIGURE,
         name_mapping=InputNameMapping(
             crown=COMPLEX_STRUCTURE_CROWN,
-            skipped_extra_targets=[],
+            extra_move=ExtraTargets(('extra',)),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -797,7 +778,6 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('extra', ParamKind.KW_ONLY, is_required=True),
-            extra=ExtraTargets(('extra',)),
         ),
         name_mapping=InputNameMapping(
             crown=InpDictCrown(
@@ -805,9 +785,9 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
                     'a': InpFieldCrown('a'),
                     'b': InpNoneCrown(),
                 },
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=[],
+            extra_move=ExtraTargets(('extra',)),
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,
@@ -836,7 +816,6 @@ def test_none_crown_at_list_crown(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
-            extra=None,
         ),
         name_mapping=InputNameMapping(
             crown=InpListCrown(
@@ -845,9 +824,9 @@ def test_none_crown_at_list_crown(debug_ctx, debug_path, extra_policy):
                     InpFieldCrown('a'),
                     InpNoneCrown(),
                 ],
-                extra=extra_policy,
+                extra_policy=extra_policy,
             ),
-            skipped_extra_targets=[],
+            extra_move=None,
         ),
         debug_path=debug_path,
         debug_ctx=debug_ctx,

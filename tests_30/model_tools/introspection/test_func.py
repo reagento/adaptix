@@ -1,6 +1,6 @@
 import pytest
 
-from dataclass_factory_30.model_tools import get_func_input_figure
+from dataclass_factory_30.model_tools import get_func_figure
 
 
 class MyClass:
@@ -8,4 +8,4 @@ class MyClass:
 
 
 def test_error_at_class_passing():
-    pytest.raises(TypeError, lambda: get_func_input_figure(MyClass))
+    pytest.raises(TypeError, lambda: get_func_figure(MyClass))

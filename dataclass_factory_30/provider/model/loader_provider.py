@@ -14,31 +14,42 @@ from .basic_gen import (
     get_extra_targets_at_crown,
     get_optional_fields_at_list_crown,
     get_skipped_fields,
+    get_wild_extra_targets,
     has_collect_policy,
-    strip_figure,
+    strip_figure_fields,
     stub_code_gen_hook,
 )
-from .crown_definitions import InputNameMapping, InputNameMappingRequest
+from .crown_definitions import InpExtraMove, InputNameMapping, InputNameMappingRequest
 from .input_creation_gen import BuiltinInputCreationGen
 
 
 class InputExtractionMaker(Protocol):
-    def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure]:
+    def __call__(
+        self,
+        mediator: Mediator,
+        request: LoaderRequest,
+    ) -> Tuple[CodeGenerator, InputFigure, InpExtraMove]:
         ...
 
 
 class InputCreationMaker(Protocol):
-    def __call__(self, mediator: Mediator, request: LoaderRequest, figure: InputFigure) -> CodeGenerator:
+    def __call__(
+        self,
+        mediator: Mediator,
+        request: LoaderRequest,
+        figure: InputFigure,
+        extra_move: InpExtraMove,
+    ) -> CodeGenerator:
         ...
 
 
 class BuiltinInputExtractionMaker(InputExtractionMaker):
-    def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure]:
+    def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure, InpExtraMove]:
         figure: InputFigure = mediator.provide(
             InputFigureRequest(type=request.type)
         )
 
-        name_mapping = mediator.provide(
+        name_mapping: InputNameMapping = mediator.provide(
             InputNameMappingRequest(
                 type=request.type,
                 figure=figure,
@@ -46,7 +57,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         )
 
         processed_figure = self._process_figure(figure, name_mapping)
-        self._validate_params(figure, processed_figure, name_mapping)
+        self._validate_params(processed_figure, name_mapping)
 
         field_loaders = {
             field.name: mediator.provide(
@@ -62,9 +73,15 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
 
         extraction_gen = self._create_extraction_gen(request, figure, name_mapping, field_loaders)
 
-        return extraction_gen, figure
+        return extraction_gen, figure, name_mapping.extra_move
 
     def _process_figure(self, figure: InputFigure, name_mapping: InputNameMapping) -> InputFigure:
+        wild_extra_targets = get_wild_extra_targets(figure, name_mapping.extra_move)
+        if wild_extra_targets:
+            raise ValueError(
+                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
+            )
+
         skipped_fields = get_skipped_fields(figure, name_mapping)
 
         skipped_required_fields = [
@@ -78,16 +95,16 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
                 f"Required fields {skipped_required_fields} are skipped"
             )
 
-        return strip_figure(figure, skipped_fields)
+        return strip_figure_fields(figure, skipped_fields)
 
-    def _validate_params(self, figure: InputFigure, processed_figure: InputFigure, name_mapping: InputNameMapping):
-        if figure.extra is None and has_collect_policy(name_mapping.crown):
+    def _validate_params(self, processed_figure: InputFigure, name_mapping: InputNameMapping) -> None:
+        if name_mapping.extra_move is None and has_collect_policy(name_mapping.crown):
             raise ValueError(
                 "Cannot create loader that collect extra data"
                 " if InputFigure does not take extra data",
             )
 
-        extra_targets_at_crown = get_extra_targets_at_crown(figure, name_mapping)
+        extra_targets_at_crown = get_extra_targets_at_crown(name_mapping)
         if extra_targets_at_crown:
             raise ValueError(
                 f"Extra targets {extra_targets_at_crown} are found at crown"
@@ -111,14 +128,19 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
     ) -> CodeGenerator:
         return BuiltinInputExtractionGen(
             figure=figure,
-            crown=name_mapping.crown,
+            name_mapping=name_mapping,
             debug_path=request.debug_path,
             field_loaders=field_loaders,
         )
 
 
-def make_input_creation(mediator: Mediator, request: LoaderRequest, figure: InputFigure) -> CodeGenerator:
-    return BuiltinInputCreationGen(figure=figure)
+def make_input_creation(
+    mediator: Mediator,
+    request: LoaderRequest,
+    figure: InputFigure,
+    extra_move: InpExtraMove,
+) -> CodeGenerator:
+    return BuiltinInputCreationGen(figure=figure, extra_move=extra_move)
 
 
 class ModelLoaderProvider(LoaderProvider):
@@ -133,8 +155,8 @@ class ModelLoaderProvider(LoaderProvider):
         self._creation_maker = creation_maker
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        extraction_gen, figure = self._extraction_maker(mediator, request)
-        creation_gen = self._creation_maker(mediator, request, figure)
+        extraction_gen, figure, extra_move = self._extraction_maker(mediator, request)
+        creation_gen = self._creation_maker(mediator, request, figure, extra_move)
 
         try:
             code_gen_hook = mediator.provide(CodeGenHookRequest())

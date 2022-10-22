@@ -1,6 +1,6 @@
 import inspect
 from inspect import isfunction
-from typing import Callable, ClassVar, Dict, Iterable, Type, TypeVar, overload
+from typing import Callable, ClassVar, Dict, Iterable, Type, TypeVar, final, overload
 
 from ..type_tools import is_subclass_soft, normalize_type, strip_tags
 from .class_dispatcher import ClassDispatcher
@@ -88,7 +88,7 @@ def _make_spa_decorator(request_cls: Type[R]):
 
 
 class StaticProvider(Provider):
-    """Provider whose RequestDispatcher is the same among all instances.
+    """Provider which instances can process same set of Request classes.
 
     Subclass defines provision actions wrapping method by decorator
     @static_provision_action(request_cls). Argument of decorator attaching
@@ -120,6 +120,7 @@ class StaticProvider(Provider):
 
         cls._sp_cls_request_dispatcher = RequestDispatcher(result)
 
+    @final
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         try:
             attr_name = self._sp_cls_request_dispatcher.dispatch(type(request))

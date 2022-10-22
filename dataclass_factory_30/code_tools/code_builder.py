@@ -17,7 +17,7 @@ class CodeBuilder:
     def lines(self) -> Sequence[str]:
         return self._lines.copy()
 
-    def _extract_lines(self, line_or_text: str) -> List[str]:
+    def _extract_lines(self, line_or_text: str) -> Iterable[str]:
         if "\n" in line_or_text:
             return dedent(line_or_text).strip("\n").split("\n")
         return [line_or_text]

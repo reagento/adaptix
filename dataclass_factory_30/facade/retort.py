@@ -5,7 +5,7 @@ from fractions import Fraction
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from pathlib import Path
-from typing import Any, ByteString, Iterable, List, Mapping, MutableMapping, Optional, Type, TypeVar, overload
+from typing import Any, ByteString, Iterable, Mapping, MutableMapping, Optional, Type, TypeVar, overload
 from uuid import UUID
 
 from ..common import Dumper, Loader, TypeHint, VarTuple
@@ -20,7 +20,6 @@ from ..provider import (
     BuiltinOutputCreationMaker,
     BytearrayBase64Provider,
     BytesBase64Provider,
-    CfgExtraPolicy,
     CoercionLimiter,
     DictProvider,
     DumperRequest,
@@ -41,9 +40,8 @@ from ..provider import (
     SecondsTimedeltaProvider,
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
-    ValueProvider,
 )
-from ..provider.model import ExtraPolicy, ExtraSkip, make_input_creation, make_output_extraction
+from ..provider.model import make_input_creation, make_output_extraction
 from ..retort import OperatingRetort
 from .provider import dumper, loader
 
@@ -140,14 +138,12 @@ class AdornedRetort(OperatingRetort):
     def __init__(
         self,
         *,
-        recipe: Optional[List[Provider]] = None,
+        recipe: Optional[Iterable[Provider]] = None,
         strict_coercion: bool = True,
         debug_path: bool = True,
-        extra_policy: ExtraPolicy = ExtraSkip(),
     ):
         self._strict_coercion = strict_coercion
         self._debug_path = debug_path
-        self._extra_policy = extra_policy
         super().__init__(recipe)
 
     def _calculate_derived(self):
@@ -160,7 +156,6 @@ class AdornedRetort(OperatingRetort):
         *,
         strict_coercion: Optional[bool] = None,
         debug_path: Optional[bool] = None,
-        extra_policy: Optional[ExtraPolicy] = None,
     ) -> R:
         # pylint: disable=protected-access
         with self._clone() as clone:
@@ -169,9 +164,6 @@ class AdornedRetort(OperatingRetort):
 
             if debug_path is not None:
                 clone._debug_path = debug_path
-
-            if extra_policy is not None:
-                clone._extra_policy = extra_policy
 
         return clone
 
@@ -185,9 +177,7 @@ class AdornedRetort(OperatingRetort):
         return clone
 
     def _get_config_recipe(self) -> VarTuple[Provider]:
-        return (
-            ValueProvider(CfgExtraPolicy, self._extra_policy),
-        )
+        return ()
 
     def get_loader(self, tp: Type[T]) -> Loader[T]:
         try:

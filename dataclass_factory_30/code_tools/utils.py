@@ -72,7 +72,7 @@ def _get_complex_literal_expr(obj: object) -> Optional[str]:
     return None
 
 
-_CLS_TO_LITERAL_FACTORY: Dict[Any, str] = {
+_CLS_TO_FACTORY_LITERAL: Dict[Any, str] = {
     list: '[]',
     dict: '{}',
     tuple: '()',
@@ -81,8 +81,8 @@ _CLS_TO_LITERAL_FACTORY: Dict[Any, str] = {
 }
 
 
-def get_literal_factory(obj: object) -> Optional[str]:
+def get_literal_from_factory(obj: object) -> Optional[str]:
     try:
-        return _CLS_TO_LITERAL_FACTORY.get(obj, None)
+        return _CLS_TO_FACTORY_LITERAL.get(obj, None)
     except TypeError:
         return None

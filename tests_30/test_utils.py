@@ -22,3 +22,11 @@ def test_singleton_repr():
 
     assert repr(MySingleton()) == "MySingleton()"
     assert repr(MyReprSingleton()) == "<CustomSingletonRepr>"
+
+
+def test_singleton_hash():
+    class MySingleton(metaclass=SingletonMeta):
+        pass
+
+    hash(MySingleton())
+

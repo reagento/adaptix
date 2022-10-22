@@ -13,25 +13,41 @@ from .basic_gen import (
     get_extra_targets_at_crown,
     get_optional_fields_at_list_crown,
     get_skipped_fields,
-    strip_figure,
+    get_wild_extra_targets,
+    strip_figure_fields,
     stub_code_gen_hook,
 )
-from .crown_definitions import OutputNameMapping, OutputNameMappingRequest
+from .crown_definitions import OutExtraMove, OutputNameMapping, OutputNameMappingRequest
 from .output_creation_gen import BuiltinOutputCreationGen
 from .output_extraction_gen import BuiltinOutputExtractionGen
 
 
 class OutputExtractionMaker(Protocol):
-    def __call__(self, mediator: Mediator, request: DumperRequest, figure: OutputFigure) -> CodeGenerator:
+    def __call__(
+        self,
+        mediator: Mediator,
+        request: DumperRequest,
+        figure: OutputFigure,
+        extra_move: OutExtraMove,
+    ) -> CodeGenerator:
         ...
 
 
 class OutputCreationMaker(Protocol):
-    def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure]:
+    def __call__(
+        self,
+        mediator: Mediator,
+        request: DumperRequest,
+    ) -> Tuple[CodeGenerator, OutputFigure, OutExtraMove]:
         ...
 
 
-def make_output_extraction(mediator: Mediator, request: DumperRequest, figure: OutputFigure) -> CodeGenerator:
+def make_output_extraction(
+    mediator: Mediator,
+    request: DumperRequest,
+    figure: OutputFigure,
+    extra_move: OutExtraMove,
+) -> CodeGenerator:
     field_dumpers = {
         field.name: mediator.provide(
             DumperFieldRequest(
@@ -45,13 +61,14 @@ def make_output_extraction(mediator: Mediator, request: DumperRequest, figure: O
 
     return BuiltinOutputExtractionGen(
         figure=figure,
+        extra_move=extra_move,
         debug_path=request.debug_path,
-        field_dumpers=field_dumpers,
+        fields_dumpers=field_dumpers,
     )
 
 
 class BuiltinOutputCreationMaker(OutputCreationMaker):
-    def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure]:
+    def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure, OutExtraMove]:
         figure: OutputFigure = mediator.provide(
             OutputFigureRequest(type=request.type)
         )
@@ -65,7 +82,7 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
 
         processed_figure = self._process_figure(figure, name_mapping)
         creation_gen = self._create_creation_gen(request, processed_figure, name_mapping)
-        return creation_gen, processed_figure
+        return creation_gen, processed_figure, name_mapping.extra_move
 
     def _process_figure(self, figure: OutputFigure, name_mapping: OutputNameMapping) -> OutputFigure:
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
@@ -77,13 +94,19 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
                 f"Optional fields {optional_fields_at_list_crown} are found at list crown"
             )
 
-        extra_targets_at_crown = get_extra_targets_at_crown(figure, name_mapping)
+        wild_extra_targets = get_wild_extra_targets(figure, name_mapping.extra_move)
+        if wild_extra_targets:
+            raise ValueError(
+                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
+            )
+
+        extra_targets_at_crown = get_extra_targets_at_crown(name_mapping)
         if extra_targets_at_crown:
             raise ValueError(
                 f"Extra targets {extra_targets_at_crown} are found at crown"
             )
 
-        return strip_figure(figure, get_skipped_fields(figure, name_mapping))
+        return strip_figure_fields(figure, get_skipped_fields(figure, name_mapping))
 
     def _create_creation_gen(
         self,
@@ -93,7 +116,7 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
     ) -> CodeGenerator:
         return BuiltinOutputCreationGen(
             figure=figure,
-            crown=name_mapping.crown,
+            name_mapping=name_mapping,
             debug_path=request.debug_path,
         )
 
@@ -110,8 +133,8 @@ class ModelDumperProvider(DumperProvider):
         self._creation_maker = creation_maker
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        creation_gen, figure = self._creation_maker(mediator, request)
-        extraction_gen = self._extraction_maker(mediator, request, figure)
+        creation_gen, figure, extra_move = self._creation_maker(mediator, request)
+        extraction_gen = self._extraction_maker(mediator, request, figure, extra_move)
 
         try:
             code_gen_hook = mediator.provide(CodeGenHookRequest())

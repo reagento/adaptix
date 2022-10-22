@@ -21,6 +21,7 @@ from typing import (
     NewType,
     NoReturn,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -403,7 +404,7 @@ def _create_norm_union(args: VarTuple[BaseNormType]) -> BaseNormType:
     return _UnionNormType(args, source=create_union(tuple(a.source for a in args)))
 
 
-def _dedup(inp: Iterable) -> List:
+def _dedup(inp: Iterable[T]) -> Iterable[T]:
     in_set = set()
     result = []
     for item in inp:
@@ -618,7 +619,7 @@ class TypeNormalizer:
 
             return _LiteralNormType(args, source=tp)
 
-    def _unfold_union_args(self, norm_args: Iterable[N]) -> List[N]:
+    def _unfold_union_args(self, norm_args: Iterable[N]) -> Iterable[N]:
         result: List[N] = []
         for norm in norm_args:
             if norm.origin == Union:
@@ -640,7 +641,7 @@ class TypeNormalizer:
             for arg, sources in args_to_sources.items()
         ]
 
-    def _merge_literals(self, args: Iterable[N]) -> List[N]:
+    def _merge_literals(self, args: Iterable[N]) -> Sequence[N]:
         result = []
         lit_args: List[N] = []
         for norm in args:

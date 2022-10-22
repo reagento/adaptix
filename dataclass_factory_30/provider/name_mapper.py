@@ -1,30 +1,28 @@
 from dataclasses import dataclass, field
-from typing import Collection, Dict, List, Optional, cast
+from typing import Dict, List, Optional, Sequence, Tuple, TypeVar, Union, cast
 
 # TODO: Add support for path in map
-from ..model_tools import BaseFigure, DefaultFactory, DefaultValue, ExtraTargets, NoDefault, OutputField
+from ..model_tools import DefaultFactory, DefaultValue, NoDefault, OutputField
 from .essential import Mediator
 from .model import (
     BaseCrown,
     BaseDictCrown,
     BaseFieldCrown,
     BaseListCrown,
-    BaseNameMapping,
     BaseNameMappingRequest,
     BaseNoneCrown,
-    CfgExtraPolicy,
+    DictExtraPolicy,
     ExtraCollect,
-    ExtraPolicy,
+    ExtraSkip,
     Filler,
     InpCrown,
     InpDictCrown,
-    InpExtraPolicyDict,
-    InpExtraPolicyList,
     InpFieldCrown,
     InpListCrown,
     InpNoneCrown,
     InputNameMapping,
     InputNameMappingRequest,
+    ListExtraPolicy,
     NameMappingProvider,
     OutCrown,
     OutDictCrown,
@@ -37,7 +35,25 @@ from .model import (
     RootOutCrown,
     Sieve,
 )
+from .model.crown_definitions import (
+    BaseExtraMove,
+    Extractor,
+    ExtraExtract,
+    ExtraForbid,
+    ExtraKwargs,
+    ExtraSaturate,
+    ExtraTargets,
+    InpExtraMove,
+    OutExtraMove,
+    RootBaseCrown,
+    Saturator,
+)
 from .name_style import NameStyle, convert_snake_style
+
+T = TypeVar('T')
+
+ExtraIn = Union[ExtraSkip, str, Sequence[str], ExtraForbid, ExtraKwargs, Saturator]
+ExtraOut = Union[ExtraSkip, str, Sequence[str], Extractor]
 
 
 @dataclass(frozen=True)
@@ -78,7 +94,10 @@ class NameMapper(NameMappingProvider):
     trim_trailing_underscore: bool = True
     name_style: Optional[NameStyle] = None
 
-    omit_default: bool = True  # TODO: may be ask retort for this parameter
+    omit_default: bool = True
+
+    extra_in: ExtraIn = ExtraSkip()
+    extra_out: ExtraOut = ExtraSkip()
 
     def _should_skip(self, name: str) -> bool:
         if name in self.skip:
@@ -110,34 +129,31 @@ class NameMapper(NameMappingProvider):
 
         return name
 
-    def _get_extra_targets(self, figure: BaseFigure) -> Collection[str]:
-        if isinstance(figure.extra, ExtraTargets):
-            return set(figure.extra.fields)
-        return []
+    def _provide_crown(
+        self,
+        mediator: Mediator,
+        request: BaseNameMappingRequest,
+        extra_move: BaseExtraMove,
+    ) -> RootBaseCrown:
+        extra_targets = extra_move.fields if isinstance(extra_move, ExtraTargets) else ()
 
-    def _provide_name_mapping(self, mediator: Mediator, request: BaseNameMappingRequest) -> BaseNameMapping:
-        extra_targets = self._get_extra_targets(request.figure)
-
-        return BaseNameMapping(
-            crown=BaseDictCrown(
-                map={
-                    self._convert_name(fld.name): BaseFieldCrown(fld.name)
-                    for fld in request.figure.fields
-                    if not (
-                        self._should_skip(fld.name)
-                        or
-                        fld.name in extra_targets
-                    )
-                },
-            ),
-            skipped_extra_targets=list(filter(self._should_skip, extra_targets)),
+        return BaseDictCrown(
+            map={
+                self._convert_name(fld.name): BaseFieldCrown(fld.name)
+                for fld in request.figure.fields
+                if not (
+                    self._should_skip(fld.name)
+                    or
+                    fld.name in extra_targets
+                )
+            },
         )
 
     def _to_inp_crown(
         self,
         base: BaseCrown,
-        dict_extra: InpExtraPolicyDict,
-        list_extra: InpExtraPolicyList,
+        dict_extra_policy: DictExtraPolicy,
+        list_extra_policy: ListExtraPolicy,
     ) -> InpCrown:
         if isinstance(base, BaseFieldCrown):
             return InpFieldCrown(base.name)
@@ -146,18 +162,18 @@ class NameMapper(NameMappingProvider):
         if isinstance(base, BaseDictCrown):
             return InpDictCrown(
                 map={
-                    key: self._to_inp_crown(value, dict_extra, list_extra)
+                    key: self._to_inp_crown(value, dict_extra_policy, list_extra_policy)
                     for key, value in base.map.items()
                 },
-                extra=dict_extra,
+                extra_policy=dict_extra_policy,
             )
         if isinstance(base, BaseListCrown):
             return InpListCrown(
                 map=[
-                    self._to_inp_crown(value, dict_extra, list_extra)
+                    self._to_inp_crown(value, dict_extra_policy, list_extra_policy)
                     for value in base.map
                 ],
-                extra=list_extra,
+                extra_policy=list_extra_policy,
             )
         raise RuntimeError
 
@@ -188,6 +204,29 @@ class NameMapper(NameMappingProvider):
             )
         raise RuntimeError
 
+    def _create_extra_targets(self, extra: Union[str, Sequence[str]]) -> ExtraTargets:
+        if isinstance(extra, str):
+            return ExtraTargets((extra, ))
+        return ExtraTargets(tuple(extra))
+
+    def _get_inp_extra_move_and_policy(self, extra: ExtraIn) -> Tuple[InpExtraMove, DictExtraPolicy]:
+        if extra == ExtraForbid():
+            return None, ExtraForbid()
+        if extra == ExtraSkip():
+            return None, ExtraSkip()
+        if extra == ExtraKwargs():
+            return ExtraKwargs(), ExtraCollect()
+        if callable(extra):
+            return ExtraSaturate(extra), ExtraCollect()
+        return self._create_extra_targets(extra), ExtraCollect()  # type: ignore[arg-type]
+
+    def _get_out_extra_move(self, extra: ExtraOut) -> OutExtraMove:
+        if extra == ExtraSkip():
+            return None
+        if callable(extra):
+            return ExtraExtract(extra)
+        return self._create_extra_targets(extra)  # type: ignore[arg-type]
+
     def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> InputNameMapping:
         skipped_required_fields = [
             fld for fld in request.figure.fields
@@ -195,26 +234,28 @@ class NameMapper(NameMappingProvider):
         ]
 
         if skipped_required_fields:
-            sr_field_names = [field.name for field in skipped_required_fields]
+            sr_field_names = [fld.name for fld in skipped_required_fields]
             raise ValueError(
                 f"Can not create name mapping for type {request.type}"
                 f" that skips required fields {sr_field_names}",
             )
 
-        base_name_mapping = self._provide_name_mapping(mediator, request)
-        extra_policy: ExtraPolicy = mediator.provide(CfgExtraPolicy())
+        extra_move, extra_policy = self._get_inp_extra_move_and_policy(self.extra_in)
+        crown = self._provide_crown(mediator, request, extra_move)
 
-        if isinstance(extra_policy, ExtraCollect) and isinstance(base_name_mapping.crown, BaseListCrown):
+        if extra_policy == ExtraCollect() and isinstance(crown, BaseListCrown):
             raise ValueError
 
         return InputNameMapping(
             crown=cast(
                 RootInpCrown,
                 self._to_inp_crown(
-                    base_name_mapping.crown, extra_policy, cast(InpExtraPolicyList, extra_policy)
+                    base=crown,
+                    dict_extra_policy=extra_policy,
+                    list_extra_policy=extra_policy,  # type: ignore[arg-type]
                 )
             ),
-            skipped_extra_targets=base_name_mapping.skipped_extra_targets,
+            extra_move=extra_move,
         )
 
     def _create_sieve(self, field_: OutputField) -> Sieve:
@@ -231,12 +272,13 @@ class NameMapper(NameMappingProvider):
         raise ValueError
 
     def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> OutputNameMapping:
-        base_name_mapping = self._provide_name_mapping(mediator, request)
+        extra_move = self._get_out_extra_move(self.extra_out)
+        crown = self._provide_crown(mediator, request, extra_move)
 
         if self.omit_default:
             sieves = {
-                field.name: self._create_sieve(field)
-                for field in request.figure.fields if field.default != NoDefault()
+                fld.name: self._create_sieve(fld)
+                for fld in request.figure.fields if fld.default != NoDefault()
             }
         else:
             sieves = {}
@@ -245,8 +287,10 @@ class NameMapper(NameMappingProvider):
             crown=cast(
                 RootOutCrown,
                 self._to_out_crown(
-                    base_name_mapping.crown, filler=DefaultValue(None), sieves=sieves
+                    base=crown,
+                    filler=DefaultValue(None),
+                    sieves=sieves
                 ),
             ),
-            skipped_extra_targets=base_name_mapping.skipped_extra_targets,
+            extra_move=extra_move,
         )

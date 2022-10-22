@@ -44,7 +44,6 @@ from .model import (
     BaseNameMappingRequest,
     BuiltinInputExtractionMaker,
     BuiltinOutputCreationMaker,
-    CfgExtraPolicy,
     InputCreationMaker,
     InputExtractionMaker,
     InputFigureRequest,
@@ -61,7 +60,7 @@ from .model import (
     make_output_extraction,
 )
 from .model.figure_provider import PropertyAdder
-from .name_mapper import NameMapper
+from .name_mapper import ExtraIn, ExtraOut, NameMapper
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import (
     AndRequestChecker,

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, Optional
 
 from ..common import TypeHint
 
@@ -51,7 +51,7 @@ class ExcludedTypeLoadError(LoadError):
 
 @dataclass(eq=False)
 class UnionLoadError(LoadError):
-    sub_errors: List[LoadError]
+    sub_errors: Iterable[LoadError]
 
 
 @dataclass(eq=False)

@@ -7,14 +7,15 @@ import pytest
 from dataclass_factory_30.feature_requirement import HAS_ANNOTATED
 from dataclass_factory_30.model_tools import (
     DefaultValue,
-    ExtraKwargs,
+    Figure,
     InputField,
     InputFigure,
-    IntrospectionError,
+    IntrospectionImpossible,
     NoDefault,
     ParamKind,
-    get_class_init_input_figure,
+    get_class_init_figure,
 )
+from dataclass_factory_30.model_tools.definitions import ParamKwargs
 from tests_helpers import requires
 
 
@@ -28,6 +29,15 @@ class Valid1:
 
 class Valid2Kwargs:
     def __init__(self, a, b: int, c: str = 'abc', *, d, **data):
+        self.a = a
+        self.b = b
+        self.c = c
+        self.d = d
+        self.data = data
+
+
+class Valid2KwargsTyped:
+    def __init__(self, a, b: int, c: str = 'abc', *, d, **data: str):
         self.a = a
         self.b = b
         self.c = c
@@ -77,24 +87,44 @@ VALID_FIELDS = (
 
 def test_extra_none():
     assert (
-        get_class_init_input_figure(Valid1)
+        get_class_init_figure(Valid1)
         ==
-        InputFigure(
-            constructor=Valid1,
-            extra=None,
-            fields=VALID_FIELDS,
+        Figure(
+            input=InputFigure(
+                constructor=Valid1,
+                kwargs=None,
+                fields=VALID_FIELDS,
+            ),
+            output=None,
         )
     )
 
 
 def test_extra_kwargs():
     assert (
-        get_class_init_input_figure(Valid2Kwargs)
+        get_class_init_figure(Valid2Kwargs)
         ==
-        InputFigure(
-            constructor=Valid2Kwargs,
-            extra=ExtraKwargs(),
-            fields=VALID_FIELDS,
+        Figure(
+            input=InputFigure(
+                constructor=Valid2Kwargs,
+                kwargs=ParamKwargs(Any),
+                fields=VALID_FIELDS,
+            ),
+            output=None,
+        )
+
+    )
+
+    assert (
+        get_class_init_figure(Valid2KwargsTyped)
+        ==
+        Figure(
+            input=InputFigure(
+                constructor=Valid2KwargsTyped,
+                kwargs=ParamKwargs(str),
+                fields=VALID_FIELDS,
+            ),
+            output=None,
         )
     )
 
@@ -106,32 +136,36 @@ def test_pos_only():
             self.b = b
 
     assert (
-        get_class_init_input_figure(HasPosOnly)
+        get_class_init_figure(HasPosOnly)
         ==
-        InputFigure(
-            constructor=HasPosOnly,
-            extra=None,
-            fields=(
-                InputField(
-                    type=Any,
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_ONLY,
-                    param_name='a',
-                ),
-                InputField(
-                    type=Any,
-                    name='b',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='b',
+        Figure(
+            input=InputFigure(
+                constructor=HasPosOnly,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=Any,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_ONLY,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=Any,
+                        name='b',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='b',
+                    ),
                 ),
             ),
+            output=None,
         )
+
     )
 
     class HasPosOnlyWithDefault:
@@ -140,31 +174,34 @@ def test_pos_only():
             self.b = b
 
     assert (
-        get_class_init_input_figure(HasPosOnlyWithDefault)
+        get_class_init_figure(HasPosOnlyWithDefault)
         ==
-        InputFigure(
-            constructor=HasPosOnlyWithDefault,
-            extra=None,
-            fields=(
-                InputField(
-                    type=Any,
-                    name='a',
-                    default=DefaultValue(None),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_ONLY,
-                    param_name='a',
-                ),
-                InputField(
-                    type=Any,
-                    name='b',
-                    default=DefaultValue(None),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_ONLY,
-                    param_name='b',
+        Figure(
+            input=InputFigure(
+                constructor=HasPosOnlyWithDefault,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=Any,
+                        name='a',
+                        default=DefaultValue(None),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_ONLY,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=Any,
+                        name='b',
+                        default=DefaultValue(None),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_ONLY,
+                        param_name='b',
+                    ),
                 ),
             ),
+            output=None,
         )
     )
 
@@ -176,8 +213,8 @@ def test_var_arg():
             self.b = b
             self.args = args
 
-    with pytest.raises(IntrospectionError):
-        get_class_init_input_figure(HasVarArg)
+    with pytest.raises(IntrospectionImpossible):
+        get_class_init_figure(HasVarArg)
 
 
 @requires(HAS_ANNOTATED)
@@ -187,21 +224,24 @@ def test_annotated():
             pass
 
     assert (
-        get_class_init_input_figure(WithAnnotated)
+        get_class_init_figure(WithAnnotated)
         ==
-        InputFigure(
-            constructor=WithAnnotated,
-            extra=None,
-            fields=(
-                InputField(
-                    type=typing.Annotated[int, 'metadata'],
-                    name='a',
-                    default=NoDefault(),
-                    is_required=True,
-                    metadata=MappingProxyType({}),
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
+        Figure(
+            input=InputFigure(
+                constructor=WithAnnotated,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=typing.Annotated[int, 'metadata'],
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
                 ),
             ),
+            output=None,
         )
     )

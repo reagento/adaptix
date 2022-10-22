@@ -42,10 +42,16 @@ def _singleton_repr(self):
     return f"{type(self).__name__}()"
 
 
+def _singleton_hash(self) -> int:
+    return hash(type(self))
+
+
 class SingletonMeta(type):
     def __new__(mcs, name, bases, namespace, **kwargs):
         namespace.setdefault("__repr__", _singleton_repr)
         namespace.setdefault("__str__", _singleton_repr)
+        namespace.setdefault("__hash__", _singleton_hash)
+        namespace.setdefault("__slots__", ())
         cls = super().__new__(mcs, name, bases, namespace, **kwargs)
 
         instance = super().__call__(cls)

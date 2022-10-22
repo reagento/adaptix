@@ -1,81 +1,54 @@
 import inspect
 from dataclasses import replace
-from typing import Any, Callable, Container, Iterable, Optional, cast
+from typing import Any, Container, Iterable, cast
 
 from ...common import TypeHint
 from ...model_tools import (
     DescriptorAccessor,
-    InputFigure,
-    IntrospectionError,
+    IntrospectionImpossible,
     OutputField,
     OutputFigure,
-    get_attrs_input_figure,
-    get_attrs_output_figure,
-    get_class_init_input_figure,
-    get_dataclass_input_figure,
-    get_dataclass_output_figure,
-    get_named_tuple_input_figure,
-    get_named_tuple_output_figure,
-    get_typed_dict_input_figure,
-    get_typed_dict_output_figure,
+    get_attrs_figure,
+    get_class_init_figure,
+    get_dataclass_figure,
+    get_named_tuple_figure,
+    get_typed_dict_figure,
 )
+from ...model_tools.definitions import FigureIntrospector
 from ..essential import CannotProvide, Mediator, Provider, Request
 from ..static_provider import StaticProvider, static_provision_action
 from .definitions import InputFigureRequest, OutputFigureRequest
 
 
 class FigureProvider(Provider):
-    def __init__(
-        self,
-        input_figure_getter: Optional[Callable[[Any], InputFigure]] = None,
-        output_figure_getter: Optional[Callable[[Any], OutputFigure]] = None,
-    ):
-        self._input_figure_getter = input_figure_getter
-        self._output_figure_getter = output_figure_getter
+    def __init__(self, introspector: FigureIntrospector):
+        self._introspector = introspector
 
     def apply_provider(self, mediator: Mediator, request: Request):
         if isinstance(request, InputFigureRequest):
-            if self._input_figure_getter is None:
-                raise CannotProvide
             try:
-                return self._input_figure_getter(request.type)
-            except IntrospectionError:
+                figure = self._introspector(request.type)
+            except IntrospectionImpossible:
                 raise CannotProvide
 
+            return figure.input
+
         if isinstance(request, OutputFigureRequest):
-            if self._output_figure_getter is None:
-                raise CannotProvide
             try:
-                return self._output_figure_getter(request.type)
-            except IntrospectionError:
+                figure = self._introspector(request.type)
+            except IntrospectionImpossible:
                 raise CannotProvide
+
+            return figure.output
 
         raise CannotProvide
 
 
-NAMED_TUPLE_FIGURE_PROVIDER = FigureProvider(
-    get_named_tuple_input_figure,
-    get_named_tuple_output_figure,
-)
-
-TYPED_DICT_FIGURE_PROVIDER = FigureProvider(
-    get_typed_dict_input_figure,
-    get_typed_dict_output_figure,
-)
-
-DATACLASS_FIGURE_PROVIDER = FigureProvider(
-    get_dataclass_input_figure,
-    get_dataclass_output_figure,
-)
-
-CLASS_INIT_FIGURE_PROVIDER = FigureProvider(
-    get_class_init_input_figure,
-)
-
-ATTRS_FIGURE_PROVIDER = FigureProvider(
-    get_attrs_input_figure,
-    get_attrs_output_figure,
-)
+NAMED_TUPLE_FIGURE_PROVIDER = FigureProvider(get_named_tuple_figure)
+TYPED_DICT_FIGURE_PROVIDER = FigureProvider(get_typed_dict_figure)
+DATACLASS_FIGURE_PROVIDER = FigureProvider(get_dataclass_figure)
+CLASS_INIT_FIGURE_PROVIDER = FigureProvider(get_class_init_figure)
+ATTRS_FIGURE_PROVIDER = FigureProvider(get_attrs_figure)
 
 
 class PropertyAdder(StaticProvider):

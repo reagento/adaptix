@@ -71,9 +71,11 @@ class ParentRetort(Retort):
 
 INNER_RECEIPT_RETORT = ParentRetort(
     recipe=[
-        name_mapping(omit_default=False),
+        name_mapping(
+            omit_default=False,
+            extra_in=ExtraSkip(),
+        ),
     ],
-    extra_policy=ExtraSkip(),
 )
 
 
@@ -81,8 +83,8 @@ _OUTER_BASE_RETORT = ParentRetort(
     recipe=[
         loader(PhoneNumber, outer_phonenumber_loader),
         loader(str, string_cp866_mutator, Chain.LAST),
+        name_mapping(extra_in=ExtraForbid()),
     ],
-    extra_policy=ExtraForbid(),
 )
 
 _OUTER_REC_ITEM_RETORT = _OUTER_BASE_RETORT.extend(

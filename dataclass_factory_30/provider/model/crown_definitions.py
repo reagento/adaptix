@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Collection, Dict, Generic, List, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, List, Mapping, MutableMapping, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools import BaseFigure, DefaultFactory, DefaultValue, InputFigure, OutputFigure
 from ...utils import SingletonMeta
-from ..essential import Mediator, Request
+from ..essential import Mediator
 from ..request_cls import TypeHintRM
 from ..static_provider import StaticProvider, static_provision_action
 
@@ -38,50 +38,51 @@ class ExtraCollect(metaclass=SingletonMeta):
 # NoneCrown-s represent element that do not map to any field
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseDictCrown(Generic[T]):
     map: Dict[str, T]
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseListCrown(Generic[T]):
     map: List[T]
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseNoneCrown:
     pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseFieldCrown:
     name: str
 
 
 BaseCrown = Union[BaseDictCrown, BaseListCrown, BaseNoneCrown, BaseFieldCrown]
+RootBaseCrown = Union[BaseDictCrown, BaseListCrown]
 
 # --------  Input Crown -------- #
 
-InpExtraPolicyDict = Union[ExtraSkip, ExtraForbid, ExtraCollect]
-InpExtraPolicyList = Union[ExtraSkip, ExtraForbid]
+DictExtraPolicy = Union[ExtraSkip, ExtraForbid, ExtraCollect]
+ListExtraPolicy = Union[ExtraSkip, ExtraForbid]
 
 
-@dataclass
+@dataclass(frozen=True)
 class InpDictCrown(BaseDictCrown['InpCrown']):
-    extra: InpExtraPolicyDict
+    extra_policy: DictExtraPolicy
 
 
-@dataclass
+@dataclass(frozen=True)
 class InpListCrown(BaseListCrown['InpCrown']):
-    extra: InpExtraPolicyList
+    extra_policy: ListExtraPolicy
 
 
-@dataclass
+@dataclass(frozen=True)
 class InpNoneCrown(BaseNoneCrown):
     pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class InpFieldCrown(BaseFieldCrown):
     pass
 
@@ -96,7 +97,7 @@ RootInpCrown = Union[InpDictCrown, InpListCrown]
 Sieve = Callable[[Any], bool]
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutDictCrown(BaseDictCrown['OutCrown']):
     sieves: Dict[str, Sieve]
 
@@ -111,7 +112,7 @@ class OutDictCrown(BaseDictCrown['OutCrown']):
         self._validate()
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutListCrown(BaseListCrown['OutCrown']):
     pass
 
@@ -119,12 +120,12 @@ class OutListCrown(BaseListCrown['OutCrown']):
 Filler = Union[DefaultValue, DefaultFactory]
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutNoneCrown(BaseNoneCrown):
     filler: Filler
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutFieldCrown(BaseFieldCrown):
     pass
 
@@ -134,17 +135,39 @@ RootOutCrown = Union[OutDictCrown, OutListCrown]
 
 # --------  Name Mapping -------- #
 
-ExtraPolicy = Union[ExtraSkip, ExtraForbid, ExtraCollect]
 
-
-class CfgExtraPolicy(Request[ExtraPolicy]):
+class ExtraKwargs(metaclass=SingletonMeta):
     pass
 
 
 @dataclass(frozen=True)
+class ExtraTargets:
+    fields: VarTuple[str]
+
+
+Saturator = Callable[[T, MutableMapping[str, Any]], None]
+Extractor = Callable[[T], Mapping[str, Any]]
+
+
+@dataclass(frozen=True)
+class ExtraSaturate(Generic[T]):
+    func: Saturator[T]
+
+
+@dataclass(frozen=True)
+class ExtraExtract(Generic[T]):
+    func: Extractor[T]
+
+
+InpExtraMove = Union[None, ExtraTargets, ExtraKwargs, ExtraSaturate[T]]
+OutExtraMove = Union[None, ExtraTargets, ExtraExtract[T]]
+BaseExtraMove = Union[InpExtraMove, OutExtraMove]
+
+
+@dataclass(frozen=True)
 class BaseNameMapping:
-    crown: Union[BaseDictCrown, BaseListCrown]
-    skipped_extra_targets: Collection[str]
+    crown: RootBaseCrown
+    extra_move: BaseExtraMove
 
 
 @dataclass(frozen=True)
@@ -154,7 +177,8 @@ class BaseNameMappingRequest(TypeHintRM[T], Generic[T]):
 
 @dataclass(frozen=True)
 class InputNameMapping(BaseNameMapping):
-    crown: Union[InpDictCrown, InpListCrown]
+    crown: RootInpCrown
+    extra_move: InpExtraMove
 
 
 @dataclass(frozen=True)
@@ -164,7 +188,8 @@ class InputNameMappingRequest(BaseNameMappingRequest[InputNameMapping]):
 
 @dataclass(frozen=True)
 class OutputNameMapping(BaseNameMapping):
-    crown: Union[OutDictCrown, OutListCrown]
+    crown: RootOutCrown
+    extra_move: OutExtraMove
 
 
 @dataclass(frozen=True)
