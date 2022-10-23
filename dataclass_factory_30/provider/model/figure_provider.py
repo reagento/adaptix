@@ -31,12 +31,18 @@ class FigureProvider(Provider):
             except IntrospectionImpossible:
                 raise CannotProvide
 
+            if figure.input is None:
+                raise CannotProvide
+
             return figure.input
 
         if isinstance(request, OutputFigureRequest):
             try:
                 figure = self._introspector(request.type)
             except IntrospectionImpossible:
+                raise CannotProvide
+
+            if figure.output is None:
                 raise CannotProvide
 
             return figure.output
