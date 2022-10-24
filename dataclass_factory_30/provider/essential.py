@@ -36,7 +36,10 @@ class CannotProvide(Exception):
         return f"{type(self).__name__}(msg={self.msg!r}, sub_errors={self.sub_errors!r})"
 
 
-class Mediator(ABC, Generic[T]):
+V = TypeVar('V')
+
+
+class Mediator(ABC, Generic[V]):
     """Mediator is an object that gives provider access to other providers
     and that stores state of the current search.
 
@@ -52,7 +55,7 @@ class Mediator(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def provide_from_next(self) -> T:
+    def provide_from_next(self) -> V:
         """Forward current request to providers
         that placed after current provider at the recipe.
         """
@@ -69,7 +72,7 @@ class Provider(ABC):
     """An object that can process Request instances"""
 
     @abstractmethod
-    def apply_provider(self, mediator: Mediator[T], request: Request[T]) -> T:
+    def apply_provider(self, mediator: Mediator[Request[T]], request: Request[T]) -> T:
         """Handle request instance and return a value of type required by request.
         Behavior must be the same during the provider object lifetime
 

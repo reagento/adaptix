@@ -3,7 +3,7 @@
 pre-commit==2.20.0
 bandit==1.7.4
 
-mypy==0.971
+mypy==0.982
 
 vulture==2.5
 

@@ -13,23 +13,23 @@ RequestDispatcher = ClassDispatcher[Request, str]
 R = TypeVar('R', bound=Request)
 P = TypeVar('P', bound=Provider)
 T = TypeVar('T')
-SPA = Callable[[P, Mediator, R], T]
+SPA = Callable[[P, Mediator[T], R], T]
 
 _SPA_RC_STORAGE = '_spa_request_cls'
 
 
 @overload
-def static_provision_action() -> Callable[[SPA[P, R, T]], SPA[P, R, T]]:
+def static_provision_action() -> Callable[[SPA[P, T, R]], SPA[P, T, R]]:
     ...
 
 
 @overload
-def static_provision_action(request_cls: Type[Request], /) -> Callable[[SPA[P, R, T]], SPA[P, R, T]]:
+def static_provision_action(request_cls: Type[Request], /) -> Callable[[SPA[P, T, R]], SPA[P, T, R]]:
     ...
 
 
 @overload
-def static_provision_action(func: SPA[P, R, T], /) -> SPA[P, R, T]:
+def static_provision_action(func: SPA[P, T, R], /) -> SPA[P, T, R]:
     ...
 
 

@@ -35,15 +35,15 @@ class PythonVersionRequirement(Requirement):
 
 
 class PackageRequirement(Requirement):
-    def __init__(self, package: str, test_stmt: str):
+    def __init__(self, package: str, test_statement: str):
         self.package = package
-        self.test_stmt = dedent(test_stmt)
+        self.test_statement = dedent(test_statement)
         super().__init__()
 
     def _evaluate(self) -> bool:
         try:
             # pylint: disable=exec-used
-            exec(self.test_stmt)  # noqa
+            exec(self.test_statement)  # noqa
         except ImportError:
             return False
         return True
