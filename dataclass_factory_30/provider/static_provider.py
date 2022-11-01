@@ -23,7 +23,7 @@ def static_provision_action() -> Callable[[SPA[P, T, R]], SPA[P, T, R]]:
     ...
 
 
-@overload
+@overload  # type: ignore[misc]
 def static_provision_action(request_cls: Type[Request], /) -> Callable[[SPA[P, T, R]], SPA[P, T, R]]:
     ...
 

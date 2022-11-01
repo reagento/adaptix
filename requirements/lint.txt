@@ -8,9 +8,9 @@
     # via -r requirements/raw/test_extra_none.txt
 astpath[xpath]==0.9.0
     # via -r requirements/raw/lint.txt
-astroid==2.11.7
+astroid==2.12.12
     # via pylint
-attrs==21.4.0
+attrs==22.1.0
     # via
     #   -r requirements/raw/test_extra_new.txt
     #   flake8-bugbear
@@ -29,11 +29,11 @@ dill==0.3.5.1
     # via pylint
 distlib==0.3.5
     # via virtualenv
-dlint==0.12.0
+dlint==0.13.0
     # via -r requirements/raw/lint.txt
 filelock==3.8.0
     # via virtualenv
-flake8==4.0.1
+flake8==5.0.4
     # via
     #   -r requirements/raw/lint.txt
     #   dlint
@@ -44,19 +44,19 @@ flake8==4.0.1
     #   flake8-mutable
     #   flake8-noqa
     #   flake8-polyfill
-flake8-bugbear==22.7.1
+flake8-bugbear==22.10.27
     # via -r requirements/raw/lint.txt
-flake8-builtins==1.5.3
+flake8-builtins==2.0.1
     # via -r requirements/raw/lint.txt
 flake8-cognitive-complexity==0.1.0
     # via -r requirements/raw/lint.txt
-flake8-comprehensions==3.10.0
+flake8-comprehensions==3.10.1
     # via -r requirements/raw/lint.txt
 flake8-debugger==4.1.2
     # via -r requirements/raw/lint.txt
 flake8-mutable==1.2.0
     # via -r requirements/raw/lint.txt
-flake8-noqa==1.2.8
+flake8-noqa==1.2.9
     # via -r requirements/raw/lint.txt
 flake8-polyfill==1.0.2
     # via -r requirements/raw/lint.txt
@@ -78,7 +78,7 @@ lxml==4.9.1
     # via astpath
 mando==0.6.4
     # via radon
-mccabe==0.6.1
+mccabe==0.7.0
     # via
     #   flake8
     #   pylint
@@ -92,7 +92,7 @@ packaging==21.3
     # via pytest
 pbr==5.10.0
     # via stevedore
-phonenumbers==8.12.54
+phonenumbers==8.12.57
     # via -r requirements/raw/test_extra_none.txt
 platformdirs==2.5.2
     # via
@@ -104,13 +104,13 @@ pre-commit==2.20.0
     # via -r requirements/raw/lint.txt
 py==1.11.0
     # via pytest
-pycodestyle==2.8.0
+pycodestyle==2.9.1
     # via
     #   flake8
     #   flake8-debugger
-pyflakes==2.4.0
+pyflakes==2.5.0
     # via flake8
-pylint==2.14.5
+pylint==2.15.5
     # via -r requirements/raw/lint.txt
 pyparsing==3.0.9
     # via packaging
@@ -150,7 +150,7 @@ typing-extensions==4.3.0
     #   mypy
 virtualenv==20.16.3
     # via pre-commit
-vulture==2.5
+vulture==2.6
     # via -r requirements/raw/lint.txt
 wrapt==1.14.1
     # via astroid
