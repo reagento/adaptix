@@ -351,7 +351,7 @@ def test_name_mapping_skipping(retort):
 
 def test_name_mapping_error_on_required_field_skip(retort):
     string_to_match = re.escape(
-        "Can not create name mapping for type <class 'provider.test_name_mapper.Stub'>"
+        "Can not create name mapping for type <class 'tests_30.provider.test_name_mapper.Stub'>"
         " that skips required fields ['c']"
     )
 

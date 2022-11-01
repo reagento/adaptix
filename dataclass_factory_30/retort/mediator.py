@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from itertools import islice
 from typing import Any, Callable, Dict, Generic, Iterable, Sequence, Tuple, TypeVar
 
-from ..provider import CannotProvide, ClassDispatcher, Mediator, Provider, Request
+from ..provider import CannotProvide, Mediator, Provider, Request
+from ..utils import ClassDispatcher
 
 T = TypeVar('T')
 

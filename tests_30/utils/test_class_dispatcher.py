@@ -1,6 +1,6 @@
 import pytest
 
-from dataclass_factory_30.provider import ClassDispatcher
+from dataclass_factory_30.utils import ClassDispatcher
 
 
 class Cls1:
