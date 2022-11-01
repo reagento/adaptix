@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from copy import copy
-from typing import Any, Generator, Iterable, Tuple, TypeVar, final
+from typing import Any, Generator, Iterable, Tuple, TypeVar, Union, final
 
 C = TypeVar('C', bound='Cloneable')
 
@@ -75,3 +75,10 @@ def pairs(iterable: Iterable[T]) -> Iterable[Tuple[T, T]]:
     for current in it:
         yield past, current
         past = current
+
+
+class Omitted(metaclass=SingletonMeta):
+    pass
+
+
+Omittable = Union[T, Omitted]

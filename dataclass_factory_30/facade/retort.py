@@ -43,11 +43,7 @@ from ..provider import (
 )
 from ..provider.model import make_input_creation, make_output_extraction
 from ..retort import OperatingRetort
-from .provider import dumper, loader
-
-
-def stub(arg):
-    return arg
+from .provider import as_is_dumper, as_is_loader, dumper, loader
 
 
 class FilledRetort(OperatingRetort, ABC):
@@ -56,8 +52,8 @@ class FilledRetort(OperatingRetort, ABC):
     recipe = [
         NoneProvider(),
 
-        loader(Any, stub),
-        dumper(Any, stub),
+        as_is_loader(Any),
+        as_is_dumper(Any),
 
         IsoFormatProvider(datetime),
         IsoFormatProvider(date),
@@ -67,16 +63,16 @@ class FilledRetort(OperatingRetort, ABC):
         EnumExactValueProvider(),  # it has higher priority than int for IntEnum
 
         CoercionLimiter(loader(int), [int]),
-        dumper(int, stub),
+        as_is_dumper(int),
 
         CoercionLimiter(loader(float), [float, int]),
-        dumper(float, stub),
+        as_is_dumper(float),
 
-        CoercionLimiter(loader(str, stub), [str]),
-        dumper(str, stub),
+        CoercionLimiter(as_is_loader(str), [str]),
+        as_is_dumper(str),
 
-        CoercionLimiter(loader(bool, stub), [bool]),
-        dumper(bool, stub),
+        CoercionLimiter(as_is_loader(bool), [bool]),
+        as_is_dumper(bool),
 
         CoercionLimiter(loader(Decimal), [str, Decimal]),
         dumper(Decimal, Decimal.__str__),

@@ -10,7 +10,8 @@ from .concrete_provider import (
     RegexPatternProvider,
     SecondsTimedeltaProvider,
 )
-from .errors import (
+from .essential import CannotProvide, Mediator, Provider, Request
+from .exceptions import (
     ExcludedTypeLoadError,
     ExtraFieldsError,
     ExtraItemsError,
@@ -23,7 +24,6 @@ from .errors import (
     ValidationError,
     ValueLoadError,
 )
-from .essential import CannotProvide, Mediator, Provider, Request
 from .generic_provider import (
     DictProvider,
     EnumExactValueProvider,

@@ -14,7 +14,7 @@ from dataclass_factory_30.provider import (
     SecondsTimedeltaProvider,
 )
 from dataclass_factory_30.provider.concrete_provider import DatetimeFormatMismatch
-from dataclass_factory_30.provider.errors import TypeLoadError, ValueLoadError
+from dataclass_factory_30.provider.exceptions import TypeLoadError, ValueLoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 

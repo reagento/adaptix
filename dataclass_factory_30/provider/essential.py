@@ -72,7 +72,7 @@ class Provider(ABC):
     """An object that can process Request instances"""
 
     @abstractmethod
-    def apply_provider(self, mediator: Mediator[Request[T]], request: Request[T]) -> T:
+    def apply_provider(self, mediator: Mediator[T], request: Request[T]) -> T:
         """Handle request instance and return a value of type required by request.
         Behavior must be the same during the provider object lifetime
 

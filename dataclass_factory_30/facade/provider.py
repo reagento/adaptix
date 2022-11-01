@@ -94,6 +94,14 @@ def dumper(pred, func, chain=None):
     )
 
 
+def as_is_loader(pred: Any) -> Provider:
+    return loader(pred, lambda x: x)
+
+
+def as_is_dumper(pred: Any) -> Provider:
+    return dumper(pred, lambda x: x)
+
+
 @overload
 def constructor(pred: Type[T], func: Callable[..., T], /) -> Provider:
     ...

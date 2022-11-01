@@ -5,8 +5,8 @@ from typing import Collection, Type, TypeVar, final
 
 from ..common import Dumper, Loader, TypeHint
 from ..type_tools import create_union, normalize_type
-from .errors import TypeLoadError
 from .essential import CannotProvide, Mediator, Provider, Request
+from .exceptions import TypeLoadError
 from .provider_basics import RequestChecker, match_origin
 from .request_cls import DumperRequest, LoaderRequest
 from .static_provider import StaticProvider, static_provision_action

@@ -89,43 +89,16 @@ class _BasicNormType(BaseNormType, ABC):
         return f'<{type(self).__name__}({self.origin},{args_str} source={self._source})>'
 
 
-class _NormType(BaseNormType):
-    __slots__ = ('_source', '_origin', '_args')
+class _NormType(_BasicNormType):
+    __slots__ = _BasicNormType.__slots__ + ('_source',)
 
     def __init__(self, origin: TypeHint, args: VarTuple[Any], *, source: TypeHint):
-        self._source = source
         self._origin = origin
-        self._args = args
+        super().__init__(args, source=source)
 
     @property
     def origin(self) -> Any:
         return self._origin
-
-    @property
-    def args(self) -> VarTuple[Any]:
-        return self._args
-
-    @property
-    def source(self) -> TypeHint:
-        return self._source
-
-    def __hash__(self):
-        return hash((self._origin, self._args))
-
-    def __eq__(self, other):
-        if isinstance(other, _NormType):
-            return (
-                self._origin == other._origin
-                and
-                self._args == other._args
-            )
-        if isinstance(other, BaseNormType):
-            return False
-        return NotImplemented
-
-    def __repr__(self):
-        args_str = f" {list(self.args)}," if self.args else ""
-        return f'<{type(self).__name__}({self.origin},{args_str} source={self._source})>'
 
 
 class _UnionNormType(_BasicNormType):

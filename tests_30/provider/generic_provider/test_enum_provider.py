@@ -2,7 +2,7 @@ from enum import Enum, IntEnum
 
 from dataclass_factory_30.facade import dumper, enum_by_value, loader
 from dataclass_factory_30.provider import DumperRequest, EnumExactValueProvider, EnumNameProvider, LoaderRequest
-from dataclass_factory_30.provider.errors import BadVariantError, MsgError
+from dataclass_factory_30.provider.exceptions import BadVariantError, MsgError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 

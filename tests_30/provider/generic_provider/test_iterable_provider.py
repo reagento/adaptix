@@ -20,7 +20,7 @@ import pytest
 
 from dataclass_factory_30.facade import dumper, loader
 from dataclass_factory_30.provider import CoercionLimiter, DumperRequest, IterableProvider, LoaderRequest
-from dataclass_factory_30.provider.errors import ExcludedTypeLoadError, TypeLoadError
+from dataclass_factory_30.provider.exceptions import ExcludedTypeLoadError, TypeLoadError
 from dataclass_factory_30.retort.operating_retort import NoSuitableProvider
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 

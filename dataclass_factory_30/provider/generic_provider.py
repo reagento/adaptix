@@ -8,8 +8,8 @@ from typing import Callable, Collection, Container, Dict, Iterable, Literal, Map
 from ..common import Dumper, Loader, TypeHint
 from ..struct_path import append_path
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
-from .errors import BadVariantError, ExcludedTypeLoadError, LoadError, MsgError, TypeLoadError, UnionLoadError
 from .essential import CannotProvide, Mediator, Request
+from .exceptions import BadVariantError, ExcludedTypeLoadError, LoadError, MsgError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider, for_origin
 from .request_cls import DumperRequest, LoaderRequest, TypeHintRM
 from .static_provider import StaticProvider, static_provision_action

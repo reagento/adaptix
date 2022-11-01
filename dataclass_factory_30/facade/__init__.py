@@ -1,5 +1,7 @@
 from .provider import (
     add_property,
+    as_is_dumper,
+    as_is_loader,
     bound,
     constructor,
     dumper,
