@@ -1,10 +1,12 @@
+import inspect
+import sys
 from collections import defaultdict
 from enum import Enum
-import inspect
 from typing import (
-    Any, Collection, Dict, Generic, List, Optional, Tuple, Type, TypeVar,
+    Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar,
     Union, get_type_hints, Iterable, DefaultDict,
 )
+from warnings import warn
 
 LITERAL_TYPES: List[Any] = []
 TYPED_DICT_METAS_TMP: List[Any] = []
@@ -14,6 +16,11 @@ try:
     LITERAL_TYPES.append(PyLiteral)
 except ImportError:
     pass
+
+try:
+    from typing_extensions import NotRequired, Required
+except ImportError:
+    Required = NotRequired = None
 
 try:
     CompatLiteral: Any
@@ -38,10 +45,11 @@ try:
 
     TYPED_DICT_METAS_TMP.append(type(RealPyTypedDict))
 except ImportError:
-    pass
+    PyTypedDict = None
 
 try:
     from typing_extensions import TypedDict as CompatTypedDict  # type: ignore
+
     # This is a hack. It exists because typing_extensions.TypedDict
     # is not guaranteed to be a type, it can also be a function (which it is in 3.9)
     _Foo = CompatTypedDict("_Foo", {})
@@ -52,6 +60,66 @@ except ImportError:
 
 TYPED_DICT_METAS = tuple(TYPED_DICT_METAS_TMP)
 del TYPED_DICT_METAS_TMP
+
+
+class TypedDictAt38Warning(UserWarning):
+    def __str__(self):
+        return (
+            "Runtime introspection of TypedDict at python3.8 and lower does not support inheritance."
+            " Please, update python or consider limitations suppressing this warning"
+        )
+
+
+HAS_PY_39 = sys.version_info >= (3, 9)
+
+
+def get_keys_from_normal_typed_dict(tp, fields):
+    required_keys = tp.__required_keys__
+    return {f.field_name for f in fields if f.field_name in required_keys}
+
+
+if HAS_PY_39:
+    def td_make_requirement_determinant(tp, fields):
+        return get_keys_from_normal_typed_dict(tp, fields)
+else:
+    def td_make_requirement_determinant(tp, fields):
+        if len(TYPED_DICT_METAS) > 1:
+            typing_extensions_td, *_ = TYPED_DICT_METAS[1:]
+        else:
+            typing_extensions_td = TYPED_DICT_METAS[0]
+        if isinstance(tp, typing_extensions_td):  # type: ignore
+            return get_keys_from_normal_typed_dict(tp, fields)
+        warn(TypedDictAt38Warning(), stacklevel=3)
+        total = tp.__total__
+        if total:
+            return {f.field_name for f in fields}
+        return set()
+
+
+def check_for_required_and_not_required(type_: Type) -> bool:
+    if not all([PyTypedDict, CompatTypedDict]):
+        return False
+    typing_extensions_td, *_ = TYPED_DICT_METAS[1:]
+    typing_td, *_ = TYPED_DICT_METAS[:1]
+
+    is_old_typed_dict = not isinstance(
+        type_, typing_extensions_td) and isinstance(type_, typing_td)
+    if not is_old_typed_dict:
+        return False
+    annotations = type_.__annotations__
+    for tp in annotations:
+        result = is_required_or_not_required(annotations[tp])
+        if result:
+            return True
+    return False
+
+
+def is_required_or_not_required(type_: Type) -> bool:
+    if all([Required, NotRequired]):  # type: ignore
+        origin = getattr(type_, "__origin__", None)
+        if origin is not None and origin in (NotRequired, Required):  # type: ignore
+            return True
+    return False
 
 
 def get_self_type_hints(cls: Type) -> Dict[str, Type]:
@@ -121,10 +189,10 @@ def is_namedtuple(type_) -> bool:
     # we check only `_fields` class attribute,
     # so user can create own typeddict-like classes with minimal implementation
     return issubclass_safe(type_, tuple) \
-           and hasattr(type_, "_fields") \
-           and hasattr(type_, "_make") \
-           and hasattr(type_, "_asdict") \
-           and hasattr(type_, "_replace")
+        and hasattr(type_, "_fields") \
+        and hasattr(type_, "_make") \
+        and hasattr(type_, "_asdict") \
+        and hasattr(type_, "_replace")
 
 
 def is_optional(type_) -> bool:

@@ -20,7 +20,8 @@ from .type_detection import (
     args_unspecified, hasargs, is_any, is_iterable, is_dict,
     is_enum, is_generic_concrete, is_literal, is_literal36, is_newtype,
     is_none, is_optional, is_tuple, is_typeddict, is_union, is_namedtuple,
-    is_generic,
+    is_required_or_not_required, Required, NotRequired,
+    td_make_requirement_determinant, check_for_required_and_not_required,
 )
 from .validators import combine_parser_validators
 
@@ -231,6 +232,21 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
     return complex_parser
 
 
+def get_required_fields(fields: Sequence[FieldInfo], total: bool) -> Set[str]:
+    if all([Required, NotRequired]):
+        list_fields = []
+        for field in fields:
+            origin = getattr(field.type, "__origin__", None)
+            if origin is not None and origin is NotRequired:
+                continue
+            elif not total:
+                continue
+            else:
+                list_fields.append(field.field_name)
+        return set(list_fields)
+    return {f.field_name for f in fields}
+
+
 def get_typed_dict_parser(
     class_: Type,
     factory: AbstractFactory,
@@ -241,18 +257,15 @@ def get_typed_dict_parser(
     post_validators: Dict[Optional[str], List[Parser]],
 ) -> Parser:
     complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown, pre_validators, post_validators)
-    requires_fields = {f.field_name for f in fields}
-    if class_.__total__:
-        def total_parser(data):
-            res = complex_parser(data)
+    required_fields = td_make_requirement_determinant(class_, fields)
 
-            if not set(res) == requires_fields:
-                raise ValueError("Not all fields provided for %s" % class_)
+    def _parser(data):
+        res = complex_parser(data)
+        if set(res) < required_fields:
+            raise ValueError("Not all fields provided for %s" % class_)
+        return res
 
-            return res
-
-        return total_parser
-    return complex_parser
+    return _parser
 
 
 def get_optional_parser(parser: Parser[T]) -> Parser[Optional[T]]:
@@ -380,6 +393,10 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
             value_type_arg = cls.__args__[1]
         return get_dict_parser(factory.parser(key_type_arg), factory.parser(value_type_arg))
     if is_typeddict(cls) or (is_generic_concrete(cls) and is_typeddict(cls.__origin__)):
+        if check_for_required_and_not_required(cls):
+            raise ValueError("If you want to use NotRequired/Required, on Python < 3.11, "
+                             "you should inherit your class from "
+                             "typing_extensions.TypedDict instead of typing.TypedDict")
         return get_typed_dict_parser(
             cls,
             factory,
@@ -419,6 +436,8 @@ def create_parser_impl(factory, schema: Schema, debug_path: bool, cls: Type) -> 
         if len(parsers) < len(cls.__args__):
             return get_optional_parser(parser)
         return parser
+    if is_required_or_not_required(cls):
+        return create_parser_impl(factory, schema, debug_path, cls.__args__[0])
     try:
         return get_complex_parser(
             class_=cls,

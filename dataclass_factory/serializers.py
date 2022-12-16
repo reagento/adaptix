@@ -15,6 +15,7 @@ from .type_detection import (
     hasargs, is_any, is_iterable, is_dict, is_enum, is_generic_concrete,
     is_newtype, is_optional, is_tuple, is_type_var, is_typeddict, is_union,
     is_literal, is_literal36, instance_wont_have_dict, is_none, is_namedtuple,
+    td_make_requirement_determinant, is_required_or_not_required,
 )
 
 
@@ -47,7 +48,7 @@ def get_complex_serializer(
         (f.field_name, factory.serializer(f.type), f.data_name, f.default)
         for f in fields
     )
-    unknown=schema.unknown
+    unknown = schema.unknown
     if isinstance(unknown, Unknown):
         unpack_unknown = False
     elif isinstance(unknown, str):
@@ -210,7 +211,9 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
             False,
         )
     if is_typeddict(class_) or (is_generic_concrete(class_) and is_typeddict(class_.__origin__)):
-        if class_.__total__:
+        fields = get_typeddict_fields(schema, class_)
+        required_fields = td_make_requirement_determinant(class_, fields)
+        if required_fields == set(f.field_name for f in fields):
             return get_complex_serializer(
                 factory,
                 schema,
@@ -270,7 +273,8 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
     if is_iterable(class_):
         item_serializer = get_lazy_serializer(factory)
         return get_collection_serializer(item_serializer)
-
+    if is_required_or_not_required(class_):
+        return create_serializer_impl(factory, schema, debug_path, class_.__args__[0])
     if isinstance(class_, type):
         if instance_wont_have_dict(class_):
             raise ValueError(f"Can not create serializer for {class_}")
