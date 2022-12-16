@@ -20,8 +20,8 @@ from .type_detection import (
     args_unspecified, hasargs, is_any, is_iterable, is_dict,
     is_enum, is_generic_concrete, is_literal, is_literal36, is_newtype,
     is_none, is_optional, is_tuple, is_typeddict, is_union, is_namedtuple,
-    is_required_or_not_required, Required, NotRequired,
-    td_make_requirement_determinant, check_for_required_and_not_required,
+    is_required_or_not_required, get_required_fields,
+    check_for_required_and_not_required,
 )
 from .validators import combine_parser_validators
 
@@ -232,21 +232,6 @@ def get_complex_parser(class_: Type[T],  # noqa C901, CCR001
     return complex_parser
 
 
-def get_required_fields(fields: Sequence[FieldInfo], total: bool) -> Set[str]:
-    if all([Required, NotRequired]):
-        list_fields = []
-        for field in fields:
-            origin = getattr(field.type, "__origin__", None)
-            if origin is not None and origin is NotRequired:
-                continue
-            elif not total:
-                continue
-            else:
-                list_fields.append(field.field_name)
-        return set(list_fields)
-    return {f.field_name for f in fields}
-
-
 def get_typed_dict_parser(
     class_: Type,
     factory: AbstractFactory,
@@ -257,7 +242,7 @@ def get_typed_dict_parser(
     post_validators: Dict[Optional[str], List[Parser]],
 ) -> Parser:
     complex_parser = get_complex_parser(class_, factory, fields, debug_path, unknown, pre_validators, post_validators)
-    required_fields = td_make_requirement_determinant(class_, fields)
+    required_fields = get_required_fields(class_, fields)
 
     def _parser(data):
         res = complex_parser(data)

@@ -15,7 +15,7 @@ from .type_detection import (
     hasargs, is_any, is_iterable, is_dict, is_enum, is_generic_concrete,
     is_newtype, is_optional, is_tuple, is_type_var, is_typeddict, is_union,
     is_literal, is_literal36, instance_wont_have_dict, is_none, is_namedtuple,
-    td_make_requirement_determinant, is_required_or_not_required,
+    get_required_fields, is_required_or_not_required,
 )
 
 
@@ -212,7 +212,7 @@ def create_serializer_impl(factory, schema: Schema, debug_path: bool,
         )
     if is_typeddict(class_) or (is_generic_concrete(class_) and is_typeddict(class_.__origin__)):
         fields = get_typeddict_fields(schema, class_)
-        required_fields = td_make_requirement_determinant(class_, fields)
+        required_fields = get_required_fields(class_, fields)
         if required_fields == set(f.field_name for f in fields):
             return get_complex_serializer(
                 factory,

@@ -75,18 +75,19 @@ HAS_PY_39 = sys.version_info >= (3, 9)
 
 def get_keys_from_normal_typed_dict(tp, fields):
     required_keys = tp.__required_keys__
-    return {f.field_name for f in fields if f.field_name in required_keys}
+    return {
+        f.field_name
+        for f in fields
+        if f.field_name in required_keys
+    }
 
 
 if HAS_PY_39:
-    def td_make_requirement_determinant(tp, fields):
+    def get_required_fields(tp, fields):
         return get_keys_from_normal_typed_dict(tp, fields)
 else:
-    def td_make_requirement_determinant(tp, fields):
-        if len(TYPED_DICT_METAS) > 1:
-            typing_extensions_td, *_ = TYPED_DICT_METAS[1:]
-        else:
-            typing_extensions_td = TYPED_DICT_METAS[0]
+    def get_required_fields(tp, fields):
+        typing_extensions_td = TYPED_DICT_METAS[-1]
         if isinstance(tp, typing_extensions_td):  # type: ignore
             return get_keys_from_normal_typed_dict(tp, fields)
         warn(TypedDictAt38Warning(), stacklevel=3)
@@ -99,11 +100,11 @@ else:
 def check_for_required_and_not_required(type_: Type) -> bool:
     if not all([PyTypedDict, CompatTypedDict]):
         return False
-    typing_extensions_td, *_ = TYPED_DICT_METAS[1:]
-    typing_td, *_ = TYPED_DICT_METAS[:1]
+    typing_extensions_td = TYPED_DICT_METAS[0]
+    typing_td = TYPED_DICT_METAS[1]
 
     is_old_typed_dict = not isinstance(
-        type_, typing_extensions_td) and isinstance(type_, typing_td)
+        type_, typing_extensions_td) and isinstance(type_, typing_td)  # type: ignore
     if not is_old_typed_dict:
         return False
     annotations = type_.__annotations__
