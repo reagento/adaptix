@@ -100,11 +100,11 @@ else:
 def check_for_required_and_not_required(type_: Type) -> bool:
     if not all([PyTypedDict, CompatTypedDict]):
         return False
-    typing_extensions_td = TYPED_DICT_METAS[0]
-    typing_td = TYPED_DICT_METAS[1]
-
+    typing_extensions_td = TYPED_DICT_METAS[1]
+    typing_td = TYPED_DICT_METAS[0]
     is_old_typed_dict = not isinstance(
         type_, typing_extensions_td) and isinstance(type_, typing_td)  # type: ignore
+    print(is_old_typed_dict)
     if not is_old_typed_dict:
         return False
     annotations = type_.__annotations__
