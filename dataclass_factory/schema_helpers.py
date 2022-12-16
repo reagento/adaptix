@@ -6,9 +6,8 @@ from ipaddress import (
     IPv4Network, IPv6Network,
     IPv4Interface, IPv6Interface,
 )
-from operator import attrgetter
 from pathlib import Path
-from typing import Type, Dict, Any, Generic, cast, Callable
+from typing import Type, Dict, Any, Generic, Callable
 from uuid import UUID
 
 from .common import T, AbstractFactory, Parser

@@ -1,7 +1,6 @@
 import sys
-import unittest
 from typing import Any
-from unittest import TestCase
+from unittest import TestCase, skipUnless
 from itertools import product
 from nose2.tools import params  # type: ignore
 from typing_extensions import TypedDict as CompatTypedDict, Required as CompatRequired, NotRequired as CompatNotRequired
@@ -48,6 +47,7 @@ class TestTypedDict(TestCase):
     @params(*TYPED_DICTS)
     def test_not_total(self, typed_dict):
         class Book(typed_dict, total=False):
+
             name: str
             year: int
 
@@ -78,7 +78,7 @@ class TestTypedDict(TestCase):
         self.assertEqual(mydict, factory.load(data, MyDict))
         self.assertEqual(data, factory.dump(mydict, MyDict))
 
-    @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
+    @skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
     @params(*TYPED_DICTS)
     def test_inheritance(self, typed_dict):
         class Parent(typed_dict, total=False):
@@ -105,7 +105,7 @@ class TestTypedDict(TestCase):
         self.assertEqual(data, factory.load(data, Book))
         self.assertEqual(data, factory.dump(data, Book))
 
-    @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
+    @skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
     @params(*product((CompatTypedDict,), NOT_REQUIRED))
     def test_not_required(self, typed_dict, not_required):
         class Book(typed_dict):
@@ -134,7 +134,7 @@ class TestTypedDict(TestCase):
         self.assertEqual(data, factory.load(data, Child))
         self.assertEqual(data, factory.dump(data, Child))
 
-    @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
+    @skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
     @params(*product((CompatTypedDict,), NOT_REQUIRED))
     def test_inheritance_not_required(self, typed_dict, not_required):
         class Parent(typed_dict, total=False):
@@ -148,7 +148,7 @@ class TestTypedDict(TestCase):
         self.assertEqual(data, factory.load(data, Child))
         self.assertEqual(data, factory.dump(data, Child))
 
-    @unittest.skipUnless((3, 8) <= sys.version_info <= (3, 10), "requires Python <= 3.10 and >= 3.8")
+    @skipUnless((3, 8) <= sys.version_info <= (3, 10), "requires Python <= 3.10 and >= 3.8")
     @params(*product(REQUIRED, NOT_REQUIRED))
     def test_incorrect_inheritance_from_typing_td(self, required, not_required):
         class Parent(PyTypedDict, total=False):
