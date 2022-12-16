@@ -1,17 +1,21 @@
 import sys
+import unittest
 from typing import Any
 from unittest import TestCase
-
+from itertools import product
 from nose2.tools import params  # type: ignore
-from typing_extensions import TypedDict as CompatTypedDict
-
+from typing_extensions import TypedDict as CompatTypedDict, Required as CompatRequired, NotRequired as CompatNotRequired
 from dataclass_factory import Factory, NameStyle, Schema
 
 TYPED_DICTS: Any = [CompatTypedDict]
+REQUIRED: Any = [CompatRequired]  # type: ignore
+NOT_REQUIRED: Any = [CompatNotRequired]  # type: ignore
 if sys.version_info >= (3, 8):
     from typing import TypedDict as PyTypedDict
-
-    TYPED_DICTS.append(PyTypedDict)
+if sys.version_info >= (3, 11):
+    from typing import Required, NotRequired
+    REQUIRED.append(Required)  # type: ignore
+    NOT_REQUIRED.append(NotRequired)  # type: ignore
 
 
 class TestTypedDict(TestCase):
@@ -73,3 +77,88 @@ class TestTypedDict(TestCase):
         mydict: MyDict = dict(python_name="hello", other="world")
         self.assertEqual(mydict, factory.load(data, MyDict))
         self.assertEqual(data, factory.dump(mydict, MyDict))
+
+    @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
+    @params(*TYPED_DICTS)
+    def test_inheritance(self, typed_dict):
+        class Parent(typed_dict, total=False):
+            name: str
+
+        class Child(Parent):
+            age: int
+        data = {
+            "age": 10
+        }
+        factory = Factory()
+        self.assertEqual(data, factory.load(data, Child))
+        self.assertEqual(data, factory.dump(data, Child))
+
+    @params(*product((CompatTypedDict,), REQUIRED))
+    def test_required(self, typed_dict, required):
+        class Book(typed_dict, total=False):
+            name: required[str]
+            year: int
+        data = {
+            "name": "hello"
+        }
+        factory = Factory()
+        self.assertEqual(data, factory.load(data, Book))
+        self.assertEqual(data, factory.dump(data, Book))
+
+    @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
+    @params(*product((CompatTypedDict,), NOT_REQUIRED))
+    def test_not_required(self, typed_dict, not_required):
+        class Book(typed_dict):
+            name: not_required[str]
+            year: int
+        data = {
+            "year": 10
+        }
+        factory = Factory()
+        self.assertEqual(data, factory.load(data, Book))
+        self.assertEqual(data, factory.dump(data, Book))
+
+    @params(*product((CompatTypedDict,), REQUIRED))
+    def test_inheritance_required(self, typed_dict, required):
+        class Parent(typed_dict):
+            name: str
+
+        class Child(Parent, total=False):
+            age: required[int]
+
+        data = {
+            "name": "hello",
+            "age": 10
+        }
+        factory = Factory()
+        self.assertEqual(data, factory.load(data, Child))
+        self.assertEqual(data, factory.dump(data, Child))
+
+    @unittest.skipUnless(sys.version_info >= (3, 9), "requires Python >= 3.9")
+    @params(*product((CompatTypedDict,), NOT_REQUIRED))
+    def test_inheritance_not_required(self, typed_dict, not_required):
+        class Parent(typed_dict, total=False):
+            name: str
+
+        class Child(Parent):
+            age: not_required[int]
+
+        data = {}
+        factory = Factory()
+        self.assertEqual(data, factory.load(data, Child))
+        self.assertEqual(data, factory.dump(data, Child))
+
+    @unittest.skipUnless((3, 8) <= sys.version_info <= (3, 10), "requires Python <= 3.10 and >= 3.8")
+    @params(*product(REQUIRED, NOT_REQUIRED))
+    def test_incorrect_inheritance_from_typing_td(self, required, not_required):
+        class Parent(PyTypedDict, total=False):
+            name: required[str]
+
+        class Child(Parent):
+            age: not_required[int]
+
+        data = {
+            "name": "hello"
+        }
+        factory = Factory()
+        self.assertRaises(ValueError, factory.load, data, Child)
