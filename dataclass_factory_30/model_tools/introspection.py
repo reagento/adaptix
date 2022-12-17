@@ -1,4 +1,3 @@
-# pylint: disable=import-outside-toplevel
 import inspect
 import warnings
 from dataclasses import MISSING as DC_MISSING, Field as DCField, fields as dc_fields, is_dataclass, replace
@@ -28,6 +27,12 @@ from .definitions import (
     ParamKind,
     ParamKwargs,
 )
+
+try:
+    import attrs
+except ImportError:
+    attrs = None  # type: ignore[assignment]
+
 
 # ======================
 #       Function
@@ -317,8 +322,6 @@ def get_class_init_figure(tp) -> Figure[InputFigure, None]:
 
 
 def _get_attrs_default(field) -> Default:
-    import attrs
-
     default: Any = field.default
 
     if isinstance(default, attrs.Factory):  # type: ignore
@@ -341,8 +344,6 @@ def _get_attrs_field_type(field, type_hints):
 
 
 def _get_attrs_fields(tp, type_hints: Dict[str, TypeHint]) -> Iterable[BaseField]:
-    import attrs
-
     try:
         fields_iterator = attrs.fields(tp)
     except (TypeError, attrs.exceptions.NotAnAttrsClassError):
@@ -364,8 +365,6 @@ NoneType = type(None)
 
 
 def _process_attr_input_field(field: InputField, base_fields_dict: Dict[str, BaseField], has_custom_init: bool):
-    import attrs
-
     try:
         base_field = base_fields_dict[field.name]
     except KeyError:
