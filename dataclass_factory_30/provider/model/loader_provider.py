@@ -6,7 +6,7 @@ from ...provider.essential import CannotProvide, Mediator
 from ...provider.model.definitions import CodeGenerator, InputFigure, InputFigureRequest, VarBinder
 from ...provider.model.input_extraction_gen import BuiltinInputExtractionGen
 from ...provider.provider_template import LoaderProvider
-from ...provider.request_cls import LoaderFieldRequest, LoaderRequest
+from ...provider.request_cls import InputFieldLocation, LoaderRequest, TypeHintLocation
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -19,7 +19,7 @@ from .basic_gen import (
     strip_figure_fields,
     stub_code_gen_hook,
 )
-from .crown_definitions import InpExtraMove, InputNameMapping, InputNameMappingRequest
+from .crown_definitions import InpExtraMove, InputNameLayout, InputNameLayoutRequest
 from .input_creation_gen import BuiltinInputCreationGen
 
 
@@ -46,43 +46,42 @@ class InputCreationMaker(Protocol):
 class BuiltinInputExtractionMaker(InputExtractionMaker):
     def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure, InpExtraMove]:
         figure: InputFigure = mediator.provide(
-            InputFigureRequest(type=request.type)
+            InputFigureRequest(loc=request.loc)
         )
 
-        name_mapping: InputNameMapping = mediator.provide(
-            InputNameMappingRequest(
-                type=request.type,
+        name_layout: InputNameLayout = mediator.provide(
+            InputNameLayoutRequest(
+                loc=request.loc,
                 figure=figure,
             )
         )
 
-        processed_figure = self._process_figure(figure, name_mapping)
-        self._validate_params(processed_figure, name_mapping)
+        processed_figure = self._process_figure(figure, name_layout)
+        self._validate_params(processed_figure, name_layout)
 
         field_loaders = {
             field.name: mediator.provide(
-                LoaderFieldRequest(
+                LoaderRequest(
                     strict_coercion=request.strict_coercion,
                     debug_path=request.debug_path,
-                    field=field,
-                    type=field.type,
+                    loc=InputFieldLocation(**vars(field)),
                 )
             )
             for field in processed_figure.fields
         }
 
-        extraction_gen = self._create_extraction_gen(request, figure, name_mapping, field_loaders)
+        extraction_gen = self._create_extraction_gen(request, figure, name_layout, field_loaders)
 
-        return extraction_gen, figure, name_mapping.extra_move
+        return extraction_gen, figure, name_layout.extra_move
 
-    def _process_figure(self, figure: InputFigure, name_mapping: InputNameMapping) -> InputFigure:
-        wild_extra_targets = get_wild_extra_targets(figure, name_mapping.extra_move)
+    def _process_figure(self, figure: InputFigure, name_layout: InputNameLayout) -> InputFigure:
+        wild_extra_targets = get_wild_extra_targets(figure, name_layout.extra_move)
         if wild_extra_targets:
             raise ValueError(
                 f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
             )
 
-        skipped_fields = get_skipped_fields(figure, name_mapping)
+        skipped_fields = get_skipped_fields(figure, name_layout)
 
         skipped_required_fields = [
             field.name
@@ -97,14 +96,14 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
 
         return strip_figure_fields(figure, skipped_fields)
 
-    def _validate_params(self, processed_figure: InputFigure, name_mapping: InputNameMapping) -> None:
-        if name_mapping.extra_move is None and has_collect_policy(name_mapping.crown):
+    def _validate_params(self, processed_figure: InputFigure, name_layout: InputNameLayout) -> None:
+        if name_layout.extra_move is None and has_collect_policy(name_layout.crown):
             raise ValueError(
                 "Cannot create loader that collect extra data"
                 " if InputFigure does not take extra data",
             )
 
-        extra_targets_at_crown = get_extra_targets_at_crown(name_mapping)
+        extra_targets_at_crown = get_extra_targets_at_crown(name_layout)
         if extra_targets_at_crown:
             raise ValueError(
                 f"Extra targets {extra_targets_at_crown} are found at crown"
@@ -112,7 +111,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
 
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
             {field.name: field for field in processed_figure.fields},
-            name_mapping.crown,
+            name_layout.crown,
         )
         if optional_fields_at_list_crown:
             raise ValueError(
@@ -123,12 +122,12 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         self,
         request: LoaderRequest,
         figure: InputFigure,
-        name_mapping: InputNameMapping,
+        name_layout: InputNameLayout,
         field_loaders: Mapping[str, Loader],
     ) -> CodeGenerator:
         return BuiltinInputExtractionGen(
             figure=figure,
-            name_mapping=name_mapping,
+            name_layout=name_layout,
             debug_path=request.debug_path,
             field_loaders=field_loaders,
         )
@@ -183,11 +182,14 @@ class ModelLoaderProvider(LoaderProvider):
         )
 
     def _get_closure_name(self, request: LoaderRequest) -> str:
-        tp = request.type
-        if isinstance(tp, type):
-            name = tp.__name__
+        if isinstance(request.loc, TypeHintLocation):
+            tp = request.loc.type
+            if isinstance(tp, type):
+                name = tp.__name__
+            else:
+                name = str(tp)
         else:
-            name = str(tp)
+            name = ''
 
         s_name = self._name_sanitizer.sanitize(name)
         if s_name != "":

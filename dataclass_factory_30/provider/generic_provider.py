@@ -3,7 +3,7 @@ from abc import ABC
 from dataclasses import dataclass, replace
 from enum import EnumMeta, Flag
 from inspect import isabstract
-from typing import Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, Union
+from typing import Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, TypeVar, Union
 
 from ..common import Dumper, Loader, TypeHint
 from ..struct_path import append_path
@@ -11,7 +11,7 @@ from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_
 from .essential import CannotProvide, Mediator, Request
 from .exceptions import BadVariantError, ExcludedTypeLoadError, LoadError, MsgError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider, for_origin
-from .request_cls import DumperRequest, LoaderRequest, TypeHintRM
+from .request_cls import DumperRequest, LoaderRequest, LocatedRequest, TypeHintLocation
 from .static_provider import StaticProvider, static_provision_action
 
 
@@ -21,25 +21,46 @@ def stub(arg):
 
 class NewTypeUnwrappingProvider(StaticProvider):
     @static_provision_action
-    def _provide_unwrapping(self, mediator: Mediator, request: TypeHintRM) -> Loader:
-        if not is_new_type(request.type):
+    def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
+        if not isinstance(request.loc, TypeHintLocation):
+            raise CannotProvide
+        if not is_new_type(request.loc.type):
             raise CannotProvide
 
-        return mediator.provide(replace(request, type=request.type.__supertype__))
+        return mediator.provide(
+            replace(request, loc=replace(request.loc, type=request.loc.type.__supertype__))
+        )
 
 
 class TypeHintTagsUnwrappingProvider(StaticProvider):
     @static_provision_action
-    def _provide_unwrapping(self, mediator: Mediator, request: TypeHintRM) -> Loader:
-        unwrapped = strip_tags(normalize_type(request.type))
-        if unwrapped.source == request.type:  # type has not changed, continue search
+    def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
+        if not isinstance(request.loc, TypeHintLocation):
+            raise CannotProvide
+        unwrapped = strip_tags(normalize_type(request.loc.type))
+        if unwrapped.source == request.loc.type:  # type has not changed, continue search
             raise CannotProvide
 
-        return mediator.provide(replace(request, type=unwrapped))
+        return mediator.provide(
+            replace(request, loc=replace(request.loc, type=unwrapped))
+        )
 
 
 def _is_exact_zero_or_one(arg):
     return type(arg) == int and arg in (0, 1)  # pylint: disable=unidiomatic-typecheck
+
+
+def _get_type_from_request(request: LocatedRequest) -> TypeHint:
+    if isinstance(request.loc, TypeHintLocation):
+        return request.loc.type
+    raise CannotProvide
+
+
+LR = TypeVar('LR', bound=LocatedRequest)
+
+
+def _replace_type(request: LR, tp: TypeHint) -> LR:
+    return replace(request, loc=replace(request.loc, type=tp))  # type: ignore
 
 
 @dataclass
@@ -53,7 +74,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return tuple(args)
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = normalize_type(request.type)
+        norm = normalize_type(_get_type_from_request(request))
 
         # TODO: add support for enum
         if request.strict_coercion and any(
@@ -88,10 +109,10 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 @for_origin(Union)
 class UnionProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = normalize_type(request.type)
+        norm = normalize_type(_get_type_from_request(request))
 
         loaders = tuple(
-            mediator.provide(replace(request, type=tp.source))
+            mediator.provide(_replace_type(request, tp.source))
             for tp in norm.args
         )
 
@@ -131,29 +152,29 @@ class UnionProvider(LoaderProvider, DumperProvider):
         return (origin is None or isinstance(origin, type)) and not is_subclass_soft(origin, collections.abc.Callable)
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        norm = normalize_type(request.type)
+        request_type = _get_type_from_request(request)
+        norm = normalize_type(request_type)
 
         # TODO: allow use Literal[..., None] with non single optional
 
         if self._is_single_optional(norm):
             non_optional = next(case for case in norm.args if case.origin is not None)
-            non_optional_dumper = mediator.provide(replace(request, type=non_optional.source))
+            non_optional_dumper = mediator.provide(_replace_type(request, non_optional.source))
             return self._get_single_optional_dumper(non_optional_dumper)
 
         non_class_origins = [case.source for case in norm.args if not self._is_class_origin(case.origin)]
         if non_class_origins:
             raise ValueError(
-                f"Can not create dumper for {request.type}."
+                f"Can not create dumper for {request_type}."
                 f" All cases of union must be class, but found {non_class_origins}"
             )
 
         dumpers = tuple(
-            mediator.provide(replace(request, type=tp.source))
+            mediator.provide(_replace_type(request, tp.source))
             for tp in norm.args
         )
 
         dumper_type_map = {case.origin: dumper for case, dumper in zip(norm.args, dumpers)}
-
         return self._get_dumper(dumper_type_map)
 
     def _get_dumper(self, dumper_type_map: Mapping[type, Dumper]) -> Dumper:
@@ -200,9 +221,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
             return origin
         raise CannotProvide
 
-    def _fetch_norm_and_arg(self, request: TypeHintRM):
+    def _fetch_norm_and_arg(self, request: LocatedRequest):
         try:
-            norm = normalize_type(request.type)
+            norm = normalize_type(_get_type_from_request(request))
         except ValueError:
             raise CannotProvide
 
@@ -223,7 +244,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
-        arg_loader = mediator.provide(replace(request, type=arg))
+        arg_loader = mediator.provide(_replace_type(request, arg))
         return self._make_loader(request, iter_factory, arg_loader)
 
     def _create_debug_path_iter_mapper(self, converter):
@@ -309,7 +330,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
-        arg_dumper = mediator.provide(replace(request, type=arg))
+        arg_dumper = mediator.provide(_replace_type(request, arg))
         return self._make_dumper(request, iter_factory, arg_dumper)
 
     def _make_dumper(self, request: DumperRequest, iter_factory, arg_dumper):
@@ -334,27 +355,19 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
 @for_origin(Dict)
 class DictProvider(LoaderProvider, DumperProvider):
-    def _extract_key_value(self, request: TypeHintRM) -> Tuple[BaseNormType, BaseNormType]:
-        norm = normalize_type(request.type)
+    def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
+        norm = normalize_type(_get_type_from_request(request))
         return norm.args  # type: ignore
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         key, value = self._extract_key_value(request)
 
         key_loader = mediator.provide(
-            LoaderRequest(
-                type=key.source,
-                strict_coercion=request.strict_coercion,
-                debug_path=request.debug_path
-            )
+            _replace_type(request, key.source),
         )
 
         value_loader = mediator.provide(
-            LoaderRequest(
-                type=value.source,
-                strict_coercion=request.strict_coercion,
-                debug_path=request.debug_path
-            )
+            _replace_type(request, value.source),
         )
 
         return self._make_loader(request, key_loader=key_loader, value_loader=value_loader)
@@ -412,11 +425,11 @@ class DictProvider(LoaderProvider, DumperProvider):
         key, value = self._extract_key_value(request)
 
         key_dumper = mediator.provide(
-            replace(request, type=key.source),
+            _replace_type(request, key.source),
         )
 
         value_dumper = mediator.provide(
-            replace(request, type=value.source),
+            _replace_type(request, value.source),
         )
 
         return self._make_dumper(request, key_dumper=key_dumper, value_dumper=value_dumper)
@@ -460,10 +473,10 @@ class DictProvider(LoaderProvider, DumperProvider):
 
 class BaseEnumProvider(LoaderProvider, DumperProvider, ABC):
     def _check_request(self, mediator: Mediator, request: Request) -> None:
-        if not isinstance(request, TypeHintRM):
+        if not isinstance(request, LocatedRequest):
             raise CannotProvide
 
-        norm = normalize_type(request.type)
+        norm = normalize_type(_get_type_from_request(request))
 
         if not isinstance(norm.origin, EnumMeta):
             raise CannotProvide
@@ -477,7 +490,7 @@ class EnumNameProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world by their name"""
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = request.type
+        enum = _get_type_from_request(request)
 
         if issubclass(enum, Flag):
             raise ValueError(f"Can not use {type(self).__name__} with Flag subclass {enum}")
@@ -513,8 +526,8 @@ class EnumValueProvider(BaseEnumProvider):
         self._value_type = value_type
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = request.type
-        value_loader = mediator.provide(replace(request, type=self._value_type))
+        enum = _get_type_from_request(request)
+        value_loader = mediator.provide(_replace_type(request, self._value_type))
 
         def enum_loader(data):
             loaded_value = value_loader(data)
@@ -526,7 +539,7 @@ class EnumValueProvider(BaseEnumProvider):
         return enum_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        value_dumper = mediator.provide(replace(request, type=self._value_type))
+        value_dumper = mediator.provide(_replace_type(request, self._value_type))
 
         def enum_dumper(data):
             return value_dumper(data.value)
@@ -544,7 +557,7 @@ class EnumExactValueProvider(BaseEnumProvider):
     """
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = request.type
+        enum = _get_type_from_request(request)
         variants = [case.value for case in enum]
 
         def enum_exact_loader(data):

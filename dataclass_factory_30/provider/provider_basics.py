@@ -9,7 +9,7 @@ from ..common import TypeHint
 from ..type_tools import is_parametrized, is_protocol, is_subclass_soft, normalize_type
 from ..type_tools.normalize_type import BaseNormType, NormTV, NotSubscribedError
 from .essential import CannotProvide, Mediator, Provider, Request
-from .request_cls import FieldRM, TypeHintRM
+from .request_cls import FieldLocation, LocatedRequest, Location, TypeHintLocation
 
 T = TypeVar('T')
 
@@ -98,37 +98,38 @@ class XorRequestChecker(RequestChecker):
 
 
 class BoundedRequestChecker(RequestChecker, ABC):
-    BOUND: ClassVar[Type[Request]]
+    BOUND: ClassVar[Type[Location]]
 
     def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
-        if isinstance(request, self.BOUND):
-            self._check_bounded_request(mediator, request)
-        else:
-            raise CannotProvide(f'Only instances of {self.BOUND} is allowed')
+        if not isinstance(request, LocatedRequest):
+            raise CannotProvide(f'Request must be instance of {LocatedRequest}')
+        if not isinstance(request.loc, self.BOUND):
+            raise CannotProvide(f'Request location must be instance of {self.BOUND}')
+        self._check_location(mediator, request.loc)
 
     @abstractmethod
-    def _check_bounded_request(self, mediator: Mediator, request: Any) -> None:
+    def _check_location(self, mediator: Mediator, loc: Any) -> None:
         ...
 
 
 @dataclass
 class ExactFieldNameRC(BoundedRequestChecker):
-    BOUND = FieldRM
+    BOUND = FieldLocation
     field_name: str
 
-    def _check_bounded_request(self, mediator: Mediator, request: FieldRM) -> None:
-        if self.field_name == request.field.name:
+    def _check_location(self, mediator: Mediator, loc: FieldLocation) -> None:
+        if self.field_name == loc.name:
             return
         raise CannotProvide(f'field_name must be a {self.field_name!r}')
 
 
 @dataclass
 class ReFieldNameRC(BoundedRequestChecker):
-    BOUND = FieldRM
+    BOUND = FieldLocation
     pattern: Pattern[str]
 
-    def _check_bounded_request(self, mediator: Mediator, request: FieldRM) -> None:
-        if self.pattern.fullmatch(request.field.name):
+    def _check_location(self, mediator: Mediator, loc: FieldLocation) -> None:
+        if self.pattern.fullmatch(loc.name):
             return
 
         raise CannotProvide(f'field_name must be matched by {self.pattern!r}')
@@ -136,36 +137,36 @@ class ReFieldNameRC(BoundedRequestChecker):
 
 @dataclass
 class ExactTypeRC(BoundedRequestChecker):
-    BOUND = TypeHintRM
+    BOUND = TypeHintLocation
     norm: BaseNormType
 
-    def _check_bounded_request(self, mediator: Mediator, request: TypeHintRM) -> None:
-        if normalize_type(request.type) == self.norm:
+    def _check_location(self, mediator: Mediator, loc: TypeHintLocation) -> None:
+        if normalize_type(loc.type) == self.norm:
             return
-        raise CannotProvide(f'{request.type} must be a equal to {self.norm.source}')
+        raise CannotProvide(f'{loc.type} must be a equal to {self.norm.source}')
 
 
 @dataclass
 class SubclassRC(BoundedRequestChecker):
-    BOUND = TypeHintRM
+    BOUND = TypeHintLocation
     type_: type
 
-    def _check_bounded_request(self, mediator: Mediator, request: TypeHintRM) -> None:
-        norm = normalize_type(request.type)
+    def _check_location(self, mediator: Mediator, loc: TypeHintLocation) -> None:
+        norm = normalize_type(loc.type)
         if is_subclass_soft(norm.origin, self.type_):
             return
-        raise CannotProvide(f'{request.type} must be a subclass of {self.type_}')
+        raise CannotProvide(f'{loc.type} must be a subclass of {self.type_}')
 
 
 @dataclass
 class ExactOriginRC(BoundedRequestChecker):
-    BOUND = TypeHintRM
+    BOUND = TypeHintLocation
     origin: Any
 
-    def _check_bounded_request(self, mediator: Mediator, request: TypeHintRM) -> None:
-        if normalize_type(request.type).origin == self.origin:
+    def _check_location(self, mediator: Mediator, loc: TypeHintLocation) -> None:
+        if normalize_type(loc.type).origin == self.origin:
             return
-        raise CannotProvide(f'{request.type} must have origin {self.origin}')
+        raise CannotProvide(f'{loc.type} must have origin {self.origin}')
 
 
 @dataclass

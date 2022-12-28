@@ -5,7 +5,7 @@ from typing import Dict, Optional
 class ContextNamespace(ABC):
     @abstractmethod
     def add(self, name: str, value: object) -> None:
-        pass
+        ...
 
 
 class BuiltinContextNamespace(ContextNamespace):

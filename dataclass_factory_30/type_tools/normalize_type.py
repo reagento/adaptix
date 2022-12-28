@@ -545,8 +545,7 @@ class TypeNormalizer:
             if not args or args == ((),):
                 return _NormType(tuple, (), source=tp)
 
-            is_var_args = args[-1] is ...
-            if is_var_args:
+            if args[-1] is Ellipsis:
                 return _NormType(
                     tuple, (*self._norm_iter(args[:-1]), ...),
                     source=tp,
@@ -562,7 +561,7 @@ class TypeNormalizer:
                     c_abc.Callable, (..., ANY_NT), source=tp
                 )
 
-            if args[0] is ...:
+            if args[0] is Ellipsis:
                 call_args = ...
             elif isinstance(args[0], list):
                 call_args = tuple(map(normalize_type, args[0]))

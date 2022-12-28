@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from dataclass_factory_30.provider import CannotProvide, Request, TypeHintRM
+from dataclass_factory_30.provider import CannotProvide, Request, TypeHintLocation
 from dataclass_factory_30.provider.provider_basics import StackEndRC, create_req_checker
 from dataclass_factory_30.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 
@@ -26,31 +26,31 @@ def test_stack_end_rc():
 
     with pytest.raises(CannotProvide, match="Request stack is too small"):
         checker.check_request(
-            _create_mediator(TypeHintRM(int)),
-            TypeHintRM(int),
+            _create_mediator(TypeHintLocation(int)),
+            TypeHintLocation(int),
         )
 
     with pytest.raises(CannotProvide, match="Request stack is too small"):
         checker.check_request(
-            _create_mediator(TypeHintRM(int), TypeHintRM(str)),
-            TypeHintRM(int),
+            _create_mediator(TypeHintLocation(int), TypeHintLocation(str)),
+            TypeHintLocation(int),
         )
 
     with pytest.raises(CannotProvide):
         checker.check_request(
-            _create_mediator(TypeHintRM(int), TypeHintRM(str), TypeHintRM(str)),
-            TypeHintRM(int),
+            _create_mediator(TypeHintLocation(int), TypeHintLocation(str), TypeHintLocation(str)),
+            TypeHintLocation(int),
         )
 
     checker.check_request(
-        _create_mediator(TypeHintRM(int), TypeHintRM(str), TypeHintRM(bool)),
-        TypeHintRM(int),
+        _create_mediator(TypeHintLocation(int), TypeHintLocation(str), TypeHintLocation(bool)),
+        TypeHintLocation(int),
     )
     checker.check_request(
-        _create_mediator(TypeHintRM(int), TypeHintRM(int), TypeHintRM(str), TypeHintRM(bool)),
-        TypeHintRM(int),
+        _create_mediator(TypeHintLocation(int), TypeHintLocation(int), TypeHintLocation(str), TypeHintLocation(bool)),
+        TypeHintLocation(int),
     )
     checker.check_request(
-        _create_mediator(TypeHintRM(str), TypeHintRM(int), TypeHintRM(str), TypeHintRM(bool)),
-        TypeHintRM(int),
+        _create_mediator(TypeHintLocation(str), TypeHintLocation(int), TypeHintLocation(str), TypeHintLocation(bool)),
+        TypeHintLocation(int),
     )

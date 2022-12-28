@@ -14,21 +14,21 @@ from dataclass_factory_30.model_tools import (
     ParamKind,
     ParamKwargs,
 )
-from dataclass_factory_30.provider import InputNameMappingRequest, NameMapper, NameStyle, ValueProvider
+from dataclass_factory_30.provider import InputNameLayoutRequest, NameStyle, NameToPathMaker, ValueProvider
 from dataclass_factory_30.provider.model.crown_definitions import (
     ExtraSkip,
     InpDictCrown,
     InpFieldCrown,
-    InputNameMapping,
+    InputNameLayout,
     OutDictCrown,
     OutFieldCrown,
-    OutputNameMapping,
-    OutputNameMappingRequest,
+    OutputNameLayout,
+    OutputNameLayoutRequest,
 )
 from tests_helpers import TestRetort
 
 
-def check_name_mapper(mapper: NameMapper, source: Set[str], target: Set[str]):
+def check_name_mapper(mapper: NameToPathMaker, source: Set[str], target: Set[str]):
     result = set()
     for s_name in source:
         if not mapper._should_skip(s_name):
@@ -39,7 +39,7 @@ def check_name_mapper(mapper: NameMapper, source: Set[str], target: Set[str]):
 
 def test_default():
     check_name_mapper(
-        NameMapper(),
+        NameToPathMaker(),
         {'a', 'b', '_c', 'd_', '_e_'},
         {'a', 'b', 'd'},
     )
@@ -47,7 +47,7 @@ def test_default():
 
 def test_name_mutating():
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             map={},
             trim_trailing_underscore=True,
             name_style=NameStyle.UPPER,
@@ -56,7 +56,7 @@ def test_name_mutating():
         {'A', 'B', 'D'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             map={'a': 'z'},
             trim_trailing_underscore=True,
             name_style=NameStyle.UPPER,
@@ -65,7 +65,7 @@ def test_name_mutating():
         {'z', 'B', 'D'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             map={'a': 'z'},
             trim_trailing_underscore=True,
             name_style=NameStyle.UPPER,
@@ -74,7 +74,7 @@ def test_name_mutating():
         {'z', 'B', 'D'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             map={'a': 'z', '_c': 'x'},
             trim_trailing_underscore=True,
             name_style=NameStyle.UPPER,
@@ -83,7 +83,7 @@ def test_name_mutating():
         {'z', 'B', 'D'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             map={'a': 'z', 'd_': 'w'},
             name_style=NameStyle.UPPER,
             trim_trailing_underscore=True,
@@ -92,7 +92,7 @@ def test_name_mutating():
         {'z', 'B', 'w'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             map={'a': '_z'},
             name_style=NameStyle.UPPER,
             trim_trailing_underscore=True,
@@ -101,7 +101,7 @@ def test_name_mutating():
         {'_z', 'B', 'D'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             map={},
             trim_trailing_underscore=False,
             name_style=NameStyle.UPPER,
@@ -113,7 +113,7 @@ def test_name_mutating():
 
 def test_name_filtering():
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             skip=['a', 'xxx'],
             only_mapped=False,
             only=None,
@@ -123,7 +123,7 @@ def test_name_filtering():
         {'b', 'd'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             skip=[],
             only_mapped=True,
             only=None,
@@ -134,7 +134,7 @@ def test_name_filtering():
         set(),
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             skip=[],
             only_mapped=True,
             only=None,
@@ -145,7 +145,7 @@ def test_name_filtering():
         {'z'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             skip=[],
             only_mapped=False,
             only=['a', '_c'],
@@ -155,7 +155,7 @@ def test_name_filtering():
         {'a', '_c'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             skip=[],
             only_mapped=True,
             only=['a'],
@@ -166,7 +166,7 @@ def test_name_filtering():
         {'a', 'y'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             skip=['b'],
             only_mapped=False,
             only=['a', 'b'],
@@ -176,7 +176,7 @@ def test_name_filtering():
         {'a'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             skip=['b'],
             only_mapped=True,
             only=None,
@@ -187,7 +187,7 @@ def test_name_filtering():
         {'z'},
     )
     check_name_mapper(
-        NameMapper(
+        NameToPathMaker(
             skip=[],
             only_mapped=False,
             only=['a', '_c'],
@@ -210,7 +210,7 @@ class MapField:
 
 
 def inp_request(fields: List[MapField], kwargs: Optional[ParamKwargs] = None):
-    return InputNameMappingRequest(
+    return InputNameLayoutRequest(
         type=Stub,
         figure=InputFigure(
             constructor=Stub,
@@ -232,7 +232,7 @@ def inp_request(fields: List[MapField], kwargs: Optional[ParamKwargs] = None):
 
 
 def out_request(fields: Iterable[MapField]):
-    return OutputNameMappingRequest(
+    return OutputNameLayoutRequest(
         type=Stub,
         figure=OutputFigure(
             fields=tuple(
@@ -256,7 +256,7 @@ def out_request(fields: Iterable[MapField]):
 def retort():
     return TestRetort(
         [
-            NameMapper(
+            NameToPathMaker(
                 skip=['c'],
                 map={'d': 'z'},
                 extra_in=ExtraSkip(),
@@ -281,7 +281,7 @@ def test_name_mapping_simple(retort):
         inp_request(fields=fields)
     )
 
-    assert inp_name_mapping == InputNameMapping(
+    assert inp_name_mapping == InputNameLayout(
         crown=InpDictCrown(
             {
                 'a': InpFieldCrown('a'),
@@ -296,7 +296,7 @@ def test_name_mapping_simple(retort):
         out_request(fields=fields)
     )
 
-    assert out_name_mapping == OutputNameMapping(
+    assert out_name_mapping == OutputNameLayout(
         crown=OutDictCrown(
             {
                 'a': OutFieldCrown('a'),
@@ -324,7 +324,7 @@ def test_name_mapping_skipping(retort):
         inp_request(fields)
     )
 
-    assert inp_name_mapping == InputNameMapping(
+    assert inp_name_mapping == InputNameLayout(
         crown=InpDictCrown(
             {
                 'a': InpFieldCrown('a'),
@@ -338,7 +338,7 @@ def test_name_mapping_skipping(retort):
         out_request(fields)
     )
 
-    assert out_name_mapping == OutputNameMapping(
+    assert out_name_mapping == OutputNameLayout(
         crown=OutDictCrown(
             {
                 'a': OutFieldCrown('a'),

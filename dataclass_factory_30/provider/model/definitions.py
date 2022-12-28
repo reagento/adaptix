@@ -3,18 +3,18 @@ from typing import Protocol, TypeVar
 
 from ...code_tools import CodeBuilder, ContextNamespace, MangledConstant, PrefixManglerBase, mangling_method
 from ...model_tools import BaseField, InputFigure, OutputFigure
-from ..request_cls import TypeHintRM
+from ..request_cls import LocatedRequest
 
 T = TypeVar('T')
 
 
 @dataclass(frozen=True)
-class InputFigureRequest(TypeHintRM[InputFigure]):
+class InputFigureRequest(LocatedRequest[InputFigure]):
     pass
 
 
 @dataclass(frozen=True)
-class OutputFigureRequest(TypeHintRM[OutputFigure]):
+class OutputFigureRequest(LocatedRequest[OutputFigure]):
     pass
 
 

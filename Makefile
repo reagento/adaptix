@@ -49,6 +49,7 @@ setup:
 	pip install -r requirements/pre.txt
 	pip install -e .
 	pip install -r requirements/dev.txt
+	pre-commit
 	pre-commit install
 
 

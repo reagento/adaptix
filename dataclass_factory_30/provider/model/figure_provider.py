@@ -16,6 +16,7 @@ from ...model_tools import (
 )
 from ...model_tools.definitions import FigureIntrospector
 from ..essential import CannotProvide, Mediator, Provider, Request
+from ..request_cls import TypeHintLocation
 from ..static_provider import StaticProvider, static_provision_action
 from .definitions import InputFigureRequest, OutputFigureRequest
 
@@ -25,9 +26,9 @@ class FigureProvider(Provider):
         self._introspector = introspector
 
     def apply_provider(self, mediator: Mediator, request: Request):
-        if isinstance(request, InputFigureRequest):
+        if isinstance(request, InputFigureRequest) and isinstance(request.loc, TypeHintLocation):
             try:
-                figure = self._introspector(request.type)
+                figure = self._introspector(request.loc.type)
             except IntrospectionImpossible:
                 raise CannotProvide
 
@@ -36,9 +37,9 @@ class FigureProvider(Provider):
 
             return figure.input
 
-        if isinstance(request, OutputFigureRequest):
+        if isinstance(request, OutputFigureRequest) and isinstance(request.loc, TypeHintLocation):
             try:
-                figure = self._introspector(request.type)
+                figure = self._introspector(request.loc.type)
             except IntrospectionImpossible:
                 raise CannotProvide
 
@@ -77,10 +78,13 @@ class PropertyAdder(StaticProvider):
 
     @static_provision_action
     def provide_output_figure(self, mediator: Mediator[OutputFigure], request: OutputFigureRequest) -> OutputFigure:
+        if not isinstance(request.loc, TypeHintLocation) or not isinstance(request.loc.type, type):
+            raise CannotProvide
+
         figure = mediator.provide_from_next()
 
         additional_fields = tuple(
-            replace(field, type=self._infer_property_type(request.type, self._get_attr_name(field)))
+            replace(field, type=self._infer_property_type(request.loc.type, self._get_attr_name(field)))
             if field.name in self._infer_types_for else
             field
             for field in self._output_fields
@@ -91,10 +95,7 @@ class PropertyAdder(StaticProvider):
     def _get_attr_name(self, field: OutputField) -> str:
         return cast(DescriptorAccessor, field.accessor).attr_name
 
-    def _infer_property_type(self, tp: TypeHint, attr_name: str):
-        if not isinstance(tp, type):
-            raise CannotProvide
-
+    def _infer_property_type(self, tp: TypeHint, attr_name: str) -> TypeHint:
         prop = getattr(tp, attr_name)
 
         if not isinstance(prop, property):

@@ -8,11 +8,11 @@ from typing import Type, TypeVar, Union
 
 from ..common import Dumper, Loader
 from ..type_tools import normalize_type
-from .essential import Mediator, Request
+from .essential import CannotProvide, Mediator, Request
 from .exceptions import LoadError, TypeLoadError, ValueLoadError
 from .provider_basics import ExactTypeRC
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithRC, for_origin
-from .request_cls import DumperRequest, LoaderRequest
+from .request_cls import DumperRequest, LoaderRequest, TypeHintLocation
 
 T = TypeVar('T')
 
@@ -152,8 +152,11 @@ class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
     _BYTES_PROVIDER = BytesBase64Provider()
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        if not isinstance(request.loc, TypeHintLocation):
+            raise CannotProvide
+
         bytes_loader = self._BYTES_PROVIDER.apply_provider(
-            mediator, replace(request, type=bytes)
+            mediator, replace(request, loc=replace(request.loc, type=bytes))
         )
 
         def bytearray_base64_loader(data):

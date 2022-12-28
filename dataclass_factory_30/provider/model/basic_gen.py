@@ -27,7 +27,7 @@ from .crown_definitions import (
     BaseFieldCrown,
     BaseFigure,
     BaseListCrown,
-    BaseNameMapping,
+    BaseNameLayout,
     BaseNoneCrown,
     ExtraCollect,
     ExtraTargets,
@@ -113,10 +113,10 @@ def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
     return used_set
 
 
-def get_skipped_fields(figure: BaseFigure, name_mapping: BaseNameMapping) -> Collection[str]:
-    used_direct_fields = _collect_used_direct_fields(name_mapping.crown)
-    if isinstance(name_mapping.extra_move, ExtraTargets):
-        extra_targets = name_mapping.extra_move.fields
+def get_skipped_fields(figure: BaseFigure, name_layout: BaseNameLayout) -> Collection[str]:
+    used_direct_fields = _collect_used_direct_fields(name_layout.crown)
+    if isinstance(name_layout.extra_move, ExtraTargets):
+        extra_targets = name_layout.extra_move.fields
     else:
         extra_targets = ()
 
@@ -144,11 +144,11 @@ def _inner_get_extra_targets_at_crown(extra_targets: Container[str], crown: Base
     raise TypeError
 
 
-def get_extra_targets_at_crown(name_mapping: BaseNameMapping) -> Collection[str]:
-    if not isinstance(name_mapping.extra_move, ExtraTargets):
+def get_extra_targets_at_crown(name_layout: BaseNameLayout) -> Collection[str]:
+    if not isinstance(name_layout.extra_move, ExtraTargets):
         return []
 
-    return _inner_get_extra_targets_at_crown(name_mapping.extra_move.fields, name_mapping.crown)
+    return _inner_get_extra_targets_at_crown(name_layout.extra_move.fields, name_layout.crown)
 
 
 def get_optional_fields_at_list_crown(

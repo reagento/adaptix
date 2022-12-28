@@ -23,7 +23,7 @@ from dataclass_factory_30.provider import (
     ModelDumperProvider,
     NameSanitizer,
     OutputFigureRequest,
-    OutputNameMappingRequest,
+    OutputNameLayoutRequest,
     ValueProvider,
     make_output_extraction,
 )
@@ -32,7 +32,7 @@ from dataclass_factory_30.provider.model import (
     OutFieldCrown,
     OutListCrown,
     OutNoneCrown,
-    OutputNameMapping,
+    OutputNameLayout,
 )
 from dataclass_factory_30.provider.model.crown_definitions import ExtraExtract, ExtraTargets
 from dataclass_factory_30.struct_path import Attr, PathElement, PathElementMarker
@@ -80,7 +80,7 @@ def dummy_items(**kwargs: Any):
 
 def make_dumper_getter(
     fig: OutputFigure,
-    name_mapping: OutputNameMapping,
+    name_mapping: OutputNameLayout,
     debug_path: bool,
     debug_ctx: DebugCtx,
 ) -> Callable[[], Dumper]:
@@ -88,7 +88,7 @@ def make_dumper_getter(
         retort = TestRetort(
             recipe=[
                 ValueProvider(OutputFigureRequest, fig),
-                ValueProvider(OutputNameMappingRequest, name_mapping),
+                ValueProvider(OutputNameLayoutRequest, name_mapping),
                 bound(int, ValueProvider(DumperRequest, int_dumper)),
                 ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
                 debug_ctx.accum,
@@ -189,7 +189,7 @@ def test_flat(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
             field('a', acc_schema.accessor_maker('a', is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required_b)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     'a': OutFieldCrown('a'),
@@ -271,7 +271,7 @@ def test_wild_extra_targets(debug_ctx, debug_path, acc_schema):
         fig=figure(
             field('a', acc_schema.accessor_maker('a', is_required=True)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     'a': OutFieldCrown('a'),
@@ -296,7 +296,7 @@ def test_one_extra_target(debug_ctx, debug_path, is_required_a, is_required_b, a
             field('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required=is_required_b)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     'a': OutFieldCrown('a'),
@@ -371,7 +371,7 @@ def test_several_extra_target(
             field('c', acc_schema.accessor_maker('c', is_required=is_required_c)),
             field('d', acc_schema.accessor_maker('d', is_required=is_required_d)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     'a': OutFieldCrown('a'),
@@ -459,7 +459,7 @@ def test_extra_extract(debug_ctx, debug_path, is_required_a, acc_schema):
             field('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required=True)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     'a': OutFieldCrown('a'),
@@ -513,7 +513,7 @@ def test_optional_fields_at_list(debug_ctx, debug_path, acc_schema):
             field('a', acc_schema.accessor_maker('a', is_required=True)),
             field('b', acc_schema.accessor_maker('b', is_required=False)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutListCrown(
                 [
                     OutFieldCrown('a'),
@@ -551,7 +551,7 @@ def test_flat_mapping(debug_ctx, debug_path, is_required_a, is_required_b, acc_s
             field(mp.a.field, acc_schema.accessor_maker('a', is_required_a)),
             field(mp.b.field, acc_schema.accessor_maker('b', is_required_b)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     mp.a.mapped: OutFieldCrown(mp.a.field),
@@ -634,7 +634,7 @@ def test_direct_list(debug_ctx, debug_path, acc_schema):
             field('a', acc_schema.accessor_maker('a', True)),
             field('b', acc_schema.accessor_maker('b', True)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutListCrown(
                 [
                     OutFieldCrown('a'),
@@ -690,7 +690,7 @@ def test_structure_flattening(debug_ctx, debug_path, acc_schema):
             field('h', acc_schema.accessor_maker('h', True)),
             field('extra', acc_schema.accessor_maker('extra', True)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     'z': OutDictCrown(
@@ -860,7 +860,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, acc_schema, is_required_a,
             field('a', acc_schema.accessor_maker('a', is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required_b)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     'm_a': OutFieldCrown('a'),
@@ -882,7 +882,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, acc_schema, is_required_a,
             field('a', acc_schema.accessor_maker('a', is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required_b)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     'm_a': OutFieldCrown('a'),
@@ -911,7 +911,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, acc_schema, is_required
         fig=figure(
             field('a', acc_schema.accessor_maker('a', is_required_a)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutDictCrown(
                 {
                     'w': OutNoneCrown(filler=DefaultValue(None)),
@@ -936,7 +936,7 @@ def test_none_crown_at_list_crown(debug_ctx, debug_path, acc_schema):
         fig=figure(
             field('a', acc_schema.accessor_maker('a', True)),
         ),
-        name_mapping=OutputNameMapping(
+        name_mapping=OutputNameLayout(
             crown=OutListCrown(
                 [
                     OutNoneCrown(filler=DefaultValue(None)),

@@ -30,7 +30,6 @@ from ..provider import (
     LoaderRequest,
     ModelDumperProvider,
     ModelLoaderProvider,
-    NameMapper,
     NameSanitizer,
     NewTypeUnwrappingProvider,
     NoneProvider,
@@ -38,12 +37,19 @@ from ..provider import (
     RegexPatternProvider,
     Request,
     SecondsTimedeltaProvider,
+    TypeHintLocation,
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
-from ..provider.model import make_input_creation, make_output_extraction
+from ..provider.model import ExtraSkip, make_input_creation, make_output_extraction
+from ..provider.name_layout import (
+    BuiltinExtraMoveAndPoliciesMaker,
+    BuiltinNameLayoutProvider,
+    BuiltinSievesMaker,
+    BuiltinStructureMaker,
+)
 from ..retort import OperatingRetort
-from .provider import as_is_dumper, as_is_loader, dumper, loader
+from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
 
 
 class FilledRetort(OperatingRetort, ABC):
@@ -107,10 +113,25 @@ class FilledRetort(OperatingRetort, ABC):
         ABCProxy(MutableMapping, dict),
         ABCProxy(ByteString, bytes),
 
+        name_mapping(
+            skip=(),
+            only_mapped=False,
+            only=None,
+            map={},
+            trim_trailing_underscore=True,
+            name_style=None,
+            omit_default=True,
+            extra_in=ExtraSkip(),
+            extra_out=ExtraSkip(),
+        ),
+        BuiltinNameLayoutProvider(
+            structure_maker=BuiltinStructureMaker(),
+            sieves_maker=BuiltinSievesMaker(),
+            extra_move_maker=BuiltinExtraMoveAndPoliciesMaker(),
+            extra_policies_maker=BuiltinExtraMoveAndPoliciesMaker(),
+        ),
         ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
         ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
-
-        NameMapper(),
 
         NAMED_TUPLE_FIGURE_PROVIDER,
         TYPED_DICT_FIGURE_PROVIDER,
@@ -125,7 +146,7 @@ class FilledRetort(OperatingRetort, ABC):
 
 T = TypeVar('T')
 RequestTV = TypeVar('RequestTV', bound=Request)
-R = TypeVar('R', bound='AdornedRetort')
+AR = TypeVar('AR', bound='AdornedRetort')
 
 
 class AdornedRetort(OperatingRetort):
@@ -148,11 +169,11 @@ class AdornedRetort(OperatingRetort):
         self._dumper_cache = {}
 
     def replace(
-        self: R,
+        self: AR,
         *,
         strict_coercion: Optional[bool] = None,
         debug_path: Optional[bool] = None,
-    ) -> R:
+    ) -> AR:
         # pylint: disable=protected-access
         with self._clone() as clone:
             if strict_coercion is not None:
@@ -163,7 +184,7 @@ class AdornedRetort(OperatingRetort):
 
         return clone
 
-    def extend(self: R, *, recipe: Iterable[Provider]) -> R:
+    def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         # pylint: disable=protected-access
         with self._clone() as clone:
             clone._inc_instance_recipe = (
@@ -181,7 +202,7 @@ class AdornedRetort(OperatingRetort):
         except KeyError:
             loader_ = self._facade_provide(
                 LoaderRequest(
-                    type=tp,
+                    loc=TypeHintLocation(tp),
                     strict_coercion=self._strict_coercion,
                     debug_path=self._debug_path
                 )
@@ -195,7 +216,7 @@ class AdornedRetort(OperatingRetort):
         except KeyError:
             dumper_ = self._facade_provide(
                 DumperRequest(
-                    type=tp,
+                    loc=TypeHintLocation(tp),
                     debug_path=self._debug_path
                 )
             )

@@ -5,7 +5,7 @@ from ...common import Dumper
 from ...provider.essential import CannotProvide, Mediator
 from ...provider.model.definitions import CodeGenerator, OutputFigure, OutputFigureRequest, VarBinder
 from ...provider.provider_template import DumperProvider
-from ...provider.request_cls import DumperFieldRequest, DumperRequest
+from ...provider.request_cls import DumperRequest, OutputFieldLocation, TypeHintLocation
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -17,7 +17,7 @@ from .basic_gen import (
     strip_figure_fields,
     stub_code_gen_hook,
 )
-from .crown_definitions import OutExtraMove, OutputNameMapping, OutputNameMappingRequest
+from .crown_definitions import OutExtraMove, OutputNameLayout, OutputNameLayoutRequest
 from .output_creation_gen import BuiltinOutputCreationGen
 from .output_extraction_gen import BuiltinOutputExtractionGen
 
@@ -50,10 +50,9 @@ def make_output_extraction(
 ) -> CodeGenerator:
     field_dumpers = {
         field.name: mediator.provide(
-            DumperFieldRequest(
+            DumperRequest(
+                loc=OutputFieldLocation(**vars(field)),
                 debug_path=request.debug_path,
-                field=field,
-                type=field.type,
             )
         )
         for field in figure.fields
@@ -70,53 +69,53 @@ def make_output_extraction(
 class BuiltinOutputCreationMaker(OutputCreationMaker):
     def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure, OutExtraMove]:
         figure: OutputFigure = mediator.provide(
-            OutputFigureRequest(type=request.type)
+            OutputFigureRequest(loc=request.loc)
         )
 
-        name_mapping = mediator.provide(
-            OutputNameMappingRequest(
-                type=request.type,
+        name_layout = mediator.provide(
+            OutputNameLayoutRequest(
+                loc=request.loc,
                 figure=figure,
             )
         )
 
-        processed_figure = self._process_figure(figure, name_mapping)
-        creation_gen = self._create_creation_gen(request, processed_figure, name_mapping)
-        return creation_gen, processed_figure, name_mapping.extra_move
+        processed_figure = self._process_figure(figure, name_layout)
+        creation_gen = self._create_creation_gen(request, processed_figure, name_layout)
+        return creation_gen, processed_figure, name_layout.extra_move
 
-    def _process_figure(self, figure: OutputFigure, name_mapping: OutputNameMapping) -> OutputFigure:
+    def _process_figure(self, figure: OutputFigure, name_layout: OutputNameLayout) -> OutputFigure:
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
             {field.name: field for field in figure.fields},
-            name_mapping.crown,
+            name_layout.crown,
         )
         if optional_fields_at_list_crown:
             raise ValueError(
                 f"Optional fields {optional_fields_at_list_crown} are found at list crown"
             )
 
-        wild_extra_targets = get_wild_extra_targets(figure, name_mapping.extra_move)
+        wild_extra_targets = get_wild_extra_targets(figure, name_layout.extra_move)
         if wild_extra_targets:
             raise ValueError(
                 f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
             )
 
-        extra_targets_at_crown = get_extra_targets_at_crown(name_mapping)
+        extra_targets_at_crown = get_extra_targets_at_crown(name_layout)
         if extra_targets_at_crown:
             raise ValueError(
                 f"Extra targets {extra_targets_at_crown} are found at crown"
             )
 
-        return strip_figure_fields(figure, get_skipped_fields(figure, name_mapping))
+        return strip_figure_fields(figure, get_skipped_fields(figure, name_layout))
 
     def _create_creation_gen(
         self,
         request: DumperRequest,
         figure: OutputFigure,
-        name_mapping: OutputNameMapping,
+        name_layout: OutputNameLayout,
     ) -> CodeGenerator:
         return BuiltinOutputCreationGen(
             figure=figure,
-            name_mapping=name_mapping,
+            name_layout=name_layout,
             debug_path=request.debug_path,
         )
 
@@ -161,11 +160,14 @@ class ModelDumperProvider(DumperProvider):
         )
 
     def _get_closure_name(self, request: DumperRequest) -> str:
-        tp = request.type
-        if isinstance(tp, type):
-            name = tp.__name__
+        if isinstance(request.loc, TypeHintLocation):
+            tp = request.loc.type
+            if isinstance(tp, type):
+                name = tp.__name__
+            else:
+                name = str(tp)
         else:
-            name = str(tp)
+            name = ''
 
         s_name = self._name_sanitizer.sanitize(name)
         if s_name != "":

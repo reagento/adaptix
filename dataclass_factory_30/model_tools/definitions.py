@@ -264,7 +264,6 @@ class Figure(Generic[Inp, Out]):
 
 
 FullFigure = Figure[InputFigure, OutputFigure]
-
 FigureIntrospector = Callable[[Any], Figure]
 
 

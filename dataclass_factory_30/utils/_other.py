@@ -8,7 +8,7 @@ C = TypeVar('C', bound='Cloneable')
 
 class Cloneable(ABC):
     @abstractmethod
-    def _calculate_derived(self):
+    def _calculate_derived(self) -> None:
         ...
 
     @contextmanager
@@ -78,7 +78,8 @@ def pairs(iterable: Iterable[T]) -> Iterable[Tuple[T, T]]:
 
 
 class Omitted(metaclass=SingletonMeta):
-    pass
+    def __bool__(self):
+        raise TypeError('Omitted() can not be used in boolean context')
 
 
 Omittable = Union[T, Omitted]

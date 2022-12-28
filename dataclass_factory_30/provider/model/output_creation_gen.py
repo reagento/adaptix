@@ -11,7 +11,7 @@ from .crown_definitions import (
     OutFieldCrown,
     OutListCrown,
     OutNoneCrown,
-    OutputNameMapping,
+    OutputNameLayout,
     Sieve,
 )
 from .definitions import CodeGenerator, OutputFigure, VarBinder
@@ -84,9 +84,9 @@ class ElementExpr(NamedTuple):
 
 
 class BuiltinOutputCreationGen(CodeGenerator):
-    def __init__(self, figure: OutputFigure, name_mapping: OutputNameMapping, debug_path: bool):
+    def __init__(self, figure: OutputFigure, name_layout: OutputNameLayout, debug_path: bool):
         self._figure = figure
-        self._name_mapping = name_mapping
+        self._name_layout = name_layout
         self._debug_path = debug_path
 
         self._name_to_field: Dict[str, OutputField] = {field.name: field for field in self._figure.fields}
@@ -113,10 +113,10 @@ class BuiltinOutputCreationGen(CodeGenerator):
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
 
-        if not self._gen_root_crown_dispatch(crown_builder, state, self._name_mapping.crown):
+        if not self._gen_root_crown_dispatch(crown_builder, state, self._name_layout.crown):
             raise TypeError
 
-        if self._name_mapping.extra_move is None:
+        if self._name_layout.extra_move is None:
             crown_builder += f"return {state.crown_var_self()}"
         else:
             crown_builder += Template("return {**$var_self, **$extra}").substitute(

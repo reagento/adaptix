@@ -40,26 +40,24 @@ from .model import (
     DATACLASS_FIGURE_PROVIDER,
     NAMED_TUPLE_FIGURE_PROVIDER,
     TYPED_DICT_FIGURE_PROVIDER,
-    BaseNameMappingRequest,
+    BaseNameLayoutRequest,
     BuiltinInputExtractionMaker,
     BuiltinOutputCreationMaker,
     InputCreationMaker,
     InputExtractionMaker,
     InputFigureRequest,
-    InputNameMappingRequest,
+    InputNameLayoutRequest,
     ModelDumperProvider,
     ModelLoaderProvider,
-    NameMappingProvider,
     NameSanitizer,
     OutputCreationMaker,
     OutputExtractionMaker,
     OutputFigureRequest,
-    OutputNameMappingRequest,
+    OutputNameLayoutRequest,
     make_input_creation,
     make_output_extraction,
 )
 from .model.figure_provider import PropertyAdder
-from .name_mapper import ExtraIn, ExtraOut, NameMapper
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import (
     AndRequestChecker,
@@ -78,5 +76,5 @@ from .provider_basics import (
     match_origin,
 )
 from .provider_template import ABCProxy, CoercionLimiter, DumperProvider, LoaderProvider, for_origin
-from .request_cls import DumperFieldRequest, DumperRequest, FieldRM, LoaderFieldRequest, LoaderRequest, TypeHintRM
+from .request_cls import DumperRequest, FieldLocation, LoaderRequest, TypeHintLocation
 from .static_provider import StaticProvider, static_provision_action

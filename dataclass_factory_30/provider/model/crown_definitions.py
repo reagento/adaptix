@@ -1,13 +1,10 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generic, List, Mapping, MutableMapping, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, Mapping, MutableMapping, Sequence, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools import BaseFigure, DefaultFactory, DefaultValue, InputFigure, OutputFigure
 from ...utils import SingletonMeta
-from ..essential import Mediator
-from ..request_cls import TypeHintRM
-from ..static_provider import StaticProvider, static_provision_action
+from ..request_cls import LocatedRequest
 
 T = TypeVar('T')
 
@@ -38,28 +35,29 @@ class ExtraCollect(metaclass=SingletonMeta):
 # NoneCrown-s represent element that do not map to any field
 
 
-@dataclass(frozen=True)
+@dataclass
 class BaseDictCrown(Generic[T]):
-    map: Dict[str, T]
+    map: Mapping[str, T]
 
 
-@dataclass(frozen=True)
+@dataclass
 class BaseListCrown(Generic[T]):
-    map: List[T]
+    map: Sequence[T]
 
 
-@dataclass(frozen=True)
+@dataclass
 class BaseNoneCrown:
     pass
 
 
-@dataclass(frozen=True)
+@dataclass
 class BaseFieldCrown:
     name: str
 
 
-BaseCrown = Union[BaseDictCrown, BaseListCrown, BaseNoneCrown, BaseFieldCrown]
-RootBaseCrown = Union[BaseDictCrown, BaseListCrown]
+BranchBaseCrown = Union[BaseDictCrown, BaseListCrown]
+LeafBaseCrown = Union[BaseFieldCrown, BaseNoneCrown]
+BaseCrown = Union[BranchBaseCrown, LeafBaseCrown]
 
 # --------  Input Crown -------- #
 
@@ -67,28 +65,29 @@ DictExtraPolicy = Union[ExtraSkip, ExtraForbid, ExtraCollect]
 ListExtraPolicy = Union[ExtraSkip, ExtraForbid]
 
 
-@dataclass(frozen=True)
+@dataclass
 class InpDictCrown(BaseDictCrown['InpCrown']):
     extra_policy: DictExtraPolicy
 
 
-@dataclass(frozen=True)
+@dataclass
 class InpListCrown(BaseListCrown['InpCrown']):
     extra_policy: ListExtraPolicy
 
 
-@dataclass(frozen=True)
+@dataclass
 class InpNoneCrown(BaseNoneCrown):
     pass
 
 
-@dataclass(frozen=True)
+@dataclass
 class InpFieldCrown(BaseFieldCrown):
     pass
 
 
-InpCrown = Union[InpDictCrown, InpListCrown, InpFieldCrown, InpNoneCrown]
-RootInpCrown = Union[InpDictCrown, InpListCrown]
+BranchInpCrown = Union[InpDictCrown, InpListCrown]
+LeafInpCrown = Union[InpFieldCrown, InpNoneCrown]
+InpCrown = Union[BranchInpCrown, LeafInpCrown]
 
 # --------  Output Crown -------- #
 
@@ -97,7 +96,7 @@ RootInpCrown = Union[InpDictCrown, InpListCrown]
 Sieve = Callable[[Any], bool]
 
 
-@dataclass(frozen=True)
+@dataclass
 class OutDictCrown(BaseDictCrown['OutCrown']):
     sieves: Dict[str, Sieve]
 
@@ -112,7 +111,7 @@ class OutDictCrown(BaseDictCrown['OutCrown']):
         self._validate()
 
 
-@dataclass(frozen=True)
+@dataclass
 class OutListCrown(BaseListCrown['OutCrown']):
     pass
 
@@ -120,20 +119,21 @@ class OutListCrown(BaseListCrown['OutCrown']):
 Filler = Union[DefaultValue, DefaultFactory]
 
 
-@dataclass(frozen=True)
+@dataclass
 class OutNoneCrown(BaseNoneCrown):
     filler: Filler
 
 
-@dataclass(frozen=True)
+@dataclass
 class OutFieldCrown(BaseFieldCrown):
     pass
 
 
-OutCrown = Union[OutDictCrown, OutListCrown, OutNoneCrown, OutFieldCrown]
-RootOutCrown = Union[OutDictCrown, OutListCrown]
+BranchOutCrown = Union[OutDictCrown, OutListCrown]
+LeafOutCrown = Union[OutFieldCrown, OutNoneCrown]
+OutCrown = Union[BranchOutCrown, LeafOutCrown]
 
-# --------  Name Mapping -------- #
+# --------  Name Layout -------- #
 
 
 class ExtraKwargs(metaclass=SingletonMeta):
@@ -165,45 +165,33 @@ BaseExtraMove = Union[InpExtraMove, OutExtraMove]
 
 
 @dataclass(frozen=True)
-class BaseNameMapping:
-    crown: RootBaseCrown
+class BaseNameLayout:
+    crown: BranchBaseCrown
     extra_move: BaseExtraMove
 
 
 @dataclass(frozen=True)
-class BaseNameMappingRequest(TypeHintRM[T], Generic[T]):
+class BaseNameLayoutRequest(LocatedRequest[T], Generic[T]):
     figure: BaseFigure
 
 
 @dataclass(frozen=True)
-class InputNameMapping(BaseNameMapping):
-    crown: RootInpCrown
+class InputNameLayout(BaseNameLayout):
+    crown: BranchInpCrown
     extra_move: InpExtraMove
 
 
 @dataclass(frozen=True)
-class InputNameMappingRequest(BaseNameMappingRequest[InputNameMapping]):
+class InputNameLayoutRequest(BaseNameLayoutRequest[InputNameLayout]):
     figure: InputFigure
 
 
 @dataclass(frozen=True)
-class OutputNameMapping(BaseNameMapping):
-    crown: RootOutCrown
+class OutputNameLayout(BaseNameLayout):
+    crown: BranchOutCrown
     extra_move: OutExtraMove
 
 
 @dataclass(frozen=True)
-class OutputNameMappingRequest(BaseNameMappingRequest[OutputNameMapping]):
+class OutputNameLayoutRequest(BaseNameLayoutRequest[OutputNameLayout]):
     figure: OutputFigure
-
-
-class NameMappingProvider(StaticProvider, ABC):
-    @abstractmethod
-    @static_provision_action
-    def _provide_input_name_mapping(self, mediator: Mediator, request: InputNameMappingRequest) -> InputNameMapping:
-        ...
-
-    @abstractmethod
-    @static_provision_action
-    def _provide_output_name_mapping(self, mediator: Mediator, request: OutputNameMappingRequest) -> OutputNameMapping:
-        ...

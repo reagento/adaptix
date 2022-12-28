@@ -26,7 +26,7 @@ from .crown_definitions import (
     InpFieldCrown,
     InpListCrown,
     InpNoneCrown,
-    InputNameMapping,
+    InputNameLayout,
 )
 from .definitions import CodeGenerator, VarBinder
 
@@ -117,12 +117,12 @@ class BuiltinInputExtractionGen(CodeGenerator):
     def __init__(
         self,
         figure: InputFigure,
-        name_mapping: InputNameMapping,
+        name_layout: InputNameLayout,
         debug_path: bool,
         field_loaders: Mapping[str, Loader],
     ):
         self._figure = figure
-        self._name_mapping = name_mapping
+        self._name_layout = name_layout
         self._debug_path = debug_path
         self._name_to_field: Dict[str, InputField] = {
             field.name: field for field in self._figure.fields
@@ -131,13 +131,13 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
     @property
     def _can_collect_extra(self) -> bool:
-        return self._name_mapping.extra_move is not None
+        return self._name_layout.extra_move is not None
 
     def _is_extra_target(self, field: InputField):
         return (
-            isinstance(self._name_mapping.extra_move, ExtraTargets)
+            isinstance(self._name_layout.extra_move, ExtraTargets)
             and
-            field.name in self._name_mapping.extra_move.fields
+            field.name in self._name_layout.extra_move.fields
         )
 
     def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
@@ -160,7 +160,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
         for field_name, loader in self._field_loaders.items():
             state.ctx_namespace.add(state.field_loader(field_name), loader)
 
-        if not self._gen_root_crown_dispatch(crown_builder, state, self._name_mapping.crown):
+        if not self._gen_root_crown_dispatch(crown_builder, state, self._name_layout.crown):
             raise TypeError
 
         builder = CodeBuilder()
@@ -418,12 +418,12 @@ class BuiltinInputExtractionGen(CodeGenerator):
     def _gen_extra_targets_assigment(self, builder: CodeBuilder, state: GenState):
         # Saturate extra targets with data.
         # If extra data is not collected, loader of required field will get empty dict
-        extra_move = self._name_mapping.extra_move
+        extra_move = self._name_layout.extra_move
 
         if not isinstance(extra_move, ExtraTargets):
             return
 
-        if self._name_mapping.crown.extra_policy == ExtraCollect():
+        if self._name_layout.crown.extra_policy == ExtraCollect():
             for target in extra_move.fields:
                 field = self._name_to_field[target]
 
