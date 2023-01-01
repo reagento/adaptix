@@ -14,7 +14,7 @@ from dataclass_factory_30.model_tools import (
     ParamKind,
     ParamKwargs,
 )
-from dataclass_factory_30.provider import InputNameLayoutRequest, NameStyle, NameToPathMaker, ValueProvider
+from dataclass_factory_30.provider import InputNameLayoutRequest, NameStyle, ValueProvider
 from dataclass_factory_30.provider.model.crown_definitions import (
     ExtraSkip,
     InpDictCrown,
@@ -28,7 +28,7 @@ from dataclass_factory_30.provider.model.crown_definitions import (
 from tests_helpers import TestRetort
 
 
-def check_name_mapper(mapper: NameToPathMaker, source: Set[str], target: Set[str]):
+def check_name_mapper(mapper, source: Set[str], target: Set[str]):
     result = set()
     for s_name in source:
         if not mapper._should_skip(s_name):

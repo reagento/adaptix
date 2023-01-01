@@ -24,6 +24,7 @@ from dataclass_factory_30.provider import (
     NameSanitizer,
     OutputFigureRequest,
     OutputNameLayoutRequest,
+    TypeHintLocation,
     ValueProvider,
     make_output_extraction,
 )
@@ -96,7 +97,10 @@ def make_dumper_getter(
         )
 
         dumper = retort.provide(
-            DumperRequest(type=Dummy, debug_path=debug_path)
+            DumperRequest(
+                loc=TypeHintLocation(type=Dummy),
+                debug_path=debug_path,
+            )
         )
         return dumper
 

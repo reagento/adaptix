@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from dataclass_factory_30.provider import LiteralProvider, LoaderRequest, LoadError
+from dataclass_factory_30.provider import LiteralProvider, LoaderRequest, LoadError, TypeHintLocation
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 
@@ -20,7 +20,7 @@ def retort():
 def test_loader_base(retort, strict_coercion, debug_path):
     loader = retort.provide(
         LoaderRequest(
-            type=Literal["a", "b", 10],
+            loc=TypeHintLocation(type=Literal["a", "b", 10]),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -55,42 +55,42 @@ def test_strict_coercion(retort, debug_path):
     # so Literal[0, 1] sometimes returns Literal[False, True]
     # and vice versa.
     # We add a random string at the end to suppress caching
-    loader_int = retort.provide(
+    int_loader = retort.provide(
         LoaderRequest(
-            type=Literal[0, 1, rnd()],  # noqa
+            loc=TypeHintLocation(type=Literal[0, 1, rnd()]),  # noqa
             strict_coercion=True,
             debug_path=debug_path,
         )
     )
 
-    assert _is_exact_zero(loader_int(0))
-    assert _is_exact_one(loader_int(1))
+    assert _is_exact_zero(int_loader(0))
+    assert _is_exact_one(int_loader(1))
 
     raises_path(
         LoadError(),
-        lambda: loader_int(False)
+        lambda: int_loader(False)
     )
     raises_path(
         LoadError(),
-        lambda: loader_int(True)
+        lambda: int_loader(True)
     )
 
-    loader_bool = retort.provide(
+    bool_loader = retort.provide(
         LoaderRequest(
-            type=Literal[False, True, rnd()],  # noqa
+            loc=TypeHintLocation(type=Literal[False, True, rnd()]),  # noqa
             strict_coercion=True,
             debug_path=debug_path,
         )
     )
 
-    assert loader_bool(False) is False
-    assert loader_bool(True) is True
+    assert bool_loader(False) is False
+    assert bool_loader(True) is True
 
     raises_path(
         LoadError(),
-        lambda: loader_bool(0)
+        lambda: bool_loader(0)
     )
     raises_path(
         LoadError(),
-        lambda: loader_bool(1)
+        lambda: bool_loader(1)
     )

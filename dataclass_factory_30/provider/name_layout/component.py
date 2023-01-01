@@ -26,7 +26,7 @@ from ..model.crown_definitions import (
     OutputNameLayoutRequest,
 )
 from ..name_style import NameStyle, convert_snake_style
-from ..overlay import Overlay, Schema, provide_schema
+from ..overlay_schema import Overlay, Schema, provide_schema
 from .base import ExtraIn, ExtraMoveMaker, ExtraOut, ExtraPoliciesMaker, Key, Path, PathsTo, SievesMaker, StructureMaker
 
 RawKey = Union[Key, EllipsisType]
@@ -121,12 +121,10 @@ class BuiltinSievesMaker(SievesMaker):
     def _create_sieve(self, field: OutputField) -> Sieve:
         if isinstance(field.default, DefaultValue):
             default_value = field.default.value
-
             return lambda x: x != default_value
 
         if isinstance(field.default, DefaultFactory):
             default_factory = field.default.factory
-
             return lambda x: x != default_factory()
 
         raise ValueError

@@ -20,6 +20,7 @@ from dataclass_factory_30.provider import (
     NameSanitizer,
     NoRequiredFieldsError,
     NoRequiredItemsError,
+    TypeHintLocation,
     TypeLoadError,
     ValueProvider,
     make_input_creation,
@@ -100,7 +101,11 @@ def make_loader_getter(
         )
 
         loader = retort.provide(
-            LoaderRequest(type=Gauge, debug_path=debug_path, strict_coercion=False)
+            LoaderRequest(
+                loc=TypeHintLocation(type=Gauge),
+                debug_path=debug_path,
+                strict_coercion=False,
+            )
         )
         return loader
 

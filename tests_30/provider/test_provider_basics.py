@@ -4,14 +4,15 @@ import pytest
 
 from dataclass_factory_30.provider import CannotProvide, Request, TypeHintLocation
 from dataclass_factory_30.provider.provider_basics import StackEndRC, create_req_checker
+from dataclass_factory_30.provider.request_cls import LocatedRequest
 from dataclass_factory_30.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 
 
-def _create_mediator(*arg: Request[Any]):
+def create_mediator(*elements: Request[Any]):
     return BuiltinMediator(
         searcher=RawRecipeSearcher([]),
         recursion_resolving=RecursionResolving(),
-        request_stack=arg,
+        request_stack=elements,
     )
 
 
@@ -26,31 +27,54 @@ def test_stack_end_rc():
 
     with pytest.raises(CannotProvide, match="Request stack is too small"):
         checker.check_request(
-            _create_mediator(TypeHintLocation(int)),
-            TypeHintLocation(int),
+            create_mediator(
+                LocatedRequest(loc=TypeHintLocation(int)),
+            ),
+            LocatedRequest(loc=TypeHintLocation(int)),
         )
 
     with pytest.raises(CannotProvide, match="Request stack is too small"):
         checker.check_request(
-            _create_mediator(TypeHintLocation(int), TypeHintLocation(str)),
-            TypeHintLocation(int),
+            create_mediator(
+                LocatedRequest(loc=TypeHintLocation(int)),
+                LocatedRequest(loc=TypeHintLocation(str)),
+            ),
+            LocatedRequest(loc=TypeHintLocation(int)),
         )
 
     with pytest.raises(CannotProvide):
         checker.check_request(
-            _create_mediator(TypeHintLocation(int), TypeHintLocation(str), TypeHintLocation(str)),
-            TypeHintLocation(int),
+            create_mediator(
+                LocatedRequest(loc=TypeHintLocation(int)),
+                LocatedRequest(loc=TypeHintLocation(str)),
+                LocatedRequest(loc=TypeHintLocation(str)),
+            ),
+            LocatedRequest(loc=TypeHintLocation(int)),
         )
 
     checker.check_request(
-        _create_mediator(TypeHintLocation(int), TypeHintLocation(str), TypeHintLocation(bool)),
-        TypeHintLocation(int),
+        create_mediator(
+            LocatedRequest(loc=TypeHintLocation(int)),
+            LocatedRequest(loc=TypeHintLocation(str)),
+            LocatedRequest(loc=TypeHintLocation(bool)),
+        ),
+        LocatedRequest(loc=TypeHintLocation(int)),
     )
     checker.check_request(
-        _create_mediator(TypeHintLocation(int), TypeHintLocation(int), TypeHintLocation(str), TypeHintLocation(bool)),
-        TypeHintLocation(int),
+        create_mediator(
+            LocatedRequest(loc=TypeHintLocation(int)),
+            LocatedRequest(loc=TypeHintLocation(int)),
+            LocatedRequest(loc=TypeHintLocation(str)),
+            LocatedRequest(loc=TypeHintLocation(bool)),
+        ),
+        LocatedRequest(loc=TypeHintLocation(int)),
     )
     checker.check_request(
-        _create_mediator(TypeHintLocation(str), TypeHintLocation(int), TypeHintLocation(str), TypeHintLocation(bool)),
-        TypeHintLocation(int),
+        create_mediator(
+            LocatedRequest(loc=TypeHintLocation(str)),
+            LocatedRequest(loc=TypeHintLocation(int)),
+            LocatedRequest(loc=TypeHintLocation(str)),
+            LocatedRequest(loc=TypeHintLocation(bool)),
+        ),
+        LocatedRequest(loc=TypeHintLocation(int)),
     )

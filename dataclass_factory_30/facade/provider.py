@@ -3,8 +3,6 @@ from enum import Enum, EnumMeta
 from types import MappingProxyType
 from typing import Any, Callable, Iterable, Mapping, Optional, Sequence, Type, TypeVar, Union, overload
 
-from dataclass_factory_30.provider.overlay import OverlayProvider
-
 from ..common import Catchable, Dumper, Loader, TypeHint
 from ..model_tools import Default, DescriptorAccessor, NoDefault, OutputField, get_func_figure
 from ..provider import (
@@ -34,6 +32,7 @@ from ..provider.name_layout.component import (
     SievesOverlay,
     StructureOverlay,
 )
+from ..provider.overlay_schema import OverlayProvider
 from ..utils import Omittable, Omitted
 from .utils import resolve_pred_value_chain
 
@@ -146,8 +145,7 @@ def _convert_name_map_to_stack(name_map: NameMap) -> NameMapStack:
 
 
 def name_mapping(
-    pred: Any = Omitted(),
-    /, *,
+    pred: Omittable[Any] = Omitted(),
     # filtering which fields are presented
     skip: Omittable[Iterable[str]] = Omitted(),
     only: Omittable[Optional[Iterable[str]]] = Omitted(),

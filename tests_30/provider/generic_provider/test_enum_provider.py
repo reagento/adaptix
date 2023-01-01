@@ -1,7 +1,13 @@
 from enum import Enum, IntEnum
 
 from dataclass_factory_30.facade import dumper, enum_by_value, loader
-from dataclass_factory_30.provider import DumperRequest, EnumExactValueProvider, EnumNameProvider, LoaderRequest
+from dataclass_factory_30.provider import (
+    DumperRequest,
+    EnumExactValueProvider,
+    EnumNameProvider,
+    LoaderRequest,
+    TypeHintLocation,
+)
 from dataclass_factory_30.provider.exceptions import BadVariantError, MsgError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
@@ -24,7 +30,7 @@ def test_name_provider(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=MyEnum,
+            loc=TypeHintLocation(type=MyEnum),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -49,7 +55,7 @@ def test_name_provider(strict_coercion, debug_path):
 
     dumper = retort.provide(
         DumperRequest(
-            type=MyEnum,
+            loc=TypeHintLocation(type=MyEnum),
             debug_path=debug_path,
         )
     )
@@ -67,7 +73,7 @@ def test_exact_value_provider(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=MyEnum,
+            loc=TypeHintLocation(type=MyEnum),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -92,7 +98,7 @@ def test_exact_value_provider(strict_coercion, debug_path):
 
     dumper = retort.provide(
         DumperRequest(
-            type=MyEnum,
+            loc=TypeHintLocation(type=MyEnum),
             debug_path=debug_path,
         )
     )
@@ -101,7 +107,7 @@ def test_exact_value_provider(strict_coercion, debug_path):
 
     int_enum_loader = retort.provide(
         LoaderRequest(
-            type=MyIntEnum,
+            loc=TypeHintLocation(type=MyIntEnum),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -136,7 +142,7 @@ def test_value_provider(strict_coercion, debug_path):
 
     enum_loader = retort.provide(
         LoaderRequest(
-            type=MyEnum,
+            loc=TypeHintLocation(type=MyEnum),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -157,7 +163,7 @@ def test_value_provider(strict_coercion, debug_path):
 
     enum_dumper = retort.provide(
         DumperRequest(
-            type=MyEnum,
+            loc=TypeHintLocation(type=MyEnum),
             debug_path=debug_path,
         )
     )

@@ -10,6 +10,7 @@ from dataclass_factory_30.provider import (
     LiteralProvider,
     LoaderRequest,
     LoadError,
+    TypeHintLocation,
     TypeLoadError,
     UnionLoadError,
     UnionProvider,
@@ -59,7 +60,7 @@ def retort():
 def test_loading(retort, strict_coercion, debug_path):
     loader = retort.provide(
         LoaderRequest(
-            type=Union[int, str],
+            loc=TypeHintLocation(type=Union[int, str]),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -90,7 +91,7 @@ def test_loading(retort, strict_coercion, debug_path):
 def test_serializing(retort, debug_path):
     dumper = retort.provide(
         DumperRequest(
-            type=Union[int, str],
+            loc=TypeHintLocation(type=Union[int, str]),
             debug_path=debug_path,
         )
     )
@@ -110,7 +111,7 @@ def test_serializing(retort, debug_path):
 def test_opt_serializing(retort, debug_path):
     opt_dumper = retort.provide(
         DumperRequest(
-            type=Optional[str],
+            loc=TypeHintLocation(type=Optional[str]),
             debug_path=debug_path,
         )
     )
@@ -132,7 +133,7 @@ def test_bad_opt_serializing(retort, debug_path):
         ValueError,
         lambda: retort.provide(
             DumperRequest(
-                type=Union[int, Callable[[int], str]],
+                loc=TypeHintLocation(type=Union[int, Callable[[int], str]]),
                 debug_path=debug_path,
             )
         ),
@@ -157,7 +158,7 @@ def test_literal(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=Literal['a', None],
+            loc=TypeHintLocation(type=Literal['a', None]),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -181,7 +182,7 @@ def test_literal(strict_coercion, debug_path):
 
     dumper = retort.provide(
         DumperRequest(
-            type=Literal['a', None],
+            loc=TypeHintLocation(type=Literal['a', None]),
             debug_path=debug_path,
         )
     )

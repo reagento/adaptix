@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import replace
 from functools import partial
 from typing import Collection, Type, TypeVar, final
 
@@ -8,7 +7,7 @@ from ..type_tools import create_union, normalize_type
 from .essential import CannotProvide, Mediator, Provider, Request
 from .exceptions import TypeLoadError
 from .provider_basics import RequestChecker, match_origin
-from .request_cls import DumperRequest, LoaderRequest
+from .request_cls import DumperRequest, LoaderRequest, get_type_from_request, replace_type
 from .static_provider import StaticProvider, static_provision_action
 
 T = TypeVar('T')
@@ -115,9 +114,9 @@ class ABCProxy(Provider):
         if not isinstance(request, (LoaderRequest, DumperRequest)):
             raise CannotProvide
 
-        norm = normalize_type(request.type)  # type: ignore[attr-defined]
+        norm = normalize_type(get_type_from_request(request))
 
         if norm.origin != self._abstract:
             raise CannotProvide
 
-        return mediator.provide(replace(request, type=self._impl))
+        return mediator.provide(replace_type(request, self._impl))

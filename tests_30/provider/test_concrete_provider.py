@@ -12,6 +12,7 @@ from dataclass_factory_30.provider import (
     NoneProvider,
     RegexPatternProvider,
     SecondsTimedeltaProvider,
+    TypeHintLocation,
 )
 from dataclass_factory_30.provider.concrete_provider import DatetimeFormatMismatch
 from dataclass_factory_30.provider.exceptions import TypeLoadError, ValueLoadError
@@ -49,7 +50,7 @@ def test_iso_format_provider_datetime(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=datetime,
+            loc=TypeHintLocation(type=datetime),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -70,7 +71,10 @@ def test_iso_format_provider_datetime(strict_coercion, debug_path):
     )
 
     dumper = retort.provide(
-        DumperRequest(type=datetime, debug_path=debug_path)
+        DumperRequest(
+            loc=TypeHintLocation(type=datetime),
+            debug_path=debug_path,
+        )
     )
 
     assert dumper(datetime(2011, 11, 4, 0, 0)) == '2011-11-04T00:00:00'
@@ -84,7 +88,7 @@ def test_iso_format_provider_date(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=date,
+            loc=TypeHintLocation(type=date),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -99,7 +103,10 @@ def test_iso_format_provider_date(strict_coercion, debug_path):
     )
 
     dumper = retort.provide(
-        DumperRequest(type=date, debug_path=debug_path)
+        DumperRequest(
+            loc=TypeHintLocation(type=date),
+            debug_path=debug_path,
+        )
     )
 
     assert dumper(date(2019, 12, 4)) == '2019-12-04'
@@ -113,7 +120,7 @@ def test_iso_format_provider_time(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=time,
+            loc=TypeHintLocation(type=time),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -132,7 +139,10 @@ def test_iso_format_provider_time(strict_coercion, debug_path):
     )
 
     dumper = retort.provide(
-        DumperRequest(type=time, debug_path=debug_path)
+        DumperRequest(
+            loc=TypeHintLocation(type=time),
+            debug_path=debug_path,
+        )
     )
 
     assert dumper(time(4, 23, 1)) == '04:23:01'
@@ -146,7 +156,7 @@ def test_datetime_format_provider(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=datetime,
+            loc=TypeHintLocation(type=datetime),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -162,7 +172,10 @@ def test_datetime_format_provider(strict_coercion, debug_path):
     )
 
     dumper = retort.provide(
-        DumperRequest(type=datetime, debug_path=debug_path)
+        DumperRequest(
+            loc=TypeHintLocation(type=datetime),
+            debug_path=debug_path,
+        )
     )
 
     assert dumper(datetime(year=3045, month=2, day=13)) == "3045-02-13"
@@ -176,7 +189,7 @@ def test_seconds_timedelta_provider(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=timedelta,
+            loc=TypeHintLocation(type=timedelta),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -188,7 +201,7 @@ def test_seconds_timedelta_provider(strict_coercion, debug_path):
     assert loader(Decimal('0.123')) == timedelta(milliseconds=123)
 
     dumper = retort.provide(
-        DumperRequest(type=timedelta, debug_path=debug_path)
+        DumperRequest(loc=TypeHintLocation(type=timedelta), debug_path=debug_path)
     )
 
     assert dumper(timedelta(minutes=10)) == 600
@@ -202,7 +215,7 @@ def test_none_provider(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=None,
+            loc=TypeHintLocation(type=None),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -224,7 +237,7 @@ def test_bytes_provider(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=bytes,
+            loc=TypeHintLocation(type=bytes),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -256,7 +269,10 @@ def test_bytes_provider(strict_coercion, debug_path):
     )
 
     dumper = retort.provide(
-        DumperRequest(type=bytes, debug_path=debug_path)
+        DumperRequest(
+            loc=TypeHintLocation(type=bytes),
+            debug_path=debug_path,
+        )
     )
 
     assert dumper(b'abcd') == 'YWJjZA=='
@@ -270,7 +286,7 @@ def test_bytearray_provider(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=bytearray,
+            loc=TypeHintLocation(type=bytearray),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -302,7 +318,10 @@ def test_bytearray_provider(strict_coercion, debug_path):
     )
 
     dumper = retort.provide(
-        DumperRequest(type=bytearray, debug_path=debug_path)
+        DumperRequest(
+            loc=TypeHintLocation(type=bytearray),
+            debug_path=debug_path
+        )
     )
 
     assert dumper(bytearray(b'abcd')) == 'YWJjZA=='
@@ -316,7 +335,7 @@ def test_regex_provider(strict_coercion, debug_path):
 
     loader = retort.provide(
         LoaderRequest(
-            type=re.Pattern,
+            loc=TypeHintLocation(type=re.Pattern),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -334,7 +353,10 @@ def test_regex_provider(strict_coercion, debug_path):
     )
 
     dumper = retort.provide(
-        DumperRequest(type=re.Pattern, debug_path=debug_path)
+        DumperRequest(
+            loc=TypeHintLocation(type=re.Pattern),
+            debug_path=debug_path,
+        )
     )
 
     assert dumper(re.compile(r'\w')) == r'\w'

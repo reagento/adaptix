@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TypeVar
 
 from ..common import Dumper, Loader, TypeHint
 from ..model_tools import BaseField, InputField, OutputField
-from .essential import Request
+from .essential import CannotProvide, Request
 
 T = TypeVar('T')
 
@@ -47,3 +47,16 @@ class LoaderRequest(LocatedRequest[Loader]):
 @dataclass(frozen=True)
 class DumperRequest(LocatedRequest[Dumper]):
     debug_path: bool
+
+
+def get_type_from_request(request: LocatedRequest) -> TypeHint:
+    if isinstance(request.loc, TypeHintLocation):
+        return request.loc.type
+    raise CannotProvide
+
+
+LR = TypeVar('LR', bound=LocatedRequest)
+
+
+def replace_type(request: LR, tp: TypeHint) -> LR:
+    return replace(request, loc=replace(request.loc, type=tp))  # type: ignore

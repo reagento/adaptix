@@ -14,6 +14,7 @@ from typing import (
     DefaultDict,
     Dict,
     Final,
+    ForwardRef,
     FrozenSet,
     Generic,
     List,
@@ -524,21 +525,21 @@ def test_type_var(variance: dict, make_union):
 
     assert_norm_tv(
         t1,
-        NormTV(t1, limit=Bound(nt_zero(Any)))
+        NormTV(t1, limit=Bound(nt_zero(Any)), source=t1)
     )
 
     t2 = TypeVar("t2", bound=int, **variance)  # type: ignore[misc]
 
     assert_norm_tv(
         t2,
-        NormTV(t2, limit=Bound(nt_zero(int)))
+        NormTV(t2, limit=Bound(nt_zero(int)), source=t2)
     )
 
     t3 = TypeVar("t3", int, str, **variance)  # type: ignore[misc]
 
     assert_norm_tv(
         t3,
-        NormTV(t3, limit=Constraints((nt_zero(int), nt_zero(str))))
+        NormTV(t3, limit=Constraints((nt_zero(int), nt_zero(str))), source=t3)
     )
 
     t4 = TypeVar("t4", list, str, List, **variance)  # type: ignore[misc]
@@ -548,9 +549,11 @@ def test_type_var(variance: dict, make_union):
     assert_norm_tv(
         t4,
         NormTV(
-            t4, limit=Constraints(
+            t4,
+            limit=Constraints(
                 (t4_union, nt_zero(str))
-            )
+            ),
+            source=t4,
         )
     )
 
@@ -561,12 +564,12 @@ def test_type_var(variance: dict, make_union):
 
         assert_normalize(
             Concatenate[int, p1],
-            Concatenate, [nt_zero(int), NormTV(p1, limit=Bound(nt_zero(Any)))],
+            Concatenate, [nt_zero(int), NormTV(p1, limit=Bound(nt_zero(Any)), source=p1)],
         )
 
         assert_normalize(
             Concatenate[int, str, p1],
-            Concatenate, [nt_zero(int), nt_zero(str), NormTV(p1, limit=Bound(nt_zero(Any)))],
+            Concatenate, [nt_zero(int), nt_zero(str), NormTV(p1, limit=Bound(nt_zero(Any)), source=p1)],
         )
 
         assert_normalize(
@@ -574,7 +577,7 @@ def test_type_var(variance: dict, make_union):
             c_abc.Callable, [
                 make_norm_type(
                     Concatenate,
-                    (nt_zero(int), NormTV(p1, limit=Bound(nt_zero(Any)))),
+                    (nt_zero(int), NormTV(p1, limit=Bound(nt_zero(Any)), source=p1)),
                     source=Concatenate[int, p1]
                 ),
                 nt_zero(int),
@@ -586,7 +589,7 @@ def test_type_var(variance: dict, make_union):
             c_abc.Callable, [
                 make_norm_type(
                     Concatenate,
-                    (nt_zero(int), nt_zero(str), NormTV(p1, limit=Bound(nt_zero(Any)))),
+                    (nt_zero(int), nt_zero(str), NormTV(p1, limit=Bound(nt_zero(Any)), source=p1)),
                     source=Concatenate[int, str, p1]
                 ),
                 nt_zero(int),
@@ -596,7 +599,7 @@ def test_type_var(variance: dict, make_union):
         p2 = ParamSpec('p2', bound=str)  # type: ignore[misc]
         assert_norm_tv(
             p2,
-            NormTV(p2, limit=Bound(nt_zero(str)))
+            NormTV(p2, limit=Bound(nt_zero(str)), source=p2)
         )
 
         assert_normalize(
@@ -604,7 +607,7 @@ def test_type_var(variance: dict, make_union):
             c_abc.Callable, [
                 make_norm_type(
                     Concatenate,
-                    (nt_zero(int), NormTV(p2, limit=Bound(nt_zero(str)))),
+                    (nt_zero(int), NormTV(p2, limit=Bound(nt_zero(str)), source=p2)),
                     source=Concatenate[int, p2]
                 ),
                 nt_zero(int),
@@ -616,7 +619,7 @@ def test_type_var(variance: dict, make_union):
             c_abc.Callable, [
                 make_norm_type(
                     Concatenate,
-                    (nt_zero(int), nt_zero(str), NormTV(p2, limit=Bound(nt_zero(str)))),
+                    (nt_zero(int), nt_zero(str), NormTV(p2, limit=Bound(nt_zero(str)), source=p2)),
                     source=Concatenate[int, str, p2]
                 ),
                 nt_zero(int),
@@ -660,7 +663,7 @@ T3 = TypeVar('T3')
 
 
 def any_tv(tv: Any):
-    return NormTV(tv, Bound(nt_zero(Any)))
+    return NormTV(tv, Bound(nt_zero(Any)), source=tv)
 
 
 def test_generic(make_union):
@@ -751,6 +754,104 @@ def test_generic_and_protocol_with_param_spec():
         )
 
 
+T_FR1 = TypeVar('T_FR1', bound='int')
+T_FR2 = TypeVar('T_FR2', bound='MyForwardClass')
+T_FR3 = TypeVar('T_FR3', bound=List['MyForwardClass'])
+T_FR4 = TypeVar('T_FR4', 'MyForwardClass', 'MyAnotherForwardClass')
+
+
+class MyForwardClass:
+    pass
+
+
+class MyAnotherForwardClass:
+    pass
+
+
+if HAS_PARAM_SPEC:
+    P_FR1 = typing.ParamSpec('P_FR1', bound='int')  # type: ignore[misc]
+    P_FR2 = typing.ParamSpec('P_FR2', bound='MyForwardClass')  # type: ignore[misc]
+    P_FR3 = typing.ParamSpec('P_FR3', bound=List['MyForwardClass'])  # type: ignore[misc]
+
+
+def test_forward_ref_at_type_var_limit():
+    assert_norm_tv(
+        T_FR1,
+        NormTV(
+            T_FR1,
+            limit=Bound(nt_zero(int, source=ForwardRef('int'))),
+            source=T_FR1
+        ),
+    )
+    assert_norm_tv(
+        T_FR2,
+        NormTV(
+            T_FR2,
+            limit=Bound(nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass'))),
+            source=T_FR2,
+        ),
+    )
+    assert_norm_tv(
+        T_FR3,
+        NormTV(
+            T_FR3,
+            limit=Bound(
+                make_norm_type(
+                    list,
+                    (nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass')), ),
+                    source=List[ForwardRef('MyForwardClass')],
+                )
+            ),
+            source=T_FR3,
+        ),
+    )
+    assert_norm_tv(
+        T_FR4,
+        NormTV(
+            T_FR4,
+            limit=Constraints(
+                (
+                    make_norm_type(MyForwardClass, (), source=ForwardRef('MyForwardClass')),
+                    make_norm_type(MyAnotherForwardClass, (), source=ForwardRef('MyAnotherForwardClass')),
+                )
+            ),
+            source=T_FR4,
+        ),
+    )
+
+    if HAS_PARAM_SPEC:
+        assert_norm_tv(
+            P_FR1,
+            NormTV(
+                P_FR1,
+                limit=Bound(nt_zero(int, source=ForwardRef('int'))),
+                source=P_FR1,
+            ),
+        )
+        assert_norm_tv(
+            P_FR2,
+            NormTV(
+                P_FR2,
+                limit=Bound(nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass'))),
+                source=P_FR2,
+            ),
+        )
+        assert_norm_tv(
+            P_FR3,
+            NormTV(
+                P_FR3,
+                limit=Bound(
+                    make_norm_type(
+                        list,
+                        (nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass')),),
+                        source=List[ForwardRef('MyForwardClass')],
+                    )
+                ),
+                source=P_FR3,
+            ),
+        )
+
+
 @requires(HAS_PARAM_SPEC)
 def test_param_spec_args_and_kwargs():
     from typing import ParamSpec, ParamSpecArgs, ParamSpecKwargs
@@ -759,14 +860,14 @@ def test_param_spec_args_and_kwargs():
 
     assert_strict_equal(
         normalize_type(p1.args),
-        _NormParamSpecArgs(NormTV(p1, limit=Bound(nt_zero(Any))), source=p1.args),
+        _NormParamSpecArgs(NormTV(p1, limit=Bound(nt_zero(Any)), source=p1), source=p1.args),
     )
 
     assert normalize_type(p1.args).origin == ParamSpecArgs
 
     assert_strict_equal(
         normalize_type(p1.kwargs),
-        _NormParamSpecKwargs(NormTV(p1, limit=Bound(nt_zero(Any))), source=p1.kwargs),
+        _NormParamSpecKwargs(NormTV(p1, limit=Bound(nt_zero(Any)), source=p1), source=p1.kwargs),
     )
 
     assert normalize_type(p1.kwargs).origin == ParamSpecKwargs

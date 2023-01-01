@@ -19,7 +19,13 @@ from typing import (
 import pytest
 
 from dataclass_factory_30.facade import dumper, loader
-from dataclass_factory_30.provider import CoercionLimiter, DumperRequest, IterableProvider, LoaderRequest
+from dataclass_factory_30.provider import (
+    CoercionLimiter,
+    DumperRequest,
+    IterableProvider,
+    LoaderRequest,
+    TypeHintLocation,
+)
 from dataclass_factory_30.provider.exceptions import ExcludedTypeLoadError, TypeLoadError
 from dataclass_factory_30.retort.operating_retort import NoSuitableProvider
 from tests_helpers import TestRetort, parametrize_bool, raises_path
@@ -47,7 +53,7 @@ def test_mapping_providing(retort, strict_coercion, debug_path):
     with pytest.raises(NoSuitableProvider):
         retort.provide(
             LoaderRequest(
-                type=dict,
+                loc=TypeHintLocation(type=dict),
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
@@ -56,7 +62,7 @@ def test_mapping_providing(retort, strict_coercion, debug_path):
     with pytest.raises(NoSuitableProvider):
         retort.provide(
             LoaderRequest(
-                type=Dict,
+                loc=TypeHintLocation(type=Dict),
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
@@ -65,7 +71,7 @@ def test_mapping_providing(retort, strict_coercion, debug_path):
     with pytest.raises(NoSuitableProvider):
         retort.provide(
             LoaderRequest(
-                type=Mapping,
+                loc=TypeHintLocation(type=Mapping),
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
@@ -74,7 +80,7 @@ def test_mapping_providing(retort, strict_coercion, debug_path):
     with pytest.raises(NoSuitableProvider):
         retort.provide(
             LoaderRequest(
-                type=collections.Counter,
+                loc=TypeHintLocation(type=collections.Counter),
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
@@ -85,7 +91,7 @@ def test_mapping_providing(retort, strict_coercion, debug_path):
 def test_loading(retort, strict_coercion, debug_path):
     loader = retort.provide(
         LoaderRequest(
-            type=List[str],
+            loc=TypeHintLocation(type=List[str]),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -137,7 +143,7 @@ def test_abc_impl(retort, strict_coercion, debug_path):
     for tp in [Iterable, Reversible, Collection, Sequence]:
         loader = retort.provide(
             LoaderRequest(
-                type=tp[str],
+                loc=TypeHintLocation(type=tp[str]),
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
@@ -148,7 +154,7 @@ def test_abc_impl(retort, strict_coercion, debug_path):
     for tp in [MutableSequence, List]:
         loader = retort.provide(
             LoaderRequest(
-                type=tp[str],
+                loc=TypeHintLocation(type=tp[str]),
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
@@ -159,7 +165,7 @@ def test_abc_impl(retort, strict_coercion, debug_path):
     for tp in [AbstractSet, FrozenSet]:
         loader = retort.provide(
             LoaderRequest(
-                type=tp[str],
+                loc=TypeHintLocation(type=tp[str]),
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
@@ -170,7 +176,7 @@ def test_abc_impl(retort, strict_coercion, debug_path):
     for tp in [MutableSet, Set]:
         loader = retort.provide(
             LoaderRequest(
-                type=tp[str],
+                loc=TypeHintLocation(type=tp[str]),
                 strict_coercion=strict_coercion,
                 debug_path=debug_path,
             )
@@ -183,7 +189,7 @@ def test_abc_impl(retort, strict_coercion, debug_path):
 def test_serializing(retort, debug_path):
     list_dumper = retort.provide(
         DumperRequest(
-            type=List[str],
+            loc=TypeHintLocation(type=List[str]),
             debug_path=debug_path,
         )
     )
@@ -193,7 +199,7 @@ def test_serializing(retort, debug_path):
 
     iterable_dumper = retort.provide(
         DumperRequest(
-            type=Iterable[str],
+            loc=TypeHintLocation(type=Iterable[str]),
             debug_path=debug_path,
         )
     )

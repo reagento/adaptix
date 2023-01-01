@@ -43,10 +43,6 @@ class Overlay(Generic[Sc]):
         return value is Omitted()
 
     @classmethod
-    def create_empty(cls: Type[Ov]) -> Ov:
-        return cls(**{key: Omitted() for key in cls._load_mergers().keys()})  # pylint: disable=not-an-iterable
-
-    @classmethod
     def _load_mergers(cls) -> Mapping[str, Merger]:
         if cls._mergers is None:
             cls._mergers = {
@@ -60,23 +56,25 @@ class Overlay(Generic[Sc]):
         for field_name, merger in self._load_mergers().items():
             old_field_value = getattr(self, field_name)
             new_field_value = getattr(new, field_name)
-            merged[field_name] = (
-                old_field_value
-                if self._is_omitted(old_field_value) else
-                merger(self, old_field_value, new_field_value)
-            )
+            if self._is_omitted(old_field_value):
+                merged[field_name] = new_field_value
+            elif self._is_omitted(new_field_value):
+                merged[field_name] = old_field_value
+            else:
+                merged[field_name] = merger(self, old_field_value, new_field_value)
         return self.__class__(**merged)
 
-    def create_schema(self) -> Sc:
-        skipped_fields = [
+    def collect_schema(self) -> Sc:
+        omitted_fields = [
             field_name for field_name, field_value in vars(self).items()
             if self._is_omitted(field_value)
         ]
-        if skipped_fields:
+        if omitted_fields:
             raise ValueError(
-                f"Can not create schema because overlay contains omitted values at {skipped_fields}"
+                f"Can not create schema because overlay contains omitted values at {omitted_fields}"
             )
-        return self.schema.__class__(**vars(self))  # type: ignore[return-value]
+        # noinspection PyArgumentList
+        return self.schema(**vars(self))  # type: ignore[return-value]
 
 
 @dataclass(frozen=True)
@@ -85,24 +83,26 @@ class OverlayRequest(LocatedRequest[Ov], Generic[Ov]):
 
 
 def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc: Location) -> Sc:
-    if isinstance(loc, TypeHintLocation):
-        stacked_overlay = overlay.create_empty()
-        for parent in loc.type.mro():
-            new_overlay = mediator.provide(
-                OverlayRequest(
-                    loc=replace(loc, type=parent),
-                    overlay_cls=overlay,
-                )
-            )
-            stacked_overlay = new_overlay.merge(stacked_overlay)
-    else:
-        stacked_overlay = mediator.provide(
-            OverlayRequest(
-                loc=loc,
-                overlay_cls=overlay,
-            )
+    stacked_overlay = mediator.provide(
+        OverlayRequest(
+            loc=loc,
+            overlay_cls=overlay,
         )
-    return stacked_overlay.create_schema()
+    )
+    if isinstance(loc, TypeHintLocation):
+        for parent in loc.type.mro()[1:]:
+            try:
+                new_overlay = mediator.provide(
+                    OverlayRequest(
+                        loc=replace(loc, type=parent),
+                        overlay_cls=overlay,
+                    )
+                )
+            except CannotProvide:
+                pass
+            else:
+                stacked_overlay = new_overlay.merge(stacked_overlay)
+    return stacked_overlay.collect_schema()
 
 
 class OverlayProvider(StaticProvider):

@@ -1,10 +1,12 @@
 # pylint: disable=inconsistent-return-statements,comparison-with-callable
 import collections
 import re
+import sys
 import types
 import typing
 from abc import ABC, abstractmethod
 from collections import abc as c_abc, defaultdict
+from copy import copy
 from dataclasses import InitVar, dataclass
 from enum import Enum, EnumMeta
 from functools import lru_cache
@@ -13,7 +15,9 @@ from typing import (
     Callable,
     ClassVar,
     DefaultDict,
+    Dict,
     Final,
+    ForwardRef,
     Hashable,
     Iterable,
     List,
@@ -31,7 +35,14 @@ from typing import (
 )
 
 from ..common import TypeHint, VarTuple
-from ..feature_requirement import HAS_ANNOTATED, HAS_PARAM_SPEC, HAS_TYPE_ALIAS, HAS_TYPE_GUARD, HAS_TYPE_UNION_OP
+from ..feature_requirement import (
+    HAS_ANNOTATED,
+    HAS_PARAM_SPEC,
+    HAS_PY_39,
+    HAS_TYPE_ALIAS,
+    HAS_TYPE_GUARD,
+    HAS_TYPE_UNION_OP,
+)
 from .basic_utils import create_union, is_new_type, is_subclass_soft, is_user_defined_generic, strip_alias
 
 
@@ -202,10 +213,11 @@ TVLimit = Union[Bound, Constraints]
 
 
 class NormTV(BaseNormType):
-    __slots__ = ('_var', '_limit', '_variance')
+    __slots__ = ('_var', '_limit', '_variance', '_source')
 
-    def __init__(self, var: Any, limit: TVLimit):
+    def __init__(self, var: Any, limit: TVLimit, *, source: TypeHint):
         self._var = var
+        self._source = source
         self._limit = limit
 
         if var.__covariant__:  # type: ignore[attr-defined]
@@ -224,7 +236,7 @@ class NormTV(BaseNormType):
 
     @property
     def source(self) -> TypeHint:
-        return self._var
+        return self._source
 
     @property
     def name(self) -> str:
@@ -302,7 +314,7 @@ def make_norm_type(  # noqa: CCR001
     args: VarTuple[Hashable],
     *,
     source: TypeHint
-):
+) -> BaseNormType:
     if origin == Union:
         if not all(isinstance(arg, BaseNormType) for arg in args):
             raise TypeError
@@ -397,11 +409,16 @@ def _create_norm_literal(args: Iterable):
     )
 
 
-def _replace_source_with_union(norm: _NormType, sources: list) -> _NormType:
-    return make_norm_type(
-        origin=norm.origin,
-        args=norm.args,
-        source=create_union(tuple(sources))
+def _replace_source(norm: BaseNormType, *, source: TypeHint) -> BaseNormType:
+    norm_copy = copy(norm)
+    norm_copy._source = source  # type: ignore[attr-defined]
+    return norm_copy
+
+
+def _replace_source_with_union(norm: BaseNormType, sources: list) -> BaseNormType:
+    return _replace_source(
+        norm=norm,
+        source=create_union(tuple(sources)),
     )
 
 
@@ -422,11 +439,22 @@ class NotSubscribedError(ValueError):
 
 
 N = TypeVar('N', bound=BaseNormType)
+TN = TypeVar('TN', bound='TypeNormalizer')
 
 
 class TypeNormalizer:
     def __init__(self, imp_params_filler: ImplicitParamsFiller):
         self.imp_params_filler = imp_params_filler
+        self._namespace: Optional[Dict[str, Any]] = None
+
+    def _with_namespace(self: TN, namespace: Dict[str, Any]) -> TN:
+        # pylint: disable=protected-access
+        self_copy = copy(self)
+        self_copy._namespace = namespace
+        return self_copy
+
+    def _with_module_namespace(self: TN, module_name: str) -> TN:
+        return self._with_namespace(vars(sys.modules[module_name]))
 
     @overload
     def normalize(self, tp: TypeVar) -> NormTV:
@@ -440,12 +468,32 @@ class TypeNormalizer:
         origin = strip_alias(tp)
         args = get_args(tp)
 
+        result = self._norm_forward_ref(tp)
+        if result is not None:
+            return result
+
         for attr_name in self._aspect_storage:
             result = getattr(self, attr_name)(tp, origin, args)
             if result is not None:
                 return result
 
         raise RuntimeError
+
+    if HAS_PY_39:
+        def _eval_forward_ref(self, forward_ref: ForwardRef):
+            # pylint: disable=protected-access
+            return forward_ref._evaluate(self._namespace, None, set())  # type: ignore[call-arg]
+    else:
+        def _eval_forward_ref(self, forward_ref: ForwardRef):
+            # pylint: disable=protected-access
+            return forward_ref._evaluate(self._namespace, None)
+
+    def _norm_forward_ref(self, tp):
+        if self._namespace is not None:
+            if isinstance(tp, str):
+                return _replace_source(self.normalize(ForwardRef(tp)), source=tp)
+            if isinstance(tp, ForwardRef):
+                return _replace_source(self.normalize(self._eval_forward_ref(tp)), source=tp)
 
     _aspect_storage = AspectStorage()
 
@@ -485,23 +533,30 @@ class TypeNormalizer:
                     source=tp
                 )
 
-    def _get_bound(self, origin) -> Bound:
-        return Bound(ANY_NT) if origin.__bound__ is None else Bound(self.normalize(origin.__bound__))
+    def _get_bound(self, type_var) -> Bound:
+        return (
+            Bound(ANY_NT)
+            if type_var.__bound__ is None else
+            Bound(self.normalize(type_var.__bound__))
+        )
 
     @_aspect_storage.add
     def _norm_type_var(self, tp, origin, args):
+        # pylint: disable=protected-access
         if isinstance(origin, TypeVar):
+            namespaced = self._with_module_namespace(origin.__module__)
             limit = (
                 Constraints(
                     tuple(
-                        self._dedup_union_args(self._norm_iter(origin.__constraints__))
+                        namespaced._dedup_union_args(
+                            namespaced._norm_iter(origin.__constraints__)
+                        )
                     )
                 )
                 if origin.__constraints__ else
-                self._get_bound(origin)
+                namespaced._get_bound(origin)
             )
-
-            return NormTV(var=origin, limit=limit)
+            return NormTV(var=origin, limit=limit, source=tp)
 
     if HAS_PARAM_SPEC:
         @_aspect_storage.add
@@ -513,7 +568,12 @@ class TypeNormalizer:
                 return _NormParamSpecKwargs(param_spec=self.normalize(origin), source=tp)
 
             if isinstance(origin, typing.ParamSpec):
-                return NormTV(var=origin, limit=self._get_bound(origin))
+                namespaced = self._with_module_namespace(origin.__module__)
+                return NormTV(
+                    var=origin,
+                    limit=namespaced._get_bound(origin),  # pylint: disable=protected-access
+                    source=tp,
+                )
 
     @_aspect_storage.add
     def _norm_init_var(self, tp, origin, args):

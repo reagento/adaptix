@@ -5,7 +5,14 @@ from typing import Dict
 import pytest
 
 from dataclass_factory_30.facade import dumper, loader
-from dataclass_factory_30.provider import CoercionLimiter, DictProvider, DumperRequest, LoaderRequest, TypeLoadError
+from dataclass_factory_30.provider import (
+    CoercionLimiter,
+    DictProvider,
+    DumperRequest,
+    LoaderRequest,
+    TypeHintLocation,
+    TypeLoadError,
+)
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 
@@ -38,7 +45,7 @@ class MyMapping:
 def test_loading(retort, strict_coercion, debug_path):
     loader = retort.provide(
         LoaderRequest(
-            type=Dict[str, str],
+            loc=TypeHintLocation(type=Dict[str, str]),
             strict_coercion=strict_coercion,
             debug_path=debug_path,
         )
@@ -77,7 +84,7 @@ def test_loading(retort, strict_coercion, debug_path):
 def test_serializing(retort, debug_path):
     dumper = retort.provide(
         DumperRequest(
-            type=Dict[str, str],
+            loc=TypeHintLocation(type=Dict[str, str]),
             debug_path=debug_path,
         )
     )

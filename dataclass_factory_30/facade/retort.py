@@ -114,6 +114,7 @@ class FilledRetort(OperatingRetort, ABC):
         ABCProxy(ByteString, bytes),
 
         name_mapping(
+            chain=None,
             skip=(),
             only_mapped=False,
             only=None,

@@ -97,14 +97,14 @@ class XorRequestChecker(RequestChecker):
             raise CannotProvide(sub_errors=exceptions)
 
 
-class BoundedRequestChecker(RequestChecker, ABC):
-    BOUND: ClassVar[Type[Location]]
+class LocatedRequestChecker(RequestChecker, ABC):
+    LOCATION: ClassVar[Type[Location]]
 
     def check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
         if not isinstance(request, LocatedRequest):
             raise CannotProvide(f'Request must be instance of {LocatedRequest}')
-        if not isinstance(request.loc, self.BOUND):
-            raise CannotProvide(f'Request location must be instance of {self.BOUND}')
+        if not isinstance(request.loc, self.LOCATION):
+            raise CannotProvide(f'Request location must be instance of {self.LOCATION}')
         self._check_location(mediator, request.loc)
 
     @abstractmethod
@@ -113,8 +113,8 @@ class BoundedRequestChecker(RequestChecker, ABC):
 
 
 @dataclass
-class ExactFieldNameRC(BoundedRequestChecker):
-    BOUND = FieldLocation
+class ExactFieldNameRC(LocatedRequestChecker):
+    LOCATION = FieldLocation
     field_name: str
 
     def _check_location(self, mediator: Mediator, loc: FieldLocation) -> None:
@@ -124,8 +124,8 @@ class ExactFieldNameRC(BoundedRequestChecker):
 
 
 @dataclass
-class ReFieldNameRC(BoundedRequestChecker):
-    BOUND = FieldLocation
+class ReFieldNameRC(LocatedRequestChecker):
+    LOCATION = FieldLocation
     pattern: Pattern[str]
 
     def _check_location(self, mediator: Mediator, loc: FieldLocation) -> None:
@@ -136,8 +136,8 @@ class ReFieldNameRC(BoundedRequestChecker):
 
 
 @dataclass
-class ExactTypeRC(BoundedRequestChecker):
-    BOUND = TypeHintLocation
+class ExactTypeRC(LocatedRequestChecker):
+    LOCATION = TypeHintLocation
     norm: BaseNormType
 
     def _check_location(self, mediator: Mediator, loc: TypeHintLocation) -> None:
@@ -147,8 +147,8 @@ class ExactTypeRC(BoundedRequestChecker):
 
 
 @dataclass
-class SubclassRC(BoundedRequestChecker):
-    BOUND = TypeHintLocation
+class SubclassRC(LocatedRequestChecker):
+    LOCATION = TypeHintLocation
     type_: type
 
     def _check_location(self, mediator: Mediator, loc: TypeHintLocation) -> None:
@@ -159,8 +159,8 @@ class SubclassRC(BoundedRequestChecker):
 
 
 @dataclass
-class ExactOriginRC(BoundedRequestChecker):
-    BOUND = TypeHintLocation
+class ExactOriginRC(LocatedRequestChecker):
+    LOCATION = TypeHintLocation
     origin: Any
 
     def _check_location(self, mediator: Mediator, loc: TypeHintLocation) -> None:
