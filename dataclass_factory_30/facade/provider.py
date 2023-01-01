@@ -1,7 +1,7 @@
 import re
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import Any, Callable, Iterable, Mapping, Optional, Sequence, Type, TypeVar, Union, overload
+from typing import Any, Callable, Iterable, Mapping, Optional, Sequence, TypeVar, Union
 
 from ..common import Catchable, Dumper, Loader, TypeHint
 from ..model_tools import Default, DescriptorAccessor, NoDefault, OutputField, get_func_figure
@@ -34,41 +34,24 @@ from ..provider.name_layout.component import (
 )
 from ..provider.overlay_schema import OverlayProvider
 from ..utils import Omittable, Omitted
-from .utils import resolve_pred_value_chain
 
 T = TypeVar('T')
 
 
-def bound(pred: Any, provider: Provider, /) -> Provider:
+def bound(pred: Any, provider: Provider) -> Provider:
     if pred == Omitted():
         return provider
     return BoundingProvider(create_req_checker(pred), provider)
 
 
-def make_chain(chain: Optional[Chain], provider: Provider, /) -> Provider:
+def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
     if chain is None:
         return provider
 
     return ChainingProvider(chain, provider)
 
 
-@overload
-def loader(pred: Type[T], func: Loader[T], chain: Optional[Chain] = None, /) -> Provider:
-    ...
-
-
-@overload
-def loader(pred: Any, func: Loader, chain: Optional[Chain] = None, /) -> Provider:
-    ...
-
-
-@overload
-def loader(type_or_class_method: Union[type, Loader], chain: Optional[Chain] = None, /) -> Provider:
-    ...
-
-
-def loader(func_or_pred, func_or_chain=None, maybe_chain=None):
-    pred, func, chain = resolve_pred_value_chain(func_or_pred, func_or_chain, maybe_chain)
+def loader(pred: Any, func: Loader, chain: Optional[Chain] = None) -> Provider:
     return bound(
         pred,
         make_chain(
@@ -78,21 +61,7 @@ def loader(func_or_pred, func_or_chain=None, maybe_chain=None):
     )
 
 
-@overload
-def dumper(pred: Type[T], func: Dumper[T], chain: Optional[Chain] = None, /) -> Provider:
-    ...
-
-
-@overload
-def dumper(pred: Any, func: Dumper, chain: Optional[Chain] = None, /) -> Provider:
-    ...
-
-
-# We can not extract origin class from method
-# because at class level it is a simple function.
-# There is rare case when method is WrapperDescriptorType,
-# nevertheless one arg signature was removed
-def dumper(pred, func, chain=None):
+def dumper(pred: Any, func: Dumper, chain: Optional[Chain] = None) -> Provider:
     return bound(
         pred,
         make_chain(
@@ -110,32 +79,12 @@ def as_is_dumper(pred: Any) -> Provider:
     return dumper(pred, lambda x: x)
 
 
-@overload
-def constructor(pred: Type[T], func: Callable[..., T], /) -> Provider:
-    ...
-
-
-@overload
-def constructor(pred: Any, func: Callable, /) -> Provider:
-    ...
-
-
-@overload
-def constructor(type_or_class_method: Callable, /) -> Provider:
-    ...
-
-
-def constructor(func_or_pred, opt_func=None):
-    pred, func, _ = resolve_pred_value_chain(func_or_pred, opt_func, None)
-
+def constructor(pred: Any, func: Callable) -> Provider:
     return bound(
         pred,
         ValueProvider(
             InputFigureRequest,
-            get_func_figure(
-                func,
-                slice(0 if opt_func else 1, None),
-            )
+            get_func_figure(func)
         ),
     )
 
@@ -283,46 +232,12 @@ def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Pr
     return _wrap_enum_provider([first_pred, *preds], EnumValueProvider(tp))
 
 
-@overload
 def validator(
     pred: Any,
-    function: Callable[[Any], bool],
+    func: Callable[[Any], bool],
     error: Union[str, Callable[[Any], LoadError], None] = None,
-    chain: Chain = Chain.LAST,
-    /,
-) -> Provider:
-    ...
-
-
-@overload
-def validator(
-    pred: Any,
-    function: Callable[[Any], bool],
-    chain: Chain,
-    /,
-) -> Provider:
-    ...
-
-
-def validator(
-    pred: Any,
-    function: Callable[[Any], bool],
-    error_or_chain: Union[str, Callable[[Any], LoadError], None, Chain] = None,
     chain: Optional[Chain] = None,
-    /,
 ) -> Provider:
-    if isinstance(error_or_chain, Chain):
-        if chain is None:
-            raise ValueError
-        error = None
-        p_chain = error_or_chain
-    elif chain is None:
-        error = error_or_chain
-        p_chain = Chain.LAST
-    else:
-        error = error_or_chain
-        p_chain = chain
-
     # pylint: disable=C3001
     exception_factory = (
         lambda x: ValidationError(error)
@@ -331,8 +246,8 @@ def validator(
     )
 
     def validating_loader(data):
-        if function(data):
+        if func(data):
             return data
         raise exception_factory(data)
 
-    return loader(pred, validating_loader, p_chain)
+    return loader(pred, validating_loader, chain=chain)

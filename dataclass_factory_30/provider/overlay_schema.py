@@ -1,7 +1,6 @@
 from dataclasses import dataclass, fields, replace
 from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, Optional, Type, TypeVar
 
-from dataclass_factory_30.common import VarTuple
 from dataclass_factory_30.provider import (
     CannotProvide,
     Chain,
@@ -12,8 +11,6 @@ from dataclass_factory_30.provider import (
 )
 from dataclass_factory_30.provider.request_cls import LocatedRequest, Location
 from dataclass_factory_30.utils import ClassDispatcher, Omitted
-
-NameMapStack = VarTuple[Any]
 
 
 @dataclass
@@ -29,12 +26,12 @@ Merger = Callable[[Any, Any, Any], Any]
 
 @dataclass
 class Overlay(Generic[Sc]):
-    schema: ClassVar[Type[Schema]]
+    _schema_cls: ClassVar[Type[Schema]]
     _mergers: ClassVar[Optional[Mapping[str, Merger]]]
 
     def __init_subclass__(cls, *args, **kwargs):
+        cls._schema_cls = cls.__orig_bases__[0].__args__[0]  # type: ignore[attr-defined]  # pylint: disable=no-member
         cls._mergers = None
-        cls.schema = cls.__orig_bases__[0].__args__[0]  # type: ignore[attr-defined]  # pylint: disable=no-member
 
     def _default_merge(self, old: Any, new: Any) -> Any:
         return new
@@ -64,7 +61,7 @@ class Overlay(Generic[Sc]):
                 merged[field_name] = merger(self, old_field_value, new_field_value)
         return self.__class__(**merged)
 
-    def collect_schema(self) -> Sc:
+    def to_schema(self) -> Sc:
         omitted_fields = [
             field_name for field_name, field_value in vars(self).items()
             if self._is_omitted(field_value)
@@ -74,7 +71,7 @@ class Overlay(Generic[Sc]):
                 f"Can not create schema because overlay contains omitted values at {omitted_fields}"
             )
         # noinspection PyArgumentList
-        return self.schema(**vars(self))  # type: ignore[return-value]
+        return self._schema_cls(**vars(self))  # type: ignore[return-value]
 
 
 @dataclass(frozen=True)
@@ -102,7 +99,7 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc: Location
                 pass
             else:
                 stacked_overlay = new_overlay.merge(stacked_overlay)
-    return stacked_overlay.collect_schema()
+    return stacked_overlay.to_schema()
 
 
 class OverlayProvider(StaticProvider):

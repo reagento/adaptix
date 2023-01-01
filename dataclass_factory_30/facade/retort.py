@@ -68,10 +68,10 @@ class FilledRetort(OperatingRetort, ABC):
 
         EnumExactValueProvider(),  # it has higher priority than int for IntEnum
 
-        CoercionLimiter(loader(int), [int]),
+        CoercionLimiter(loader(int, int), [int]),
         as_is_dumper(int),
 
-        CoercionLimiter(loader(float), [float, int]),
+        CoercionLimiter(loader(float, float), [float, int]),
         as_is_dumper(float),
 
         CoercionLimiter(as_is_loader(str), [str]),
@@ -80,11 +80,11 @@ class FilledRetort(OperatingRetort, ABC):
         CoercionLimiter(as_is_loader(bool), [bool]),
         as_is_dumper(bool),
 
-        CoercionLimiter(loader(Decimal), [str, Decimal]),
+        CoercionLimiter(loader(Decimal, Decimal), [str, Decimal]),
         dumper(Decimal, Decimal.__str__),
-        CoercionLimiter(loader(Fraction), [str, Fraction]),
+        CoercionLimiter(loader(Fraction, Fraction), [str, Fraction]),
         dumper(Fraction, Fraction.__str__),
-        CoercionLimiter(loader(complex), [str, complex]),
+        CoercionLimiter(loader(complex, complex), [str, complex]),
         dumper(complex, complex.__str__),
 
         BytesBase64Provider(),
@@ -92,7 +92,7 @@ class FilledRetort(OperatingRetort, ABC):
 
         *chain.from_iterable(
             (
-                loader(tp),
+                loader(tp, tp),
                 dumper(tp, tp.__str__),  # type: ignore[arg-type]
             )
             for tp in [

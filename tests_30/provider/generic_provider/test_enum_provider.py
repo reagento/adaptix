@@ -135,7 +135,7 @@ def test_value_provider(strict_coercion, debug_path):
     retort = TestRetort(
         recipe=[
             enum_by_value(MyEnum, tp=str),
-            loader(str),
+            loader(str, str),
             dumper(str, custom_string_dumper),
         ]
     )

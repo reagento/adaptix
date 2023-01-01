@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from itertools import groupby
 from typing import Dict, Generic, Mapping, NoReturn, Sequence, TypeVar, Union, cast
 
-from dataclass_factory_30.provider.model.crown_definitions import (
+from ..model.crown_definitions import (
     BaseDictCrown,
     BaseListCrown,
     CrownPath,
@@ -18,7 +18,7 @@ from dataclass_factory_30.provider.model.crown_definitions import (
     OutListCrown,
     Sieve,
 )
-from dataclass_factory_30.provider.name_layout.base import Key, Path, PathsTo
+from .base import Key, Path, PathsTo
 
 
 class InconsistentPathElement(TypeError):

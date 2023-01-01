@@ -82,7 +82,7 @@ INNER_RECEIPT_RETORT = ParentRetort(
 _OUTER_BASE_RETORT = ParentRetort(
     recipe=[
         loader(PhoneNumber, outer_phonenumber_loader),
-        loader(str, string_cp866_mutator, Chain.LAST),
+        loader(str, string_cp866_mutator, chain=Chain.LAST),
         name_mapping(extra_in=ExtraForbid()),
     ],
 )
