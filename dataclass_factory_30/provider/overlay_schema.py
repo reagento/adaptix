@@ -26,7 +26,7 @@ Merger = Callable[[Any, Any, Any], Any]
 
 @dataclass
 class Overlay(Generic[Sc]):
-    _schema_cls: ClassVar[Type[Schema]]
+    _schema_cls: ClassVar[Type[Schema]]  # ClassVar can not contain TypeVar
     _mergers: ClassVar[Optional[Mapping[str, Merger]]]
 
     def __init_subclass__(cls, *args, **kwargs):
@@ -86,7 +86,7 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc: Location
             overlay_cls=overlay,
         )
     )
-    if isinstance(loc, TypeHintLocation):
+    if isinstance(loc, TypeHintLocation) and isinstance(loc.type, type):
         for parent in loc.type.mro()[1:]:
             try:
                 new_overlay = mediator.provide(
@@ -118,7 +118,11 @@ class OverlayProvider(StaticProvider):
         if self._chain is None:
             return overlay
 
-        next_overlay = mediator.provide_from_next()
+        try:
+            next_overlay = mediator.provide_from_next()
+        except CannotProvide:
+            return overlay
+
         if self._chain == Chain.FIRST:
             return next_overlay.merge(overlay)
         return overlay.merge(next_overlay)

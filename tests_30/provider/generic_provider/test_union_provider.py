@@ -15,7 +15,7 @@ from dataclass_factory_30.provider import (
     UnionLoadError,
     UnionProvider,
 )
-from tests_helpers import TestRetort, parametrize_bool, raises_path
+from tests_helpers import TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 
 @dataclass
@@ -74,7 +74,7 @@ def test_loading(retort, strict_coercion, debug_path):
             UnionLoadError,
             lambda: loader([]),
             path=[],
-            match=re.escape(
+            match=full_match_regex_str(
                 "[TypeLoadError(expected_type=<class 'int'>), TypeLoadError(expected_type=<class 'str'>)]"
             ),
         )
@@ -103,7 +103,7 @@ def test_serializing(retort, debug_path):
         KeyError,
         lambda: dumper([]),
         path=[],
-        match=re.escape("<class 'list'>"),
+        match=full_match_regex_str("<class 'list'>"),
     )
 
 
@@ -123,7 +123,7 @@ def test_opt_serializing(retort, debug_path):
         TypeError,
         lambda: opt_dumper([]),
         path=[],
-        match=re.escape("<class 'list'>"),
+        match=full_match_regex_str("<class 'list'>"),
     )
 
 
@@ -138,7 +138,7 @@ def test_bad_opt_serializing(retort, debug_path):
             )
         ),
         path=[],
-        match=re.escape(
+        match=full_match_regex_str(
             "Can not create dumper for typing.Union[int, typing.Callable[[int], str]]."
             " All cases of union must be class, but found [typing.Callable[[int], str]]"
         ),

@@ -28,12 +28,31 @@ Path = VarTuple[Key]
 PathsTo = Mapping[Path, T]
 
 
+class ExtraMoveMaker(ABC):
+    @abstractmethod
+    def make_inp_extra_move(
+        self,
+        mediator: Mediator,
+        request: InputNameLayoutRequest,
+    ) -> InpExtraMove:
+        ...
+
+    @abstractmethod
+    def make_out_extra_move(
+        self,
+        mediator: Mediator,
+        request: OutputNameLayoutRequest,
+    ) -> OutExtraMove:
+        ...
+
+
 class StructureMaker(ABC):
     @abstractmethod
     def make_inp_structure(
         self,
         mediator: Mediator,
         request: InputNameLayoutRequest,
+        extra_move: InpExtraMove,
     ) -> PathsTo[LeafInpCrown]:
         ...
 
@@ -42,6 +61,7 @@ class StructureMaker(ABC):
         self,
         mediator: Mediator,
         request: OutputNameLayoutRequest,
+        extra_move: OutExtraMove,
     ) -> PathsTo[LeafOutCrown]:
         ...
 
@@ -52,7 +72,7 @@ class SievesMaker(ABC):
         self,
         mediator: Mediator,
         request: OutputNameLayoutRequest,
-        path_to_leaf: PathsTo[LeafOutCrown],
+        paths_to_leaves: PathsTo[LeafOutCrown],
     ) -> PathsTo[Sieve]:
         ...
 
@@ -63,26 +83,6 @@ class ExtraPoliciesMaker(ABC):
         self,
         mediator: Mediator,
         request: InputNameLayoutRequest,
-        path_to_leaf: PathsTo[LeafInpCrown],
+        paths_to_leaves: PathsTo[LeafInpCrown],
     ) -> PathsTo[DictExtraPolicy]:
-        ...
-
-
-class ExtraMoveMaker(ABC):
-    @abstractmethod
-    def make_inp_extra_move(
-        self,
-        mediator: Mediator,
-        request: InputNameLayoutRequest,
-        path_to_leaf: PathsTo[LeafInpCrown],
-    ) -> InpExtraMove:
-        ...
-
-    @abstractmethod
-    def make_out_extra_move(
-        self,
-        mediator: Mediator,
-        request: OutputNameLayoutRequest,
-        path_to_leaf: PathsTo[LeafOutCrown],
-    ) -> OutExtraMove:
         ...

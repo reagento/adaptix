@@ -88,7 +88,6 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
             for field in figure.fields
             if field.is_required and field.name in skipped_fields
         ]
-
         if skipped_required_fields:
             raise ValueError(
                 f"Required fields {skipped_required_fields} are skipped"

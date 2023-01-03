@@ -62,16 +62,32 @@ def _singleton_hash(self) -> int:
     return hash(type(self))
 
 
+def _singleton_copy(self):
+    return self
+
+
+def _singleton_deepcopy(self, memo):
+    return self
+
+
+def _singleton_new(cls):
+    return cls._instance  # pylint: disable=protected-access
+
+
 class SingletonMeta(type):
     def __new__(mcs, name, bases, namespace, **kwargs):
         namespace.setdefault("__repr__", _singleton_repr)
         namespace.setdefault("__str__", _singleton_repr)
         namespace.setdefault("__hash__", _singleton_hash)
+        namespace.setdefault("__copy__", _singleton_copy)
+        namespace.setdefault("__deepcopy__", _singleton_deepcopy)
         namespace.setdefault("__slots__", ())
         cls = super().__new__(mcs, name, bases, namespace, **kwargs)
 
         instance = super().__call__(cls)
         cls._instance = instance
+        if '__new__' not in cls.__dict__:
+            cls.__new__ = _singleton_new
         return cls
 
     def __call__(cls):
@@ -122,7 +138,7 @@ class ClassDispatcher(Generic[K_co, V]):
     def dispatch(self, key: Type[K_co]) -> V:
         """Returns a value associated with the key.
         If the key does not exist it will return
-        value of the closest superclass or raise KeyError
+        value of the closest superclass otherwise raise KeyError
         """
         for parent in key.__mro__:
             try:

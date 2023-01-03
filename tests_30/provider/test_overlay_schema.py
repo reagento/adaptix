@@ -9,7 +9,7 @@ from dataclass_factory_30.provider import Chain, Mediator, Provider, Request, St
 from dataclass_factory_30.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
 from dataclass_factory_30.provider.request_cls import Location, TypeHintLocation
 from dataclass_factory_30.utils import Omittable, Omitted
-from tests_helpers import TestRetort
+from tests_helpers import TestRetort, full_match_regex_str
 
 
 @dataclass
@@ -299,7 +299,7 @@ def test_typehint_location():
 def test_omitted_fields():
     with pytest.raises(
         ValueError,
-        match=re.escape("Can not create schema because overlay contains omitted values at ['number']")
+        match=full_match_regex_str("Can not create schema because overlay contains omitted values at ['number']")
     ):
         provide_overlay_schema(
             recipe=[

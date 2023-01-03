@@ -1,7 +1,7 @@
 import re
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import Any, Callable, Iterable, Mapping, Optional, Sequence, TypeVar, Union
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 from ..common import Catchable, Dumper, Loader, TypeHint
 from ..model_tools import Default, DescriptorAccessor, NoDefault, OutputField, get_func_figure
@@ -27,8 +27,9 @@ from ..provider import (
 from ..provider.name_layout.base import ExtraIn, ExtraOut
 from ..provider.name_layout.component import (
     ExtraMoveAndPoliciesOverlay,
-    NameMap,
     NameMapStack,
+    RawKey,
+    RawPath,
     SievesOverlay,
     StructureOverlay,
 )
@@ -84,17 +85,33 @@ def constructor(pred: Any, func: Callable) -> Provider:
         pred,
         ValueProvider(
             InputFigureRequest,
-            get_func_figure(func)
+            get_func_figure(func).input,
         ),
     )
 
 
+NameMap = Mapping[Union[str, re.Pattern], Union[RawKey, Iterable[RawKey]]]
+
+
 def _convert_name_map_to_stack(name_map: NameMap) -> NameMapStack:
-    return tuple((re.compile(pattern), tuple(path)) for pattern, path in name_map.items())
+    result: List[Tuple[re.Pattern, RawPath]] = []
+    for pattern, path in name_map.items():
+        if path == ():
+            raise ValueError(f"Path for field {pattern!r} can not be empty iterable")
+
+        result.append(
+            (
+                pattern if isinstance(pattern, re.Pattern) else re.compile(pattern),
+                (path, ) if isinstance(path, (str, int)) or path is Ellipsis else tuple(path)
+            )
+        )
+
+    return tuple(result)
 
 
 def name_mapping(
     pred: Omittable[Any] = Omitted(),
+    *,
     # filtering which fields are presented
     skip: Omittable[Iterable[str]] = Omitted(),
     only: Omittable[Optional[Iterable[str]]] = Omitted(),
@@ -108,7 +125,7 @@ def name_mapping(
     # policy for data that does not map to fields
     extra_in: Omittable[ExtraIn] = Omitted(),
     extra_out: Omittable[ExtraOut] = Omitted(),
-    # chaining
+    # chaining with next matching provider
     chain: Optional[Chain] = Chain.FIRST,
 ) -> Provider:
     """A name mapping decides which fields will be presented
@@ -118,14 +135,7 @@ def name_mapping(
     1. Determining which fields are presented
     2. Mutating names of presented fields
 
-    Parameters that are responsible for
-    filtering of available have such priority
-    1. skip
-    2. only | only_mapped
-    3. skip_internal
-
-    Fields selected by only and only_mapped are unified.
-    Rules with higher priority overlap other rules.
+    `skip` parameter has higher priority than `only` and `only_mapped`.
 
     Mutating parameters works in that way:
     Mapper tries to use the value from the map.
@@ -133,9 +143,6 @@ def name_mapping(
     trim trailing underscore and convert name style.
 
     The field must follow snake_case to could be converted.
-
-    If you try to skip required input field,
-    class will raise error
     """
     return bound(
         pred,
@@ -236,7 +243,7 @@ def validator(
     pred: Any,
     func: Callable[[Any], bool],
     error: Union[str, Callable[[Any], LoadError], None] = None,
-    chain: Optional[Chain] = None,
+    chain: Chain = Chain.LAST,
 ) -> Provider:
     # pylint: disable=C3001
     exception_factory = (
@@ -250,4 +257,4 @@ def validator(
             return data
         raise exception_factory(data)
 
-    return loader(pred, validating_loader, chain=chain)
+    return loader(pred, validating_loader, chain)

@@ -1,36 +1,45 @@
+import pickle
+from copy import copy, deepcopy
+
 import pytest
 
 from dataclass_factory_30.utils import ClassDispatcher, SingletonMeta
 
 
-def test_singleton_simple():
-    class MySingleton(metaclass=SingletonMeta):
-        pass
+class SomeSingleton(metaclass=SingletonMeta):
+    pass
 
-    instance1 = MySingleton()
-    instance2 = MySingleton()
+
+def test_singleton_simple():
+    instance1 = SomeSingleton()
+    instance2 = SomeSingleton()
 
     assert instance1 is instance2
     assert instance1 == instance2
 
 
 def test_singleton_repr():
-    class MySingleton(metaclass=SingletonMeta):
-        pass
-
     class MyReprSingleton(metaclass=SingletonMeta):
         def __repr__(self):
             return "<CustomSingletonRepr>"
 
-    assert repr(MySingleton()) == "MySingleton()"
+    assert repr(SomeSingleton()) == "SomeSingleton()"
     assert repr(MyReprSingleton()) == "<CustomSingletonRepr>"
 
 
 def test_singleton_hash():
-    class MySingleton(metaclass=SingletonMeta):
-        pass
+    hash(SomeSingleton())
 
-    hash(MySingleton())
+
+def test_singleton_copy():
+    assert copy(SomeSingleton()) is SomeSingleton()
+    assert deepcopy(SomeSingleton()) is SomeSingleton()
+
+    assert pickle.loads(pickle.dumps(SomeSingleton())) is SomeSingleton()
+
+
+def test_singleton_new():
+    assert SomeSingleton.__new__(SomeSingleton) is SomeSingleton()
 
 
 class Cls1:

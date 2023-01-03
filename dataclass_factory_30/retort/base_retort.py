@@ -79,7 +79,7 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
         """Process request iterating over the result of _get_full_recipe()
         :param request:
         :return: request result
-        :raise CannotProvide: request did not processed
+        :raise CannotProvide: request was not processed
         """
         mediator = self._create_mediator(request_stack)
         return mediator.provide(request)

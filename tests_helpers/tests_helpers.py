@@ -1,3 +1,4 @@
+import re
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Callable, Iterable, List, Optional, Type, TypeVar, Union
 
@@ -102,3 +103,29 @@ class PlaceholderProvider(Provider):
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         raise CannotProvide
+
+
+class CustomEqual:
+    def __init__(self, func, repr_str):
+        self.func = func
+        self.repr_str = repr_str
+
+    def __eq__(self, other):
+        return self.func(other)
+
+    def __repr__(self):
+        return self.repr_str
+
+    def __str__(self):
+        return self.repr_str
+
+
+def type_of(tp: type) -> Any:
+    def type_of_equal(other):
+        return isinstance(other, tp)
+
+    return CustomEqual(type_of_equal, f"type_of({tp.__qualname__})")
+
+
+def full_match_regex_str(string_to_match: str) -> str:
+    return '^' + re.escape(string_to_match) + '$'

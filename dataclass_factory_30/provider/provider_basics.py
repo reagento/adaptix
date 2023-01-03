@@ -247,18 +247,18 @@ class BoundingProvider(Provider):
 
 
 class ValueProvider(Provider, Generic[T]):
-    def __init__(self, req_cls: Type[Request[T]], value: T):
-        self._req_cls = req_cls
+    def __init__(self, request_cls: Type[Request[T]], value: T):
+        self._request_cls = request_cls
         self._value = value
 
     def apply_provider(self, mediator: Mediator, request: Request):
-        if not isinstance(request, self._req_cls):
+        if not isinstance(request, self._request_cls):
             raise CannotProvide
 
         return self._value
 
     def __repr__(self):
-        return f"{type(self).__name__}({self._req_cls}, {self._value})"
+        return f"{type(self).__name__}({self._request_cls}, {self._value})"
 
 
 class ConcatProvider(Provider):

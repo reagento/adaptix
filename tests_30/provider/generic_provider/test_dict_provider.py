@@ -27,7 +27,7 @@ def retort():
     return TestRetort(
         recipe=[
             DictProvider(),
-            CoercionLimiter(loader(str), [str]),
+            CoercionLimiter(loader(str, str), [str]),
             dumper(str, string_dumper),
         ]
     )

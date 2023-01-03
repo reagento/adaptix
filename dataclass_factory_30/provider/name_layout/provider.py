@@ -34,9 +34,9 @@ class BuiltinNameLayoutProvider(StaticProvider):
 
     @static_provision_action
     def _provide_input_name_layout(self, mediator: Mediator, request: InputNameLayoutRequest) -> InputNameLayout:
-        path_to_leaf = self._structure_maker.make_inp_structure(mediator, request)
+        extra_move = self._extra_move_maker.make_inp_extra_move(mediator, request)
+        path_to_leaf = self._structure_maker.make_inp_structure(mediator, request, extra_move)
         extra_policies = self._extra_policies_maker.make_extra_policies(mediator, request, path_to_leaf)
-        extra_move = self._extra_move_maker.make_inp_extra_move(mediator, request, path_to_leaf)
 
         return InputNameLayout(
             crown=self._create_input_crown(mediator, request.figure, path_to_leaf, extra_policies),
@@ -55,9 +55,9 @@ class BuiltinNameLayoutProvider(StaticProvider):
 
     @static_provision_action
     def _provide_output_name_layout(self, mediator: Mediator, request: OutputNameLayoutRequest) -> OutputNameLayout:
-        path_to_leaf = self._structure_maker.make_out_structure(mediator, request)
+        extra_move = self._extra_move_maker.make_out_extra_move(mediator, request)
+        path_to_leaf = self._structure_maker.make_out_structure(mediator, request, extra_move)
         path_to_sieve = self._sieves_maker.make_sieves(mediator, request, path_to_leaf)
-        extra_move = self._extra_move_maker.make_out_extra_move(mediator, request, path_to_leaf)
 
         return OutputNameLayout(
             crown=self._create_output_crown(mediator, request.figure, path_to_leaf, path_to_sieve),

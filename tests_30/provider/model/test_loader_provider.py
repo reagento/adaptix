@@ -36,7 +36,7 @@ from dataclass_factory_30.provider.model import (
     InputNameLayout,
 )
 from dataclass_factory_30.provider.model.crown_definitions import ExtraKwargs, ExtraSaturate, ExtraTargets
-from tests_helpers import DebugCtx, TestRetort, parametrize_bool, raises_path
+from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 
 @dataclass
@@ -85,7 +85,7 @@ def int_loader(data):
 
 def make_loader_getter(
     fig: InputFigure,
-    name_mapping: InputNameLayout,
+    name_layout: InputNameLayout,
     debug_path: bool,
     debug_ctx: DebugCtx,
 ) -> Callable[[], Loader]:
@@ -93,7 +93,7 @@ def make_loader_getter(
         retort = TestRetort(
             recipe=[
                 ValueProvider(InputFigureRequest, fig),
-                ValueProvider(InputNameLayoutRequest, name_mapping),
+                ValueProvider(InputNameLayoutRequest, name_layout),
                 bound(int, ValueProvider(LoaderRequest, int_loader)),
                 ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
                 debug_ctx.accum,
@@ -123,7 +123,7 @@ def test_direct(debug_ctx, debug_path, extra_policy):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
@@ -181,7 +181,7 @@ def test_direct_list(debug_ctx, debug_path, extra_policy):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpListCrown(
                 [
                     InpFieldCrown('a'),
@@ -227,7 +227,7 @@ def test_extra_forbid(debug_ctx, debug_path):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
@@ -264,7 +264,7 @@ def test_creation(debug_ctx, debug_path, extra_policy):
             field('d', ParamKind.KW_ONLY, is_required=True),
             field('e', ParamKind.KW_ONLY, is_required=False),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
@@ -291,7 +291,7 @@ def test_extra_kwargs(debug_ctx, debug_path):
             field('a', ParamKind.POS_ONLY, is_required=True),
             kwargs=ParamKwargs(Any),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
@@ -314,7 +314,7 @@ def test_wild_extra_targets(debug_ctx, debug_path):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
@@ -328,7 +328,7 @@ def test_wild_extra_targets(debug_ctx, debug_path):
     )
 
     pytest.raises(ValueError, loader_getter).match(
-        re.escape("ExtraTargets ['b'] are attached to non-existing fields")
+        full_match_regex_str("ExtraTargets ['b'] are attached to non-existing fields")
     )
 
 
@@ -339,7 +339,7 @@ def test_extra_targets_one(debug_ctx, debug_path, is_required):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=is_required),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
@@ -367,7 +367,7 @@ def test_extra_targets_two(debug_ctx, debug_path, is_required_first, is_required
             field('b', ParamKind.POS_OR_KW, is_required=is_required_first),
             field('c', ParamKind.KW_ONLY, is_required=is_required_second),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
@@ -394,7 +394,7 @@ def test_extra_saturate(debug_ctx, debug_path):
         fig=figure(
             field('a', ParamKind.POS_ONLY, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
@@ -419,7 +419,7 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
             field('b', ParamKind.POS_OR_KW, is_required=False),
             kwargs=ParamKwargs(Any),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'm_a': InpFieldCrown('a'),
@@ -453,7 +453,7 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'm_a': InpFieldCrown('a'),
@@ -465,14 +465,14 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
         debug_path=debug_path,
         debug_ctx=debug_ctx,
     )
-    pytest.raises(ValueError, loader_getter).match(re.escape("Required fields ['b'] are skipped"))
+    pytest.raises(ValueError, loader_getter).match(full_match_regex_str("Required fields ['b'] are skipped"))
 
     loader_getter = make_loader_getter(
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'm_a': InpFieldCrown('a'),
@@ -493,7 +493,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'm_a': InpFieldCrown('a'),
@@ -507,7 +507,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, loader_getter).match(
-        re.escape("Extra targets ['b'] are found at crown")
+        full_match_regex_str("Extra targets ['b'] are found at crown")
     )
 
     loader_getter = make_loader_getter(
@@ -515,7 +515,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'm_a': InpFieldCrown('a'),
@@ -529,7 +529,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, loader_getter).match(
-        re.escape("Extra targets ['b'] are found at crown")
+        full_match_regex_str("Extra targets ['b'] are found at crown")
     )
 
 
@@ -539,7 +539,7 @@ def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpListCrown(
                 [
                     InpFieldCrown('a'),
@@ -553,7 +553,7 @@ def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, loader_getter).match(
-        re.escape("Optional fields ['b'] are found at list crown")
+        full_match_regex_str("Optional fields ['b'] are found at list crown")
     )
 
 
@@ -565,7 +565,7 @@ def test_flat_mapping(debug_ctx, debug_path, is_required):
             field('b', ParamKind.POS_OR_KW, is_required=False),
             field('e', ParamKind.KW_ONLY, is_required=is_required),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'm_a': InpFieldCrown('a'),
@@ -637,7 +637,7 @@ COMPLEX_STRUCTURE_CROWN = InpDictCrown(
 def test_structure_flattening(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
         fig=COMPLEX_STRUCTURE_FIGURE,
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=COMPLEX_STRUCTURE_CROWN,
             extra_move=ExtraTargets(('extra',)),
         ),
@@ -747,7 +747,7 @@ def _replace_value_by_path(data, path, new_value):
 def test_error_path_at_complex_structure(debug_ctx, debug_path, error_path):
     loader_getter = make_loader_getter(
         fig=COMPLEX_STRUCTURE_FIGURE,
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=COMPLEX_STRUCTURE_CROWN,
             extra_move=ExtraTargets(('extra',)),
         ),
@@ -784,7 +784,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('extra', ParamKind.KW_ONLY, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpDictCrown(
                 {
                     'a': InpFieldCrown('a'),
@@ -822,7 +822,7 @@ def test_none_crown_at_list_crown(debug_ctx, debug_path, extra_policy):
         fig=figure(
             field('a', ParamKind.POS_OR_KW, is_required=True),
         ),
-        name_mapping=InputNameLayout(
+        name_layout=InputNameLayout(
             crown=InpListCrown(
                 [
                     InpNoneCrown(),

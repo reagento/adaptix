@@ -42,7 +42,7 @@ def retort():
     return TestRetort(
         recipe=[
             IterableProvider(),
-            CoercionLimiter(loader(str), [str]),
+            CoercionLimiter(loader(str, str), [str]),
             dumper(str, string_dumper),
         ]
     )
