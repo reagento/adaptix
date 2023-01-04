@@ -19,13 +19,7 @@ from typing import (
 import pytest
 
 from dataclass_factory.facade import dumper, loader
-from dataclass_factory.provider import (
-    CoercionLimiter,
-    DumperRequest,
-    IterableProvider,
-    LoaderRequest,
-    TypeHintLocation,
-)
+from dataclass_factory.provider import CoercionLimiter, DumperRequest, IterableProvider, LoaderRequest, TypeHintLocation
 from dataclass_factory.provider.exceptions import ExcludedTypeLoadError, TypeLoadError
 from dataclass_factory.retort.operating_retort import NoSuitableProvider
 from tests_helpers import TestRetort, parametrize_bool, raises_path

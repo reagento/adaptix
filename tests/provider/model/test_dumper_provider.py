@@ -28,13 +28,7 @@ from dataclass_factory.provider import (
     ValueProvider,
     make_output_extraction,
 )
-from dataclass_factory.provider.model import (
-    OutDictCrown,
-    OutFieldCrown,
-    OutListCrown,
-    OutNoneCrown,
-    OutputNameLayout,
-)
+from dataclass_factory.provider.model import OutDictCrown, OutFieldCrown, OutListCrown, OutNoneCrown, OutputNameLayout
 from dataclass_factory.provider.model.crown_definitions import ExtraExtract, ExtraTargets
 from dataclass_factory.struct_path import Attr, PathElement, PathElementMarker
 from dataclass_factory.utils import SingletonMeta

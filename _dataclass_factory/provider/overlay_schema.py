@@ -1,16 +1,9 @@
 from dataclasses import dataclass, fields, replace
 from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, Optional, Type, TypeVar
 
-from dataclass_factory.provider import (
-    CannotProvide,
-    Chain,
-    Mediator,
-    StaticProvider,
-    TypeHintLocation,
-    static_provision_action,
-)
-from dataclass_factory.provider.request_cls import LocatedRequest, Location
-from dataclass_factory.utils import ClassDispatcher, Omitted
+from ..provider import CannotProvide, Chain, Mediator, StaticProvider, TypeHintLocation, static_provision_action
+from ..provider.request_cls import LocatedRequest, Location
+from ..utils import ClassDispatcher, Omitted
 
 
 @dataclass

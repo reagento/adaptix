@@ -62,7 +62,7 @@ RULES = [
         module='typing',
         variable='get_type_hints',
         error_msg='Use type_tools.get_all_type_hints() instead of typing.get_type_hints()',
-        exclude=['dataclass_factory/type_tools/basic_utils.py'],
+        exclude=['_dataclass_factory/type_tools/basic_utils.py'],
     ),
 ]
 
