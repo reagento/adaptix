@@ -2,7 +2,7 @@ import re
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
-from dataclass_factory.provider import (
+from _dataclass_factory.provider import (
     BytearrayBase64Provider,
     BytesBase64Provider,
     DatetimeFormatProvider,
@@ -14,8 +14,7 @@ from dataclass_factory.provider import (
     SecondsTimedeltaProvider,
     TypeHintLocation,
 )
-from dataclass_factory.provider.concrete_provider import DatetimeFormatMismatch
-from dataclass_factory.provider.exceptions import TypeLoadError, ValueLoadError
+from _dataclass_factory.provider.exceptions import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 

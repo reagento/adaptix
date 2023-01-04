@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 
 import pytest
 
-from dataclass_factory.provider import Mediator, Request, StaticProvider, static_provision_action
-from dataclass_factory.provider.static_provider import RequestDispatcher
+from _dataclass_factory.provider.static_provider import RequestDispatcher
+from dataclass_factory import Mediator, Request
+from dataclass_factory.provider.static_provider import StaticProvider, static_provision_action
 
 
 class SampleRequest(Request):

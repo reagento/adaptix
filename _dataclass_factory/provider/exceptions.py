@@ -67,3 +67,8 @@ class ValidationError(MsgError):
 @dataclass(eq=False)
 class BadVariantError(LoadError):
     allowed_values: Iterable[Any]
+
+
+@dataclass(eq=False)
+class DatetimeFormatMismatch(LoadError):
+    format: str

@@ -2,8 +2,8 @@ import typing
 from types import MappingProxyType
 from typing import TypedDict
 
-from dataclass_factory.feature_requirement import HAS_ANNOTATED, HAS_PY_39
-from dataclass_factory.model_tools import (
+from _dataclass_factory.feature_requirement import HAS_ANNOTATED, HAS_PY_39
+from _dataclass_factory.model_tools import (
     InputField,
     InputFigure,
     ItemAccessor,
@@ -13,7 +13,7 @@ from dataclass_factory.model_tools import (
     ParamKind,
     get_typed_dict_figure,
 )
-from dataclass_factory.model_tools.definitions import Figure
+from _dataclass_factory.model_tools.definitions import Figure
 from tests_helpers import requires
 
 

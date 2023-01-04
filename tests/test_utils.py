@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 
 import pytest
 
-from dataclass_factory.utils import ClassDispatcher, SingletonMeta
+from _dataclass_factory.utils import ClassDispatcher, SingletonMeta
 
 
 class SomeSingleton(metaclass=SingletonMeta):

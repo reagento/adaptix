@@ -1,6 +1,6 @@
 import pytest
 
-from dataclass_factory.model_tools import (
+from _dataclass_factory.model_tools import (
     AttrAccessor,
     InputField,
     InputFigure,

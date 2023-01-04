@@ -1,6 +1,6 @@
 import pytest
 
-from dataclass_factory.model_tools import get_func_figure
+from _dataclass_factory.model_tools import get_func_figure
 
 
 class MyClass:

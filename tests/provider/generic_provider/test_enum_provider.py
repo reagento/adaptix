@@ -1,13 +1,13 @@
 from enum import Enum, IntEnum
 
-from dataclass_factory.facade import dumper, enum_by_value, loader
-from dataclass_factory.provider import (
+from _dataclass_factory.provider import (
     DumperRequest,
     EnumExactValueProvider,
     EnumNameProvider,
     LoaderRequest,
     TypeHintLocation,
 )
+from dataclass_factory import dumper, enum_by_value, loader
 from dataclass_factory.provider.exceptions import BadVariantError, MsgError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 

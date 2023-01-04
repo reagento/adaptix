@@ -2,10 +2,10 @@ from typing import Any
 
 import pytest
 
-from dataclass_factory.provider import CannotProvide, Request, TypeHintLocation
-from dataclass_factory.provider.provider_basics import StackEndRC, create_req_checker
-from dataclass_factory.provider.request_cls import LocatedRequest
-from dataclass_factory.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
+from _dataclass_factory.provider.provider_basics import StackEndRC, create_req_checker
+from _dataclass_factory.provider.request_cls import LocatedRequest, TypeHintLocation
+from _dataclass_factory.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
+from dataclass_factory import CannotProvide, Request
 
 
 def create_mediator(*elements: Request[Any]):

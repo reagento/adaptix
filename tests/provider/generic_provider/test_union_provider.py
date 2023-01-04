@@ -4,8 +4,7 @@ from typing import Callable, List, Literal, Optional, Union
 
 import pytest
 
-from dataclass_factory.facade import Retort, dumper, loader
-from dataclass_factory.provider import (
+from _dataclass_factory.provider import (
     DumperRequest,
     LiteralProvider,
     LoaderRequest,
@@ -15,6 +14,7 @@ from dataclass_factory.provider import (
     UnionLoadError,
     UnionProvider,
 )
+from dataclass_factory import dumper, loader
 from tests_helpers import TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 

@@ -9,7 +9,7 @@ from typing import Type, TypeVar, Union
 from ..common import Dumper, Loader
 from ..type_tools import normalize_type
 from .essential import CannotProvide, Mediator, Request
-from .exceptions import LoadError, TypeLoadError, ValueLoadError
+from .exceptions import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from .provider_basics import ExactTypeRC
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithRC, for_origin
 from .request_cls import DumperRequest, LoaderRequest, TypeHintLocation
@@ -49,11 +49,6 @@ class IsoFormatProvider(ForAnyDateTime, LoaderProvider, DumperProvider):
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return self.cls.isoformat
-
-
-@dataclass(eq=False)
-class DatetimeFormatMismatch(LoadError):
-    format: str
 
 
 @dataclass

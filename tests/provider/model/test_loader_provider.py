@@ -5,10 +5,9 @@ from typing import Any, Callable, Dict, Optional
 
 import pytest
 
-from dataclass_factory.common import Loader, VarTuple
-from dataclass_factory.facade import bound
-from dataclass_factory.model_tools import InputField, InputFigure, NoDefault, ParamKind, ParamKwargs
-from dataclass_factory.provider import (
+from _dataclass_factory.common import VarTuple
+from _dataclass_factory.model_tools import InputField, InputFigure, NoDefault, ParamKind, ParamKwargs
+from _dataclass_factory.provider import (
     BuiltinInputExtractionMaker,
     ExtraFieldsError,
     ExtraItemsError,
@@ -25,7 +24,7 @@ from dataclass_factory.provider import (
     ValueProvider,
     make_input_creation,
 )
-from dataclass_factory.provider.model import (
+from _dataclass_factory.provider.model import (
     ExtraCollect,
     ExtraForbid,
     ExtraSkip,
@@ -35,7 +34,8 @@ from dataclass_factory.provider.model import (
     InpNoneCrown,
     InputNameLayout,
 )
-from dataclass_factory.provider.model.crown_definitions import ExtraKwargs, ExtraSaturate, ExtraTargets
+from _dataclass_factory.provider.model.crown_definitions import ExtraSaturate, ExtraTargets
+from dataclass_factory import ExtraKwargs, Loader, bound
 from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 

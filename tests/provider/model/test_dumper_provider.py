@@ -5,9 +5,8 @@ from typing import Any, Callable, Dict, Optional, Type
 
 import pytest
 
-from dataclass_factory.common import Catchable, Dumper
-from dataclass_factory.facade import bound
-from dataclass_factory.model_tools import (
+from _dataclass_factory.common import Catchable
+from _dataclass_factory.model_tools import (
     Accessor,
     AttrAccessor,
     DefaultFactory,
@@ -17,7 +16,7 @@ from dataclass_factory.model_tools import (
     OutputField,
     OutputFigure,
 )
-from dataclass_factory.provider import (
+from _dataclass_factory.provider import (
     BuiltinOutputCreationMaker,
     DumperRequest,
     ModelDumperProvider,
@@ -28,10 +27,11 @@ from dataclass_factory.provider import (
     ValueProvider,
     make_output_extraction,
 )
-from dataclass_factory.provider.model import OutDictCrown, OutFieldCrown, OutListCrown, OutNoneCrown, OutputNameLayout
-from dataclass_factory.provider.model.crown_definitions import ExtraExtract, ExtraTargets
-from dataclass_factory.struct_path import Attr, PathElement, PathElementMarker
-from dataclass_factory.utils import SingletonMeta
+from _dataclass_factory.provider.model import OutDictCrown, OutFieldCrown, OutListCrown, OutNoneCrown, OutputNameLayout
+from _dataclass_factory.provider.model.crown_definitions import ExtraExtract, ExtraTargets
+from _dataclass_factory.struct_path import Attr, PathElement, PathElementMarker
+from _dataclass_factory.utils import SingletonMeta
+from dataclass_factory import Dumper, bound
 from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 

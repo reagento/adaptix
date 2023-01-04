@@ -3,8 +3,8 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Any, NamedTuple
 
-from dataclass_factory.feature_requirement import HAS_ANNOTATED
-from dataclass_factory.model_tools import (
+from _dataclass_factory.feature_requirement import HAS_ANNOTATED
+from _dataclass_factory.model_tools import (
     AttrAccessor,
     DefaultValue,
     InputField,
@@ -15,7 +15,7 @@ from dataclass_factory.model_tools import (
     ParamKind,
     get_named_tuple_figure,
 )
-from dataclass_factory.model_tools.definitions import Figure
+from _dataclass_factory.model_tools.definitions import Figure
 from tests_helpers import requires
 
 FooAB = namedtuple('FooAB', 'a b')

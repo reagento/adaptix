@@ -4,9 +4,9 @@ from typing import List
 import phonenumbers
 from phonenumbers import PhoneNumber
 
-from dataclass_factory.facade import Retort, bound, dumper, enum_by_name, loader, name_mapping, validator
-from dataclass_factory.provider import Chain, ExtraFieldsError, ValueLoadError
-from dataclass_factory.provider.model import ExtraForbid, ExtraSkip
+from dataclass_factory import Retort, bound, dumper, enum_by_name, loader, name_mapping, validator
+from dataclass_factory.provider import Chain, ExtraForbid, ExtraSkip
+from dataclass_factory.provider.exceptions import ExtraFieldsError, ValueLoadError
 
 from .models import Receipt, ReceiptType, RecItem
 from .money import Money, TooPreciseAmount

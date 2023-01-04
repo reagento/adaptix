@@ -4,8 +4,8 @@ from typing import Any
 
 import pytest
 
-from dataclass_factory.feature_requirement import HAS_ANNOTATED
-from dataclass_factory.model_tools import (
+from _dataclass_factory.feature_requirement import HAS_ANNOTATED
+from _dataclass_factory.model_tools import (
     DefaultValue,
     Figure,
     InputField,
@@ -15,7 +15,7 @@ from dataclass_factory.model_tools import (
     ParamKind,
     get_class_init_figure,
 )
-from dataclass_factory.model_tools.definitions import ParamKwargs
+from _dataclass_factory.model_tools.definitions import ParamKwargs
 from tests_helpers import requires
 
 

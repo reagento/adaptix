@@ -4,11 +4,10 @@ from typing import Callable, Iterable, List
 
 import pytest
 
-from dataclass_factory.facade import bound
-from dataclass_factory.provider import Chain, Mediator, Provider, Request, StaticProvider, static_provision_action
-from dataclass_factory.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
-from dataclass_factory.provider.request_cls import Location, TypeHintLocation
-from dataclass_factory.utils import Omittable, Omitted
+from _dataclass_factory.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
+from _dataclass_factory.provider.request_cls import Location, TypeHintLocation
+from dataclass_factory import Chain, Mediator, Omittable, Omitted, Provider, Request, bound
+from dataclass_factory.provider.static_provider import StaticProvider, static_provision_action
 from tests_helpers import TestRetort, full_match_regex_str
 
 

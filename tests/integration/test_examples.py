@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from dataclass_factory.facade import Retort
+from dataclass_factory import Retort
 
 
 @dataclass

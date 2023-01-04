@@ -4,10 +4,10 @@ from typing import Any, Callable, Iterable, List, Optional, Type, TypeVar, Union
 
 import pytest
 
-from dataclass_factory.common import EllipsisType, VarTuple
-from dataclass_factory.feature_requirement import PythonVersionRequirement
-from dataclass_factory.provider import CannotProvide, Mediator, Provider, Request
-from dataclass_factory.provider.model.basic_gen import CodeGenAccumulator
+from _dataclass_factory.common import EllipsisType, VarTuple
+from _dataclass_factory.feature_requirement import PythonVersionRequirement
+from _dataclass_factory.provider.model.basic_gen import CodeGenAccumulator
+from dataclass_factory import CannotProvide, Mediator, Provider, Request
 from dataclass_factory.retort import OperatingRetort
 from dataclass_factory.struct_path import get_path
 
