@@ -4,9 +4,9 @@ from typing import Any, List, Union
 
 import phonenumbers
 
-from dataclass_factory_30.facade.provider import ValidationError
-from dataclass_factory_30.provider import ExtraFieldsError, LoadError, TypeLoadError, UnionLoadError, ValueLoadError
-from dataclass_factory_30.provider.exceptions import BadVariantError
+from dataclass_factory.facade.provider import ValidationError
+from dataclass_factory.provider import ExtraFieldsError, LoadError, TypeLoadError, UnionLoadError, ValueLoadError
+from dataclass_factory.provider.exceptions import BadVariantError
 from tests_helpers import raises_path
 
 from .models import NotifyEmail, NotifyPhone, Receipt, ReceiptType, RecItem, Taxation

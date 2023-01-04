@@ -21,11 +21,10 @@ classifiers = [
 'Bug Tracker' = 'https://github.com/tishka17/dataclass_factory/issues'
 
 [tool.setuptools]
-packages = ['dataclass_factory', 'dataclass_factory_30']
+packages = ['dataclass_factory']
 
 [tool.setuptools.package-data]
 dataclass_factory = ['py.typed']
-dataclass_factory_30 = ['py.typed']
 
 [[project.authors]]
 name = 'A. Tikhonov'
@@ -42,8 +41,8 @@ remove_redundant_aliases = true
 [tool.pytest.ini_options]
 python_classes = 'WeDoNotUseClassTestCase'
 python_files = ['test_*.py', '*_test.py', 'tests_helpers.py']
-testpaths = ['tests_30', 'tests_helpers', 'examples']
-filterwarnings = ['ignore::dataclass_factory_30.model_tools.introspection.TypedDictAt38Warning']
+testpaths = ['tests', 'tests_helpers', 'examples']
+filterwarnings = ['ignore::dataclass_factory.model_tools.introspection.TypedDictAt38Warning']
 
 [tool.bandit]
 skips = ['B102']

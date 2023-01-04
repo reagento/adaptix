@@ -7,8 +7,8 @@ from mashumaro import DataClassDictMixin
 from pydantic import BaseModel, Field
 
 from dataclass_factory import Factory, Schema as DSchema
-from dataclass_factory_30.facade.factory import Factory as NewFactory
-from dataclass_factory_30.facade.provider import name_mapping
+from dataclass_factory.facade.factory import Factory as NewFactory
+from dataclass_factory.facade.provider import name_mapping
 
 
 @dataclass

@@ -40,7 +40,7 @@ test:
 .PHONY: cov
 cov:
 	@coverage erase
-	@tox -e $$(tox -l | grep '^py' | sort -r | tr '\n' ',') -p auto -- --cov dataclass_factory_30 --cov-append
+	@tox -e $$(tox -l | grep '^py' | sort -r | tr '\n' ',') -p auto -- --cov _dataclass_factory --cov-append
 	@coverage xml
 
 
