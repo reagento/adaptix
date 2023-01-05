@@ -3,9 +3,9 @@ from functools import partial
 from typing import Collection, Type, TypeVar, final
 
 from ..common import Dumper, Loader, TypeHint
+from ..load_error import TypeLoadError
 from ..type_tools import create_union, normalize_type
 from .essential import CannotProvide, Mediator, Provider, Request
-from .exceptions import TypeLoadError
 from .provider_basics import RequestChecker, match_origin
 from .request_cls import DumperRequest, LoaderRequest, get_type_from_request, replace_type
 from .static_provider import StaticProvider, static_provision_action

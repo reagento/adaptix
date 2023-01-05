@@ -4,8 +4,7 @@ from typing import Dict, Mapping, Optional, Set
 
 from ...code_tools import CodeBuilder, ContextNamespace
 from ...common import Loader
-from ...model_tools import InputField, InputFigure
-from ...provider.exceptions import (
+from ...load_error import (
     ExtraFieldsError,
     ExtraItemsError,
     LoadError,
@@ -13,6 +12,7 @@ from ...provider.exceptions import (
     NoRequiredItemsError,
     TypeLoadError,
 )
+from ...model_tools import InputField, InputFigure
 from ...struct_path import append_path, extend_path
 from .crown_definitions import (
     CrownPath,

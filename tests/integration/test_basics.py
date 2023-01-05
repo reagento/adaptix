@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 
 from dataclass_factory import Retort
-from dataclass_factory.provider.exceptions import TypeLoadError
+from dataclass_factory.load_error import TypeLoadError
 from dataclass_factory.struct_path import get_path
 
 

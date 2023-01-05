@@ -5,8 +5,8 @@ import phonenumbers
 from phonenumbers import PhoneNumber
 
 from dataclass_factory import Retort, bound, dumper, enum_by_name, loader, name_mapping, validator
+from dataclass_factory.load_error import ExtraFieldsError, ValueLoadError
 from dataclass_factory.provider import Chain, ExtraForbid, ExtraSkip
-from dataclass_factory.provider.exceptions import ExtraFieldsError, ValueLoadError
 
 from .models import Receipt, ReceiptType, RecItem
 from .money import Money, TooPreciseAmount

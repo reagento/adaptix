@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Iterable, Optional
 
-from ..common import TypeHint
+from .common import TypeHint
 
 # __init__ of these classes do not call super().__init__,
 # but it's ok! BaseException.__init__ do nothing useful

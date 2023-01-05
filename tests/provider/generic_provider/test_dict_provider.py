@@ -5,7 +5,7 @@ import pytest
 
 from _dataclass_factory.provider import CoercionLimiter, DictProvider, DumperRequest, LoaderRequest, TypeHintLocation
 from dataclass_factory import dumper, loader
-from dataclass_factory.provider.exceptions import TypeLoadError
+from dataclass_factory.load_error import TypeLoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 

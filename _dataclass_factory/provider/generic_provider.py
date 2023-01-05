@@ -6,10 +6,10 @@ from inspect import isabstract
 from typing import Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, Union
 
 from ..common import Dumper, Loader, TypeHint
+from ..load_error import BadVariantError, ExcludedTypeLoadError, LoadError, MsgError, TypeLoadError, UnionLoadError
 from ..struct_path import append_path
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
 from .essential import CannotProvide, Mediator, Request
-from .exceptions import BadVariantError, ExcludedTypeLoadError, LoadError, MsgError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider, for_origin
 from .request_cls import (
     DumperRequest,
