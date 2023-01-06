@@ -83,7 +83,7 @@ def analyze_file(filename: str, rule_matches: List[RuleMatch]) -> None:
                 )
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('targets', help="files to lint", nargs='+', )
     args = parser.parse_args()

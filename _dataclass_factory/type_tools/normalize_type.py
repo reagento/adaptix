@@ -482,11 +482,11 @@ class TypeNormalizer:
     if HAS_PY_39:
         def _eval_forward_ref(self, forward_ref: ForwardRef):
             # pylint: disable=protected-access
-            return forward_ref._evaluate(self._namespace, None, set())  # type: ignore[call-arg]
+            return forward_ref._evaluate(self._namespace, None, frozenset())
     else:
         def _eval_forward_ref(self, forward_ref: ForwardRef):
             # pylint: disable=protected-access
-            return forward_ref._evaluate(self._namespace, None)
+            return forward_ref._evaluate(self._namespace, None)  # type: ignore[call-arg]
 
     def _norm_forward_ref(self, tp):
         if self._namespace is not None:

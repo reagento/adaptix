@@ -1,6 +1,6 @@
 import re
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Callable, Iterable, List, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Iterable, Optional, Type, TypeVar, Union
 
 import pytest
 
@@ -55,7 +55,7 @@ def raises_path(
 
     if not isinstance(exc, type):
         if is_dataclass(exc):
-            assert asdict(exc_info.value) == asdict(exc)  # noqa
+            assert asdict(exc_info.value) == asdict(exc)
         else:
             raise TypeError("Can compare only dataclass instances")
 

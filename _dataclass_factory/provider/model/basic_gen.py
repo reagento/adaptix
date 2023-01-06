@@ -63,7 +63,7 @@ class CodeGenHookRequest(Request[CodeGenHook]):
 class CodeGenAccumulator(StaticProvider):
     """Accumulates all generated code. It may be useful for debugging"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.list: List[Tuple[Sequence[Request], CodeGenHookData]] = []
 
     @static_provision_action

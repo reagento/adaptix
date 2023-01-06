@@ -6,7 +6,7 @@
 #
 -e ./tests_helpers
     # via -r requirements/raw/test_extra_none.txt
-attrs==22.1.0
+attrs==22.2.0
     # via
     #   -r requirements/raw/test_extra_new.txt
     #   pytest
