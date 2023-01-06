@@ -10,9 +10,9 @@ from ..common import Dumper, Loader
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from ..type_tools import normalize_type
 from .essential import CannotProvide, Mediator, Request
-from .provider_basics import ExactTypeRC
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithRC, for_origin
 from .request_cls import DumperRequest, LoaderRequest, TypeHintLocation
+from .request_filtering import ExactTypeRC
 
 T = TypeVar('T')
 

@@ -22,7 +22,7 @@ from ..provider import (
     Provider,
     ValidationError,
     ValueProvider,
-    create_req_checker,
+    create_request_checker,
 )
 from ..provider.name_layout.base import ExtraIn, ExtraOut
 from ..provider.name_layout.component import (
@@ -42,7 +42,7 @@ T = TypeVar('T')
 def bound(pred: Any, provider: Provider) -> Provider:
     if pred == Omitted():
         return provider
-    return BoundingProvider(create_req_checker(pred), provider)
+    return BoundingProvider(create_request_checker(pred), provider)
 
 
 def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
@@ -222,7 +222,7 @@ def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provid
         raise ValueError(f"Can not apply enum rules to {Enum}")
 
     return BoundingProvider(
-        OrRequestChecker([create_req_checker(pred) for pred in preds]),
+        OrRequestChecker([create_request_checker(pred) for pred in preds]),
         provider,
     )
 

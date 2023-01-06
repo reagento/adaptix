@@ -6,8 +6,8 @@ from ..common import Dumper, Loader, TypeHint
 from ..load_error import TypeLoadError
 from ..type_tools import create_union, normalize_type
 from .essential import CannotProvide, Mediator, Provider, Request
-from .provider_basics import RequestChecker, match_origin
 from .request_cls import DumperRequest, LoaderRequest, get_type_from_request, replace_type
+from .request_filtering import RequestChecker, match_origin
 from .static_provider import StaticProvider, static_provision_action
 
 T = TypeVar('T')

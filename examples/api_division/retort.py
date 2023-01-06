@@ -4,7 +4,7 @@ from typing import List
 import phonenumbers
 from phonenumbers import PhoneNumber
 
-from dataclass_factory import Retort, bound, dumper, enum_by_name, loader, name_mapping, validator
+from dataclass_factory import P, Retort, dumper, enum_by_name, loader, name_mapping, validator
 from dataclass_factory.load_error import ExtraFieldsError, ValueLoadError
 from dataclass_factory.provider import Chain, ExtraForbid, ExtraSkip
 
@@ -78,27 +78,16 @@ INNER_RECEIPT_RETORT = ParentRetort(
     ],
 )
 
-
-_OUTER_BASE_RETORT = ParentRetort(
-    recipe=[
-        loader(PhoneNumber, outer_phonenumber_loader),
-        loader(str, string_cp866_mutator, Chain.LAST),
-        name_mapping(extra_in=ExtraForbid()),
-    ],
-)
-
-_OUTER_REC_ITEM_RETORT = _OUTER_BASE_RETORT.extend(
-    recipe=[
-        validator('quantity', lambda x: x > Decimal(0), 'Value must be > 0'),
-        validator('price', lambda x: x >= Money(0), 'Value must be >= 0'),
-    ],
-)
-
-
-OUTER_RECEIPT_RETORT = _OUTER_BASE_RETORT.extend(
+OUTER_RECEIPT_RETORT = ParentRetort(
     recipe=[
         validator(List[RecItem], lambda x: len(x) > 0, 'At least one item must be presented'),
-        bound(RecItem, _OUTER_REC_ITEM_RETORT),
+        validator(P[RecItem].quantity, lambda x: x > Decimal(0), 'Value must be > 0'),
+        validator(P[RecItem].price, lambda x: x >= Money(0), 'Value must be >= 0'),
+
         loader(Receipt, forbid_version_key, Chain.FIRST),
+        loader(PhoneNumber, outer_phonenumber_loader),
+        loader(str, string_cp866_mutator, Chain.LAST),
+
+        name_mapping(extra_in=ExtraForbid()),
     ],
 )

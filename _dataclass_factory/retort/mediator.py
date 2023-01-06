@@ -60,7 +60,11 @@ class BuiltinMediator(Mediator):
 
     def provide(self, request: Request[T]) -> T:
         if request in self._request_stack:  # maybe we need to lookup in set for large request_stack
-            resolver = self._get_resolver(request)
+            try:
+                resolver = self._get_resolver(request)
+            except KeyError:
+                raise RecursionError("Infinite recursion has been detected that can not be resolved") from None
+
             stub = resolver.get_stub(request)
             self.recursion_stubs[request] = stub
             return stub
