@@ -1,5 +1,5 @@
-pytest
-pytest-cov
+pytest==7.2.0
+pytest-cov==4.0.0
 -e ./tests_helpers
 
-phonenumbers==8.12.57
+phonenumbers==8.13.3

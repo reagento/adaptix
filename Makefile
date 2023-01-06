@@ -55,7 +55,7 @@ setup:
 
 .PHONY: deps-compile
 deps-compile:
-	@for file in requirements/raw/*.txt; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q; done
+	@for file in requirements/raw/*.txt; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q --resolver=backtracking --allow-unsafe; done
 	@# pip-compile saves local packages by absolute path, fix it
 	@for file in requirements/*.txt; do sed -i -E "s/-e file:.+\/tests_helpers/-e .\/tests_helpers/" "$${file}"; done
 
