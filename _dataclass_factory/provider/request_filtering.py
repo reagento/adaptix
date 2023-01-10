@@ -225,7 +225,7 @@ def _create_origin_request_checker(norm: BaseNormType) -> RequestChecker:
 
 def match_origin(tp: TypeHint) -> RequestChecker:
     if is_parametrized(tp):
-        raise ValueError("Origin must be not parametrized")
+        raise ValueError("TypeHint must be not parametrized")
 
     try:
         norm = normalize_type(tp)

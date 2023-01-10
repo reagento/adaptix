@@ -158,7 +158,7 @@ class WithUserName:
     user_name: str
 
 
-def field(name: str, tp: TypeHint) -> FieldLocation:
+def field_loc(name: str, tp: TypeHint) -> FieldLocation:
     return FieldLocation(
         type=tp,
         name=name,
@@ -183,7 +183,7 @@ def test_request_pattern():
         P[WithUserName].user_name,
         [
             LocatedRequest(loc=TypeHintLocation(WithUserName)),
-            LocatedRequest(loc=field('user_name', str)),
+            LocatedRequest(loc=field_loc('user_name', str)),
         ],
         fail=False,
     )
@@ -191,7 +191,7 @@ def test_request_pattern():
         P[WithUserName].user_name,
         [
             LocatedRequest(loc=TypeHintLocation(WithUserName)),
-            LocatedRequest(loc=field('user_name', int)),
+            LocatedRequest(loc=field_loc('user_name', int)),
         ],
         fail=False,
     )
@@ -199,7 +199,7 @@ def test_request_pattern():
         P[WithUserName].user_id,
         [
             LocatedRequest(loc=TypeHintLocation(WithUserName)),
-            LocatedRequest(loc=field('user_name', int)),
+            LocatedRequest(loc=field_loc('user_name', int)),
         ],
         fail=True,
     )
@@ -217,7 +217,7 @@ def test_request_pattern():
         P[WithUserName] + P.user_name,
         [
             LocatedRequest(loc=TypeHintLocation(WithUserName)),
-            LocatedRequest(loc=field('user_name', int)),
+            LocatedRequest(loc=field_loc('user_name', int)),
         ],
         fail=False,
     )

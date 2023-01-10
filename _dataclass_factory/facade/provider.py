@@ -3,7 +3,7 @@ from enum import Enum, EnumMeta
 from types import MappingProxyType
 from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
-from ..common import Catchable, Dumper, Loader, TypeHint
+from ..common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ..model_tools import Default, DescriptorAccessor, NoDefault, OutputField, get_func_figure
 from ..provider import (
     BoundingProvider,
@@ -96,13 +96,18 @@ NameMap = Mapping[Union[str, re.Pattern], Union[RawKey, Iterable[RawKey]]]
 def _convert_name_map_to_stack(name_map: NameMap) -> NameMapStack:
     result: List[Tuple[re.Pattern, RawPath]] = []
     for pattern, path in name_map.items():
-        if path == ():
-            raise ValueError(f"Path for field {pattern!r} can not be empty iterable")
+        path_tuple: VarTuple[RawKey]
+        if isinstance(path, (str, int)) or path is Ellipsis:
+            path_tuple = (path, )
+        else:
+            path_tuple = tuple(path)
+            if path_tuple == ():
+                raise ValueError(f"Path for field {pattern!r} can not be empty iterable")
 
         result.append(
             (
                 pattern if isinstance(pattern, re.Pattern) else re.compile(pattern),
-                (path, ) if isinstance(path, (str, int)) or path is Ellipsis else tuple(path)
+                path_tuple
             )
         )
 
