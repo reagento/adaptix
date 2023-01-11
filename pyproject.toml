@@ -21,7 +21,7 @@ classifiers = [
 'Bug Tracker' = 'https://github.com/tishka17/dataclass_factory/issues'
 
 [tool.setuptools]
-packages = ['_dataclass_factory', 'dataclass_factory']
+package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
 dataclass_factory = ['py.typed']
