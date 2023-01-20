@@ -74,10 +74,10 @@ class FilledRetort(OperatingRetort, ABC):
         CoercionLimiter(loader(float, float), [float, int]),
         as_is_dumper(float),
 
-        CoercionLimiter(as_is_loader(str), [str]),
+        CoercionLimiter(loader(str, str), [str]),
         as_is_dumper(str),
 
-        CoercionLimiter(as_is_loader(bool), [bool]),
+        CoercionLimiter(loader(bool, bool), [bool]),
         as_is_dumper(bool),
 
         CoercionLimiter(loader(Decimal, Decimal), [str, Decimal]),
@@ -201,28 +201,30 @@ class AdornedRetort(OperatingRetort):
         try:
             return self._loader_cache[tp]
         except KeyError:
-            loader_ = self._facade_provide(
-                LoaderRequest(
-                    loc=TypeHintLocation(tp),
-                    strict_coercion=self._strict_coercion,
-                    debug_path=self._debug_path
-                )
+            pass
+        loader_ = self._facade_provide(
+            LoaderRequest(
+                loc=TypeHintLocation(tp),
+                strict_coercion=self._strict_coercion,
+                debug_path=self._debug_path
             )
-            self._loader_cache[tp] = loader_
-            return loader_
+        )
+        self._loader_cache[tp] = loader_
+        return loader_
 
     def get_dumper(self, tp: Type[T]) -> Dumper[T]:
         try:
             return self._dumper_cache[tp]
         except KeyError:
-            dumper_ = self._facade_provide(
-                DumperRequest(
-                    loc=TypeHintLocation(tp),
-                    debug_path=self._debug_path
-                )
+            pass
+        dumper_ = self._facade_provide(
+            DumperRequest(
+                loc=TypeHintLocation(tp),
+                debug_path=self._debug_path
             )
-            self._dumper_cache[tp] = dumper_
-            return dumper_
+        )
+        self._dumper_cache[tp] = dumper_
+        return dumper_
 
     @overload
     def load(self, data: Any, tp: Type[T], /) -> T:

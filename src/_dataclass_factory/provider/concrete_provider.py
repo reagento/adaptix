@@ -1,7 +1,7 @@
 import binascii
 import re
 from binascii import a2b_base64, b2a_base64
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Type, TypeVar, Union
@@ -10,7 +10,7 @@ from _dataclass_factory.common import Dumper, Loader
 from _dataclass_factory.load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from _dataclass_factory.provider.essential import CannotProvide, Mediator, Request
 from _dataclass_factory.provider.provider_template import DumperProvider, LoaderProvider, ProviderWithRC, for_origin
-from _dataclass_factory.provider.request_cls import DumperRequest, LoaderRequest, TypeHintLocation
+from _dataclass_factory.provider.request_cls import DumperRequest, LoaderRequest, TypeHintLocation, replace_type
 from _dataclass_factory.provider.request_filtering import ExactTypeRC
 from _dataclass_factory.type_tools import normalize_type
 
@@ -151,7 +151,7 @@ class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
             raise CannotProvide
 
         bytes_loader = self._BYTES_PROVIDER.apply_provider(
-            mediator, replace(request, loc=replace(request.loc, type=bytes))
+            mediator, replace_type(request, bytes)
         )
 
         def bytearray_base64_loader(data):
