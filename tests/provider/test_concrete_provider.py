@@ -2,7 +2,7 @@ import re
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
-from _dataclass_factory.provider import (
+from dataclass_factory._internal.provider import (
     BytearrayBase64Provider,
     BytesBase64Provider,
     DatetimeFormatProvider,

@@ -36,7 +36,8 @@ from uuid import uuid4
 
 import pytest
 
-from _dataclass_factory.feature_requirement import (
+from dataclass_factory import TypeHint
+from dataclass_factory._internal.feature_requirement import (
     HAS_ANNOTATED,
     HAS_PARAM_SPEC,
     HAS_STD_CLASSES_GENERICS,
@@ -44,8 +45,8 @@ from _dataclass_factory.feature_requirement import (
     HAS_TYPE_GUARD,
     HAS_TYPE_UNION_OP,
 )
-from _dataclass_factory.type_tools import normalize_type
-from _dataclass_factory.type_tools.normalize_type import (
+from dataclass_factory._internal.type_tools import normalize_type
+from dataclass_factory._internal.type_tools.normalize_type import (
     BaseNormType,
     Bound,
     Constraints,
@@ -58,7 +59,6 @@ from _dataclass_factory.type_tools.normalize_type import (
     _NormType,
     make_norm_type,
 )
-from dataclass_factory import TypeHint
 from tests_helpers import requires
 
 MISSING = object()

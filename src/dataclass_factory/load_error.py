@@ -1,4 +1,4 @@
-from _dataclass_factory.load_error import (
+from dataclass_factory._internal.load_error import (
     BadVariantError,
     DatetimeFormatMismatch,
     ExcludedTypeLoadError,

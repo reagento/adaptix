@@ -18,14 +18,14 @@ from typing import (
 
 import pytest
 
-from _dataclass_factory.provider import (
+from dataclass_factory import NoSuitableProvider, dumper, loader
+from dataclass_factory._internal.provider import (
     CoercionLimiter,
     DumperRequest,
     IterableProvider,
     LoaderRequest,
     TypeHintLocation,
 )
-from dataclass_factory import NoSuitableProvider, dumper, loader
 from dataclass_factory.load_error import ExcludedTypeLoadError, TypeLoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 

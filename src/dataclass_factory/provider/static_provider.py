@@ -1,1 +1,1 @@
-from _dataclass_factory.provider.static_provider import StaticProvider, static_provision_action
+from dataclass_factory._internal.provider.static_provider import StaticProvider, static_provision_action

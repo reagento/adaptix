@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from _dataclass_factory.provider import LiteralProvider, LoaderRequest, LoadError, TypeHintLocation
+from dataclass_factory._internal.provider import LiteralProvider, LoaderRequest, LoadError, TypeHintLocation
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 

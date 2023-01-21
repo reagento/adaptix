@@ -3,8 +3,8 @@ from dataclasses import InitVar, dataclass, field
 from types import MappingProxyType
 from typing import ClassVar
 
-from _dataclass_factory.feature_requirement import HAS_ANNOTATED
-from _dataclass_factory.model_tools import (
+from dataclass_factory._internal.feature_requirement import HAS_ANNOTATED
+from dataclass_factory._internal.model_tools import (
     AttrAccessor,
     DefaultFactory,
     DefaultValue,

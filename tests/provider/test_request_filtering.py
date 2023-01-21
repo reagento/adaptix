@@ -4,13 +4,13 @@ from typing import Any, List, Union
 
 import pytest
 
-from _dataclass_factory.common import TypeHint
-from _dataclass_factory.model_tools import NoDefault
-from _dataclass_factory.provider import create_request_checker
-from _dataclass_factory.provider.request_cls import FieldLocation, LocatedRequest, TypeHintLocation
-from _dataclass_factory.provider.request_filtering import AnyRequestChecker, RequestPattern, StackEndRC
-from _dataclass_factory.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 from dataclass_factory import CannotProvide, P, Request
+from dataclass_factory._internal.common import TypeHint
+from dataclass_factory._internal.model_tools import NoDefault
+from dataclass_factory._internal.provider import create_request_checker
+from dataclass_factory._internal.provider.request_cls import FieldLocation, LocatedRequest, TypeHintLocation
+from dataclass_factory._internal.provider.request_filtering import AnyRequestChecker, RequestPattern, StackEndRC
+from dataclass_factory._internal.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 from tests_helpers import full_match_regex_str
 
 

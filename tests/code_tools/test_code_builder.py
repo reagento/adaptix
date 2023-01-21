@@ -1,4 +1,4 @@
-from _dataclass_factory.code_tools import CodeBuilder
+from dataclass_factory._internal.code_tools import CodeBuilder
 
 
 def test_append_lines():

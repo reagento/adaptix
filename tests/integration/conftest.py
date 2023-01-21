@@ -1,6 +1,6 @@
 import pytest
 
-from _dataclass_factory.provider.model.basic_gen import CodeGenAccumulator
+from dataclass_factory._internal.provider.model.basic_gen import CodeGenAccumulator
 
 
 @pytest.fixture

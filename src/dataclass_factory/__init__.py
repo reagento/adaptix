@@ -1,5 +1,5 @@
-from _dataclass_factory.common import Dumper, Loader, TypeHint
-from _dataclass_factory.facade import (
+from dataclass_factory._internal.common import Dumper, Loader, TypeHint
+from dataclass_factory._internal.facade import (
     AdornedRetort,
     FilledRetort,
     Retort,
@@ -16,8 +16,8 @@ from _dataclass_factory.facade import (
     name_mapping,
     validator,
 )
-from _dataclass_factory.model_tools.introspection import TypedDictAt38Warning
-from _dataclass_factory.utils import Omittable, Omitted
+from dataclass_factory._internal.model_tools.introspection import TypedDictAt38Warning
+from dataclass_factory._internal.utils import Omittable, Omitted
 from dataclass_factory.provider import (
     CannotProvide,
     Chain,

@@ -4,7 +4,8 @@ from typing import Any, Dict, Optional, Union
 
 import pytest
 
-from _dataclass_factory.model_tools import (
+from dataclass_factory import bound, name_mapping
+from dataclass_factory._internal.model_tools import (
     AttrAccessor,
     Default,
     DefaultFactory,
@@ -17,7 +18,7 @@ from _dataclass_factory.model_tools import (
     ParamKind,
     ParamKwargs,
 )
-from _dataclass_factory.provider import (
+from dataclass_factory._internal.provider import (
     BuiltinInputExtractionMaker,
     BuiltinOutputCreationMaker,
     InputFigureRequest,
@@ -33,7 +34,7 @@ from _dataclass_factory.provider import (
     make_input_creation,
     make_output_extraction,
 )
-from _dataclass_factory.provider.model import (
+from dataclass_factory._internal.provider.model import (
     ExtraForbid,
     ExtraSkip,
     InpDictCrown,
@@ -43,7 +44,7 @@ from _dataclass_factory.provider.model import (
     OutFieldCrown,
     OutputNameLayout,
 )
-from _dataclass_factory.provider.model.crown_definitions import (
+from dataclass_factory._internal.provider.model.crown_definitions import (
     ExtraCollect,
     ExtraExtract,
     ExtraKwargs,
@@ -54,20 +55,19 @@ from _dataclass_factory.provider.model.crown_definitions import (
     OutListCrown,
     OutNoneCrown,
 )
-from _dataclass_factory.provider.name_layout import (
+from dataclass_factory._internal.provider.name_layout import (
     BuiltinExtraMoveAndPoliciesMaker,
     BuiltinNameLayoutProvider,
     BuiltinSievesMaker,
     BuiltinStructureMaker,
 )
-from _dataclass_factory.provider.request_cls import (
+from dataclass_factory._internal.provider.request_cls import (
     DumperRequest,
     FieldLocation,
     LoaderRequest,
     Location,
     TypeHintLocation,
 )
-from dataclass_factory import bound, name_mapping
 from tests_helpers import TestRetort, full_match_regex_str, type_of
 
 

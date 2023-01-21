@@ -1,4 +1,4 @@
-from _dataclass_factory.struct_path import (
+from dataclass_factory._internal.struct_path import (
     Attr,
     Path,
     PathElement,

@@ -2,7 +2,7 @@ from collections import deque
 
 import pytest
 
-from _dataclass_factory.struct_path import append_path, extend_path, get_path, get_path_unchecked
+from dataclass_factory._internal.struct_path import append_path, extend_path, get_path, get_path_unchecked
 
 
 def _raw_path(obj: object):

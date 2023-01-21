@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 
 import pytest
 
-from _dataclass_factory.provider.static_provider import RequestDispatcher
 from dataclass_factory import Mediator, Request
+from dataclass_factory._internal.provider.static_provider import RequestDispatcher
 from dataclass_factory.provider.static_provider import StaticProvider, static_provision_action
 
 

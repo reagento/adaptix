@@ -1,1 +1,1 @@
-from _dataclass_factory.retort import BaseRetort, NoSuitableProvider, OperatingRetort
+from dataclass_factory._internal.retort import BaseRetort, NoSuitableProvider, OperatingRetort
