@@ -1,4 +1,6 @@
 import re
+from contextlib import contextmanager
+from copy import copy
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Callable, Iterable, Optional, Type, TypeVar, Union
 
@@ -129,3 +131,12 @@ def type_of(tp: type) -> Any:
 
 def full_match_regex_str(string_to_match: str) -> str:
     return '^' + re.escape(string_to_match) + '$'
+
+
+@contextmanager
+def rollback_object_state(obj):
+    state_copy = copy(obj.__dict__)
+    try:
+        yield obj
+    finally:
+        obj.__dict__ = state_copy

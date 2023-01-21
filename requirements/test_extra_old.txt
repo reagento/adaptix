@@ -30,6 +30,8 @@ pytest==7.2.0
     #   pytest-cov
 pytest-cov==4.0.0
     # via -r requirements/raw/test_extra_none.txt
+python-json-logger==2.0.4
+    # via -r requirements/raw/test_extra_none.txt
 tomli==2.0.1
     # via
     #   coverage

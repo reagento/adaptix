@@ -1,8 +1,12 @@
+import json
+import logging
 from collections import deque
 
 import pytest
+from pythonjsonlogger import jsonlogger
 
-from dataclass_factory._internal.struct_path import append_path, extend_path, get_path, get_path_unchecked
+from dataclass_factory.struct_path import StructPathRendererFilter, append_path, extend_path, get_path
+from tests_helpers import rollback_object_state
 
 
 def _raw_path(obj: object):
@@ -20,8 +24,6 @@ def test_append_path():
     append_path(exc, 3)
     assert _raw_path(exc) == deque([3, 'bar', 'foo'])
 
-    append_path(object(), 'baz')
-
 
 def test_extend_path():
     exc = Exception()
@@ -31,31 +33,58 @@ def test_extend_path():
     extend_path(exc, ['c', 'd'])
     assert _raw_path(exc) == deque(['c', 'd', 'a', 'b'])
 
-    extend_path(object(), ['baz'])
-
 
 def test_get_path():
     exc = Exception()
 
-    assert list(get_path_unchecked(exc)) == []
-
-    with pytest.raises(AttributeError):
-        _raw_path(exc)
-
+    pytest.raises(AttributeError, lambda: _raw_path(exc))
     assert list(get_path(exc)) == []
-    assert list(get_path_unchecked(exc)) == []
-    assert _raw_path(exc) == deque()
 
     append_path(exc, 'foo')
 
     assert list(get_path(exc)) == ['foo']
-    assert list(get_path_unchecked(exc)) == ['foo']
 
     new_exc = Exception()
     append_path(new_exc, 'bar')
 
     assert list(get_path(new_exc)) == ['bar']
-    assert list(get_path_unchecked(new_exc)) == ['bar']
 
-    assert get_path(object()) is None
-    assert list(get_path_unchecked(object())) == []
+
+@pytest.fixture()
+def temp_logger():
+    logger = logging.getLogger('temp_test_logger')
+    with rollback_object_state(logger):
+        yield logger
+
+
+def test_struct_path_renderer_filter(caplog, temp_logger):
+    caplog.set_level(logging.DEBUG, temp_logger.name)
+    temp_logger.addFilter(StructPathRendererFilter())
+
+    try:
+        raise ValueError
+    except Exception:
+        temp_logger.exception('unexpected exception')
+    assert caplog.records[-1].struct_path == []
+
+    try:
+        raise extend_path(ValueError(), ['a', 'b'])
+    except Exception:
+        temp_logger.exception('unexpected exception')
+    assert caplog.records[-1].struct_path == ['a', 'b']
+
+
+def test_struct_path_renderer_with_pythonjsonlogger(caplog, temp_logger):
+    caplog.set_level(logging.DEBUG, temp_logger.name)
+    temp_logger.addFilter(StructPathRendererFilter())
+
+    with rollback_object_state(caplog.handler):
+        caplog.handler.setFormatter(jsonlogger.JsonFormatter())
+
+        try:
+            raise extend_path(ValueError(), ['a', 'b'])
+        except Exception:
+            temp_logger.exception('unexpected exception')
+
+        assert len(caplog.records) == 1
+        assert json.loads(caplog.text)['struct_path'] == ['a', 'b']

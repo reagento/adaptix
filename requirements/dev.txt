@@ -172,6 +172,8 @@ pytest==7.2.0
     #   pytest-cov
 pytest-cov==4.0.0
     # via -r requirements/raw/test_extra_none.txt
+python-json-logger==2.0.4
+    # via -r requirements/raw/test_extra_none.txt
 pytz==2022.2.1
     # via babel
 pyyaml==6.0

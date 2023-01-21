@@ -1,6 +1,7 @@
+import logging
 from collections import deque
 from dataclasses import dataclass
-from typing import Any, Optional, Reversible, Sequence, TypeVar, Union
+from typing import Any, Callable, Reversible, Sequence, TypeVar, Union
 
 
 class PathElementMarker:
@@ -35,10 +36,7 @@ def append_path(obj: T, path_element: PathElement) -> T:
         # noinspection PyProtectedMember
         path = obj._df_struct_path  # type: ignore[attr-defined]
     except AttributeError:
-        try:
-            obj._df_struct_path = deque([path_element])  # type: ignore[attr-defined]
-        except AttributeError:
-            pass
+        obj._df_struct_path = deque([path_element])  # type: ignore[attr-defined]
     else:
         path.appendleft(path_element)
     return obj
@@ -54,47 +52,79 @@ def extend_path(obj: T, sub_path: Reversible[PathElement]) -> T:
         # noinspection PyProtectedMember
         path = obj._df_struct_path  # type: ignore[attr-defined]
     except AttributeError:
-        try:
-            obj._df_struct_path = deque(sub_path)  # type: ignore[attr-defined]
-        except AttributeError:
-            pass
+        obj._df_struct_path = deque(sub_path)  # type: ignore[attr-defined]
     else:
         path.extendleft(reversed(sub_path))
     return obj
 
 
-def get_path(obj: object) -> Optional[Path]:
-    """Retrieve path from object. Path stores in special attribute,
-    if object does not allow to add 3rd-party attributes, returns None.
-
-    Function needs to determine why object has no attribute -- it is does not support
-    3rd-party attributes or path is empty.
-    So it tests this trying to set value (!!!) for special attribute.
-    If you do not want to mutate object use :function get_path_unchecked:
-    """
-    # pylint: disable=protected-access
-    try:
-        # noinspection PyProtectedMember
-        return obj._df_struct_path  # type: ignore[attr-defined]
-    except AttributeError:
-        try:
-            obj._df_struct_path = deque()  # type: ignore[attr-defined]
-        except AttributeError:
-            return None
-        return deque()
-
-
-def get_path_unchecked(obj: object) -> Path:
-    """Retrieve path from object. Path stores in special attribute,
-    if object does not allow to add 3rd-party attributes, returns empty sequence.
-
-    This function can not determine why object has no attribute -- it is does not support
-    3rd-party attributes or path is empty, so it simply returns empty sequence.
-
-    If you want to separate this two cases, use :function get_path:
-    """
+def get_path(obj: object) -> Path:
+    """Retrieve path from object. Path stores in special attribute"""
     try:
         # noinspection PyProtectedMember
         return obj._df_struct_path  # type: ignore[attr-defined]  # pylint: disable=protected-access
     except AttributeError:
         return deque()
+
+
+class PathedException(Exception):
+    def __init__(self, exc: Exception, path: Path):
+        self.exc = exc
+        self.path = path
+
+    def __str__(self):
+        exc_instance_desc = f': {self.exc}' if str(self.exc) else ''
+        return f'at {list(self.path)} raised {type(self.exc).__qualname__}{exc_instance_desc}'
+
+
+class PathExceptionRenderer:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is None:
+            return
+
+        exc_path = get_path(exc_val)
+        raise PathedException(exc_val, exc_path)
+
+
+render_exc_path = PathExceptionRenderer()
+# pylint: disable=attribute-defined-outside-init
+render_exc_path.__doc__ = \
+    """Special context manager that wraps unhandled exception with PathedException.
+    This allows to render struct_path at console. Object should be used debug purposes only.
+
+    Example::
+         with render_exc_path:
+            print(retort.load(some_data, SomeModel))
+    """
+
+
+def default_path_processor(path):
+    return [
+        element if isinstance(element, (int, str)) else str(element)
+        for element in path
+    ]
+
+
+class StructPathRendererFilter(logging.Filter):
+    __slots__ = ('_attr_name', '_path_processor')
+
+    def __init__(
+        self,
+        attr_name: str = 'struct_path',
+        path_processor: Callable[[Path], Any] = default_path_processor,
+    ):
+        super().__init__()
+        self._attr_name = attr_name
+        self._path_processor = path_processor
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.exc_info is not None:
+            setattr(
+                record,
+                self._attr_name,
+                self._path_processor(get_path(record.exc_info[1])),
+            )
+        return True
