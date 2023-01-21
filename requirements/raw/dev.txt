@@ -1,6 +1,6 @@
 sphinx
 sphinx_rtd_theme
-tox==4.2.5
+tox==4.3.5
 coverage==7.0.3
 pip-tools==6.12.1
 setuptools==65.6.3
