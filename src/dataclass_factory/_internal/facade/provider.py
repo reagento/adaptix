@@ -4,7 +4,7 @@ from types import MappingProxyType
 from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 from ..common import Catchable, Dumper, Loader, TypeHint, VarTuple
-from ..model_tools import Default, DescriptorAccessor, NoDefault, OutputField, get_func_figure
+from ..model_tools import Default, DescriptorAccessor, NoDefault, OutputField, get_callable_figure
 from ..provider import (
     BoundingProvider,
     Chain,
@@ -85,7 +85,7 @@ def constructor(pred: Any, func: Callable) -> Provider:
         pred,
         ValueProvider(
             InputFigureRequest,
-            get_func_figure(func).input,
+            get_callable_figure(func).input,
         ),
     )
 

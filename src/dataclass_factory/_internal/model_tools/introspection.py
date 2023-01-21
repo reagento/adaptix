@@ -49,14 +49,13 @@ def _is_empty(value):
     return value is Signature.empty
 
 
-def get_func_figure(func, params_slice=slice(0, None)) -> Figure[InputFigure, None]:
-    if isinstance(func, type):
-        raise TypeError("classes are not accepted here")
+def get_callable_figure(func, params_slice=slice(0, None)) -> Figure[InputFigure, None]:
+    try:
+        signature = inspect.signature(func)
+    except TypeError:
+        raise IntrospectionImpossible
 
-    params = list(
-        inspect.signature(func).parameters.values()
-    )[params_slice]
-
+    params = list(signature.parameters.values())[params_slice]
     kinds = [p.kind for p in params]
 
     if Parameter.VAR_POSITIONAL in kinds:
@@ -303,7 +302,7 @@ def get_class_init_figure(tp) -> Figure[InputFigure, None]:
     if not isinstance(tp, type):
         raise IntrospectionImpossible
 
-    figure = get_func_figure(
+    figure = get_callable_figure(
         tp.__init__,  # type: ignore[misc]
         slice(1, None)
     )
@@ -400,6 +399,13 @@ def _get_attr_param_name(field):
 def get_attrs_figure(tp) -> FullFigure:
     if not HAS_ATTRS_PKG:
         raise NoTargetPackage
+
+    try:
+        is_attrs = attrs.has(tp)
+    except TypeError:
+        raise IntrospectionImpossible
+    if not is_attrs:
+        raise IntrospectionImpossible
 
     type_hints = get_all_type_hints(tp)
 

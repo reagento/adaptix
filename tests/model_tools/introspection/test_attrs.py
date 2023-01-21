@@ -1,6 +1,7 @@
 import typing
+from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Tuple
 
 import pytest
 
@@ -18,7 +19,7 @@ from dataclass_factory._internal.model_tools import (
     ParamKind,
     get_attrs_figure,
 )
-from dataclass_factory._internal.model_tools.definitions import ParamKwargs
+from dataclass_factory._internal.model_tools.definitions import IntrospectionImpossible, ParamKwargs
 from tests_helpers import requires
 
 pytest.importorskip("attrs")
@@ -616,3 +617,16 @@ def test_annotated():
             )
         )
     )
+
+
+def test_not_attrs():
+    @dataclass
+    class IAmDataclass:
+        foo: int
+
+    with pytest.raises(IntrospectionImpossible):
+        get_attrs_figure(IAmDataclass)
+
+    with pytest.raises(IntrospectionImpossible):
+        get_attrs_figure(Tuple[IAmDataclass, int])
+

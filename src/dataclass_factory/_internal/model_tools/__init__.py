@@ -25,9 +25,9 @@ from dataclass_factory._internal.model_tools.definitions import (
 )
 from dataclass_factory._internal.model_tools.introspection import (
     get_attrs_figure,
+    get_callable_figure,
     get_class_init_figure,
     get_dataclass_figure,
-    get_func_figure,
     get_named_tuple_figure,
     get_typed_dict_figure,
 )
