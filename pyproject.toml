@@ -48,7 +48,7 @@ filterwarnings = ['ignore::dataclass_factory.TypedDictAt38Warning']
 skips = ['B102']
 
 [tool.bandit.assert_used]
-skips = ['*/test_*.py', '*/*_test.py']
+skips = ['*/test_*.py', '*/*_test.py', 'docs/examples/*']
 
 [tool.vulture]
 min_confidence = 60

@@ -1,10 +1,9 @@
-sphinx
-sphinx_rtd_theme
 tox==4.3.5
 coverage==7.0.3
 pip-tools==6.12.1
 setuptools==65.6.3
 
 -r lint.txt
+-r doc.txt
 -r test_extra_new.txt
 -r pre.txt

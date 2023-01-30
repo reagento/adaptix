@@ -1,0 +1,49 @@
+import logging
+from dataclasses import dataclass
+
+from pythonjsonlogger import jsonlogger
+
+from dataclass_factory import Retort
+from dataclass_factory.load_error import LoadError
+from dataclass_factory.struct_path import StructPathRendererFilter
+
+
+@dataclass
+class Person:
+    id: str
+    name: str
+
+
+@dataclass
+class Book:
+    title: str
+    price: int
+    author: Person
+
+
+data = {
+    "title": "Fahrenheit 451",
+    "price": 100,
+    "author": {
+        "id": 753,  # model declaration requires string!
+        "name": "Ray Bradbury",
+    }
+}
+
+logging.basicConfig()
+logging.getLogger().handlers[0].formatter = jsonlogger.JsonFormatter()
+# one line needed by dataclass_factory
+logging.getLogger().addFilter(StructPathRendererFilter())
+
+retort = Retort()
+
+try:
+    retort.load(data, Book)
+except LoadError as e:
+    # {"message": "Bad input data for book", ..., "struct_path": ["author", "id"]}
+    logging.warning("Bad input data for book", exc_info=e)
+except Exception:
+    logging.exception("Unexpected error at book loading")
+
+# {"message": "some other message", ...}
+logging.error('Some other message')

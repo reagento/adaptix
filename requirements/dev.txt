@@ -197,12 +197,18 @@ smmap==5.0.0
     # via gitdb
 snowballstemmer==2.2.0
     # via sphinx
-sphinx==5.1.1
+sphinx==5.3.0
     # via
-    #   -r requirements/raw/dev.txt
+    #   -r requirements/raw/doc.txt
+    #   sphinx-copybutton
+    #   sphinx-design
     #   sphinx-rtd-theme
-sphinx-rtd-theme==1.0.0
-    # via -r requirements/raw/dev.txt
+sphinx-copybutton==0.5.1
+    # via -r requirements/raw/doc.txt
+sphinx-design==0.3.0
+    # via -r requirements/raw/doc.txt
+sphinx-rtd-theme==1.1.1
+    # via -r requirements/raw/doc.txt
 sphinxcontrib-applehelp==1.0.2
     # via sphinx
 sphinxcontrib-devhelp==1.0.2

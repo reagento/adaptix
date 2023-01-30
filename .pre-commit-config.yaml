@@ -1,4 +1,4 @@
-files: '(src/.*)|(tests/.*)|(tests_helpers/.*)|(^examples/.*)'
+files: '(src/.*)|(tests/.*)|(tests_helpers/.*)|(^examples/.*)|(docs/examples/tutorial/.*)'
 default_stages:
   - commit
   - push

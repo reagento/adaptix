@@ -7,6 +7,7 @@ dataclass-factory
 
    overview
    quickstart
+   tutorial
    extended
    types
 

@@ -5,12 +5,7 @@ Overview
 Requirements
 ==================
 
-* python >= 3.6
-
-You can use ``dataclass_factory`` with python 3.6 and ``dataclass`` library installed from pip.
-
-On python 3.7 it has no external dependencies outside of the Python standard library.
-
+* python >= 3.8
 
 Advantages
 =============

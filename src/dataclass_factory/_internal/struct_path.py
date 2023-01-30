@@ -59,7 +59,7 @@ def extend_path(obj: T, sub_path: Reversible[PathElement]) -> T:
 
 
 def get_path(obj: object) -> Path:
-    """Retrieve path from object. Path stores in special attribute"""
+    """Retrieve path from object. Path stores in special private attribute that never be accessed directly"""
     try:
         # noinspection PyProtectedMember
         return obj._df_struct_path  # type: ignore[attr-defined]  # pylint: disable=protected-access
@@ -74,7 +74,7 @@ class PathedException(Exception):
 
     def __str__(self):
         exc_instance_desc = f': {self.exc}' if str(self.exc) else ''
-        return f'at {list(self.path)} raised {type(self.exc).__qualname__}{exc_instance_desc}'
+        return f'at {list(self.path)} was raised {type(self.exc).__qualname__}{exc_instance_desc}'
 
 
 class PathExceptionRenderer:

@@ -34,6 +34,7 @@ from ..provider.name_layout.component import (
     StructureOverlay,
 )
 from ..provider.overlay_schema import OverlayProvider
+from ..provider.request_filtering import RequestPattern
 from ..utils import Omittable, Omitted
 
 T = TypeVar('T')
@@ -216,7 +217,7 @@ def _ensure_attr_name(prop: NameOrProp) -> str:
     return fget.__name__
 
 
-EnumPred = Union[TypeHint, str, EnumMeta]
+EnumPred = Union[TypeHint, str, EnumMeta, RequestPattern]
 
 
 def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provider:
@@ -252,7 +253,7 @@ def validator(
 ) -> Provider:
     # pylint: disable=C3001
     exception_factory = (
-        lambda x: ValidationError(error)
+        (lambda x: ValidationError(error))
         if error is None or isinstance(error, str) else
         error
     )
