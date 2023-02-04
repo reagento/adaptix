@@ -24,4 +24,4 @@ data = [
 retort = Retort()
 books = retort.load(data, List[Book])
 assert books == [Book(title="Fahrenheit 451", price=100), Book(title="1984", price=100)]
-assert retort.dump(books) == data
+assert retort.dump(books, List[Book]) == data

@@ -28,16 +28,17 @@ except ValidationError as e:
 
 
 class BelowZero(LoadError):
-    pass
+    def __init__(self, actual_value: int):
+        self.actual_value = actual_value
 
 
 retort = Retort(
     recipe=[
-        validator(P[Book].price, lambda x: x >= 0, lambda x: BelowZero()),
+        validator(P[Book].price, lambda x: x >= 0, lambda x: BelowZero(x)),
     ],
 )
 
 try:
     retort.load(data, Book)
-except BelowZero:
-    pass
+except BelowZero as e:
+    assert e.actual_value == -10

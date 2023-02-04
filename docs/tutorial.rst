@@ -67,7 +67,7 @@ More detail about working with the saved path in :ref:`Struct path`
 
 
 ``strict_coercion`` affects only the loading process.
-If it is enabled (that is state by default) type will be converted only two conditions passed:
+If it is enabled (this is default state) type will be converted only two conditions passed:
 
 #. There is only one way to produce casting
 #. No information will be lost
@@ -174,7 +174,10 @@ it allows to separates creation of loaders and dumpers for specific types into i
 .. literalinclude:: examples/tutorial/retort_combination.py
 
 In this example, loader and dumper for ``LiteraryWork`` will be created by ``literature_retort``
-(note that ``debug_path`` and ``strict_coercion`` options will be used from upper level retort)
+(note that ``debug_path`` and ``strict_coercion`` options will be used from upper level retort).
+
+Retort is provider that proxies search info own recipe, so if you pass retort without a ``bound`` wrapper,
+it will be used for all loaders and dumpers, overriding all subsequent providers.
 
 
 Provider chaining
@@ -252,5 +255,7 @@ or `Datadog <https://docs.datadoghq.com/integrations/python/>`_ using one additi
 
   No builtin formatter can render all passed extra data.
   You can only specify the concrete field or create a custom formatter.
+
+  This example works only at python 3.10 and more.
 
   .. literalinclude:: examples/tutorial/struct_path_renderer_filter.py
