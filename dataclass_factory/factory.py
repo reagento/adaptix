@@ -7,7 +7,7 @@ from .naming import NameStyle
 from .parsers import create_parser, get_lazy_parser
 from .schema import merge_schema, Schema, Unknown
 from .serializers import create_serializer, get_lazy_serializer
-from .type_detection import is_generic_concrete
+from .type_detection import is_generic_concrete, is_generic_unspecified_args
 from .schema_helpers import COMMON_SCHEMAS
 
 DEFAULT_SCHEMA = Schema[Any](
@@ -99,6 +99,8 @@ class Factory(AbstractFactory):
         """
         Finds or creates `Schema` describing `class_` conversion rules
         """
+        if is_generic_unspecified_args(class_):
+            class_ = class_[Any]
         if is_generic_concrete(class_):
             base_class = class_.__origin__  # type: ignore
         else:

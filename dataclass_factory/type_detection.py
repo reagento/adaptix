@@ -1,6 +1,7 @@
 from collections import defaultdict
 from enum import Enum
 import inspect
+import types
 from typing import (
     Any, Collection, Dict, Generic, List, Optional, Tuple, Type, TypeVar,
     Union, get_type_hints, Iterable, DefaultDict,
@@ -157,6 +158,16 @@ def is_generic(type_: Type) -> bool:
     # but do not act like generics unless they are parametrized
     # we can check if it is a true Generic by checking `__orig_bases__`
     return issubclass_safe(type_, Generic) and hasattr(type_, "__orig_bases__")
+
+
+def is_generic_unspecified_args(type_: Type) -> bool:
+    try:
+        return bool(
+            hasattr(type_, "__class_getitem__",)
+            and type(type_[str] is types.GenericAlias)  # type: ignore
+        )
+    except (TypeError, AttributeError):
+        return False
 
 
 def is_none(type_: Type) -> bool:
