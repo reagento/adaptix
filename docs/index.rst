@@ -5,11 +5,7 @@ dataclass-factory
    :maxdepth: 3
    :caption: Contents:
 
-   overview
-   quickstart
    tutorial
-   extended
-   types
 
 
 Indices and tables
