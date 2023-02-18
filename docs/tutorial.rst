@@ -10,7 +10,7 @@ Installation
 
 Just use pip to install the library::
 
-    pip install dataclass_factory
+    pip install adaptix
 
 
 Introduction
@@ -210,7 +210,7 @@ Error handling
 
 All loaders have to throw ``LoadError`` to signal invalid input data.
 Other exceptions mean errors at loaders themselves.
-All builtin ``LoadError`` children are listed at ``dataclass_factory.load_error`` subpackage
+All builtin ``LoadError`` children are listed at ``adaptix.load_error`` subpackage
 and designed to produce machine-readable structured errors.
 
 .. literalinclude:: examples/tutorial/load_error.py
@@ -246,7 +246,7 @@ The second helper is intended to use at production.
 ``StructPathRendererFilter()`` extracts the path from the exception and injects it as ``struct_path``
 attribute of `LogRecord <https://docs.python.org/3/library/logging.html#logging.LogRecord>`_.
 You only need to attach the Filter to the corresponding logger (or handler).
-This allows to integrate ``dataclass_factory`` with error monitoring tools like `Sentry <https://sentry.io/for/python/>`_
+This allows to integrate ``adaptix`` with error monitoring tools like `Sentry <https://sentry.io/for/python/>`_
 or `Datadog <https://docs.datadoghq.com/integrations/python/>`_ using one additional line.
 
 .. literalinclude:: examples/tutorial/struct_path_renderer_filter_json.py

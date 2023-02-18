@@ -34,9 +34,9 @@ def append_path(obj: T, path_element: PathElement) -> T:
     # pylint: disable=protected-access
     try:
         # noinspection PyProtectedMember
-        path = obj._df_struct_path  # type: ignore[attr-defined]
+        path = obj._adaptix_struct_path  # type: ignore[attr-defined]
     except AttributeError:
-        obj._df_struct_path = deque([path_element])  # type: ignore[attr-defined]
+        obj._adaptix_struct_path = deque([path_element])  # type: ignore[attr-defined]
     else:
         path.appendleft(path_element)
     return obj
@@ -50,9 +50,9 @@ def extend_path(obj: T, sub_path: Reversible[PathElement]) -> T:
     # pylint: disable=protected-access
     try:
         # noinspection PyProtectedMember
-        path = obj._df_struct_path  # type: ignore[attr-defined]
+        path = obj._adaptix_struct_path  # type: ignore[attr-defined]
     except AttributeError:
-        obj._df_struct_path = deque(sub_path)  # type: ignore[attr-defined]
+        obj._adaptix_struct_path = deque(sub_path)  # type: ignore[attr-defined]
     else:
         path.extendleft(reversed(sub_path))
     return obj
@@ -62,7 +62,7 @@ def get_path(obj: object) -> Path:
     """Retrieve path from object. Path stores in special private attribute that never be accessed directly"""
     try:
         # noinspection PyProtectedMember
-        return obj._df_struct_path  # type: ignore[attr-defined]  # pylint: disable=protected-access
+        return obj._adaptix_struct_path  # type: ignore[attr-defined]  # pylint: disable=protected-access
     except AttributeError:
         return deque()
 

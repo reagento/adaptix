@@ -2,7 +2,7 @@ from typing import Tuple
 
 import pytest
 
-from dataclass_factory._internal.model_tools import IntrospectionImpossible, get_callable_figure
+from adaptix._internal.model_tools import IntrospectionImpossible, get_callable_figure
 
 
 def test_introspection_impossible():

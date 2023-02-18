@@ -5,10 +5,10 @@ from typing import Any, Callable, Dict, Optional
 
 import pytest
 
-from dataclass_factory import ExtraKwargs, Loader, bound
-from dataclass_factory._internal.common import VarTuple
-from dataclass_factory._internal.model_tools import InputField, InputFigure, NoDefault, ParamKind, ParamKwargs
-from dataclass_factory._internal.provider import (
+from adaptix import ExtraKwargs, Loader, bound
+from adaptix._internal.common import VarTuple
+from adaptix._internal.model_tools import InputField, InputFigure, NoDefault, ParamKind, ParamKwargs
+from adaptix._internal.provider import (
     BuiltinInputExtractionMaker,
     ExtraFieldsError,
     ExtraItemsError,
@@ -25,7 +25,7 @@ from dataclass_factory._internal.provider import (
     ValueProvider,
     make_input_creation,
 )
-from dataclass_factory._internal.provider.model import (
+from adaptix._internal.provider.model import (
     ExtraCollect,
     ExtraForbid,
     ExtraSkip,
@@ -35,7 +35,7 @@ from dataclass_factory._internal.provider.model import (
     InpNoneCrown,
     InputNameLayout,
 )
-from dataclass_factory._internal.provider.model.crown_definitions import ExtraSaturate, ExtraTargets
+from adaptix._internal.provider.model.crown_definitions import ExtraSaturate, ExtraTargets
 from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 

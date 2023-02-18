@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 
-from dataclass_factory import Chain, P, Retort, dumper, loader
+from adaptix import Chain, P, Retort, dumper, loader
 
 
 @dataclass

@@ -1,6 +1,6 @@
 import pytest
 
-from dataclass_factory._internal.model_tools import (
+from adaptix._internal.model_tools import (
     AttrAccessor,
     InputField,
     InputFigure,

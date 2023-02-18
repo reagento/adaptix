@@ -3,8 +3,8 @@ requires = ['setuptools==65.1.0']
 build-backend = 'setuptools.build_meta'
 
 [project]
-name = 'dataclass_factory'
-version = '3.0.0-alpha.1'
+name = 'adaptix'
+version = '3.0.0a1'
 description = 'An utility class for creating instances of dataclasses'
 readme = 'README.md'
 requires-python = '>=3.8'
@@ -24,7 +24,7 @@ classifiers = [
 package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
-dataclass_factory = ['py.typed']
+adaptix = ['py.typed']
 
 [[project.authors]]
 name = 'A. Tikhonov'
@@ -42,7 +42,7 @@ remove_redundant_aliases = true
 python_classes = 'WeDoNotUseClassTestCase'
 python_files = ['test_*.py', '*_test.py', 'tests_helpers.py']
 testpaths = ['tests', 'tests_helpers', 'examples']
-filterwarnings = ['ignore::dataclass_factory.TypedDictAt38Warning']
+filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
 
 [tool.bandit]
 skips = ['B102']

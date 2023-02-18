@@ -1,4 +1,4 @@
-from dataclass_factory._internal.load_error import (
+from adaptix._internal.load_error import (
     DatetimeFormatMismatch,
     ExcludedTypeLoadError,
     ExtraFieldsError,
@@ -12,7 +12,7 @@ from dataclass_factory._internal.load_error import (
     ValidationError,
     ValueLoadError,
 )
-from dataclass_factory._internal.provider.concrete_provider import (
+from adaptix._internal.provider.concrete_provider import (
     Base64DumperMixin,
     BytearrayBase64Provider,
     BytesBase64Provider,
@@ -22,7 +22,7 @@ from dataclass_factory._internal.provider.concrete_provider import (
     RegexPatternProvider,
     SecondsTimedeltaProvider,
 )
-from dataclass_factory._internal.provider.generic_provider import (
+from adaptix._internal.provider.generic_provider import (
     DictProvider,
     EnumExactValueProvider,
     EnumNameProvider,
@@ -33,7 +33,7 @@ from dataclass_factory._internal.provider.generic_provider import (
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
-from dataclass_factory._internal.provider.static_provider import StaticProvider, static_provision_action
+from adaptix._internal.provider.static_provider import StaticProvider, static_provision_action
 
 from .essential import CannotProvide, Mediator, Provider, Request
 from .model import (

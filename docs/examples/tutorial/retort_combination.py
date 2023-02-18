@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List
 
-from dataclass_factory import Retort, bound, dumper, enum_by_name, loader
+from adaptix import Retort, bound, dumper, enum_by_name, loader
 
 
 class LiteraryGenre(Enum):

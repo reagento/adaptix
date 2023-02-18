@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from pytest import param, register_assert_rewrite
 
-from dataclass_factory._internal.feature_requirement import HAS_PY_310
+from adaptix._internal.feature_requirement import HAS_PY_310
 
 DOCS_ROOT_PARENT = Path(__file__).parent.parent
 DOCS_EXAMPLES_ROOT = DOCS_ROOT_PARENT / 'docs' / 'examples'

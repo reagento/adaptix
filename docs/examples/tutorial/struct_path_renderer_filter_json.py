@@ -3,9 +3,9 @@ from dataclasses import dataclass
 
 from pythonjsonlogger import jsonlogger
 
-from dataclass_factory import Retort
-from dataclass_factory.load_error import LoadError
-from dataclass_factory.struct_path import StructPathRendererFilter
+from adaptix import Retort
+from adaptix.load_error import LoadError
+from adaptix.struct_path import StructPathRendererFilter
 
 
 @dataclass
@@ -32,7 +32,7 @@ data = {
 
 logging.basicConfig()
 logging.getLogger().handlers[0].formatter = jsonlogger.JsonFormatter()
-# one line needed by dataclass_factory
+# one line needed by adaptix
 logging.getLogger().addFilter(StructPathRendererFilter())
 
 retort = Retort()

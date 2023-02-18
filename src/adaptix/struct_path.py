@@ -1,4 +1,4 @@
-from dataclass_factory._internal.struct_path import (
+from adaptix._internal.struct_path import (
     Attr,
     Path,
     PathedException,

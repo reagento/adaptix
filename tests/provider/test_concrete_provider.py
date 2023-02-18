@@ -2,7 +2,7 @@ import re
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
-from dataclass_factory._internal.provider import (
+from adaptix._internal.provider import (
     BytearrayBase64Provider,
     BytesBase64Provider,
     DatetimeFormatProvider,
@@ -14,7 +14,7 @@ from dataclass_factory._internal.provider import (
     SecondsTimedeltaProvider,
     TypeHintLocation,
 )
-from dataclass_factory.load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
+from adaptix.load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 

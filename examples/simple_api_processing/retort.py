@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from dataclass_factory import Retort, dumper, loader, name_mapping
+from adaptix import Retort, dumper, loader, name_mapping
 
 from .models import Forecast, Weather
 

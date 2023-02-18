@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from dataclass_factory import P, Retort, validator
-from dataclass_factory.load_error import LoadError, ValidationError
+from adaptix import P, Retort, validator
+from adaptix.load_error import LoadError, ValidationError
 
 
 @dataclass

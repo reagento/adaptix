@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from dataclass_factory import Retort, dumper, loader
+from adaptix import Retort, dumper, loader
 
 base_retort = Retort(
     recipe=[

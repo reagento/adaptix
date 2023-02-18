@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from dataclass_factory import Retort, dumper, loader
+from adaptix import Retort, dumper, loader
 
 
 @dataclass

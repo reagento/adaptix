@@ -5,13 +5,13 @@ from collections import deque
 import pytest
 from pythonjsonlogger import jsonlogger
 
-from dataclass_factory.struct_path import StructPathRendererFilter, append_path, extend_path, get_path
+from adaptix.struct_path import StructPathRendererFilter, append_path, extend_path, get_path
 from tests_helpers import rollback_object_state
 
 
 def _raw_path(obj: object):
     # noinspection PyProtectedMember
-    return obj._df_struct_path  # type: ignore[attr-defined]
+    return obj._adaptix_struct_path  # type: ignore[attr-defined]
 
 
 def test_append_path():

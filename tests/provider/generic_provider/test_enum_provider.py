@@ -1,14 +1,14 @@
 from enum import Enum, IntEnum
 
-from dataclass_factory import dumper, enum_by_value, loader
-from dataclass_factory._internal.provider import (
+from adaptix import dumper, enum_by_value, loader
+from adaptix._internal.provider import (
     DumperRequest,
     EnumExactValueProvider,
     EnumNameProvider,
     LoaderRequest,
     TypeHintLocation,
 )
-from dataclass_factory.load_error import BadVariantError, MsgError
+from adaptix.load_error import BadVariantError, MsgError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 

@@ -1,4 +1,4 @@
-from dataclass_factory import Retort
+from adaptix import Retort
 
 external_retort = Retort(
     recipe=[

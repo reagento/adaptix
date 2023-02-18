@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from dataclass_factory import Retort
-from dataclass_factory.load_error import LoadError, NoRequiredFieldsError
+from adaptix import Retort
+from adaptix.load_error import LoadError, NoRequiredFieldsError
 
 
 @dataclass

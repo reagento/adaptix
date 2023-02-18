@@ -1,4 +1,4 @@
-from dataclass_factory import Retort
+from adaptix import Retort
 from tests_helpers import PlaceholderProvider
 
 

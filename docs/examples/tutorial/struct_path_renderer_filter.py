@@ -1,9 +1,9 @@
 import logging
 from dataclasses import dataclass
 
-from dataclass_factory import Retort
-from dataclass_factory.load_error import LoadError
-from dataclass_factory.struct_path import StructPathRendererFilter
+from adaptix import Retort
+from adaptix.load_error import LoadError
+from adaptix.struct_path import StructPathRendererFilter
 
 
 @dataclass

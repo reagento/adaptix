@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List
 
-from dataclass_factory import P, Retort, loader
+from adaptix import P, Retort, loader
 
 
 @dataclass

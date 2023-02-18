@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from dataclass_factory import Retort, loader
-from dataclass_factory.struct_path import Attr, get_path
+from adaptix import Retort, loader
+from adaptix.struct_path import Attr, get_path
 
 
 @dataclass

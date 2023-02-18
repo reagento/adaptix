@@ -4,7 +4,7 @@ from typing import Any, List, Union
 
 import phonenumbers
 
-from dataclass_factory.load_error import (
+from adaptix.load_error import (
     BadVariantError,
     ExtraFieldsError,
     LoadError,

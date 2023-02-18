@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from dataclass_factory import Retort, loader
+from adaptix import Retort, loader
 
 
 @dataclass

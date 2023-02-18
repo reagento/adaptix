@@ -4,8 +4,8 @@ from typing import Callable, List, Literal, Optional, Union
 
 import pytest
 
-from dataclass_factory import dumper, loader
-from dataclass_factory._internal.provider import (
+from adaptix import dumper, loader
+from adaptix._internal.provider import (
     DumperRequest,
     LiteralProvider,
     LoaderRequest,

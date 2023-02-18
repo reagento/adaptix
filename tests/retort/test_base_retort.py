@@ -2,8 +2,8 @@ import re
 
 import pytest
 
-from dataclass_factory import Retort
-from dataclass_factory._internal.retort import BaseRetort
+from adaptix import Retort
+from adaptix._internal.retort import BaseRetort
 from tests_helpers import PlaceholderProvider, full_match_regex_str
 
 

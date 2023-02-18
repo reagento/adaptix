@@ -5,8 +5,8 @@ from typing import Any, Tuple
 
 import pytest
 
-from dataclass_factory._internal.feature_requirement import HAS_ANNOTATED
-from dataclass_factory._internal.model_tools import (
+from adaptix._internal.feature_requirement import HAS_ANNOTATED
+from adaptix._internal.model_tools import (
     AttrAccessor,
     DefaultFactory,
     DefaultValue,
@@ -19,7 +19,7 @@ from dataclass_factory._internal.model_tools import (
     ParamKind,
     get_attrs_figure,
 )
-from dataclass_factory._internal.model_tools.definitions import IntrospectionImpossible, ParamKwargs
+from adaptix._internal.model_tools.definitions import IntrospectionImpossible, ParamKwargs
 from tests_helpers import requires
 
 pytest.importorskip("attrs")

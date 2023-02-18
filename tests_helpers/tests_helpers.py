@@ -6,12 +6,12 @@ from typing import Any, Callable, Iterable, Optional, Type, TypeVar, Union
 
 import pytest
 
-from dataclass_factory import CannotProvide, Mediator, Provider, Request
-from dataclass_factory._internal.common import EllipsisType, VarTuple
-from dataclass_factory._internal.feature_requirement import PythonVersionRequirement
-from dataclass_factory._internal.provider.model.basic_gen import CodeGenAccumulator
-from dataclass_factory.retort import OperatingRetort
-from dataclass_factory.struct_path import get_path
+from adaptix import CannotProvide, Mediator, Provider, Request
+from adaptix._internal.common import EllipsisType, VarTuple
+from adaptix._internal.feature_requirement import PythonVersionRequirement
+from adaptix._internal.provider.model.basic_gen import CodeGenAccumulator
+from adaptix.retort import OperatingRetort
+from adaptix.struct_path import get_path
 
 T = TypeVar("T")
 

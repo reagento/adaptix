@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from dataclass_factory import Retort
+from adaptix import Retort
 
 
 @dataclass

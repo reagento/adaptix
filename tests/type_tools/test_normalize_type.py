@@ -36,8 +36,8 @@ from uuid import uuid4
 
 import pytest
 
-from dataclass_factory import TypeHint
-from dataclass_factory._internal.feature_requirement import (
+from adaptix import TypeHint
+from adaptix._internal.feature_requirement import (
     HAS_ANNOTATED,
     HAS_PARAM_SPEC,
     HAS_STD_CLASSES_GENERICS,
@@ -45,8 +45,8 @@ from dataclass_factory._internal.feature_requirement import (
     HAS_TYPE_GUARD,
     HAS_TYPE_UNION_OP,
 )
-from dataclass_factory._internal.type_tools import normalize_type
-from dataclass_factory._internal.type_tools.normalize_type import (
+from adaptix._internal.type_tools import normalize_type
+from adaptix._internal.type_tools.normalize_type import (
     BaseNormType,
     Bound,
     Constraints,

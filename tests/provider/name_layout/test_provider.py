@@ -4,8 +4,8 @@ from typing import Any, Dict, Optional, Union
 
 import pytest
 
-from dataclass_factory import bound, name_mapping
-from dataclass_factory._internal.model_tools import (
+from adaptix import bound, name_mapping
+from adaptix._internal.model_tools import (
     AttrAccessor,
     Default,
     DefaultFactory,
@@ -18,7 +18,7 @@ from dataclass_factory._internal.model_tools import (
     ParamKind,
     ParamKwargs,
 )
-from dataclass_factory._internal.provider import (
+from adaptix._internal.provider import (
     BuiltinInputExtractionMaker,
     BuiltinOutputCreationMaker,
     InputFigureRequest,
@@ -34,7 +34,7 @@ from dataclass_factory._internal.provider import (
     make_input_creation,
     make_output_extraction,
 )
-from dataclass_factory._internal.provider.model import (
+from adaptix._internal.provider.model import (
     ExtraForbid,
     ExtraSkip,
     InpDictCrown,
@@ -44,7 +44,7 @@ from dataclass_factory._internal.provider.model import (
     OutFieldCrown,
     OutputNameLayout,
 )
-from dataclass_factory._internal.provider.model.crown_definitions import (
+from adaptix._internal.provider.model.crown_definitions import (
     ExtraCollect,
     ExtraExtract,
     ExtraKwargs,
@@ -55,13 +55,13 @@ from dataclass_factory._internal.provider.model.crown_definitions import (
     OutListCrown,
     OutNoneCrown,
 )
-from dataclass_factory._internal.provider.name_layout import (
+from adaptix._internal.provider.name_layout import (
     BuiltinExtraMoveAndPoliciesMaker,
     BuiltinNameLayoutProvider,
     BuiltinSievesMaker,
     BuiltinStructureMaker,
 )
-from dataclass_factory._internal.provider.request_cls import (
+from adaptix._internal.provider.request_cls import (
     DumperRequest,
     FieldLocation,
     LoaderRequest,

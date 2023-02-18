@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from dataclass_factory import Retort
-from dataclass_factory.load_error import LoadError, TypeLoadError
-from dataclass_factory.struct_path import get_path
+from adaptix import Retort
+from adaptix.load_error import LoadError, TypeLoadError
+from adaptix.struct_path import get_path
 
 
 @dataclass

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Mapping, Sequence, TypeVar, Union
 
-from dataclass_factory._internal.provider.model.crown_definitions import (
+from adaptix._internal.provider.model.crown_definitions import (
     Extractor,
     ExtraForbid,
     ExtraKwargs,

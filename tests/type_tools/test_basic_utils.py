@@ -1,9 +1,9 @@
 from collections import namedtuple
 from typing import Generic, List, NamedTuple, Protocol, SupportsInt, Tuple, TypeVar, Union, runtime_checkable
 
-from dataclass_factory._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
-from dataclass_factory._internal.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
-from dataclass_factory._internal.type_tools.basic_utils import is_parametrized
+from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
+from adaptix._internal.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
+from adaptix._internal.type_tools.basic_utils import is_parametrized
 
 
 class NTParent(NamedTuple):

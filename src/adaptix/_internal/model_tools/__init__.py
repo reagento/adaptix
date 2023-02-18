@@ -1,4 +1,4 @@
-from dataclass_factory._internal.model_tools.definitions import (
+from adaptix._internal.model_tools.definitions import (
     Accessor,
     Attr,
     AttrAccessor,
@@ -23,7 +23,7 @@ from dataclass_factory._internal.model_tools.definitions import (
     ParamKwargs,
     PathElement,
 )
-from dataclass_factory._internal.model_tools.introspection import (
+from adaptix._internal.model_tools.introspection import (
     get_attrs_figure,
     get_callable_figure,
     get_class_init_figure,
