@@ -1,7 +1,7 @@
-tox==4.3.5
-coverage==7.0.3
-pip-tools==6.12.1
-setuptools==65.6.3
+tox==4.4.5
+coverage==7.1.0
+pip-tools==6.12.2
+setuptools==67.3.2
 
 -r lint.txt
 -r doc.txt

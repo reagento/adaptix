@@ -79,8 +79,7 @@ class NegRequestChecker(RequestChecker):
             self._rc.check_request(mediator, request)
         except CannotProvide:
             return
-        else:
-            raise CannotProvide
+        raise CannotProvide
 
 
 class XorRequestChecker(RequestChecker):

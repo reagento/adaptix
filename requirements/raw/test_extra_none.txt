@@ -1,6 +1,6 @@
-pytest==7.2.0
+pytest==7.2.1
 pytest-cov==4.0.0
 -e ./tests_helpers
 
-phonenumbers==8.13.3
-python-json-logger==2.0.4
+phonenumberslite==8.13.6
+python-json-logger==2.0.6
