@@ -49,7 +49,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
             raise CannotProvide
 
         return mediator.provide(
-            replace(request, loc=replace(request.loc, type=unwrapped))
+            replace(request, loc=replace(request.loc, type=unwrapped.source))
         )
 
 
