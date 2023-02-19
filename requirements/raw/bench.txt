@@ -1,0 +1,12 @@
+pytest==7.2.1
+
+pyperf==2.5.0
+matplotlib==3.7.0
+
+mashumaro==3.5
+pydantic==1.10.5
+cattrs==22.2.0
+schematics==2.1.1
+dataclass-factory==2.16
+marshmallow==3.19.0
+msgspec==0.13.1

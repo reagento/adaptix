@@ -6,4 +6,5 @@ setuptools==67.3.2
 -r lint.txt
 -r doc.txt
 -r test_extra_new.txt
+-r bench.txt
 -r pre.txt

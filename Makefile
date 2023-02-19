@@ -29,12 +29,16 @@ lint:
 
 .PHONY: test-all
 test-all:
-	@tox -e $$(tox -l | grep '^py' | tr '\n' ',')
+	@tox -e $$(tox -l | grep -e '^py' -e 'bench_test' | tr '\n' ',')
 
 
 .PHONY: test
 test:
 	@tox -e $$(tox -l | grep '^py' | grep 'new$$' | tr '\n' ',')
+
+.PHONY: test-bench
+test-bench:
+	@tox -e bench_test
 
 
 .PHONY: cov
@@ -48,6 +52,7 @@ cov:
 setup:
 	pip install -r requirements/pre.txt
 	pip install -e .
+	pip install -e ./benchmarks
 	pip install -r requirements/dev.txt
 	pre-commit
 	pre-commit install
@@ -64,3 +69,4 @@ deps-compile:
 venv-sync:
 	@pip-sync requirements/pre.txt requirements/dev.txt
 	@pip install -e .
+	@pip install -e ./benchmarks
