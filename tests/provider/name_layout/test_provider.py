@@ -230,13 +230,13 @@ def assert_flat_name_mapping(
         DEFAULT_NAME_MAPPING,
     )
     assert {
-               crown.name: key  # type: ignore
-               for key, crown in layouts.inp.crown.map.items()  # type: ignore
-           } == {
-               key: mapped_key
-               for key, mapped_key in mapping.items()
-               if mapped_key is not None
-           }
+        crown.name: key  # type: ignore
+        for key, crown in layouts.inp.crown.map.items()  # type: ignore
+    } == {
+        key: mapped_key
+        for key, mapped_key in mapping.items()
+        if mapped_key is not None
+    }
 
 
 def test_name_mutating():

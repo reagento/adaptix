@@ -19,7 +19,7 @@ class StubsRecursionResolver(ABC, Generic[T]):
 
 
 ProvideCallable = Callable[[Mediator, Request[T]], T]
-SearchResult = Tuple[ProvideCallable, int]
+SearchResult = Tuple[ProvideCallable[T], int]
 
 
 class RecipeSearcher(ABC):
@@ -29,7 +29,7 @@ class RecipeSearcher(ABC):
     """
 
     @abstractmethod
-    def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
+    def search_candidates(self, search_offset: int, request: Request[T]) -> Iterable[SearchResult[T]]:
         ...
 
     @abstractmethod
