@@ -4,6 +4,8 @@
 #
 #    pip-compile --allow-unsafe --output-file=requirements/bench.txt --resolver=backtracking requirements/raw/bench.txt
 #
+-e ./benchmarks
+    # via -r requirements/raw/bench.txt
 attrs==22.2.0
     # via
     #   cattrs
@@ -47,6 +49,8 @@ pillow==9.4.0
     # via matplotlib
 pluggy==1.0.0
     # via pytest
+psutil==5.9.4
+    # via -r requirements/raw/bench.txt
 pydantic==1.10.5
     # via -r requirements/raw/bench.txt
 pyparsing==3.0.9

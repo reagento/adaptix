@@ -52,7 +52,6 @@ cov:
 setup:
 	pip install -r requirements/pre.txt
 	pip install -e .
-	pip install -e ./benchmarks
 	pip install -r requirements/dev.txt
 	pre-commit
 	pre-commit install
@@ -63,10 +62,10 @@ deps-compile:
 	@for file in requirements/raw/*.txt; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q --resolver=backtracking --allow-unsafe; done
 	@# pip-compile saves local packages by absolute path, fix it
 	@for file in requirements/*.txt; do sed -i -E "s/-e file:.+\/tests_helpers/-e .\/tests_helpers/" "$${file}"; done
+	@for file in requirements/*.txt; do sed -i -E "s/-e file:.+\/benchmarks/-e .\/benchmarks/" "$${file}"; done
 
 
 .PHONY: venv-sync
 venv-sync:
 	@pip-sync requirements/pre.txt requirements/dev.txt
 	@pip install -e .
-	@pip install -e ./benchmarks

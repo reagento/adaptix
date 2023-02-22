@@ -1,6 +1,9 @@
 pytest==7.2.1
 
+-e ./benchmarks
+
 pyperf==2.5.0
+psutil==5.9.4
 matplotlib==3.7.0
 
 mashumaro==3.5
