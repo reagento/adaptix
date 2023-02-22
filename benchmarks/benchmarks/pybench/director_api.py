@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
 from pathlib import Path
@@ -202,7 +203,7 @@ class BenchRunner:
     ) -> None:
         subprocess.run(
             [
-                'python', '-m', 'benchmarks.pybench.pyperf_runner',
+                sys.executable, '-m', 'benchmarks.pybench.pyperf_runner',
                 '--inherit-environ', 'PYBENCH_NAME,PYBENCH_ENTRYPOINT,PYBENCH_PARAMS',
                 *extra_args,
             ],
