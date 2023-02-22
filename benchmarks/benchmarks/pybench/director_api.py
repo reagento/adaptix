@@ -2,6 +2,7 @@
 import inspect
 import json
 import os
+import shutil
 import subprocess
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
@@ -44,7 +45,7 @@ class BenchAccessor:
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument('--data-dir', action='store', required=False, type=Path)
-        parser.add_argument('--env-spec', action='extend', required=False, metavar="KEY=VALUE")
+        parser.add_argument('--env-spec', action='extend', nargs="+", required=False, metavar="KEY=VALUE")
 
     def override_state(self, env_spec: Optional[Iterable[str]], data_dir: Optional[Path] = None):
         if data_dir is not None:
@@ -57,7 +58,7 @@ class BenchAccessor:
                 if key not in self.env_spec:
                     raise KeyError(f"Unexpected key {key}")
                 update_data[key] = value
-            self.env_spec = self.env_spec | update_data
+            self.env_spec = {**self.env_spec, **update_data}
 
     def apply_state(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -65,12 +66,14 @@ class BenchAccessor:
     def bench_result_file(self, bench_id: str) -> Path:
         return self.data_dir / f"{bench_id}.json"
 
+    def env_spec_str(self) -> str:
+        return '[' + '-'.join(f"{k}={v}" for k, v in self.env_spec.items()) + ']'
+
     def get_id(self, schema: BenchSchema) -> str:
         if schema.kwargs:
             id_kwargs = {schema.data_renaming.get(k, k): v for k, v in schema.kwargs.items()}
             kwargs_str = '-'.join(f"{k}={v}" for k, v in id_kwargs.items())
-            env_info_str = '-'.join(f"{k}={v}" for k, v in self.env_spec.items())
-            return f"{schema.base_id}[{env_info_str}][{kwargs_str}]"
+            return f"{schema.base_id}{self.env_spec_str()}[{kwargs_str}]"
         return schema.base_id
 
 
@@ -93,7 +96,7 @@ class Plotter:
 
     def draw_plot(self, output: Optional[Path], dpi: float):
         if output is None:
-            output = self.accessor.data_dir / 'plot.png'
+            output = self.accessor.data_dir / f'plot{self.accessor.env_spec_str()}.png'
 
         self._render_plot(
             output=output,
@@ -136,8 +139,8 @@ class BenchRunner:
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         group = parser.add_mutually_exclusive_group()
-        group.add_argument('--include', '-i', action='extend', required=False)
-        group.add_argument('--exclude', '-e', action='extend', required=False)
+        group.add_argument('--include', '-i', action='extend', nargs="+", required=False)
+        group.add_argument('--exclude', '-e', action='extend', nargs="+", required=False)
         group.add_argument(
             '--missing', action='store_true', required=False, default=False,
             help='run only missing benchmarks'
@@ -181,13 +184,14 @@ class BenchRunner:
         result_file = self.accessor.bench_result_file(bench_id)
         with TemporaryDirectory() as dir_name:
             temp_file = Path(dir_name) / f"{bench_id}.json"
+            print(f'start: {bench_id}')
             self.launch_benchmark(
                 bench_name=bench_id,
                 entrypoint=get_function_object_ref(schema.func),
                 params=[schema.kwargs[param] for param in sig.parameters.keys()],
                 extra_args=['-o', str(temp_file)]
             )
-            os.replace(temp_file, result_file)
+            shutil.move(temp_file, result_file)
 
     def launch_benchmark(
         self,
@@ -195,15 +199,15 @@ class BenchRunner:
         entrypoint: str,
         params: List[Any],
         extra_args: Iterable[str] = (),
-    ):
+    ) -> None:
         subprocess.run(
             [
-                'pybench_pyperf_runner',
-                '--inherit-environ', 'PYBENCH_NAME,PYBENCH_ENTRYPOINT,PYBENCH_PARAMS,PLACEHOLDER',
-                # pyperf skips last envvar
+                'python', '-m', 'benchmarks.pybench.pyperf_runner',
+                '--inherit-environ', 'PYBENCH_NAME,PYBENCH_ENTRYPOINT,PYBENCH_PARAMS',
                 *extra_args,
             ],
-            env=os.environ | {
+            env={
+                **os.environ,
                 'PYBENCH_NAME': bench_name,
                 'PYBENCH_ENTRYPOINT': entrypoint,
                 'PYBENCH_PARAMS': json.dumps(params),
