@@ -1,7 +1,7 @@
 import binascii
 import re
 from binascii import a2b_base64, b2a_base64
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Type, TypeVar, Union
@@ -149,7 +149,7 @@ class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
         bytes_loader = self._BYTES_PROVIDER.apply_provider(
-            mediator, request.add_loc(TypeHintLoc(bytes))
+            mediator, replace(request, loc_map=request.loc_map.add(TypeHintLoc(bytes)))
         )
 
         def bytearray_base64_loader(data):

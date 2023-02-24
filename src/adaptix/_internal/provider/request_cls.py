@@ -51,9 +51,6 @@ LR = TypeVar('LR', bound='LocatedRequest')
 class LocatedRequest(Request[T]):
     loc_map: LocMap
 
-    def add_loc(self: LR, *locs: Location) -> LR:
-        return replace(self, loc_map=self.loc_map.add(*locs))
-
 
 @dataclass(frozen=True)
 class LoaderRequest(LocatedRequest[Loader]):

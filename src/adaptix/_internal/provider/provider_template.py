@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Collection, Type, TypeVar, Union, cast, final
+from typing import Collection, Type, TypeVar, final
 
 from ..common import Dumper, Loader, TypeHint
 from ..load_error import TypeLoadError
 from ..type_tools import create_union, normalize_type
-from .essential import CannotProvide, Mediator, Provider, Request
-from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc, get_type_from_request
-from .request_filtering import RequestChecker, match_origin
+from .essential import Mediator, Provider, Request
+from .request_cls import DumperRequest, LoaderRequest, LocMap, StrictCoercionRequest, TypeHintLoc
+from .request_filtering import ExactOriginRC, RequestChecker, match_origin
 from .static_provider import StaticProvider, static_provision_action
 
 T = TypeVar('T')
@@ -105,18 +105,24 @@ class CoercionLimiter(LoaderProvider):
         return f"{type(self).__name__}({self.loader_provider}, {self.allowed_strict_origins})"
 
 
-class ABCProxy(Provider):
+class ABCProxy(LoaderProvider, DumperProvider):
     def __init__(self, abstract: TypeHint, impl: TypeHint):
         self._abstract = normalize_type(abstract).origin
         self._impl = impl
 
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        if not isinstance(request, (LoaderRequest, DumperRequest)):
-            raise CannotProvide
+    def _check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
+        ExactOriginRC(self._abstract).check_request(mediator, request)
 
-        norm = normalize_type(get_type_from_request(request))
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return mediator.provide(
+            LoaderRequest(
+                loc_map=LocMap(TypeHintLoc(type=self._impl))
+            )
+        )
 
-        if norm.origin != self._abstract:
-            raise CannotProvide
-
-        return mediator.provide(request.add_loc(TypeHintLoc(type=self._impl)))  # type: ignore[attr-defined]
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.provide(
+            DumperRequest(
+                loc_map=LocMap(TypeHintLoc(type=self._impl))
+            )
+        )
