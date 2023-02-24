@@ -94,7 +94,7 @@ class StaticProvider(Provider):
     @static_provision_action(request_cls). Argument of decorator attaching
     method to specified Request class.
     It means that that provision action will be called for specified
-    request or it's subclass. See :class Provider: for details.
+    request, or it's subclass. See :class Provider: for details.
 
     You can omit request_cls parameter and decorator try to infer it introspecting method signature.
 
