@@ -20,7 +20,6 @@ from adaptix._internal.provider import (
     NameSanitizer,
     NoRequiredFieldsError,
     NoRequiredItemsError,
-    TypeHintLocation,
     TypeLoadError,
     ValueProvider,
     make_input_creation,
@@ -100,12 +99,11 @@ def make_loader_getter(
             ]
         )
 
-        loader = retort.provide(
-            LoaderRequest(
-                loc=TypeHintLocation(type=Gauge),
-                debug_path=debug_path,
-                strict_coercion=False,
-            )
+        loader = retort.replace(
+            debug_path=debug_path,
+            strict_coercion=False,
+        ).get_loader(
+            Gauge,
         )
         return loader
 

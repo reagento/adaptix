@@ -37,9 +37,10 @@ from ..provider import (
     RegexPatternProvider,
     Request,
     SecondsTimedeltaProvider,
-    TypeHintLocation,
+    TypeHintLoc,
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
+    ValueProvider,
 )
 from ..provider.model import ExtraSkip, make_input_creation, make_output_extraction
 from ..provider.name_layout import (
@@ -48,6 +49,7 @@ from ..provider.name_layout import (
     BuiltinSievesMaker,
     BuiltinStructureMaker,
 )
+from ..provider.request_cls import DebugPathRequest, LocMap, StrictCoercionRequest
 from ..retort import OperatingRetort
 from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
 
@@ -146,7 +148,7 @@ class FilledRetort(OperatingRetort, ABC):
 
 
 T = TypeVar('T')
-RequestTV = TypeVar('RequestTV', bound=Request)
+RequestT = TypeVar('RequestT', bound=Request)
 AR = TypeVar('AR', bound='AdornedRetort')
 
 
@@ -195,7 +197,10 @@ class AdornedRetort(OperatingRetort):
         return clone
 
     def _get_config_recipe(self) -> VarTuple[Provider]:
-        return ()
+        return (
+            ValueProvider(StrictCoercionRequest, self._strict_coercion),
+            ValueProvider(DebugPathRequest, self._debug_path),
+        )
 
     def get_loader(self, tp: Type[T]) -> Loader[T]:
         try:
@@ -203,11 +208,7 @@ class AdornedRetort(OperatingRetort):
         except KeyError:
             pass
         loader_ = self._facade_provide(
-            LoaderRequest(
-                loc=TypeHintLocation(tp),
-                strict_coercion=self._strict_coercion,
-                debug_path=self._debug_path
-            )
+            LoaderRequest(loc_map=LocMap(TypeHintLoc(type=tp)))
         )
         self._loader_cache[tp] = loader_
         return loader_
@@ -218,10 +219,7 @@ class AdornedRetort(OperatingRetort):
         except KeyError:
             pass
         dumper_ = self._facade_provide(
-            DumperRequest(
-                loc=TypeHintLocation(tp),
-                debug_path=self._debug_path
-            )
+            DumperRequest(loc_map=LocMap(TypeHintLoc(type=tp)))
         )
         self._dumper_cache[tp] = dumper_
         return dumper_

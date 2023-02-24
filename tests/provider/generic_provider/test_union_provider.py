@@ -10,7 +10,7 @@ from adaptix._internal.provider import (
     LiteralProvider,
     LoaderRequest,
     LoadError,
-    TypeHintLocation,
+    TypeHintLoc,
     TypeLoadError,
     UnionLoadError,
     UnionProvider,
@@ -58,12 +58,11 @@ def retort():
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_loading(retort, strict_coercion, debug_path):
-    loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=Union[int, str]),
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-        )
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    ).get_loader(
+        Union[int, str],
     )
 
     assert loader(1) == 1
@@ -89,11 +88,10 @@ def test_loading(retort, strict_coercion, debug_path):
 
 @parametrize_bool('debug_path')
 def test_serializing(retort, debug_path):
-    dumper = retort.provide(
-        DumperRequest(
-            loc=TypeHintLocation(type=Union[int, str]),
-            debug_path=debug_path,
-        )
+    dumper = retort.replace(
+        debug_path=debug_path,
+    ).get_dumper(
+        Union[int, str]
     )
 
     assert dumper(1) == 1
@@ -109,11 +107,10 @@ def test_serializing(retort, debug_path):
 
 @parametrize_bool('debug_path')
 def test_opt_serializing(retort, debug_path):
-    opt_dumper = retort.provide(
-        DumperRequest(
-            loc=TypeHintLocation(type=Optional[str]),
-            debug_path=debug_path,
-        )
+    opt_dumper = retort.replace(
+        debug_path=debug_path,
+    ).get_dumper(
+        Optional[str],
     )
 
     assert opt_dumper('a') == 'a'
@@ -130,12 +127,11 @@ def test_opt_serializing(retort, debug_path):
 @parametrize_bool('debug_path')
 def test_bad_opt_serializing(retort, debug_path):
     raises_path(
-        ValueError,
-        lambda: retort.provide(
-            DumperRequest(
-                loc=TypeHintLocation(type=Union[int, Callable[[int], str]]),
-                debug_path=debug_path,
-            )
+        exc=ValueError,
+        func=lambda: retort.replace(
+            debug_path=debug_path,
+        ).get_dumper(
+            Union[int, Callable[[int], str]],
         ),
         path=[],
         match=full_match_regex_str(
@@ -156,12 +152,11 @@ def test_literal(strict_coercion, debug_path):
         ]
     )
 
-    loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=Literal['a', None]),
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-        )
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    ).get_loader(
+        Literal['a', None],
     )
 
     assert loader('a') == 'a'
@@ -180,11 +175,10 @@ def test_literal(strict_coercion, debug_path):
             path=[],
         )
 
-    dumper = retort.provide(
-        DumperRequest(
-            loc=TypeHintLocation(type=Literal['a', None]),
-            debug_path=debug_path,
-        )
+    dumper = retort.replace(
+        debug_path=debug_path,
+    ).get_dumper(
+        Literal['a', None],
     )
 
     assert dumper('a') == 'a'

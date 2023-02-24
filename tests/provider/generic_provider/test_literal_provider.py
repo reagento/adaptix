@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from adaptix._internal.provider import LiteralProvider, LoaderRequest, LoadError, TypeHintLocation
+from adaptix._internal.provider import LiteralProvider, LoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 
@@ -18,12 +18,11 @@ def retort():
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_loader_base(retort, strict_coercion, debug_path):
-    loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=Literal["a", "b", 10]),
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-        )
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    ).get_loader(
+        Literal["a", "b", 10]
     )
 
     assert loader("a") == "a"
@@ -55,12 +54,11 @@ def test_strict_coercion(retort, debug_path):
     # so Literal[0, 1] sometimes returns Literal[False, True]
     # and vice versa.
     # We add a random string at the end to suppress caching
-    int_loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=Literal[0, 1, rnd()]),  # noqa
-            strict_coercion=True,
-            debug_path=debug_path,
-        )
+    int_loader = retort.replace(
+        strict_coercion=True,
+        debug_path=debug_path,
+    ).get_loader(
+        Literal[0, 1, rnd()]  # noqa
     )
 
     assert _is_exact_zero(int_loader(0))
@@ -75,12 +73,11 @@ def test_strict_coercion(retort, debug_path):
         lambda: int_loader(True)
     )
 
-    bool_loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=Literal[False, True, rnd()]),  # noqa
-            strict_coercion=True,
-            debug_path=debug_path,
-        )
+    bool_loader = retort.replace(
+        strict_coercion=True,
+        debug_path=debug_path,
+    ).get_loader(
+        Literal[False, True, rnd()]  # noqa
     )
 
     assert bool_loader(False) is False

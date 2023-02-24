@@ -63,7 +63,7 @@ from .model.figure_provider import PropertyAdder
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import BoundingProvider, Chain, ChainingProvider, ValueProvider
 from .provider_template import ABCProxy, CoercionLimiter, DumperProvider, LoaderProvider, for_origin
-from .request_cls import DumperRequest, FieldLocation, LoaderRequest, TypeHintLocation
+from .request_cls import DumperRequest, FieldLoc, LoaderRequest, TypeHintLoc
 from .request_filtering import (
     AndRequestChecker,
     ExactFieldNameRC,

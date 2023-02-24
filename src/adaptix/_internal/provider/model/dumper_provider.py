@@ -4,7 +4,7 @@ from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
 from ...common import Dumper
 from ..essential import CannotProvide, Mediator
 from ..provider_template import DumperProvider
-from ..request_cls import DumperRequest, OutputFieldLocation, TypeHintLocation
+from ..request_cls import DebugPathRequest, DumperRequest, FieldLoc, LocMap, OutputFieldLoc, TypeHintLoc
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -51,17 +51,28 @@ def make_output_extraction(
     field_dumpers = {
         field.name: mediator.provide(
             DumperRequest(
-                loc=OutputFieldLocation(**vars(field)),
-                debug_path=request.debug_path,
+                loc_map=LocMap(
+                    TypeHintLoc(
+                        type=field.type,
+                    ),
+                    FieldLoc(
+                        name=field.name,
+                        default=field.default,
+                        metadata=field.metadata,
+                    ),
+                    OutputFieldLoc(
+                        accessor=field.accessor,
+                    )
+                ),
             )
         )
         for field in figure.fields
     }
-
+    debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
     return BuiltinOutputExtractionGen(
         figure=figure,
         extra_move=extra_move,
-        debug_path=request.debug_path,
+        debug_path=debug_path,
         fields_dumpers=field_dumpers,
     )
 
@@ -69,18 +80,19 @@ def make_output_extraction(
 class BuiltinOutputCreationMaker(OutputCreationMaker):
     def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure, OutExtraMove]:
         figure: OutputFigure = mediator.provide(
-            OutputFigureRequest(loc=request.loc)
+            OutputFigureRequest(loc_map=request.loc_map)
         )
 
         name_layout = mediator.provide(
             OutputNameLayoutRequest(
-                loc=request.loc,
+                loc_map=request.loc_map,
                 figure=figure,
             )
         )
 
         processed_figure = self._process_figure(figure, name_layout)
-        creation_gen = self._create_creation_gen(request, processed_figure, name_layout)
+        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
+        creation_gen = self._create_creation_gen(debug_path, processed_figure, name_layout)
         return creation_gen, processed_figure, name_layout.extra_move
 
     def _process_figure(self, figure: OutputFigure, name_layout: OutputNameLayout) -> OutputFigure:
@@ -109,14 +121,14 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
 
     def _create_creation_gen(
         self,
-        request: DumperRequest,
+        debug_path: bool,
         figure: OutputFigure,
         name_layout: OutputNameLayout,
     ) -> CodeGenerator:
         return BuiltinOutputCreationGen(
             figure=figure,
             name_layout=name_layout,
-            debug_path=request.debug_path,
+            debug_path=debug_path,
         )
 
 
@@ -160,8 +172,8 @@ class ModelDumperProvider(DumperProvider):
         )
 
     def _get_closure_name(self, request: DumperRequest) -> str:
-        if isinstance(request.loc, TypeHintLocation):
-            tp = request.loc.type
+        if request.loc_map.contains(TypeHintLoc):
+            tp = request.loc_map[TypeHintLoc].type
             if isinstance(tp, type):
                 name = tp.__name__
             else:

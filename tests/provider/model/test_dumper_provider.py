@@ -24,7 +24,7 @@ from adaptix._internal.provider import (
     NameSanitizer,
     OutputFigureRequest,
     OutputNameLayoutRequest,
-    TypeHintLocation,
+    TypeHintLoc,
     ValueProvider,
     make_output_extraction,
 )
@@ -90,11 +90,10 @@ def make_dumper_getter(
             ]
         )
 
-        dumper = retort.provide(
-            DumperRequest(
-                loc=TypeHintLocation(type=Dummy),
-                debug_path=debug_path,
-            )
+        dumper = retort.replace(
+            debug_path=debug_path
+        ).get_dumper(
+            Dummy,
         )
         return dumper
 

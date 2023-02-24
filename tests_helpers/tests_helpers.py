@@ -2,15 +2,14 @@ import re
 from contextlib import contextmanager
 from copy import copy
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Callable, Iterable, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Optional, Type, TypeVar, Union
 
 import pytest
 
-from adaptix import CannotProvide, Mediator, Provider, Request
-from adaptix._internal.common import EllipsisType, VarTuple
+from adaptix import AdornedRetort, CannotProvide, Mediator, Provider, Request
+from adaptix._internal.common import EllipsisType
 from adaptix._internal.feature_requirement import PythonVersionRequirement
 from adaptix._internal.provider.model.basic_gen import CodeGenAccumulator
-from adaptix.retort import OperatingRetort
 from adaptix.struct_path import get_path
 
 T = TypeVar("T")
@@ -28,14 +27,8 @@ def requires(requirement: PythonVersionRequirement):
     return wrapper
 
 
-class TestRetort(OperatingRetort):
-    def __init__(self, recipe: Iterable[Provider]):
-        super().__init__(recipe)
-
-    def _get_config_recipe(self) -> VarTuple[Provider]:
-        return ()
-
-    provide = OperatingRetort._facade_provide
+class TestRetort(AdornedRetort):
+    provide = AdornedRetort._facade_provide
 
 
 E = TypeVar('E', bound=Exception)

@@ -62,11 +62,13 @@ from adaptix._internal.provider.name_layout import (
     BuiltinStructureMaker,
 )
 from adaptix._internal.provider.request_cls import (
+    DebugPathRequest,
     DumperRequest,
-    FieldLocation,
+    FieldLoc,
     LoaderRequest,
-    Location,
-    TypeHintLocation,
+    LocMap,
+    StrictCoercionRequest,
+    TypeHintLoc,
 )
 from tests_helpers import TestRetort, full_match_regex_str, type_of
 
@@ -90,7 +92,7 @@ def stub(*args, **kwargs):
 
 def make_layouts(
     *fields_or_providers: Union[TestField, Provider],
-    loc: Location = Location(),
+    loc_map: LocMap = LocMap(),
 ) -> Layouts:
     fields = [element for element in fields_or_providers if isinstance(element, TestField)]
     providers = [element for element in fields_or_providers if isinstance(element, Provider)]
@@ -141,28 +143,28 @@ def make_layouts(
             ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
             ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
         ]
+    ).replace(
+        strict_coercion=True,
+        debug_path=True,
     )
     inp_request = InputNameLayoutRequest(
-        loc=loc,
+        loc_map=loc_map,
         figure=input_figure,
     )
     out_request = OutputNameLayoutRequest(
-        loc=loc,
+        loc_map=loc_map,
         figure=output_figure,
     )
     inp_name_layout = retort.provide(inp_request)
     out_name_layout = retort.provide(out_request)
     retort.provide(
         LoaderRequest(
-            loc=loc,
-            debug_path=True,
-            strict_coercion=True,
+            loc_map=loc_map,
         )
     )
     retort.provide(
         DumperRequest(
-            loc=loc,
-            debug_path=True,
+            loc_map=loc_map,
         )
     )
     return Layouts(inp_name_layout, out_name_layout)
@@ -691,14 +693,17 @@ class Foo:
     pass
 
 
-TYPE_HINT_LOCATION = TypeHintLocation(
-    type=Foo,
+TYPE_HINT_LOC_MAP = LocMap(
+    TypeHintLoc(
+        type=Foo,
+    ),
 )
-FIELD_LOCATION = FieldLocation(
-    type=Foo,
-    name='foo',
-    default=NoDefault(),
-    metadata={},
+FIELD_LOC_MAP = TYPE_HINT_LOC_MAP.add(
+    FieldLoc(
+        name='foo',
+        default=NoDefault(),
+        metadata={},
+    ),
 )
 
 
@@ -802,7 +807,7 @@ def test_extra_at_list():
                 extra_out='b',
             ),
             DEFAULT_NAME_MAPPING,
-            loc=TYPE_HINT_LOCATION,
+            loc_map=TYPE_HINT_LOC_MAP,
         )
 
     with pytest.raises(
@@ -823,7 +828,7 @@ def test_extra_at_list():
                 extra_out='b',
             ),
             DEFAULT_NAME_MAPPING,
-            loc=FIELD_LOCATION,
+            loc_map=FIELD_LOC_MAP,
         )
 
 
@@ -856,7 +861,7 @@ def test_required_field_skip():
                 skip=['a'],
             ),
             DEFAULT_NAME_MAPPING,
-            loc=TYPE_HINT_LOCATION,
+            loc_map=TYPE_HINT_LOC_MAP,
         )
 
     with pytest.raises(
@@ -873,7 +878,7 @@ def test_required_field_skip():
                 skip=['a'],
             ),
             DEFAULT_NAME_MAPPING,
-            loc=FIELD_LOCATION,
+            loc_map=FIELD_LOC_MAP,
         )
 
 
@@ -912,7 +917,7 @@ def test_inconsistent_path_elements():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc=TYPE_HINT_LOCATION,
+            loc_map=TYPE_HINT_LOC_MAP,
         )
 
     with pytest.raises(
@@ -932,7 +937,7 @@ def test_inconsistent_path_elements():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc=FIELD_LOCATION,
+            loc_map=FIELD_LOC_MAP,
         )
 
 
@@ -972,7 +977,7 @@ def test_duplicated_path():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc=TYPE_HINT_LOCATION,
+            loc_map=TYPE_HINT_LOC_MAP,
         )
 
     with pytest.raises(
@@ -992,7 +997,7 @@ def test_duplicated_path():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc=FIELD_LOCATION,
+            loc_map=FIELD_LOC_MAP,
         )
 
 
@@ -1032,7 +1037,7 @@ def test_optional_field_at_list():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc=TYPE_HINT_LOCATION,
+            loc_map=TYPE_HINT_LOC_MAP,
         )
 
     with pytest.raises(
@@ -1052,7 +1057,7 @@ def test_optional_field_at_list():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc=FIELD_LOCATION,
+            loc_map=FIELD_LOC_MAP,
         )
 
 

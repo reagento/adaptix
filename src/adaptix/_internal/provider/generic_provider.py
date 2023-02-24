@@ -12,12 +12,13 @@ from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_
 from .essential import CannotProvide, Mediator, Request
 from .provider_template import DumperProvider, LoaderProvider, for_origin
 from .request_cls import (
+    DebugPathRequest,
     DumperRequest,
     LoaderRequest,
     LocatedRequest,
-    TypeHintLocation,
+    StrictCoercionRequest,
+    TypeHintLoc,
     get_type_from_request,
-    replace_type,
 )
 from .static_provider import StaticProvider, static_provision_action
 
@@ -29,27 +30,27 @@ def stub(arg):
 class NewTypeUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        if not isinstance(request.loc, TypeHintLocation):
-            raise CannotProvide
-        if not is_new_type(request.loc.type):
+        loc = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
+
+        if not is_new_type(loc.type):
             raise CannotProvide
 
         return mediator.provide(
-            replace(request, loc=replace(request.loc, type=request.loc.type.__supertype__))
+            request.add_loc(TypeHintLoc(type=loc.type.__supertype__))
         )
 
 
 class TypeHintTagsUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        if not isinstance(request.loc, TypeHintLocation):
-            raise CannotProvide
-        unwrapped = strip_tags(normalize_type(request.loc.type))
-        if unwrapped.source == request.loc.type:  # type has not changed, continue search
+        loc = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
+
+        unwrapped = strip_tags(normalize_type(loc.type))
+        if unwrapped.source == loc.type:  # type has not changed, continue search
             raise CannotProvide
 
         return mediator.provide(
-            replace(request, loc=replace(request.loc, type=unwrapped.source))
+            request.add_loc(TypeHintLoc(type=unwrapped.source)),
         )
 
 
@@ -69,9 +70,10 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = normalize_type(get_type_from_request(request))
+        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
 
         # TODO: add support for enum
-        if request.strict_coercion and any(
+        if strict_coercion and any(
             isinstance(arg, bool) or _is_exact_zero_or_one(arg)
             for arg in norm.args
         ):
@@ -106,13 +108,13 @@ class UnionProvider(LoaderProvider, DumperProvider):
         norm = normalize_type(get_type_from_request(request))
 
         loaders = tuple(
-            mediator.provide(replace_type(request, tp.source))
+            mediator.provide(request.add_loc(TypeHintLoc(type=tp.source)))
             for tp in norm.args
         )
+        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
 
-        if request.debug_path:
+        if debug_path:
             return self._get_loader_dp(loaders)
-
         return self._get_loader_non_dp(loaders)
 
     def _get_loader_dp(self, loader_iter: Iterable[Loader]) -> Loader:
@@ -153,7 +155,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
         if self._is_single_optional(norm):
             non_optional = next(case for case in norm.args if case.origin is not None)
-            non_optional_dumper = mediator.provide(replace_type(request, non_optional.source))
+            non_optional_dumper = mediator.provide(request.add_loc(TypeHintLoc(type=non_optional.source)))
             return self._get_single_optional_dumper(non_optional_dumper)
 
         non_class_origins = [case.source for case in norm.args if not self._is_class_origin(case.origin)]
@@ -164,7 +166,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
             )
 
         dumpers = tuple(
-            mediator.provide(replace_type(request, tp.source))
+            mediator.provide(request.add_loc(TypeHintLoc(type=tp.source)))
             for tp in norm.args
         )
 
@@ -238,8 +240,15 @@ class IterableProvider(LoaderProvider, DumperProvider):
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
-        arg_loader = mediator.provide(replace_type(request, arg))
-        return self._make_loader(request, iter_factory, arg_loader)
+        arg_loader = mediator.provide(request.add_loc(TypeHintLoc(type=arg)))
+        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
+        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
+        return self._make_loader(
+            iter_factory=iter_factory,
+            arg_loader=arg_loader,
+            strict_coercion=strict_coercion,
+            debug_path=debug_path,
+        )
 
     def _create_debug_path_iter_mapper(self, converter):
         def iter_mapper(iterable):
@@ -256,16 +265,16 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
         return iter_mapper
 
-    def _make_loader(self, request: LoaderRequest, iter_factory, arg_loader):
-        if request.debug_path:
+    def _make_loader(self, *, iter_factory, arg_loader, strict_coercion: bool, debug_path: bool):
+        if debug_path:
             iter_mapper = self._create_debug_path_iter_mapper(arg_loader)
 
-            if request.strict_coercion:
+            if strict_coercion:
                 return self._get_dp_sc_loader(iter_factory, iter_mapper)
 
             return self._get_dp_non_sc_loader(iter_factory, iter_mapper)
 
-        if request.strict_coercion:
+        if strict_coercion:
             return self._get_non_dp_sc_loader(iter_factory, arg_loader)
 
         return self._get_non_dp_non_sc_loader(iter_factory, arg_loader)
@@ -324,11 +333,16 @@ class IterableProvider(LoaderProvider, DumperProvider):
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
-        arg_dumper = mediator.provide(replace_type(request, arg))
-        return self._make_dumper(request, iter_factory, arg_dumper)
+        arg_dumper = mediator.provide(request.add_loc(TypeHintLoc(type=arg)))
+        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
+        return self._make_dumper(
+            iter_factory=iter_factory,
+            arg_dumper=arg_dumper,
+            debug_path=debug_path,
+        )
 
-    def _make_dumper(self, request: DumperRequest, iter_factory, arg_dumper):
-        if request.debug_path:
+    def _make_dumper(self, *, iter_factory, arg_dumper, debug_path: bool):
+        if debug_path:
             iter_mapper = self._create_debug_path_iter_mapper(arg_dumper)
             return self._get_dp_dumper(iter_factory, iter_mapper)
 
@@ -357,17 +371,22 @@ class DictProvider(LoaderProvider, DumperProvider):
         key, value = self._extract_key_value(request)
 
         key_loader = mediator.provide(
-            replace_type(request, key.source),
+            request.add_loc(TypeHintLoc(type=key.source)),
         )
-
         value_loader = mediator.provide(
-            replace_type(request, value.source),
+            request.add_loc(TypeHintLoc(type=value.source)),
+        )
+        debug_path = mediator.provide(
+            DebugPathRequest(loc_map=request.loc_map)
+        )
+        return self._make_loader(
+            key_loader=key_loader,
+            value_loader=value_loader,
+            debug_path=debug_path,
         )
 
-        return self._make_loader(request, key_loader=key_loader, value_loader=value_loader)
-
-    def _make_loader(self, request: LoaderRequest, key_loader: Loader, value_loader: Loader):
-        if request.debug_path:
+    def _make_loader(self, key_loader: Loader, value_loader: Loader, debug_path: bool):
+        if debug_path:
             return self._get_loader_dp(
                 key_loader=key_loader,
                 value_loader=value_loader,
@@ -419,17 +438,22 @@ class DictProvider(LoaderProvider, DumperProvider):
         key, value = self._extract_key_value(request)
 
         key_dumper = mediator.provide(
-            replace_type(request, key.source),
+            request.add_loc(TypeHintLoc(type=key.source)),
         )
-
         value_dumper = mediator.provide(
-            replace_type(request, value.source),
+            request.add_loc(TypeHintLoc(type=value.source)),
+        )
+        debug_path = mediator.provide(
+            DebugPathRequest(loc_map=request.loc_map)
+        )
+        return self._make_dumper(
+            key_dumper=key_dumper,
+            value_dumper=value_dumper,
+            debug_path=debug_path
         )
 
-        return self._make_dumper(request, key_dumper=key_dumper, value_dumper=value_dumper)
-
-    def _make_dumper(self, request: DumperRequest, key_dumper: Dumper, value_dumper: Dumper):
-        if request.debug_path:
+    def _make_dumper(self, key_dumper: Dumper, value_dumper: Dumper, debug_path: bool):
+        if debug_path:
             return self._get_dumper_dp(
                 key_dumper=key_dumper,
                 value_dumper=value_dumper,
@@ -521,7 +545,9 @@ class EnumValueProvider(BaseEnumProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
-        value_loader = mediator.provide(replace_type(request, self._value_type))
+        value_loader = mediator.provide(
+            request.add_loc(TypeHintLoc(type=self._value_type)),
+        )
 
         def enum_loader(data):
             loaded_value = value_loader(data)
@@ -533,7 +559,9 @@ class EnumValueProvider(BaseEnumProvider):
         return enum_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        value_dumper = mediator.provide(replace_type(request, self._value_type))
+        value_dumper = mediator.provide(
+            request.add_loc(TypeHintLoc(type=self._value_type))
+        )
 
         def enum_dumper(data):
             return value_dumper(data.value)

@@ -443,8 +443,8 @@ TN = TypeVar('TN', bound='TypeNormalizer')
 
 
 class TypeNormalizer:
-    def __init__(self, imp_params_filler: ImplicitParamsFiller):
-        self.imp_params_filler = imp_params_filler
+    def __init__(self, implicit_params_filler: ImplicitParamsFiller):
+        self.implicit_params_filler = implicit_params_filler
         self._namespace: Optional[Dict[str, Any]] = None
 
     def _with_namespace(self: TN, namespace: Dict[str, Any]) -> TN:
@@ -741,7 +741,7 @@ class TypeNormalizer:
                 source=tp
             )
 
-        params = self.imp_params_filler.get_implicit_params(
+        params = self.implicit_params_filler.get_implicit_params(
             origin, self
         )
 

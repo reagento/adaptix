@@ -45,7 +45,7 @@ from ..model.crown_definitions import (
 )
 from ..name_style import NameStyle, convert_snake_style
 from ..overlay_schema import Overlay, Schema, provide_schema
-from ..request_cls import FieldLocation, LocatedRequest, TypeHintLocation
+from ..request_cls import FieldLoc, LocatedRequest, TypeHintLoc
 from .base import ExtraIn, ExtraMoveMaker, ExtraOut, ExtraPoliciesMaker, Key, Path, PathsTo, SievesMaker, StructureMaker
 
 RawKey = Union[Key, EllipsisType]
@@ -84,10 +84,13 @@ LeafCr = TypeVar('LeafCr', bound=LeafBaseCrown)
 
 
 def location_to_string(request: LocatedRequest) -> str:
-    if isinstance(request.loc, FieldLocation):
-        return f' at type {request.loc.type} that situated at field {request.loc.name!r}'
-    if isinstance(request.loc, TypeHintLocation):
-        return f' at type {request.loc.type}'
+    loc_map = request.loc_map
+    if loc_map.contains(TypeHintLoc, FieldLoc):
+        return f' at type {loc_map[TypeHintLoc].type} that situated at field {request.loc_map[FieldLoc].name!r}'
+    if loc_map.contains(TypeHintLoc):
+        return f' at type {loc_map[TypeHintLoc].type}'
+    if loc_map.contains(FieldLoc):
+        return f' situated at field {request.loc_map[FieldLoc].name!r}'
     return ''
 
 
@@ -229,7 +232,7 @@ class BuiltinStructureMaker(StructureMaker):
         request: InputNameLayoutRequest,
         extra_move: InpExtraMove,
     ) -> PathsTo[LeafInpCrown]:
-        schema = provide_schema(StructureOverlay, mediator, request.loc)
+        schema = provide_schema(StructureOverlay, mediator, request.loc_map)
         fields_to_paths = list(self._fields_to_paths(schema, request.figure.fields, extra_move))
         skipped_required_fields = [
             field.name
@@ -255,7 +258,7 @@ class BuiltinStructureMaker(StructureMaker):
         request: OutputNameLayoutRequest,
         extra_move: OutExtraMove,
     ) -> PathsTo[LeafOutCrown]:
-        schema = provide_schema(StructureOverlay, mediator, request.loc)
+        schema = provide_schema(StructureOverlay, mediator, request.loc_map)
         fields_to_paths = list(self._fields_to_paths(schema, request.figure.fields, extra_move))
         self._validate_structure(request, fields_to_paths)
         paths_to_leaves: Dict[Path, LeafOutCrown] = {
@@ -295,7 +298,7 @@ class BuiltinSievesMaker(SievesMaker):
         request: OutputNameLayoutRequest,
         paths_to_leaves: PathsTo[LeafOutCrown],
     ) -> PathsTo[Sieve]:
-        schema = provide_schema(SievesOverlay, mediator, request.loc)
+        schema = provide_schema(SievesOverlay, mediator, request.loc_map)
         if not schema.omit_default:
             return {}
 
@@ -342,7 +345,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         mediator: Mediator,
         request: InputNameLayoutRequest,
     ) -> InpExtraMove:
-        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc)
+        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_map)
         if schema.extra_in in (ExtraForbid(), ExtraSkip()):
             return None
         if schema.extra_in == ExtraKwargs():
@@ -356,7 +359,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         mediator: Mediator,
         request: OutputNameLayoutRequest,
     ) -> OutExtraMove:
-        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc)
+        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_map)
         if schema.extra_out == ExtraSkip():
             return None
         if callable(schema.extra_out):
@@ -376,7 +379,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         request: InputNameLayoutRequest,
         paths_to_leaves: PathsTo[LeafInpCrown],
     ) -> PathsTo[DictExtraPolicy]:
-        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc)
+        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_map)
         policy = self._get_extra_policy(schema)
         path_to_extra_policy: Dict[Path, DictExtraPolicy] = {
             (): policy,

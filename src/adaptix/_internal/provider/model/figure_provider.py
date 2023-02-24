@@ -14,41 +14,43 @@ from ...model_tools import (
     get_named_tuple_figure,
     get_typed_dict_figure,
 )
-from ...model_tools.definitions import FigureIntrospector
+from ...model_tools.definitions import FigureIntrospector, InputFigure
 from ..essential import CannotProvide, Mediator, Provider, Request
-from ..request_cls import TypeHintLocation
+from ..request_cls import TypeHintLoc
 from ..static_provider import StaticProvider, static_provision_action
 from .definitions import InputFigureRequest, OutputFigureRequest
 
 
-class FigureProvider(Provider):
+class FigureProvider(StaticProvider):
     def __init__(self, introspector: FigureIntrospector):
         self._introspector = introspector
 
-    def apply_provider(self, mediator: Mediator, request: Request):
-        if isinstance(request, InputFigureRequest) and isinstance(request.loc, TypeHintLocation):
-            try:
-                figure = self._introspector(request.loc.type)
-            except IntrospectionImpossible:
-                raise CannotProvide
+    @static_provision_action
+    def _provide_input_figure(self, mediator: Mediator, request: InputFigureRequest) -> InputFigure:
+        loc = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
 
-            if figure.input is None:
-                raise CannotProvide
+        try:
+            figure = self._introspector(loc.type)
+        except IntrospectionImpossible:
+            raise CannotProvide
 
-            return figure.input
+        if figure.input is None:
+            raise CannotProvide
 
-        if isinstance(request, OutputFigureRequest) and isinstance(request.loc, TypeHintLocation):
-            try:
-                figure = self._introspector(request.loc.type)
-            except IntrospectionImpossible:
-                raise CannotProvide
+        return figure.input
 
-            if figure.output is None:
-                raise CannotProvide
+    @static_provision_action
+    def _provide_output_figure(self, mediator: Mediator, request: OutputFigureRequest) -> OutputFigure:
+        loc = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
+        try:
+            figure = self._introspector(loc.type)
+        except IntrospectionImpossible:
+            raise CannotProvide
 
-            return figure.output
+        if figure.output is None:
+            raise CannotProvide
 
-        raise CannotProvide
+        return figure.output
 
 
 NAMED_TUPLE_FIGURE_PROVIDER = FigureProvider(get_named_tuple_figure)
@@ -77,19 +79,16 @@ class PropertyAdder(StaticProvider):
             )
 
     @static_provision_action
-    def provide_output_figure(self, mediator: Mediator[OutputFigure], request: OutputFigureRequest) -> OutputFigure:
-        if not isinstance(request.loc, TypeHintLocation) or not isinstance(request.loc.type, type):
-            raise CannotProvide
-
+    def _provide_output_figure(self, mediator: Mediator[OutputFigure], request: OutputFigureRequest) -> OutputFigure:
+        tp = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide).type
         figure = mediator.provide_from_next()
 
         additional_fields = tuple(
-            replace(field, type=self._infer_property_type(request.loc.type, self._get_attr_name(field)))
+            replace(field, type=self._infer_property_type(tp, self._get_attr_name(field)))
             if field.name in self._infer_types_for else
             field
             for field in self._output_fields
         )
-
         return replace(figure, fields=figure.fields + additional_fields)
 
     def _get_attr_name(self, field: OutputField) -> str:

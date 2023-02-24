@@ -6,8 +6,9 @@ from adaptix._internal.provider import (
     EnumExactValueProvider,
     EnumNameProvider,
     LoaderRequest,
-    TypeHintLocation,
+    TypeHintLoc,
 )
+from adaptix._internal.provider.request_cls import LocMap
 from adaptix.load_error import BadVariantError, MsgError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
@@ -26,15 +27,12 @@ def test_name_provider(strict_coercion, debug_path):
         recipe=[
             EnumNameProvider(),
         ]
+    ).replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
     )
 
-    loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=MyEnum),
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-        )
-    )
+    loader = retort.get_loader(MyEnum)
 
     assert loader("V1") == MyEnum.V1
 
@@ -53,12 +51,7 @@ def test_name_provider(strict_coercion, debug_path):
         lambda: loader(MyEnum.V1)
     )
 
-    dumper = retort.provide(
-        DumperRequest(
-            loc=TypeHintLocation(type=MyEnum),
-            debug_path=debug_path,
-        )
-    )
+    dumper = retort.get_dumper(MyEnum)
 
     assert dumper(MyEnum.V1) == "V1"
 
@@ -69,15 +62,12 @@ def test_exact_value_provider(strict_coercion, debug_path):
         recipe=[
             EnumExactValueProvider(),
         ]
+    ).replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
     )
 
-    loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=MyEnum),
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-        )
-    )
+    loader = retort.get_loader(MyEnum)
 
     assert loader("1") == MyEnum.V1
 
@@ -96,22 +86,11 @@ def test_exact_value_provider(strict_coercion, debug_path):
         lambda: loader(MyEnum.V1)
     )
 
-    dumper = retort.provide(
-        DumperRequest(
-            loc=TypeHintLocation(type=MyEnum),
-            debug_path=debug_path,
-        )
-    )
+    dumper = retort.get_dumper(MyEnum)
 
     assert dumper(MyEnum.V1) == "1"
 
-    int_enum_loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=MyIntEnum),
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-        )
-    )
+    int_enum_loader = retort.get_loader(MyIntEnum)
 
     assert int_enum_loader(1) == MyIntEnum.V1
 
@@ -138,15 +117,12 @@ def test_value_provider(strict_coercion, debug_path):
             loader(str, str),
             dumper(str, custom_string_dumper),
         ]
+    ).replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
     )
 
-    enum_loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=MyEnum),
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-        )
-    )
+    enum_loader = retort.get_loader(MyEnum)
 
     assert enum_loader("1") == MyEnum.V1
     assert enum_loader(1) == MyEnum.V1
@@ -161,11 +137,6 @@ def test_value_provider(strict_coercion, debug_path):
         lambda: enum_loader(MyEnum.V1)
     )
 
-    enum_dumper = retort.provide(
-        DumperRequest(
-            loc=TypeHintLocation(type=MyEnum),
-            debug_path=debug_path,
-        )
-    )
+    enum_dumper = retort.get_dumper(MyEnum)
 
     assert enum_dumper(MyEnum.V1) == "PREFIX 1"

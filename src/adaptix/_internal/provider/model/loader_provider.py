@@ -6,7 +6,7 @@ from ..essential import CannotProvide, Mediator
 from ..model.definitions import CodeGenerator, InputFigure, InputFigureRequest, VarBinder
 from ..model.input_extraction_gen import BuiltinInputExtractionGen
 from ..provider_template import LoaderProvider
-from ..request_cls import InputFieldLocation, LoaderRequest, TypeHintLocation
+from ..request_cls import DebugPathRequest, FieldLoc, InputFieldLoc, LoaderRequest, LocMap, TypeHintLoc
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -46,12 +46,12 @@ class InputCreationMaker(Protocol):
 class BuiltinInputExtractionMaker(InputExtractionMaker):
     def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure, InpExtraMove]:
         figure: InputFigure = mediator.provide(
-            InputFigureRequest(loc=request.loc)
+            InputFigureRequest(loc_map=request.loc_map)
         )
 
         name_layout: InputNameLayout = mediator.provide(
             InputNameLayoutRequest(
-                loc=request.loc,
+                loc_map=request.loc_map,
                 figure=figure,
             )
         )
@@ -62,15 +62,27 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         field_loaders = {
             field.name: mediator.provide(
                 LoaderRequest(
-                    strict_coercion=request.strict_coercion,
-                    debug_path=request.debug_path,
-                    loc=InputFieldLocation(**vars(field)),
+                    loc_map=LocMap(
+                        TypeHintLoc(
+                            type=field.type,
+                        ),
+                        FieldLoc(
+                            name=field.name,
+                            default=field.default,
+                            metadata=field.metadata,
+                        ),
+                        InputFieldLoc(
+                            is_required=field.is_required,
+                            param_kind=field.param_kind,
+                            param_name=field.param_name,
+                        )
+                    ),
                 )
             )
             for field in processed_figure.fields
         }
-
-        extraction_gen = self._create_extraction_gen(request, figure, name_layout, field_loaders)
+        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
+        extraction_gen = self._create_extraction_gen(debug_path, figure, name_layout, field_loaders)
 
         return extraction_gen, figure, name_layout.extra_move
 
@@ -119,7 +131,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
 
     def _create_extraction_gen(
         self,
-        request: LoaderRequest,
+        debug_path: bool,
         figure: InputFigure,
         name_layout: InputNameLayout,
         field_loaders: Mapping[str, Loader],
@@ -127,7 +139,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         return BuiltinInputExtractionGen(
             figure=figure,
             name_layout=name_layout,
-            debug_path=request.debug_path,
+            debug_path=debug_path,
             field_loaders=field_loaders,
         )
 
@@ -181,8 +193,8 @@ class ModelLoaderProvider(LoaderProvider):
         )
 
     def _get_closure_name(self, request: LoaderRequest) -> str:
-        if isinstance(request.loc, TypeHintLocation):
-            tp = request.loc.type
+        if request.loc_map.contains(TypeHintLoc):
+            tp = request.loc_map[TypeHintLoc].type
             if isinstance(tp, type):
                 name = tp.__name__
             else:

@@ -9,7 +9,7 @@ from ..common import TypeHint, VarTuple
 from ..type_tools import BaseNormType, NormTV, is_parametrized, is_protocol, is_subclass_soft, normalize_type
 from ..type_tools.normalize_type import NotSubscribedError
 from .essential import CannotProvide, Request
-from .request_cls import FieldLocation, LocatedRequest, Location, TypeHintLocation
+from .request_cls import FieldLoc, LocatedRequest, Location, LocMap, TypeHintLoc
 
 T = TypeVar('T')
 
@@ -113,9 +113,9 @@ class LocatedRequestChecker(RequestChecker, ABC):
     def check_request(self, mediator: DirectMediator, request: Request) -> None:
         if not isinstance(request, LocatedRequest):
             raise CannotProvide(f'Request must be instance of {LocatedRequest}')
-        if not isinstance(request.loc, self.LOCATION):
+        if self.LOCATION not in request.loc_map:
             raise CannotProvide(f'Request location must be instance of {self.LOCATION}')
-        self._check_location(mediator, request.loc)
+        self._check_location(mediator, request.loc_map[self.LOCATION])
 
     @abstractmethod
     def _check_location(self, mediator: DirectMediator, loc: Any) -> None:
@@ -124,10 +124,10 @@ class LocatedRequestChecker(RequestChecker, ABC):
 
 @dataclass
 class ExactFieldNameRC(LocatedRequestChecker):
-    LOCATION = FieldLocation
+    LOCATION = FieldLoc
     field_name: str
 
-    def _check_location(self, mediator: DirectMediator, loc: FieldLocation) -> None:
+    def _check_location(self, mediator: DirectMediator, loc: FieldLoc) -> None:
         if self.field_name == loc.name:
             return
         raise CannotProvide(f'field_name must be a {self.field_name!r}')
@@ -135,10 +135,10 @@ class ExactFieldNameRC(LocatedRequestChecker):
 
 @dataclass
 class ReFieldNameRC(LocatedRequestChecker):
-    LOCATION = FieldLocation
+    LOCATION = FieldLoc
     pattern: Pattern[str]
 
-    def _check_location(self, mediator: DirectMediator, loc: FieldLocation) -> None:
+    def _check_location(self, mediator: DirectMediator, loc: FieldLoc) -> None:
         if self.pattern.fullmatch(loc.name):
             return
 
@@ -147,10 +147,10 @@ class ReFieldNameRC(LocatedRequestChecker):
 
 @dataclass
 class ExactTypeRC(LocatedRequestChecker):
-    LOCATION = TypeHintLocation
+    LOCATION = TypeHintLoc
     norm: BaseNormType
 
-    def _check_location(self, mediator: DirectMediator, loc: TypeHintLocation) -> None:
+    def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> None:
         if normalize_type(loc.type) == self.norm:
             return
         raise CannotProvide(f'{loc.type} must be a equal to {self.norm.source}')
@@ -158,10 +158,10 @@ class ExactTypeRC(LocatedRequestChecker):
 
 @dataclass
 class OriginSubclassRC(LocatedRequestChecker):
-    LOCATION = TypeHintLocation
+    LOCATION = TypeHintLoc
     type_: type
 
-    def _check_location(self, mediator: DirectMediator, loc: TypeHintLocation) -> None:
+    def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> None:
         norm = normalize_type(loc.type)
         if is_subclass_soft(norm.origin, self.type_):
             return
@@ -170,10 +170,10 @@ class OriginSubclassRC(LocatedRequestChecker):
 
 @dataclass
 class ExactOriginRC(LocatedRequestChecker):
-    LOCATION = TypeHintLocation
+    LOCATION = TypeHintLoc
     origin: Any
 
-    def _check_location(self, mediator: DirectMediator, loc: TypeHintLocation) -> None:
+    def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> None:
         if normalize_type(loc.type).origin == self.origin:
             return
         raise CannotProvide(f'{loc.type} must have origin {self.origin}')

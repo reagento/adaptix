@@ -19,7 +19,7 @@ from typing import (
 import pytest
 
 from adaptix import NoSuitableProvider, dumper, loader
-from adaptix._internal.provider import CoercionLimiter, DumperRequest, IterableProvider, LoaderRequest, TypeHintLocation
+from adaptix._internal.provider import CoercionLimiter, IterableProvider
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
@@ -43,52 +43,30 @@ def retort():
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_mapping_providing(retort, strict_coercion, debug_path):
-    with pytest.raises(NoSuitableProvider):
-        retort.provide(
-            LoaderRequest(
-                loc=TypeHintLocation(type=dict),
-                strict_coercion=strict_coercion,
-                debug_path=debug_path,
-            )
-        )
+    retort = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    )
 
     with pytest.raises(NoSuitableProvider):
-        retort.provide(
-            LoaderRequest(
-                loc=TypeHintLocation(type=Dict),
-                strict_coercion=strict_coercion,
-                debug_path=debug_path,
-            )
-        )
+        retort.get_loader(dict)
 
     with pytest.raises(NoSuitableProvider):
-        retort.provide(
-            LoaderRequest(
-                loc=TypeHintLocation(type=Mapping),
-                strict_coercion=strict_coercion,
-                debug_path=debug_path,
-            )
-        )
+        retort.get_loader(Dict)
 
     with pytest.raises(NoSuitableProvider):
-        retort.provide(
-            LoaderRequest(
-                loc=TypeHintLocation(type=collections.Counter),
-                strict_coercion=strict_coercion,
-                debug_path=debug_path,
-            )
-        )
+        retort.get_loader(Mapping)
+
+    with pytest.raises(NoSuitableProvider):
+        retort.get_loader(collections.Counter)
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_loading(retort, strict_coercion, debug_path):
-    loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=List[str]),
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-        )
-    )
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    ).get_loader(List[str])
 
     assert loader(["a", "b", "c"]) == ["a", "b", "c"]
     assert loader(("a", "b", "c")) == ["a", "b", "c"]
@@ -133,70 +111,39 @@ def test_loading(retort, strict_coercion, debug_path):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_abc_impl(retort, strict_coercion, debug_path):
-    for tp in [Iterable, Reversible, Collection, Sequence]:
-        loader = retort.provide(
-            LoaderRequest(
-                loc=TypeHintLocation(type=tp[str]),
-                strict_coercion=strict_coercion,
-                debug_path=debug_path,
-            )
-        )
+    retort = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    )
 
+    for tp in [Iterable, Reversible, Collection, Sequence]:
+        loader = retort.get_loader(tp[str])
         assert loader(["a", "b", "c"]) == ("a", "b", "c")
 
     for tp in [MutableSequence, List]:
-        loader = retort.provide(
-            LoaderRequest(
-                loc=TypeHintLocation(type=tp[str]),
-                strict_coercion=strict_coercion,
-                debug_path=debug_path,
-            )
-        )
-
+        loader = retort.get_loader(tp[str])
         assert loader(["a", "b", "c"]) == ["a", "b", "c"]
 
     for tp in [AbstractSet, FrozenSet]:
-        loader = retort.provide(
-            LoaderRequest(
-                loc=TypeHintLocation(type=tp[str]),
-                strict_coercion=strict_coercion,
-                debug_path=debug_path,
-            )
-        )
+        loader = retort.get_loader(tp[str])
 
         assert loader(["a", "b", "c"]) == frozenset(["a", "b", "c"])
 
     for tp in [MutableSet, Set]:
-        loader = retort.provide(
-            LoaderRequest(
-                loc=TypeHintLocation(type=tp[str]),
-                strict_coercion=strict_coercion,
-                debug_path=debug_path,
-            )
-        )
-
+        loader = retort.get_loader(tp[str])
         assert loader(["a", "b", "c"]) == {"a", "b", "c"}
 
 
 @parametrize_bool('debug_path')
 def test_serializing(retort, debug_path):
-    list_dumper = retort.provide(
-        DumperRequest(
-            loc=TypeHintLocation(type=List[str]),
-            debug_path=debug_path,
-        )
+    retort = retort.replace(
+        debug_path=debug_path
     )
-
+    list_dumper = retort.get_dumper(List[str])
     assert list_dumper(["a", "b"]) == ["a", "b"]
     assert list_dumper({'a': 1, 'b': 2}) == ['a', 'b']
 
-    iterable_dumper = retort.provide(
-        DumperRequest(
-            loc=TypeHintLocation(type=Iterable[str]),
-            debug_path=debug_path,
-        )
-    )
-
+    iterable_dumper = retort.get_dumper(Iterable[str])
     assert iterable_dumper(["a", "b"]) == ("a", "b")
     assert iterable_dumper(("a", "b")) == ("a", "b")
     assert iterable_dumper(['1', '2']) == ("1", "2")

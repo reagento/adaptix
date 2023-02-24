@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Collection, Type, TypeVar, final
+from typing import Collection, Type, TypeVar, Union, cast, final
 
 from ..common import Dumper, Loader, TypeHint
 from ..load_error import TypeLoadError
 from ..type_tools import create_union, normalize_type
 from .essential import CannotProvide, Mediator, Provider, Request
-from .request_cls import DumperRequest, LoaderRequest, get_type_from_request, replace_type
+from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc, get_type_from_request
 from .request_filtering import RequestChecker, match_origin
 from .static_provider import StaticProvider, static_provision_action
 
@@ -73,8 +73,8 @@ class CoercionLimiter(LoaderProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         loader = self.loader_provider.apply_provider(mediator, request)
-
-        if not request.strict_coercion:
+        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
+        if not strict_coercion:
             return loader
 
         allowed_strict_origins = self.allowed_strict_origins
@@ -119,4 +119,4 @@ class ABCProxy(Provider):
         if norm.origin != self._abstract:
             raise CannotProvide
 
-        return mediator.provide(replace_type(request, self._impl))
+        return mediator.provide(request.add_loc(TypeHintLoc(type=self._impl)))  # type: ignore[attr-defined]

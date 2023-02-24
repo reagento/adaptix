@@ -11,7 +11,7 @@ from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from ..type_tools import normalize_type
 from .essential import CannotProvide, Mediator, Request
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithRC, for_origin
-from .request_cls import DumperRequest, LoaderRequest, TypeHintLocation, replace_type
+from .request_cls import DumperRequest, LoaderRequest, TypeHintLoc
 from .request_filtering import ExactTypeRC
 
 T = TypeVar('T')
@@ -147,11 +147,9 @@ class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
     _BYTES_PROVIDER = BytesBase64Provider()
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        if not isinstance(request.loc, TypeHintLocation):
-            raise CannotProvide
-
+        request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
         bytes_loader = self._BYTES_PROVIDER.apply_provider(
-            mediator, replace_type(request, bytes)
+            mediator, request.add_loc(TypeHintLoc(bytes))
         )
 
         def bytearray_base64_loader(data):

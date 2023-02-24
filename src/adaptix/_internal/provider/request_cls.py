@@ -1,9 +1,10 @@
-from dataclasses import dataclass, replace
-from typing import TypeVar
+from dataclasses import dataclass, field, replace
+from typing import Any, Mapping, TypeVar
 
 from ..common import Dumper, Loader, TypeHint
-from ..model_tools import BaseField, InputField, OutputField
+from ..model_tools import Accessor, Default, ParamKind
 from ..provider.essential import CannotProvide, Request
+from ..utils import ClassMap
 
 T = TypeVar('T')
 
@@ -14,49 +15,63 @@ class Location:
 
 
 @dataclass(frozen=True)
-class TypeHintLocation(Location):
+class TypeHintLoc(Location):
     type: TypeHint
 
 
 @dataclass(frozen=True)
-class FieldLocation(BaseField, TypeHintLocation):
-    pass
+class FieldLoc(Location):
+    name: str
+    default: Default
+    metadata: Mapping[Any, Any] = field(hash=False)
 
 
 @dataclass(frozen=True)
-class InputFieldLocation(InputField, FieldLocation):
-    pass
+class InputFieldLoc(Location):
+    is_required: bool
+    param_kind: ParamKind
+    param_name: str
 
 
 @dataclass(frozen=True)
-class OutputFieldLocation(OutputField, FieldLocation):
-    pass
+class OutputFieldLoc(Location):
+    accessor: Accessor
+
+
+@dataclass(frozen=True)
+class GenericParamLoc(Location):
+    pos: int
+
+
+LocMap = ClassMap[Location]
+LR = TypeVar('LR', bound='LocatedRequest')
 
 
 @dataclass(frozen=True)
 class LocatedRequest(Request[T]):
-    loc: Location
+    loc_map: LocMap
+
+    def add_loc(self: LR, *locs: Location) -> LR:
+        return replace(self, loc_map=self.loc_map.add(*locs))
 
 
 @dataclass(frozen=True)
 class LoaderRequest(LocatedRequest[Loader]):
-    strict_coercion: bool
-    debug_path: bool
+    pass
 
 
 @dataclass(frozen=True)
 class DumperRequest(LocatedRequest[Dumper]):
-    debug_path: bool
+    pass
 
 
 def get_type_from_request(request: LocatedRequest) -> TypeHint:
-    if isinstance(request.loc, TypeHintLocation):
-        return request.loc.type
-    raise CannotProvide
+    return request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide).type
 
 
-LR = TypeVar('LR', bound=LocatedRequest)
+class StrictCoercionRequest(LocatedRequest[bool]):
+    pass
 
 
-def replace_type(request: LR, tp: TypeHint) -> LR:
-    return replace(request, loc=replace(request.loc, type=tp))  # type: ignore
+class DebugPathRequest(LocatedRequest[bool]):
+    pass

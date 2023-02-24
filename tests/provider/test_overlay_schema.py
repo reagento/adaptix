@@ -6,7 +6,7 @@ import pytest
 
 from adaptix import Chain, Mediator, Omittable, Omitted, Provider, Request, bound
 from adaptix._internal.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
-from adaptix._internal.provider.request_cls import Location, TypeHintLocation
+from adaptix._internal.provider.request_cls import Location, LocMap, TypeHintLoc
 from adaptix.provider.static_provider import StaticProvider, static_provision_action
 from tests_helpers import TestRetort, full_match_regex_str
 
@@ -63,7 +63,7 @@ def test_simple():
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, Location())
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=1,
         char_list=['a', 'b'],
@@ -92,7 +92,7 @@ def test_chaining():
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, Location())
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=1,
         char_list=['a', 'b', 'c', 'd'],
@@ -119,7 +119,7 @@ def test_chaining():
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, Location())
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=2,
         char_list=['c', 'd', 'a', 'b'],
@@ -146,7 +146,7 @@ def test_chaining():
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, Location())
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=2,
         char_list=['a', 'b', 'c', 'd'],
@@ -173,7 +173,7 @@ def test_chaining():
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, Location())
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=1,
         char_list=['c', 'd'],
@@ -200,7 +200,7 @@ def test_chaining():
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, Location())
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=2,
         char_list=['c', 'd'],
@@ -243,7 +243,7 @@ def test_typehint_location():
                 ),
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, TypeHintLocation(type=MyClass2))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocMap(TypeHintLoc(type=MyClass2)))
     ) == MySchema(
         number=1,
         char_list=['a', 'b', 'c', 'd'],
@@ -288,7 +288,7 @@ def test_typehint_location():
                 ),
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, TypeHintLocation(type=MyClass2))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocMap(TypeHintLoc(type=MyClass2)))
     ) == MySchema(
         number=1,
         char_list=['a', 'b', 'c', 'd', 'e', 'f'],
@@ -321,6 +321,6 @@ def test_omitted_fields():
                     chain=None,
                 ),
             ],
-            provide_action=lambda m: provide_schema(MyOverlay, m, Location())
+            provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
         )
 

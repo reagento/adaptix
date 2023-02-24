@@ -1,9 +1,11 @@
+import collections
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from copy import copy
 from typing import (
     AbstractSet,
     Any,
+    Callable,
     Collection,
     Dict,
     Generator,
@@ -11,12 +13,16 @@ from typing import (
     Hashable,
     Iterable,
     Iterator,
+    KeysView,
+    Mapping,
     Optional,
     Tuple,
     Type,
     TypeVar,
     Union,
+    ValuesView,
     final,
+    overload,
 )
 
 C = TypeVar('C', bound='Cloneable')
@@ -194,3 +200,79 @@ class ClassDispatcherKeysView(Generic[K_co]):
 
     def __repr__(self):
         return f'{type(self).__qualname__}({self._keys!r})'
+
+
+CM = TypeVar('CM', bound='ClassMap')
+D = TypeVar('D')
+
+
+class ClassMap(Generic[T]):
+    __slots__ = ('_mapping', )
+
+    def __init__(self, *values: T):
+        self._mapping: Mapping[Type[T], T] = {type(value): value for value in values}
+
+    def __getitem__(self, item: Type[D]) -> D:
+        return self._mapping[item]  # type: ignore[index,return-value]
+
+    def __iter__(self) -> Iterator[Type[T]]:
+        return iter(self._mapping)
+
+    def __len__(self) -> int:
+        return len(self._mapping)
+
+    def __contains__(self, item):
+        return item in self._mapping
+
+    def contains(self, *classes: Type[T]) -> bool:
+        return all(key in self._mapping for key in classes)
+
+    def get_or_raise(
+        self,
+        key: Type[D],
+        exception_factory: Callable[[], Union[BaseException, Type[BaseException]]],
+    ) -> D:
+        try:
+            return self._mapping[key]  # type: ignore[index,return-value]
+        except KeyError:
+            raise exception_factory() from None
+
+    def keys(self) -> KeysView[Type[T]]:
+        return self._mapping.keys()
+
+    def values(self) -> ValuesView[T]:
+        return self._mapping.values()
+
+    def __eq__(self, other):
+        if isinstance(other, ClassMap):
+            return self._mapping == other._mapping
+        return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, ClassMap):
+            return self._mapping != other._mapping
+        return NotImplemented
+
+    def __hash__(self):
+        return hash((key, value) for key, value in self._mapping.items())
+
+    def __repr__(self):
+        return f'{type(self).__qualname__}({self._mapping!r})'
+
+    def _with_new_mapping(self: CM, mapping: Mapping[Type[T], T]) -> CM:
+        self_copy = copy(self)
+        self_copy._mapping = mapping  # pylint: disable=protected-access
+        return self_copy
+
+    def add(self: CM, *values: T) -> CM:
+        return self._with_new_mapping(
+            {**self._mapping, **{type(value): value for value in values}}
+        )
+
+    def discard(self: CM, *classes: Type[T]) -> CM:
+        return self._with_new_mapping(
+            {
+                key: value for key, value in self._mapping.items()
+                if key not in classes
+            }
+        )

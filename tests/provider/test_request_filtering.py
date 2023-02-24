@@ -8,7 +8,7 @@ from adaptix import CannotProvide, P, Request
 from adaptix._internal.common import TypeHint
 from adaptix._internal.model_tools import NoDefault
 from adaptix._internal.provider import create_request_checker
-from adaptix._internal.provider.request_cls import FieldLocation, LocatedRequest, TypeHintLocation
+from adaptix._internal.provider.request_cls import FieldLoc, LocatedRequest, LocMap, TypeHintLoc
 from adaptix._internal.provider.request_filtering import AnyRequestChecker, RequestPattern, StackEndRC
 from adaptix._internal.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 from tests_helpers import full_match_regex_str
@@ -34,55 +34,55 @@ def test_stack_end_rc():
     with pytest.raises(CannotProvide, match="Request stack is too small"):
         checker.check_request(
             create_mediator(
-                LocatedRequest(loc=TypeHintLocation(int)),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
             ),
-            LocatedRequest(loc=TypeHintLocation(int)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
         )
 
     with pytest.raises(CannotProvide, match="Request stack is too small"):
         checker.check_request(
             create_mediator(
-                LocatedRequest(loc=TypeHintLocation(int)),
-                LocatedRequest(loc=TypeHintLocation(str)),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
             ),
-            LocatedRequest(loc=TypeHintLocation(str)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
         )
 
     with pytest.raises(CannotProvide):
         checker.check_request(
             create_mediator(
-                LocatedRequest(loc=TypeHintLocation(int)),
-                LocatedRequest(loc=TypeHintLocation(str)),
-                LocatedRequest(loc=TypeHintLocation(str)),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
             ),
-            LocatedRequest(loc=TypeHintLocation(str)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
         )
 
     checker.check_request(
         create_mediator(
-            LocatedRequest(loc=TypeHintLocation(int)),
-            LocatedRequest(loc=TypeHintLocation(str)),
-            LocatedRequest(loc=TypeHintLocation(bool)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
         ),
-        LocatedRequest(loc=TypeHintLocation(bool)),
+        LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
     )
     checker.check_request(
         create_mediator(
-            LocatedRequest(loc=TypeHintLocation(int)),
-            LocatedRequest(loc=TypeHintLocation(int)),
-            LocatedRequest(loc=TypeHintLocation(str)),
-            LocatedRequest(loc=TypeHintLocation(bool)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
         ),
-        LocatedRequest(loc=TypeHintLocation(bool)),
+        LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
     )
     checker.check_request(
         create_mediator(
-            LocatedRequest(loc=TypeHintLocation(str)),
-            LocatedRequest(loc=TypeHintLocation(int)),
-            LocatedRequest(loc=TypeHintLocation(str)),
-            LocatedRequest(loc=TypeHintLocation(bool)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
         ),
-        LocatedRequest(loc=TypeHintLocation(bool)),
+        LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
     )
 
 
@@ -103,33 +103,33 @@ def test_nested_start_rc():
 
     checker.check_request(
         create_mediator(
-            LocatedRequest(loc=TypeHintLocation(bool)),
-            LocatedRequest(loc=TypeHintLocation(int)),
-            LocatedRequest(loc=TypeHintLocation(str)),
-            LocatedRequest(loc=TypeHintLocation(bool)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
         ),
-        LocatedRequest(loc=TypeHintLocation(bool)),
+        LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
     )
 
     with pytest.raises(CannotProvide, match="Request stack is too small"):
         checker.check_request(
             create_mediator(
-                LocatedRequest(loc=TypeHintLocation(int)),
-                LocatedRequest(loc=TypeHintLocation(str)),
-                LocatedRequest(loc=TypeHintLocation(bool)),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
             ),
-            LocatedRequest(loc=TypeHintLocation(bool)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
         )
 
     with pytest.raises(CannotProvide):
         checker.check_request(
             create_mediator(
-                LocatedRequest(loc=TypeHintLocation(str)),
-                LocatedRequest(loc=TypeHintLocation(int)),
-                LocatedRequest(loc=TypeHintLocation(str)),
-                LocatedRequest(loc=TypeHintLocation(bool)),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+                LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
             ),
-            LocatedRequest(loc=TypeHintLocation(bool)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
         )
 
 
@@ -158,48 +158,50 @@ class WithUserName:
     user_name: str
 
 
-def field_loc(name: str, tp: TypeHint) -> FieldLocation:
-    return FieldLocation(
-        type=tp,
-        name=name,
-        default=NoDefault(),
-        metadata={},
+def field_loc_map(name: str, tp: TypeHint) -> LocMap:
+    return LocMap(
+        TypeHintLoc(tp),
+        FieldLoc(
+            name=name,
+            default=NoDefault(),
+            metadata={},
+        )
     )
 
 
 def test_request_pattern():
     check_request_pattern(
         P[int],
-        LocatedRequest(loc=TypeHintLocation(int)),
+        LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
         fail=False,
     )
     check_request_pattern(
         P[int],
-        LocatedRequest(loc=TypeHintLocation(str)),
+        LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
         fail=True,
     )
 
     check_request_pattern(
         P[WithUserName].user_name,
         [
-            LocatedRequest(loc=TypeHintLocation(WithUserName)),
-            LocatedRequest(loc=field_loc('user_name', str)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(WithUserName))),
+            LocatedRequest(loc_map=field_loc_map('user_name', str)),
         ],
         fail=False,
     )
     check_request_pattern(
         P[WithUserName].user_name,
         [
-            LocatedRequest(loc=TypeHintLocation(WithUserName)),
-            LocatedRequest(loc=field_loc('user_name', int)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(WithUserName))),
+            LocatedRequest(loc_map=field_loc_map('user_name', int)),
         ],
         fail=False,
     )
     check_request_pattern(
         P[WithUserName].user_id,
         [
-            LocatedRequest(loc=TypeHintLocation(WithUserName)),
-            LocatedRequest(loc=field_loc('user_name', int)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(WithUserName))),
+            LocatedRequest(loc_map=field_loc_map('user_name', int)),
         ],
         fail=True,
     )
@@ -216,8 +218,8 @@ def test_request_pattern():
     check_request_pattern(
         P[WithUserName] + P.user_name,
         [
-            LocatedRequest(loc=TypeHintLocation(WithUserName)),
-            LocatedRequest(loc=field_loc('user_name', int)),
+            LocatedRequest(loc_map=LocMap(TypeHintLoc(WithUserName))),
+            LocatedRequest(loc_map=field_loc_map('user_name', int)),
         ],
         fail=False,
     )

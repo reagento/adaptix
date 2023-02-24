@@ -4,7 +4,8 @@ from typing import Dict
 import pytest
 
 from adaptix import dumper, loader
-from adaptix._internal.provider import CoercionLimiter, DictProvider, DumperRequest, LoaderRequest, TypeHintLocation
+from adaptix._internal.provider import CoercionLimiter, DictProvider, DumperRequest, LoaderRequest, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocMap
 from adaptix.load_error import TypeLoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
@@ -36,12 +37,11 @@ class MyMapping:
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_loading(retort, strict_coercion, debug_path):
-    loader = retort.provide(
-        LoaderRequest(
-            loc=TypeHintLocation(type=Dict[str, str]),
-            strict_coercion=strict_coercion,
-            debug_path=debug_path,
-        )
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    ).get_loader(
+        Dict[str, str],
     )
 
     assert loader({'a': 'b', 'c': 'd'}) == {'a': 'b', 'c': 'd'}
@@ -75,11 +75,10 @@ def test_loading(retort, strict_coercion, debug_path):
 
 @parametrize_bool('debug_path')
 def test_serializing(retort, debug_path):
-    dumper = retort.provide(
-        DumperRequest(
-            loc=TypeHintLocation(type=Dict[str, str]),
-            debug_path=debug_path,
-        )
+    dumper = retort.replace(
+        debug_path=debug_path,
+    ).get_dumper(
+        Dict[str, str],
     )
 
     assert dumper({'a': 'b', 'c': 'd'}) == {'a': 'b', 'c': 'd'}

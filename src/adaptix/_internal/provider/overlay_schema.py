@@ -4,7 +4,7 @@ from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, Optional
 from ..utils import ClassDispatcher, Omitted
 from .essential import CannotProvide, Mediator
 from .provider_basics import Chain
-from .request_cls import LocatedRequest, Location, TypeHintLocation
+from .request_cls import LocatedRequest, Location, LocMap, TypeHintLoc
 from .static_provider import StaticProvider, static_provision_action
 
 
@@ -74,19 +74,20 @@ class OverlayRequest(LocatedRequest[Ov], Generic[Ov]):
     overlay_cls: Type[Ov]
 
 
-def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc: Location) -> Sc:
+def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_map: LocMap) -> Sc:
     stacked_overlay = mediator.provide(
         OverlayRequest(
-            loc=loc,
+            loc_map=loc_map,
             overlay_cls=overlay,
         )
     )
-    if isinstance(loc, TypeHintLocation) and isinstance(loc.type, type):
-        for parent in loc.type.mro()[1:]:
+
+    if loc_map.contains(TypeHintLoc) and isinstance(loc_map[TypeHintLoc].type, type):
+        for parent in loc_map[TypeHintLoc].type.mro()[1:]:
             try:
                 new_overlay = mediator.provide(
                     OverlayRequest(
-                        loc=replace(loc, type=parent),
+                        loc_map=loc_map.add(TypeHintLoc(type=parent)),
                         overlay_cls=overlay,
                     )
                 )
@@ -94,6 +95,7 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc: Location
                 pass
             else:
                 stacked_overlay = new_overlay.merge(stacked_overlay)
+
     return stacked_overlay.to_schema()
 
 
