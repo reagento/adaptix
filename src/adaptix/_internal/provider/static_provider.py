@@ -34,8 +34,8 @@ def static_provision_action(func: SPA[P, T, R], /) -> SPA[P, T, R]:
 
 
 def static_provision_action(arg=None):
-    """Marks method as @static_provision_action
-    See :class StaticProvider: for details
+    """Marks method as ``@static_provision_action``.
+    See :class:`StaticProvider` for details
     """
 
     if arg is None:
@@ -91,19 +91,18 @@ class StaticProvider(Provider):
     """Provider which instances can process same set of Request classes.
 
     Subclass defines provision actions wrapping method by decorator
-    @static_provision_action(request_cls). Argument of decorator attaching
+    ``@static_provision_action(request_cls)``. Argument of decorator attaching
     method to specified Request class.
     It means that that provision action will be called for specified
-    request, or it's subclass. See :class Provider: for details.
+    request, or it's subclass. See :class:`Provider` for details.
 
     You can omit request_cls parameter and decorator try to infer it introspecting method signature.
 
     Subclasses cannot have multiple methods attached to the same request.
 
-    During subclassing, StaticProvider goes through attributes of the class
-    and collects all methods wrapped by @static_provision_action() decorator.
-    Then it merges new @static_provision_action's with the parent ones
-    and creates the RequestDispatcher.
+    During subclassing, ``StaticProvider`` goes through attributes of the class
+    and collects all methods wrapped by :func:`static_provision_action` decorator.
+    Then it merges list of new :func:`static_provision_action`'s with the parent ones.
     """
     _sp_cls_request_dispatcher: ClassVar[RequestDispatcher] = RequestDispatcher()
 

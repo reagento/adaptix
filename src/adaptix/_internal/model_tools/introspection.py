@@ -151,8 +151,11 @@ def get_named_tuple_figure(tp) -> FullFigure:
 #       TypedDict
 # =====================
 
-
 class TypedDictAt38Warning(UserWarning):
+    """Runtime introspection of TypedDict at python3.8 does not support inheritance.
+    Please, update python or consider limitations suppressing this warning
+    """
+
     def __str__(self):
         return (
             "Runtime introspection of TypedDict at python3.8 does not support inheritance."

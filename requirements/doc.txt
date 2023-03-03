@@ -8,6 +8,8 @@ alabaster==0.7.13
     # via sphinx
 babel==2.11.0
     # via sphinx
+beautifulsoup4==4.11.2
+    # via furo
 certifi==2022.12.7
     # via requests
 charset-normalizer==3.0.1
@@ -16,6 +18,8 @@ docutils==0.18.1
     # via
     #   sphinx
     #   sphinx-rtd-theme
+furo==2022.12.7
+    # via -r requirements/raw/doc.txt
 idna==3.4
     # via requests
 imagesize==1.4.1
@@ -26,25 +30,40 @@ markupsafe==2.1.2
     # via jinja2
 packaging==23.0
     # via sphinx
+pbr==5.11.1
+    # via sphinxcontrib-apidoc
 pygments==2.14.0
-    # via sphinx
+    # via
+    #   furo
+    #   sphinx
 pytz==2022.7.1
     # via babel
 requests==2.28.2
     # via sphinx
 snowballstemmer==2.2.0
     # via sphinx
+soupsieve==2.4
+    # via beautifulsoup4
 sphinx==5.3.0
     # via
     #   -r requirements/raw/doc.txt
+    #   furo
+    #   sphinx-basic-ng
     #   sphinx-copybutton
     #   sphinx-design
     #   sphinx-rtd-theme
+    #   sphinxcontrib-apidoc
+sphinx-basic-ng==1.0.0b1
+    # via furo
 sphinx-copybutton==0.5.1
     # via -r requirements/raw/doc.txt
 sphinx-design==0.3.0
     # via -r requirements/raw/doc.txt
+sphinx-paramlinks==0.5.4
+    # via -r requirements/raw/doc.txt
 sphinx-rtd-theme==1.2.0
+    # via -r requirements/raw/doc.txt
+sphinxcontrib-apidoc==0.3.0
     # via -r requirements/raw/doc.txt
 sphinxcontrib-applehelp==1.0.4
     # via sphinx

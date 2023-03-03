@@ -6,6 +6,7 @@ dataclass-factory
    :caption: Contents:
 
    tutorial
+   API Reference <api_reference/modules>
 
 
 Indices and tables

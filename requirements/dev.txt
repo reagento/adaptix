@@ -24,6 +24,8 @@ babel==2.11.0
     # via sphinx
 bandit==1.7.4
     # via -r requirements/raw/lint.txt
+beautifulsoup4==4.11.2
+    # via furo
 build==0.10.0
     # via pip-tools
 cachetools==5.3.0
@@ -103,6 +105,8 @@ flake8-polyfill==1.0.2
     # via -r requirements/raw/lint.txt
 fonttools==4.38.0
     # via matplotlib
+furo==2022.12.7
+    # via -r requirements/raw/doc.txt
 future==0.18.3
     # via radon
 gitdb==4.0.10
@@ -163,7 +167,9 @@ packaging==23.0
     #   sphinx
     #   tox
 pbr==5.11.1
-    # via stevedore
+    # via
+    #   sphinxcontrib-apidoc
+    #   stevedore
 phonenumberslite==8.13.6
     # via -r requirements/raw/test_extra_none.txt
 pillow==9.4.0
@@ -192,7 +198,9 @@ pydantic==1.10.5
 pyflakes==2.5.0
     # via flake8
 pygments==2.14.0
-    # via sphinx
+    # via
+    #   furo
+    #   sphinx
 pylint==2.16.2
     # via -r requirements/raw/lint.txt
 pyparsing==3.0.9
@@ -234,17 +242,28 @@ smmap==5.0.0
     # via gitdb
 snowballstemmer==2.2.0
     # via sphinx
+soupsieve==2.4
+    # via beautifulsoup4
 sphinx==5.3.0
     # via
     #   -r requirements/raw/doc.txt
+    #   furo
+    #   sphinx-basic-ng
     #   sphinx-copybutton
     #   sphinx-design
     #   sphinx-rtd-theme
+    #   sphinxcontrib-apidoc
+sphinx-basic-ng==1.0.0b1
+    # via furo
 sphinx-copybutton==0.5.1
     # via -r requirements/raw/doc.txt
 sphinx-design==0.3.0
     # via -r requirements/raw/doc.txt
+sphinx-paramlinks==0.5.4
+    # via -r requirements/raw/doc.txt
 sphinx-rtd-theme==1.2.0
+    # via -r requirements/raw/doc.txt
+sphinxcontrib-apidoc==0.3.0
     # via -r requirements/raw/doc.txt
 sphinxcontrib-applehelp==1.0.4
     # via sphinx

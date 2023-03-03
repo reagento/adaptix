@@ -123,7 +123,7 @@ class Omitted(metaclass=SingletonMeta):
 Omittable = Union[T, Omitted]
 
 
-K_co = TypeVar('K_co', covariant=True, bound=Hashable)
+K_co = TypeVar('K_co', covariant=True)
 V = TypeVar('V')
 
 
@@ -135,11 +135,8 @@ class ClassDispatcher(Generic[K_co, V]):
     """
     __slots__ = ('_mapping',)
 
-    def __init__(self, mapping: Optional[Dict[Type[K_co], V]] = None):
-        if mapping is None:
-            self._mapping: Dict[Type[K_co], V] = {}
-        else:
-            self._mapping = mapping
+    def __init__(self, mapping: Optional[Mapping[Type[K_co], V]] = None):
+        self._mapping: Dict[Type[K_co], V] = {} if mapping is None else dict(mapping)
 
     def dispatch(self, key: Type[K_co]) -> V:
         """Returns a value associated with the key.

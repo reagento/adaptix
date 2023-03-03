@@ -78,12 +78,13 @@ class PathedException(Exception):
 
 
 class ExcPathRenderer:
-    """Special context manager that wraps unhandled exception with PathedException.
+    """Special context manager that wraps unhandled exception with :class:`PathedException`.
     This allows to render struct_path at console. Object should be used debug purposes only.
 
     Example::
+
          with ExcPathRenderer():
-            print(retort.load(some_data, SomeModel))
+             print(retort.load(some_data, SomeModel))
     """
 
     def __enter__(self):
@@ -117,6 +118,7 @@ class StructPathRendererFilter(logging.Filter):
         self._path_processor = path_processor
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """Modify record adding information about exception path"""
         if record.exc_info is not None:
             setattr(
                 record,

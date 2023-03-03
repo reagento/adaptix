@@ -7,7 +7,7 @@ T = TypeVar('T')
 
 @dataclass(frozen=True)
 class Request(Generic[T]):
-    """An object that contains data to be processed by Provider.
+    """An object that contains data to be processed by :class:`Provider`.
 
     Generic argument indicates which object should be
     returned after request processing.
@@ -49,6 +49,7 @@ class Mediator(ABC, Generic[V]):
     @abstractmethod
     def provide(self, request: Request[T]) -> T:
         """Get response of sent request.
+
         :param request: A request instance
         :return: Result of the request processing
         :raise CannotProvide: A provider able to process the request does not found
@@ -64,7 +65,7 @@ class Mediator(ABC, Generic[V]):
     @abstractmethod
     def request_stack(self) -> Sequence[Request[Any]]:
         """Call stack, but consisting of requests.
-        Last element of request_stack is current request.
+        Last element of ``request_stack`` is current request.
         """
 
 

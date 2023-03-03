@@ -58,15 +58,15 @@ Fields also can contain any supported collections.
 Retort configuration
 ======================
 
-There are two options that ``Retort`` constructor takes.
+There are two options that :class:`Retort` constructor takes.
 
-``debug_path`` parameter is responsible for saving path where exception was caused.
+:paramref:`debug_path` parameter is responsible for saving path where exception was caused.
 You can disable this option if data is loading or dumping from a trusted source where an error is unlikely.
 It will slightly improve performance if no error will be caused and will have more impact if an exception will be raised.
 More detail about working with the saved path in :ref:`Struct path`
 
 
-``strict_coercion`` affects only the loading process.
+:paramref:`strict_coercion` affects only the loading process.
 If it is enabled (this is default state) type will be converted only two conditions passed:
 
 #. There is only one way to produce casting
@@ -116,6 +116,9 @@ Here are some of them.
 #. ``enum_by_name`` allows representing enums by their names.
 #. ``enum_by_value`` takes the type of enum values and uses it to load or dump enum cases.
 
+
+.. _predicate-system:
+
 Predicate system
 ------------------
 
@@ -163,7 +166,7 @@ You can only make new retort object based on the existing one
 
 .. literalinclude:: examples/tutorial/retort_replace.py
 
-``.extend`` method adds items to the recipe begging.
+``.extend`` method adds items to the recipe beginning.
 This allows following the DRY principle.
 
 .. literalinclude:: examples/tutorial/retort_extend.py
@@ -174,7 +177,7 @@ it allows to separates creation of loaders and dumpers for specific types into i
 .. literalinclude:: examples/tutorial/retort_combination.py
 
 In this example, loader and dumper for ``LiteraryWork`` will be created by ``literature_retort``
-(note that ``debug_path`` and ``strict_coercion`` options will be used from upper level retort).
+(note that ``debug_path`` and ``strict_coercion`` options will be used from upper level retort [This is FAKE]).
 
 Retort is provider that proxies search into own recipe, so if you pass retort without a ``bound`` wrapper,
 it will be used for all loaders and dumpers, overriding all subsequent providers.
@@ -202,7 +205,8 @@ Validators
 .. literalinclude:: examples/tutorial/validators.py
 
 If the test function returns ``False``, the exception will be raised.
-You can pass an exception factory that returns the actual exception or pass the string to raise ValidationError instance.
+You can pass an exception factory
+that returns the actual exception or pass the string to raise :class:`ValidationError` instance.
 
 
 Error handling

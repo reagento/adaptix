@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from enum import Enum, EnumMeta
 from types import MappingProxyType
@@ -54,6 +56,16 @@ def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
 
 
 def loader(pred: Any, func: Loader, chain: Optional[Chain] = None) -> Provider:
+    """Basic provider to define custom loader
+
+    :param pred: Predicate specifying where loader should be used. See :ref:`predicate-system` for details.
+    :param func: Function that acts as loader.
+        It must take one positional argument of raw data and return processed value.
+
+    :param chain:
+
+    :return: desired provider
+    """
     return bound(
         pred,
         make_chain(
