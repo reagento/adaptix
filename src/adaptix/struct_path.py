@@ -1,5 +1,6 @@
 from adaptix._internal.struct_path import (
     Attr,
+    ExcPathRenderer,
     Path,
     PathedException,
     PathElement,
@@ -8,5 +9,4 @@ from adaptix._internal.struct_path import (
     append_path,
     extend_path,
     get_path,
-    render_exc_path,
 )

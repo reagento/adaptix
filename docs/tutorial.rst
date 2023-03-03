@@ -236,7 +236,7 @@ The path is stored at a special private attribute in the exception object,
 so it is not shown at ``__str__`` or ``__repr__`` of exception.
 There are two helpers to solve this problem.
 
-First is ``render_exc_path`` context manager. It reraises all exceptions as ``PathedException``
+First is ``ExcPathRenderer`` context manager. It reraises all exceptions as ``PathedException``
 that shows path and origin error at ``__str__``.
 This tool should be used only for debugging, developing, and prototyping but never in production.
 

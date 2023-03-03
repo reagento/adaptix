@@ -77,7 +77,15 @@ class PathedException(Exception):
         return f'at {list(self.path)} was raised {type(self.exc).__qualname__}{exc_instance_desc}'
 
 
-class PathExceptionRenderer:
+class ExcPathRenderer:
+    """Special context manager that wraps unhandled exception with PathedException.
+    This allows to render struct_path at console. Object should be used debug purposes only.
+
+    Example::
+         with ExcPathRenderer():
+            print(retort.load(some_data, SomeModel))
+    """
+
     def __enter__(self):
         return self
 
@@ -87,18 +95,6 @@ class PathExceptionRenderer:
 
         exc_path = get_path(exc_val)
         raise PathedException(exc_val, exc_path)
-
-
-render_exc_path = PathExceptionRenderer()
-# pylint: disable=attribute-defined-outside-init
-render_exc_path.__doc__ = \
-    """Special context manager that wraps unhandled exception with PathedException.
-    This allows to render struct_path at console. Object should be used debug purposes only.
-
-    Example::
-         with render_exc_path:
-            print(retort.load(some_data, SomeModel))
-    """
 
 
 def default_path_processor(path):

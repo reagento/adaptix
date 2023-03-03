@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from adaptix import Retort
 from adaptix.load_error import TypeLoadError
-from adaptix.struct_path import PathedException, render_exc_path
+from adaptix.struct_path import ExcPathRenderer, PathedException
 
 
 @dataclass
@@ -30,7 +30,7 @@ data = {
 retort = Retort()
 
 try:
-    with render_exc_path:
+    with ExcPathRenderer():
         retort.load(data, Book)
 except PathedException as e:
     assert isinstance(e.exc, TypeLoadError)
