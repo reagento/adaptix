@@ -25,7 +25,7 @@ class Overlay(Generic[Sc]):
     _mergers: ClassVar[Optional[Mapping[str, Merger]]]
 
     def __init_subclass__(cls, *args, **kwargs):
-        cls._schema_cls = cls.__orig_bases__[0].__args__[0]  # type: ignore[attr-defined]  # pylint: disable=no-member
+        cls._schema_cls = cls.__orig_bases__[0].__args__[0]  # pylint: disable=no-member
         cls._mergers = None
 
     def _default_merge(self, old: Any, new: Any) -> Any:

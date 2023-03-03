@@ -55,17 +55,17 @@ def _get_complex_literal_expr(obj: object) -> Optional[str]:
         return "frozenset()"
 
     if type(obj) == slice:
-        parts = (obj.start, obj.step, obj.stop)  # type: ignore[attr-defined]
+        parts = (obj.start, obj.step, obj.stop)
         return "slice" + _parenthesize("()", parts)
 
     if type(obj) == range:
-        parts = (obj.start, obj.step, obj.stop)  # type: ignore[attr-defined]
+        parts = (obj.start, obj.step, obj.stop)
         return "range" + _parenthesize("()", parts)
 
     if type(obj) == dict:
         body = ", ".join(
             f"{_provide_lit_expr(key)}: {_provide_lit_expr(value)}"
-            for key, value in obj.items()  # type: ignore[attr-defined]
+            for key, value in obj.items()
         )
         return "{" + body + "}"
 

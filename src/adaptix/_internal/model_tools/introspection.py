@@ -324,10 +324,10 @@ def _get_attrs_default(field) -> Default:
     default: Any = field.default
 
     if isinstance(default, attrs.Factory):  # type: ignore
-        if default.takes_self:  # type: ignore
+        if default.takes_self:
             # TODO: add support
             raise ValueError("Factory with self parameter does not supported yet")
-        return DefaultFactory(default.factory)  # type: ignore
+        return DefaultFactory(default.factory)
 
     if default is attrs.NOTHING:
         return NoDefault()

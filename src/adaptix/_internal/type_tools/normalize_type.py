@@ -220,9 +220,9 @@ class NormTV(BaseNormType):
         self._source = source
         self._limit = limit
 
-        if var.__covariant__:  # type: ignore[attr-defined]
+        if var.__covariant__:
             self._variance = Variance.COVARIANT
-        if var.__contravariant__:  # type: ignore[attr-defined]
+        if var.__contravariant__:
             self._variance = Variance.CONTRAVARIANT
         self._variance = Variance.INVARIANT
 
@@ -318,11 +318,11 @@ def make_norm_type(  # noqa: CCR001
     if origin == Union:
         if not all(isinstance(arg, BaseNormType) for arg in args):
             raise TypeError
-        return _UnionNormType(args, source=source)  # type: ignore
+        return _UnionNormType(args, source=source)
     if origin == Literal:
         if not all(type(arg) in [int, bool, str, bytes] or isinstance(type(arg), EnumMeta) for arg in args):
             raise TypeError
-        return _LiteralNormType(args, source=source)  # type: ignore
+        return _LiteralNormType(args, source=source)
     if HAS_ANNOTATED and origin == typing.Annotated:
         return _AnnotatedNormType(args, source=source)
     if isinstance(origin, TypeVar):
@@ -403,9 +403,7 @@ def _create_norm_literal(args: Iterable):
     dedup_args = tuple(_dedup(args))
     return _LiteralNormType(
         dedup_args,
-        source=Literal.__getitem__(  # pylint: disable=unnecessary-dunder-call
-            dedup_args  # type: ignore
-        )
+        source=Literal.__getitem__(dedup_args)  # pylint: disable=unnecessary-dunder-call
     )
 
 
