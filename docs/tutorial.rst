@@ -177,7 +177,7 @@ it allows to separates creation of loaders and dumpers for specific types into i
 .. literalinclude:: examples/tutorial/retort_combination.py
 
 In this example, loader and dumper for ``LiteraryWork`` will be created by ``literature_retort``
-(note that ``debug_path`` and ``strict_coercion`` options will be used from upper level retort [This is FAKE]).
+(note that ``debug_path`` and ``strict_coercion`` options of upper-level retort do not affects inner retorts).
 
 Retort is provider that proxies search into own recipe, so if you pass retort without a ``bound`` wrapper,
 it will be used for all loaders and dumpers, overriding all subsequent providers.

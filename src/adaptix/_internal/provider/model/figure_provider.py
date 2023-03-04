@@ -27,7 +27,7 @@ class FigureProvider(StaticProvider):
 
     @static_provision_action
     def _provide_input_figure(self, mediator: Mediator, request: InputFigureRequest) -> InputFigure:
-        loc = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
+        loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
 
         try:
             figure = self._introspector(loc.type)
@@ -41,7 +41,7 @@ class FigureProvider(StaticProvider):
 
     @static_provision_action
     def _provide_output_figure(self, mediator: Mediator, request: OutputFigureRequest) -> OutputFigure:
-        loc = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
+        loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
         try:
             figure = self._introspector(loc.type)
         except IntrospectionImpossible:
@@ -80,7 +80,7 @@ class PropertyAdder(StaticProvider):
 
     @static_provision_action
     def _provide_output_figure(self, mediator: Mediator[OutputFigure], request: OutputFigureRequest) -> OutputFigure:
-        tp = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide).type
+        tp = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide).type
         figure = mediator.provide_from_next()
 
         additional_fields = tuple(

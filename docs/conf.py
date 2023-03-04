@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'dataclass-factory'
+project = 'adaptix'
 copyright = '2020, Tishka17'
 author = 'Tishka17'
 master_doc = 'index'

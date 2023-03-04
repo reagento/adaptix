@@ -56,13 +56,19 @@ def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
 
 
 def loader(pred: Any, func: Loader, chain: Optional[Chain] = None) -> Provider:
-    """Basic provider to define custom loader
+    """Basic provider to define custom loader.
 
     :param pred: Predicate specifying where loader should be used. See :ref:`predicate-system` for details.
     :param func: Function that acts as loader.
-        It must take one positional argument of raw data and return processed value.
+        It must take one positional argument of raw data and return the processed value.
+    :param chain: Controls how the function will interact with the previous loader.
 
-    :param chain:
+        When ``None`` is passed, the specified function will fully replace the previous loader.
+
+        If a parameter is ``Chain.FIRST``,
+        the specified function will take raw data and its result will be passed to previous loader.
+
+        If the parameter is ``Chain.LAST``, the specified function gets result of the previous loader.
 
     :return: desired provider
     """
@@ -76,6 +82,22 @@ def loader(pred: Any, func: Loader, chain: Optional[Chain] = None) -> Provider:
 
 
 def dumper(pred: Any, func: Dumper, chain: Optional[Chain] = None) -> Provider:
+    """Basic provider to define custom dumper.
+
+    :param pred: Predicate specifying where dumper should be used. See :ref:`predicate-system` for details.
+    :param func: Function that acts as dumper.
+        It must take one positional argument of raw data and return the processed value.
+    :param chain: Controls how the function will interact with the previous dumper.
+
+        When ``None`` is passed, the specified function will fully replace the previous dumper.
+
+        If a parameter is ``Chain.FIRST``,
+        the specified function will take raw data and its result will be passed to previous dumper.
+
+        If the parameter is ``Chain.LAST``, the specified function gets result of the previous dumper.
+
+    :return: desired provider
+    """
     return bound(
         pred,
         make_chain(
@@ -86,10 +108,20 @@ def dumper(pred: Any, func: Dumper, chain: Optional[Chain] = None) -> Provider:
 
 
 def as_is_loader(pred: Any) -> Provider:
+    """Provider that creates loader which does nothing with input data.
+
+    :param pred: Predicate specifying where loader should be used. See :ref:`predicate-system` for details.
+    :return: desired provider
+    """
     return loader(pred, lambda x: x)
 
 
 def as_is_dumper(pred: Any) -> Provider:
+    """Provider that creates dumper which does nothing with input data.
+
+    :param pred: Predicate specifying where dumper should be used. See :ref:`predicate-system` for details.
+    :return: desired provider
+    """
     return dumper(pred, lambda x: x)
 
 
@@ -237,7 +269,7 @@ def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provid
         return provider
 
     if Enum in preds:
-        raise ValueError(f"Can not apply enum rules to {Enum}")
+        raise ValueError(f"Can not apply enum provider to {Enum}")
 
     return BoundingProvider(
         OrRequestChecker([create_request_checker(pred) for pred in preds]),
@@ -246,14 +278,41 @@ def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provid
 
 
 def enum_by_name(*preds: EnumPred) -> Provider:
+    """Provider that represents enum members to the outside world by their name.
+
+    :param preds: Predicates specifying where the provider should be used.
+        The provider will be applied if any predicates meet the conditions,
+        if no predicates are passed, the provider will be used for all Enums.
+        See :ref:`predicate-system` for details.
+    :return: desired provider
+    """
     return _wrap_enum_provider(preds, EnumNameProvider())
 
 
 def enum_by_exact_value(*preds: EnumPred) -> Provider:
+    """Provider that represents enum members to the outside world by their value without any processing.
+
+    :param preds: Predicates specifying where the provider should be used.
+        The provider will be applied if any predicates meet the conditions,
+        if no predicates are passed, the provider will be used for all Enums.
+        See :ref:`predicate-system` for details.
+    :return: desired provider
+    """
     return _wrap_enum_provider(preds, EnumExactValueProvider())
 
 
 def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Provider:
+    """Provider that represents enum members to the outside world by their value by loader and dumper of specified type.
+    The loader will call the loader of the :paramref:`tp` and pass it to the enum constructor.
+    The dumper will get value from eum member and pass it to the dumper of the :paramref:`tp`.
+
+    :param first_pred: Predicate specifying where the provider should be used.
+        See :ref:`predicate-system` for details.
+    :param preds: Additional predicates. The provider will be applied if any predicates meet the conditions.
+    :param tp: Type of enum members.
+        This type must cover all enum members for the correct operation of loader and dumper
+    :return: desired provider
+    """
     return _wrap_enum_provider([first_pred, *preds], EnumValueProvider(tp))
 
 

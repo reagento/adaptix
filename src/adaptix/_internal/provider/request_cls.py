@@ -63,7 +63,7 @@ class DumperRequest(LocatedRequest[Dumper]):
 
 
 def get_type_from_request(request: LocatedRequest) -> TypeHint:
-    return request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide).type
+    return request.loc_map.get_or_raise(TypeHintLoc, CannotProvide).type
 
 
 class StrictCoercionRequest(LocatedRequest[bool]):

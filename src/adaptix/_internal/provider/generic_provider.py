@@ -32,7 +32,7 @@ def stub(arg):
 class NewTypeUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
+        loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
 
         if not is_new_type(loc.type):
             raise CannotProvide
@@ -48,7 +48,7 @@ class NewTypeUnwrappingProvider(StaticProvider):
 class TypeHintTagsUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
+        loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
 
         unwrapped = strip_tags(normalize_type(loc.type))
         if unwrapped.source == loc.type:  # type has not changed, continue search
@@ -593,17 +593,7 @@ class EnumNameProvider(BaseEnumProvider):
 
 
 class EnumValueProvider(BaseEnumProvider):
-    """This provider represents enum members to the outside world by their value.
-    Input data will be loaded and then interpreted as one of enum member value.
-    At serializing value of enum member will be dumped.
-    """
-
     def __init__(self, value_type: TypeHint):
-        """Create value provider for Enum.
-
-        :param value_type: Type of enum member value
-            that will be used to create loader and dumper of member value
-        """
         self._value_type = value_type
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:

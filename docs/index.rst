@@ -1,4 +1,4 @@
-dataclass-factory
+adaptix
 =============================================
 
 .. toctree::

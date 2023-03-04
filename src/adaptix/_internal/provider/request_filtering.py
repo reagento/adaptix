@@ -9,7 +9,7 @@ from ..common import TypeHint, VarTuple
 from ..type_tools import BaseNormType, NormTV, is_parametrized, is_protocol, is_subclass_soft, normalize_type
 from ..type_tools.normalize_type import NotSubscribedError
 from .essential import CannotProvide, Request
-from .request_cls import FieldLoc, LocatedRequest, Location, LocMap, TypeHintLoc
+from .request_cls import FieldLoc, LocatedRequest, Location, TypeHintLoc
 
 T = TypeVar('T')
 
