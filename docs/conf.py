@@ -60,7 +60,9 @@ html_theme = 'furo'
 html_static_path = ['_static']
 
 autodoc_type_aliases = {
-    'Loader': 'adaptix.Loader'
+    'Loader': 'adaptix.Loader',
+    'Dumper': 'adaptix.Dumper',
+    'Omittable': 'adaptix.Omittable',
 }
 autodoc_member_order = 'bysource'
 
