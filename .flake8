@@ -39,4 +39,3 @@ max-cognitive-complexity=12
 max-complexity=12
 per-file-ignores=
     **/__init__.py:F401
-    src/adaptix/**:F401

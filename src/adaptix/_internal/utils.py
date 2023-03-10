@@ -1,4 +1,3 @@
-import collections
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from copy import copy
@@ -10,7 +9,6 @@ from typing import (
     Dict,
     Generator,
     Generic,
-    Hashable,
     Iterable,
     Iterator,
     KeysView,
@@ -22,7 +20,6 @@ from typing import (
     Union,
     ValuesView,
     final,
-    overload,
 )
 
 C = TypeVar('C', bound='Cloneable')

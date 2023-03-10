@@ -15,7 +15,7 @@ from ...model_tools import (
     get_typed_dict_figure,
 )
 from ...model_tools.definitions import FigureIntrospector, InputFigure
-from ..essential import CannotProvide, Mediator, Provider, Request
+from ..essential import CannotProvide, Mediator
 from ..request_cls import TypeHintLoc
 from ..static_provider import StaticProvider, static_provision_action
 from .definitions import InputFigureRequest, OutputFigureRequest

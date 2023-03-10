@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import Any, Mapping, TypeVar
 
 from ..common import Dumper, Loader, TypeHint
