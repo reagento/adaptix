@@ -53,7 +53,6 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         self._gen_extra_extraction(
             builder, binder, ctx_namespace, name_to_fields,
         )
-
         return builder
 
     def _is_extra_target(self, field: OutputField) -> bool:

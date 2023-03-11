@@ -20,6 +20,7 @@ from .basic_gen import (
     stub_code_gen_hook,
 )
 from .crown_definitions import InpExtraMove, InputNameLayout, InputNameLayoutRequest
+from .figure_provider import provide_generic_resolved_figure
 from .input_creation_gen import BuiltinInputCreationGen
 
 
@@ -45,9 +46,7 @@ class InputCreationMaker(Protocol):
 
 class BuiltinInputExtractionMaker(InputExtractionMaker):
     def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure, InpExtraMove]:
-        figure: InputFigure = mediator.provide(
-            InputFigureRequest(loc_map=request.loc_map)
-        )
+        figure = provide_generic_resolved_figure(mediator, InputFigureRequest(loc_map=request.loc_map))
 
         name_layout: InputNameLayout = mediator.provide(
             InputNameLayoutRequest(

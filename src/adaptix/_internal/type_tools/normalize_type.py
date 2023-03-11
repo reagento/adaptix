@@ -1,6 +1,4 @@
 # pylint: disable=inconsistent-return-statements,comparison-with-callable
-import collections
-import re
 import sys
 import types
 import typing
@@ -35,15 +33,9 @@ from typing import (
 )
 
 from ..common import TypeHint, VarTuple
-from ..feature_requirement import (
-    HAS_ANNOTATED,
-    HAS_PARAM_SPEC,
-    HAS_PY_39,
-    HAS_TYPE_ALIAS,
-    HAS_TYPE_GUARD,
-    HAS_TYPE_UNION_OP,
-)
-from .basic_utils import create_union, is_new_type, is_subclass_soft, is_user_defined_generic, strip_alias
+from ..feature_requirement import HAS_ANNOTATED, HAS_PARAM_SPEC, HAS_TYPE_ALIAS, HAS_TYPE_GUARD, HAS_TYPE_UNION_OP
+from .basic_utils import create_union, eval_forward_ref, is_new_type, is_subclass_soft, strip_alias
+from .implicit_params import ImplicitParamsGetter
 
 
 class BaseNormType(Hashable, ABC):
@@ -338,53 +330,6 @@ NoneType = type(None)
 ANY_NT = _NormType(Any, (), source=Any)
 
 
-class ImplicitParamsFiller:
-    ONE_ANY_STR_PARAM = [re.Pattern, re.Match]
-
-    TYPE_PARAM_CNT = {
-        type: 1,
-        list: 1,
-        set: 1,
-        frozenset: 1,
-        collections.Counter: 1,
-        collections.deque: 1,
-        dict: 2,
-        defaultdict: 2,
-        collections.OrderedDict: 2,
-        collections.ChainMap: 2,
-        **{el: 1 for el in ONE_ANY_STR_PARAM}
-    }
-
-    NORM_ANY_STR_PARAM = _UnionNormType(
-        (_NormType(bytes, (), source=bytes), _NormType(str, (), source=str)),
-        source=Union[bytes, str],
-    )
-
-    def _convert_generic_element(self, limit: TVLimit, param):
-        if HAS_PARAM_SPEC and isinstance(param, typing.ParamSpec):
-            return ...
-        if isinstance(limit, Constraints):
-            return _create_norm_union(limit.value)
-        return limit.value
-
-    def get_implicit_params(self, origin, normalizer: "TypeNormalizer") -> VarTuple[BaseNormType]:
-        if origin in self.ONE_ANY_STR_PARAM:
-            return (self.NORM_ANY_STR_PARAM,)
-
-        if is_user_defined_generic(origin):
-            params: Iterable[TypeVar] = origin.__parameters__
-            limits = [normalizer.normalize(p).limit for p in params]
-
-            return tuple(
-                self._convert_generic_element(limit, param)
-                for limit, param in zip(limits, params)
-            )
-
-        count = self.TYPE_PARAM_CNT.get(origin, 0)
-
-        return tuple(ANY_NT for _ in range(count))
-
-
 def _create_norm_union(args: VarTuple[BaseNormType]) -> BaseNormType:
     return _UnionNormType(args, source=create_union(tuple(a.source for a in args)))
 
@@ -441,8 +386,8 @@ TN = TypeVar('TN', bound='TypeNormalizer')
 
 
 class TypeNormalizer:
-    def __init__(self, implicit_params_filler: ImplicitParamsFiller):
-        self.implicit_params_filler = implicit_params_filler
+    def __init__(self, implicit_params_getter: ImplicitParamsGetter):
+        self.implicit_params_getter = implicit_params_getter
         self._namespace: Optional[Dict[str, Any]] = None
 
     def _with_namespace(self: TN, namespace: Dict[str, Any]) -> TN:
@@ -477,21 +422,18 @@ class TypeNormalizer:
 
         raise RuntimeError
 
-    if HAS_PY_39:
-        def _eval_forward_ref(self, forward_ref: ForwardRef):
-            # pylint: disable=protected-access
-            return forward_ref._evaluate(self._namespace, None, frozenset())
-    else:
-        def _eval_forward_ref(self, forward_ref: ForwardRef):
-            # pylint: disable=protected-access
-            return forward_ref._evaluate(self._namespace, None)  # type: ignore[call-arg]
-
     def _norm_forward_ref(self, tp):
         if self._namespace is not None:
             if isinstance(tp, str):
-                return _replace_source(self.normalize(ForwardRef(tp)), source=tp)
+                return _replace_source(
+                    self.normalize(ForwardRef(tp)),
+                    source=tp,
+                )
             if isinstance(tp, ForwardRef):
-                return _replace_source(self.normalize(self._eval_forward_ref(tp)), source=tp)
+                return _replace_source(
+                    self.normalize(eval_forward_ref(self._namespace, tp)),
+                    source=tp
+                )
 
     _aspect_storage = AspectStorage()
 
@@ -723,26 +665,28 @@ class TypeNormalizer:
     if HAS_TYPE_ALIAS:
         ALLOWED_ZERO_PARAMS_ORIGINS.add(typing.TypeAlias)
 
-    def _norm_generic_element(self, element):
-        if element is Ellipsis:
+    def _norm_generic_arg(self, arg):
+        if arg is Ellipsis:
             return Ellipsis
-        if isinstance(element, tuple):
-            return self._norm_iter(element)
-        return self.normalize(element)
+        if isinstance(arg, tuple):
+            return self._norm_iter(arg)
+        return self.normalize(arg)
+
+    def _norm_implicit_param(self, param):
+        if param is Ellipsis:
+            return Ellipsis
+        return self.normalize(param)
 
     @_aspect_storage.add
     def _norm_other(self, tp, origin, args):
         if args:
             return _NormType(
                 origin,
-                tuple(self._norm_generic_element(el) for el in args),
+                tuple(self._norm_generic_arg(el) for el in args),
                 source=tp
             )
 
-        params = self.implicit_params_filler.get_implicit_params(
-            origin, self
-        )
-
+        params = self.implicit_params_getter.get_implicit_params(origin)
         if not (
             params
             or isinstance(origin, type)
@@ -752,12 +696,12 @@ class TypeNormalizer:
 
         return _NormType(
             origin,
-            params,
+            tuple(self._norm_implicit_param(param) for param in params),
             source=tp,
         )
 
 
-_STD_NORMALIZER = TypeNormalizer(ImplicitParamsFiller())
+_STD_NORMALIZER = TypeNormalizer(ImplicitParamsGetter())
 _cached_normalize = lru_cache(maxsize=128)(_STD_NORMALIZER.normalize)
 
 

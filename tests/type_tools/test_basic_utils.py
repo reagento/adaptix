@@ -1,9 +1,22 @@
 from collections import namedtuple
-from typing import Generic, List, NamedTuple, Protocol, SupportsInt, Tuple, TypeVar, Union, runtime_checkable
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    NamedTuple,
+    Protocol,
+    SupportsInt,
+    Tuple,
+    TypeVar,
+    Union,
+    runtime_checkable,
+)
 
 from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
 from adaptix._internal.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
-from adaptix._internal.type_tools.basic_utils import is_parametrized
+from adaptix._internal.type_tools.basic_utils import get_type_vars_of_parametrized, is_parametrized
 
 
 class NTParent(NamedTuple):
@@ -179,3 +192,59 @@ def test_is_parametrized():
     assert is_parametrized(Union[int, str])
 
     # do not test all special cases of typing like Annotated, rely on get_args
+
+
+def test_get_type_vars_of_parametrized():
+    assert get_type_vars_of_parametrized(Gen[T]) == (T,)
+    assert get_type_vars_of_parametrized(Gen[str]) == ()
+    assert get_type_vars_of_parametrized(Gen) == ()
+
+    assert get_type_vars_of_parametrized(Proto[T]) == (T, )
+    assert get_type_vars_of_parametrized(Proto[str]) == ()
+    assert get_type_vars_of_parametrized(Proto) == ()
+
+    assert get_type_vars_of_parametrized(list) == ()
+    assert get_type_vars_of_parametrized(List[T]) == (T, )
+    assert get_type_vars_of_parametrized(List) == ()
+    assert get_type_vars_of_parametrized(List[str]) == ()
+
+    assert get_type_vars_of_parametrized(dict) == ()
+    assert get_type_vars_of_parametrized(Dict[T, V]) == (T, V)
+    assert get_type_vars_of_parametrized(Dict) == ()
+    assert get_type_vars_of_parametrized(Dict[str, V]) == (V, )
+    assert get_type_vars_of_parametrized(Dict[T, str]) == (T, )
+    assert get_type_vars_of_parametrized(Dict[str, str]) == ()
+    assert get_type_vars_of_parametrized(Dict[V, T]) == (V, T)
+
+    assert get_type_vars_of_parametrized(tuple) == ()
+    assert get_type_vars_of_parametrized(Tuple) == ()
+    assert get_type_vars_of_parametrized(Tuple[()]) == ()
+    assert get_type_vars_of_parametrized(Tuple[int]) == ()
+    assert get_type_vars_of_parametrized(Tuple[int, T]) == (T, )
+
+    assert get_type_vars_of_parametrized(Callable) == ()
+    assert get_type_vars_of_parametrized(Callable[..., Any]) == ()
+    assert get_type_vars_of_parametrized(Callable[[int], Any]) == ()
+    assert get_type_vars_of_parametrized(Callable[[T], Any]) == (T, )
+    assert get_type_vars_of_parametrized(Callable[[T], T]) == (T, )
+    assert get_type_vars_of_parametrized(Callable[[T, int, V], T]) == (T, V)
+
+    if HAS_STD_CLASSES_GENERICS:
+        assert get_type_vars_of_parametrized(list[T]) == (T, )
+        assert get_type_vars_of_parametrized(list[str]) == ()
+        assert get_type_vars_of_parametrized(dict[T, V]) == (T, V)
+        assert get_type_vars_of_parametrized(dict[str, V]) == (V,)
+        assert get_type_vars_of_parametrized(dict[T, str]) == (T,)
+        assert get_type_vars_of_parametrized(dict[str, str]) == ()
+        assert get_type_vars_of_parametrized(dict[V, T]) == (V, T)
+
+        assert get_type_vars_of_parametrized(tuple[()]) == ()
+        assert get_type_vars_of_parametrized(tuple[int]) == ()
+        assert get_type_vars_of_parametrized(tuple[int, T]) == (T,)
+
+    assert get_type_vars_of_parametrized(Generic) == ()
+    assert get_type_vars_of_parametrized(Generic[T]) == (T, )
+    assert get_type_vars_of_parametrized(Generic[T, V]) == (T, V)
+
+
+

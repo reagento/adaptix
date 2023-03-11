@@ -1,6 +1,6 @@
 import re
 from contextlib import contextmanager
-from copy import copy
+from copy import copy, deepcopy
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Callable, Optional, Type, TypeVar, Union
 
@@ -133,3 +133,13 @@ def rollback_object_state(obj):
         yield obj
     finally:
         obj.__dict__ = state_copy
+
+
+def pretty_typehint_test_id(config, val, argname):
+    try:
+        return val.__name__
+    except AttributeError:
+        try:
+            return val._name
+        except AttributeError:
+            return None

@@ -1,6 +1,8 @@
 import contextlib
 from textwrap import dedent
-from typing import Iterable, List, Sequence
+from typing import Generator, Iterable, List, Sequence, TypeVar
+
+CB = TypeVar('CB', bound='CodeBuilder')
 
 
 class CodeBuilder:
@@ -10,7 +12,7 @@ class CodeBuilder:
         self._indent_delta = indent_delta
 
     @property
-    def indent_delta(self):
+    def indent_delta(self) -> int:
         return self._indent_delta
 
     @property
@@ -29,7 +31,7 @@ class CodeBuilder:
             for line in lines
         )
 
-    def __call__(self, line_or_text: str) -> "CodeBuilder":
+    def __call__(self: CB, line_or_text: str) -> CB:
         """Append lines to builder"""
         lines = self._extract_lines(line_or_text)
         self._add_indenting_lines(lines)
@@ -38,7 +40,7 @@ class CodeBuilder:
     __add__ = __call__
     __iadd__ = __call__
 
-    def include(self, line_or_text: str) -> "CodeBuilder":
+    def include(self: CB, line_or_text: str) -> CB:
         """Add first line of input text to last line of builder and append other lines"""
         first_line, *other_lines = self._extract_lines(line_or_text)
 
@@ -52,12 +54,12 @@ class CodeBuilder:
     __lshift__ = include
     __ilshift__ = include
 
-    def empty_line(self):
+    def empty_line(self: CB) -> CB:
         self("")
         return self
 
     @contextlib.contextmanager
-    def indent(self, indent_delta: int):
+    def indent(self, indent_delta: int) -> Generator[None, None, None]:
         self._cur_indent += indent_delta
         try:
             yield
@@ -70,7 +72,7 @@ class CodeBuilder:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._cur_indent -= self._indent_delta
 
-    def extend(self, other: "CodeBuilder"):
+    def extend(self: CB, other: CB) -> CB:
         self._add_indenting_lines(other.lines)
         return self
 

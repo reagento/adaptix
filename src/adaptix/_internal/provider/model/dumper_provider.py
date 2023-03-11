@@ -18,6 +18,7 @@ from .basic_gen import (
 )
 from .crown_definitions import OutExtraMove, OutputNameLayout, OutputNameLayoutRequest
 from .definitions import CodeGenerator, OutputFigure, OutputFigureRequest, VarBinder
+from .figure_provider import provide_generic_resolved_figure
 from .output_creation_gen import BuiltinOutputCreationGen
 from .output_extraction_gen import BuiltinOutputExtractionGen
 
@@ -79,9 +80,7 @@ def make_output_extraction(
 
 class BuiltinOutputCreationMaker(OutputCreationMaker):
     def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure, OutExtraMove]:
-        figure: OutputFigure = mediator.provide(
-            OutputFigureRequest(loc_map=request.loc_map)
-        )
+        figure = provide_generic_resolved_figure(mediator, OutputFigureRequest(loc_map=request.loc_map))
 
         name_layout = mediator.provide(
             OutputNameLayoutRequest(

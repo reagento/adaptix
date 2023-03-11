@@ -1,8 +1,21 @@
 import types
-from typing import Generic, Iterable, Protocol, TypedDict, Union, get_args, get_origin, get_type_hints
+from typing import (
+    Any,
+    Dict,
+    ForwardRef,
+    Generic,
+    Iterable,
+    Protocol,
+    TypedDict,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
-from ..common import TypeHint
-from ..feature_requirement import HAS_ANNOTATED
+from ..common import TypeHint, VarTuple
+from ..feature_requirement import HAS_ANNOTATED, HAS_PY_39, HAS_STD_CLASSES_GENERICS
 
 TYPED_DICT_MCS = type(types.new_class("_TypedDictSample", (TypedDict,), {}))
 
@@ -48,12 +61,16 @@ def is_named_tuple_class(tp) -> bool:
     )
 
 
+def get_type_vars(tp: TypeHint) -> VarTuple[TypeVar]:
+    return getattr(tp, '__parameters__', ())
+
+
 def is_user_defined_generic(tp) -> bool:
-    return (
-        hasattr(tp, '__parameters__')
-        and tp.__parameters__
-        and is_subclass_soft(strip_alias(tp), Generic)  # throw away builtin generics
-    )
+    return bool(get_type_vars(tp)) and is_subclass_soft(strip_alias(tp), Generic)
+
+
+def is_generic(tp) -> bool:
+    return bool(get_type_vars(tp))
 
 
 def is_protocol(tp):
@@ -64,8 +81,7 @@ def is_protocol(tp):
 
 
 def create_union(args: tuple):
-    # pylint: disable=unnecessary-dunder-call
-    return Union.__getitem__(args)
+    return Union[args]
 
 
 if HAS_ANNOTATED:
@@ -77,3 +93,28 @@ else:
 
 def is_parametrized(tp: TypeHint) -> bool:
     return bool(get_args(tp))
+
+
+def get_type_vars_of_parametrized(tp: TypeHint) -> VarTuple[TypeVar]:
+    try:
+        params = tp.__parameters__
+    except AttributeError:
+        return ()
+
+    if isinstance(tp, type):
+        if HAS_STD_CLASSES_GENERICS and isinstance(tp, types.GenericAlias):
+            return params
+        return ()
+    if get_origin(tp) is not None and get_args(tp) == ():
+        return ()
+    return params
+
+
+if HAS_PY_39:
+    def eval_forward_ref(namespace: Dict[str, Any], forward_ref: ForwardRef):
+        # pylint: disable=protected-access
+        return forward_ref._evaluate(namespace, None, frozenset())
+else:
+    def eval_forward_ref(namespace: Dict[str, Any], forward_ref: ForwardRef):
+        # pylint: disable=protected-access
+        return forward_ref._evaluate(namespace, None)  # type: ignore[call-arg]

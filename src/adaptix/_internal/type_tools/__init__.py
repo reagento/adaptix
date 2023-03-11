@@ -10,5 +10,5 @@ from .basic_utils import (
     is_user_defined_generic,
     strip_alias,
 )
-from .norm_utils import is_generic, strip_tags
+from .norm_utils import strip_tags
 from .normalize_type import BaseNormType, NormParamSpecMarker, NormTV, make_norm_type, normalize_type
