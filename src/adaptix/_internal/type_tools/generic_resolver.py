@@ -1,5 +1,5 @@
 from dataclasses import dataclass, replace
-from typing import Callable, Dict, Generic, Hashable, Mapping, TypeVar, get_args
+from typing import Callable, Collection, Dict, Generic, Hashable, Mapping, TypeVar, get_args
 
 from ..common import TypeHint
 from .basic_utils import get_type_vars, get_type_vars_of_parametrized, is_generic, is_parametrized, strip_alias
@@ -12,6 +12,7 @@ K = TypeVar('K', bound=Hashable)
 @dataclass
 class MembersStorage(Generic[K, M]):
     members: Mapping[K, TypeHint]
+    overriden: Collection[K]
     meta: M
 
 
@@ -69,7 +70,11 @@ class GenericResolver(Generic[K, M]):
         return replace(
             members_storage,
             members={
-                key: bases_members[key] if key in bases_members else value
+                key: (
+                    bases_members[key]
+                    if key in bases_members and key not in members_storage.overriden else
+                    value
+                )
                 for key, value in members_storage.members.items()
             },
         )

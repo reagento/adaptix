@@ -94,6 +94,7 @@ def test_extra_none():
                 constructor=Valid1,
                 kwargs=None,
                 fields=VALID_FIELDS,
+                overriden_types=frozenset(fld.name for fld in VALID_FIELDS),
             ),
             output=None,
         )
@@ -109,6 +110,7 @@ def test_extra_kwargs():
                 constructor=Valid2Kwargs,
                 kwargs=ParamKwargs(Any),
                 fields=VALID_FIELDS,
+                overriden_types=frozenset(fld.name for fld in VALID_FIELDS),
             ),
             output=None,
         )
@@ -123,6 +125,7 @@ def test_extra_kwargs():
                 constructor=Valid2KwargsTyped,
                 kwargs=ParamKwargs(str),
                 fields=VALID_FIELDS,
+                overriden_types=frozenset(fld.name for fld in VALID_FIELDS),
             ),
             output=None,
         )
@@ -162,6 +165,7 @@ def test_pos_only():
                         param_name='b',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             ),
             output=None,
         )
@@ -200,6 +204,7 @@ def test_pos_only():
                         param_name='b',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             ),
             output=None,
         )
@@ -241,6 +246,7 @@ def test_annotated():
                         param_name='a',
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             ),
             output=None,
         )

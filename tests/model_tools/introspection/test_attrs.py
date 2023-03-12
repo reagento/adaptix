@@ -124,6 +124,7 @@ def test_new_style():
                         param_name='d',
                     ),
                 ),
+                overriden_types=frozenset({'a', '_b', 'd', 'e', 'f', 'g', 'h', 'i'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -191,6 +192,7 @@ def test_new_style():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a', '_b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'}),
             ),
         )
     )
@@ -231,6 +233,7 @@ def test_old_style():
                         param_name='b',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -249,6 +252,7 @@ def test_old_style():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             ),
         )
     )
@@ -306,6 +310,7 @@ def test_custom_init():
                         param_name='c',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', '_c'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -338,6 +343,7 @@ def test_custom_init():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', '_c', 'd'}),
             )
         )
     )
@@ -389,6 +395,7 @@ def test_custom_init_unknown_params():
                         param_name='c',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -407,6 +414,7 @@ def test_custom_init_unknown_params():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'other'}),
             )
         )
     )
@@ -447,6 +455,7 @@ def test_custom_init_kwargs():
                         param_name='a',
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -458,6 +467,7 @@ def test_custom_init_kwargs():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             ),
         )
     )
@@ -480,6 +490,7 @@ def test_custom_init_kwargs():
                         param_name='a',
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -491,6 +502,7 @@ def test_custom_init_kwargs():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             ),
         )
     )
@@ -520,6 +532,7 @@ def test_none_attr():
                         param_name='a',
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -531,6 +544,7 @@ def test_none_attr():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             ),
         )
     )
@@ -563,6 +577,7 @@ def test_none_attr_custom_init():
                         param_name='a',
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -574,6 +589,7 @@ def test_none_attr_custom_init():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             )
         )
     )
@@ -603,6 +619,7 @@ def test_annotated():
                         param_name='a',
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -614,6 +631,7 @@ def test_annotated():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a'}),
             )
         )
     )
@@ -629,4 +647,164 @@ def test_not_attrs():
 
     with pytest.raises(IntrospectionImpossible):
         get_attrs_figure(Tuple[IAmDataclass, int])
+
+
+def test_inheritance_new_style():
+    @define
+    class Parent:
+        a: int
+        b: int
+
+    @define
+    class Child(Parent):
+        a: int
+        c: int
+
+    assert (
+        get_attrs_figure(Child)
+        ==
+        Figure(
+            input=InputFigure(
+                constructor=Child,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        name='b',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='b',
+                    ),
+                    InputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=int,
+                        name='c',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='c',
+                    ),
+                ),
+                overriden_types=frozenset({'a', 'c'}),
+            ),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=int,
+                        name='b',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('b', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='c',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('c', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                ),
+                overriden_types=frozenset({'a', 'c'}),
+            )
+        )
+    )
+
+
+def test_inheritance_old_style():
+    @attr.s
+    class Parent:
+        a = attr.ib(type=int)
+        b = attr.ib(type=int)
+        d: int
+
+    @attr.s
+    class Child(Parent):
+        a = attr.ib(type=int)
+        c = attr.ib(type=int)
+        e: int
+
+    assert (
+        get_attrs_figure(Child)
+        ==
+        Figure(
+            input=InputFigure(
+                constructor=Child,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        name='b',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='b',
+                    ),
+                    InputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=int,
+                        name='c',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='c',
+                    ),
+                ),
+                overriden_types=frozenset({'a', 'c'}),
+            ),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=int,
+                        name='b',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('b', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='a',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('a', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='c',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('c', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                ),
+                overriden_types=frozenset({'a', 'c'}),
+            )
+        )
+    )
 

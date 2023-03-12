@@ -102,6 +102,7 @@ def test_input():
                         param_name='i',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c', 'd', 'e', 'i'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -141,6 +142,7 @@ def test_input():
                         metadata=MappingProxyType({'meta': 'data'}),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'd', 'e', 'f', 'i'}),
             )
         )
     )
@@ -184,6 +186,7 @@ def test_inheritance():
                         param_name='b',
                     ),
                 ),
+                overriden_types=frozenset({'b'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -202,6 +205,7 @@ def test_inheritance():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'b'}),
             ),
         )
     )
@@ -236,6 +240,7 @@ def test_forward_ref():
                         param_name='fr_field',
                     ),
                 ),
+                overriden_types=frozenset({'fr_field'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -247,6 +252,7 @@ def test_forward_ref():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'fr_field'}),
             ),
         )
     )
@@ -278,6 +284,7 @@ def test_forward_ref():
                         param_name='some_field',
                     ),
                 ),
+                overriden_types=frozenset({'some_field'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -296,6 +303,7 @@ def test_forward_ref():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'some_field'}),
             )
         )
     )
@@ -325,6 +333,7 @@ def test_annotated():
                         param_name='annotated_field',
                     ),
                 ),
+                overriden_types=frozenset({'annotated_field'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -336,6 +345,7 @@ def test_annotated():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'annotated_field'}),
             ),
         )
     )

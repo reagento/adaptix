@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Generic, Hashable, Mapping, Optional, TypeVar, Union
+from typing import Any, Callable, FrozenSet, Generic, Hashable, Mapping, Optional, TypeVar, Union
 
 from ..common import Catchable, TypeHint, VarTuple
 from ..struct_path import Attr, PathElement
@@ -177,6 +177,7 @@ class BaseFigure:
     See doc :class InputFigure: and :class OutputFigure: for more details
     """
     fields: VarTuple[BaseField]
+    overriden_types: FrozenSet[str]
     fields_dict: Mapping[str, BaseField] = field(init=False, hash=False, repr=False, compare=False)
 
     def _validate(self):
@@ -187,6 +188,10 @@ class BaseFigure:
                 if fld.name in field_names
             }
             raise ValueError(f"Field names {duplicates} are duplicated")
+
+        wild_overriden_types = self.overriden_types - field_names
+        if wild_overriden_types:
+            raise ValueError(f"overriden_types contains non existing fields {wild_overriden_types} ")
 
     def __post_init__(self):
         self._validate()

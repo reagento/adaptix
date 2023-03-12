@@ -73,6 +73,7 @@ def figure(*fields: InputField, kwargs: Optional[ParamKwargs] = None):
         fields=fields,
         constructor=gauge,
         kwargs=kwargs,
+        overriden_types=frozenset(fld.name for fld in fields),
     )
 
 

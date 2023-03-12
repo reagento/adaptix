@@ -18,11 +18,10 @@ from adaptix._internal.model_tools import (
 from adaptix._internal.model_tools.definitions import Figure
 from tests_helpers import requires
 
-FooAB = namedtuple('FooAB', 'a b')
-FooBA = namedtuple('FooBA', 'b a')
-
 
 def test_order_ab():
+    FooAB = namedtuple('FooAB', 'a b')
+
     assert (
         get_named_tuple_figure(FooAB)
         ==
@@ -50,6 +49,7 @@ def test_order_ab():
                         param_name='b',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -68,12 +68,15 @@ def test_order_ab():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             )
         )
     )
 
 
 def test_order_ba():
+    FooBA = namedtuple('FooBA', 'b a')
+
     assert (
         get_named_tuple_figure(FooBA)
         ==
@@ -101,6 +104,7 @@ def test_order_ba():
                         param_name='a',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -119,6 +123,7 @@ def test_order_ba():
                         accessor=AttrAccessor('a', is_required=True),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             ),
         )
     )
@@ -128,10 +133,9 @@ def func():
     return 0
 
 
-FooDefs = namedtuple('FooDefs', 'a b c', defaults=[0, func])
-
-
 def test_defaults():
+    FooDefs = namedtuple('FooDefs', 'a b c', defaults=[0, func])
+
     assert (
         get_named_tuple_figure(FooDefs)
         ==
@@ -168,6 +172,7 @@ def test_defaults():
                         param_name='c',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -193,15 +198,15 @@ def test_defaults():
                         accessor=AttrAccessor('c', is_required=True),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c'}),
             ),
         )
     )
 
 
-WithRename = namedtuple('WithRename', ['abc', 'def', 'ghi', 'abc'], defaults=[0], rename=True)
-
-
 def test_rename():
+    WithRename = namedtuple('WithRename', ['abc', 'def', 'ghi', 'abc'], defaults=[0], rename=True)
+
     assert (
         get_named_tuple_figure(WithRename)
         ==
@@ -247,6 +252,7 @@ def test_rename():
                         param_name='_3',
                     ),
                 ),
+                overriden_types=frozenset({'abc', '_1', 'ghi', '_3'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -279,15 +285,15 @@ def test_rename():
                         accessor=AttrAccessor('_3', is_required=True),
                     ),
                 ),
+                overriden_types=frozenset({'abc', '_1', 'ghi', '_3'}),
             ),
         )
     )
 
 
-BarA = NamedTuple('BarA', a=int, b=str)  # type: ignore[misc]
-
-
 def test_class_hinted_namedtuple():
+    BarA = NamedTuple('BarA', a=int, b=str)
+
     assert (
         get_named_tuple_figure(BarA)
         ==
@@ -315,6 +321,7 @@ def test_class_hinted_namedtuple():
                         param_name='b',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -333,21 +340,21 @@ def test_class_hinted_namedtuple():
                         accessor=AttrAccessor('b', is_required=True),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b'}),
             )
         )
 
     )
 
 
-# ClassVar is not supported in NamedTuple
-
-class BarB(NamedTuple):
-    a: int
-    b: str = 'abc'
-    c: 'bool' = False
-
-
 def test_hinted_namedtuple():
+    # ClassVar is not supported in NamedTuple
+
+    class BarB(NamedTuple):
+        a: int
+        b: str = 'abc'
+        c: 'bool' = False
+
     assert (
         get_named_tuple_figure(BarB)
         ==
@@ -384,6 +391,7 @@ def test_hinted_namedtuple():
                         param_name='c',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -409,20 +417,20 @@ def test_hinted_namedtuple():
                         accessor=AttrAccessor('c', is_required=True),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c'}),
             ),
         )
     )
 
 
-class Parent(NamedTuple):
-    a: int
-
-
-class Child(Parent):
-    b: str
-
 
 def test_inheritance():
+    class Parent(NamedTuple):
+        a: int
+
+    class Child(Parent):
+        b: str
+
     assert (
         get_named_tuple_figure(Child)
         ==
@@ -441,6 +449,7 @@ def test_inheritance():
                         param_name='a',
                     ),
                 ),
+                overriden_types=frozenset(),
             ),
             output=OutputFigure(
                 fields=(
@@ -452,6 +461,127 @@ def test_inheritance():
                         accessor=AttrAccessor('a', is_required=True),
                     ),
                 ),
+                overriden_types=frozenset(),
+            ),
+        )
+    )
+
+
+def test_inheritance_overriden_types():
+    class Parent(NamedTuple):
+        a: int
+        b: str
+
+    class Child(Parent):
+        a: bool
+        c: str
+
+    assert (
+        get_named_tuple_figure(Child)
+        ==
+        Figure(
+            input=InputFigure(
+                constructor=Child,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=bool,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=str,
+                        name='b',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='b',
+                    ),
+                ),
+                overriden_types=frozenset({'a'}),
+            ),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=bool,
+                        name='a',
+                        default=NoDefault(),
+                        metadata=MappingProxyType({}),
+                        accessor=AttrAccessor('a', is_required=True),
+                    ),
+                    OutputField(
+                        type=str,
+                        name='b',
+                        default=NoDefault(),
+                        metadata=MappingProxyType({}),
+                        accessor=AttrAccessor('b', is_required=True),
+                    ),
+                ),
+                overriden_types=frozenset({'a'}),
+            ),
+        )
+    )
+
+
+def test_inheritance_overriden_types_functional_parent():
+    Parent = namedtuple('Parent', 'a b')
+
+    class Child(Parent):
+        a: bool
+        c: str
+
+    assert (
+        get_named_tuple_figure(Child)
+        ==
+        Figure(
+            input=InputFigure(
+                constructor=Child,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=bool,
+                        name='a',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='a',
+                    ),
+                    InputField(
+                        type=Any,
+                        name='b',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='b',
+                    ),
+                ),
+                overriden_types=frozenset({'a'}),
+            ),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=bool,
+                        name='a',
+                        default=NoDefault(),
+                        metadata=MappingProxyType({}),
+                        accessor=AttrAccessor('a', is_required=True),
+                    ),
+                    OutputField(
+                        type=Any,
+                        name='b',
+                        default=NoDefault(),
+                        metadata=MappingProxyType({}),
+                        accessor=AttrAccessor('b', is_required=True),
+                    ),
+                ),
+                overriden_types=frozenset({'a'}),
             ),
         )
     )
@@ -480,6 +610,7 @@ def test_annotated():
                         param_name='annotated_field',
                     ),
                 ),
+                overriden_types=frozenset({'annotated_field'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -491,6 +622,7 @@ def test_annotated():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'annotated_field'}),
             ),
         )
     )

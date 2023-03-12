@@ -3,9 +3,8 @@ import warnings
 from dataclasses import MISSING as DC_MISSING, Field as DCField, fields as dc_fields, is_dataclass, replace
 from inspect import Parameter, Signature
 from types import MappingProxyType
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
-from ..common import TypeHint
 from ..feature_requirement import HAS_ATTRS_PKG, HAS_PY_39
 from ..model_tools.definitions import (
     AttrAccessor,
@@ -92,6 +91,11 @@ def get_callable_figure(func, params_slice=slice(0, None)) -> Figure[InputFigure
                 if param.kind != Parameter.VAR_KEYWORD
             ),
             kwargs=param_kwargs,
+            overriden_types=frozenset(
+                param.name
+                for param in params
+                if param.kind != Parameter.VAR_KEYWORD
+            ),
         ),
         output=None,
     )
@@ -107,6 +111,10 @@ def get_named_tuple_figure(tp) -> FullFigure:
         raise IntrospectionImpossible
 
     type_hints = get_all_type_hints(tp)
+    if tuple in tp.__bases__:
+        overriden_types = frozenset(tp._fields)
+    else:
+        overriden_types = frozenset(tp.__annotations__.keys() & set(tp._fields))
 
     # noinspection PyProtectedMember
     input_figure = InputFigure(
@@ -127,7 +135,8 @@ def get_named_tuple_figure(tp) -> FullFigure:
                 param_kind=ParamKind.POS_OR_KW,
             )
             for field_name in tp._fields
-        )
+        ),
+        overriden_types=overriden_types,
     )
 
     return Figure(
@@ -143,6 +152,7 @@ def get_named_tuple_figure(tp) -> FullFigure:
                 )
                 for fld in input_figure.fields
             ),
+            overriden_types=overriden_types,
         )
     )
 
@@ -181,11 +191,13 @@ def _get_td_hints(tp):
 
 
 def get_typed_dict_figure(tp) -> FullFigure:
+    # __annotations__ of TypedDict contains also parents type hints unlike any other classes,
+    # so overriden_types always contains all fields
     if not is_typed_dict_class(tp):
         raise IntrospectionImpossible
 
     requirement_determinant = _td_make_requirement_determinant(tp)
-
+    type_hints = _get_td_hints(tp)
     return Figure(
         input=InputFigure(
             constructor=tp,
@@ -199,9 +211,10 @@ def get_typed_dict_figure(tp) -> FullFigure:
                     param_kind=ParamKind.KW_ONLY,
                     param_name=name,
                 )
-                for name, tp in _get_td_hints(tp)
+                for name, tp in type_hints
             ),
             kwargs=None,
+            overriden_types=frozenset(tp.__annotations__.keys()),
         ),
         output=OutputFigure(
             fields=tuple(
@@ -212,8 +225,9 @@ def get_typed_dict_figure(tp) -> FullFigure:
                     accessor=ItemAccessor(name, requirement_determinant(name)),
                     metadata=MappingProxyType({}),
                 )
-                for name, tp in _get_td_hints(tp)
+                for name, tp in type_hints
             ),
+            overriden_types=frozenset(tp.__annotations__.keys()),
         ),
     )
 
@@ -266,11 +280,10 @@ def get_dataclass_figure(tp) -> FullFigure:
         raise IntrospectionImpossible
 
     name_to_dc_field = all_dc_fields(tp)
-
+    dc_fields_public = dc_fields(tp)
     init_params = list(
         inspect.signature(tp.__init__).parameters.keys()
     )[1:]
-
     type_hints = get_all_type_hints(tp)
 
     return Figure(
@@ -281,6 +294,10 @@ def get_dataclass_figure(tp) -> FullFigure:
                 for field_name in init_params
             ),
             kwargs=None,
+            overriden_types=frozenset(
+                field_name for field_name in init_params
+                if field_name in tp.__annotations__
+            ),
         ),
         output=OutputFigure(
             fields=tuple(
@@ -291,7 +308,11 @@ def get_dataclass_figure(tp) -> FullFigure:
                     accessor=AttrAccessor(field.name, True),
                     metadata=field.metadata,
                 )
-                for field in dc_fields(tp)
+                for field in dc_fields_public
+            ),
+            overriden_types=frozenset(
+                field.name for field in dc_fields_public
+                if field.name in tp.__annotations__
             ),
         )
     )
@@ -345,30 +366,16 @@ def _get_attrs_field_type(field, type_hints):
         return Any if field.type is None else field.type
 
 
-def _get_attrs_fields(tp, type_hints: Dict[str, TypeHint]) -> Iterable[BaseField]:
-    try:
-        fields_iterator = attrs.fields(tp)
-    except (TypeError, attrs.exceptions.NotAnAttrsClassError):
-        raise IntrospectionImpossible
-
-    return [
-        BaseField(
-            # if field is not annotated, type attribute will store None value
-            type=_get_attrs_field_type(field, type_hints),
-            default=_get_attrs_default(field),
-            metadata=field.metadata,
-            name=field.name,
-        )
-        for field in fields_iterator
-    ]
-
-
 NoneType = type(None)
 
 
-def _process_attr_input_field(field: InputField, base_fields_dict: Dict[str, BaseField], has_custom_init: bool):
+def _process_attr_input_field(
+    field: InputField,
+    param_name_to_base_field: Dict[str, BaseField],
+    has_custom_init: bool,
+):
     try:
-        base_field = base_fields_dict[field.name]
+        base_field = param_name_to_base_field[field.name]
     except KeyError:
         return field
 
@@ -412,39 +419,64 @@ def get_attrs_figure(tp) -> FullFigure:
 
     type_hints = get_all_type_hints(tp)
 
-    base_fields_dict = {
+    try:
+        attrs_fields = attrs.fields(tp)
+    except (TypeError, attrs.exceptions.NotAnAttrsClassError):
+        raise IntrospectionImpossible
+
+    attrs_fields_dict = {
+        field.name: field for field in attrs_fields
+    }
+    param_name_to_base_field = {
         _get_attr_param_name(field): field
-        for field in _get_attrs_fields(tp, type_hints)
+        for field in (
+            BaseField(
+                # if field is not annotated, type attribute will store None value
+                type=_get_attrs_field_type(field, type_hints),
+                default=_get_attrs_default(field),
+                metadata=field.metadata,
+                name=field.name,
+            )
+            for field in attrs_fields
+        )
     }
 
     has_custom_init = hasattr(tp, '__attrs_init__')
 
     figure = get_class_init_figure(tp)
-
+    input_fields = tuple(
+        _process_attr_input_field(field, param_name_to_base_field, has_custom_init)
+        for field in figure.input.fields
+    )
     input_figure = replace(
         figure.input,
-        fields=tuple(
-            _process_attr_input_field(field, base_fields_dict, has_custom_init)
-            for field in figure.input.fields
-        )
+        fields=input_fields,
+        overriden_types=frozenset(
+            (fld.name for fld in input_fields)
+            if has_custom_init else
+            (fld.name for fld in input_fields if not attrs_fields_dict[fld.name].inherited)
+        ),
     )
-
+    output_fields = tuple(
+        OutputField(
+            name=field.name,
+            type=_get_attrs_field_type(field, type_hints),
+            default=(
+                input_figure.fields_dict[field.name].default
+                if field.name in input_figure.fields_dict else
+                NoDefault()
+            ),
+            metadata=field.metadata,
+            accessor=AttrAccessor(field.name, is_required=True),
+        )
+        for field in param_name_to_base_field.values()
+    )
     return Figure(
         input=input_figure,
         output=OutputFigure(
-            fields=tuple(
-                OutputField(
-                    name=field.name,
-                    type=_get_attrs_field_type(field, type_hints),
-                    default=(
-                        input_figure.fields_dict[field.name].default
-                        if field.name in input_figure.fields_dict else
-                        NoDefault()
-                    ),
-                    metadata=field.metadata,
-                    accessor=AttrAccessor(field.name, is_required=True),
-                )
-                for field in _get_attrs_fields(tp, type_hints)
+            fields=output_fields,
+            overriden_types=frozenset(
+                fld.name for fld in output_fields if not attrs_fields_dict[fld.name].inherited
             ),
         ),
     )

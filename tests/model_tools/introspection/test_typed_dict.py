@@ -66,6 +66,7 @@ def test_total():
                         param_name='c',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -91,6 +92,7 @@ def test_total():
                         accessor=ItemAccessor('c', is_required=True),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c'}),
             ),
         )
     )
@@ -133,6 +135,7 @@ def test_non_total():
                         param_name='c',
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -158,6 +161,7 @@ def test_non_total():
                         accessor=ItemAccessor('c', is_required=False),
                     ),
                 ),
+                overriden_types=frozenset({'a', 'b', 'c'}),
             ),
         )
     )
@@ -198,6 +202,7 @@ def test_inheritance_first():
                         param_name='x',
                     ),
                 ),
+                overriden_types=frozenset({'x'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -209,6 +214,7 @@ def test_inheritance_first():
                         accessor=ItemAccessor('x', is_required=False),
                     ),
                 ),
+                overriden_types=frozenset({'x'}),
             ),
         )
     )
@@ -242,6 +248,7 @@ def test_inheritance_second():
                         param_name='y',
                     ),
                 ),
+                overriden_types=frozenset({'x', 'y'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -260,6 +267,7 @@ def test_inheritance_second():
                         accessor=ItemAccessor('y', is_required=True),
                     ),
                 ),
+                overriden_types=frozenset({'x', 'y'}),
             )
         )
     )
@@ -302,6 +310,7 @@ def test_inheritance_third():
                         param_name='z',
                     ),
                 ),
+                overriden_types=frozenset({'x', 'y', 'z'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -327,6 +336,7 @@ def test_inheritance_third():
                         accessor=ItemAccessor('z', is_required=False),
                     ),
                 ),
+                overriden_types=frozenset({'x', 'y', 'z'}),
             )
         )
     )
@@ -355,6 +365,7 @@ def test_annotated():
                         param_name='annotated_field',
                     ),
                 ),
+                overriden_types=frozenset({'annotated_field'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -366,6 +377,7 @@ def test_annotated():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'annotated_field'}),
             )
         )
     )
@@ -391,6 +403,7 @@ def test_annotated():
                         param_name='annotated_field',
                     ),
                 ),
+                overriden_types=frozenset({'annotated_field'}),
             ),
             output=OutputFigure(
                 fields=(
@@ -402,6 +415,7 @@ def test_annotated():
                         metadata=MappingProxyType({}),
                     ),
                 ),
+                overriden_types=frozenset({'annotated_field'}),
             )
         )
     )

@@ -111,6 +111,7 @@ def make_layouts(
         ),
         constructor=stub,
         kwargs=ParamKwargs(Any),
+        overriden_types=frozenset(fld.name for fld in fields),
     )
     output_figure = OutputFigure(
         fields=tuple(
@@ -126,6 +127,7 @@ def make_layouts(
             )
             for fld in fields
         ),
+        overriden_types=frozenset(fld.name for fld in fields),
     )
     retort = TestRetort(
         recipe=[

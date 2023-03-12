@@ -196,6 +196,10 @@ def strip_figure_fields(figure: Fig, skipped_fields: Collection[str]) -> Fig:
             field for field in figure.fields
             if field.name not in skipped_fields
         ),
+        overriden_types=frozenset(
+            field.name for field in figure.fields
+            if field.name not in skipped_fields
+        )
     )
 
 

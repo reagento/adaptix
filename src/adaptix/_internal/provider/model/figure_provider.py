@@ -146,10 +146,12 @@ class FigureGenericResolver(Generic[Fig]):
             return MembersStorage(
                 meta=None,
                 members={},
+                overriden=frozenset(),
             )
         return MembersStorage(
             meta=figure,
-            members={field.name: field.type for field in figure.fields}
+            members={field.name: field.type for field in figure.fields},
+            overriden=figure.overriden_types,
         )
 
 

@@ -48,6 +48,7 @@ def test_inconsistent_fields_order(first, second):
                     param_name='a',
                 ),
             ),
+            overriden_types=frozenset({'a'}),
         )
 
 
@@ -84,6 +85,7 @@ def _make_triple_iff(first, second, third):
                 param_name='c',
             ),
         ),
+        overriden_types=frozenset({'a', 'b', 'c'}),
     )
 
 
@@ -136,7 +138,8 @@ def test_name_duplicates():
                     param_kind=ParamKind.POS_OR_KW,
                     param_name='a2',
                 ),
-            )
+            ),
+            overriden_types=frozenset({'a'}),
         )
 
     with pytest.raises(ValueError):
@@ -162,7 +165,8 @@ def test_name_duplicates():
                     param_kind=ParamKind.POS_OR_KW,
                     param_name='a',
                 ),
-            )
+            ),
+            overriden_types=frozenset({'a1', 'a2'}),
         )
 
     with pytest.raises(ValueError):
@@ -182,7 +186,8 @@ def test_name_duplicates():
                     accessor=AttrAccessor("a", is_required=True),
                     metadata={},
                 ),
-            )
+            ),
+            overriden_types=frozenset({'a'}),
         )
 
 
@@ -196,4 +201,54 @@ def test_optional_and_positional_only():
             metadata={},
             param_kind=ParamKind.POS_ONLY,
             param_name='a',
+        )
+
+
+def test_non_existing_fields_overriden_types():
+    with pytest.raises(ValueError):
+        InputFigure(
+            constructor=stub_constructor,
+            kwargs=None,
+            fields=(
+                InputField(
+                    name="a",
+                    type=int,
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata={},
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='a',
+                ),
+                InputField(
+                    name="b",
+                    type=int,
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata={},
+                    param_kind=ParamKind.POS_OR_KW,
+                    param_name='b',
+                ),
+            ),
+            overriden_types=frozenset({'c'}),
+        )
+
+    with pytest.raises(ValueError):
+        OutputFigure(
+            fields=(
+                OutputField(
+                    name="a",
+                    type=int,
+                    default=NoDefault(),
+                    accessor=AttrAccessor("a", is_required=True),
+                    metadata={},
+                ),
+                OutputField(
+                    name="b",
+                    type=int,
+                    default=NoDefault(),
+                    accessor=AttrAccessor("b", is_required=True),
+                    metadata={},
+                ),
+            ),
+            overriden_types=frozenset({'c'}),
         )

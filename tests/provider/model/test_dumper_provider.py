@@ -46,7 +46,7 @@ def field(name: str, accessor: Accessor):
 
 
 def figure(*fields: OutputField):
-    return OutputFigure(fields=fields)
+    return OutputFigure(fields=fields, overriden_types=frozenset(fld.name for fld in fields))
 
 
 def int_dumper(data):
