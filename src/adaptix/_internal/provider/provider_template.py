@@ -1,33 +1,32 @@
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Collection, Type, TypeVar, final
+from typing import Collection, Optional, Type, TypeVar, final
 
 from ..common import Dumper, Loader, TypeHint
 from ..load_error import TypeLoadError
 from ..type_tools import create_union, normalize_type
-from .essential import Mediator, Provider, Request
+from .essential import Mediator, Provider
 from .request_cls import DumperRequest, LoaderRequest, LocMap, StrictCoercionRequest, TypeHintLoc
-from .request_filtering import ExactOriginRC, RequestChecker, match_origin
+from .request_filtering import AnyRequestChecker, ExactOriginRC, ProviderWithRC, RequestChecker, match_origin
 from .static_provider import StaticProvider, static_provision_action
 
 T = TypeVar('T')
 
 
-class ProviderWithRC(StaticProvider):
-    def _check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
-        pass
+class ProviderWithAttachableRC(StaticProvider, ProviderWithRC):
+    _request_checker: RequestChecker = AnyRequestChecker()
+
+    def get_request_checker(self) -> Optional[RequestChecker]:
+        return self._request_checker
 
 
-def attach_request_checker(checker: RequestChecker, cls: Type[ProviderWithRC]):
-    if not (isinstance(cls, type) and issubclass(cls, ProviderWithRC)):
-        raise TypeError(f"Only {ProviderWithRC} child is allowed")
+def attach_request_checker(checker: RequestChecker, cls: Type[ProviderWithAttachableRC]):
+    if not (isinstance(cls, type) and issubclass(cls, ProviderWithAttachableRC)):
+        raise TypeError(f"Only {ProviderWithAttachableRC} child is allowed")
 
     # noinspection PyProtectedMember
     # pylint: disable=protected-access
-    if cls._check_request is not ProviderWithRC._check_request:
-        raise RuntimeError("Can not attach request checker twice")
-
-    cls._check_request = checker.check_request  # type: ignore
+    cls._request_checker = checker
     return cls
 
 
@@ -38,11 +37,11 @@ def for_origin(tp: TypeHint):
     )
 
 
-class LoaderProvider(ProviderWithRC, ABC):
+class LoaderProvider(ProviderWithAttachableRC, ABC):
     @final
     @static_provision_action
     def _outer_provide_loader(self, mediator: Mediator, request: LoaderRequest):
-        self._check_request(mediator, request)
+        self._request_checker.check_request(mediator, request)
         return self._provide_loader(mediator, request)
 
     @abstractmethod
@@ -50,11 +49,11 @@ class LoaderProvider(ProviderWithRC, ABC):
         ...
 
 
-class DumperProvider(ProviderWithRC, ABC):
+class DumperProvider(ProviderWithAttachableRC, ABC):
     @final
     @static_provision_action
     def _outer_provide_dumper(self, mediator: Mediator, request: DumperRequest):
-        self._check_request(mediator, request)
+        self._request_checker.check_request(mediator, request)
         return self._provide_dumper(mediator, request)
 
     @abstractmethod
@@ -104,14 +103,17 @@ class CoercionLimiter(LoaderProvider):
     def __repr__(self):
         return f"{type(self).__name__}({self.loader_provider}, {self.allowed_strict_origins})"
 
+    def get_request_checker(self) -> Optional[RequestChecker]:
+        if isinstance(self.loader_provider, ProviderWithRC):
+            return self.loader_provider.get_request_checker()
+        return None
+
 
 class ABCProxy(LoaderProvider, DumperProvider):
     def __init__(self, abstract: TypeHint, impl: TypeHint):
         self._abstract = normalize_type(abstract).origin
         self._impl = impl
-
-    def _check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
-        ExactOriginRC(self._abstract).check_request(mediator, request)
+        self._request_checker = ExactOriginRC(self._abstract)
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return mediator.provide(

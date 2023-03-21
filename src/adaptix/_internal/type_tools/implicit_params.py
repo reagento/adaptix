@@ -12,7 +12,7 @@ from .basic_utils import create_union, eval_forward_ref, is_user_defined_generic
 class ImplicitParamsGetter:
     ONE_ANY_STR_PARAM = [re.Pattern, re.Match]
 
-    TYPE_PARAM_CNT = {
+    TYPE_PARAM_COUNT = {
         type: 1,
         list: 1,
         set: 1,
@@ -55,7 +55,7 @@ class ImplicitParamsGetter:
                 for param in origin.__parameters__
             )
 
-        count = self.TYPE_PARAM_CNT.get(origin, 0)
+        count = self.TYPE_PARAM_COUNT.get(origin, 0)
         return tuple(Any for _ in range(count))
 
 

@@ -3,12 +3,12 @@ from abc import ABC, abstractmethod
 from copy import copy
 from dataclasses import dataclass
 from inspect import isabstract
-from typing import Any, ClassVar, Iterable, Optional, Pattern, Protocol, Sequence, Type, TypeVar, Union
+from typing import Any, ClassVar, Iterable, Optional, Pattern, Protocol, Sequence, Tuple, Type, TypeVar, Union
 
 from ..common import TypeHint, VarTuple
 from ..type_tools import BaseNormType, NormTV, is_parametrized, is_protocol, is_subclass_soft, normalize_type
 from ..type_tools.normalize_type import NotSubscribedError
-from .essential import CannotProvide, Request
+from .essential import CannotProvide, Mediator, Provider, Request
 from .request_cls import FieldLoc, LocatedRequest, Location, TypeHintLoc
 
 T = TypeVar('T')
@@ -41,6 +41,12 @@ class RequestChecker(ABC):
 
     def __invert__(self) -> 'RequestChecker':
         return NegRequestChecker(self)
+
+
+class ProviderWithRC(Provider, ABC):
+    @abstractmethod
+    def get_request_checker(self) -> Optional[RequestChecker]:
+        ...
 
 
 class OrRequestChecker(RequestChecker):
@@ -177,6 +183,29 @@ class ExactOriginRC(LocatedRequestChecker):
         if normalize_type(loc.type).origin == self.origin:
             return
         raise CannotProvide(f'{loc.type} must have origin {self.origin}')
+
+
+class ExactOriginMergedProvider(Provider):
+    def __init__(self, origins_to_providers: Sequence[Tuple[ExactOriginRC, Provider]]):
+        self.origin_to_provider = {
+            request_checker.origin: provider
+            for request_checker, provider in reversed(origins_to_providers)
+        }
+
+    def apply_provider(self, mediator: Mediator[T], request: Request[T]) -> T:
+        if not isinstance(request, LocatedRequest):
+            raise CannotProvide(f'Request must be instance of {LocatedRequest}')
+
+        loc = request.loc_map.get_or_raise(
+            TypeHintLoc,
+            lambda: CannotProvide(f'Request location must be instance of {TypeHintLoc}')
+        )
+        try:
+            provider = self.origin_to_provider[normalize_type(loc.type).origin]
+        except KeyError:
+            raise CannotProvide
+
+        return provider.apply_provider(mediator, request)
 
 
 class RequestStackCutter(DirectMediator):

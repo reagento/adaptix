@@ -4,7 +4,7 @@ from typing import ClassVar, Iterable, Optional, Sequence, TypeVar
 from ..common import VarTuple
 from ..provider import Mediator, Provider, Request
 from ..utils import Cloneable, ForbiddingDescriptor
-from .mediator import BuiltinMediator, RawRecipeSearcher, RecipeSearcher, RecursionResolving
+from .mediator import BuiltinMediator, IntrospectingRecipeSearcher, RecipeSearcher, RecursionResolving
 
 
 class RetortMeta(ABCMeta):  # inherits from ABCMeta to be compatible with ABC
@@ -62,9 +62,13 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
             + self._get_config_recipe()
             + self._full_class_recipe
         )
+        self._searcher = self._create_searcher(self._full_recipe)
+
+    def _create_searcher(self, full_recipe: Sequence[Provider]) -> RecipeSearcher:
+        return IntrospectingRecipeSearcher(full_recipe)
 
     def _get_searcher(self) -> RecipeSearcher:
-        return RawRecipeSearcher(recipe=self._get_full_recipe())
+        return self._searcher
 
     @abstractmethod
     def _get_recursion_resolving(self) -> RecursionResolving:

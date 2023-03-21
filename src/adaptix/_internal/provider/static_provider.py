@@ -5,6 +5,7 @@ from typing import Callable, ClassVar, Dict, Iterable, Type, TypeVar, final, ove
 from ..type_tools import is_subclass_soft, normalize_type, strip_tags
 from ..utils import ClassDispatcher
 from .essential import CannotProvide, Mediator, Provider, Request
+from .provider_basics import RequestClassDeterminedProvider
 
 __all__ = ('StaticProvider', 'static_provision_action', 'RequestDispatcher')
 
@@ -87,7 +88,7 @@ def _make_spa_decorator(request_cls: Type[R]):
     return spa_decorator
 
 
-class StaticProvider(Provider):
+class StaticProvider(RequestClassDeterminedProvider):
     """Provider which instances can process same set of Request classes.
 
     Subclass defines provision actions wrapping method by decorator
@@ -127,6 +128,14 @@ class StaticProvider(Provider):
             raise CannotProvide
 
         return getattr(self, attr_name)(mediator, request)
+
+    @final
+    def maybe_can_process_request_cls(self, request_cls: Type[Request]) -> bool:
+        try:
+            self._sp_cls_request_dispatcher.dispatch(request_cls)
+        except KeyError:
+            return False
+        return True
 
 
 def _rc_attached_to_several_spa(cls: type, name1: str, name2: str, rc: Type[Request]):

@@ -8,11 +8,10 @@ from typing import Type, TypeVar, Union
 
 from ..common import Dumper, Loader
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
-from ..type_tools import normalize_type
-from .essential import CannotProvide, Mediator, Request
-from .provider_template import DumperProvider, LoaderProvider, ProviderWithRC, for_origin
+from .essential import CannotProvide, Mediator
+from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC, for_origin
 from .request_cls import DumperRequest, LoaderRequest, TypeHintLoc
-from .request_filtering import ExactTypeRC
+from .request_filtering import create_request_checker
 
 T = TypeVar('T')
 
@@ -22,14 +21,11 @@ def stub(arg):
 
 
 @dataclass
-class ForAnyDateTime(ProviderWithRC):
+class ForAnyDateTime(ProviderWithAttachableRC):
     cls: Type[Union[date, time]]
 
     def __post_init__(self):
-        self._request_checker = ExactTypeRC(normalize_type(self.cls))
-
-    def _check_request(self, mediator: Mediator[T], request: Request[T]) -> None:
-        self._request_checker.check_request(mediator, request)
+        self._request_checker = create_request_checker(self.cls)
 
 
 @dataclass

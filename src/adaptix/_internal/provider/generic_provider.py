@@ -22,6 +22,7 @@ from .request_cls import (
     TypeHintLoc,
     get_type_from_request,
 )
+from .request_filtering import DirectMediator, RequestChecker
 from .static_provider import StaticProvider, static_provision_action
 
 
@@ -552,8 +553,8 @@ class DictProvider(LoaderProvider, DumperProvider):
         return dict_dumper
 
 
-class BaseEnumProvider(LoaderProvider, DumperProvider, ABC):
-    def _check_request(self, mediator: Mediator, request: Request) -> None:
+class AnyEnumRC(RequestChecker):
+    def check_request(self, mediator: DirectMediator, request: Request) -> None:
         if not isinstance(request, LocatedRequest):
             raise CannotProvide
 
@@ -561,6 +562,10 @@ class BaseEnumProvider(LoaderProvider, DumperProvider, ABC):
 
         if not isinstance(norm.origin, EnumMeta):
             raise CannotProvide
+
+
+class BaseEnumProvider(LoaderProvider, DumperProvider, ABC):
+    _request_checker = AnyEnumRC()
 
 
 def _enum_name_dumper(data):

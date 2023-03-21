@@ -1,13 +1,20 @@
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Generic, Type, TypeVar
+from typing import Generic, Optional, Type, TypeVar
 
 from .essential import CannotProvide, Mediator, Provider, Request
-from .request_filtering import RequestChecker
+from .request_filtering import ProviderWithRC, RequestChecker
 
 T = TypeVar('T')
 
 
-class BoundingProvider(Provider):
+class RequestClassDeterminedProvider(Provider, ABC):
+    @abstractmethod
+    def maybe_can_process_request_cls(self, request_cls: Type[Request]) -> bool:
+        ...
+
+
+class BoundingProvider(RequestClassDeterminedProvider, ProviderWithRC):
     def __init__(self, request_checker: RequestChecker, provider: Provider):
         self._request_checker = request_checker
         self._provider = provider
@@ -19,8 +26,16 @@ class BoundingProvider(Provider):
     def __repr__(self):
         return f"{type(self).__name__}({self._request_checker}, {self._provider})"
 
+    def maybe_can_process_request_cls(self, request_cls: Type[Request]) -> bool:
+        if isinstance(self._provider, RequestClassDeterminedProvider):
+            return self._provider.maybe_can_process_request_cls(request_cls)
+        return True
 
-class ValueProvider(Provider, Generic[T]):
+    def get_request_checker(self) -> Optional[RequestChecker]:
+        return self._request_checker
+
+
+class ValueProvider(RequestClassDeterminedProvider, Generic[T]):
     def __init__(self, request_cls: Type[Request[T]], value: T):
         self._request_cls = request_cls
         self._value = value
@@ -34,8 +49,11 @@ class ValueProvider(Provider, Generic[T]):
     def __repr__(self):
         return f"{type(self).__name__}({self._request_cls}, {self._value})"
 
+    def maybe_can_process_request_cls(self, request_cls: Type[Request]) -> bool:
+        return issubclass(request_cls, self._request_cls)
 
-class ConcatProvider(Provider):
+
+class ConcatProvider(RequestClassDeterminedProvider):
     def __init__(self, *providers: Provider):
         self._providers = providers
 
@@ -53,13 +71,20 @@ class ConcatProvider(Provider):
     def __repr__(self):
         return f"{type(self).__name__}({self._providers})"
 
+    def maybe_can_process_request_cls(self, request_cls: Type[Request]) -> bool:
+        return any(
+            not isinstance(provider, RequestClassDeterminedProvider)
+            or provider.maybe_can_process_request_cls(request_cls)
+            for provider in self._providers
+        )
+
 
 class Chain(Enum):
     FIRST = 'FIRST'
     LAST = 'LAST'
 
 
-class ChainingProvider(Provider):
+class ChainingProvider(RequestClassDeterminedProvider):
     def __init__(self, chain: Chain, provider: Provider):
         self._chain = chain
         self._provider = provider
@@ -79,3 +104,8 @@ class ChainingProvider(Provider):
             return second(first(data))
 
         return chain_processor
+
+    def maybe_can_process_request_cls(self, request_cls: Type[Request]) -> bool:
+        if isinstance(self._provider, RequestClassDeterminedProvider):
+            return self._provider.maybe_can_process_request_cls(request_cls)
+        return True

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, fields
 from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, Optional, Type, TypeVar
 
+from ..type_tools import strip_alias
 from ..utils import ClassDispatcher, Omitted
 from .essential import CannotProvide, Mediator
 from .provider_basics import Chain
@@ -25,7 +26,13 @@ class Overlay(Generic[Sc]):
     _mergers: ClassVar[Optional[Mapping[str, Merger]]]
 
     def __init_subclass__(cls, *args, **kwargs):
-        cls._schema_cls = cls.__orig_bases__[0].__args__[0]  # pylint: disable=no-member
+        for base in cls.__orig_bases__:  # pylint: disable=no-member
+            if strip_alias(base) == Overlay:
+                cls._schema_cls = base.__args__[0]
+                break
+        else:
+            raise ValueError
+
         cls._mergers = None
 
     def _default_merge(self, old: Any, new: Any) -> Any:

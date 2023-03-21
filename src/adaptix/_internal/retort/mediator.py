@@ -1,8 +1,11 @@
 from abc import ABC, abstractmethod
 from itertools import islice
-from typing import Any, Callable, Dict, Generic, Iterable, Sequence, Tuple, TypeVar
+from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Set, Tuple, Type, TypeVar
 
+from ..common import TypeHint
 from ..provider import CannotProvide, Mediator, Provider, Request
+from ..provider.provider_basics import RequestClassDeterminedProvider
+from ..provider.request_filtering import ExactOriginMergedProvider, ExactOriginRC, ProviderWithRC
 from ..utils import ClassDispatcher
 
 T = TypeVar('T')
@@ -125,3 +128,105 @@ class RawRecipeSearcher(RecipeSearcher):
 
     def get_max_offset(self) -> int:
         return len(self.recipe)
+
+
+class Combiner(ABC):
+    @abstractmethod
+    def add_element(self, provider: Provider) -> bool:
+        ...
+
+    @abstractmethod
+    def combine_elements(self) -> Sequence[Provider]:
+        ...
+
+    @abstractmethod
+    def has_elements(self) -> bool:
+        ...
+
+
+class ExactOriginCombiner(Combiner):
+    def __init__(self) -> None:
+        self._combo: List[Tuple[ExactOriginRC, Provider]] = []
+        self._origins: Set[TypeHint] = set()
+
+    def add_element(self, provider: Provider) -> bool:
+        if not isinstance(provider, ProviderWithRC):
+            return False
+        request_checker = provider.get_request_checker()
+        if request_checker is None:
+            return False
+        if not isinstance(request_checker, ExactOriginRC):
+            return False
+        if request_checker.origin in self._origins:
+            return False
+
+        self._combo.append((request_checker, provider))
+        self._origins.add(request_checker.origin)
+        return True
+
+    def combine_elements(self) -> Sequence[Provider]:
+        if len(self._combo) == 1:
+            return [self._combo[0][1]]
+
+        merged_provider = ExactOriginMergedProvider(self._combo)
+        self._combo.clear()
+        self._origins.clear()
+        return [merged_provider]
+
+    def has_elements(self) -> bool:
+        return bool(self._combo)
+
+
+class IntrospectingRecipeSearcher(RecipeSearcher):
+    def __init__(self, recipe: Sequence[Provider]):
+        self._recipe = recipe
+        self._cls_to_recipe: Dict[Type[Request], Sequence[Provider]] = {}
+
+    def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
+        request_cls = type(request)
+        try:
+            sub_recipe = self._cls_to_recipe[request_cls]
+        except KeyError:
+            sub_recipe = self._collect_candidates(request_cls, self._recipe)
+            self._cls_to_recipe[request_cls] = sub_recipe
+
+        for i, provider in enumerate(
+            islice(sub_recipe, search_offset, None),
+            start=search_offset
+        ):
+            yield provider.apply_provider, i + 1
+
+    def _create_combiner(self) -> Combiner:
+        return ExactOriginCombiner()
+
+    def _merge_providers(self, recipe: Sequence[Provider]) -> Sequence[Provider]:
+        combiner = self._create_combiner()
+
+        result: List[Provider] = []
+        for provider in recipe:
+            is_added = combiner.add_element(provider)
+            if not is_added:
+                if combiner.has_elements():
+                    result.extend(combiner.combine_elements())
+                result.append(provider)
+
+        if combiner.has_elements():
+            result.extend(combiner.combine_elements())
+        return result
+
+    def _collect_candidates(self, request_cls: Type[Request], recipe: Sequence[Provider]) -> Sequence[Provider]:
+        candidates = [
+            provider
+            for i, provider in enumerate(recipe)
+            if (
+                not isinstance(provider, RequestClassDeterminedProvider)
+                or provider.maybe_can_process_request_cls(request_cls)
+            )
+        ]
+        return self._merge_providers(candidates)
+
+    def clear_cache(self):
+        self._cls_to_recipe = {}
+
+    def get_max_offset(self) -> int:
+        return len(self._recipe)

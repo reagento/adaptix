@@ -47,7 +47,8 @@ def provide_overlay_schema(recipe: Iterable[Provider], provide_action: Callable[
             SampleRequestProvider(provide_action),
         ]
     )
-    return retort.provide(SampleRequest())
+    result = retort.provide(SampleRequest())
+    return result
 
 
 def test_simple():
