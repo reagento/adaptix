@@ -29,7 +29,6 @@ class FigureProvider(StaticProvider):
     @static_provision_action
     def _provide_input_figure(self, mediator: Mediator, request: InputFigureRequest) -> InputFigure:
         loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
-
         try:
             figure = self._introspector(loc.type)
         except IntrospectionImpossible:

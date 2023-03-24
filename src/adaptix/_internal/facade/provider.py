@@ -15,9 +15,10 @@ from ..provider import (
     EnumExactValueProvider,
     EnumNameProvider,
     EnumValueProvider,
-    InputFigureRequest,
     LoaderRequest,
     LoadError,
+    ModelLoaderProvider,
+    NameSanitizer,
     NameStyle,
     OrRequestChecker,
     PropertyAdder,
@@ -26,6 +27,7 @@ from ..provider import (
     ValueProvider,
     create_request_checker,
 )
+from ..provider.model.loader_provider import InlinedInputExtractionMaker, make_input_creation
 from ..provider.name_layout.base import ExtraIn, ExtraOut
 from ..provider.name_layout.component import (
     ExtraMoveAndPoliciesOverlay,
@@ -126,11 +128,13 @@ def as_is_dumper(pred: Any) -> Provider:
 
 
 def constructor(pred: Any, func: Callable) -> Provider:
+    input_figure = get_callable_figure(func).input
     return bound(
         pred,
-        ValueProvider(
-            InputFigureRequest,
-            get_callable_figure(func).input,
+        ModelLoaderProvider(
+            NameSanitizer(),
+            InlinedInputExtractionMaker(input_figure),
+            make_input_creation,
         ),
     )
 

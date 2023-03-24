@@ -2,7 +2,7 @@ from dataclasses import dataclass, fields
 from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, Optional, Type, TypeVar
 
 from ..type_tools import strip_alias
-from ..utils import ClassDispatcher, Omitted
+from ..utils import ClassMap, Omitted
 from .essential import CannotProvide, Mediator
 from .provider_basics import Chain
 from .request_cls import LocatedRequest, LocMap, TypeHintLoc
@@ -109,13 +109,12 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_map: LocM
 class OverlayProvider(StaticProvider):
     def __init__(self, overlays: Iterable[Overlay], chain: Optional[Chain]):
         self._chain = chain
-        self._overlays = overlays
-        self._dispatcher = ClassDispatcher({type(overlay): overlay for overlay in overlays})
+        self._overlays = ClassMap(*overlays)
 
     @static_provision_action
     def _provide_overlay(self, mediator: Mediator, request: OverlayRequest):
         try:
-            overlay = self._dispatcher.dispatch(request.overlay_cls)
+            overlay = self._overlays[request.overlay_cls]
         except KeyError:
             raise CannotProvide
 

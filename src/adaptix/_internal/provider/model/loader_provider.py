@@ -45,8 +45,11 @@ class InputCreationMaker(Protocol):
 
 
 class BuiltinInputExtractionMaker(InputExtractionMaker):
+    def _fetch_figure(self, mediator: Mediator, request: LoaderRequest) -> InputFigure:
+        return provide_generic_resolved_figure(mediator, InputFigureRequest(loc_map=request.loc_map))
+
     def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure, InpExtraMove]:
-        figure = provide_generic_resolved_figure(mediator, InputFigureRequest(loc_map=request.loc_map))
+        figure = self._fetch_figure(mediator, request)
 
         name_layout: InputNameLayout = mediator.provide(
             InputNameLayoutRequest(
@@ -141,6 +144,15 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
             debug_path=debug_path,
             field_loaders=field_loaders,
         )
+
+
+class InlinedInputExtractionMaker(BuiltinInputExtractionMaker):
+    def __init__(self, figure: InputFigure):
+        self._figure = figure
+        super().__init__()
+
+    def _fetch_figure(self, mediator: Mediator, request: LoaderRequest) -> InputFigure:
+        return self._figure
 
 
 def make_input_creation(
