@@ -85,11 +85,11 @@ LeafCr = TypeVar('LeafCr', bound=LeafBaseCrown)
 
 def location_to_string(request: LocatedRequest) -> str:
     loc_map = request.loc_map
-    if loc_map.contains(TypeHintLoc, FieldLoc):
+    if loc_map.has(TypeHintLoc, FieldLoc):
         return f' at type {loc_map[TypeHintLoc].type} that situated at field {request.loc_map[FieldLoc].name!r}'
-    if loc_map.contains(TypeHintLoc):
+    if loc_map.has(TypeHintLoc):
         return f' at type {loc_map[TypeHintLoc].type}'
-    if loc_map.contains(FieldLoc):
+    if loc_map.has(FieldLoc):
         return f' situated at field {request.loc_map[FieldLoc].name!r}'
     return ''
 

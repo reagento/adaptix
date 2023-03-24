@@ -156,6 +156,6 @@ class FigureGenericResolver(Generic[Fig]):
 
 
 def provide_generic_resolved_figure(mediator: Mediator, request: LocatedRequest[Fig]) -> Fig:
-    if not request.loc_map.contains(TypeHintLoc):
+    if not request.loc_map.has(TypeHintLoc):
         return mediator.provide(request)
     return FigureGenericResolver(mediator, request).provide()

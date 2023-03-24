@@ -89,7 +89,7 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_map: LocM
         )
     )
 
-    if loc_map.contains(TypeHintLoc) and isinstance(loc_map[TypeHintLoc].type, type):
+    if loc_map.has(TypeHintLoc) and isinstance(loc_map[TypeHintLoc].type, type):
         for parent in loc_map[TypeHintLoc].type.mro()[1:]:
             try:
                 new_overlay = mediator.provide(

@@ -171,7 +171,7 @@ class ModelDumperProvider(DumperProvider):
         )
 
     def _get_closure_name(self, request: DumperRequest) -> str:
-        if request.loc_map.contains(TypeHintLoc):
+        if request.loc_map.has(TypeHintLoc):
             tp = request.loc_map[TypeHintLoc].type
             if isinstance(tp, type):
                 name = tp.__name__

@@ -218,7 +218,7 @@ class ClassMap(Generic[T]):
     def __contains__(self, item):
         return item in self._mapping
 
-    def contains(self, *classes: Type[T]) -> bool:
+    def has(self, *classes: Type[T]) -> bool:
         return all(key in self._mapping for key in classes)
 
     def get_or_raise(
