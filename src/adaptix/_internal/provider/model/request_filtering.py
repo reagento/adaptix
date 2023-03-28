@@ -11,8 +11,5 @@ class AnyModelRC(RequestChecker):
 
         try:
             mediator.provide(InputFigureRequest(loc_map=request.loc_map))
-            return
         except CannotProvide:
-            pass
-
-        mediator.provide(OutputFigureRequest(loc_map=request.loc_map))
+            mediator.provide(OutputFigureRequest(loc_map=request.loc_map))

@@ -4,7 +4,7 @@ from decimal import Decimal
 from fractions import Fraction
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
-from pathlib import Path
+from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 from typing import Any, ByteString, Iterable, Mapping, MutableMapping, Optional, Type, TypeVar, overload
 from uuid import UUID
 
@@ -98,7 +98,10 @@ class FilledRetort(OperatingRetort, ABC):
                 dumper(tp, tp.__str__),  # type: ignore[arg-type]
             )
             for tp in [
-                UUID, Path,
+                UUID,
+                PurePath, Path,
+                PurePosixPath, PosixPath,
+                PureWindowsPath, WindowsPath,
                 IPv4Address, IPv6Address,
                 IPv4Network, IPv6Network,
                 IPv4Interface, IPv6Interface,
