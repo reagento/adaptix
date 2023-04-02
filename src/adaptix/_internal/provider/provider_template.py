@@ -1,12 +1,18 @@
 from abc import ABC, abstractmethod
-from functools import partial
 from typing import Optional, Type, TypeVar, final
 
 from ..common import Dumper, Loader, TypeHint
 from ..type_tools import normalize_type
 from .essential import Mediator
 from .request_cls import DumperRequest, LoaderRequest, LocMap, TypeHintLoc
-from .request_filtering import AnyRequestChecker, ExactOriginRC, ProviderWithRC, RequestChecker, match_origin
+from .request_filtering import (
+    AnyRequestChecker,
+    ExactOriginRC,
+    Pred,
+    ProviderWithRC,
+    RequestChecker,
+    create_request_checker,
+)
 from .static_provider import StaticProvider, static_provision_action
 
 T = TypeVar('T')
@@ -19,21 +25,17 @@ class ProviderWithAttachableRC(StaticProvider, ProviderWithRC):
         return self._request_checker
 
 
-def attach_request_checker(checker: RequestChecker, cls: Type[ProviderWithAttachableRC]):
-    if not (isinstance(cls, type) and issubclass(cls, ProviderWithAttachableRC)):
-        raise TypeError(f"Only {ProviderWithAttachableRC} child is allowed")
+def for_predicate(pred: Pred):
+    def decorator(cls: Type[ProviderWithAttachableRC]):
+        if not (isinstance(cls, type) and issubclass(cls, ProviderWithAttachableRC)):
+            raise TypeError(f"Only {ProviderWithAttachableRC} child is allowed")
 
-    # noinspection PyProtectedMember
-    # pylint: disable=protected-access
-    cls._request_checker = checker
-    return cls
+        # noinspection PyProtectedMember
+        # pylint: disable=protected-access
+        cls._request_checker = create_request_checker(pred)
+        return cls
 
-
-def for_origin(tp: TypeHint):
-    return partial(
-        attach_request_checker,
-        match_origin(tp)
-    )
+    return decorator
 
 
 class LoaderProvider(ProviderWithAttachableRC, ABC):

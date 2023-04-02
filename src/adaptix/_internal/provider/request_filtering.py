@@ -244,27 +244,6 @@ class AnyRequestChecker(RequestChecker):
         return
 
 
-def _create_origin_request_checker(norm: BaseNormType) -> RequestChecker:
-    if is_protocol(norm.origin) or isabstract(norm.origin):
-        return OriginSubclassRC(norm.origin)
-
-    return ExactOriginRC(norm.origin)
-
-
-def match_origin(tp: TypeHint) -> RequestChecker:
-    if is_parametrized(tp):
-        raise ValueError("TypeHint must be not parametrized")
-
-    try:
-        norm = normalize_type(tp)
-    except NotSubscribedError:
-        return ExactOriginRC(tp)
-    except ValueError:
-        raise ValueError(f'Can not create RequestChecker from {tp}')
-
-    return _create_origin_request_checker(norm)
-
-
 Pred = Union[str, re.Pattern, type, TypeHint, RequestChecker, 'RequestPattern']
 
 
@@ -302,12 +281,9 @@ def create_request_checker(pred: Pred) -> RequestChecker:
         raise ValueError(f'Can not create RequestChecker from {pred} type var')
 
     if not is_parametrized(pred):
-        if norm.args:
-            raise ValueError(
-                f'Can not create RequestChecker from non-parametrized generic {pred}.'
-                f' You should parametrize it or wrap with match_origin()'
-            )
-        return _create_origin_request_checker(norm)
+        if is_protocol(norm.origin) or isabstract(norm.origin):
+            return OriginSubclassRC(norm.origin)
+        return ExactOriginRC(norm.origin)
 
     return ExactTypeRC(norm)
 

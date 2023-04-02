@@ -11,7 +11,7 @@ from ..struct_path import append_path
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
 from ..utils import ClassDispatcher
 from .essential import CannotProvide, Mediator, Request
-from .provider_template import DumperProvider, LoaderProvider, for_origin
+from .provider_template import DumperProvider, LoaderProvider, for_predicate
 from .request_cls import (
     DebugPathRequest,
     DumperRequest,
@@ -69,7 +69,7 @@ def _is_exact_zero_or_one(arg):
 
 
 @dataclass
-@for_origin(Literal)
+@for_predicate(Literal)
 class LiteralProvider(LoaderProvider, DumperProvider):
     tuple_size_limit: int = 4
 
@@ -112,7 +112,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return stub
 
 
-@for_origin(Union)
+@for_predicate(Union)
 class UnionProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = normalize_type(get_type_from_request(request))
@@ -222,7 +222,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
 CollectionsMapping = collections.abc.Mapping
 
 
-@for_origin(Iterable)
+@for_predicate(Iterable)
 class IterableProvider(LoaderProvider, DumperProvider):
     ABC_TO_IMPL = {
         collections.abc.Iterable: tuple,
@@ -410,7 +410,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         return iter_dumper
 
 
-@for_origin(Dict)
+@for_predicate(Dict)
 class DictProvider(LoaderProvider, DumperProvider):
     def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
         norm = normalize_type(get_type_from_request(request))

@@ -35,7 +35,6 @@ from .provider import (
     Request,
     Saturator,
     create_request_checker,
-    match_origin,
 )
 from .retort import NoSuitableProvider
 
@@ -76,7 +75,6 @@ __all__ = (
     'P',
     'Saturator',
     'create_request_checker',
-    'match_origin',
     'retort',
     'Provider',
     'NoSuitableProvider',

@@ -10,7 +10,7 @@ from typing import Generic, Type, TypeVar, Union
 from ..common import Dumper, Loader
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from .essential import CannotProvide, Mediator
-from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC, for_origin
+from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC, for_predicate
 from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
 from .request_filtering import create_request_checker
 
@@ -49,7 +49,7 @@ class IsoFormatProvider(ForAnyDateTime, LoaderProvider, DumperProvider):
 
 
 @dataclass
-@for_origin(datetime)
+@for_predicate(datetime)
 class DatetimeFormatProvider(LoaderProvider, DumperProvider):
     format: str
 
@@ -75,7 +75,7 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
         return datetime_format_dumper
 
 
-@for_origin(timedelta)
+@for_predicate(timedelta)
 class SecondsTimedeltaProvider(LoaderProvider, DumperProvider):
     _OK_TYPES = (int, float, Decimal)
 
@@ -99,7 +99,7 @@ def none_loader(data):
     raise TypeLoadError(None)
 
 
-@for_origin(None)
+@for_predicate(None)
 class NoneProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return none_loader
@@ -119,7 +119,7 @@ class Base64DumperMixin(DumperProvider):
 B64_PATTERN = re.compile(b'[A-Za-z0-9+/]*={0,2}')
 
 
-@for_origin(bytes)
+@for_predicate(bytes)
 class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         def bytes_base64_loader(data):
@@ -139,7 +139,7 @@ class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
         return bytes_base64_loader
 
 
-@for_origin(bytearray)
+@for_predicate(bytearray)
 class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
     _BYTES_PROVIDER = BytesBase64Provider()
 
@@ -159,7 +159,7 @@ def _regex_dumper(data: re.Pattern):
     return data.pattern
 
 
-@for_origin(re.Pattern)
+@for_predicate(re.Pattern)
 class RegexPatternProvider(LoaderProvider, DumperProvider):
     def __init__(self, flags: re.RegexFlag = re.RegexFlag(0)):
         self.flags = flags

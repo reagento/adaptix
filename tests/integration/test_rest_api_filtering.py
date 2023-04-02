@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any, Dict, Generic, List, Optional, TypedDict, TypeVar, Union
 from uuid import UUID
 
-from adaptix import Chain, NameStyle, P, Retort, loader, match_origin, name_mapping
+from adaptix import Chain, NameStyle, P, Retort, loader, name_mapping
 
 # HTTP
 
@@ -173,10 +173,10 @@ def fix_empty_query(data):
 
 retort = Retort(
     recipe=[
-        name_mapping(match_origin(HttpRequest), name_style=NameStyle.CAMEL),
+        name_mapping(HttpRequest, name_style=NameStyle.CAMEL),
         name_mapping(HttpRequestContext, name_style=NameStyle.CAMEL),
-        loader(P[match_origin(HttpRequest)].body, process_json_body, Chain.FIRST),
-        loader(P[match_origin(HttpRequest)].query_string_parameters, fix_empty_query, Chain.FIRST),
+        loader(P[HttpRequest].body, process_json_body, Chain.FIRST),
+        loader(P[HttpRequest].query_string_parameters, fix_empty_query, Chain.FIRST),
     ]
 )
 

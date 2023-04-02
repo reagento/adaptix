@@ -62,7 +62,7 @@ from .model import (
 from .model.figure_provider import PropertyAdder
 from .name_style import NameStyle, convert_snake_style
 from .provider_basics import BoundingProvider, Chain, ChainingProvider, ValueProvider
-from .provider_template import ABCProxy, DumperProvider, LoaderProvider, for_origin
+from .provider_template import ABCProxy, DumperProvider, LoaderProvider, for_predicate
 from .request_cls import DumperRequest, FieldLoc, LoaderRequest, TypeHintLoc
 from .request_filtering import (
     AndRequestChecker,
@@ -74,5 +74,4 @@ from .request_filtering import (
     RequestChecker,
     XorRequestChecker,
     create_request_checker,
-    match_origin,
 )
