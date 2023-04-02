@@ -54,7 +54,7 @@ ASSERTER_LIST = [
     ],
 )
 def test_request_stack(order):
-    searcher = RawRecipeSearcher(recipe=[ASSERTER_LIST[value-1] for value in order])
+    searcher = RawRecipeSearcher(recipe=[ASSERTER_LIST[value - 1] for value in order])
 
     mediator = BuiltinMediator(
         searcher=searcher,

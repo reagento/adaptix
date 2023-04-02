@@ -146,7 +146,7 @@ class ClassDispatcher(Generic[K_co, V]):
             except KeyError:
                 pass
 
-        raise KeyError
+        raise KeyError(key)
 
     def values(self) -> Collection[V]:
         return self._mapping.values()

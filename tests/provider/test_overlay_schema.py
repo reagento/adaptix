@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 from typing import Callable, Iterable, List
 
@@ -6,7 +5,7 @@ import pytest
 
 from adaptix import Chain, Mediator, Omittable, Omitted, Provider, Request, bound
 from adaptix._internal.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
-from adaptix._internal.provider.request_cls import Location, LocMap, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
 from adaptix.provider.static_provider import StaticProvider, static_provision_action
 from tests_helpers import TestRetort, full_match_regex_str
 
@@ -324,4 +323,3 @@ def test_omitted_fields():
             ],
             provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
         )
-

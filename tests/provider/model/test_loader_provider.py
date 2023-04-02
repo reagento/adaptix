@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Any, Callable, Dict, Optional

@@ -38,13 +38,13 @@ from ..provider.name_layout.component import (
     StructureOverlay,
 )
 from ..provider.overlay_schema import OverlayProvider
-from ..provider.request_filtering import RequestPattern
+from ..provider.request_filtering import Pred, RequestPattern
 from ..utils import Omittable, Omitted
 
 T = TypeVar('T')
 
 
-def bound(pred: Any, provider: Provider) -> Provider:
+def bound(pred: Pred, provider: Provider) -> Provider:
     if pred == Omitted():
         return provider
     return BoundingProvider(create_request_checker(pred), provider)
@@ -57,7 +57,7 @@ def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
     return ChainingProvider(chain, provider)
 
 
-def loader(pred: Any, func: Loader, chain: Optional[Chain] = None) -> Provider:
+def loader(pred: Pred, func: Loader, chain: Optional[Chain] = None) -> Provider:
     """Basic provider to define custom loader.
 
     :param pred: Predicate specifying where loader should be used. See :ref:`predicate-system` for details.
@@ -83,7 +83,7 @@ def loader(pred: Any, func: Loader, chain: Optional[Chain] = None) -> Provider:
     )
 
 
-def dumper(pred: Any, func: Dumper, chain: Optional[Chain] = None) -> Provider:
+def dumper(pred: Pred, func: Dumper, chain: Optional[Chain] = None) -> Provider:
     """Basic provider to define custom dumper.
 
     :param pred: Predicate specifying where dumper should be used. See :ref:`predicate-system` for details.
@@ -109,7 +109,7 @@ def dumper(pred: Any, func: Dumper, chain: Optional[Chain] = None) -> Provider:
     )
 
 
-def as_is_loader(pred: Any) -> Provider:
+def as_is_loader(pred: Pred) -> Provider:
     """Provider that creates loader which does nothing with input data.
 
     :param pred: Predicate specifying where loader should be used. See :ref:`predicate-system` for details.
@@ -118,7 +118,7 @@ def as_is_loader(pred: Any) -> Provider:
     return loader(pred, lambda x: x)
 
 
-def as_is_dumper(pred: Any) -> Provider:
+def as_is_dumper(pred: Pred) -> Provider:
     """Provider that creates dumper which does nothing with input data.
 
     :param pred: Predicate specifying where dumper should be used. See :ref:`predicate-system` for details.
@@ -127,7 +127,7 @@ def as_is_dumper(pred: Any) -> Provider:
     return dumper(pred, lambda x: x)
 
 
-def constructor(pred: Any, func: Callable) -> Provider:
+def constructor(pred: Pred, func: Callable) -> Provider:
     input_figure = get_callable_figure(func).input
     return bound(
         pred,
@@ -164,7 +164,7 @@ def _convert_name_map_to_stack(name_map: NameMap) -> NameMapStack:
 
 
 def name_mapping(
-    pred: Omittable[Any] = Omitted(),
+    pred: Omittable[Pred] = Omitted(),
     *,
     # filtering which fields are presented
     skip: Omittable[Iterable[str]] = Omitted(),
@@ -227,7 +227,7 @@ NameOrProp = Union[str, property]
 
 
 def add_property(
-    pred: Any,
+    pred: Pred,
     prop: NameOrProp,
     tp: Omittable[TypeHint] = Omitted(),
     /, *,
@@ -321,7 +321,7 @@ def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Pr
 
 
 def validator(
-    pred: Any,
+    pred: Pred,
     func: Callable[[Any], bool],
     error: Union[str, Callable[[Any], LoadError], None] = None,
     chain: Chain = Chain.LAST,

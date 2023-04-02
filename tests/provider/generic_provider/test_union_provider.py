@@ -1,20 +1,10 @@
-import re
 from dataclasses import dataclass
 from typing import Callable, List, Literal, Optional, Union
 
 import pytest
 
-from adaptix import dumper, loader
-from adaptix._internal.provider import (
-    DumperRequest,
-    LiteralProvider,
-    LoaderRequest,
-    LoadError,
-    TypeHintLoc,
-    TypeLoadError,
-    UnionLoadError,
-    UnionProvider,
-)
+from adaptix import Retort, dumper, loader
+from adaptix._internal.provider import LiteralProvider, LoadError, TypeLoadError, UnionLoadError, UnionProvider
 from tests_helpers import TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 
@@ -103,6 +93,35 @@ def test_serializing(retort, debug_path):
         path=[],
         match=full_match_regex_str("<class 'list'>"),
     )
+
+
+@parametrize_bool('debug_path')
+def test_serializing_subclass(retort, debug_path):
+    @dataclass
+    class Parent:
+        foo: int
+
+    @dataclass
+    class Child(Parent):
+        bar: int
+
+    dumper = Retort(
+        debug_path=debug_path,
+    ).get_dumper(
+        Union[Parent, str]
+    )
+
+    assert dumper(Parent(foo=1)) == {'foo': 1}
+    assert dumper(Child(foo=1, bar=2)) == {'foo': 1}
+    assert dumper('a') == 'a'
+
+    raises_path(
+        KeyError,
+        lambda: dumper([]),
+        path=[],
+        match=full_match_regex_str("<class 'list'>"),
+    )
+
 
 
 @parametrize_bool('debug_path')

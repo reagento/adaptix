@@ -3,12 +3,13 @@ from abc import ABC
 from dataclasses import dataclass, replace
 from enum import EnumMeta, Flag
 from inspect import isabstract
-from typing import Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, Union
+from typing import Any, Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, Union
 
 from ..common import Dumper, Loader, TypeHint
 from ..load_error import BadVariantError, ExcludedTypeLoadError, LoadError, MsgError, TypeLoadError, UnionLoadError
 from ..struct_path import append_path
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
+from ..utils import ClassDispatcher
 from .essential import CannotProvide, Mediator, Request
 from .provider_template import DumperProvider, LoaderProvider, for_origin
 from .request_cls import (
@@ -200,12 +201,12 @@ class UnionProvider(LoaderProvider, DumperProvider):
             for i, tp in enumerate(norm.args)
         )
 
-        dumper_type_map = {case.origin: dumper for case, dumper in zip(norm.args, dumpers)}
-        return self._get_dumper(dumper_type_map)
+        dumper_type_dispatcher = ClassDispatcher({case.origin: dumper for case, dumper in zip(norm.args, dumpers)})
+        return self._get_dumper(dumper_type_dispatcher)
 
-    def _get_dumper(self, dumper_type_map: Mapping[type, Dumper]) -> Dumper:
+    def _get_dumper(self, dumper_type_dispatcher: ClassDispatcher[Any, Dumper]) -> Dumper:
         def union_dumper(data):
-            return dumper_type_map[type(data)](data)
+            return dumper_type_dispatcher.dispatch(type(data))(data)
 
         return union_dumper
 
@@ -317,9 +318,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
         return self._get_non_dp_non_sc_loader(iter_factory, arg_loader)
 
     def _get_dp_non_sc_loader(self, iter_factory, iter_mapper):
-        def iter_loader_dp(value):
+        def iter_loader_dp(data):
             try:
-                value_iter = iter(value)
+                value_iter = iter(data)
             except TypeError:
                 raise TypeLoadError(Iterable)
 
@@ -328,12 +329,14 @@ class IterableProvider(LoaderProvider, DumperProvider):
         return iter_loader_dp
 
     def _get_dp_sc_loader(self, iter_factory, iter_mapper):
-        def iter_loader_dp_sc(value):
-            if isinstance(value, CollectionsMapping):
+        def iter_loader_dp_sc(data):
+            if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Mapping)
+            if type(data) == str:  # pylint: disable=unidiomatic-typecheck
+                raise ExcludedTypeLoadError(str)
 
             try:
-                value_iter = iter(value)
+                value_iter = iter(data)
             except TypeError:
                 raise TypeLoadError(Iterable)
 
@@ -342,12 +345,14 @@ class IterableProvider(LoaderProvider, DumperProvider):
         return iter_loader_dp_sc
 
     def _get_non_dp_sc_loader(self, iter_factory, arg_loader):
-        def iter_loader_sc(value):
-            if isinstance(value, CollectionsMapping):
+        def iter_loader_sc(data):
+            if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Mapping)
+            if type(data) == str:  # pylint: disable=unidiomatic-typecheck
+                raise ExcludedTypeLoadError(str)
 
             try:
-                map_iter = map(arg_loader, value)
+                map_iter = map(arg_loader, data)
             except TypeError:
                 raise TypeLoadError(Iterable)
 
@@ -356,9 +361,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
         return iter_loader_sc
 
     def _get_non_dp_non_sc_loader(self, iter_factory, arg_loader):
-        def iter_loader(value):
+        def iter_loader(data):
             try:
-                map_iter = map(arg_loader, value)
+                map_iter = map(arg_loader, data)
             except TypeError:
                 raise TypeLoadError(Iterable)
 

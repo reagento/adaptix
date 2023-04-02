@@ -423,7 +423,6 @@ def test_hinted_namedtuple():
     )
 
 
-
 def test_inheritance():
     class Parent(NamedTuple):
         a: int

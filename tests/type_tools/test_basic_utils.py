@@ -245,6 +245,3 @@ def test_get_type_vars_of_parametrized():
     assert get_type_vars_of_parametrized(Generic) == ()
     assert get_type_vars_of_parametrized(Generic[T]) == (T, )
     assert get_type_vars_of_parametrized(Generic[T, V]) == (T, V)
-
-
-

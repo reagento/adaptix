@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 from types import MappingProxyType, SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Type
@@ -24,7 +23,6 @@ from adaptix._internal.provider import (
     NameSanitizer,
     OutputFigureRequest,
     OutputNameLayoutRequest,
-    TypeHintLoc,
     ValueProvider,
     make_output_extraction,
 )

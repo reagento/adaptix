@@ -49,6 +49,15 @@ class PackageRequirement(Requirement):
         return True
 
 
+class PythonImplementationRequirement(Requirement):
+    def __init__(self, implementation_name: str):
+        self.implementation_name = implementation_name
+        super().__init__()
+
+    def _evaluate(self) -> bool:
+        return sys.implementation.name == self.implementation_name
+
+
 HAS_PY_39 = PythonVersionRequirement((3, 9))
 HAS_ANNOTATED = HAS_PY_39
 HAS_STD_CLASSES_GENERICS = HAS_PY_39
@@ -60,3 +69,6 @@ HAS_TYPE_ALIAS = HAS_PY_310
 HAS_PARAM_SPEC = HAS_PY_310
 
 HAS_ATTRS_PKG = PackageRequirement('attrs', 'from attrs import fields')
+
+IS_CPYTHON = PythonImplementationRequirement('cpython')
+IS_PYPY = PythonImplementationRequirement('pypy')

@@ -20,7 +20,6 @@ from ..provider import (
     BuiltinOutputCreationMaker,
     BytearrayBase64Provider,
     BytesBase64Provider,
-    CoercionLimiter,
     DictProvider,
     DumperRequest,
     EnumExactValueProvider,
@@ -41,6 +40,15 @@ from ..provider import (
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
     ValueProvider,
+)
+from ..provider.concrete_provider import (
+    BOOL_LOADER_PROVIDER,
+    COMPLEX_LOADER_PROVIDER,
+    DECIMAL_LOADER_PROVIDER,
+    FLOAT_LOADER_PROVIDER,
+    FRACTION_LOADER_PROVIDER,
+    INT_LOADER_PROVIDER,
+    STR_LOADER_PROVIDER,
 )
 from ..provider.model import ExtraSkip, make_input_creation, make_output_extraction
 from ..provider.name_layout import (
@@ -70,23 +78,25 @@ class FilledRetort(OperatingRetort, ABC):
 
         EnumExactValueProvider(),  # it has higher priority than int for IntEnum
 
-        CoercionLimiter(loader(int, int), [int]),
+        INT_LOADER_PROVIDER,
         as_is_dumper(int),
 
-        CoercionLimiter(loader(float, float), [float, int]),
+        FLOAT_LOADER_PROVIDER,
         as_is_dumper(float),
 
-        CoercionLimiter(loader(str, str), [str]),
+        STR_LOADER_PROVIDER,
         as_is_dumper(str),
 
-        CoercionLimiter(loader(bool, bool), [bool]),
+        BOOL_LOADER_PROVIDER,
         as_is_dumper(bool),
 
-        CoercionLimiter(loader(Decimal, Decimal), [str, Decimal]),
+        DECIMAL_LOADER_PROVIDER,
         dumper(Decimal, Decimal.__str__),
-        CoercionLimiter(loader(Fraction, Fraction), [str, Fraction]),
+
+        FRACTION_LOADER_PROVIDER,
         dumper(Fraction, Fraction.__str__),
-        CoercionLimiter(loader(complex, complex), [str, complex]),
+
+        COMPLEX_LOADER_PROVIDER,
         dumper(complex, complex.__str__),
 
         BytesBase64Provider(),

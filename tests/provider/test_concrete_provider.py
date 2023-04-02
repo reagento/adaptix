@@ -1,23 +1,14 @@
 import re
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
+from fractions import Fraction
+from typing import Union
 
-from adaptix._internal.provider import (
-    BytearrayBase64Provider,
-    BytesBase64Provider,
-    DatetimeFormatProvider,
-    DumperRequest,
-    IsoFormatProvider,
-    LoaderRequest,
-    NoneProvider,
-    RegexPatternProvider,
-    SecondsTimedeltaProvider,
-    TypeHintLoc,
-    ValueProvider,
-)
-from adaptix._internal.provider.request_cls import DebugPathRequest, LocMap, StrictCoercionRequest
+from adaptix import Retort
+from adaptix._internal.feature_requirement import IS_PYPY
+from adaptix._internal.provider import DatetimeFormatProvider
 from adaptix.load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
-from tests_helpers import TestRetort, parametrize_bool, raises_path
+from tests_helpers import parametrize_bool, raises_path
 
 
 def check_any_dt(loader):
@@ -45,11 +36,7 @@ def check_any_dt(loader):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_iso_format_provider_datetime(strict_coercion, debug_path):
-    retort = TestRetort(
-        recipe=[
-            IsoFormatProvider(datetime),
-        ]
-    ).replace(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
     )
@@ -75,11 +62,7 @@ def test_iso_format_provider_datetime(strict_coercion, debug_path):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_iso_format_provider_date(strict_coercion, debug_path):
-    retort = TestRetort(
-        recipe=[
-            IsoFormatProvider(date),
-        ]
-    ).replace(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
     )
@@ -99,11 +82,7 @@ def test_iso_format_provider_date(strict_coercion, debug_path):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_iso_format_provider_time(strict_coercion, debug_path):
-    retort = TestRetort(
-        recipe=[
-            IsoFormatProvider(time),
-        ]
-    ).replace(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
     )
@@ -127,13 +106,12 @@ def test_iso_format_provider_time(strict_coercion, debug_path):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_datetime_format_provider(strict_coercion, debug_path):
-    retort = TestRetort(
-        recipe=[
-            DatetimeFormatProvider("%Y-%m-%d"),
-        ]
-    ).replace(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
+        recipe=[
+            DatetimeFormatProvider("%Y-%m-%d"),
+        ],
     )
 
     loader = retort.get_loader(datetime)
@@ -152,11 +130,7 @@ def test_datetime_format_provider(strict_coercion, debug_path):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_seconds_timedelta_provider(strict_coercion, debug_path):
-    retort = TestRetort(
-        recipe=[
-            SecondsTimedeltaProvider(),
-        ]
-    ).replace(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
     )
@@ -173,11 +147,7 @@ def test_seconds_timedelta_provider(strict_coercion, debug_path):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_none_provider(strict_coercion, debug_path):
-    retort = TestRetort(
-        recipe=[
-            NoneProvider(),
-        ]
-    ).replace(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
     )
@@ -185,20 +155,18 @@ def test_none_provider(strict_coercion, debug_path):
     loader = retort.get_loader(None)
 
     assert loader(None) is None
-
     raises_path(
         TypeLoadError(None),
         lambda: loader(10)
     )
 
+    dumper = retort.get_dumper(None)
+    assert dumper(None) is None
+
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_bytes_provider(strict_coercion, debug_path):
-    retort = TestRetort(
-        recipe=[
-            BytesBase64Provider(),
-        ]
-    ).replace(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
     )
@@ -236,11 +204,7 @@ def test_bytes_provider(strict_coercion, debug_path):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_bytearray_provider(strict_coercion, debug_path):
-    retort = TestRetort(
-        recipe=[
-            BytearrayBase64Provider(),
-        ]
-    ).replace(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
     )
@@ -278,11 +242,7 @@ def test_bytearray_provider(strict_coercion, debug_path):
 
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_regex_provider(strict_coercion, debug_path):
-    retort = TestRetort(
-        recipe=[
-            RegexPatternProvider(),
-        ]
-    ).replace(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
     )
@@ -302,3 +262,136 @@ def test_regex_provider(strict_coercion, debug_path):
 
     dumper = retort.get_dumper(re.Pattern)
     assert dumper(re.compile(r'\w')) == r'\w'
+
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_int_loader_provider(strict_coercion, debug_path):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    )
+    loader = retort.get_loader(int)
+
+    assert loader(100) == 100
+
+    if strict_coercion:
+        raises_path(TypeLoadError(int), lambda: loader(None))
+        raises_path(TypeLoadError(int), lambda: loader('foo'))
+        raises_path(TypeLoadError(int), lambda: loader('100'))
+    else:
+        raises_path(TypeLoadError(Union[int, float, str]), lambda: loader(None))
+        raises_path(ValueLoadError("Bad string format"), lambda: loader('foo'))
+        assert loader('100') == 100
+
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_float_loader_provider(strict_coercion, debug_path):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    )
+    loader = retort.get_loader(float)
+
+    assert loader(100.0) == 100.0
+    assert isinstance(loader(100), float)
+
+    if strict_coercion:
+        raises_path(TypeLoadError(Union[int, float]), lambda: loader(None))
+        raises_path(TypeLoadError(Union[int, float]), lambda: loader('foo'))
+        raises_path(TypeLoadError(Union[int, float]), lambda: loader('100'))
+    else:
+        raises_path(TypeLoadError(Union[int, float, str]), lambda: loader(None))
+        raises_path(ValueLoadError("Bad string format"), lambda: loader('foo'))
+        assert loader('100') == 100
+
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_str_loader_provider(strict_coercion, debug_path):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    )
+    loader = retort.get_loader(str)
+
+    assert loader('foo') == 'foo'
+
+    if strict_coercion:
+        raises_path(TypeLoadError(str), lambda: loader(None))
+    else:
+        assert loader(None) == 'None'
+
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_bool_loader_provider(strict_coercion, debug_path):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    )
+    loader = retort.get_loader(bool)
+
+    assert loader(True) == True
+
+    if strict_coercion:
+        raises_path(TypeLoadError(bool), lambda: loader(None))
+    else:
+        assert loader(None) == False
+
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_decimal_loader_provider(strict_coercion, debug_path):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    )
+    loader = retort.get_loader(Decimal)
+
+    assert loader('100') == Decimal('100')
+    assert loader(Decimal('100')) == Decimal('100')
+    raises_path(TypeLoadError(Union[str, Decimal]), lambda: loader(None))
+    raises_path(ValueLoadError("Bad string format"), lambda: loader('foo'))
+    raises_path(TypeLoadError(Union[str, Decimal]), lambda: loader(None))
+
+    if strict_coercion:
+        raises_path(TypeLoadError(Union[str, Decimal]), lambda: loader([]))
+    else:
+        if IS_PYPY:
+            description = (
+                'Invalid tuple size in creation of Decimal from list or tuple.'
+                '  The list or tuple should have exactly three elements.'
+            )
+        else:
+            description = 'argument must be a sequence of length 3'
+
+        raises_path(ValueLoadError(description), lambda: loader([]))
+
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_fraction_loader_provider(strict_coercion, debug_path):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    )
+    loader = retort.get_loader(Fraction)
+
+    assert loader('100') == Fraction('100')
+    assert loader(Fraction('100')) == Fraction('100')
+    raises_path(TypeLoadError(Union[str, Fraction]), lambda: loader(None))
+    raises_path(ValueLoadError("Bad string format"), lambda: loader('foo'))
+    raises_path(TypeLoadError(Union[str, Fraction]), lambda: loader(None))
+    raises_path(TypeLoadError(Union[str, Fraction]), lambda: loader([]))
+
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_complex_loader_provider(strict_coercion, debug_path):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+    )
+    loader = retort.get_loader(complex)
+
+    assert loader('100') == complex('100')
+    assert loader(complex('100')) == complex('100')
+    raises_path(TypeLoadError(Union[str, complex]), lambda: loader(None))
+    raises_path(ValueLoadError("Bad string format"), lambda: loader('foo'))
+    raises_path(TypeLoadError(Union[str, complex]), lambda: loader(None))
+    raises_path(TypeLoadError(Union[str, complex]), lambda: loader([]))

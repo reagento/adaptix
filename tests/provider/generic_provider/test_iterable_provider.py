@@ -18,8 +18,9 @@ from typing import (
 
 import pytest
 
-from adaptix import NoSuitableProvider, dumper, loader
-from adaptix._internal.provider import CoercionLimiter, IterableProvider
+from adaptix import NoSuitableProvider, dumper
+from adaptix._internal.provider import IterableProvider
+from adaptix._internal.provider.concrete_provider import STR_LOADER_PROVIDER
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
@@ -35,7 +36,7 @@ def retort():
     return TestRetort(
         recipe=[
             IterableProvider(),
-            CoercionLimiter(loader(str, str), [str]),
+            STR_LOADER_PROVIDER,
             dumper(str, string_dumper),
         ]
     )
@@ -82,6 +83,7 @@ def test_loading(retort, strict_coercion, debug_path):
         assert loader({"a": 0, "b": 0, "c": 0}) == ["a", "b", "c"]
         assert loader(collections.OrderedDict({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
         assert loader(collections.ChainMap({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
+        assert loader("abc") == ["a", "b", "c"]
 
     if strict_coercion:
         raises_path(
@@ -89,19 +91,21 @@ def test_loading(retort, strict_coercion, debug_path):
             lambda: loader({"a": 0, "b": 0, "c": 0}),
             path=[],
         )
-
         raises_path(
             ExcludedTypeLoadError(Mapping),
             lambda: loader(collections.ChainMap({"a": 0, "b": 0, "c": 0})),
             path=[],
         )
-
+        raises_path(
+            ExcludedTypeLoadError(str),
+            lambda: loader("abc"),
+            path=[],
+        )
         raises_path(
             TypeLoadError(str),
             lambda: loader([1, 2, 3]),
             path=[0] if debug_path else [],
         )
-
         raises_path(
             TypeLoadError(str),
             lambda: loader(["1", 2, 3]),

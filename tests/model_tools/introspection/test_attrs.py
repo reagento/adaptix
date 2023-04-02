@@ -807,4 +807,3 @@ def test_inheritance_old_style():
             )
         )
     )
-

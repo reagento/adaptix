@@ -3,9 +3,9 @@ from typing import Dict
 
 import pytest
 
-from adaptix import dumper, loader
-from adaptix._internal.provider import CoercionLimiter, DictProvider, DumperRequest, LoaderRequest, TypeHintLoc
-from adaptix._internal.provider.request_cls import LocMap
+from adaptix import dumper
+from adaptix._internal.provider import DictProvider
+from adaptix._internal.provider.concrete_provider import STR_LOADER_PROVIDER
 from adaptix.load_error import TypeLoadError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
@@ -21,7 +21,7 @@ def retort():
     return TestRetort(
         recipe=[
             DictProvider(),
-            CoercionLimiter(loader(str, str), [str]),
+            STR_LOADER_PROVIDER,
             dumper(str, string_dumper),
         ]
     )

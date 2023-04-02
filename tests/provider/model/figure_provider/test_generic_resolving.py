@@ -93,7 +93,7 @@ def test_two_params(tp1, tp2):
     )
 
 
-def test_sub_gen():
+def test_sub_generic():
     @dataclass
     class SubGen(Generic[T]):
         foo: T
