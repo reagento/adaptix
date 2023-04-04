@@ -60,11 +60,21 @@ director.add(
 director.add(
     BenchSchema(
         base_id='pydantic',
+        label='pydantic\n(st)',
+        tag='pydantic-st',
+        func=bench_pydantic.bench_dumping,
+        kwargs={'reviews_count': 100, 'strict_types': True},
+        data_renaming={'reviews_count': 'rc', 'strict_types': 'st'},
+    ),
+)
+director.add(
+    BenchSchema(
+        base_id='pydantic',
         label='pydantic',
         tag='pydantic',
         func=bench_pydantic.bench_dumping,
-        kwargs={'reviews_count': 100},
-        data_renaming={'reviews_count': 'rc'},
+        kwargs={'reviews_count': 100, 'strict_types': False},
+        data_renaming={'reviews_count': 'rc', 'strict_types': 'st'},
     ),
 )
 

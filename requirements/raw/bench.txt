@@ -7,7 +7,7 @@ psutil==5.9.4
 matplotlib==3.7.0
 
 mashumaro==3.5
-pydantic==1.10.5
+pydantic==2.0a1
 cattrs==22.2.0
 schematics==2.1.1
 dataclass-factory==2.16

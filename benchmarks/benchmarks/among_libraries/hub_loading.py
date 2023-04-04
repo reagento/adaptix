@@ -75,11 +75,21 @@ director.add(
 director.add(
     BenchSchema(
         base_id='pydantic',
+        label='pydantic\n(st)',
+        tag='pydantic-st',
+        func=bench_pydantic.bench_loading,
+        kwargs={'reviews_count': 100, 'strict_types': True},
+        data_renaming={'reviews_count': 'rc', 'strict_types': 'st'},
+    ),
+)
+director.add(
+    BenchSchema(
+        base_id='pydantic',
         label='pydantic',
         tag='pydantic',
         func=bench_pydantic.bench_loading,
-        kwargs={'reviews_count': 100},
-        data_renaming={'reviews_count': 'rc'},
+        kwargs={'reviews_count': 100, 'strict_types': False},
+        data_renaming={'reviews_count': 'rc', 'strict_types': 'st'},
     ),
 )
 
@@ -119,7 +129,7 @@ director.add(
     BenchSchema(
         base_id='dataclass_factory',
         label='dataclass_factory\n(dp)',
-        tag='dataclass_factory',
+        tag='dataclass_factory-dp',
         func=bench_dataclass_factory.bench_loading,
         kwargs={'debug_path': True, 'reviews_count': 100},
         data_renaming={'debug_path': 'dp', 'reviews_count': 'rc'},
