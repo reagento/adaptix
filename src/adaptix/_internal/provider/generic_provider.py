@@ -527,7 +527,6 @@ class DictProvider(LoaderProvider, DumperProvider):
                 key_dumper=key_dumper,
                 value_dumper=value_dumper,
             )
-
         return self._get_dumper_non_dp(
             key_dumper=key_dumper,
             value_dumper=value_dumper,

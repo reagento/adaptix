@@ -312,7 +312,7 @@ class RequestPattern:
     def __getitem__(self: Pat, item: Union[Pred, VarTuple[Pred]]) -> Pat:
         if isinstance(item, tuple):
             return self._extend_stack(
-                [OrRequestChecker(self._ensure_request_checker(el) for el in item)]
+                [OrRequestChecker([self._ensure_request_checker(el) for el in item])]
             )
         return self._extend_stack([self._ensure_request_checker(item)])
 

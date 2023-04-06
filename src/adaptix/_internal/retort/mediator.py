@@ -217,7 +217,7 @@ class IntrospectingRecipeSearcher(RecipeSearcher):
     def _collect_candidates(self, request_cls: Type[Request], recipe: Sequence[Provider]) -> Sequence[Provider]:
         candidates = [
             provider
-            for i, provider in enumerate(recipe)
+            for provider in recipe
             if (
                 not isinstance(provider, RequestClassDeterminedProvider)
                 or provider.maybe_can_process_request_cls(request_cls)

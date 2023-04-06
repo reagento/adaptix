@@ -84,7 +84,7 @@ class SecondsTimedeltaProvider(LoaderProvider, DumperProvider):
 
         def timedelta_loader(data):
             if type(data) not in ok_types:
-                raise TypeLoadError(float)
+                raise TypeLoadError(Union[int, float, Decimal])
             return timedelta(seconds=int(data), microseconds=int(data % 1 * 10 ** 6))
 
         return timedelta_loader

@@ -3,16 +3,13 @@ import typing
 from dataclasses import InitVar
 from typing import ClassVar, Final
 
-from ..feature_requirement import HAS_ANNOTATED, HAS_TYPE_GUARD
+from ..feature_requirement import HAS_ANNOTATED
 from .normalize_type import BaseNormType
 
 _TYPE_TAGS = [Final, ClassVar, InitVar]
 
 if HAS_ANNOTATED:
     _TYPE_TAGS.append(typing.Annotated)
-
-if HAS_TYPE_GUARD:
-    _TYPE_TAGS.append(typing.TypeGuard)
 
 
 def strip_tags(norm: BaseNormType) -> BaseNormType:
