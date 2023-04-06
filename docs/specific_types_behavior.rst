@@ -185,7 +185,7 @@ For objects of types that are not listed in the union,
 but which are a subclass of some union case, the base class dumper is used.
 If there are several parents, it will be the selected class that appears first in ``.mro()`` list.
 
-Also, builtin provider can not work
+Also, builtin dumper can not work
 with union containing non-class type hints like ``Union[Literal['foo', 'bar'], int]``.
 
 Iterable subclasses
@@ -221,7 +221,8 @@ Models are supported out of the box:
 
 - `dataclass <https://docs.python.org/3/library/dataclasses>`_
 - `NamedTuple <https://docs.python.org/3/library/typing.html#typing.NamedTuple>`_
-  (namedtuple also is supported, but types of all fields will be ``Any``)
+  (`namedtuple <https://docs.python.org/3/library/collections.html#collections.namedtuple>`_
+  also is supported, but types of all fields will be ``Any``)
 - `TypedDict <https://docs.python.org/3/library/typing.html#typing.TypedDict>`_
 - `attrs <https://www.attrs.org/en/stable/>`_
 
