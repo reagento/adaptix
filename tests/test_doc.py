@@ -9,7 +9,7 @@ from adaptix._internal.feature_requirement import HAS_PY_310
 DOCS_ROOT_PARENT = Path(__file__).parent.parent
 DOCS_EXAMPLES_ROOT = DOCS_ROOT_PARENT / 'docs' / 'examples'
 EXCLUDE = ['__init__.py']
-GLOB = 'tutorial/*'
+GLOB = '*.py'
 
 
 def pytest_generate_tests(metafunc):

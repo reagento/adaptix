@@ -33,6 +33,7 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.extlinks',
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
     'sphinxcontrib.apidoc',
     'sphinx_paramlinks',
 ]
@@ -73,3 +74,5 @@ apidoc_separate_modules = True
 apidoc_extra_args = ['--maxdepth', '1']
 
 paramlinks_hyperlink_param = 'name'
+
+add_function_parentheses = False
