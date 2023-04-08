@@ -291,12 +291,12 @@ def create_request_checker(pred: Pred) -> RequestChecker:
     if isinstance(norm, NormTV):
         raise ValueError(f'Can not create RequestChecker from {pred} type var')
 
-    if not is_parametrized(pred):
-        if is_protocol(norm.origin) or isabstract(norm.origin):
-            return OriginSubclassRC(norm.origin)
-        return ExactOriginRC(norm.origin)
+    if is_parametrized(pred):
+        return ExactTypeRC(norm)
 
-    return ExactTypeRC(norm)
+    if is_protocol(norm.origin) or isabstract(norm.origin):
+        return OriginSubclassRC(norm.origin)
+    return ExactOriginRC(norm.origin)
 
 
 Pat = TypeVar('Pat', bound='RequestPattern')

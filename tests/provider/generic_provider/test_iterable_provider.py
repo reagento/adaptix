@@ -4,6 +4,7 @@ from collections import deque
 from typing import (
     AbstractSet,
     Collection,
+    Deque,
     Dict,
     FrozenSet,
     Iterable,
@@ -18,7 +19,7 @@ from typing import (
 
 import pytest
 
-from adaptix import NoSuitableProvider, dumper
+from adaptix import NoSuitableProvider, Retort, dumper
 from adaptix._internal.provider import IterableProvider
 from adaptix._internal.provider.concrete_provider import STR_LOADER_PROVIDER
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
@@ -111,6 +112,20 @@ def test_loading(retort, strict_coercion, debug_path):
             lambda: loader(["1", 2, 3]),
             path=[1] if debug_path else [],
         )
+
+
+@pytest.mark.parametrize(
+    ['tp', 'factory'],
+    [
+        (Deque, deque),
+        (Set, set),
+        (FrozenSet, frozenset),
+        (FrozenSet, frozenset),
+    ],
+)
+def test_specific_type_loading(tp, factory):
+    loaded = Retort().load(['a', 'b', 'c'], tp[str])
+    assert loaded == factory(['a', 'b', 'c'])
 
 
 @parametrize_bool('strict_coercion', 'debug_path')

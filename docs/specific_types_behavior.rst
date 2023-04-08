@@ -201,7 +201,7 @@ For example, if you need a dumper for type ``Iterable[int]``, retort will use ``
 So if a field with ``Iterable[int]`` type will contain ``List[int]``,
 the list will be converted to a tuple while dumping.
 
-Mapping subclasses
+Dict and Mapping
 '''''''''''''''''''''
 
 Loader accepts any other ``Mapping`` and makes ``dict`` instances.
@@ -217,7 +217,7 @@ Also, the model could be loaded from the list.
 
 Dumper works similarly and produces dict (or list).
 
-Models are supported out of the box:
+Models that are supported out of the box:
 
 - `dataclass <https://docs.python.org/3/library/dataclasses>`_
 - `NamedTuple <https://docs.python.org/3/library/typing.html#typing.NamedTuple>`_
