@@ -18,17 +18,17 @@ packaging==23.0
     # via
     #   -r requirements/raw/test_extra_none.txt
     #   pytest
-phonenumberslite==8.13.6
+phonenumberslite==8.13.8
     # via -r requirements/raw/test_extra_none.txt
 pluggy==1.0.0
     # via pytest
-pytest==7.2.1
+pytest==7.2.2
     # via
     #   -r requirements/raw/test_extra_none.txt
     #   pytest-cov
 pytest-cov==4.0.0
     # via -r requirements/raw/test_extra_none.txt
-python-json-logger==2.0.6
+python-json-logger==2.0.7
     # via -r requirements/raw/test_extra_none.txt
 tomli==2.0.1
     # via

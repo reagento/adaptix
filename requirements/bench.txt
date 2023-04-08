@@ -61,7 +61,7 @@ pyparsing==3.0.9
     # via matplotlib
 pyperf==2.5.0
     # via -r requirements/raw/bench.txt
-pytest==7.2.1
+pytest==7.2.2
     # via -r requirements/raw/bench.txt
 python-dateutil==2.8.2
     # via matplotlib

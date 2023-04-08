@@ -201,13 +201,13 @@ class Constraints:
     value: VarTuple[BaseNormType]
 
 
-TVLimit = Union[Bound, Constraints]
+TypeVarLimit = Union[Bound, Constraints]  # pylint: disable=invalid-name
 
 
 class NormTV(BaseNormType):
     __slots__ = ('_var', '_limit', '_variance', '_source')
 
-    def __init__(self, var: Any, limit: TVLimit, *, source: TypeHint):
+    def __init__(self, var: Any, limit: TypeVarLimit, *, source: TypeHint):
         self._var = var
         self._source = source
         self._limit = limit
@@ -239,7 +239,7 @@ class NormTV(BaseNormType):
         return self._variance
 
     @property
-    def limit(self) -> TVLimit:
+    def limit(self) -> TypeVarLimit:
         return self._limit
 
     def __repr__(self):

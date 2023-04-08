@@ -4,7 +4,7 @@
 #
 #    pip-compile --allow-unsafe --output-file=requirements/pre.txt --resolver=backtracking requirements/raw/pre.txt
 #
-wheel==0.38.4
+wheel==0.40.0
     # via -r requirements/raw/pre.txt
 
 # The following packages are considered to be unsafe in a requirements file:
