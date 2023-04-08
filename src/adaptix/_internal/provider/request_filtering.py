@@ -9,7 +9,7 @@ from ..common import TypeHint, VarTuple
 from ..type_tools import BaseNormType, NormTV, is_parametrized, is_protocol, is_subclass_soft, normalize_type
 from ..type_tools.normalize_type import NotSubscribedError
 from .essential import CannotProvide, Mediator, Provider, Request
-from .request_cls import FieldLoc, LocatedRequest, Location, TypeHintLoc
+from .request_cls import FieldLoc, GenericParamLoc, LocatedRequest, Location, TypeHintLoc
 
 T = TypeVar('T')
 
@@ -239,6 +239,17 @@ class StackEndRC(RequestChecker):
             )
 
 
+@dataclass
+class GenericParamRC(LocatedRequestChecker):
+    LOCATION = GenericParamLoc
+    pos: int
+
+    def _check_location(self, mediator: DirectMediator, loc: GenericParamLoc) -> None:
+        if loc.pos == self.pos:
+            return
+        raise CannotProvide(f'Generic param position {loc.pos} must be equal to {self.pos}')
+
+
 class AnyRequestChecker(RequestChecker):
     def check_request(self, mediator: DirectMediator, request: Request) -> None:
         return
@@ -347,6 +358,11 @@ class RequestPattern:
             )
 
         return create_request_checker(pred)
+
+    def generic_arg(self: Pat, pos: int, pred: Pred) -> Pat:
+        return self._extend_stack(
+            [GenericParamRC(pos) & self._ensure_request_checker(pred)]
+        )
 
     def build_request_checker(self) -> RequestChecker:
         if len(self._stack) == 1:

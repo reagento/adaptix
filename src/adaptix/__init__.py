@@ -33,6 +33,7 @@ from .provider import (
     P,
     Provider,
     Request,
+    RequestPattern,
     Saturator,
     create_request_checker,
 )
@@ -72,6 +73,7 @@ __all__ = (
     'ExtraSkip',
     'Mediator',
     'NameStyle',
+    'RequestPattern',
     'P',
     'Saturator',
     'create_request_checker',
