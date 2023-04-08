@@ -20,7 +20,7 @@ from adaptix._internal.model_tools import (
     get_attrs_figure,
 )
 from adaptix._internal.model_tools.definitions import IntrospectionImpossible, ParamKwargs
-from tests_helpers import requires
+from tests_helpers import ATTRS_WITH_ALIAS, requires
 
 pytest.importorskip("attrs")
 
@@ -804,6 +804,124 @@ def test_inheritance_old_style():
                     ),
                 ),
                 overriden_types=frozenset({'a', 'c'}),
+            )
+        )
+    )
+
+
+@requires(ATTRS_WITH_ALIAS)
+def test_alias_new_style():
+    @define
+    class WithAliases:
+        foo: int = field(alias='foo1')
+        _foo: int = field(alias='foo2')
+
+    assert (
+        get_attrs_figure(WithAliases)
+        ==
+        Figure(
+            input=InputFigure(
+                constructor=WithAliases,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        name='foo',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='foo1',
+                    ),
+                    InputField(
+                        type=int,
+                        name='_foo',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='foo2',
+                    ),
+                ),
+                overriden_types=frozenset({'foo', '_foo'}),
+            ),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=int,
+                        name='foo',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('foo', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='_foo',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('_foo', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                ),
+                overriden_types=frozenset({'foo', '_foo'}),
+            )
+        )
+    )
+
+
+@requires(ATTRS_WITH_ALIAS)
+def test_alias_old_style():
+    @attr.s
+    class WithAliases:
+        foo = attr.ib(type=int, alias='foo1')
+        _foo = attr.ib(type=int, alias='foo2')
+
+    assert (
+        get_attrs_figure(WithAliases)
+        ==
+        Figure(
+            input=InputFigure(
+                constructor=WithAliases,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        name='foo',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='foo1',
+                    ),
+                    InputField(
+                        type=int,
+                        name='_foo',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        param_kind=ParamKind.POS_OR_KW,
+                        param_name='foo2',
+                    ),
+                ),
+                overriden_types=frozenset({'foo', '_foo'}),
+            ),
+            output=OutputFigure(
+                fields=(
+                    OutputField(
+                        type=int,
+                        name='foo',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('foo', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                    OutputField(
+                        type=int,
+                        name='_foo',
+                        default=NoDefault(),
+                        accessor=AttrAccessor('_foo', is_required=True),
+                        metadata=MappingProxyType({}),
+                    ),
+                ),
+                overriden_types=frozenset({'foo', '_foo'}),
             )
         )
     )

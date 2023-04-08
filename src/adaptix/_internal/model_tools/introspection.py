@@ -344,8 +344,8 @@ def get_class_init_figure(tp) -> Figure[InputFigure, None]:
 # =================
 
 
-def _get_attrs_default(field) -> Default:
-    default: Any = field.default
+def _get_attrs_default(attrs_field) -> Default:
+    default: Any = attrs_field.default
 
     if isinstance(default, attrs.Factory):  # type: ignore
         if default.takes_self:
@@ -359,11 +359,11 @@ def _get_attrs_default(field) -> Default:
     return DefaultValue(default)
 
 
-def _get_attrs_field_type(field, type_hints):
+def _get_attrs_field_type(attrs_field, type_hints):
     try:
-        return type_hints[field.name]
+        return type_hints[attrs_field.name]
     except KeyError:
-        return Any if field.type is None else field.type
+        return Any if attrs_field.type is None else attrs_field.type
 
 
 NoneType = type(None)
@@ -398,11 +398,13 @@ def _process_attr_input_field(
     )
 
 
-def _get_attr_param_name(field):
+def _get_attrs_param_name(attrs_field):
+    if hasattr(attrs_field, 'alias'):
+        return attrs_field.alias
     return (
-        field.name[1:]
-        if field.name.startswith("_") and not field.name.startswith("__") else
-        field.name
+        attrs_field.name[1:]
+        if attrs_field.name.startswith("_") and not attrs_field.name.startswith("__") else
+        attrs_field.name
     )
 
 
@@ -428,17 +430,14 @@ def get_attrs_figure(tp) -> FullFigure:
         field.name: field for field in attrs_fields
     }
     param_name_to_base_field = {
-        _get_attr_param_name(field): field
-        for field in (
-            BaseField(
-                # if field is not annotated, type attribute will store None value
-                type=_get_attrs_field_type(field, type_hints),
-                default=_get_attrs_default(field),
-                metadata=field.metadata,
-                name=field.name,
-            )
-            for field in attrs_fields
+        _get_attrs_param_name(attrs_fld): BaseField(
+            # if field is not annotated, type attribute will store None value
+            type=_get_attrs_field_type(attrs_fld, type_hints),
+            default=_get_attrs_default(attrs_fld),
+            metadata=attrs_fld.metadata,
+            name=attrs_fld.name,
         )
+        for attrs_fld in attrs_fields
     }
 
     has_custom_init = hasattr(tp, '__attrs_init__')

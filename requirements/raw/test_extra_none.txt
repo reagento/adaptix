@@ -4,3 +4,4 @@ pytest-cov==4.0.0
 
 phonenumberslite==8.13.6
 python-json-logger==2.0.6
+packaging==23.0

@@ -91,7 +91,9 @@ mypy-extensions==1.0.0
 nodeenv==1.7.0
     # via pre-commit
 packaging==23.0
-    # via pytest
+    # via
+    #   -r requirements/raw/test_extra_none.txt
+    #   pytest
 pbr==5.11.1
     # via stevedore
 phonenumberslite==8.13.6

@@ -1,2 +1,2 @@
 -r test_extra_none.txt
-attrs==19.2.0
+attrs==20.1.0
