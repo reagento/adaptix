@@ -42,10 +42,6 @@ assert book == Book(title="Fahrenheit 451", price=100)
 assert retort.dump(book) == data
 ```
 
-## Requirements
-
-* Python 3.8
-
 ## Use cases
 
 * Validation and transformation of received data for your API.
