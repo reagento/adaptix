@@ -1,10 +1,11 @@
-adaptix
+Adaptix
 =============================================
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents:
 
+   overview
    tutorial
    specific_types_behavior
    API Reference <api_reference/modules>
