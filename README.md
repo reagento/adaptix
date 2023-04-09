@@ -1,4 +1,4 @@
-# adaptix
+# Adaptix
 
 [![PyPI version](https://badge.fury.io/py/adaptix.svg)](https://badge.fury.io/py/dataclass-factory)
 [![downloads](https://img.shields.io/pypi/dm/adaptix.svg)](https://pypistats.org/packages/adaptix)
@@ -7,7 +7,7 @@
 
 An extremely flexible and configurable data model conversion library.
 
-[📑 Documentation](https://adaptix.readthedocs.io/)
+📑 [Documentation](https://adaptix.readthedocs.io/)
 
 ## TL;DR
 
@@ -18,8 +18,9 @@ pip install adaptix
 
 Use
 ```python
-from adaptix import Retort
 from dataclasses import dataclass
+
+from adaptix import Retort
 
 
 @dataclass
@@ -35,13 +36,15 @@ data = {
 }
 
 retort = Retort()
-book: Book = retort.load(data, Book)  # Same as Book(title="Fahrenheit 451", price=100)
-dumped = retort.dump(book)
+
+book = retort.load(data, Book)
+assert book == Book(title="Fahrenheit 451", price=100)
+assert retort.dump(book) == data
 ```
 
 ## Requirements
 
-* python >= 3.8
+* Python 3.8
 
 ## Use cases
 
