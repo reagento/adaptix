@@ -15,7 +15,9 @@ certifi==2022.12.7
 charset-normalizer==3.0.1
     # via requests
 docutils==0.18.1
-    # via sphinx
+    # via
+    #   myst-parser
+    #   sphinx
 furo==2023.3.27
     # via -r requirements/raw/doc.txt
 idna==3.4
@@ -23,9 +25,21 @@ idna==3.4
 imagesize==1.4.1
     # via sphinx
 jinja2==3.1.2
-    # via sphinx
+    # via
+    #   myst-parser
+    #   sphinx
+markdown-it-py==2.2.0
+    # via
+    #   mdit-py-plugins
+    #   myst-parser
 markupsafe==2.1.2
     # via jinja2
+mdit-py-plugins==0.3.5
+    # via myst-parser
+mdurl==0.1.2
+    # via markdown-it-py
+myst-parser==1.0.0
+    # via -r requirements/raw/doc.txt
 packaging==23.0
     # via sphinx
 pbr==5.11.1
@@ -36,6 +50,8 @@ pygments==2.14.0
     #   sphinx
 pytz==2022.7.1
     # via babel
+pyyaml==6.0
+    # via myst-parser
 requests==2.28.2
     # via sphinx
 snowballstemmer==2.2.0
@@ -46,6 +62,7 @@ sphinx==5.3.0
     # via
     #   -r requirements/raw/doc.txt
     #   furo
+    #   myst-parser
     #   sphinx-basic-ng
     #   sphinx-copybutton
     #   sphinx-design

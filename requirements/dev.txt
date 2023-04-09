@@ -67,7 +67,9 @@ distlib==0.3.6
 dlint==0.14.0
     # via -r requirements/raw/lint.txt
 docutils==0.18.1
-    # via sphinx
+    # via
+    #   myst-parser
+    #   sphinx
 exceptiongroup==1.1.0
     # via
     #   cattrs
@@ -122,7 +124,9 @@ iniconfig==2.0.0
 isort==5.12.0
     # via pylint
 jinja2==3.1.2
-    # via sphinx
+    # via
+    #   myst-parser
+    #   sphinx
 kiwisolver==1.4.4
     # via matplotlib
 lazy-object-proxy==1.9.0
@@ -132,7 +136,10 @@ lxml==4.9.2
 mando==0.6.4
     # via radon
 markdown-it-py==2.2.0
-    # via rich
+    # via
+    #   mdit-py-plugins
+    #   myst-parser
+    #   rich
 markupsafe==2.1.2
     # via jinja2
 marshmallow==3.19.0
@@ -145,6 +152,8 @@ mccabe==0.7.0
     # via
     #   flake8
     #   pylint
+mdit-py-plugins==0.3.5
+    # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
 msgspec==0.13.1
@@ -153,6 +162,8 @@ mypy==1.2.0
     # via -r requirements/raw/lint.txt
 mypy-extensions==1.0.0
     # via mypy
+myst-parser==1.0.0
+    # via -r requirements/raw/doc.txt
 nodeenv==1.7.0
     # via pre-commit
 numpy==1.24.2
@@ -233,6 +244,7 @@ pytz==2022.7.1
 pyyaml==6.0
     # via
     #   bandit
+    #   myst-parser
     #   pre-commit
 radon==6.0.1
     # via -r requirements/raw/lint.txt
@@ -256,6 +268,7 @@ sphinx==5.3.0
     # via
     #   -r requirements/raw/doc.txt
     #   furo
+    #   myst-parser
     #   sphinx-basic-ng
     #   sphinx-copybutton
     #   sphinx-design
