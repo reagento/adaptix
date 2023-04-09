@@ -22,7 +22,7 @@ Example
 Requirements
 ==================
 
-* Python 3.8
+* Python 3.8+
 
 
 Use cases
