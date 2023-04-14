@@ -19,7 +19,8 @@ director = BenchmarkDirector(
     plot_params=PlotParams(
         title='Among Libraries Benchmark (dumping)',
         fig_size=(9, 6),
-        label_padding=35,
+        label_padding=40,
+        trim_after=200,
     ),
     env_spec={
         'py': f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
@@ -66,8 +67,6 @@ director.add(
         kwargs={'reviews_count': 100, 'strict_types': True},
         data_renaming={'reviews_count': 'rc', 'strict_types': 'st'},
     ),
-)
-director.add(
     BenchSchema(
         base_id='pydantic',
         label='pydantic',
@@ -98,8 +97,6 @@ director.add(
         kwargs={'detailed_validation': True, 'reviews_count': 100},
         data_renaming={'detailed_validation': 'dv', 'reviews_count': 'rc'},
     ),
-)
-director.add(
     BenchSchema(
         base_id='cattrs',
         label='cattrs',
@@ -152,8 +149,6 @@ director.add(
         kwargs={'no_gc': False, 'reviews_count': 100},
         data_renaming={'reviews_count': 'rc'},
     ),
-)
-director.add(
     BenchSchema(
         base_id='msgspec',
         label='msgspec\n(no_gc)',

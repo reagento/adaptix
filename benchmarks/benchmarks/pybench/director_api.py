@@ -9,7 +9,7 @@ from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
 import pyperf
 from matplotlib import pyplot as plt
@@ -35,10 +35,11 @@ class PlotParams:
     title: str
     fig_size: Tuple[float, float] = (8, 4.8)
     label_padding: float = 0
+    trim_after: Optional[float] = None
 
 
 class BenchAccessor:
-    def __init__(self, data_dir: Path, env_spec: Mapping[str, Any], schemas: List[BenchSchema]):
+    def __init__(self, data_dir: Path, env_spec: Mapping[str, str], schemas: List[BenchSchema]):
         self.data_dir = data_dir
         self.env_spec = env_spec
         self.schemas = schemas
@@ -120,9 +121,20 @@ class Plotter:
             color='orange',
             ecolor='black',
             capsize=5,
-            edgecolor="black"
+            edgecolor="black",
         )
-        bar_left_aligned_label(ax, hbars, fmt='%.1f', padding=self.params.label_padding, fontsize=9)
+
+        if self.params.trim_after is not None:
+            upper_bound = next(mean * 1.08 for mean in reversed(means) if mean <= self.params.trim_after)
+            ax.set_xbound(upper=upper_bound)
+
+        bar_left_aligned_label(
+            ax,
+            hbars,
+            padding=self.params.label_padding,
+            fontsize=9,
+            labels=[f'{mean:.1f}' for mean in means],
+        )
         ax.set_xlabel('Time (μs)')
         ax.set_yticks(x_pos)
         ax.tick_params(bottom=False, left=False)
@@ -235,8 +247,14 @@ class BenchmarkDirector:
         self.env_spec = env_spec
         self.plot_params = plot_params
         self.schemas: List[BenchSchema] = list(schemas)
+        self._bench_tags: Set[str] = set()
 
     def add(self, *schemas: BenchSchema) -> None:
+        for schema in schemas:
+            if schema.tag in self._bench_tags:
+                raise ValueError(f'Benchmark tag {schema.tag!r} is duplicated')
+            self._bench_tags.add(schema.tag)
+
         self.schemas.extend(schemas)
 
     def cli(self, args: Optional[Sequence[str]] = None):
