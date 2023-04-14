@@ -28,7 +28,7 @@ from .crown_definitions import (
     InpNoneCrown,
     InputNameLayout,
 )
-from .definitions import CodeGenerator, VarBinder
+from .definitions import CodeGenerator, VarBinder, as_is_stub
 
 
 class GenState:
@@ -401,18 +401,23 @@ class BuiltinInputExtractionGen(CodeGenerator):
     ):
         field_loader = state.field_loader(field_name)
 
+        if self._field_loaders[field_name] == as_is_stub:
+            processing_expr = data_for_loader
+        else:
+            processing_expr = f'{field_loader}({data_for_loader})'
+
         if self._debug_path and state.path:
             builder(
                 f"""
                 try:
-                    {field_left_value} = {field_loader}({data_for_loader})
+                    {field_left_value} = {processing_expr}
                 except Exception as e:
                     raise {self._wrap_error('e', state.path)}
                 """
             )
         else:
             builder(
-                f"{field_left_value} = {field_loader}({data_for_loader})"
+                f"{field_left_value} = {processing_expr}"
             )
 
     def _gen_extra_targets_assigment(self, builder: CodeBuilder, state: GenState):

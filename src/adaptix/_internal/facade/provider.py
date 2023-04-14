@@ -27,6 +27,7 @@ from ..provider import (
     ValueProvider,
     create_request_checker,
 )
+from ..provider.model.definitions import as_is_stub
 from ..provider.model.loader_provider import InlinedInputExtractionMaker, make_input_creation
 from ..provider.name_layout.base import ExtraIn, ExtraOut
 from ..provider.name_layout.component import (
@@ -115,7 +116,7 @@ def as_is_loader(pred: Pred) -> Provider:
     :param pred: Predicate specifying where loader should be used. See :ref:`predicate-system` for details.
     :return: desired provider
     """
-    return loader(pred, lambda x: x)
+    return loader(pred, as_is_stub)
 
 
 def as_is_dumper(pred: Pred) -> Provider:
@@ -124,7 +125,7 @@ def as_is_dumper(pred: Pred) -> Provider:
     :param pred: Predicate specifying where dumper should be used. See :ref:`predicate-system` for details.
     :return: desired provider
     """
-    return dumper(pred, lambda x: x)
+    return dumper(pred, as_is_stub)
 
 
 def constructor(pred: Pred, func: Callable) -> Provider:

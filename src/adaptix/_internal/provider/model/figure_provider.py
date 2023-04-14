@@ -17,7 +17,9 @@ from ...model_tools import (
 from ...model_tools.definitions import FigureIntrospector, InputFigure
 from ...type_tools.generic_resolver import GenericResolver, MembersStorage
 from ..essential import CannotProvide, Mediator
+from ..provider_template import ProviderWithAttachableRC
 from ..request_cls import LocatedRequest, TypeHintLoc
+from ..request_filtering import create_request_checker
 from ..static_provider import StaticProvider, static_provision_action
 from .definitions import InputFigureRequest, OutputFigureRequest
 
@@ -158,3 +160,43 @@ def provide_generic_resolved_figure(mediator: Mediator, request: LocatedRequest[
     if not request.loc_map.has(TypeHintLoc):
         return mediator.provide(request)
     return FigureGenericResolver(mediator, request).provide()
+
+
+T = TypeVar('T')
+
+
+class SimilarFigureProvider(ProviderWithAttachableRC):
+    def __init__(self, target: TypeHint, prototype: TypeHint, for_input: bool = True, for_output: bool = True):
+        self._target = target
+        self._prototype = prototype
+        self._request_checker = create_request_checker(self._target)
+        self._for_input = for_input
+        self._for_output = for_output
+
+    @static_provision_action
+    def _provide_input_figure(self, mediator: Mediator, request: InputFigureRequest) -> InputFigure:
+        if not self._for_input:
+            raise CannotProvide
+
+        self._request_checker.check_request(mediator, request)
+        figure = mediator.provide(
+            replace(
+                request,
+                loc_map=request.loc_map.add(TypeHintLoc(self._prototype))
+            )
+        )
+        return replace(figure, constructor=self._target)
+
+    @static_provision_action
+    def _provide_output_figure(self, mediator: Mediator, request: OutputFigureRequest) -> OutputFigure:
+        if not self._for_output:
+            raise CannotProvide
+
+        self._request_checker.check_request(mediator, request)
+        figure = mediator.provide(
+            replace(
+                request,
+                loc_map=request.loc_map.add(TypeHintLoc(self._prototype))
+            )
+        )
+        return figure

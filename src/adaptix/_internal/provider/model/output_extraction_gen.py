@@ -6,7 +6,7 @@ from ...common import Dumper
 from ...model_tools import AttrAccessor, ItemAccessor, OutputField, OutputFigure
 from ...struct_path import append_path, extend_path
 from .crown_definitions import ExtraExtract, ExtraTargets, OutExtraMove
-from .definitions import CodeGenerator, VarBinder
+from .definitions import CodeGenerator, VarBinder, as_is_stub
 
 
 class BuiltinOutputExtractionGen(CodeGenerator):
@@ -105,8 +105,11 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         raw_access_expr = self._gen_access_expr(binder, ctx_namespace, field)
         path_element_expr = self._gen_path_element_expr(ctx_namespace, field)
 
-        dumper = self._dumper(field)
-        on_access_ok_stmt = Template(on_access_ok).substitute(expr=f"{dumper}({raw_access_expr})")
+        if self._fields_dumpers[field.name] == as_is_stub:
+            on_access_ok_stmt = Template(on_access_ok).substitute(expr=raw_access_expr)
+        else:
+            dumper = self._dumper(field)
+            on_access_ok_stmt = Template(on_access_ok).substitute(expr=f"{dumper}({raw_access_expr})")
 
         if self._debug_path:
             builder += f"""
@@ -137,12 +140,17 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         raw_access_expr = self._gen_access_expr(binder, ctx_namespace, field)
         path_element_expr = self._gen_path_element_expr(ctx_namespace, field)
 
-        dumper = self._dumper(field)
         raw_field = self._raw_field(field)
 
-        on_access_ok_stmt = Template(on_access_ok).substitute(
-            expr=f"{dumper}({raw_field})"
-        )
+        if self._fields_dumpers[field.name] == as_is_stub:
+            on_access_ok_stmt = Template(on_access_ok).substitute(
+                expr=raw_field,
+            )
+        else:
+            dumper = self._dumper(field)
+            on_access_ok_stmt = Template(on_access_ok).substitute(
+                expr=f"{dumper}({raw_field})",
+            )
 
         access_error = field.accessor.access_error
         access_error_var = get_literal_expr(access_error)
