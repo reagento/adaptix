@@ -1,6 +1,6 @@
 # Adaptix
 
-[![PyPI version](https://badge.fury.io/py/adaptix.svg)](https://badge.fury.io/py/dataclass-factory)
+[![PyPI version](https://img.shields.io/pypi/v/adaptix.svg)](https://badge.fury.io/py/dataclass-factory)
 [![downloads](https://img.shields.io/pypi/dm/adaptix.svg)](https://pypistats.org/packages/adaptix)
 [![versions](https://img.shields.io/pypi/pyversions/adaptix.svg)](https://github.com/reagento/dataclass_factory)
 [![license](https://img.shields.io/github/license/reagento/dataclass_factory.svg)](https://github.com/reagento/dataclass_factory/blob/master/LICENSE)
