@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Seque
 
 import pyperf
 from matplotlib import pyplot as plt
+from pyperf._cli import format_checks
 
 from benchmarks.pybench.matplotlib_utils import bar_left_aligned_label
 from benchmarks.pybench.utils import get_function_object_ref
@@ -22,12 +23,10 @@ __all__ = ['BenchmarkDirector', 'BenchSchema', 'PlotParams']
 
 @dataclass
 class BenchSchema:
-    base_id: str
-    label: str
-    tag: str
     func: Callable
+    base: str
+    tags: Iterable[str]
     kwargs: Mapping[str, Any]
-    data_renaming: Mapping[str, str]
 
 
 @dataclass
@@ -72,11 +71,19 @@ class BenchAccessor:
         return '[' + '-'.join(f"{k}={v}" for k, v in self.env_spec.items()) + ']'
 
     def get_id(self, schema: BenchSchema) -> str:
-        if schema.kwargs:
-            id_kwargs = {schema.data_renaming.get(k, k): v for k, v in schema.kwargs.items()}
-            kwargs_str = '-'.join(f"{k}={v}" for k, v in id_kwargs.items())
-            return f"{schema.base_id}{self.env_spec_str()}[{kwargs_str}]"
-        return schema.base_id
+        return self.get_local_id(schema) + self.env_spec_str()
+
+    def get_local_id(self, schema: BenchSchema) -> str:
+        if schema.tags:
+            tags_str = '-' + '-'.join(schema.tags)
+            return schema.base + tags_str
+        return schema.base
+
+    def get_label(self, schema: BenchSchema) -> str:
+        if schema.tags:
+            tags_str = ', '.join(schema.tags)
+            return f"{schema.base}\n({tags_str})"
+        return schema.base
 
 
 class Plotter:
@@ -138,7 +145,12 @@ class Plotter:
         ax.set_xlabel('Time (μs)')
         ax.set_yticks(x_pos)
         ax.tick_params(bottom=False, left=False)
-        ax.set_yticklabels([self.accessor.id_to_schema[bench.get_name()].label for bench in benchmarks])
+        ax.set_yticklabels(
+            [
+                self.accessor.get_label(self.accessor.id_to_schema[bench.get_name()])
+                for bench in benchmarks
+            ]
+        )
         ax.set_title(self.params.title)
         ax.xaxis.grid(True)
         plt.tight_layout(w_pad=1000)
@@ -172,24 +184,28 @@ class BenchRunner:
                 schema for schema in self.accessor.schemas
                 if not self.accessor.bench_result_file(self.accessor.get_id(schema)).exists()
             ]
-        tag_to_schema = {
-            schema.tag: schema
+        local_id_to_schema = {
+            self.accessor.get_local_id(schema): schema
             for schema in schemas
         }
 
         benchmarks_to_run: List[str]
         if exclude is not None:
-            benchmarks_to_run = [schema.tag for schema in schemas if schema.tag not in set(exclude)]
+            benchmarks_to_run = [
+                self.accessor.get_local_id(schema)
+                for schema in schemas
+                if self.accessor.get_local_id(schema) not in set(exclude)
+            ]
         elif include is not None:
-            wild_labels = set(include) - tag_to_schema.keys()
+            wild_labels = set(include) - local_id_to_schema.keys()
             if wild_labels:
                 raise ValueError(f"Unknown labels {wild_labels}")
             benchmarks_to_run = list(include)
         else:
-            benchmarks_to_run = [schema.tag for schema in schemas]
+            benchmarks_to_run = [self.accessor.get_local_id(schema) for schema in schemas]
 
         for tag in benchmarks_to_run:
-            self.run_one_benchmark(tag_to_schema[tag])
+            self.run_one_benchmark(local_id_to_schema[tag])
 
     def run_one_benchmark(self, schema: BenchSchema) -> None:
         sig = inspect.signature(schema.func)
@@ -203,6 +219,13 @@ class BenchRunner:
                 entrypoint=get_function_object_ref(schema.func),
                 params=[schema.kwargs[param] for param in sig.parameters.keys()],
                 extra_args=['-o', str(temp_file)]
+            )
+            result_file.write_text(
+                json.dumps(
+                    json.loads(temp_file.read_text()),
+                    ensure_ascii=False,
+                    indent=4,
+                )
             )
             shutil.move(temp_file, result_file)
 
@@ -229,6 +252,41 @@ class BenchRunner:
         )
 
 
+class Checker:
+    def __init__(self, accessor: BenchAccessor):
+        self.accessor = accessor
+
+    def add_arguments(self, parser: ArgumentParser) -> None:
+        pass
+
+    def _process_warning(self, schema: BenchSchema, bench: pyperf.Benchmark, warnings: Iterable[str]) -> Iterable[str]:
+        return [
+            self.accessor.get_id(schema)
+        ] + [
+            line
+            for line in warnings
+            if not line.startswith('Use')
+        ]
+
+    def check_results(self):
+        lines = []
+        for schema in self.accessor.schemas:
+            result_file_path = self.accessor.bench_result_file(self.accessor.get_id(schema))
+
+            if not result_file_path.exists():
+                lines.append(f'Result file of {self.accessor.get_id(schema)!r}')
+                lines.append('')
+                continue
+
+            bench = pyperf.Benchmark.load(str(result_file_path))
+            warnings = format_checks(bench)
+            if warnings:
+                lines.extend(self._process_warning(schema, bench, warnings))
+                lines.append('')
+
+        print('\n'.join(lines))
+
+
 def call_by_namespace(func: Callable, namespace: Namespace) -> Any:
     sig = inspect.signature(func)
     kwargs_for_func = (vars(namespace).keys() & sig.parameters.keys())
@@ -247,22 +305,19 @@ class BenchmarkDirector:
         self.env_spec = env_spec
         self.plot_params = plot_params
         self.schemas: List[BenchSchema] = list(schemas)
-        self._bench_tags: Set[str] = set()
 
     def add(self, *schemas: BenchSchema) -> None:
-        for schema in schemas:
-            if schema.tag in self._bench_tags:
-                raise ValueError(f'Benchmark tag {schema.tag!r} is duplicated')
-            self._bench_tags.add(schema.tag)
-
         self.schemas.extend(schemas)
 
     def cli(self, args: Optional[Sequence[str]] = None):
         accessor = self.make_accessor()
+        self._validate_schemas(accessor)
+
         runner = self.make_bench_runner(accessor)
         plotter = self.make_bench_plotter(accessor)
+        checker = self.make_checker(accessor)
 
-        parser = self._make_parser(accessor, runner, plotter)
+        parser = self._make_parser(accessor, runner, plotter, checker)
         namespace = parser.parse_args(args)
 
         call_by_namespace(accessor.override_state, namespace)
@@ -274,10 +329,18 @@ class BenchmarkDirector:
         elif namespace.command == 'run-render':
             call_by_namespace(runner.run_benchmarks, namespace)
             call_by_namespace(plotter.draw_plot, namespace)
+        elif namespace.command == 'check':
+            call_by_namespace(checker.check_results, namespace)
         else:
             raise TypeError
 
-    def _make_parser(self, accessor: BenchAccessor, runner: BenchRunner, plotter: Plotter) -> ArgumentParser:
+    def _make_parser(
+        self,
+        accessor: BenchAccessor,
+        runner: BenchRunner,
+        plotter: Plotter,
+        checker: Checker,
+    ) -> ArgumentParser:
         parser = ArgumentParser()
 
         subparsers = parser.add_subparsers(required=True)
@@ -297,6 +360,12 @@ class BenchmarkDirector:
         accessor.add_arguments(run_render_parser)
         runner.add_arguments(run_render_parser)
         plotter.add_arguments(run_render_parser)
+
+        check_parser = subparsers.add_parser('check')
+        check_parser.set_defaults(command='check')
+        accessor.add_arguments(check_parser)
+        checker.add_arguments(check_parser)
+
         return parser
 
     def make_accessor(self) -> BenchAccessor:
@@ -311,3 +380,14 @@ class BenchmarkDirector:
 
     def make_bench_plotter(self, accessor: BenchAccessor) -> Plotter:
         return Plotter(self.plot_params, accessor)
+
+    def make_checker(self, accessor: BenchAccessor) -> Checker:
+        return Checker(accessor)
+
+    def _validate_schemas(self, accessor: BenchAccessor):
+        local_id_set: Set[str] = set()
+        for schema in self.schemas:
+            local_id = accessor.get_local_id(schema)
+            if local_id in local_id_set:
+                raise ValueError(f'Local id {local_id} is duplicated')
+            local_id_set.add(local_id)

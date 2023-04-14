@@ -30,132 +30,106 @@ director = BenchmarkDirector(
 
 director.add(
     BenchSchema(
-        base_id='adaptix',
-        label='adaptix\n(dp)',
-        tag='adaptix-dp',
         func=bench_adaptix.bench_dumping,
+        base='adaptix',
+        tags=['dp'],
         kwargs={'debug_path': True, 'reviews_count': 100},
-        data_renaming={'debug_path': 'dp', 'reviews_count': 'rc'},
     ),
     BenchSchema(
-        base_id='adaptix',
-        label='adaptix',
-        tag='adaptix',
         func=bench_adaptix.bench_dumping,
+        base='adaptix',
+        tags=[],
         kwargs={'debug_path': False, 'reviews_count': 100},
-        data_renaming={'debug_path': 'dp', 'reviews_count': 'rc'},
     ),
 )
 
 director.add(
     BenchSchema(
-        base_id='mashumaro',
-        label='mashumaro',
-        tag='mashumaro',
         func=bench_mashumaro.bench_dumping,
+        base='mashumaro',
+        tags=[],
         kwargs={'reviews_count': 100},
-        data_renaming={'reviews_count': 'rc'},
     ),
 )
 
 director.add(
     BenchSchema(
-        base_id='pydantic',
-        label='pydantic\n(st)',
-        tag='pydantic-st',
         func=bench_pydantic.bench_dumping,
+        base='pydantic',
+        tags=['st'],
         kwargs={'reviews_count': 100, 'strict_types': True},
-        data_renaming={'reviews_count': 'rc', 'strict_types': 'st'},
     ),
     BenchSchema(
-        base_id='pydantic',
-        label='pydantic',
-        tag='pydantic',
         func=bench_pydantic.bench_dumping,
+        base='pydantic',
+        tags=[],
         kwargs={'reviews_count': 100, 'strict_types': False},
-        data_renaming={'reviews_count': 'rc', 'strict_types': 'st'},
     ),
 )
 
 director.add(
     BenchSchema(
-        base_id='asdict',
-        label='asdict',
-        tag='asdict',
         func=bench_asdict.bench_dumping,
+        base='asdict',
+        tags=[],
         kwargs={'reviews_count': 100},
-        data_renaming={'reviews_count': 'rc'},
     ),
 )
 
 director.add(
     BenchSchema(
-        base_id='cattrs',
-        label='cattrs\n(dv)',
-        tag='cattrs-dv',
         func=bench_cattrs.bench_dumping,
+        base='cattrs',
+        tags=['dv'],
         kwargs={'detailed_validation': True, 'reviews_count': 100},
-        data_renaming={'detailed_validation': 'dv', 'reviews_count': 'rc'},
     ),
     BenchSchema(
-        base_id='cattrs',
-        label='cattrs',
-        tag='cattrs',
         func=bench_cattrs.bench_dumping,
+        base='cattrs',
+        tags=[],
         kwargs={'detailed_validation': False, 'reviews_count': 100},
-        data_renaming={'detailed_validation': 'dv', 'reviews_count': 'rc'},
     ),
 )
 
 director.add(
     BenchSchema(
-        base_id='schematics',
-        label='schematics',
-        tag='schematics',
         func=bench_schematics.bench_dumping,
+        base='schematics',
+        tags=[],
         kwargs={'reviews_count': 100},
-        data_renaming={'reviews_count': 'rc'},
     ),
 )
 
 director.add(
     BenchSchema(
-        base_id='dataclass_factory',
-        label='dataclass_factory',
-        tag='dataclass_factory',
         func=bench_dataclass_factory.bench_dumping,
+        base='dataclass_factory',
+        tags=[],
         kwargs={'reviews_count': 100},
-        data_renaming={'reviews_count': 'rc'},
     ),
 )
 
 director.add(
     BenchSchema(
-        base_id='marshmallow',
-        label='marshmallow',
-        tag='marshmallow',
         func=bench_marshmallow.bench_dumping,
+        base='marshmallow',
+        tags=[],
         kwargs={'reviews_count': 100},
-        data_renaming={'reviews_count': 'rc'},
     ),
 )
 
 director.add(
     BenchSchema(
-        base_id='msgspec',
-        label='msgspec',
-        tag='msgspec',
         func=bench_msgspec.bench_dumping,
+        base='msgspec',
+        tags=[],
         kwargs={'no_gc': False, 'reviews_count': 100},
-        data_renaming={'reviews_count': 'rc'},
     ),
     BenchSchema(
-        base_id='msgspec',
-        label='msgspec\n(no_gc)',
-        tag='msgspec-no_gc',
         func=bench_msgspec.bench_dumping,
+        base='msgspec',
+        tags=['no_gc'],
         kwargs={'no_gc': True, 'reviews_count': 100},
-        data_renaming={'reviews_count': 'rc'},
     ),
 )
 
