@@ -3,7 +3,7 @@ from typing import List
 
 from dataclass_factory import Factory, Schema
 
-from benchmarks.among_libraries.input_data import create_book, create_dumped_book
+from benchmarks.among_libraries.common import create_book, create_dumped_book
 from benchmarks.pybench.bench_api import benchmark_plan
 
 
@@ -22,14 +22,14 @@ class Book:
     reviews: List[Review]
 
 
-schemas = {
+SCHEMAS = {
     Review: Schema(name_mapping={'content': 'text'}),
 }
 
 
 def test_loading():
     assert (
-        Factory(schemas=schemas).load(create_dumped_book(reviews_count=1), Book)
+        Factory(schemas=SCHEMAS).load(create_dumped_book(reviews_count=1), Book)
         ==
         create_book(Book, Review, reviews_count=1)
     )
@@ -37,21 +37,21 @@ def test_loading():
 
 def test_dumping():
     assert (
-        Factory(schemas=schemas).dump(create_book(Book, Review, reviews_count=1))
+        Factory(schemas=SCHEMAS).dump(create_book(Book, Review, reviews_count=1))
         ==
         create_dumped_book(reviews_count=1)
     )
 
 
 def bench_loading(debug_path: bool, reviews_count: int):
-    parser = Factory(schemas=schemas, debug_path=debug_path).parser(Book)
+    parser = Factory(schemas=SCHEMAS, debug_path=debug_path).parser(Book)
 
     data = create_dumped_book(reviews_count=reviews_count)
     return benchmark_plan(parser, data)
 
 
 def bench_dumping(reviews_count: int):
-    serializer = Factory(schemas=schemas).serializer(Book)
+    serializer = Factory(schemas=SCHEMAS).serializer(Book)
 
     data = create_book(Book, Review, reviews_count=reviews_count)
     return benchmark_plan(serializer, data)

@@ -86,7 +86,7 @@ class BenchAccessor:
         return schema.base
 
 
-class Plotter:
+class BenchPlotter:
     def __init__(self, params: PlotParams, accessor: BenchAccessor):
         self.params = params
         self.accessor = accessor
@@ -197,9 +197,9 @@ class BenchRunner:
                 if self.accessor.get_local_id(schema) not in set(exclude)
             ]
         elif include is not None:
-            wild_labels = set(include) - local_id_to_schema.keys()
-            if wild_labels:
-                raise ValueError(f"Unknown labels {wild_labels}")
+            wild_local_ids = set(include) - local_id_to_schema.keys()
+            if wild_local_ids:
+                raise ValueError(f"Unknown local ids {wild_local_ids}")
             benchmarks_to_run = list(include)
         else:
             benchmarks_to_run = [self.accessor.get_local_id(schema) for schema in schemas]
@@ -252,14 +252,19 @@ class BenchRunner:
         )
 
 
-class Checker:
+class BenchChecker:
     def __init__(self, accessor: BenchAccessor):
         self.accessor = accessor
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         pass
 
-    def _process_warning(self, schema: BenchSchema, bench: pyperf.Benchmark, warnings: Iterable[str]) -> Iterable[str]:
+    def _process_warnings_batch(
+        self,
+        schema: BenchSchema,
+        bench: pyperf.Benchmark,
+        warnings: Iterable[str],
+    ) -> Iterable[str]:
         return [
             self.accessor.get_id(schema)
         ] + [
@@ -281,7 +286,7 @@ class Checker:
             bench = pyperf.Benchmark.load(str(result_file_path))
             warnings = format_checks(bench)
             if warnings:
-                lines.extend(self._process_warning(schema, bench, warnings))
+                lines.extend(self._process_warnings_batch(schema, bench, warnings))
                 lines.append('')
 
         print('\n'.join(lines))
@@ -315,7 +320,7 @@ class BenchmarkDirector:
 
         runner = self.make_bench_runner(accessor)
         plotter = self.make_bench_plotter(accessor)
-        checker = self.make_checker(accessor)
+        checker = self.make_bench_checker(accessor)
 
         parser = self._make_parser(accessor, runner, plotter, checker)
         namespace = parser.parse_args(args)
@@ -338,8 +343,8 @@ class BenchmarkDirector:
         self,
         accessor: BenchAccessor,
         runner: BenchRunner,
-        plotter: Plotter,
-        checker: Checker,
+        plotter: BenchPlotter,
+        checker: BenchChecker,
     ) -> ArgumentParser:
         parser = ArgumentParser()
 
@@ -378,11 +383,11 @@ class BenchmarkDirector:
     def make_bench_runner(self, accessor: BenchAccessor) -> BenchRunner:
         return BenchRunner(accessor)
 
-    def make_bench_plotter(self, accessor: BenchAccessor) -> Plotter:
-        return Plotter(self.plot_params, accessor)
+    def make_bench_plotter(self, accessor: BenchAccessor) -> BenchPlotter:
+        return BenchPlotter(self.plot_params, accessor)
 
-    def make_checker(self, accessor: BenchAccessor) -> Checker:
-        return Checker(accessor)
+    def make_bench_checker(self, accessor: BenchAccessor) -> BenchChecker:
+        return BenchChecker(accessor)
 
     def _validate_schemas(self, accessor: BenchAccessor):
         local_id_set: Set[str] = set()

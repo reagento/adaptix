@@ -3,7 +3,7 @@ from typing import List
 
 import msgspec
 
-from benchmarks.among_libraries.input_data import create_book, create_dumped_book
+from benchmarks.among_libraries.common import create_book, create_dumped_book
 from benchmarks.pybench.bench_api import benchmark_plan
 
 review_rename = {'content': 'text'}

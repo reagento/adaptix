@@ -1,9 +1,9 @@
 from functools import partial
 from typing import List
 
-from pydantic import BaseModel, Field, StrictFloat, StrictInt, StrictStr
+from pydantic import BaseModel, Field
 
-from benchmarks.among_libraries.input_data import create_book, create_dumped_book
+from benchmarks.among_libraries.common import create_book, create_dumped_book
 from benchmarks.pybench.bench_api import benchmark_plan
 
 
@@ -24,21 +24,26 @@ class Book(BaseModel):
     reviews: List[Review]
 
 
-class StrictTypesReview(BaseModel):
-    id: StrictInt
-    title: StrictStr
-    rating: StrictFloat
-    content: StrictStr = Field(alias='text')
+class StrictReview(BaseModel):
+    id: int
+    title: str
+    rating: float
+    content: str = Field(alias='text')
 
     model_config = {
         'populate_by_name': True,
+        'strict': True,
     }
 
 
-class StrictTypesBook(BaseModel):
-    id: StrictFloat
-    name: StrictStr
-    reviews: List[StrictTypesReview]
+class StrictBook(BaseModel):
+    id: int
+    name: str
+    reviews: List[StrictReview]
+
+    model_config = {
+        'strict': True,
+    }
 
 
 def test_loading():
@@ -48,9 +53,9 @@ def test_loading():
         create_book(Book, Review, reviews_count=1)
     )
     assert (
-        StrictTypesBook.model_validate(create_dumped_book(reviews_count=1))
+        StrictBook.model_validate(create_dumped_book(reviews_count=1))
         ==
-        create_book(StrictTypesBook, StrictTypesReview, reviews_count=1)
+        create_book(StrictBook, StrictReview, reviews_count=1)
     )
 
 
@@ -61,15 +66,15 @@ def test_dumping():
         create_dumped_book(reviews_count=1)
     )
     assert (
-        create_book(StrictTypesBook, StrictTypesReview, reviews_count=1).model_dump(mode='json', by_alias=True)
+        create_book(StrictBook, StrictReview, reviews_count=1).model_dump(mode='json', by_alias=True)
         ==
         create_dumped_book(reviews_count=1)
     )
 
 
-def bench_loading(reviews_count: int, strict_types: bool):
-    if strict_types:
-        loader = StrictTypesBook.model_validate
+def bench_loading(strict: bool, reviews_count: int):
+    if strict:
+        loader = StrictBook.model_validate
     else:
         loader = Book.model_validate
 
@@ -77,10 +82,10 @@ def bench_loading(reviews_count: int, strict_types: bool):
     return benchmark_plan(loader, data)
 
 
-def bench_dumping(reviews_count: int, strict_types: bool):
-    if strict_types:
-        data = create_book(StrictTypesBook, StrictTypesReview, reviews_count=reviews_count)
-        dumper = StrictTypesBook.model_dump
+def bench_dumping(strict: bool, reviews_count: int):
+    if strict:
+        data = create_book(StrictBook, StrictReview, reviews_count=reviews_count)
+        dumper = StrictBook.model_dump
     else:
         data = create_book(Book, Review, reviews_count=reviews_count)
         dumper = Book.model_dump

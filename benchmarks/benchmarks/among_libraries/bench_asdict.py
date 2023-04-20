@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass
 from typing import List
 
-from benchmarks.among_libraries.input_data import create_book, create_dumped_book
+from benchmarks.among_libraries.common import create_book, create_dumped_book
 from benchmarks.pybench.bench_api import benchmark_plan
 
 

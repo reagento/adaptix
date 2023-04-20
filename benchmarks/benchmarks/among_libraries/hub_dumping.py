@@ -14,6 +14,8 @@ from benchmarks.among_libraries import (
 )
 from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, PlotParams
 
+REVIEWS_COUNT = 100
+
 director = BenchmarkDirector(
     data_dir=Path(__file__).parent.parent.parent / 'data' / 'among_libraries' / 'dumping',
     plot_params=PlotParams(
@@ -33,13 +35,13 @@ director.add(
         func=bench_adaptix.bench_dumping,
         base='adaptix',
         tags=['dp'],
-        kwargs={'debug_path': True, 'reviews_count': 100},
+        kwargs={'debug_path': True, 'reviews_count': REVIEWS_COUNT},
     ),
     BenchSchema(
         func=bench_adaptix.bench_dumping,
         base='adaptix',
         tags=[],
-        kwargs={'debug_path': False, 'reviews_count': 100},
+        kwargs={'debug_path': False, 'reviews_count': REVIEWS_COUNT},
     ),
 )
 
@@ -48,7 +50,7 @@ director.add(
         func=bench_mashumaro.bench_dumping,
         base='mashumaro',
         tags=[],
-        kwargs={'reviews_count': 100},
+        kwargs={'reviews_count': REVIEWS_COUNT},
     ),
 )
 
@@ -56,14 +58,14 @@ director.add(
     BenchSchema(
         func=bench_pydantic.bench_dumping,
         base='pydantic',
-        tags=['st'],
-        kwargs={'reviews_count': 100, 'strict_types': True},
+        tags=['strict'],
+        kwargs={'strict': True, 'reviews_count': REVIEWS_COUNT},
     ),
     BenchSchema(
         func=bench_pydantic.bench_dumping,
         base='pydantic',
         tags=[],
-        kwargs={'reviews_count': 100, 'strict_types': False},
+        kwargs={'strict': False, 'reviews_count': REVIEWS_COUNT},
     ),
 )
 
@@ -72,7 +74,7 @@ director.add(
         func=bench_asdict.bench_dumping,
         base='asdict',
         tags=[],
-        kwargs={'reviews_count': 100},
+        kwargs={'reviews_count': REVIEWS_COUNT},
     ),
 )
 
@@ -81,13 +83,13 @@ director.add(
         func=bench_cattrs.bench_dumping,
         base='cattrs',
         tags=['dv'],
-        kwargs={'detailed_validation': True, 'reviews_count': 100},
+        kwargs={'detailed_validation': True, 'reviews_count': REVIEWS_COUNT},
     ),
     BenchSchema(
         func=bench_cattrs.bench_dumping,
         base='cattrs',
         tags=[],
-        kwargs={'detailed_validation': False, 'reviews_count': 100},
+        kwargs={'detailed_validation': False, 'reviews_count': REVIEWS_COUNT},
     ),
 )
 
@@ -96,7 +98,7 @@ director.add(
         func=bench_schematics.bench_dumping,
         base='schematics',
         tags=[],
-        kwargs={'reviews_count': 100},
+        kwargs={'reviews_count': REVIEWS_COUNT},
     ),
 )
 
@@ -105,7 +107,7 @@ director.add(
         func=bench_dataclass_factory.bench_dumping,
         base='dataclass_factory',
         tags=[],
-        kwargs={'reviews_count': 100},
+        kwargs={'reviews_count': REVIEWS_COUNT},
     ),
 )
 
@@ -114,7 +116,7 @@ director.add(
         func=bench_marshmallow.bench_dumping,
         base='marshmallow',
         tags=[],
-        kwargs={'reviews_count': 100},
+        kwargs={'reviews_count': REVIEWS_COUNT},
     ),
 )
 
@@ -123,13 +125,13 @@ director.add(
         func=bench_msgspec.bench_dumping,
         base='msgspec',
         tags=[],
-        kwargs={'no_gc': False, 'reviews_count': 100},
+        kwargs={'no_gc': False, 'reviews_count': REVIEWS_COUNT},
     ),
     BenchSchema(
         func=bench_msgspec.bench_dumping,
         base='msgspec',
         tags=['no_gc'],
-        kwargs={'no_gc': True, 'reviews_count': 100},
+        kwargs={'no_gc': True, 'reviews_count': REVIEWS_COUNT},
     ),
 )
 

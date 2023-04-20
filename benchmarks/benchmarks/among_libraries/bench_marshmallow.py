@@ -3,7 +3,7 @@ from typing import List
 
 from marshmallow import Schema, fields, post_load
 
-from benchmarks.among_libraries.input_data import create_book, create_dumped_book
+from benchmarks.among_libraries.common import create_book, create_dumped_book
 from benchmarks.pybench.bench_api import benchmark_plan
 
 
@@ -29,7 +29,7 @@ class ReviewSchema(Schema):
     content = fields.Str(data_key='text')
 
     @post_load
-    def post(self, data, **kwargs):
+    def _to_model(self, data, **kwargs):
         return Review(**data)
 
 
@@ -39,7 +39,7 @@ class BookSchema(Schema):
     reviews = fields.List(fields.Nested(ReviewSchema()))
 
     @post_load
-    def post(self, data, **kwargs):
+    def _to_model(self, data, **kwargs):
         return Book(**data)
 
 

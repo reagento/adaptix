@@ -1,21 +1,21 @@
 from schematics.models import Model
 from schematics.types import FloatType, IntType, ListType, ModelType, StringType
 
-from benchmarks.among_libraries.input_data import create_dumped_book
+from benchmarks.among_libraries.common import create_dumped_book
 from benchmarks.pybench.bench_api import benchmark_plan
 
 
 class Review(Model):
-    id = IntType()
-    title = StringType()
-    rating = FloatType()
-    content = StringType(serialized_name='text')
+    id = IntType(required=True)
+    title = StringType(required=True)
+    rating = FloatType(required=True)
+    content = StringType(serialized_name='text', required=True)
 
 
 class Book(Model):
-    id = IntType()
-    name = StringType()
-    reviews = ListType(ModelType(Review))
+    id = IntType(required=True)
+    name = StringType(required=True)
+    reviews = ListType(ModelType(Review), required=True)
 
 
 def create_book_schematics(*, reviews_count: int) -> Book:
