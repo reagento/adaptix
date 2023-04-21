@@ -1,7 +1,8 @@
 import sys
 from pathlib import Path
 
-from benchmarks.among_libraries import (
+from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, PlotParams
+from benchmarks.small_structures import (
     bench_adaptix,
     bench_asdict,
     bench_cattrs,
@@ -12,14 +13,13 @@ from benchmarks.among_libraries import (
     bench_pydantic,
     bench_schematics,
 )
-from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, PlotParams
 
 REVIEWS_COUNT = 100
 
 director = BenchmarkDirector(
-    data_dir=Path(__file__).parent.parent.parent / 'data' / 'among_libraries' / 'dumping',
+    data_dir=Path(__file__).parent.parent.parent / 'data' / 'small_structures' / 'dumping',
     plot_params=PlotParams(
-        title='Among Libraries Benchmark (dumping)',
+        title='Small Structures Benchmark (dumping)',
         fig_size=(9, 6),
         label_padding=40,
         trim_after=200,

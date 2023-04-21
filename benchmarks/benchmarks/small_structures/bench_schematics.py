@@ -1,8 +1,8 @@
 from schematics.models import Model
 from schematics.types import FloatType, IntType, ListType, ModelType, StringType
 
-from benchmarks.among_libraries.common import create_dumped_book
 from benchmarks.pybench.bench_api import benchmark_plan
+from benchmarks.small_structures.common import create_dumped_book
 
 
 class Review(Model):

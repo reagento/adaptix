@@ -4,8 +4,8 @@ from attr import define
 from cattr import Converter
 from cattrs.gen import make_dict_structure_fn, make_dict_unstructure_fn, override
 
-from benchmarks.among_libraries.common import create_book, create_dumped_book
 from benchmarks.pybench.bench_api import benchmark_plan
+from benchmarks.small_structures.common import create_book, create_dumped_book
 
 
 @define
