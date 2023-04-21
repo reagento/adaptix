@@ -27,8 +27,8 @@ from ..provider import (
     ValueProvider,
     create_request_checker,
 )
-from ..provider.model.definitions import as_is_stub
 from ..provider.model.loader_provider import InlinedInputExtractionMaker, make_input_creation
+from ..provider.model.special_cases_optimization import as_is_stub
 from ..provider.name_layout.base import ExtraIn, ExtraOut
 from ..provider.name_layout.component import (
     ExtraMoveAndPoliciesOverlay,

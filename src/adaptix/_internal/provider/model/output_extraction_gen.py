@@ -6,7 +6,8 @@ from ...common import Dumper
 from ...model_tools import AttrAccessor, ItemAccessor, OutputField, OutputFigure
 from ...struct_path import append_path, extend_path
 from .crown_definitions import ExtraExtract, ExtraTargets, OutExtraMove
-from .definitions import CodeGenerator, VarBinder, as_is_stub
+from .definitions import CodeGenerator, VarBinder
+from .special_cases_optimization import as_is_stub
 
 
 class BuiltinOutputExtractionGen(CodeGenerator):

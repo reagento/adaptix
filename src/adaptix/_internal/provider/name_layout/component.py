@@ -43,6 +43,7 @@ from ..model.crown_definitions import (
     OutNoneCrown,
     OutputNameLayoutRequest,
 )
+from ..model.special_cases_optimization import set_default_clause
 from ..name_style import NameStyle, convert_snake_style
 from ..overlay_schema import Overlay, Schema, provide_schema
 from ..request_cls import FieldLoc, LocatedRequest, TypeHintLoc
@@ -284,11 +285,11 @@ class BuiltinSievesMaker(SievesMaker):
     def _create_sieve(self, field: OutputField) -> Sieve:
         if isinstance(field.default, DefaultValue):
             default_value = field.default.value
-            return lambda x: x != default_value
+            return set_default_clause(lambda x: x != default_value, field.default)
 
         if isinstance(field.default, DefaultFactory):
             default_factory = field.default.factory
-            return lambda x: x != default_factory()
+            return set_default_clause(lambda x: x != default_factory(), field.default)
 
         raise ValueError
 

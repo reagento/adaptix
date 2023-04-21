@@ -11,6 +11,7 @@ from ..struct_path import append_path
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
 from ..utils import ClassDispatcher
 from .essential import CannotProvide, Mediator, Request
+from .model.special_cases_optimization import as_is_stub
 from .provider_template import DumperProvider, LoaderProvider, for_predicate
 from .request_cls import (
     DebugPathRequest,
@@ -180,6 +181,8 @@ class UnionProvider(LoaderProvider, DumperProvider):
                     )
                 )
             )
+            if non_optional_dumper == as_is_stub:
+                return as_is_stub
             return self._get_single_optional_dumper(non_optional_dumper)
 
         non_class_origins = [case.source for case in norm.args if not self._is_class_origin(case.origin)]
@@ -200,6 +203,8 @@ class UnionProvider(LoaderProvider, DumperProvider):
             )
             for i, tp in enumerate(norm.args)
         )
+        if all(dumper == as_is_stub for dumper in dumpers):
+            return as_is_stub
 
         dumper_type_dispatcher = ClassDispatcher({case.origin: dumper for case, dumper in zip(norm.args, dumpers)})
         return self._get_dumper(dumper_type_dispatcher)

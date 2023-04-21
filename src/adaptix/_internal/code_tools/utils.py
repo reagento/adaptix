@@ -86,3 +86,10 @@ def get_literal_from_factory(obj: object) -> Optional[str]:
         return _CLS_TO_FACTORY_LITERAL.get(obj, None)
     except TypeError:
         return None
+
+
+_SINGLETONS = {None, Ellipsis, NotImplemented}
+
+
+def is_singleton(obj: object) -> bool:
+    return obj in _SINGLETONS or isinstance(obj, bool)

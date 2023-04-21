@@ -251,7 +251,8 @@ class ClassMap(Generic[T]):
         return hash((key, value) for key, value in self._mapping.items())
 
     def __repr__(self):
-        return f'{type(self).__qualname__}({self._mapping!r})'
+        args_str = ', '.join(repr(v) for v in self._mapping.values())
+        return f'{type(self).__qualname__}({args_str})'
 
     def _with_new_mapping(self: CM, mapping: Mapping[Type[T], T]) -> CM:
         self_copy = copy(self)

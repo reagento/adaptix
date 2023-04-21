@@ -3,6 +3,7 @@ from string import Template
 from typing import Dict, NamedTuple, Optional
 
 from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr, get_literal_from_factory
+from ...code_tools.utils import is_singleton
 from ...model_tools import DefaultFactory, DefaultValue, OutputField
 from .crown_definitions import (
     CrownPathElem,
@@ -16,6 +17,7 @@ from .crown_definitions import (
 )
 from .definitions import CodeGenerator, OutputFigure, VarBinder
 from .input_extraction_gen import CrownPath
+from .special_cases_optimization import get_default_clause
 
 
 class GenState:
@@ -76,6 +78,13 @@ class GenState:
             return "sieve"
 
         return 'sieve_' + self._get_path_idx(path)
+
+    def default_clause(self, key: CrownPathElem) -> str:
+        path = self._path + (key,)
+        if not path:
+            return "dfl"
+
+        return 'dfl_' + self._get_path_idx(path)
 
 
 class ElementExpr(NamedTuple):
@@ -266,22 +275,46 @@ class BuiltinOutputCreationGen(CodeGenerator):
         element_expr: ElementExpr,
     ):
         self_var = state.crown_var_self()
-        sieve_var = state.sieve(key)
-        state.ctx_namespace.add(sieve_var, sieve)
-
+        condition = self._gen_sieve_condition(state, sieve, key, element_expr.expr)
         if element_expr.can_inline:
             builder += f"""
-                if {sieve_var}({element_expr.expr}):
+                if {condition}:
                     {self_var}[{key!r}] = {element_expr.expr}
             """
         else:
             builder += f"""
                 value = {element_expr.expr}
-                if {sieve_var}(value):
+                if {condition}:
                     {self_var}[{key!r}] = value
             """
-
         builder.empty_line()
+
+    def _gen_sieve_condition(self, state: GenState, sieve: Sieve, key: str, input_expr: str) -> str:
+        default_clause = get_default_clause(sieve)
+        if default_clause is None:
+            sieve_var = state.sieve(key)
+            state.ctx_namespace.add(sieve_var, sieve)
+            return f'{sieve_var}({input_expr})'
+
+        if isinstance(default_clause, DefaultValue):
+            literal_expr = get_literal_expr(default_clause.value)
+            if literal_expr is not None:
+                if is_singleton(default_clause.value):
+                    return f"{input_expr} is not {literal_expr}"
+                return f"{input_expr} != {literal_expr}"
+            default_clause_var = state.default_clause(key)
+            state.ctx_namespace.add(default_clause_var, default_clause.value)
+            return f"{input_expr} != {default_clause_var}"
+
+        if isinstance(default_clause, DefaultFactory):
+            literal_expr = get_literal_from_factory(default_clause.factory)
+            if literal_expr is not None:
+                return f"{input_expr} != {literal_expr}"
+            default_clause_var = state.default_clause(key)
+            state.ctx_namespace.add(default_clause_var, default_clause.factory)
+            return f"{input_expr} != {default_clause_var}()"
+
+        raise TypeError
 
     def _gen_list_crown(self, builder: CodeBuilder, state: GenState, crown: OutListCrown):
         for i, sub_crown in enumerate(crown.map):

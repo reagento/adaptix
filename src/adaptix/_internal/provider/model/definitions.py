@@ -31,6 +31,3 @@ class VarBinder(PrefixManglerBase):
 class CodeGenerator(Protocol):
     def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         ...
-
-
-as_is_stub = lambda x: x  # noqa: E731  # pylint: disable=unnecessary-lambda-assignment

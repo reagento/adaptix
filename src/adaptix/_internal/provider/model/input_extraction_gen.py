@@ -28,7 +28,8 @@ from .crown_definitions import (
     InpNoneCrown,
     InputNameLayout,
 )
-from .definitions import CodeGenerator, VarBinder, as_is_stub
+from .definitions import CodeGenerator, VarBinder
+from .special_cases_optimization import as_is_stub
 
 
 class GenState:
