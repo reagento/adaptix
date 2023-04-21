@@ -183,7 +183,7 @@ def test_literal(strict_coercion, debug_path):
 
     if debug_path:
         raises_path(
-            UnionLoadError([TypeLoadError(type(None)), LoadError()]),
+            UnionLoadError([TypeLoadError(None), LoadError()]),
             lambda: loader('b'),
             path=[],
         )

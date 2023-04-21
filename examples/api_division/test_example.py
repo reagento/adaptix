@@ -91,13 +91,13 @@ def test_outer_loading():
     raises_path(
         UnionLoadError(
             [
+                TypeLoadError(expected_type=None),
                 UnionLoadError(
                     [
                         LoadError(),
-                        ValueLoadError(msg='Bad phone number')
+                        ValueLoadError(msg='Bad phone number'),
                     ]
                 ),
-                TypeLoadError(expected_type=None)
             ]
         ),
         lambda: outer_receipt_loader(bad_phone_data),

@@ -1,7 +1,8 @@
 from typing import Optional, TypeVar, Union
 
-from ...model_tools import DefaultFactory, DefaultValue
-from .crown_definitions import Sieve
+from adaptix._internal.load_error import TypeLoadError
+from adaptix._internal.model_tools import DefaultFactory, DefaultValue
+from adaptix._internal.provider.model.crown_definitions import Sieve
 
 as_is_stub = lambda x: x  # noqa: E731  # pylint: disable=unnecessary-lambda-assignment
 
@@ -19,3 +20,9 @@ def set_default_clause(sieve: S, default: Union[DefaultValue, DefaultFactory]) -
 
 def get_default_clause(sieve: Sieve) -> Optional[Union[DefaultValue, DefaultFactory]]:
     return getattr(sieve, '_adaptix_default_clause', None)
+
+
+def none_loader(data):
+    if data is None:
+        return None
+    raise TypeLoadError(None)

@@ -2,6 +2,8 @@ import contextlib
 from copy import copy
 from typing import Dict, Mapping, Optional, Set
 
+from adaptix._internal.provider.model.special_cases_optimization import as_is_stub
+
 from ...code_tools import CodeBuilder, ContextNamespace
 from ...common import Loader
 from ...load_error import (
@@ -29,7 +31,6 @@ from .crown_definitions import (
     InputNameLayout,
 )
 from .definitions import CodeGenerator, VarBinder
-from .special_cases_optimization import as_is_stub
 
 
 class GenState:
@@ -357,45 +358,38 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
     def _gen_field_crown(self, builder: CodeBuilder, state: GenState, crown: InpFieldCrown):
         field = state.get_field(crown)
-
-        if field.is_required:
-            field_left_value = state.binder.field(field)
+        if field.is_optional:
+            last_path_el = state.path[-1]
+            data = state.with_parent_path().get_data_var_name()
+            with builder(f'if {last_path_el!r} in {data}:'):
+                self._gen_field_assigment(
+                    builder=builder,
+                    assign_to=f"{state.binder.opt_fields}[{field.name!r}]",
+                    field_name=field.name,
+                    data_for_loader=f"{data}[{last_path_el!r}]",
+                    state=state,
+                )
         else:
-            field_left_value = f"{state.binder.opt_fields}[{field.name!r}]"
-
-        self._gen_var_assigment_from_data(
-            builder,
-            state,
-            assign_to=state.raw_field(field),
-            ignore_lookup_error=field.is_optional,
-        )
-        data_for_loader = state.raw_field(field)
-
-        if field.is_required:
+            self._gen_var_assigment_from_data(
+                builder=builder,
+                state=state,
+                assign_to=state.raw_field(field),
+                ignore_lookup_error=field.is_optional,
+            )
             builder.empty_line()
             self._gen_field_assigment(
-                builder,
-                field_left_value,
-                field.name,
-                data_for_loader,
-                state,
+                builder=builder,
+                assign_to=state.binder.field(field),
+                field_name=field.name,
+                data_for_loader=state.raw_field(field),
+                state=state,
             )
-        else:
-            with builder("else:"):
-                self._gen_field_assigment(
-                    builder,
-                    field_left_value,
-                    field.name,
-                    data_for_loader,
-                    state,
-                )
-
         builder.empty_line()
 
     def _gen_field_assigment(
         self,
         builder: CodeBuilder,
-        field_left_value: str,
+        assign_to: str,
         field_name: str,
         data_for_loader: str,
         state: GenState,
@@ -411,14 +405,14 @@ class BuiltinInputExtractionGen(CodeGenerator):
             builder(
                 f"""
                 try:
-                    {field_left_value} = {processing_expr}
+                    {assign_to} = {processing_expr}
                 except Exception as e:
                     raise {self._wrap_error('e', state.path)}
                 """
             )
         else:
             builder(
-                f"{field_left_value} = {processing_expr}"
+                f"{assign_to} = {processing_expr}"
             )
 
     def _gen_extra_targets_assigment(self, builder: CodeBuilder, state: GenState):
@@ -434,8 +428,8 @@ class BuiltinInputExtractionGen(CodeGenerator):
                 field = self._name_to_field[target]
 
                 self._gen_field_assigment(
-                    builder,
-                    field_left_value=state.binder.field(field),
+                    builder=builder,
+                    assign_to=state.binder.field(field),
                     field_name=target,
                     data_for_loader=state.get_extra_var_name(),
                     state=state,
@@ -443,11 +437,10 @@ class BuiltinInputExtractionGen(CodeGenerator):
         else:
             for target in extra_move.fields:
                 field = self._name_to_field[target]
-
                 if field.is_required:
                     self._gen_field_assigment(
-                        builder,
-                        field_left_value=state.binder.field(field),
+                        builder=builder,
+                        assign_to=state.binder.field(field),
                         field_name=target,
                         data_for_loader="{}",
                         state=state,

@@ -117,6 +117,21 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 class UnionProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = normalize_type(get_type_from_request(request))
+        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
+
+        if self._is_single_optional(norm):
+            non_optional = next(case for case in norm.args if case.origin is not None)
+            non_optional_loader = mediator.provide(
+                LoaderRequest(
+                    loc_map=LocMap(
+                        TypeHintLoc(type=non_optional.source),
+                        GenericParamLoc(pos=0),
+                    )
+                )
+            )
+            if debug_path:
+                return self._single_optional_dp_loader(non_optional_loader)
+            return self._single_optional_non_dp_loader(non_optional_loader)
 
         loaders = tuple(
             mediator.provide(
@@ -129,11 +144,28 @@ class UnionProvider(LoaderProvider, DumperProvider):
             )
             for i, tp in enumerate(norm.args)
         )
-        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
-
         if debug_path:
             return self._get_loader_dp(loaders)
         return self._get_loader_non_dp(loaders)
+
+    def _single_optional_non_dp_loader(self, loader: Loader) -> Loader:
+        def optional_non_dp_loader(data):
+            if data is None:
+                return None
+            return loader(data)
+
+        return optional_non_dp_loader
+
+    def _single_optional_dp_loader(self, loader: Loader) -> Loader:
+        def optional_dp_loader(data):
+            if data is None:
+                return None
+            try:
+                return loader(data)
+            except LoadError as e:
+                raise UnionLoadError([TypeLoadError(None), e])
+
+        return optional_dp_loader
 
     def _get_loader_dp(self, loader_iter: Iterable[Loader]) -> Loader:
         def union_loader_dp(data):
@@ -216,12 +248,12 @@ class UnionProvider(LoaderProvider, DumperProvider):
         return union_dumper
 
     def _get_single_optional_dumper(self, dumper: Dumper) -> Dumper:
-        def union_so_dumper(data):
+        def optional_dumper(data):
             if data is None:
                 return None
             return dumper(data)
 
-        return union_so_dumper
+        return optional_dumper
 
 
 CollectionsMapping = collections.abc.Mapping

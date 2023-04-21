@@ -7,6 +7,8 @@ from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from typing import Generic, Type, TypeVar, Union
 
+from adaptix._internal.provider.model.special_cases_optimization import none_loader
+
 from ..common import Dumper, Loader
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from .essential import CannotProvide, Mediator
@@ -91,12 +93,6 @@ class SecondsTimedeltaProvider(LoaderProvider, DumperProvider):
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return timedelta.total_seconds
-
-
-def none_loader(data):
-    if data is None:
-        return None
-    raise TypeLoadError(None)
 
 
 @for_predicate(None)
