@@ -1,7 +1,7 @@
 # API division
 
-This example shows how the library can be used in a real project
-and illustrates adding custom types support
+This example shows how the library can be used in a real project.
+Also it illustrates adding custom types support
 as well as separating the representation of the same model for external and internal APIs.
 
 The code for the external API contains a lot more validation,

@@ -49,7 +49,7 @@ outer_sample_data = {
 outer_receipt_loader = OUTER_RECEIPT_RETORT.get_loader(Receipt)
 
 
-def test_outer_loading():
+def test_outer_loading_basic():
     assert outer_receipt_loader(outer_sample_data) == Receipt(
         type=ReceiptType.INCOME,
         items=[
@@ -63,6 +63,8 @@ def test_outer_loading():
         notify=[NotifyEmail("mail@example.com")],
     )
 
+
+def test_outer_loading_no_rec_items():
     no_rec_items_data = change(outer_sample_data, ["items"], [])
 
     raises_path(
@@ -71,6 +73,8 @@ def test_outer_loading():
         path=['items'],
     )
 
+
+def test_outer_loading_bad_phone():
     phone_data = change(outer_sample_data, ["notify", 0], {"type": "phone", "value": "+14155552671"})
 
     assert outer_receipt_loader(phone_data) == Receipt(
@@ -104,6 +108,8 @@ def test_outer_loading():
         path=['notify'],  # I do not know how to fix that
     )
 
+
+def test_outer_loading_bad_receipt_type():
     bad_receipt_type_data = change(outer_sample_data, ["type"], "BAD_TYPE")
 
     raises_path(
@@ -112,6 +118,8 @@ def test_outer_loading():
         path=['type'],
     )
 
+
+def test_outer_loading_with_version_tag():
     with_version_data = change(outer_sample_data, ["version"], 1)
 
     raises_path(
@@ -121,7 +129,7 @@ def test_outer_loading():
     )
 
 
-def test_outer_receipt_item_validation():
+def test_outer_loading_bad_item_quantity():
     bad_quantity_data = change(outer_sample_data, ["items", 0, "quantity"], Decimal(0))
 
     raises_path(
@@ -130,6 +138,8 @@ def test_outer_receipt_item_validation():
         path=["items", 0, "quantity"],
     )
 
+
+def test_outer_loading_bad_item_price():
     bad_price_data = change(outer_sample_data, ["items", 0, "price"], Decimal(-10))
 
     raises_path(
@@ -138,6 +148,8 @@ def test_outer_receipt_item_validation():
         path=["items", 0, "price"],
     )
 
+
+def test_outer_loading_bad_item_name():
     bad_name_data = change(outer_sample_data, ["items", 0, "name"], 'Matchbox 🔥')
 
     raises_path(
@@ -146,6 +158,8 @@ def test_outer_receipt_item_validation():
         path=["items", 0, "name"],
     )
 
+
+def test_outer_loading_item_name_chars_replacing():
     replace_name_data = change(outer_sample_data, ["items", 0, "name"], 'Matchbox «Dry Fire»')
 
     assert outer_receipt_loader(replace_name_data) == Receipt(
