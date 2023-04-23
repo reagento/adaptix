@@ -5,22 +5,23 @@ lint:
 
 .PHONY: test-all
 test-all:
-	@tox -e $$(tox -l | grep -e '^py' -e 'bench_test' | tr '\n' ',')
+	@tox -e $$(tox -l | grep '^py' | tr '\n' ',')
+
+
+.PHONY: test-all-p
+test-all-p:
+	@tox -e $$(tox -l | grep '^py' | sort -r | tr '\n' ',') -p auto
 
 
 .PHONY: test
 test:
 	@tox -e $$(tox -l | grep '^py' | grep 'new$$' | tr '\n' ',')
 
-.PHONY: test-bench
-test-bench:
-	@tox -e bench_test
-
 
 .PHONY: cov
 cov:
 	@coverage erase
-	@tox -e $$(tox -l | grep '^py' | sort -r | tr '\n' ',') -p auto -- --cov adaptix --cov-append
+	@tox -e $$(tox -l | grep -e '^py' | grep -v 'bench' | sort -r | tr '\n' ',') -p auto -- --cov adaptix --cov-append
 	@coverage xml
 
 
