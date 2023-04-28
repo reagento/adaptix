@@ -53,10 +53,16 @@ SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = docs
 BUILDDIR      = docs-build
 
-.PHONY: docs
-docs:
+.PHONY: doc
+doc:
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 
-.PHONY: docs-clean
-docs-clean:
+.PHONY: doc-clean
+doc-clean:
 	@$(SPHINXBUILD) -M clean "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+
+.PHONY: docs
+docs: doc
+
+.PHONY: docs-clean
+docs-clean: doc-clean

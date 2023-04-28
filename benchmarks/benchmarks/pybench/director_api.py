@@ -128,10 +128,8 @@ class BenchChecker:
         percent = stdev / mean
         if percent >= self.check_params.stddev_rel_threshold:
             lines.append(
-                "the relative standard deviation is {:.1%}, max allowed is {:.0%}"
-                .format(
-                    percent, self.check_params.stddev_rel_threshold
-                )
+                f"the relative standard deviation is {percent:.1%},"
+                f" max allowed is {self.check_params.stddev_rel_threshold:.0%}"
             )
         return lines
 
@@ -331,6 +329,7 @@ class BenchPlotter:
         plt.tight_layout(w_pad=1000)
         ax.set_axisbelow(True)
         plt.savefig(output, dpi=dpi)
+
 
 def call_by_namespace(func: Callable, namespace: Namespace) -> Any:
     sig = inspect.signature(func)

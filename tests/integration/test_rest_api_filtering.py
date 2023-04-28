@@ -56,7 +56,7 @@ class HttpRequest(Generic[BodyT, QueryT, PathT]):
     query_string_parameters: QueryT
 
 
-## REST Base
+# REST Base
 NumberT = TypeVar("NumberT")
 
 
@@ -83,7 +83,7 @@ class PagingRequest:
     limit: int = 20
 
 
-## REST Concrete
+# REST Concrete
 class Stereochemistry(Enum):
     L = "L"
     D = "D"
@@ -181,7 +181,8 @@ retort = Retort(
 )
 
 INPUT_DATA = {
-    "body": "{\"sort\": {\"sortBy\": \"id\"}, \"filters\": {\"samples\": {\"concentration\": {\"min_value\": 1.2}, \"competitor\": \"abc\"}, \"hit_strength\": {\"min_value\": 20.0, \"max_value\": 50.0}}}",
+    "body": '{"sort": {"sortBy": "id"}, "filters": {"samples": {"concentration": {"min_value": 1.2},'
+            ' "competitor": "abc"}, "hit_strength": {"min_value": 20.0, "max_value": 50.0}}}',
     "headers": {
         "Accept": "*/*",
         "Content-Length": "26",

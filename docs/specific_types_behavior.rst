@@ -167,9 +167,7 @@ This problem could be solved if the model will contain a designator (tag) that c
 .. literalinclude:: examples/specific_types_behavior/union_with_designator.py
 
 This example shows how to add a type designator to the model.
-By default, retort does not dump fields if it is equal to the default value,
-so it is needed to override this behavior via ``omit_default=False``
-for the appearance of the ``kind`` field at the dumped dict.
+Be careful, this example does not work if :paramref:`.name_mapping.omit_default` is set to ``True``.
 
 Be careful if one model is a superset of another model.
 By default, all unknown fields are skipped, this does not allow distinct such models.

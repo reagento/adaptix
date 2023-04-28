@@ -21,7 +21,7 @@ It can create models from mapping (loading) and create mappings from the model (
 
 
 .. literalinclude:: examples/tutorial/tldr.py
-
+   :lines: 2-
 
 All typing information is retrieved from your annotations, so it is not required from you to provide any schema
 or even change your dataclass decorators or class bases.

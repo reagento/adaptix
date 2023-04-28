@@ -20,4 +20,4 @@ def test_readme(accum):
     book = retort.load(data, Book)
     assert book == Book(title="Fahrenheit 451", price=100)
     dumped = retort.dump(book)
-    assert dumped == data
+    assert dumped == {**data, "author": "Unknown author"}

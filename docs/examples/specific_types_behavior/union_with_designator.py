@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Union, Literal
 
-from adaptix import Retort, name_mapping, P
+from adaptix import Retort
 
 
 @dataclass
@@ -20,14 +20,7 @@ class Dog:
     kind: Literal['dog'] = 'dog'
 
 
-retort = Retort(
-    recipe=[
-        name_mapping(
-            P[Cat, Dog],
-            omit_default=False,
-        ),
-    ],
-)
+retort = Retort()
 data = {'name': 'Tardar Sauce', 'breed': 'mixed', 'kind': 'cat'}
 cat = retort.load(data, Union[Cat, Dog])
 assert cat == Cat(name='Tardar Sauce', breed='mixed')

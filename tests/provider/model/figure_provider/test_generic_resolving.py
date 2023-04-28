@@ -296,7 +296,6 @@ def test_generic_parents_with_type_override():
     class Child(Parent[int]):
         a: bool
 
-
     assert_fields_types(
         Child,
         {'a': bool},

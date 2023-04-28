@@ -15,7 +15,7 @@ repos:
         args: ['--maxkb=100']
 
   - repo: 'https://github.com/myint/eradicate'
-    rev: v2.1.0
+    rev: 2.2.0
     hooks:
       - id: eradicate
         args: ['-e']  # remove default --in-place argument and emit error

@@ -58,7 +58,7 @@ def test_strict_coercion(retort, debug_path):
         strict_coercion=True,
         debug_path=debug_path,
     ).get_loader(
-        Literal[0, 1, rnd()]  # noqa
+        Literal[0, 1, rnd()]
     )
 
     assert _is_exact_zero(int_loader(0))
@@ -77,7 +77,7 @@ def test_strict_coercion(retort, debug_path):
         strict_coercion=True,
         debug_path=debug_path,
     ).get_loader(
-        Literal[False, True, rnd()]  # noqa
+        Literal[False, True, rnd()]
     )
 
     assert bool_loader(False) is False

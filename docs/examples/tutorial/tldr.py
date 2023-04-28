@@ -1,3 +1,4 @@
+# mypy: disable-error-code="arg-type"
 from dataclasses import dataclass
 
 from adaptix import Retort
@@ -19,4 +20,4 @@ retort = Retort()
 
 book = retort.load(data, Book)
 assert book == Book(title="Fahrenheit 451", price=100)
-assert retort.dump(book) == data
+assert retort.dump(book) == {**data, "author": "Unknown author"}

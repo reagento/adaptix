@@ -17,7 +17,7 @@ Example
 ==================
 
 .. literalinclude:: examples/tutorial/tldr.py
-
+   :lines: 2-
 
 Requirements
 ==================
