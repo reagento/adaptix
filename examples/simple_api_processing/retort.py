@@ -19,6 +19,9 @@ OPEN_WEATHER_RETORT = Retort(
                 'name': 'main',
             }
         ),
+        name_mapping(
+            omit_default=True,
+        ),
         loader(datetime, datetime.fromtimestamp),  # default dumper and loader requires isoformat strings
         dumper(datetime, datetime.timestamp),
     ]

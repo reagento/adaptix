@@ -190,7 +190,7 @@ def test_inner():
         "notify": [
             {"type": "email", "value": "mail@example.com"}
         ],
-        "version": 1,
+        "version": '1',
     }
 
     receipt = Receipt(

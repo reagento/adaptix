@@ -117,7 +117,10 @@ retort = Retort(
             map={
                 'plus_one': '+1',
                 'minus_one': '-1',
-            }
+            },
+        ),
+        name_mapping(
+            omit_default=True,
         ),
     ],
 )

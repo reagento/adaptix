@@ -49,4 +49,4 @@ class Receipt:
     items: List[RecItem]
     taxation: Taxation
     notify: Optional[List[NotifyTarget]]
-    version: Literal[1] = 1
+    version: Literal['1'] = '1'
