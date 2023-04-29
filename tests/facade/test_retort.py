@@ -25,3 +25,7 @@ def test_retort_extend():
     assert retort._get_full_recipe() == recipe_before_extend
     assert extended_retort._get_full_recipe()[:len(to_extend)] == to_extend
     assert not extended_retort._loader_cache and not extended_retort._dumper_cache
+
+
+def test_hashability():
+    hash(Retort())

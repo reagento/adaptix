@@ -113,6 +113,8 @@ gitdb==4.0.10
     # via gitpython
 gitpython==3.1.31
     # via bandit
+greenlet==2.0.2
+    # via sqlalchemy
 identify==2.5.18
     # via pre-commit
 idna==3.4
@@ -228,6 +230,8 @@ pyproject-api==1.5.1
     # via tox
 pyproject-hooks==1.0.0
     # via build
+pysqlite3-binary==0.5.0
+    # via -r requirements/raw/test_extra_none.txt
 pytest==7.2.2
     # via
     #   -r requirements/raw/bench.txt
@@ -295,6 +299,8 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
+sqlalchemy==2.0.10
+    # via -r requirements/raw/test_extra_none.txt
 stevedore==5.0.0
     # via bandit
 toml==0.10.2
@@ -321,6 +327,7 @@ typing-extensions==4.5.0
     #   mypy
     #   pydantic
     #   pydantic-core
+    #   sqlalchemy
 urllib3==1.26.14
     # via requests
 virtualenv==20.21.0

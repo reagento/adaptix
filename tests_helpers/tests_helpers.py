@@ -7,6 +7,8 @@ from typing import Any, Callable, Optional, Type, TypeVar, Union
 
 import pytest
 from packaging.version import Version
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.dialects.sqlite.pysqlite import SQLiteDialect_pysqlite
 
 from adaptix import AdornedRetort, CannotProvide, Mediator, Provider, Request
 from adaptix._internal.common import EllipsisType
@@ -31,7 +33,11 @@ class DistributionVersionRequirement(Requirement):
 ATTRS_WITH_ALIAS = DistributionVersionRequirement('attrs', '22.2.0')
 
 def requires(
-    requirement: Union[PythonVersionRequirement, PythonImplementationRequirement, DistributionVersionRequirement]
+    requirement: Union[
+        PythonVersionRequirement,
+        PythonImplementationRequirement,
+        DistributionVersionRequirement,
+    ]
 ):
     if isinstance(requirement, PythonVersionRequirement):
         ver_str = '.'.join(map(str, requirement.min_version))
@@ -168,3 +174,20 @@ def pretty_typehint_test_id(config, val, argname):
             return val._name
         except AttributeError:
             return None
+
+
+# use pinned version of sqlite
+class SQLiteDialect_pysqlite3(SQLiteDialect_pysqlite):
+    supports_statement_cache = True
+
+    @classmethod
+    def import_dbapi(cls):
+        from pysqlite3 import dbapi2
+        return dbapi2
+
+
+dialect = SQLiteDialect_pysqlite3
+
+
+def create_sa_engine(**kwargs) -> Engine:
+    return create_engine("pysqlite3_binary://", **kwargs)

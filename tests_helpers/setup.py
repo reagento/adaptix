@@ -6,4 +6,9 @@ setup(
     name='tests_helpers',
     version='0.0.0',
     py_modules=['tests_helpers'],
+    entry_points={
+        'sqlalchemy.dialects': [
+            'pysqlite3_binary = tests_helpers:dialect',
+        ]
+    }
 )

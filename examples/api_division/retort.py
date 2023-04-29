@@ -56,8 +56,8 @@ def forbid_version_key(data):
     return data
 
 
-class ParentRetort(Retort):
-    recipe = [
+_BASE_RETORT = Retort(
+    recipe=[
         loader(Money, money_loader),
         dumper(Money, Money.rubles),
 
@@ -66,19 +66,17 @@ class ParentRetort(Retort):
 
         dumper(Decimal, lambda x: x),
         enum_by_name(ReceiptType),
-    ]
-
-
-INNER_RECEIPT_RETORT = ParentRetort(
-    recipe=[
-        name_mapping(
-            omit_default=False,
-            extra_in=ExtraSkip(),
-        ),
     ],
 )
 
-OUTER_RECEIPT_RETORT = ParentRetort(
+
+INNER_RECEIPT_RETORT = _BASE_RETORT.extend(
+    recipe=[
+        name_mapping(extra_in=ExtraSkip()),
+    ],
+)
+
+OUTER_RECEIPT_RETORT = _BASE_RETORT.extend(
     recipe=[
         validator(List[RecItem], lambda x: len(x) > 0, 'At least one item must be presented'),
         validator(P[RecItem].quantity, lambda x: x > Decimal(0), 'Value must be > 0'),
