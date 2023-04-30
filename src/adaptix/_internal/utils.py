@@ -9,6 +9,7 @@ from typing import (
     Dict,
     Generator,
     Generic,
+    Hashable,
     Iterable,
     Iterator,
     KeysView,
@@ -198,18 +199,23 @@ class ClassDispatcherKeysView(Generic[K_co]):
 
 CM = TypeVar('CM', bound='ClassMap')
 D = TypeVar('D')
+H = TypeVar('H', bound=Hashable)
 
 
-class ClassMap(Generic[T]):
+class ClassMap(Generic[H]):
     __slots__ = ('_mapping', )
 
-    def __init__(self, *values: T):
-        self._mapping: Mapping[Type[T], T] = {type(value): value for value in values}
+    def __init__(self, *values: H):
+        # need stable order for hash calculation
+        self._mapping: Mapping[Type[H], H] = {
+            type(value): value
+            for value in sorted(values, key=lambda v: type(v).__qualname__)
+        }
 
     def __getitem__(self, item: Type[D]) -> D:
         return self._mapping[item]  # type: ignore[index,return-value]
 
-    def __iter__(self) -> Iterator[Type[T]]:
+    def __iter__(self) -> Iterator[Type[H]]:
         return iter(self._mapping)
 
     def __len__(self) -> int:
@@ -218,7 +224,7 @@ class ClassMap(Generic[T]):
     def __contains__(self, item):
         return item in self._mapping
 
-    def has(self, *classes: Type[T]) -> bool:
+    def has(self, *classes: Type[H]) -> bool:
         return all(key in self._mapping for key in classes)
 
     def get_or_raise(
@@ -231,10 +237,10 @@ class ClassMap(Generic[T]):
         except KeyError:
             raise exception_factory() from None
 
-    def keys(self) -> KeysView[Type[T]]:
+    def keys(self) -> KeysView[Type[H]]:
         return self._mapping.keys()
 
-    def values(self) -> ValuesView[T]:
+    def values(self) -> ValuesView[H]:
         return self._mapping.values()
 
     def __eq__(self, other):
@@ -248,23 +254,23 @@ class ClassMap(Generic[T]):
         return NotImplemented
 
     def __hash__(self):
-        return hash((key, value) for key, value in self._mapping.items())
+        return hash(tuple(self._mapping.values()))
 
     def __repr__(self):
         args_str = ', '.join(repr(v) for v in self._mapping.values())
         return f'{type(self).__qualname__}({args_str})'
 
-    def _with_new_mapping(self: CM, mapping: Mapping[Type[T], T]) -> CM:
+    def _with_new_mapping(self: CM, mapping: Mapping[Type[H], H]) -> CM:
         self_copy = copy(self)
         self_copy._mapping = mapping  # pylint: disable=protected-access
         return self_copy
 
-    def add(self: CM, *values: T) -> CM:
+    def add(self: CM, *values: H) -> CM:
         return self._with_new_mapping(
             {**self._mapping, **{type(value): value for value in values}}
         )
 
-    def discard(self: CM, *classes: Type[T]) -> CM:
+    def discard(self: CM, *classes: Type[H]) -> CM:
         return self._with_new_mapping(
             {
                 key: value for key, value in self._mapping.items()
