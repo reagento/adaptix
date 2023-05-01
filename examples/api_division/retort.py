@@ -64,7 +64,11 @@ _BASE_RETORT = Retort(
         loader(PhoneNumber, phonenumbers.parse),
         dumper(PhoneNumber, load_phone_number),
 
+        # We need to represent Decimal as JSON float instead of string.
+        # JSON serializer library will take pure Decimal and produce JSON float,
+        # without intermediate casting to float (standard json package can do this)
         dumper(Decimal, lambda x: x),
+
         enum_by_name(ReceiptType),
     ],
 )
@@ -82,9 +86,9 @@ OUTER_RECEIPT_RETORT = _BASE_RETORT.extend(
         validator(P[RecItem].quantity, lambda x: x > Decimal(0), 'Value must be > 0'),
         validator(P[RecItem].price, lambda x: x >= Money(0), 'Value must be >= 0'),
 
-        loader(Receipt, forbid_version_key, Chain.FIRST),
-        loader(PhoneNumber, outer_phonenumber_loader),
-        loader(str, string_cp866_mutator, Chain.LAST),
+        loader(Receipt, forbid_version_key, Chain.FIRST), # function will be applied BEFORE builtin loader
+        loader(PhoneNumber, outer_phonenumber_loader), # function will be applied INSTEAD OF builtin loader
+        loader(str, string_cp866_mutator, Chain.LAST),  # function will be applied AFTER builtin loader
 
         name_mapping(extra_in=ExtraForbid()),
     ],

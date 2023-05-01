@@ -61,8 +61,6 @@ doc:
 doc-clean:
 	@$(SPHINXBUILD) -M clean "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 
-.PHONY: docs
-docs: doc
-
-.PHONY: docs-clean
-docs-clean: doc-clean
+.PHONY: doc-open
+doc-open:
+	@nohup python -m webbrowser -t "file://$(CURDIR)/docs-build/html/index.html" > /dev/null

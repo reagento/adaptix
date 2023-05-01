@@ -17,12 +17,10 @@ class ModelJSON(TypeDecorator):
         tp: TypeHint,
         retort: AdornedRetort,
         none_as_null: bool = False,
-        json_dumper: Callable[[Any], str] = json.dumps,
     ):
         super().__init__(none_as_null=none_as_null)
         self.tp = tp
         self.retort = retort
-        self.json_dumper = json_dumper
         self.loader = retort.get_loader(tp)
         self.dumper = retort.get_dumper(tp)
 
