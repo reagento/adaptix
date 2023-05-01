@@ -86,8 +86,8 @@ OUTER_RECEIPT_RETORT = _BASE_RETORT.extend(
         validator(P[RecItem].quantity, lambda x: x > Decimal(0), 'Value must be > 0'),
         validator(P[RecItem].price, lambda x: x >= Money(0), 'Value must be >= 0'),
 
-        loader(Receipt, forbid_version_key, Chain.FIRST), # function will be applied BEFORE builtin loader
-        loader(PhoneNumber, outer_phonenumber_loader), # function will be applied INSTEAD OF builtin loader
+        loader(Receipt, forbid_version_key, Chain.FIRST),  # function will be applied BEFORE builtin loader
+        loader(PhoneNumber, outer_phonenumber_loader),  # function will be applied INSTEAD OF builtin loader
         loader(str, string_cp866_mutator, Chain.LAST),  # function will be applied AFTER builtin loader
 
         name_mapping(extra_in=ExtraForbid()),

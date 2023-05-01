@@ -1,6 +1,3 @@
-import json
-from typing import Any, Callable
-
 from sqlalchemy import JSON, TypeDecorator
 
 from adaptix import AdornedRetort, TypeHint
