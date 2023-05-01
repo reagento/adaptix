@@ -61,7 +61,7 @@ class BuiltinMediator(Mediator):
         self.next_offset = 0
         self.recursion_stubs: Dict[Request, Any] = {}
 
-    def provide(self, request: Request[T]) -> T:
+    def provide(self, request: Request[T], *, extra_stack: Sequence[Request[Any]] = ()) -> T:
         if request in self._request_stack:  # maybe we need to lookup in set for large request_stack
             try:
                 resolver = self._get_resolver(request)
@@ -72,6 +72,7 @@ class BuiltinMediator(Mediator):
             self.recursion_stubs[request] = stub
             return stub
 
+        self._request_stack.extend(extra_stack)
         self._request_stack.append(request)
         try:
             result = self._provide_non_recursive(request, 0)

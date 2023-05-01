@@ -4,7 +4,7 @@ from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
 from ...common import Dumper
 from ..essential import CannotProvide, Mediator
 from ..provider_template import DumperProvider
-from ..request_cls import DebugPathRequest, DumperRequest, FieldLoc, LocMap, OutputFieldLoc, TypeHintLoc
+from ..request_cls import DebugPathRequest, DumperRequest, TypeHintLoc
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -18,6 +18,7 @@ from .basic_gen import (
 )
 from .crown_definitions import OutExtraMove, OutputNameLayout, OutputNameLayoutRequest
 from .definitions import CodeGenerator, OutputFigure, OutputFigureRequest, VarBinder
+from .fields import output_field_to_loc_map
 from .figure_provider import provide_generic_resolved_figure
 from .output_creation_gen import BuiltinOutputCreationGen
 from .output_extraction_gen import BuiltinOutputExtractionGen
@@ -52,19 +53,7 @@ def make_output_extraction(
     field_dumpers = {
         field.name: mediator.provide(
             DumperRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(
-                        type=field.type,
-                    ),
-                    FieldLoc(
-                        name=field.name,
-                        default=field.default,
-                        metadata=field.metadata,
-                    ),
-                    OutputFieldLoc(
-                        accessor=field.accessor,
-                    )
-                ),
+                loc_map=output_field_to_loc_map(field),
             )
         )
         for field in figure.fields

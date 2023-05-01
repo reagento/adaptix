@@ -167,7 +167,7 @@ This problem could be solved if the model will contain a designator (tag) that c
 .. literalinclude:: examples/specific_types_behavior/union_with_designator.py
 
 This example shows how to add a type designator to the model.
-Be careful, this example does not work if :paramref:`.name_mapping.omit_default` is set to ``True``.
+Be careful, this example does not work if :paramref:`.name_mapping.omit_default` is applied to tag field.
 
 Be careful if one model is a superset of another model.
 By default, all unknown fields are skipped, this does not allow distinct such models.

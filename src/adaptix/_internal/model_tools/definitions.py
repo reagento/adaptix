@@ -94,7 +94,7 @@ class AttrAccessor(DescriptorAccessor):
         return self.access_error is None
 
     def __repr__(self):
-        return f"{type(self)}(attr_name={self.attr_name}, is_required={self.is_required})"
+        return f"{type(self).__name__}(attr_name={self.attr_name}, is_required={self.is_required})"
 
 
 @dataclass(frozen=True)

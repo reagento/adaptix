@@ -30,14 +30,20 @@ class RequestChecker(ABC):
     def check_request(self, mediator: DirectMediator, request: Request) -> None:
         """Raise CannotProvide if the request does not meet the conditions"""
 
-    def __or__(self, other: 'RequestChecker') -> 'RequestChecker':
-        return OrRequestChecker([self, other])
+    def __or__(self, other: Any) -> 'RequestChecker':
+        if isinstance(other, RequestChecker):
+            return OrRequestChecker([self, other])
+        return NotImplemented
 
-    def __and__(self, other: 'RequestChecker') -> 'RequestChecker':
-        return AndRequestChecker([self, other])
+    def __and__(self, other: Any) -> 'RequestChecker':
+        if isinstance(other, RequestChecker):
+            return AndRequestChecker([self, other])
+        return NotImplemented
 
-    def __xor__(self, other: 'RequestChecker') -> 'RequestChecker':
-        return XorRequestChecker(self, other)
+    def __xor__(self, other: Any) -> 'RequestChecker':
+        if isinstance(other, RequestChecker):
+            return XorRequestChecker(self, other)
+        return NotImplemented
 
     def __invert__(self) -> 'RequestChecker':
         return NegRequestChecker(self)
@@ -208,7 +214,7 @@ class ExactOriginMergedProvider(Provider):
         return provider.apply_provider(mediator, request)
 
 
-class RequestStackCutter(DirectMediator):
+class RequestStackCutterMediator(DirectMediator):
     def __init__(self, mediator: DirectMediator, end_offset: int):
         self._mediator = mediator
         self._end_offset = end_offset
@@ -219,6 +225,19 @@ class RequestStackCutter(DirectMediator):
     @property
     def request_stack(self) -> Sequence[Request[Any]]:
         return self._mediator.request_stack[:-self._end_offset or None]
+
+
+class ExtraStackMediator(DirectMediator):
+    def __init__(self, mediator: Mediator, extra_stack: Sequence[Request[Any]]):
+        self._mediator = mediator
+        self._extra_stack = extra_stack
+
+    def provide(self, request: Request[T]) -> T:
+        return self._mediator.provide(request, extra_stack=self._extra_stack)
+
+    @property
+    def request_stack(self) -> Sequence[Request[Any]]:
+        return [*self._mediator.request_stack, *self._extra_stack]
 
 
 @dataclass
@@ -234,7 +253,7 @@ class StackEndRC(RequestChecker):
 
         for i, (checker, stack_request) in enumerate(zip(self.request_checkers, stack[offset:]), start=0):
             checker.check_request(
-                RequestStackCutter(mediator, i),
+                RequestStackCutterMediator(mediator, i),
                 stack_request,
             )
 
@@ -323,23 +342,43 @@ class RequestPattern:
     def __getitem__(self: Pat, item: Union[Pred, VarTuple[Pred]]) -> Pat:
         if isinstance(item, tuple):
             return self._extend_stack(
-                [OrRequestChecker([self._ensure_request_checker(el) for el in item])]
+                [OrRequestChecker([self._ensure_request_checker_from_pred(el) for el in item])]
             )
-        return self._extend_stack([self._ensure_request_checker(item)])
+        return self._extend_stack([self._ensure_request_checker_from_pred(item)])
 
-    def __or__(self: Pat, other: Pat) -> Pat:
+    def _ensure_request_checker(self: Pat, other: Union[Pat, RequestChecker]) -> RequestChecker:
+        if isinstance(other, RequestChecker):
+            return other
+        return other.build_request_checker()
+
+    def __or__(self: Pat, other: Union[Pat, RequestChecker]) -> Pat:
         return self._from_rc(
-            self.build_request_checker() | other.build_request_checker()
+            self.build_request_checker() | self._ensure_request_checker(other)
         )
 
-    def __and__(self: Pat, other: Pat) -> Pat:
+    def __ror__(self: Pat, other: Union[Pat, RequestChecker]) -> Pat:
         return self._from_rc(
-            self.build_request_checker() & other.build_request_checker()
+            self._ensure_request_checker(other) | self.build_request_checker()
         )
 
-    def __xor__(self: Pat, other: Pat) -> Pat:
+    def __and__(self: Pat, other: Union[Pat, RequestChecker]) -> Pat:
         return self._from_rc(
-            self.build_request_checker() ^ other.build_request_checker()
+            self.build_request_checker() & self._ensure_request_checker(other)
+        )
+
+    def __rand__(self: Pat, other: Union[Pat, RequestChecker]) -> Pat:
+        return self._from_rc(
+            self._ensure_request_checker(other) & self.build_request_checker()
+        )
+
+    def __xor__(self: Pat, other: Union[Pat, RequestChecker]) -> Pat:
+        return self._from_rc(
+            self.build_request_checker() ^ self._ensure_request_checker(other)
+        )
+
+    def __rxor__(self: Pat, other: Union[Pat, RequestChecker]) -> Pat:
+        return self._from_rc(
+            self._ensure_request_checker(other) ^ self.build_request_checker()
         )
 
     def __invert__(self: Pat) -> Pat:
@@ -350,7 +389,7 @@ class RequestPattern:
     def __add__(self: Pat, other: Pat) -> Pat:
         return self._extend_stack(other._stack)
 
-    def _ensure_request_checker(self, pred: Any) -> RequestChecker:
+    def _ensure_request_checker_from_pred(self, pred: Any) -> RequestChecker:
         if isinstance(pred, RequestPattern):
             raise TypeError(
                 "Can not use RequestPattern as predicate inside RequestPattern."
@@ -361,7 +400,7 @@ class RequestPattern:
 
     def generic_arg(self: Pat, pos: int, pred: Pred) -> Pat:
         return self._extend_stack(
-            [GenericParamRC(pos) & self._ensure_request_checker(pred)]
+            [GenericParamRC(pos) & self._ensure_request_checker_from_pred(pred)]
         )
 
     def build_request_checker(self) -> RequestChecker:
@@ -371,3 +410,18 @@ class RequestPattern:
 
 
 P = RequestPattern(stack=())
+
+
+@dataclass(frozen=True)
+class NameMappingRuleRequest(LocatedRequest):
+    is_mapped: bool
+
+
+class AnyMapped(RequestChecker):
+    """Selects only directly mapped fields.
+    It works only inside parameters of :func:`name_mapping`
+    """
+
+    def check_request(self, mediator: DirectMediator, request: Request) -> None:
+        if not isinstance(request, NameMappingRuleRequest) or not request.is_mapped:
+            raise CannotProvide

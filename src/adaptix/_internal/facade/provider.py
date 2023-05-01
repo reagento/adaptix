@@ -39,7 +39,7 @@ from ..provider.name_layout.component import (
     StructureOverlay,
 )
 from ..provider.overlay_schema import OverlayProvider
-from ..provider.request_filtering import Pred, RequestPattern
+from ..provider.request_filtering import AnyRequestChecker, Pred, RequestChecker, RequestPattern
 from ..utils import Omittable, Omitted
 
 T = TypeVar('T')
@@ -143,7 +143,10 @@ def constructor(pred: Pred, func: Callable) -> Provider:
 NameMap = Mapping[Union[str, re.Pattern], Union[RawKey, Iterable[RawKey]]]
 
 
-def _convert_name_map_to_stack(name_map: NameMap) -> NameMapStack:
+def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> Omittable[NameMapStack]:
+    if isinstance(name_map, Omitted):
+        return name_map
+
     result: List[Tuple[re.Pattern, RawPath]] = []
     for pattern, path in name_map.items():
         path_tuple: VarTuple[RawKey]
@@ -164,19 +167,34 @@ def _convert_name_map_to_stack(name_map: NameMap) -> NameMapStack:
     return tuple(result)
 
 
+def _name_mapping_convert_preds(value: Omittable[Union[Iterable[Pred], Pred]]) -> Omittable[RequestChecker]:
+    if isinstance(value, Omitted):
+        return value
+    if isinstance(value, Iterable) and not isinstance(value, str):
+        return OrRequestChecker([create_request_checker(el) for el in value])
+    return create_request_checker(value)
+
+
+def _name_mapping_convert_omit_default(
+    value: Omittable[Union[Iterable[Pred], Pred, bool]]
+) -> Omittable[RequestChecker]:
+    if isinstance(value, bool):
+        return AnyRequestChecker() if value else ~AnyRequestChecker()
+    return _name_mapping_convert_preds(value)
+
+
 def name_mapping(
     pred: Omittable[Pred] = Omitted(),
     *,
     # filtering which fields are presented
-    skip: Omittable[Iterable[str]] = Omitted(),
-    only: Omittable[Optional[Iterable[str]]] = Omitted(),
-    only_mapped: Omittable[bool] = Omitted(),
+    skip: Omittable[Union[Iterable[Pred], Pred]] = Omitted(),
+    only: Omittable[Union[Iterable[Pred], Pred]] = Omitted(),
     # mutating names of presented fields
     map: Omittable[NameMap] = Omitted(),  # noqa: A002
     trim_trailing_underscore: Omittable[bool] = Omitted(),
     name_style: Omittable[Optional[NameStyle]] = Omitted(),
     # filtering of dumped data
-    omit_default: Omittable[bool] = Omitted(),
+    omit_default: Omittable[Union[Iterable[Pred], Pred, bool]] = Omitted(),
     # policy for data that does not map to fields
     extra_in: Omittable[ExtraIn] = Omitted(),
     extra_out: Omittable[ExtraOut] = Omitted(),
@@ -190,7 +208,7 @@ def name_mapping(
     1. Determining which fields are presented
     2. Mutating names of presented fields
 
-    `skip` parameter has higher priority than `only` and `only_mapped`.
+    `skip` parameter has higher priority than `only`.
 
     Mutating parameters works in that way:
     Mapper tries to use the value from the map.
@@ -204,15 +222,14 @@ def name_mapping(
         OverlayProvider(
             overlays=[
                 StructureOverlay(
-                    skip=skip,
-                    only=only,
-                    only_mapped=only_mapped,
-                    map=Omitted() if isinstance(map, Omitted) else _convert_name_map_to_stack(map),
+                    skip=_name_mapping_convert_preds(skip),
+                    only=_name_mapping_convert_preds(only),
+                    map=_name_mapping_convert_map(map),
                     trim_trailing_underscore=trim_trailing_underscore,
                     name_style=name_style,
                 ),
                 SievesOverlay(
-                    omit_default=omit_default,
+                    omit_default=_name_mapping_convert_omit_default(omit_default),
                 ),
                 ExtraMoveAndPoliciesOverlay(
                     extra_in=extra_in,

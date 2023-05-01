@@ -62,6 +62,7 @@ from adaptix._internal.provider.name_layout import (
     BuiltinStructureMaker,
 )
 from adaptix._internal.provider.request_cls import DumperRequest, FieldLoc, LoaderRequest, LocMap, TypeHintLoc
+from adaptix._internal.provider.request_filtering import AnyMapped, AnyRequestChecker, P
 from tests_helpers import TestRetort, full_match_regex_str, type_of
 
 
@@ -167,8 +168,7 @@ def make_layouts(
 DEFAULT_NAME_MAPPING = name_mapping(
     chain=None,
     skip=(),
-    only_mapped=False,
-    only=None,
+    only=AnyRequestChecker(),
     map={},
     trim_trailing_underscore=True,
     name_style=None,
@@ -294,8 +294,7 @@ def test_name_filtering():
     assert_flat_name_mapping(
         name_mapping(
             skip=['a', 'xxx'],
-            only_mapped=False,
-            only=None,
+            only=AnyRequestChecker(),
             map={},
         ),
         {
@@ -307,60 +306,19 @@ def test_name_filtering():
     assert_flat_name_mapping(
         name_mapping(
             skip=[],
-            only_mapped=True,
-            only=None,
-            map={},
-        ),
-        {
-            'a': None,
-            'b': None,
-            'c': None,
-        },
-    )
-    assert_flat_name_mapping(
-        name_mapping(
-            skip=[],
-            only_mapped=True,
-            only=None,
-            map={'a': 'z'},
-        ),
-        {
-            'a': 'z',
-            'b': None,
-            'c': None,
-        },
-    )
-    assert_flat_name_mapping(
-        name_mapping(
-            skip=[],
-            only_mapped=False,
             only=['a'],
             map={},
         ),
         {
             'a': 'a',
             'b': None,
-            'c': None,
-        },
-    )
-    assert_flat_name_mapping(
-        name_mapping(
-            skip=[],
-            only_mapped=True,
-            only=['a'],
-            map={'b': 'y'}
-        ),
-        {
-            'a': 'a',
-            'b': 'y',
             'c': None,
         },
     )
     assert_flat_name_mapping(
         name_mapping(
             skip=['b'],
-            only_mapped=False,
-            only=None,
+            only=AnyRequestChecker(),
             map={},
         ),
         {
@@ -372,7 +330,6 @@ def test_name_filtering():
     assert_flat_name_mapping(
         name_mapping(
             skip=['b'],
-            only_mapped=False,
             only=['a', 'b'],
             map={},
         ),
@@ -382,11 +339,61 @@ def test_name_filtering():
             'c': None,
         },
     )
+
+
+def test_any_mapped():
+    assert_flat_name_mapping(
+        name_mapping(
+            skip=[],
+            only=AnyMapped(),
+            map={},
+        ),
+        {
+            'a': None,
+            'b': None,
+            'c': None,
+        },
+    )
+    assert_flat_name_mapping(
+        name_mapping(
+            skip=[],
+            only=AnyMapped(),
+            map={'a': 'z'},
+        ),
+        {
+            'a': 'z',
+            'b': None,
+            'c': None,
+        },
+    )
+    assert_flat_name_mapping(
+        name_mapping(
+            skip=[],
+            only=P['a'] | AnyMapped(),
+            map={'b': 'y'}
+        ),
+        {
+            'a': 'a',
+            'b': 'y',
+            'c': None,
+        },
+    )
     assert_flat_name_mapping(
         name_mapping(
             skip=['b'],
-            only_mapped=True,
-            only=None,
+            only=AnyMapped(),
+            map={'a': 'z', 'b': 'y'}
+        ),
+        {
+            'a': 'z',
+            'b': None,
+            'c': None,
+        },
+    )
+    assert_flat_name_mapping(
+        name_mapping(
+            skip=[],
+            only=AnyMapped() & ~P['b'],
             map={'a': 'z', 'b': 'y'}
         ),
         {

@@ -6,7 +6,7 @@ from ..essential import CannotProvide, Mediator
 from ..model.definitions import CodeGenerator, InputFigure, InputFigureRequest, VarBinder
 from ..model.input_extraction_gen import BuiltinInputExtractionGen
 from ..provider_template import LoaderProvider
-from ..request_cls import DebugPathRequest, FieldLoc, InputFieldLoc, LoaderRequest, LocMap, TypeHintLoc
+from ..request_cls import DebugPathRequest, LoaderRequest, TypeHintLoc
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -20,6 +20,7 @@ from .basic_gen import (
     stub_code_gen_hook,
 )
 from .crown_definitions import InpExtraMove, InputNameLayout, InputNameLayoutRequest
+from .fields import input_field_to_loc_map
 from .figure_provider import provide_generic_resolved_figure
 from .input_creation_gen import BuiltinInputCreationGen
 
@@ -64,21 +65,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         field_loaders = {
             field.name: mediator.provide(
                 LoaderRequest(
-                    loc_map=LocMap(
-                        TypeHintLoc(
-                            type=field.type,
-                        ),
-                        FieldLoc(
-                            name=field.name,
-                            default=field.default,
-                            metadata=field.metadata,
-                        ),
-                        InputFieldLoc(
-                            is_required=field.is_required,
-                            param_kind=field.param_kind,
-                            param_name=field.param_name,
-                        )
-                    ),
+                    loc_map=input_field_to_loc_map(field),
                 )
             )
             for field in processed_figure.fields

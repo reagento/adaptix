@@ -47,10 +47,11 @@ class Mediator(ABC, Generic[V]):
     """
 
     @abstractmethod
-    def provide(self, request: Request[T]) -> T:
+    def provide(self, request: Request[T], *, extra_stack: Sequence[Request[Any]] = ()) -> T:
         """Get response of sent request.
 
         :param request: A request instance
+        :param extra_stack: Additional stack that will be added to :attr:`.request_stack` before passed request
         :return: Result of the request processing
         :raise CannotProvide: A provider able to process the request does not found
         """

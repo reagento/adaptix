@@ -58,6 +58,7 @@ from ..provider.name_layout import (
     BuiltinStructureMaker,
 )
 from ..provider.request_cls import DebugPathRequest, LocMap, StrictCoercionRequest
+from ..provider.request_filtering import AnyRequestChecker
 from ..retort import OperatingRetort
 from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
 
@@ -131,8 +132,7 @@ class FilledRetort(OperatingRetort, ABC):
         name_mapping(
             chain=None,
             skip=(),
-            only_mapped=False,
-            only=None,
+            only=AnyRequestChecker(),
             map={},
             trim_trailing_underscore=True,
             name_style=None,

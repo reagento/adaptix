@@ -13,13 +13,13 @@ S = TypeVar('S', bound=Sieve)
 _DEFAULT_CLAUSE_ATTR_NAME = '_adaptix_default_clause'
 
 
-def set_default_clause(sieve: S, default: Union[DefaultValue, DefaultFactory]) -> S:
+def with_default_clause(sieve: S, default: Union[DefaultValue, DefaultFactory]) -> S:
     setattr(sieve, _DEFAULT_CLAUSE_ATTR_NAME, default)
     return sieve
 
 
 def get_default_clause(sieve: Sieve) -> Optional[Union[DefaultValue, DefaultFactory]]:
-    return getattr(sieve, '_adaptix_default_clause', None)
+    return getattr(sieve, _DEFAULT_CLAUSE_ATTR_NAME, None)
 
 
 def none_loader(data):

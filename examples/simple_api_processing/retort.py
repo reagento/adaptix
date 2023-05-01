@@ -10,14 +10,14 @@ OPEN_WEATHER_RETORT = Retort(
             Forecast,
             map={
                 'timestamp': 'dt',
-            }
+            },
         ),
         name_mapping(
             Weather,
             map={
                 'icon_id': 'icon',
                 'name': 'main',
-            }
+            },
         ),
         name_mapping(
             omit_default=True,
