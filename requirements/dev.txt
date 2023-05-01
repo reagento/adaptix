@@ -149,7 +149,9 @@ marshmallow==3.19.0
 mashumaro==3.5
     # via -r requirements/raw/bench.txt
 matplotlib==3.7.0
-    # via -r requirements/raw/bench.txt
+    # via
+    #   -r requirements/raw/bench.txt
+    #   sphinxext-opengraph
 mccabe==0.7.0
     # via
     #   flake8
@@ -275,6 +277,7 @@ sphinx==5.3.0
     #   sphinx-copybutton
     #   sphinx-design
     #   sphinxcontrib-apidoc
+    #   sphinxext-opengraph
 sphinx-basic-ng==1.0.0b1
     # via furo
 sphinx-copybutton==0.5.1
@@ -297,6 +300,8 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
+sphinxext-opengraph==0.8.2
+    # via -r requirements/raw/doc.txt
 sqlalchemy==2.0.10
     # via -r requirements/raw/test_extra_none.txt
 stevedore==5.0.0

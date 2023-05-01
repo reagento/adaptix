@@ -37,6 +37,7 @@ extensions = [
     'sphinxcontrib.apidoc',
     'sphinx_paramlinks',
     'myst_parser',
+    'sphinxext.opengraph',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

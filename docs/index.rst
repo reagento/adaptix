@@ -11,6 +11,14 @@ Adaptix
    API Reference <api_reference/modules>
 
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Project Links:
+
+   GitHub <https://github.com/reagento/dataclass-factory/tree/3.x/develop>
+   PyPI <https://pypi.org/project/adaptix>
+
+
 Indices and tables
 ==================
 
