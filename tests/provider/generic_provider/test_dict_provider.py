@@ -74,7 +74,7 @@ def test_loading(retort, strict_coercion, debug_path):
 
 
 @parametrize_bool('debug_path')
-def test_serializing(retort, debug_path):
+def test_dumping(retort, debug_path):
     dumper = retort.replace(
         debug_path=debug_path,
     ).get_dumper(

@@ -154,7 +154,7 @@ def test_abc_impl(retort, strict_coercion, debug_path):
 
 
 @parametrize_bool('debug_path')
-def test_serializing(retort, debug_path):
+def test_dumping(retort, debug_path):
     retort = retort.replace(
         debug_path=debug_path
     )

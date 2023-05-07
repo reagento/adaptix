@@ -238,7 +238,9 @@ class UnionProvider(LoaderProvider, DumperProvider):
         if all(dumper == as_is_stub for dumper in dumpers):
             return as_is_stub
 
-        dumper_type_dispatcher = ClassDispatcher({case.origin: dumper for case, dumper in zip(norm.args, dumpers)})
+        dumper_type_dispatcher = ClassDispatcher(
+            {type(None) if case.origin is None else case.origin: dumper for case, dumper in zip(norm.args, dumpers)}
+        )
         return self._get_dumper(dumper_type_dispatcher)
 
     def _get_dumper(self, dumper_type_dispatcher: ClassDispatcher[Any, Dumper]) -> Dumper:

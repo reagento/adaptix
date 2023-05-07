@@ -77,7 +77,7 @@ def test_loading(retort, strict_coercion, debug_path):
 
 
 @parametrize_bool('debug_path')
-def test_serializing(retort, debug_path):
+def test_dumping(retort, debug_path):
     dumper = retort.replace(
         debug_path=debug_path,
     ).get_dumper(
@@ -96,7 +96,27 @@ def test_serializing(retort, debug_path):
 
 
 @parametrize_bool('debug_path')
-def test_serializing_subclass(retort, debug_path):
+def test_dumping_of_none(retort, debug_path):
+    dumper = retort.replace(
+        debug_path=debug_path,
+    ).get_dumper(
+        Union[int, str, None]
+    )
+
+    assert dumper(1) == 1
+    assert dumper('a') == 'a'
+    assert dumper(None) == None
+
+    raises_path(
+        KeyError,
+        lambda: dumper([]),
+        path=[],
+        match=full_match_regex_str("<class 'list'>"),
+    )
+
+
+@parametrize_bool('debug_path')
+def test_dumping_subclass(retort, debug_path):
     @dataclass
     class Parent:
         foo: int
@@ -123,9 +143,8 @@ def test_serializing_subclass(retort, debug_path):
     )
 
 
-
 @parametrize_bool('debug_path')
-def test_opt_serializing(retort, debug_path):
+def test_optional_dumping(retort, debug_path):
     opt_dumper = retort.replace(
         debug_path=debug_path,
     ).get_dumper(
@@ -144,7 +163,7 @@ def test_opt_serializing(retort, debug_path):
 
 
 @parametrize_bool('debug_path')
-def test_bad_opt_serializing(retort, debug_path):
+def test_bad_optional_dumping(retort, debug_path):
     raises_path(
         exc=ValueError,
         func=lambda: retort.replace(
