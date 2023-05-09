@@ -67,17 +67,13 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
     def _create_searcher(self, full_recipe: Sequence[Provider]) -> RecipeSearcher:
         return IntrospectingRecipeSearcher(full_recipe)
 
-    def _get_searcher(self) -> RecipeSearcher:
-        return self._searcher
-
     @abstractmethod
     def _get_recursion_resolving(self) -> RecursionResolving:
         ...
 
     def _create_mediator(self, request_stack: Sequence[Request]) -> Mediator:
-        searcher = self._get_searcher()
         recursion_resolving = self._get_recursion_resolving()
-        return BuiltinMediator(searcher, recursion_resolving, request_stack)
+        return BuiltinMediator(self._searcher, recursion_resolving, request_stack)
 
     def _provide_from_recipe(self, request: Request[T], request_stack: Sequence[Request]) -> T:
         """Process request iterating over the result of _get_full_recipe()

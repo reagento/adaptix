@@ -77,7 +77,7 @@ class BuiltinMediator(Mediator):
         try:
             result = self._provide_non_recursive(request, 0)
         finally:
-            self._request_stack.pop(-1)
+            del self._request_stack[-1 - len(extra_stack):]
 
         if request in self.recursion_stubs:
             resolver = self._get_resolver(request)
