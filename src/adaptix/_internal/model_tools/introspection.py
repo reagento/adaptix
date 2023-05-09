@@ -80,7 +80,7 @@ def get_callable_figure(func, params_slice=slice(0, None)) -> Figure[InputFigure
             fields=tuple(
                 InputField(
                     type=type_hints.get(param.name, Any),
-                    name=param.name,
+                    id=param.name,
                     is_required=_is_empty(param.default) or param.kind == Parameter.POSITIONAL_ONLY,
                     default=NoDefault() if _is_empty(param.default) else DefaultValue(param.default),
                     metadata=MappingProxyType({}),
@@ -122,19 +122,19 @@ def get_named_tuple_figure(tp) -> FullFigure:
         kwargs=None,
         fields=tuple(
             InputField(
-                name=field_name,
-                type=type_hints.get(field_name, Any),
+                id=field_id,
+                type=type_hints.get(field_id, Any),
                 default=(
-                    DefaultValue(tp._field_defaults[field_name])
-                    if field_name in tp._field_defaults else
+                    DefaultValue(tp._field_defaults[field_id])
+                    if field_id in tp._field_defaults else
                     NoDefault()
                 ),
-                is_required=field_name not in tp._field_defaults,
-                param_name=field_name,
+                is_required=field_id not in tp._field_defaults,
+                param_name=field_id,
                 metadata=MappingProxyType({}),
                 param_kind=ParamKind.POS_OR_KW,
             )
-            for field_name in tp._fields
+            for field_id in tp._fields
         ),
         overriden_types=overriden_types,
     )
@@ -144,11 +144,11 @@ def get_named_tuple_figure(tp) -> FullFigure:
         output=OutputFigure(
             fields=tuple(
                 OutputField(
-                    name=fld.name,
+                    id=fld.id,
                     type=fld.type,
                     default=fld.default,
                     metadata=fld.metadata,
-                    accessor=AttrAccessor(attr_name=fld.name, is_required=True),
+                    accessor=AttrAccessor(attr_name=fld.id, is_required=True),
                 )
                 for fld in input_figure.fields
             ),
@@ -204,7 +204,7 @@ def get_typed_dict_figure(tp) -> FullFigure:
             fields=tuple(
                 InputField(
                     type=tp,
-                    name=name,
+                    id=name,
                     default=NoDefault(),
                     is_required=requirement_determinant(name),
                     metadata=MappingProxyType({}),
@@ -220,7 +220,7 @@ def get_typed_dict_figure(tp) -> FullFigure:
             fields=tuple(
                 OutputField(
                     type=tp,
-                    name=name,
+                    id=name,
                     default=NoDefault(),
                     accessor=ItemAccessor(name, requirement_determinant(name)),
                     metadata=MappingProxyType({}),
@@ -256,7 +256,7 @@ def create_inp_field_from_dc_fields(dc_field: DCField, type_hints):
     default = get_dc_default(dc_field)
     return InputField(
         type=type_hints[dc_field.name],
-        name=dc_field.name,
+        id=dc_field.name,
         default=default,
         is_required=default == NoDefault(),
         metadata=dc_field.metadata,
@@ -290,20 +290,20 @@ def get_dataclass_figure(tp) -> FullFigure:
         input=InputFigure(
             constructor=tp,
             fields=tuple(
-                create_inp_field_from_dc_fields(name_to_dc_field[field_name], type_hints)
-                for field_name in init_params
+                create_inp_field_from_dc_fields(name_to_dc_field[field_id], type_hints)
+                for field_id in init_params
             ),
             kwargs=None,
             overriden_types=frozenset(
-                field_name for field_name in init_params
-                if field_name in tp.__annotations__
+                field_id for field_id in init_params
+                if field_id in tp.__annotations__
             ),
         ),
         output=OutputFigure(
             fields=tuple(
                 OutputField(
                     type=type_hints[field.name],
-                    name=field.name,
+                    id=field.name,
                     default=get_dc_default(name_to_dc_field[field.name]),
                     accessor=AttrAccessor(field.name, True),
                     metadata=field.metadata,
@@ -375,7 +375,7 @@ def _process_attr_input_field(
     has_custom_init: bool,
 ):
     try:
-        base_field = param_name_to_base_field[field.name]
+        base_field = param_name_to_base_field[field.id]
     except KeyError:
         return field
 
@@ -394,7 +394,7 @@ def _process_attr_input_field(
             field.default
         ),
         metadata=base_field.metadata,
-        name=base_field.name,
+        id=base_field.id,
     )
 
 
@@ -435,7 +435,7 @@ def get_attrs_figure(tp) -> FullFigure:
             type=_get_attrs_field_type(attrs_fld, type_hints),
             default=_get_attrs_default(attrs_fld),
             metadata=attrs_fld.metadata,
-            name=attrs_fld.name,
+            id=attrs_fld.name,
         )
         for attrs_fld in attrs_fields
     }
@@ -451,22 +451,22 @@ def get_attrs_figure(tp) -> FullFigure:
         figure.input,
         fields=input_fields,
         overriden_types=frozenset(
-            (fld.name for fld in input_fields)
+            (fld.id for fld in input_fields)
             if has_custom_init else
-            (fld.name for fld in input_fields if not attrs_fields_dict[fld.name].inherited)
+            (fld.id for fld in input_fields if not attrs_fields_dict[fld.id].inherited)
         ),
     )
     output_fields = tuple(
         OutputField(
-            name=field.name,
-            type=_get_attrs_field_type(field, type_hints),
+            id=field.id,
+            type=field.type,
             default=(
-                input_figure.fields_dict[field.name].default
-                if field.name in input_figure.fields_dict else
+                input_figure.fields_dict[field.id].default
+                if field.id in input_figure.fields_dict else
                 NoDefault()
             ),
             metadata=field.metadata,
-            accessor=AttrAccessor(field.name, is_required=True),
+            accessor=AttrAccessor(field.id, is_required=True),
         )
         for field in param_name_to_base_field.values()
     )
@@ -475,7 +475,7 @@ def get_attrs_figure(tp) -> FullFigure:
         output=OutputFigure(
             fields=output_fields,
             overriden_types=frozenset(
-                fld.name for fld in output_fields if not attrs_fields_dict[fld.name].inherited
+                fld.id for fld in output_fields if not attrs_fields_dict[fld.id].inherited
             ),
         ),
     )

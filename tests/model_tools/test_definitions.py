@@ -30,7 +30,7 @@ def test_inconsistent_fields_order(first, second):
             kwargs=None,
             fields=(
                 InputField(
-                    name="a",
+                    id="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -39,7 +39,7 @@ def test_inconsistent_fields_order(first, second):
                     param_name='a',
                 ),
                 InputField(
-                    name="a",
+                    id="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -58,7 +58,7 @@ def _make_triple_iff(first, second, third):
         kwargs=None,
         fields=(
             InputField(
-                name="a",
+                id="a",
                 type=int,
                 default=NoDefault(),
                 is_required=True,
@@ -67,7 +67,7 @@ def _make_triple_iff(first, second, third):
                 param_name='a',
             ),
             InputField(
-                name="b",
+                id="b",
                 type=int,
                 default=NoDefault(),
                 is_required=False,
@@ -76,7 +76,7 @@ def _make_triple_iff(first, second, third):
                 param_name='b',
             ),
             InputField(
-                name="c",
+                id="c",
                 type=int,
                 default=NoDefault(),
                 is_required=True,
@@ -121,7 +121,7 @@ def test_name_duplicates():
             kwargs=None,
             fields=(
                 InputField(
-                    name="a",
+                    id="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -130,7 +130,7 @@ def test_name_duplicates():
                     param_name='a1',
                 ),
                 InputField(
-                    name="a",
+                    id="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -148,7 +148,7 @@ def test_name_duplicates():
             kwargs=None,
             fields=(
                 InputField(
-                    name="a1",
+                    id="a1",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -157,7 +157,7 @@ def test_name_duplicates():
                     param_name='a',
                 ),
                 InputField(
-                    name="a2",
+                    id="a2",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -173,14 +173,14 @@ def test_name_duplicates():
         OutputFigure(
             fields=(
                 OutputField(
-                    name="a",
+                    id="a",
                     type=int,
                     default=NoDefault(),
                     accessor=AttrAccessor("a", is_required=True),
                     metadata={},
                 ),
                 OutputField(
-                    name="a",
+                    id="a",
                     type=int,
                     default=NoDefault(),
                     accessor=AttrAccessor("a", is_required=True),
@@ -194,7 +194,7 @@ def test_name_duplicates():
 def test_optional_and_positional_only():
     with pytest.raises(ValueError):
         InputField(
-            name="a",
+            id="a",
             type=int,
             default=NoDefault(),
             is_required=False,
@@ -211,7 +211,7 @@ def test_non_existing_fields_overriden_types():
             kwargs=None,
             fields=(
                 InputField(
-                    name="a",
+                    id="a",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -220,7 +220,7 @@ def test_non_existing_fields_overriden_types():
                     param_name='a',
                 ),
                 InputField(
-                    name="b",
+                    id="b",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
@@ -236,14 +236,14 @@ def test_non_existing_fields_overriden_types():
         OutputFigure(
             fields=(
                 OutputField(
-                    name="a",
+                    id="a",
                     type=int,
                     default=NoDefault(),
                     accessor=AttrAccessor("a", is_required=True),
                     metadata={},
                 ),
                 OutputField(
-                    name="b",
+                    id="b",
                     type=int,
                     default=NoDefault(),
                     accessor=AttrAccessor("b", is_required=True),

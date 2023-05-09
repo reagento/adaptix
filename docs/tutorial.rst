@@ -134,9 +134,10 @@ Basic rules:
 #. If you pass a `runtime checkable protocol <https://docs.python.org/3/library/typing.html#typing.runtime_checkable>`_,
    the provider will be applied to all protocol implementations.
 #. If you pass a string, it will be interpreted as a regex
-   and the provider will be applied to all fields with names matched by the regex.
-   Any field name must be a valid python identifier,
-   so if you pass the field name directly, it will match an equal string.
+   and the provider will be applied to all fields with id matched by the regex.
+   In most cases, ``field_id`` is the name of the field at class definition.
+   Any field_id must be a valid python identifier,
+   so if you pass the ``field_id`` directly, it will match an equal string.
 
 Using string directly for predicate often is inconvenient because it matches fields with the same name in all models.
 So there special helper for this case.

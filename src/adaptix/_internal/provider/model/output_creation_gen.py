@@ -26,7 +26,7 @@ class GenState:
         self.ctx_namespace = ctx_namespace
         self._name_to_field = name_to_field
 
-        self.field_name2path: Dict[str, CrownPath] = {}
+        self.field_id2path: Dict[str, CrownPath] = {}
         self.path2suffix: Dict[CrownPath, str] = {}
 
         self._last_path_idx = 0
@@ -98,7 +98,7 @@ class BuiltinOutputCreationGen(CodeGenerator):
         self._name_layout = name_layout
         self._debug_path = debug_path
 
-        self._name_to_field: Dict[str, OutputField] = {field.name: field for field in self._figure.fields}
+        self._name_to_field: Dict[str, OutputField] = {field.id: field for field in self._figure.fields}
 
     def _gen_header(self, builder: CodeBuilder, state: GenState):
         if state.path2suffix:
@@ -108,9 +108,9 @@ class BuiltinOutputCreationGen(CodeGenerator):
 
             builder.empty_line()
 
-        if state.field_name2path:
+        if state.field_id2path:
             builder += "# field to path"
-            for f_name, path in state.field_name2path.items():
+            for f_name, path in state.field_id2path.items():
                 builder += f"# {f_name} -> {list(path)}"
 
             builder.empty_line()
@@ -327,7 +327,7 @@ class BuiltinOutputCreationGen(CodeGenerator):
         builder += "]"
 
     def _gen_field_crown(self, builder: CodeBuilder, state: GenState, crown: OutFieldCrown):
-        state.field_name2path[crown.name] = state.path
+        state.field_id2path[crown.name] = state.path
 
     def _gen_none_crown(self, builder: CodeBuilder, state: GenState, crown: OutNoneCrown):
         pass

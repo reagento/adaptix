@@ -41,7 +41,7 @@ class GenState:
         self.ctx_namespace = ctx_namespace
         self._name_to_field = name_to_field
 
-        self.field_name2path: Dict[str, CrownPath] = {}
+        self.field_id2path: Dict[str, CrownPath] = {}
         self.path2suffix: Dict[CrownPath, str] = {}
         self.path2known_fields: Dict[CrownPath, Set[str]] = {}
 
@@ -75,11 +75,11 @@ class GenState:
 
         return self.binder.extra + '_' + self._get_path_idx(self._path)
 
-    def field_loader(self, field_name: str) -> str:
-        return f"loader_{field_name}"
+    def field_loader(self, field_id: str) -> str:
+        return f"loader_{field_id}"
 
     def raw_field(self, field: InputField) -> str:
-        return f"r_{field.name}"
+        return f"r_{field.id}"
 
     @property
     def path(self):
@@ -97,7 +97,7 @@ class GenState:
         self._parent_path = past_parent
 
     def get_field(self, crown: InpFieldCrown) -> InputField:
-        self.field_name2path[crown.name] = self._path
+        self.field_id2path[crown.name] = self._path
         return self._name_to_field[crown.name]
 
     def with_parent_path(self) -> "GenState":
@@ -127,7 +127,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
         self._name_layout = name_layout
         self._debug_path = debug_path
         self._name_to_field: Dict[str, InputField] = {
-            field.name: field for field in self._figure.fields
+            field.id: field for field in self._figure.fields
         }
         self._field_loaders = field_loaders
 
@@ -139,7 +139,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
         return (
             isinstance(self._name_layout.extra_move, ExtraTargets)
             and
-            field.name in self._name_layout.extra_move.fields
+            field.id in self._name_layout.extra_move.fields
         )
 
     def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
@@ -159,8 +159,8 @@ class BuiltinInputExtractionGen(CodeGenerator):
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
 
-        for field_name, loader in self._field_loaders.items():
-            state.ctx_namespace.add(state.field_loader(field_name), loader)
+        for field_id, loader in self._field_loaders.items():
+            state.ctx_namespace.add(state.field_loader(field_id), loader)
 
         if not self._gen_root_crown_dispatch(crown_builder, state, self._name_layout.crown):
             raise TypeError
@@ -190,9 +190,9 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
             builder.empty_line()
 
-        if state.field_name2path:
+        if state.field_id2path:
             builder += "# field to path"
-            for f_name, path in state.field_name2path.items():
+            for f_name, path in state.field_id2path.items():
                 builder += f"# {f_name} -> {list(path)}"
 
             builder.empty_line()
@@ -364,8 +364,8 @@ class BuiltinInputExtractionGen(CodeGenerator):
             with builder(f'if {last_path_el!r} in {data}:'):
                 self._gen_field_assigment(
                     builder=builder,
-                    assign_to=f"{state.binder.opt_fields}[{field.name!r}]",
-                    field_name=field.name,
+                    assign_to=f"{state.binder.opt_fields}[{field.id!r}]",
+                    field_id=field.id,
                     data_for_loader=f"{data}[{last_path_el!r}]",
                     state=state,
                 )
@@ -380,7 +380,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
             self._gen_field_assigment(
                 builder=builder,
                 assign_to=state.binder.field(field),
-                field_name=field.name,
+                field_id=field.id,
                 data_for_loader=state.raw_field(field),
                 state=state,
             )
@@ -390,13 +390,13 @@ class BuiltinInputExtractionGen(CodeGenerator):
         self,
         builder: CodeBuilder,
         assign_to: str,
-        field_name: str,
+        field_id: str,
         data_for_loader: str,
         state: GenState,
     ):
-        field_loader = state.field_loader(field_name)
+        field_loader = state.field_loader(field_id)
 
-        if self._field_loaders[field_name] == as_is_stub:
+        if self._field_loaders[field_id] == as_is_stub:
             processing_expr = data_for_loader
         else:
             processing_expr = f'{field_loader}({data_for_loader})'
@@ -430,7 +430,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                 self._gen_field_assigment(
                     builder=builder,
                     assign_to=state.binder.field(field),
-                    field_name=target,
+                    field_id=target,
                     data_for_loader=state.get_extra_var_name(),
                     state=state,
                 )
@@ -441,7 +441,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                     self._gen_field_assigment(
                         builder=builder,
                         assign_to=state.binder.field(field),
-                        field_name=target,
+                        field_id=target,
                         data_for_loader="{}",
                         state=state,
                     )

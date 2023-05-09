@@ -52,20 +52,20 @@ class Overlay(Generic[Sc]):
 
     def merge(self: Ov, new: Ov) -> Ov:
         merged = {}
-        for field_name, merger in self._load_mergers().items():
-            old_field_value = getattr(self, field_name)
-            new_field_value = getattr(new, field_name)
+        for field_id, merger in self._load_mergers().items():
+            old_field_value = getattr(self, field_id)
+            new_field_value = getattr(new, field_id)
             if self._is_omitted(old_field_value):
-                merged[field_name] = new_field_value
+                merged[field_id] = new_field_value
             elif self._is_omitted(new_field_value):
-                merged[field_name] = old_field_value
+                merged[field_id] = old_field_value
             else:
-                merged[field_name] = merger(self, old_field_value, new_field_value)
+                merged[field_id] = merger(self, old_field_value, new_field_value)
         return self.__class__(**merged)
 
     def to_schema(self) -> Sc:
         omitted_fields = [
-            field_name for field_name, field_value in vars(self).items()
+            field_id for field_id, field_value in vars(self).items()
             if self._is_omitted(field_value)
         ]
         if omitted_fields:

@@ -58,7 +58,7 @@ def gauge(*args, **kwargs):
 def field(name: str, param_kind: ParamKind, is_required: bool):
     return InputField(
         type=int,
-        name=name,
+        id=name,
         default=NoDefault(),
         is_required=is_required,
         metadata=MappingProxyType({}),
@@ -72,7 +72,7 @@ def figure(*fields: InputField, kwargs: Optional[ParamKwargs] = None):
         fields=fields,
         constructor=gauge,
         kwargs=kwargs,
-        overriden_types=frozenset(fld.name for fld in fields),
+        overriden_types=frozenset(fld.id for fld in fields),
     )
 
 

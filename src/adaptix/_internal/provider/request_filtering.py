@@ -137,12 +137,12 @@ class LocatedRequestChecker(RequestChecker, ABC):
 @dataclass
 class ExactFieldNameRC(LocatedRequestChecker):
     LOCATION = FieldLoc
-    field_name: str
+    field_id: str
 
     def _check_location(self, mediator: DirectMediator, loc: FieldLoc) -> None:
-        if self.field_name == loc.name:
+        if self.field_id == loc.name:
             return
-        raise CannotProvide(f'field_name must be a {self.field_name!r}')
+        raise CannotProvide(f'field_id must be a {self.field_id!r}')
 
 
 @dataclass
@@ -154,7 +154,7 @@ class ReFieldNameRC(LocatedRequestChecker):
         if self.pattern.fullmatch(loc.name):
             return
 
-        raise CannotProvide(f'field_name must be matched by {self.pattern!r}')
+        raise CannotProvide(f'field_id must be matched by {self.pattern!r}')
 
 
 @dataclass

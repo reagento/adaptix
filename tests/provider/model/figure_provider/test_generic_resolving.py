@@ -22,14 +22,14 @@ def assert_fields_types(tp: TypeHint, expected: Mapping[str, TypeHint]) -> None:
         mediator,
         InputFigureRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
     )
-    input_field_types = {field.name: field.type for field in input_figure.fields}
+    input_field_types = {field.id: field.type for field in input_figure.fields}
     assert input_field_types == expected
 
     output_figure = provide_generic_resolved_figure(
         mediator,
         OutputFigureRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
     )
-    output_field_types = {field.name: field.type for field in output_figure.fields}
+    output_field_types = {field.id: field.type for field in output_figure.fields}
     assert output_field_types == expected
 
 

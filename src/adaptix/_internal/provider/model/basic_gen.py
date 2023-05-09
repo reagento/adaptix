@@ -121,8 +121,8 @@ def get_skipped_fields(figure: BaseFigure, name_layout: BaseNameLayout) -> Colle
         extra_targets = ()
 
     return [
-        field.name for field in figure.fields
-        if field.name not in used_direct_fields and field.name not in extra_targets
+        field.id for field in figure.fields
+        if field.id not in used_direct_fields and field.id not in extra_targets
     ]
 
 
@@ -194,11 +194,11 @@ def strip_figure_fields(figure: Fig, skipped_fields: Collection[str]) -> Fig:
         figure,
         fields=tuple(
             field for field in figure.fields
-            if field.name not in skipped_fields
+            if field.id not in skipped_fields
         ),
         overriden_types=frozenset(
-            field.name for field in figure.fields
-            if field.name not in skipped_fields
+            field.id for field in figure.fields
+            if field.id not in skipped_fields
         )
     )
 

@@ -121,7 +121,7 @@ class ItemAccessor(Accessor):
 @dataclass(frozen=True)
 class BaseField:
     type: TypeHint
-    name: str
+    id: str
     default: Default
     # Mapping almost never defines __hash__,
     # so it will be more convenient to exclude this field
@@ -129,8 +129,8 @@ class BaseField:
     metadata: Mapping[Any, Any] = field(hash=False)
 
     def __post_init__(self):
-        if not self.name.isidentifier():
-            raise ValueError(f"name of field must be python identifier, now it is a {self.name!r}")
+        if not self.id.isidentifier():
+            raise ValueError(f"name of field must be python identifier, now it is a {self.id!r}")
 
 
 class ParamKind(Enum):
@@ -181,21 +181,21 @@ class BaseFigure:
     fields_dict: Mapping[str, BaseField] = field(init=False, hash=False, repr=False, compare=False)
 
     def _validate(self):
-        field_names = {fld.name for fld in self.fields}
-        if len(field_names) != len(self.fields):
+        field_ids = {fld.id for fld in self.fields}
+        if len(field_ids) != len(self.fields):
             duplicates = {
-                fld.name for fld in self.fields
-                if fld.name in field_names
+                fld.id for fld in self.fields
+                if fld.id in field_ids
             }
             raise ValueError(f"Field names {duplicates} are duplicated")
 
-        wild_overriden_types = self.overriden_types - field_names
+        wild_overriden_types = self.overriden_types - field_ids
         if wild_overriden_types:
             raise ValueError(f"overriden_types contains non existing fields {wild_overriden_types} ")
 
     def __post_init__(self):
         self._validate()
-        super().__setattr__('fields_dict', {fld.name: fld for fld in self.fields})
+        super().__setattr__('fields_dict', {fld.id: fld for fld in self.fields})
 
 
 @dataclass(frozen=True)

@@ -63,7 +63,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         self._validate_params(processed_figure, name_layout)
 
         field_loaders = {
-            field.name: mediator.provide(
+            field.id: mediator.provide(
                 LoaderRequest(
                     loc_map=input_field_to_loc_map(field),
                 )
@@ -85,9 +85,9 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         skipped_fields = get_skipped_fields(figure, name_layout)
 
         skipped_required_fields = [
-            field.name
+            field.id
             for field in figure.fields
-            if field.is_required and field.name in skipped_fields
+            if field.is_required and field.id in skipped_fields
         ]
         if skipped_required_fields:
             raise ValueError(
@@ -110,7 +110,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
             )
 
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
-            {field.name: field for field in processed_figure.fields},
+            {field.id: field for field in processed_figure.fields},
             name_layout.crown,
         )
         if optional_fields_at_list_crown:

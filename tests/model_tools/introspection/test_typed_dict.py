@@ -40,7 +40,7 @@ def test_total():
                 fields=(
                     InputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -49,7 +49,7 @@ def test_total():
                     ),
                     InputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -58,7 +58,7 @@ def test_total():
                     ),
                     InputField(
                         type=bool,
-                        name='c',
+                        id='c',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -72,21 +72,21 @@ def test_total():
                 fields=(
                     OutputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('a', is_required=True),
                     ),
                     OutputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('b', is_required=True),
                     ),
                     OutputField(
                         type=bool,
-                        name='c',
+                        id='c',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('c', is_required=True),
@@ -109,7 +109,7 @@ def test_non_total():
                 fields=(
                     InputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -118,7 +118,7 @@ def test_non_total():
                     ),
                     InputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -127,7 +127,7 @@ def test_non_total():
                     ),
                     InputField(
                         type=bool,
-                        name='c',
+                        id='c',
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -141,21 +141,21 @@ def test_non_total():
                 fields=(
                     OutputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('a', is_required=False),
                     ),
                     OutputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('b', is_required=False),
                     ),
                     OutputField(
                         type=bool,
-                        name='c',
+                        id='c',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('c', is_required=False),
@@ -194,7 +194,7 @@ def test_inheritance_first():
                 fields=(
                     InputField(
                         type=int,
-                        name='x',
+                        id='x',
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -208,7 +208,7 @@ def test_inheritance_first():
                 fields=(
                     OutputField(
                         type=int,
-                        name='x',
+                        id='x',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('x', is_required=False),
@@ -231,7 +231,7 @@ def test_inheritance_second():
                 fields=(
                     InputField(
                         type=int,
-                        name='x',
+                        id='x',
                         default=NoDefault(),
                         is_required=_negate_if_not_py39(False),
                         metadata=MappingProxyType({}),
@@ -240,7 +240,7 @@ def test_inheritance_second():
                     ),
                     InputField(
                         type=str,
-                        name='y',
+                        id='y',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -254,14 +254,14 @@ def test_inheritance_second():
                 fields=(
                     OutputField(
                         type=int,
-                        name='x',
+                        id='x',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('x', is_required=_negate_if_not_py39(False)),
                     ),
                     OutputField(
                         type=str,
-                        name='y',
+                        id='y',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('y', is_required=True),
@@ -284,7 +284,7 @@ def test_inheritance_third():
                 fields=(
                     InputField(
                         type=int,
-                        name='x',
+                        id='x',
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -293,7 +293,7 @@ def test_inheritance_third():
                     ),
                     InputField(
                         type=str,
-                        name='y',
+                        id='y',
                         default=NoDefault(),
                         is_required=_negate_if_not_py39(True),
                         metadata=MappingProxyType({}),
@@ -302,7 +302,7 @@ def test_inheritance_third():
                     ),
                     InputField(
                         type=str,
-                        name='z',
+                        id='z',
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -316,21 +316,21 @@ def test_inheritance_third():
                 fields=(
                     OutputField(
                         type=int,
-                        name='x',
+                        id='x',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('x', is_required=False),
                     ),
                     OutputField(
                         type=str,
-                        name='y',
+                        id='y',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('y', is_required=_negate_if_not_py39(True)),
                     ),
                     OutputField(
                         type=str,
-                        name='z',
+                        id='z',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=ItemAccessor('z', is_required=False),
@@ -357,7 +357,7 @@ def test_annotated():
                 fields=(
                     InputField(
                         type=typing.Annotated[int, 'metadata'],
-                        name='annotated_field',
+                        id='annotated_field',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -371,7 +371,7 @@ def test_annotated():
                 fields=(
                     OutputField(
                         type=typing.Annotated[int, 'metadata'],
-                        name='annotated_field',
+                        id='annotated_field',
                         default=NoDefault(),
                         accessor=ItemAccessor('annotated_field', is_required=True),
                         metadata=MappingProxyType({}),
@@ -395,7 +395,7 @@ def test_annotated():
                 fields=(
                     InputField(
                         type=typing.Annotated[int, 'metadata'],
-                        name='annotated_field',
+                        id='annotated_field',
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -409,7 +409,7 @@ def test_annotated():
                 fields=(
                     OutputField(
                         type=typing.Annotated[int, 'metadata'],
-                        name='annotated_field',
+                        id='annotated_field',
                         default=NoDefault(),
                         accessor=ItemAccessor('annotated_field', is_required=False),
                         metadata=MappingProxyType({}),

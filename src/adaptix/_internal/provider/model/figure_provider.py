@@ -87,7 +87,7 @@ class PropertyAdder(StaticProvider):
 
         additional_fields = tuple(
             replace(field, type=self._infer_property_type(tp, self._get_attr_name(field)))
-            if field.name in self._infer_types_for else
+            if field.id in self._infer_types_for else
             field
             for field in self._output_fields
         )
@@ -130,7 +130,7 @@ class FigureGenericResolver(Generic[Fig]):
         return replace(
             members_storage.meta,
             fields=tuple(
-                replace(fld, type=members_storage.members[fld.name])
+                replace(fld, type=members_storage.members[fld.id])
                 for fld in members_storage.meta.fields
             )
         )
@@ -151,7 +151,7 @@ class FigureGenericResolver(Generic[Fig]):
             )
         return MembersStorage(
             meta=figure,
-            members={field.name: field.type for field in figure.fields},
+            members={field.id: field.type for field in figure.fields},
             overriden=figure.overriden_types,
         )
 

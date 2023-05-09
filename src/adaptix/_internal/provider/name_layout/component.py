@@ -110,11 +110,11 @@ def apply_rc(mediator: Mediator, request_checker: RequestChecker, field: BaseFie
 
 class BuiltinStructureMaker(StructureMaker):
     def _ensure_field_path(self, schema: StructureSchema, field: BaseField) -> Tuple[Path, bool]:
-        name = field.name
+        name = field.id
         for pattern, raw_path in schema.map:
-            if pattern.fullmatch(field.name):
+            if pattern.fullmatch(field.id):
                 path = tuple(
-                    field.name if isinstance(el, EllipsisType) else el
+                    field.id if isinstance(el, EllipsisType) else el
                     for el in raw_path
                 )
                 return path, True
@@ -138,7 +138,7 @@ class BuiltinStructureMaker(StructureMaker):
             extra_targets = ()
 
         for field in fields:
-            if field.name in extra_targets:
+            if field.id in extra_targets:
                 continue
 
             path, is_mapped = self._ensure_field_path(schema, field)
@@ -161,7 +161,7 @@ class BuiltinStructureMaker(StructureMaker):
                 paths_to_fields[path].append(field)
 
         duplicates = {
-            path: [field.name for field in fields]
+            path: [field.id for field in fields]
             for path, fields in paths_to_fields.items()
             if len(fields) > 1
         }
@@ -171,7 +171,7 @@ class BuiltinStructureMaker(StructureMaker):
             )
 
         optional_fields_at_list = [
-            field.name
+            field.id
             for field, path, is_mapped in fields_to_paths
             if path is not None and field.is_optional and isinstance(path[-1], int)
         ]
@@ -242,7 +242,7 @@ class BuiltinStructureMaker(StructureMaker):
         schema = provide_schema(StructureOverlay, mediator, request.loc_map)
         fields_to_paths = list(self._fields_to_paths(mediator, schema, request.figure.fields, extra_move))
         skipped_required_fields = [
-            field.name
+            field.id
             for field, path, is_mapped in fields_to_paths
             if path is None and field.is_required
         ]
@@ -252,12 +252,12 @@ class BuiltinStructureMaker(StructureMaker):
             )
         self._validate_structure(request, fields_to_paths)
         paths_to_leaves: Dict[Path, LeafInpCrown] = {
-            path: InpFieldCrown(field.name)
+            path: InpFieldCrown(field.id)
             for field, path, is_mapped in fields_to_paths
             if path is not None
         }
         self._fill_gaps_at_list(self._fill_input_gap, request, paths_to_leaves)
-        mapped_fields = {field.name for field, path, is_mapped in fields_to_paths if is_mapped}
+        mapped_fields = {field.id for field, path, is_mapped in fields_to_paths if is_mapped}
         return paths_to_leaves, mapped_fields
 
     def make_out_structure(
@@ -270,12 +270,12 @@ class BuiltinStructureMaker(StructureMaker):
         fields_to_paths = list(self._fields_to_paths(mediator, schema, request.figure.fields, extra_move))
         self._validate_structure(request, fields_to_paths)
         paths_to_leaves: Dict[Path, LeafOutCrown] = {
-            path: OutFieldCrown(field.name)
+            path: OutFieldCrown(field.id)
             for field, path, is_mapped in fields_to_paths
             if path is not None
         }
         self._fill_gaps_at_list(self._fill_output_gap, request, paths_to_leaves)
-        mapped_fields = {field.name for field, path, is_mapped in fields_to_paths if is_mapped}
+        mapped_fields = {field.id for field, path, is_mapped in fields_to_paths if is_mapped}
         return paths_to_leaves, mapped_fields
 
 
@@ -313,7 +313,7 @@ class BuiltinSievesMaker(SievesMaker):
         for path, leaf in paths_to_leaves.items():
             if isinstance(leaf, OutFieldCrown):
                 field = request.figure.fields_dict[leaf.name]
-                is_mapped = field.name in mapped_fields
+                is_mapped = field.id in mapped_fields
                 if field.default != NoDefault() and apply_rc(mediator, schema.omit_default, field, is_mapped):
                     result[path] = self._create_sieve(field)
         return result

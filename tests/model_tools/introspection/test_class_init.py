@@ -48,7 +48,7 @@ class Valid2KwargsTyped:
 VALID_FIELDS = (
     InputField(
         type=Any,
-        name='a',
+        id='a',
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
@@ -57,7 +57,7 @@ VALID_FIELDS = (
     ),
     InputField(
         type=int,
-        name='b',
+        id='b',
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
@@ -66,7 +66,7 @@ VALID_FIELDS = (
     ),
     InputField(
         type=str,
-        name='c',
+        id='c',
         default=DefaultValue('abc'),
         is_required=False,
         metadata=MappingProxyType({}),
@@ -75,7 +75,7 @@ VALID_FIELDS = (
     ),
     InputField(
         type=Any,
-        name='d',
+        id='d',
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
@@ -94,7 +94,7 @@ def test_extra_none():
                 constructor=Valid1,
                 kwargs=None,
                 fields=VALID_FIELDS,
-                overriden_types=frozenset(fld.name for fld in VALID_FIELDS),
+                overriden_types=frozenset(fld.id for fld in VALID_FIELDS),
             ),
             output=None,
         )
@@ -110,7 +110,7 @@ def test_extra_kwargs():
                 constructor=Valid2Kwargs,
                 kwargs=ParamKwargs(Any),
                 fields=VALID_FIELDS,
-                overriden_types=frozenset(fld.name for fld in VALID_FIELDS),
+                overriden_types=frozenset(fld.id for fld in VALID_FIELDS),
             ),
             output=None,
         )
@@ -125,7 +125,7 @@ def test_extra_kwargs():
                 constructor=Valid2KwargsTyped,
                 kwargs=ParamKwargs(str),
                 fields=VALID_FIELDS,
-                overriden_types=frozenset(fld.name for fld in VALID_FIELDS),
+                overriden_types=frozenset(fld.id for fld in VALID_FIELDS),
             ),
             output=None,
         )
@@ -148,7 +148,7 @@ def test_pos_only():
                 fields=(
                     InputField(
                         type=Any,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -157,7 +157,7 @@ def test_pos_only():
                     ),
                     InputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -187,7 +187,7 @@ def test_pos_only():
                 fields=(
                     InputField(
                         type=Any,
-                        name='a',
+                        id='a',
                         default=DefaultValue(None),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -196,7 +196,7 @@ def test_pos_only():
                     ),
                     InputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=DefaultValue(None),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -238,7 +238,7 @@ def test_annotated():
                 fields=(
                     InputField(
                         type=typing.Annotated[int, 'metadata'],
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),

@@ -8,7 +8,7 @@ def input_field_to_loc_map(field: InputField) -> LocMap:
             type=field.type,
         ),
         FieldLoc(
-            name=field.name,
+            name=field.id,
             default=field.default,
             metadata=field.metadata,
         ),
@@ -26,7 +26,7 @@ def output_field_to_loc_map(field: OutputField) -> LocMap:
             type=field.type,
         ),
         FieldLoc(
-            name=field.name,
+            name=field.id,
             default=field.default,
             metadata=field.metadata,
         ),

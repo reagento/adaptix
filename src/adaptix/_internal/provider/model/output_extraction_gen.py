@@ -33,10 +33,10 @@ class BuiltinOutputExtractionGen(CodeGenerator):
 
         ctx_namespace.add("append_path", append_path)
         ctx_namespace.add("extend_path", extend_path)
-        name_to_fields = {field.name: field for field in self._figure.fields}
+        name_to_fields = {field.id: field for field in self._figure.fields}
 
-        for field_name, dumper in self._fields_dumpers.items():
-            ctx_namespace.add(self._dumper(name_to_fields[field_name]), dumper)
+        for field_id, dumper in self._fields_dumpers.items():
+            ctx_namespace.add(self._dumper(name_to_fields[field_id]), dumper)
 
         if any(field.is_optional for field in self._figure.fields):
             builder(f"{binder.opt_fields} = {{}}")
@@ -48,7 +48,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
                     builder, binder, ctx_namespace, field,
                     on_access_error="pass",
                     on_access_ok_req=f"{binder.field(field)} = $expr",
-                    on_access_ok_opt=f"{binder.opt_fields}[{field.name!r}] = $expr",
+                    on_access_ok_opt=f"{binder.opt_fields}[{field.id!r}] = $expr",
                 )
 
         self._gen_extra_extraction(
@@ -57,16 +57,16 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         return builder
 
     def _is_extra_target(self, field: OutputField) -> bool:
-        return field.name in self._extra_targets
+        return field.id in self._extra_targets
 
     def _dumper(self, field: OutputField) -> str:
-        return f"dumper_{field.name}"
+        return f"dumper_{field.id}"
 
     def _raw_field(self, field: OutputField) -> str:
-        return f"r_{field.name}"
+        return f"r_{field.id}"
 
     def _accessor_getter(self, field: OutputField) -> str:
-        return f"accessor_getter_{field.name}"
+        return f"accessor_getter_{field.id}"
 
     def _gen_access_expr(self, binder: VarBinder, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         accessor = field.accessor
@@ -82,7 +82,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         return f"{accessor_getter}({binder.data})"
 
     def _get_path_element_var_name(self, field: OutputField) -> str:
-        return f"path_element_{field.name}"
+        return f"path_element_{field.id}"
 
     def _gen_path_element_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         path_element = field.accessor.path_element
@@ -106,7 +106,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         raw_access_expr = self._gen_access_expr(binder, ctx_namespace, field)
         path_element_expr = self._gen_path_element_expr(ctx_namespace, field)
 
-        if self._fields_dumpers[field.name] == as_is_stub:
+        if self._fields_dumpers[field.id] == as_is_stub:
             on_access_ok_stmt = Template(on_access_ok).substitute(expr=raw_access_expr)
         else:
             dumper = self._dumper(field)
@@ -126,7 +126,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         builder.empty_line()
 
     def _get_access_error_var_name(self, field: OutputField) -> str:
-        return f"access_error_{field.name}"
+        return f"access_error_{field.id}"
 
     def _gen_optional_field_extraction(
         self,
@@ -143,7 +143,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
 
         raw_field = self._raw_field(field)
 
-        if self._fields_dumpers[field.name] == as_is_stub:
+        if self._fields_dumpers[field.id] == as_is_stub:
             on_access_ok_stmt = Template(on_access_ok).substitute(
                 expr=raw_field,
             )
@@ -242,8 +242,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
             )
 
         elif all(field.is_required for field in name_to_fields.values()):
-            for field_name in self._extra_targets:
-                field = name_to_fields[field_name]
+            for field_id in self._extra_targets:
+                field = name_to_fields[field_id]
 
                 self._gen_required_field_extraction(
                     builder, binder, ctx_namespace, field,
@@ -252,8 +252,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
 
             builder += f'{binder.extra} = {{'
             builder <<= ", ".join(
-                "**" + binder.field(name_to_fields[field_name])
-                for field_name in self._extra_targets
+                "**" + binder.field(name_to_fields[field_id])
+                for field_id in self._extra_targets
             )
             builder <<= '}'
         else:
@@ -261,8 +261,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
 
             builder += f"{extra_stack} = []"
 
-            for field_name in self._extra_targets:
-                field = name_to_fields[field_name]
+            for field_id in self._extra_targets:
+                field = name_to_fields[field_id]
 
                 self._gen_field_extraction(
                     builder, binder, ctx_namespace, field,

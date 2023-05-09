@@ -92,7 +92,7 @@ def make_layouts(
     input_figure = InputFigure(
         fields=tuple(
             InputField(
-                name=fld.name,
+                id=fld.name,
                 type=Any,
                 default=fld.default,
                 metadata={},
@@ -109,7 +109,7 @@ def make_layouts(
     output_figure = OutputFigure(
         fields=tuple(
             OutputField(
-                name=fld.name,
+                id=fld.name,
                 type=Any,
                 default=fld.default,
                 metadata={},

@@ -32,7 +32,7 @@ def test_order_ab():
                 fields=(
                     InputField(
                         type=Any,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         param_kind=ParamKind.POS_OR_KW,
@@ -41,7 +41,7 @@ def test_order_ab():
                     ),
                     InputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         is_required=True,
                         param_kind=ParamKind.POS_OR_KW,
@@ -55,14 +55,14 @@ def test_order_ab():
                 fields=(
                     OutputField(
                         type=Any,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         accessor=AttrAccessor('a', is_required=True),
                         metadata=MappingProxyType({}),
                     ),
                     OutputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         accessor=AttrAccessor('b', is_required=True),
                         metadata=MappingProxyType({}),
@@ -87,7 +87,7 @@ def test_order_ba():
                 fields=(
                     InputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -96,7 +96,7 @@ def test_order_ba():
                     ),
                     InputField(
                         type=Any,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -110,14 +110,14 @@ def test_order_ba():
                 fields=(
                     OutputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('b', is_required=True),
                     ),
                     OutputField(
                         type=Any,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('a', is_required=True),
@@ -146,7 +146,7 @@ def test_defaults():
                 fields=(
                     InputField(
                         type=Any,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -155,7 +155,7 @@ def test_defaults():
                     ),
                     InputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=DefaultValue(0),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -164,7 +164,7 @@ def test_defaults():
                     ),
                     InputField(
                         type=Any,
-                        name='c',
+                        id='c',
                         default=DefaultValue(func),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -178,21 +178,21 @@ def test_defaults():
                 fields=(
                     OutputField(
                         type=Any,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('a', is_required=True),
                     ),
                     OutputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=DefaultValue(0),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('b', is_required=True),
                     ),
                     OutputField(
                         type=Any,
-                        name='c',
+                        id='c',
                         default=DefaultValue(func),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('c', is_required=True),
@@ -217,7 +217,7 @@ def test_rename():
                 fields=(
                     InputField(
                         type=Any,
-                        name='abc',
+                        id='abc',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -226,7 +226,7 @@ def test_rename():
                     ),
                     InputField(
                         type=Any,
-                        name='_1',
+                        id='_1',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -235,7 +235,7 @@ def test_rename():
                     ),
                     InputField(
                         type=Any,
-                        name='ghi',
+                        id='ghi',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -244,7 +244,7 @@ def test_rename():
                     ),
                     InputField(
                         type=Any,
-                        name='_3',
+                        id='_3',
                         default=DefaultValue(0),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -258,28 +258,28 @@ def test_rename():
                 fields=(
                     OutputField(
                         type=Any,
-                        name='abc',
+                        id='abc',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('abc', is_required=True),
                     ),
                     OutputField(
                         type=Any,
-                        name='_1',
+                        id='_1',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('_1', is_required=True),
                     ),
                     OutputField(
                         type=Any,
-                        name='ghi',
+                        id='ghi',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('ghi', is_required=True),
                     ),
                     OutputField(
                         type=Any,
-                        name='_3',
+                        id='_3',
                         default=DefaultValue(0),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('_3', is_required=True),
@@ -304,7 +304,7 @@ def test_class_hinted_namedtuple():
                 fields=(
                     InputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -313,7 +313,7 @@ def test_class_hinted_namedtuple():
                     ),
                     InputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -327,14 +327,14 @@ def test_class_hinted_namedtuple():
                 fields=(
                     OutputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('a', is_required=True),
                     ),
                     OutputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('b', is_required=True),
@@ -365,7 +365,7 @@ def test_hinted_namedtuple():
                 fields=(
                     InputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -374,7 +374,7 @@ def test_hinted_namedtuple():
                     ),
                     InputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=DefaultValue('abc'),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -383,7 +383,7 @@ def test_hinted_namedtuple():
                     ),
                     InputField(
                         type=bool,
-                        name='c',
+                        id='c',
                         default=DefaultValue(False),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -397,21 +397,21 @@ def test_hinted_namedtuple():
                 fields=(
                     OutputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('a', is_required=True),
                     ),
                     OutputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=DefaultValue('abc'),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('b', is_required=True),
                     ),
                     OutputField(
                         type=bool,
-                        name='c',
+                        id='c',
                         default=DefaultValue(False),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('c', is_required=True),
@@ -440,7 +440,7 @@ def test_inheritance():
                 fields=(
                     InputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -454,7 +454,7 @@ def test_inheritance():
                 fields=(
                     OutputField(
                         type=int,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('a', is_required=True),
@@ -485,7 +485,7 @@ def test_inheritance_overriden_types():
                 fields=(
                     InputField(
                         type=bool,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -494,7 +494,7 @@ def test_inheritance_overriden_types():
                     ),
                     InputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -508,14 +508,14 @@ def test_inheritance_overriden_types():
                 fields=(
                     OutputField(
                         type=bool,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('a', is_required=True),
                     ),
                     OutputField(
                         type=str,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('b', is_required=True),
@@ -544,7 +544,7 @@ def test_inheritance_overriden_types_functional_parent():
                 fields=(
                     InputField(
                         type=bool,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -553,7 +553,7 @@ def test_inheritance_overriden_types_functional_parent():
                     ),
                     InputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -567,14 +567,14 @@ def test_inheritance_overriden_types_functional_parent():
                 fields=(
                     OutputField(
                         type=bool,
-                        name='a',
+                        id='a',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('a', is_required=True),
                     ),
                     OutputField(
                         type=Any,
-                        name='b',
+                        id='b',
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
                         accessor=AttrAccessor('b', is_required=True),
@@ -601,7 +601,7 @@ def test_annotated():
                 fields=(
                     InputField(
                         type=typing.Annotated[int, 'metadata'],
-                        name='annotated_field',
+                        id='annotated_field',
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -615,7 +615,7 @@ def test_annotated():
                 fields=(
                     OutputField(
                         type=typing.Annotated[int, 'metadata'],
-                        name='annotated_field',
+                        id='annotated_field',
                         default=NoDefault(),
                         accessor=AttrAccessor('annotated_field', is_required=True),
                         metadata=MappingProxyType({}),

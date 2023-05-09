@@ -25,7 +25,7 @@ class VarBinder(PrefixManglerBase):
 
     @mangling_method("field_")
     def field(self, field: BaseField) -> str:
-        return field.name
+        return field.id
 
 
 class CodeGenerator(Protocol):

@@ -256,7 +256,7 @@ def add_property(
     attr_name = _ensure_attr_name(prop)
 
     field = OutputField(
-        name=attr_name,
+        id=attr_name,
         type=tp,
         accessor=DescriptorAccessor(attr_name, access_error),
         default=default,
@@ -267,7 +267,7 @@ def add_property(
         pred,
         PropertyAdder(
             output_fields=[field],
-            infer_types_for=[field.name] if tp == Omitted() else [],
+            infer_types_for=[field.id] if tp == Omitted() else [],
         )
     )
 

@@ -51,7 +51,7 @@ def make_output_extraction(
     extra_move: OutExtraMove,
 ) -> CodeGenerator:
     field_dumpers = {
-        field.name: mediator.provide(
+        field.id: mediator.provide(
             DumperRequest(
                 loc_map=output_field_to_loc_map(field),
             )
@@ -85,7 +85,7 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
 
     def _process_figure(self, figure: OutputFigure, name_layout: OutputNameLayout) -> OutputFigure:
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
-            {field.name: field for field in figure.fields},
+            {field.id: field for field in figure.fields},
             name_layout.crown,
         )
         if optional_fields_at_list_crown:

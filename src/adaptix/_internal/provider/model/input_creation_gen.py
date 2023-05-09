@@ -18,7 +18,7 @@ class BuiltinInputCreationGen(CodeGenerator):
         return (
             isinstance(self._extra_move, ExtraTargets)
             and
-            field.name in self._extra_move.fields
+            field.id in self._extra_move.fields
         )
 
     def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
