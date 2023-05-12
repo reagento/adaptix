@@ -9,11 +9,11 @@ from ..common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ..essential import Provider
 from ..load_error import LoadError, ValidationError
 from ..model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
-from ..model_tools.introspection import get_callable_figure
+from ..model_tools.introspection import get_callable_shape
 from ..provider.enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
 from ..provider.model.basic_gen import NameSanitizer
-from ..provider.model.figure_provider import PropertyAdder
 from ..provider.model.loader_provider import InlinedInputExtractionMaker, ModelLoaderProvider, make_input_creation
+from ..provider.model.shape_provider import PropertyAdder
 from ..provider.model.special_cases_optimization import as_is_stub
 from ..provider.name_layout.base import ExtraIn, ExtraOut
 from ..provider.name_layout.component import (
@@ -126,12 +126,12 @@ def as_is_dumper(pred: Pred) -> Provider:
 
 
 def constructor(pred: Pred, func: Callable) -> Provider:
-    input_figure = get_callable_figure(func).input
+    input_shape = get_callable_shape(func).input
     return bound(
         pred,
         ModelLoaderProvider(
             NameSanitizer(),
-            InlinedInputExtractionMaker(input_figure),
+            InlinedInputExtractionMaker(input_shape),
             make_input_creation,
         ),
     )

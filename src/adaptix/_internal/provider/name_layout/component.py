@@ -240,7 +240,7 @@ class BuiltinStructureMaker(StructureMaker):
         extra_move: InpExtraMove,
     ) -> Tuple[PathsTo[LeafInpCrown], AbstractSet[str]]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_map)
-        fields_to_paths = list(self._fields_to_paths(mediator, schema, request.figure.fields, extra_move))
+        fields_to_paths = list(self._fields_to_paths(mediator, schema, request.shape.fields, extra_move))
         skipped_required_fields = [
             field.id
             for field, path, is_mapped in fields_to_paths
@@ -267,7 +267,7 @@ class BuiltinStructureMaker(StructureMaker):
         extra_move: OutExtraMove,
     ) -> Tuple[PathsTo[LeafOutCrown], AbstractSet[str]]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_map)
-        fields_to_paths = list(self._fields_to_paths(mediator, schema, request.figure.fields, extra_move))
+        fields_to_paths = list(self._fields_to_paths(mediator, schema, request.shape.fields, extra_move))
         self._validate_structure(request, fields_to_paths)
         paths_to_leaves: Dict[Path, LeafOutCrown] = {
             path: OutFieldCrown(field.id)
@@ -312,7 +312,7 @@ class BuiltinSievesMaker(SievesMaker):
         result = {}
         for path, leaf in paths_to_leaves.items():
             if isinstance(leaf, OutFieldCrown):
-                field = request.figure.fields_dict[leaf.name]
+                field = request.shape.fields_dict[leaf.name]
                 is_mapped = field.id in mapped_fields
                 if field.default != NoDefault() and apply_rc(mediator, schema.omit_default, field, is_mapped):
                     result[path] = self._create_sieve(field)

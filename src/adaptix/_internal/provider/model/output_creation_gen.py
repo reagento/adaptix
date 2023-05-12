@@ -16,7 +16,7 @@ from .crown_definitions import (
     OutputNameLayout,
     Sieve,
 )
-from .definitions import CodeGenerator, OutputFigure, VarBinder
+from .definitions import CodeGenerator, OutputShape, VarBinder
 from .input_extraction_gen import CrownPath
 from .special_cases_optimization import get_default_clause
 
@@ -94,12 +94,12 @@ class ElementExpr(NamedTuple):
 
 
 class BuiltinOutputCreationGen(CodeGenerator):
-    def __init__(self, figure: OutputFigure, name_layout: OutputNameLayout, debug_path: bool):
-        self._figure = figure
+    def __init__(self, shape: OutputShape, name_layout: OutputNameLayout, debug_path: bool):
+        self._shape = shape
         self._name_layout = name_layout
         self._debug_path = debug_path
 
-        self._name_to_field: Dict[str, OutputField] = {field.id: field for field in self._figure.fields}
+        self._name_to_field: Dict[str, OutputField] = {field.id: field for field in self._shape.fields}
 
     def _gen_header(self, builder: CodeBuilder, state: GenState):
         if state.path2suffix:

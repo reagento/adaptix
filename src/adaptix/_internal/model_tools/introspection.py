@@ -12,18 +12,18 @@ from ..model_tools.definitions import (
     Default,
     DefaultFactory,
     DefaultValue,
-    Figure,
-    FullFigure,
+    FullShape,
     InputField,
-    InputFigure,
+    InputShape,
     IntrospectionImpossible,
     ItemAccessor,
     NoDefault,
     NoTargetPackage,
     OutputField,
-    OutputFigure,
+    OutputShape,
     ParamKind,
     ParamKwargs,
+    Shape,
 )
 from ..type_tools import get_all_type_hints, is_named_tuple_class, is_typed_dict_class
 
@@ -48,7 +48,7 @@ def _is_empty(value):
     return value is Signature.empty
 
 
-def get_callable_figure(func, params_slice=slice(0, None)) -> Figure[InputFigure, None]:
+def get_callable_shape(func, params_slice=slice(0, None)) -> Shape[InputShape, None]:
     try:
         signature = inspect.signature(func)
     except TypeError:
@@ -59,7 +59,7 @@ def get_callable_figure(func, params_slice=slice(0, None)) -> Figure[InputFigure
 
     if Parameter.VAR_POSITIONAL in kinds:
         raise IntrospectionImpossible(
-            f'Can not create InputFigure'
+            f'Can not create InputShape'
             f' from the function that has {Parameter.VAR_POSITIONAL}'
             f' parameter'
         )
@@ -74,8 +74,8 @@ def get_callable_figure(func, params_slice=slice(0, None)) -> Figure[InputFigure
 
     type_hints = get_all_type_hints(func)
 
-    return Figure(
-        input=InputFigure(
+    return Shape(
+        input=InputShape(
             constructor=func,
             fields=tuple(
                 InputField(
@@ -105,7 +105,7 @@ def get_callable_figure(func, params_slice=slice(0, None)) -> Figure[InputFigure
 #       NamedTuple
 # ======================
 
-def get_named_tuple_figure(tp) -> FullFigure:
+def get_named_tuple_shape(tp) -> FullShape:
     # pylint: disable=protected-access
     if not is_named_tuple_class(tp):
         raise IntrospectionImpossible
@@ -117,7 +117,7 @@ def get_named_tuple_figure(tp) -> FullFigure:
         overriden_types = frozenset(tp.__annotations__.keys() & set(tp._fields))
 
     # noinspection PyProtectedMember
-    input_figure = InputFigure(
+    input_shape = InputShape(
         constructor=tp,
         kwargs=None,
         fields=tuple(
@@ -139,9 +139,9 @@ def get_named_tuple_figure(tp) -> FullFigure:
         overriden_types=overriden_types,
     )
 
-    return Figure(
-        input=input_figure,
-        output=OutputFigure(
+    return Shape(
+        input=input_shape,
+        output=OutputShape(
             fields=tuple(
                 OutputField(
                     id=fld.id,
@@ -150,7 +150,7 @@ def get_named_tuple_figure(tp) -> FullFigure:
                     metadata=fld.metadata,
                     accessor=AttrAccessor(attr_name=fld.id, is_required=True),
                 )
-                for fld in input_figure.fields
+                for fld in input_shape.fields
             ),
             overriden_types=overriden_types,
         )
@@ -190,7 +190,7 @@ def _get_td_hints(tp):
     return elements
 
 
-def get_typed_dict_figure(tp) -> FullFigure:
+def get_typed_dict_shape(tp) -> FullShape:
     # __annotations__ of TypedDict contains also parents type hints unlike any other classes,
     # so overriden_types always contains all fields
     if not is_typed_dict_class(tp):
@@ -198,8 +198,8 @@ def get_typed_dict_figure(tp) -> FullFigure:
 
     requirement_determinant = _td_make_requirement_determinant(tp)
     type_hints = _get_td_hints(tp)
-    return Figure(
-        input=InputFigure(
+    return Shape(
+        input=InputShape(
             constructor=tp,
             fields=tuple(
                 InputField(
@@ -216,7 +216,7 @@ def get_typed_dict_figure(tp) -> FullFigure:
             kwargs=None,
             overriden_types=frozenset(tp.__annotations__.keys()),
         ),
-        output=OutputFigure(
+        output=OutputShape(
             fields=tuple(
                 OutputField(
                     type=tp,
@@ -265,7 +265,7 @@ def create_inp_field_from_dc_fields(dc_field: DCField, type_hints):
     )
 
 
-def get_dataclass_figure(tp) -> FullFigure:
+def get_dataclass_shape(tp) -> FullShape:
     """This function does not work properly if __init__ signature differs from
     that would be created by dataclass decorator.
 
@@ -286,8 +286,8 @@ def get_dataclass_figure(tp) -> FullFigure:
     )[1:]
     type_hints = get_all_type_hints(tp)
 
-    return Figure(
-        input=InputFigure(
+    return Shape(
+        input=InputShape(
             constructor=tp,
             fields=tuple(
                 create_inp_field_from_dc_fields(name_to_dc_field[field_id], type_hints)
@@ -299,7 +299,7 @@ def get_dataclass_figure(tp) -> FullFigure:
                 if field_id in tp.__annotations__
             ),
         ),
-        output=OutputFigure(
+        output=OutputShape(
             fields=tuple(
                 OutputField(
                     type=type_hints[field.name],
@@ -322,19 +322,19 @@ def get_dataclass_figure(tp) -> FullFigure:
 #       ClassInit
 # ======================
 
-def get_class_init_figure(tp) -> Figure[InputFigure, None]:
+def get_class_init_shape(tp) -> Shape[InputShape, None]:
     if not isinstance(tp, type):
         raise IntrospectionImpossible
 
-    figure = get_callable_figure(
+    shape = get_callable_shape(
         tp.__init__,  # type: ignore[misc]
         slice(1, None)
     )
 
     return replace(
-        figure,
+        shape,
         input=replace(
-            figure.input,
+            shape.input,
             constructor=tp,
         )
     )
@@ -379,7 +379,7 @@ def _process_attr_input_field(
     except KeyError:
         return field
 
-    # When input figure is generating we rely on __init__ signature,
+    # When input shape is generating we rely on __init__ signature,
     # but when field type is None attrs thinks that there is no type hint,
     # so if there is no custom __init__ (that can do not set type for this attribute),
     # we should use NoneType as type of field
@@ -408,7 +408,7 @@ def _get_attrs_param_name(attrs_field):
     )
 
 
-def get_attrs_figure(tp) -> FullFigure:
+def get_attrs_shape(tp) -> FullShape:
     if not HAS_ATTRS_PKG:
         raise NoTargetPackage
 
@@ -442,13 +442,13 @@ def get_attrs_figure(tp) -> FullFigure:
 
     has_custom_init = hasattr(tp, '__attrs_init__')
 
-    figure = get_class_init_figure(tp)
+    shape = get_class_init_shape(tp)
     input_fields = tuple(
         _process_attr_input_field(field, param_name_to_base_field, has_custom_init)
-        for field in figure.input.fields
+        for field in shape.input.fields
     )
-    input_figure = replace(
-        figure.input,
+    input_shape = replace(
+        shape.input,
         fields=input_fields,
         overriden_types=frozenset(
             (fld.id for fld in input_fields)
@@ -461,8 +461,8 @@ def get_attrs_figure(tp) -> FullFigure:
             id=field.id,
             type=field.type,
             default=(
-                input_figure.fields_dict[field.id].default
-                if field.id in input_figure.fields_dict else
+                input_shape.fields_dict[field.id].default
+                if field.id in input_shape.fields_dict else
                 NoDefault()
             ),
             metadata=field.metadata,
@@ -470,9 +470,9 @@ def get_attrs_figure(tp) -> FullFigure:
         )
         for field in param_name_to_base_field.values()
     )
-    return Figure(
-        input=input_figure,
-        output=OutputFigure(
+    return Shape(
+        input=input_shape,
+        output=OutputShape(
             fields=output_fields,
             overriden_types=frozenset(
                 fld.id for fld in output_fields if not attrs_fields_dict[fld.id].inherited

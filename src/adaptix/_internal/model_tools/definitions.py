@@ -172,9 +172,9 @@ class OutputField(BaseField):
 
 
 @dataclass(frozen=True)
-class BaseFigure:
+class BaseShape:
     """Signature of class. Divided into 2 parts: input and output.
-    See doc :class InputFigure: and :class OutputFigure: for more details
+    See doc :class InputShape: and :class OutputShape: for more details
     """
     fields: VarTuple[BaseField]
     overriden_types: FrozenSet[str]
@@ -204,7 +204,7 @@ class ParamKwargs:
 
 
 @dataclass(frozen=True)
-class InputFigure(BaseFigure, Generic[T]):
+class InputShape(BaseShape, Generic[T]):
     """Description of desired object creation
 
     :param constructor: callable that produces an instance of the class.
@@ -249,7 +249,7 @@ class InputFigure(BaseFigure, Generic[T]):
 
 
 @dataclass(frozen=True)
-class OutputFigure(BaseFigure):
+class OutputShape(BaseShape):
     """Description of extraction data from an object
 
     :param fields: fields (can be not only attributes) of object
@@ -258,18 +258,18 @@ class OutputFigure(BaseFigure):
     fields_dict: Mapping[str, OutputField] = field(init=False, hash=False, repr=False, compare=False)
 
 
-Inp = TypeVar('Inp', bound=Optional[InputFigure])
-Out = TypeVar('Out', bound=Optional[OutputFigure])
+Inp = TypeVar('Inp', bound=Optional[InputShape])
+Out = TypeVar('Out', bound=Optional[OutputShape])
 
 
 @dataclass
-class Figure(Generic[Inp, Out]):
+class Shape(Generic[Inp, Out]):
     input: Inp
     output: Out
 
 
-FullFigure = Figure[InputFigure, OutputFigure]
-FigureIntrospector = Callable[[Any], Figure]
+FullShape = Shape[InputShape, OutputShape]
+ShapeIntrospector = Callable[[Any], Shape]
 
 
 class IntrospectionImpossible(Exception):

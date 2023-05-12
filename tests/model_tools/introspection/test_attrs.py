@@ -10,17 +10,17 @@ from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     DefaultFactory,
     DefaultValue,
-    Figure,
     InputField,
-    InputFigure,
+    InputShape,
     IntrospectionImpossible,
     NoDefault,
     OutputField,
-    OutputFigure,
+    OutputShape,
     ParamKind,
     ParamKwargs,
+    Shape,
 )
-from adaptix._internal.model_tools.introspection import get_attrs_figure
+from adaptix._internal.model_tools.introspection import get_attrs_shape
 from tests_helpers import ATTRS_WITH_ALIAS, requires
 
 pytest.importorskip("attrs")
@@ -45,10 +45,10 @@ class NewStyle:
 
 def test_new_style():
     assert (
-        get_attrs_figure(NewStyle)
+        get_attrs_shape(NewStyle)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=NewStyle,
                 kwargs=None,
                 fields=(
@@ -127,7 +127,7 @@ def test_new_style():
                 ),
                 overriden_types=frozenset({'a', '_b', 'd', 'e', 'f', 'g', 'h', 'i'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -208,10 +208,10 @@ class OldStyle:
 
 def test_old_style():
     assert (
-        get_attrs_figure(OldStyle)
+        get_attrs_shape(OldStyle)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=OldStyle,
                 kwargs=None,
                 fields=(
@@ -236,7 +236,7 @@ def test_old_style():
                 ),
                 overriden_types=frozenset({'a', 'b'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=Any,
@@ -276,10 +276,10 @@ class CustomInit:
 
 def test_custom_init():
     assert (
-        get_attrs_figure(CustomInit)
+        get_attrs_shape(CustomInit)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=CustomInit,
                 kwargs=None,
                 fields=(
@@ -313,7 +313,7 @@ def test_custom_init():
                 ),
                 overriden_types=frozenset({'a', 'b', '_c'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -361,10 +361,10 @@ class CustomInitUnknownParams:
 
 def test_custom_init_unknown_params():
     assert (
-        get_attrs_figure(CustomInitUnknownParams)
+        get_attrs_shape(CustomInitUnknownParams)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=CustomInitUnknownParams,
                 kwargs=None,
                 fields=(
@@ -398,7 +398,7 @@ def test_custom_init_unknown_params():
                 ),
                 overriden_types=frozenset({'a', 'b', 'c'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -439,10 +439,10 @@ class CustomInitKwargsTyped:
 
 def test_custom_init_kwargs():
     assert (
-        get_attrs_figure(CustomInitKwargs)
+        get_attrs_shape(CustomInitKwargs)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=CustomInitKwargs,
                 kwargs=ParamKwargs(Any),
                 fields=(
@@ -458,7 +458,7 @@ def test_custom_init_kwargs():
                 ),
                 overriden_types=frozenset({'a'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -474,10 +474,10 @@ def test_custom_init_kwargs():
     )
 
     assert (
-        get_attrs_figure(CustomInitKwargsTyped)
+        get_attrs_shape(CustomInitKwargsTyped)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=CustomInitKwargsTyped,
                 kwargs=ParamKwargs(str),
                 fields=(
@@ -493,7 +493,7 @@ def test_custom_init_kwargs():
                 ),
                 overriden_types=frozenset({'a'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -516,10 +516,10 @@ class NoneAttr:
 
 def test_none_attr():
     assert (
-        get_attrs_figure(NoneAttr)
+        get_attrs_shape(NoneAttr)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=NoneAttr,
                 kwargs=None,
                 fields=(
@@ -535,7 +535,7 @@ def test_none_attr():
                 ),
                 overriden_types=frozenset({'a'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=type(None),
@@ -561,10 +561,10 @@ class NoneAttrCustomInit:
 
 def test_none_attr_custom_init():
     assert (
-        get_attrs_figure(NoneAttrCustomInit)
+        get_attrs_shape(NoneAttrCustomInit)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=NoneAttrCustomInit,
                 kwargs=None,
                 fields=(
@@ -580,7 +580,7 @@ def test_none_attr_custom_init():
                 ),
                 overriden_types=frozenset({'a'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=type(None),
@@ -603,10 +603,10 @@ def test_annotated():
         a: typing.Annotated[int, 'metadata']
 
     assert (
-        get_attrs_figure(WithAnnotated)
+        get_attrs_shape(WithAnnotated)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=WithAnnotated,
                 kwargs=None,
                 fields=(
@@ -622,7 +622,7 @@ def test_annotated():
                 ),
                 overriden_types=frozenset({'a'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=typing.Annotated[int, 'metadata'],
@@ -644,10 +644,10 @@ def test_not_attrs():
         foo: int
 
     with pytest.raises(IntrospectionImpossible):
-        get_attrs_figure(IAmDataclass)
+        get_attrs_shape(IAmDataclass)
 
     with pytest.raises(IntrospectionImpossible):
-        get_attrs_figure(Tuple[IAmDataclass, int])
+        get_attrs_shape(Tuple[IAmDataclass, int])
 
 
 def test_inheritance_new_style():
@@ -662,10 +662,10 @@ def test_inheritance_new_style():
         c: int
 
     assert (
-        get_attrs_figure(Child)
+        get_attrs_shape(Child)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Child,
                 kwargs=None,
                 fields=(
@@ -699,7 +699,7 @@ def test_inheritance_new_style():
                 ),
                 overriden_types=frozenset({'a', 'c'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -743,10 +743,10 @@ def test_inheritance_old_style():
         e: int
 
     assert (
-        get_attrs_figure(Child)
+        get_attrs_shape(Child)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Child,
                 kwargs=None,
                 fields=(
@@ -780,7 +780,7 @@ def test_inheritance_old_style():
                 ),
                 overriden_types=frozenset({'a', 'c'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -818,10 +818,10 @@ def test_alias_new_style():
         _foo: int = field(alias='foo2')
 
     assert (
-        get_attrs_figure(WithAliases)
+        get_attrs_shape(WithAliases)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=WithAliases,
                 kwargs=None,
                 fields=(
@@ -846,7 +846,7 @@ def test_alias_new_style():
                 ),
                 overriden_types=frozenset({'foo', '_foo'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -877,10 +877,10 @@ def test_alias_old_style():
         _foo = attr.ib(type=int, alias='foo2')
 
     assert (
-        get_attrs_figure(WithAliases)
+        get_attrs_shape(WithAliases)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=WithAliases,
                 kwargs=None,
                 fields=(
@@ -905,7 +905,7 @@ def test_alias_old_style():
                 ),
                 overriden_types=frozenset({'foo', '_foo'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,

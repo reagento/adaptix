@@ -8,15 +8,15 @@ from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     DefaultFactory,
     DefaultValue,
-    Figure,
     InputField,
-    InputFigure,
+    InputShape,
     NoDefault,
     OutputField,
-    OutputFigure,
+    OutputShape,
     ParamKind,
+    Shape,
 )
-from adaptix._internal.model_tools.introspection import get_dataclass_figure
+from adaptix._internal.model_tools.introspection import get_dataclass_shape
 from tests_helpers import requires
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
@@ -40,10 +40,10 @@ class Foo:
 
 def test_input():
     assert (
-        get_dataclass_figure(Foo)
+        get_dataclass_shape(Foo)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Foo,
                 kwargs=None,
                 fields=(
@@ -104,7 +104,7 @@ def test_input():
                 ),
                 overriden_types=frozenset({'a', 'b', 'c', 'd', 'e', 'i'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -160,10 +160,10 @@ class ChildBar(Bar):
 
 def test_inheritance():
     assert (
-        get_dataclass_figure(ChildBar)
+        get_dataclass_shape(ChildBar)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=ChildBar,
                 kwargs=None,
                 fields=(
@@ -188,7 +188,7 @@ def test_inheritance():
                 ),
                 overriden_types=frozenset({'b'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -223,10 +223,10 @@ class FRChild(FRParent):
 
 def test_forward_ref():
     assert (
-        get_dataclass_figure(FRParent)
+        get_dataclass_shape(FRParent)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=FRParent,
                 kwargs=None,
                 fields=(
@@ -242,7 +242,7 @@ def test_forward_ref():
                 ),
                 overriden_types=frozenset({'fr_field'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -258,10 +258,10 @@ def test_forward_ref():
     )
 
     assert (
-        get_dataclass_figure(FRChild)
+        get_dataclass_shape(FRChild)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=FRChild,
                 kwargs=None,
                 fields=(
@@ -286,7 +286,7 @@ def test_forward_ref():
                 ),
                 overriden_types=frozenset({'some_field'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -316,10 +316,10 @@ def test_annotated():
         annotated_field: typing.Annotated[int, 'metadata']
 
     assert (
-        get_dataclass_figure(WithAnnotated)
+        get_dataclass_shape(WithAnnotated)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=WithAnnotated,
                 kwargs=None,
                 fields=(
@@ -335,7 +335,7 @@ def test_annotated():
                 ),
                 overriden_types=frozenset({'annotated_field'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=typing.Annotated[int, 'metadata'],

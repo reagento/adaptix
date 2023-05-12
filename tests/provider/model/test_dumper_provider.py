@@ -14,7 +14,7 @@ from adaptix._internal.model_tools.definitions import (
     ItemAccessor,
     NoDefault,
     OutputField,
-    OutputFigure,
+    OutputShape,
 )
 from adaptix._internal.provider.model.basic_gen import NameSanitizer
 from adaptix._internal.provider.model.crown_definitions import (
@@ -27,7 +27,7 @@ from adaptix._internal.provider.model.crown_definitions import (
     OutputNameLayout,
     OutputNameLayoutRequest,
 )
-from adaptix._internal.provider.model.definitions import OutputFigureRequest
+from adaptix._internal.provider.model.definitions import OutputShapeRequest
 from adaptix._internal.provider.model.dumper_provider import (
     BuiltinOutputCreationMaker,
     ModelDumperProvider,
@@ -51,7 +51,7 @@ def field(name: str, accessor: Accessor):
 
 
 def figure(*fields: OutputField):
-    return OutputFigure(fields=fields, overriden_types=frozenset(fld.id for fld in fields))
+    return OutputShape(fields=fields, overriden_types=frozenset(fld.id for fld in fields))
 
 
 def int_dumper(data):
@@ -79,7 +79,7 @@ def dummy_items(**kwargs: Any):
 
 
 def make_dumper_getter(
-    fig: OutputFigure,
+    fig: OutputShape,
     name_layout: OutputNameLayout,
     debug_path: bool,
     debug_ctx: DebugCtx,
@@ -87,7 +87,7 @@ def make_dumper_getter(
     def getter():
         retort = TestRetort(
             recipe=[
-                ValueProvider(OutputFigureRequest, fig),
+                ValueProvider(OutputShapeRequest, fig),
                 ValueProvider(OutputNameLayoutRequest, name_layout),
                 bound(int, ValueProvider(DumperRequest, int_dumper)),
                 ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),

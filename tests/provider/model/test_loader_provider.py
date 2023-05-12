@@ -6,7 +6,7 @@ import pytest
 
 from adaptix import ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
-from adaptix._internal.model_tools.definitions import InputField, InputFigure, NoDefault, ParamKind, ParamKwargs
+from adaptix._internal.model_tools.definitions import InputField, InputShape, NoDefault, ParamKind, ParamKwargs
 from adaptix._internal.provider.model.basic_gen import NameSanitizer
 from adaptix._internal.provider.model.crown_definitions import (
     ExtraCollect,
@@ -21,7 +21,7 @@ from adaptix._internal.provider.model.crown_definitions import (
     InputNameLayout,
     InputNameLayoutRequest,
 )
-from adaptix._internal.provider.model.definitions import InputFigureRequest
+from adaptix._internal.provider.model.definitions import InputShapeRequest
 from adaptix._internal.provider.model.loader_provider import (
     BuiltinInputExtractionMaker,
     ModelLoaderProvider,
@@ -71,7 +71,7 @@ def field(name: str, param_kind: ParamKind, is_required: bool):
 
 
 def figure(*fields: InputField, kwargs: Optional[ParamKwargs] = None):
-    return InputFigure(
+    return InputShape(
         fields=fields,
         constructor=gauge,
         kwargs=kwargs,
@@ -86,7 +86,7 @@ def int_loader(data):
 
 
 def make_loader_getter(
-    fig: InputFigure,
+    fig: InputShape,
     name_layout: InputNameLayout,
     debug_path: bool,
     debug_ctx: DebugCtx,
@@ -94,7 +94,7 @@ def make_loader_getter(
     def getter():
         retort = TestRetort(
             recipe=[
-                ValueProvider(InputFigureRequest, fig),
+                ValueProvider(InputShapeRequest, fig),
                 ValueProvider(InputNameLayoutRequest, name_layout),
                 bound(int, ValueProvider(LoaderRequest, int_loader)),
                 ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
@@ -140,7 +140,7 @@ def test_direct(debug_ctx, debug_path, extra_policy):
 
     if extra_policy == ExtraCollect():
         pytest.raises(ValueError, loader_getter).match(
-            "Cannot create loader that collect extra data if InputFigure does not take extra data"
+            "Cannot create loader that collect extra data if InputShape does not take extra data"
         )
         return
 

@@ -7,15 +7,15 @@ import pytest
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     DefaultValue,
-    Figure,
     InputField,
-    InputFigure,
+    InputShape,
     IntrospectionImpossible,
     NoDefault,
     ParamKind,
     ParamKwargs,
+    Shape,
 )
-from adaptix._internal.model_tools.introspection import get_class_init_figure
+from adaptix._internal.model_tools.introspection import get_class_init_shape
 from tests_helpers import requires
 
 
@@ -87,10 +87,10 @@ VALID_FIELDS = (
 
 def test_extra_none():
     assert (
-        get_class_init_figure(Valid1)
+        get_class_init_shape(Valid1)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Valid1,
                 kwargs=None,
                 fields=VALID_FIELDS,
@@ -103,10 +103,10 @@ def test_extra_none():
 
 def test_extra_kwargs():
     assert (
-        get_class_init_figure(Valid2Kwargs)
+        get_class_init_shape(Valid2Kwargs)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Valid2Kwargs,
                 kwargs=ParamKwargs(Any),
                 fields=VALID_FIELDS,
@@ -118,10 +118,10 @@ def test_extra_kwargs():
     )
 
     assert (
-        get_class_init_figure(Valid2KwargsTyped)
+        get_class_init_shape(Valid2KwargsTyped)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Valid2KwargsTyped,
                 kwargs=ParamKwargs(str),
                 fields=VALID_FIELDS,
@@ -139,10 +139,10 @@ def test_pos_only():
             self.b = b
 
     assert (
-        get_class_init_figure(HasPosOnly)
+        get_class_init_shape(HasPosOnly)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=HasPosOnly,
                 kwargs=None,
                 fields=(
@@ -178,10 +178,10 @@ def test_pos_only():
             self.b = b
 
     assert (
-        get_class_init_figure(HasPosOnlyWithDefault)
+        get_class_init_shape(HasPosOnlyWithDefault)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=HasPosOnlyWithDefault,
                 kwargs=None,
                 fields=(
@@ -219,7 +219,7 @@ def test_var_arg():
             self.args = args
 
     with pytest.raises(IntrospectionImpossible):
-        get_class_init_figure(HasVarArg)
+        get_class_init_shape(HasVarArg)
 
 
 @requires(HAS_ANNOTATED)
@@ -229,10 +229,10 @@ def test_annotated():
             pass
 
     assert (
-        get_class_init_figure(WithAnnotated)
+        get_class_init_shape(WithAnnotated)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=WithAnnotated,
                 kwargs=None,
                 fields=(

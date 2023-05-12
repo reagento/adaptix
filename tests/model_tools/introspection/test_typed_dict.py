@@ -4,16 +4,16 @@ from typing import TypedDict
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_PY_39
 from adaptix._internal.model_tools.definitions import (
-    Figure,
     InputField,
-    InputFigure,
+    InputShape,
     ItemAccessor,
     NoDefault,
     OutputField,
-    OutputFigure,
+    OutputShape,
     ParamKind,
+    Shape,
 )
-from adaptix._internal.model_tools.introspection import get_typed_dict_figure
+from adaptix._internal.model_tools.introspection import get_typed_dict_shape
 from tests_helpers import requires
 
 
@@ -31,10 +31,10 @@ class Bar(TypedDict, total=False):
 
 def test_total():
     assert (
-        get_typed_dict_figure(Foo)
+        get_typed_dict_shape(Foo)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Foo,
                 kwargs=None,
                 fields=(
@@ -68,7 +68,7 @@ def test_total():
                 ),
                 overriden_types=frozenset({'a', 'b', 'c'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -100,10 +100,10 @@ def test_total():
 
 def test_non_total():
     assert (
-        get_typed_dict_figure(Bar)
+        get_typed_dict_shape(Bar)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Bar,
                 kwargs=None,
                 fields=(
@@ -137,7 +137,7 @@ def test_non_total():
                 ),
                 overriden_types=frozenset({'a', 'b', 'c'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -185,10 +185,10 @@ def _negate_if_not_py39(value: bool) -> bool:
 
 def test_inheritance_first():
     assert (
-        get_typed_dict_figure(ParentNotTotal)
+        get_typed_dict_shape(ParentNotTotal)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=ParentNotTotal,
                 kwargs=None,
                 fields=(
@@ -204,7 +204,7 @@ def test_inheritance_first():
                 ),
                 overriden_types=frozenset({'x'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -222,10 +222,10 @@ def test_inheritance_first():
 
 def test_inheritance_second():
     assert (
-        get_typed_dict_figure(ChildTotal)
+        get_typed_dict_shape(ChildTotal)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=ChildTotal,
                 kwargs=None,
                 fields=(
@@ -250,7 +250,7 @@ def test_inheritance_second():
                 ),
                 overriden_types=frozenset({'x', 'y'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -275,10 +275,10 @@ def test_inheritance_second():
 
 def test_inheritance_third():
     assert (
-        get_typed_dict_figure(GrandChildNotTotal)
+        get_typed_dict_shape(GrandChildNotTotal)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=GrandChildNotTotal,
                 kwargs=None,
                 fields=(
@@ -312,7 +312,7 @@ def test_inheritance_third():
                 ),
                 overriden_types=frozenset({'x', 'y', 'z'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -348,10 +348,10 @@ def test_annotated():
         annotated_field: typing.Annotated[int, 'metadata']
 
     assert (
-        get_typed_dict_figure(WithAnnotatedTotal)
+        get_typed_dict_shape(WithAnnotatedTotal)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=WithAnnotatedTotal,
                 kwargs=None,
                 fields=(
@@ -367,7 +367,7 @@ def test_annotated():
                 ),
                 overriden_types=frozenset({'annotated_field'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=typing.Annotated[int, 'metadata'],
@@ -386,10 +386,10 @@ def test_annotated():
         annotated_field: typing.Annotated[int, 'metadata']
 
     assert (
-        get_typed_dict_figure(WithAnnotatedNotTotal)
+        get_typed_dict_shape(WithAnnotatedNotTotal)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=WithAnnotatedNotTotal,
                 kwargs=None,
                 fields=(
@@ -405,7 +405,7 @@ def test_annotated():
                 ),
                 overriden_types=frozenset({'annotated_field'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=typing.Annotated[int, 'metadata'],

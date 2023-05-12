@@ -7,15 +7,15 @@ from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     DefaultValue,
-    Figure,
     InputField,
-    InputFigure,
+    InputShape,
     NoDefault,
     OutputField,
-    OutputFigure,
+    OutputShape,
     ParamKind,
+    Shape,
 )
-from adaptix._internal.model_tools.introspection import get_named_tuple_figure
+from adaptix._internal.model_tools.introspection import get_named_tuple_shape
 from tests_helpers import requires
 
 
@@ -23,10 +23,10 @@ def test_order_ab():
     FooAB = namedtuple('FooAB', 'a b')
 
     assert (
-        get_named_tuple_figure(FooAB)
+        get_named_tuple_shape(FooAB)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=FooAB,
                 kwargs=None,
                 fields=(
@@ -51,7 +51,7 @@ def test_order_ab():
                 ),
                 overriden_types=frozenset({'a', 'b'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=Any,
@@ -78,10 +78,10 @@ def test_order_ba():
     FooBA = namedtuple('FooBA', 'b a')
 
     assert (
-        get_named_tuple_figure(FooBA)
+        get_named_tuple_shape(FooBA)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=FooBA,
                 kwargs=None,
                 fields=(
@@ -106,7 +106,7 @@ def test_order_ba():
                 ),
                 overriden_types=frozenset({'a', 'b'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=Any,
@@ -137,10 +137,10 @@ def test_defaults():
     FooDefs = namedtuple('FooDefs', 'a b c', defaults=[0, func])
 
     assert (
-        get_named_tuple_figure(FooDefs)
+        get_named_tuple_shape(FooDefs)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=FooDefs,
                 kwargs=None,
                 fields=(
@@ -174,7 +174,7 @@ def test_defaults():
                 ),
                 overriden_types=frozenset({'a', 'b', 'c'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=Any,
@@ -208,10 +208,10 @@ def test_rename():
     WithRename = namedtuple('WithRename', ['abc', 'def', 'ghi', 'abc'], defaults=[0], rename=True)
 
     assert (
-        get_named_tuple_figure(WithRename)
+        get_named_tuple_shape(WithRename)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=WithRename,
                 kwargs=None,
                 fields=(
@@ -254,7 +254,7 @@ def test_rename():
                 ),
                 overriden_types=frozenset({'abc', '_1', 'ghi', '_3'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=Any,
@@ -295,10 +295,10 @@ def test_class_hinted_namedtuple():
     BarA = NamedTuple('BarA', a=int, b=str)
 
     assert (
-        get_named_tuple_figure(BarA)
+        get_named_tuple_shape(BarA)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=BarA,
                 kwargs=None,
                 fields=(
@@ -323,7 +323,7 @@ def test_class_hinted_namedtuple():
                 ),
                 overriden_types=frozenset({'a', 'b'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -356,10 +356,10 @@ def test_hinted_namedtuple():
         c: 'bool' = False
 
     assert (
-        get_named_tuple_figure(BarB)
+        get_named_tuple_shape(BarB)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=BarB,
                 kwargs=None,
                 fields=(
@@ -393,7 +393,7 @@ def test_hinted_namedtuple():
                 ),
                 overriden_types=frozenset({'a', 'b', 'c'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -431,10 +431,10 @@ def test_inheritance():
         b: str
 
     assert (
-        get_named_tuple_figure(Child)
+        get_named_tuple_shape(Child)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Child,
                 kwargs=None,
                 fields=(
@@ -450,7 +450,7 @@ def test_inheritance():
                 ),
                 overriden_types=frozenset(),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=int,
@@ -476,10 +476,10 @@ def test_inheritance_overriden_types():
         c: str
 
     assert (
-        get_named_tuple_figure(Child)
+        get_named_tuple_shape(Child)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Child,
                 kwargs=None,
                 fields=(
@@ -504,7 +504,7 @@ def test_inheritance_overriden_types():
                 ),
                 overriden_types=frozenset({'a'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=bool,
@@ -535,10 +535,10 @@ def test_inheritance_overriden_types_functional_parent():
         c: str
 
     assert (
-        get_named_tuple_figure(Child)
+        get_named_tuple_shape(Child)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=Child,
                 kwargs=None,
                 fields=(
@@ -563,7 +563,7 @@ def test_inheritance_overriden_types_functional_parent():
                 ),
                 overriden_types=frozenset({'a'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=bool,
@@ -592,10 +592,10 @@ def test_annotated():
         annotated_field: typing.Annotated[int, 'metadata']
 
     assert (
-        get_named_tuple_figure(WithAnnotated)
+        get_named_tuple_shape(WithAnnotated)
         ==
-        Figure(
-            input=InputFigure(
+        Shape(
+            input=InputShape(
                 constructor=WithAnnotated,
                 kwargs=None,
                 fields=(
@@ -611,7 +611,7 @@ def test_annotated():
                 ),
                 overriden_types=frozenset({'annotated_field'}),
             ),
-            output=OutputFigure(
+            output=OutputShape(
                 fields=(
                     OutputField(
                         type=typing.Annotated[int, 'metadata'],

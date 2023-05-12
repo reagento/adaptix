@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, Generic, Mapping, MutableMapping, Sequence, TypeVar, Union
 
 from ...common import VarTuple
-from ...model_tools.definitions import BaseFigure, DefaultFactory, DefaultValue, InputFigure, OutputFigure
+from ...model_tools.definitions import BaseShape, DefaultFactory, DefaultValue, InputShape, OutputShape
 from ...utils import SingletonMeta
 from ..request_cls import LocatedRequest
 
@@ -172,7 +172,7 @@ class BaseNameLayout:
 
 @dataclass(frozen=True)
 class BaseNameLayoutRequest(LocatedRequest[T], Generic[T]):
-    figure: BaseFigure
+    shape: BaseShape
 
 
 @dataclass(frozen=True)
@@ -183,7 +183,7 @@ class InputNameLayout(BaseNameLayout):
 
 @dataclass(frozen=True)
 class InputNameLayoutRequest(BaseNameLayoutRequest[InputNameLayout]):
-    figure: InputFigure
+    shape: InputShape
 
 
 @dataclass(frozen=True)
@@ -194,4 +194,4 @@ class OutputNameLayout(BaseNameLayout):
 
 @dataclass(frozen=True)
 class OutputNameLayoutRequest(BaseNameLayoutRequest[OutputNameLayout]):
-    figure: OutputFigure
+    shape: OutputShape

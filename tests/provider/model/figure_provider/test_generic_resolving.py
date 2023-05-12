@@ -6,8 +6,8 @@ from pytest import param
 
 from adaptix import CannotProvide, Retort, TypeHint
 from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
-from adaptix._internal.provider.model.definitions import InputFigureRequest, OutputFigureRequest
-from adaptix._internal.provider.model.figure_provider import provide_generic_resolved_figure
+from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
+from adaptix._internal.provider.model.shape_provider import provide_generic_resolved_shape
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
 from tests_helpers import pretty_typehint_test_id
 
@@ -18,16 +18,16 @@ def assert_fields_types(tp: TypeHint, expected: Mapping[str, TypeHint]) -> None:
     retort = Retort()
     mediator = retort._create_mediator(request_stack=())
 
-    input_figure = provide_generic_resolved_figure(
+    input_figure = provide_generic_resolved_shape(
         mediator,
-        InputFigureRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+        InputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
     )
     input_field_types = {field.id: field.type for field in input_figure.fields}
     assert input_field_types == expected
 
-    output_figure = provide_generic_resolved_figure(
+    output_figure = provide_generic_resolved_shape(
         mediator,
-        OutputFigureRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+        OutputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
     )
     output_field_types = {field.id: field.type for field in output_figure.fields}
     assert output_field_types == expected
@@ -246,15 +246,15 @@ def test_not_a_model(tp):
     mediator = retort._create_mediator(request_stack=())
 
     with pytest.raises(CannotProvide):
-        provide_generic_resolved_figure(
+        provide_generic_resolved_shape(
             mediator,
-            InputFigureRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+            InputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
         )
 
     with pytest.raises(CannotProvide):
-        provide_generic_resolved_figure(
+        provide_generic_resolved_shape(
             mediator,
-            OutputFigureRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+            OutputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
         )
 
 

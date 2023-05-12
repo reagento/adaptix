@@ -27,10 +27,10 @@ from .crown_definitions import (
     BaseCrown,
     BaseDictCrown,
     BaseFieldCrown,
-    BaseFigure,
     BaseListCrown,
     BaseNameLayout,
     BaseNoneCrown,
+    BaseShape,
     ExtraCollect,
     ExtraTargets,
     InpCrown,
@@ -115,7 +115,7 @@ def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
     return used_set
 
 
-def get_skipped_fields(figure: BaseFigure, name_layout: BaseNameLayout) -> Collection[str]:
+def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> Collection[str]:
     used_direct_fields = _collect_used_direct_fields(name_layout.crown)
     if isinstance(name_layout.extra_move, ExtraTargets):
         extra_targets = name_layout.extra_move.fields
@@ -123,7 +123,7 @@ def get_skipped_fields(figure: BaseFigure, name_layout: BaseNameLayout) -> Colle
         extra_targets = ()
 
     return [
-        field.id for field in figure.fields
+        field.id for field in shape.fields
         if field.id not in used_direct_fields and field.id not in extra_targets
     ]
 
@@ -178,28 +178,28 @@ def get_optional_fields_at_list_crown(
     raise TypeError
 
 
-def get_wild_extra_targets(figure: BaseFigure, extra_move: Union[InpExtraMove, OutExtraMove]) -> Collection[str]:
+def get_wild_extra_targets(shape: BaseShape, extra_move: Union[InpExtraMove, OutExtraMove]) -> Collection[str]:
     if not isinstance(extra_move, ExtraTargets):
         return []
 
     return [
         target for target in extra_move.fields
-        if target not in figure.fields_dict.keys()
+        if target not in shape.fields_dict.keys()
     ]
 
 
-Fig = TypeVar('Fig', bound=BaseFigure)
+Fig = TypeVar('Fig', bound=BaseShape)
 
 
-def strip_figure_fields(figure: Fig, skipped_fields: Collection[str]) -> Fig:
+def strip_shape_fields(shape: Fig, skipped_fields: Collection[str]) -> Fig:
     return replace(
-        figure,
+        shape,
         fields=tuple(
-            field for field in figure.fields
+            field for field in shape.fields
             if field.id not in skipped_fields
         ),
         overriden_types=frozenset(
-            field.id for field in figure.fields
+            field.id for field in shape.fields
             if field.id not in skipped_fields
         )
     )

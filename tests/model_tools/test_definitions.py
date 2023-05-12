@@ -3,10 +3,10 @@ import pytest
 from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     InputField,
-    InputFigure,
+    InputShape,
     NoDefault,
     OutputField,
-    OutputFigure,
+    OutputShape,
     ParamKind,
 )
 
@@ -25,7 +25,7 @@ def stub_constructor(*args, **kwargs):
 )
 def test_inconsistent_fields_order(first, second):
     with pytest.raises(ValueError):
-        InputFigure(
+        InputShape(
             constructor=stub_constructor,
             kwargs=None,
             fields=(
@@ -53,7 +53,7 @@ def test_inconsistent_fields_order(first, second):
 
 
 def _make_triple_iff(first, second, third):
-    return InputFigure(
+    return InputShape(
         constructor=stub_constructor,
         kwargs=None,
         fields=(
@@ -116,7 +116,7 @@ def test_ok_non_required_field_order(first, second, third):
 
 def test_name_duplicates():
     with pytest.raises(ValueError):
-        InputFigure(
+        InputShape(
             constructor=stub_constructor,
             kwargs=None,
             fields=(
@@ -143,7 +143,7 @@ def test_name_duplicates():
         )
 
     with pytest.raises(ValueError):
-        InputFigure(
+        InputShape(
             constructor=stub_constructor,
             kwargs=None,
             fields=(
@@ -170,7 +170,7 @@ def test_name_duplicates():
         )
 
     with pytest.raises(ValueError):
-        OutputFigure(
+        OutputShape(
             fields=(
                 OutputField(
                     id="a",
@@ -206,7 +206,7 @@ def test_optional_and_positional_only():
 
 def test_non_existing_fields_overriden_types():
     with pytest.raises(ValueError):
-        InputFigure(
+        InputShape(
             constructor=stub_constructor,
             kwargs=None,
             fields=(
@@ -233,7 +233,7 @@ def test_non_existing_fields_overriden_types():
         )
 
     with pytest.raises(ValueError):
-        OutputFigure(
+        OutputShape(
             fields=(
                 OutputField(
                     id="a",

@@ -2,7 +2,7 @@ from ...code_tools.compiler import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
 from ...model_tools.definitions import InputField, ParamKind
 from .crown_definitions import ExtraKwargs, ExtraSaturate, ExtraTargets, InpExtraMove
-from .definitions import CodeGenerator, InputFigure, VarBinder
+from .definitions import CodeGenerator, InputShape, VarBinder
 
 
 class BuiltinInputCreationGen(CodeGenerator):
@@ -11,8 +11,8 @@ class BuiltinInputCreationGen(CodeGenerator):
     It takes fields, extra and opt_fields from local vars to
     """
 
-    def __init__(self, figure: InputFigure, extra_move: InpExtraMove):
-        self._figure = figure
+    def __init__(self, shape: InputShape, extra_move: InpExtraMove):
+        self._shape = shape
         self._extra_move = extra_move
 
     def _is_extra_target(self, field: InputField):
@@ -25,14 +25,14 @@ class BuiltinInputCreationGen(CodeGenerator):
     def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         has_opt_fields = any(
             fld.is_optional and not self._is_extra_target(fld)
-            for fld in self._figure.fields
+            for fld in self._shape.fields
         )
 
         builder = CodeBuilder()
-        ctx_namespace.add('constructor', self._figure.constructor)
+        ctx_namespace.add('constructor', self._shape.constructor)
 
         with builder("constructor("):
-            for field in self._figure.fields:
+            for field in self._shape.fields:
 
                 if field.is_required or self._is_extra_target(field):
                     value = binder.field(field)

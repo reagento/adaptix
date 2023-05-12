@@ -11,10 +11,10 @@ from adaptix._internal.model_tools.definitions import (
     DefaultFactory,
     DefaultValue,
     InputField,
-    InputFigure,
+    InputShape,
     NoDefault,
     OutputField,
-    OutputFigure,
+    OutputShape,
     ParamKind,
     ParamKwargs,
 )
@@ -40,7 +40,7 @@ from adaptix._internal.provider.model.crown_definitions import (
     OutputNameLayout,
     OutputNameLayoutRequest,
 )
-from adaptix._internal.provider.model.definitions import InputFigureRequest, OutputFigureRequest
+from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
 from adaptix._internal.provider.model.dumper_provider import (
     BuiltinOutputCreationMaker,
     ModelDumperProvider,
@@ -86,7 +86,7 @@ def make_layouts(
 ) -> Layouts:
     fields = [element for element in fields_or_providers if isinstance(element, TestField)]
     providers = [element for element in fields_or_providers if isinstance(element, Provider)]
-    input_figure = InputFigure(
+    input_shape = InputShape(
         fields=tuple(
             InputField(
                 id=fld.name,
@@ -103,7 +103,7 @@ def make_layouts(
         kwargs=ParamKwargs(Any),
         overriden_types=frozenset(fld.name for fld in fields),
     )
-    output_figure = OutputFigure(
+    output_shape = OutputShape(
         fields=tuple(
             OutputField(
                 id=fld.name,
@@ -130,8 +130,8 @@ def make_layouts(
             ),
             bound(Any, ValueProvider(DumperRequest, stub)),
             bound(Any, ValueProvider(LoaderRequest, stub)),
-            ValueProvider(InputFigureRequest, input_figure),
-            ValueProvider(OutputFigureRequest, output_figure),
+            ValueProvider(InputShapeRequest, input_shape),
+            ValueProvider(OutputShapeRequest, output_shape),
             ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
             ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
         ]
@@ -141,11 +141,11 @@ def make_layouts(
     )
     inp_request = InputNameLayoutRequest(
         loc_map=loc_map,
-        figure=input_figure,
+        shape=input_shape,
     )
     out_request = OutputNameLayoutRequest(
         loc_map=loc_map,
-        figure=output_figure,
+        shape=output_shape,
     )
     inp_name_layout = retort.provide(inp_request)
     out_name_layout = retort.provide(out_request)

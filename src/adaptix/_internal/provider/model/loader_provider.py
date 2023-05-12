@@ -4,8 +4,8 @@ from ...code_tools.compiler import BasicClosureCompiler
 from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Loader
 from ...essential import CannotProvide, Mediator
-from ...model_tools.definitions import InputFigure
-from ..model.definitions import CodeGenerator, InputFigureRequest, VarBinder
+from ...model_tools.definitions import InputShape
+from ..model.definitions import CodeGenerator, InputShapeRequest, VarBinder
 from ..model.input_extraction_gen import BuiltinInputExtractionGen
 from ..provider_template import LoaderProvider
 from ..request_cls import DebugPathRequest, LoaderRequest, TypeHintLoc
@@ -18,13 +18,13 @@ from .basic_gen import (
     get_skipped_fields,
     get_wild_extra_targets,
     has_collect_policy,
-    strip_figure_fields,
+    strip_shape_fields,
     stub_code_gen_hook,
 )
 from .crown_definitions import InpExtraMove, InputNameLayout, InputNameLayoutRequest
 from .fields import input_field_to_loc_map
-from .figure_provider import provide_generic_resolved_figure
 from .input_creation_gen import BuiltinInputCreationGen
+from .shape_provider import provide_generic_resolved_shape
 
 
 class InputExtractionMaker(Protocol):
@@ -32,7 +32,7 @@ class InputExtractionMaker(Protocol):
         self,
         mediator: Mediator,
         request: LoaderRequest,
-    ) -> Tuple[CodeGenerator, InputFigure, InpExtraMove]:
+    ) -> Tuple[CodeGenerator, InputShape, InpExtraMove]:
         ...
 
 
@@ -41,28 +41,28 @@ class InputCreationMaker(Protocol):
         self,
         mediator: Mediator,
         request: LoaderRequest,
-        figure: InputFigure,
+        shape: InputShape,
         extra_move: InpExtraMove,
     ) -> CodeGenerator:
         ...
 
 
 class BuiltinInputExtractionMaker(InputExtractionMaker):
-    def _fetch_figure(self, mediator: Mediator, request: LoaderRequest) -> InputFigure:
-        return provide_generic_resolved_figure(mediator, InputFigureRequest(loc_map=request.loc_map))
+    def _fetch_shape(self, mediator: Mediator, request: LoaderRequest) -> InputShape:
+        return provide_generic_resolved_shape(mediator, InputShapeRequest(loc_map=request.loc_map))
 
-    def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputFigure, InpExtraMove]:
-        figure = self._fetch_figure(mediator, request)
+    def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputShape, InpExtraMove]:
+        shape = self._fetch_shape(mediator, request)
 
         name_layout: InputNameLayout = mediator.provide(
             InputNameLayoutRequest(
                 loc_map=request.loc_map,
-                figure=figure,
+                shape=shape,
             )
         )
 
-        processed_figure = self._process_figure(figure, name_layout)
-        self._validate_params(processed_figure, name_layout)
+        processed_shape = self._process_shape(shape, name_layout)
+        self._validate_params(processed_shape, name_layout)
 
         field_loaders = {
             field.id: mediator.provide(
@@ -70,25 +70,25 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
                     loc_map=input_field_to_loc_map(field),
                 )
             )
-            for field in processed_figure.fields
+            for field in processed_shape.fields
         }
         debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
-        extraction_gen = self._create_extraction_gen(debug_path, figure, name_layout, field_loaders)
+        extraction_gen = self._create_extraction_gen(debug_path, shape, name_layout, field_loaders)
 
-        return extraction_gen, figure, name_layout.extra_move
+        return extraction_gen, shape, name_layout.extra_move
 
-    def _process_figure(self, figure: InputFigure, name_layout: InputNameLayout) -> InputFigure:
-        wild_extra_targets = get_wild_extra_targets(figure, name_layout.extra_move)
+    def _process_shape(self, shape: InputShape, name_layout: InputNameLayout) -> InputShape:
+        wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)
         if wild_extra_targets:
             raise ValueError(
                 f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
             )
 
-        skipped_fields = get_skipped_fields(figure, name_layout)
+        skipped_fields = get_skipped_fields(shape, name_layout)
 
         skipped_required_fields = [
             field.id
-            for field in figure.fields
+            for field in shape.fields
             if field.is_required and field.id in skipped_fields
         ]
         if skipped_required_fields:
@@ -96,13 +96,13 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
                 f"Required fields {skipped_required_fields} are skipped"
             )
 
-        return strip_figure_fields(figure, skipped_fields)
+        return strip_shape_fields(shape, skipped_fields)
 
-    def _validate_params(self, processed_figure: InputFigure, name_layout: InputNameLayout) -> None:
+    def _validate_params(self, processed_shape: InputShape, name_layout: InputNameLayout) -> None:
         if name_layout.extra_move is None and has_collect_policy(name_layout.crown):
             raise ValueError(
                 "Cannot create loader that collect extra data"
-                " if InputFigure does not take extra data",
+                " if InputShape does not take extra data",
             )
 
         extra_targets_at_crown = get_extra_targets_at_crown(name_layout)
@@ -112,7 +112,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
             )
 
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
-            {field.id: field for field in processed_figure.fields},
+            {field.id: field for field in processed_shape.fields},
             name_layout.crown,
         )
         if optional_fields_at_list_crown:
@@ -123,12 +123,12 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
     def _create_extraction_gen(
         self,
         debug_path: bool,
-        figure: InputFigure,
+        shape: InputShape,
         name_layout: InputNameLayout,
         field_loaders: Mapping[str, Loader],
     ) -> CodeGenerator:
         return BuiltinInputExtractionGen(
-            figure=figure,
+            shape=shape,
             name_layout=name_layout,
             debug_path=debug_path,
             field_loaders=field_loaders,
@@ -136,21 +136,21 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
 
 
 class InlinedInputExtractionMaker(BuiltinInputExtractionMaker):
-    def __init__(self, figure: InputFigure):
-        self._figure = figure
+    def __init__(self, shape: InputShape):
+        self._shape = shape
         super().__init__()
 
-    def _fetch_figure(self, mediator: Mediator, request: LoaderRequest) -> InputFigure:
-        return self._figure
+    def _fetch_shape(self, mediator: Mediator, request: LoaderRequest) -> InputShape:
+        return self._shape
 
 
 def make_input_creation(
     mediator: Mediator,
     request: LoaderRequest,
-    figure: InputFigure,
+    shape: InputShape,
     extra_move: InpExtraMove,
 ) -> CodeGenerator:
-    return BuiltinInputCreationGen(figure=figure, extra_move=extra_move)
+    return BuiltinInputCreationGen(shape=shape, extra_move=extra_move)
 
 
 class ModelLoaderProvider(LoaderProvider):
@@ -165,8 +165,8 @@ class ModelLoaderProvider(LoaderProvider):
         self._creation_maker = creation_maker
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        extraction_gen, figure, extra_move = self._extraction_maker(mediator, request)
-        creation_gen = self._creation_maker(mediator, request, figure, extra_move)
+        extraction_gen, shape, extra_move = self._extraction_maker(mediator, request)
+        creation_gen = self._creation_maker(mediator, request, shape, extra_move)
 
         try:
             code_gen_hook = mediator.provide(CodeGenHookRequest())

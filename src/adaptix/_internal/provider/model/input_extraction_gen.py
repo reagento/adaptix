@@ -15,7 +15,7 @@ from ...load_error import (
     NoRequiredItemsError,
     TypeLoadError,
 )
-from ...model_tools.definitions import InputField, InputFigure
+from ...model_tools.definitions import InputField, InputShape
 from ...struct_path import append_path, extend_path
 from .crown_definitions import (
     CrownPath,
@@ -119,16 +119,16 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
     def __init__(
         self,
-        figure: InputFigure,
+        shape: InputShape,
         name_layout: InputNameLayout,
         debug_path: bool,
         field_loaders: Mapping[str, Loader],
     ):
-        self._figure = figure
+        self._shape = shape
         self._name_layout = name_layout
         self._debug_path = debug_path
         self._name_to_field: Dict[str, InputField] = {
-            field.id: field for field in self._figure.fields
+            field.id: field for field in self._shape.fields
         }
         self._field_loaders = field_loaders
 
@@ -171,7 +171,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
         has_opt_fields = any(
             fld.is_optional and not self._is_extra_target(fld)
-            for fld in self._figure.fields
+            for fld in self._shape.fields
         )
 
         if has_opt_fields:

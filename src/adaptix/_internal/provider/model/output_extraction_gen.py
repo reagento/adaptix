@@ -5,7 +5,7 @@ from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr
 from ...common import Dumper
-from ...model_tools.definitions import AttrAccessor, ItemAccessor, OutputField, OutputFigure
+from ...model_tools.definitions import AttrAccessor, ItemAccessor, OutputField, OutputShape
 from ...struct_path import append_path, extend_path
 from .crown_definitions import ExtraExtract, ExtraTargets, OutExtraMove
 from .definitions import CodeGenerator, VarBinder
@@ -15,12 +15,12 @@ from .special_cases_optimization import as_is_stub
 class BuiltinOutputExtractionGen(CodeGenerator):
     def __init__(
         self,
-        figure: OutputFigure,
+        shape: OutputShape,
         extra_move: OutExtraMove,
         debug_path: bool,
         fields_dumpers: Mapping[str, Dumper],
     ):
-        self._figure = figure
+        self._shape = shape
         self._extra_move = extra_move
         self._debug_path = debug_path
         self._fields_dumpers = fields_dumpers
@@ -35,16 +35,16 @@ class BuiltinOutputExtractionGen(CodeGenerator):
 
         ctx_namespace.add("append_path", append_path)
         ctx_namespace.add("extend_path", extend_path)
-        name_to_fields = {field.id: field for field in self._figure.fields}
+        name_to_fields = {field.id: field for field in self._shape.fields}
 
         for field_id, dumper in self._fields_dumpers.items():
             ctx_namespace.add(self._dumper(name_to_fields[field_id]), dumper)
 
-        if any(field.is_optional for field in self._figure.fields):
+        if any(field.is_optional for field in self._shape.fields):
             builder(f"{binder.opt_fields} = {{}}")
             builder.empty_line()
 
-        for field in self._figure.fields:
+        for field in self._shape.fields:
             if not self._is_extra_target(field):
                 self._gen_field_extraction(
                     builder, binder, ctx_namespace, field,

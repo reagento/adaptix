@@ -1,7 +1,7 @@
 from ...essential import CannotProvide, Request
 from ..request_cls import LocatedRequest
 from ..request_filtering import DirectMediator, RequestChecker
-from .definitions import InputFigureRequest, OutputFigureRequest
+from .definitions import InputShapeRequest, OutputShapeRequest
 
 
 class AnyModelRC(RequestChecker):
@@ -10,6 +10,6 @@ class AnyModelRC(RequestChecker):
             raise CannotProvide
 
         try:
-            mediator.provide(InputFigureRequest(loc_map=request.loc_map))
+            mediator.provide(InputShapeRequest(loc_map=request.loc_map))
         except CannotProvide:
-            mediator.provide(OutputFigureRequest(loc_map=request.loc_map))
+            mediator.provide(OutputShapeRequest(loc_map=request.loc_map))

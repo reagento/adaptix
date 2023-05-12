@@ -14,15 +14,15 @@ from .basic_gen import (
     get_optional_fields_at_list_crown,
     get_skipped_fields,
     get_wild_extra_targets,
-    strip_figure_fields,
+    strip_shape_fields,
     stub_code_gen_hook,
 )
 from .crown_definitions import OutExtraMove, OutputNameLayout, OutputNameLayoutRequest
-from .definitions import CodeGenerator, OutputFigure, OutputFigureRequest, VarBinder
+from .definitions import CodeGenerator, OutputShape, OutputShapeRequest, VarBinder
 from .fields import output_field_to_loc_map
-from .figure_provider import provide_generic_resolved_figure
 from .output_creation_gen import BuiltinOutputCreationGen
 from .output_extraction_gen import BuiltinOutputExtractionGen
+from .shape_provider import provide_generic_resolved_shape
 
 
 class OutputExtractionMaker(Protocol):
@@ -30,7 +30,7 @@ class OutputExtractionMaker(Protocol):
         self,
         mediator: Mediator,
         request: DumperRequest,
-        figure: OutputFigure,
+        shape: OutputShape,
         extra_move: OutExtraMove,
     ) -> CodeGenerator:
         ...
@@ -41,14 +41,14 @@ class OutputCreationMaker(Protocol):
         self,
         mediator: Mediator,
         request: DumperRequest,
-    ) -> Tuple[CodeGenerator, OutputFigure, OutExtraMove]:
+    ) -> Tuple[CodeGenerator, OutputShape, OutExtraMove]:
         ...
 
 
 def make_output_extraction(
     mediator: Mediator,
     request: DumperRequest,
-    figure: OutputFigure,
+    shape: OutputShape,
     extra_move: OutExtraMove,
 ) -> CodeGenerator:
     field_dumpers = {
@@ -57,11 +57,11 @@ def make_output_extraction(
                 loc_map=output_field_to_loc_map(field),
             )
         )
-        for field in figure.fields
+        for field in shape.fields
     }
     debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
     return BuiltinOutputExtractionGen(
-        figure=figure,
+        shape=shape,
         extra_move=extra_move,
         debug_path=debug_path,
         fields_dumpers=field_dumpers,
@@ -69,24 +69,24 @@ def make_output_extraction(
 
 
 class BuiltinOutputCreationMaker(OutputCreationMaker):
-    def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputFigure, OutExtraMove]:
-        figure = provide_generic_resolved_figure(mediator, OutputFigureRequest(loc_map=request.loc_map))
+    def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputShape, OutExtraMove]:
+        shape = provide_generic_resolved_shape(mediator, OutputShapeRequest(loc_map=request.loc_map))
 
         name_layout = mediator.provide(
             OutputNameLayoutRequest(
                 loc_map=request.loc_map,
-                figure=figure,
+                shape=shape,
             )
         )
 
-        processed_figure = self._process_figure(figure, name_layout)
+        processed_shape = self._process_shape(shape, name_layout)
         debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
-        creation_gen = self._create_creation_gen(debug_path, processed_figure, name_layout)
-        return creation_gen, processed_figure, name_layout.extra_move
+        creation_gen = self._create_creation_gen(debug_path, processed_shape, name_layout)
+        return creation_gen, processed_shape, name_layout.extra_move
 
-    def _process_figure(self, figure: OutputFigure, name_layout: OutputNameLayout) -> OutputFigure:
+    def _process_shape(self, shape: OutputShape, name_layout: OutputNameLayout) -> OutputShape:
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
-            {field.id: field for field in figure.fields},
+            {field.id: field for field in shape.fields},
             name_layout.crown,
         )
         if optional_fields_at_list_crown:
@@ -94,7 +94,7 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
                 f"Optional fields {optional_fields_at_list_crown} are found at list crown"
             )
 
-        wild_extra_targets = get_wild_extra_targets(figure, name_layout.extra_move)
+        wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)
         if wild_extra_targets:
             raise ValueError(
                 f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
@@ -106,16 +106,16 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
                 f"Extra targets {extra_targets_at_crown} are found at crown"
             )
 
-        return strip_figure_fields(figure, get_skipped_fields(figure, name_layout))
+        return strip_shape_fields(shape, get_skipped_fields(shape, name_layout))
 
     def _create_creation_gen(
         self,
         debug_path: bool,
-        figure: OutputFigure,
+        shape: OutputShape,
         name_layout: OutputNameLayout,
     ) -> CodeGenerator:
         return BuiltinOutputCreationGen(
-            figure=figure,
+            shape=shape,
             name_layout=name_layout,
             debug_path=debug_path,
         )
@@ -133,8 +133,8 @@ class ModelDumperProvider(DumperProvider):
         self._creation_maker = creation_maker
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        creation_gen, figure, extra_move = self._creation_maker(mediator, request)
-        extraction_gen = self._extraction_maker(mediator, request, figure, extra_move)
+        creation_gen, shape, extra_move = self._creation_maker(mediator, request)
+        extraction_gen = self._extraction_maker(mediator, request, shape, extra_move)
 
         try:
             code_gen_hook = mediator.provide(CodeGenHookRequest())

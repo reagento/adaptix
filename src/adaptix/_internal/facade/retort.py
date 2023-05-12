@@ -37,14 +37,14 @@ from ..provider.generic_provider import (
 from ..provider.model.basic_gen import NameSanitizer
 from ..provider.model.crown_definitions import ExtraSkip
 from ..provider.model.dumper_provider import BuiltinOutputCreationMaker, ModelDumperProvider, make_output_extraction
-from ..provider.model.figure_provider import (
-    ATTRS_FIGURE_PROVIDER,
-    CLASS_INIT_FIGURE_PROVIDER,
-    DATACLASS_FIGURE_PROVIDER,
-    NAMED_TUPLE_FIGURE_PROVIDER,
-    TYPED_DICT_FIGURE_PROVIDER,
-)
 from ..provider.model.loader_provider import BuiltinInputExtractionMaker, ModelLoaderProvider, make_input_creation
+from ..provider.model.shape_provider import (
+    ATTRS_SHAPE_PROVIDER,
+    CLASS_INIT_SHAPE_PROVIDER,
+    DATACLASS_SHAPE_PROVIDER,
+    NAMED_TUPLE_SHAPE_PROVIDER,
+    TYPED_DICT_SHAPE_PROVIDER,
+)
 from ..provider.name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
 from ..provider.name_layout.provider import BuiltinNameLayoutProvider
 from ..provider.provider_template import ABCProxy, ValueProvider
@@ -147,11 +147,11 @@ class FilledRetort(OperatingRetort, ABC):
         ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
         ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
 
-        NAMED_TUPLE_FIGURE_PROVIDER,
-        TYPED_DICT_FIGURE_PROVIDER,
-        DATACLASS_FIGURE_PROVIDER,
-        CLASS_INIT_FIGURE_PROVIDER,
-        ATTRS_FIGURE_PROVIDER,
+        NAMED_TUPLE_SHAPE_PROVIDER,
+        TYPED_DICT_SHAPE_PROVIDER,
+        DATACLASS_SHAPE_PROVIDER,
+        CLASS_INIT_SHAPE_PROVIDER,
+        ATTRS_SHAPE_PROVIDER,
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),

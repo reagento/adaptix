@@ -2,7 +2,7 @@ from typing import TypeVar
 
 from adaptix._internal.essential import Mediator
 
-from ...model_tools.definitions import InputFigure, OutputFigure
+from ...model_tools.definitions import InputShape, OutputShape
 from ..model.crown_definitions import (
     BranchInpCrown,
     BranchOutCrown,
@@ -43,7 +43,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
             mediator, request, paths_to_leaves, mapped_fields
         )
         return InputNameLayout(
-            crown=self._create_input_crown(mediator, request.figure, paths_to_leaves, extra_policies),
+            crown=self._create_input_crown(mediator, request.shape, paths_to_leaves, extra_policies),
             extra_move=extra_move,
         )
 
@@ -51,7 +51,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
     def _create_input_crown(
         self,
         mediator: Mediator,
-        figure: InputFigure,
+        shape: InputShape,
         path_to_leaf: PathsTo[LeafInpCrown],
         extra_policies: PathsTo[DictExtraPolicy],
     ) -> BranchInpCrown:
@@ -65,7 +65,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
             mediator, request, paths_to_leaves, mapped_fields
         )
         return OutputNameLayout(
-            crown=self._create_output_crown(mediator, request.figure, paths_to_leaves, path_to_sieve),
+            crown=self._create_output_crown(mediator, request.shape, paths_to_leaves, path_to_sieve),
             extra_move=extra_move,
         )
 
@@ -73,7 +73,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
     def _create_output_crown(
         self,
         mediator: Mediator,
-        figure: OutputFigure,
+        shape: OutputShape,
         path_to_leaf: PathsTo[LeafOutCrown],
         path_to_sieve: PathsTo[Sieve],
     ) -> BranchOutCrown:
