@@ -4,18 +4,18 @@ from types import MappingProxyType
 from typing import Any, NamedTuple
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
-from adaptix._internal.model_tools import (
+from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     DefaultValue,
+    Figure,
     InputField,
     InputFigure,
     NoDefault,
     OutputField,
     OutputFigure,
     ParamKind,
-    get_named_tuple_figure,
 )
-from adaptix._internal.model_tools.definitions import Figure
+from adaptix._internal.model_tools.introspection import get_named_tuple_figure
 from tests_helpers import requires
 
 

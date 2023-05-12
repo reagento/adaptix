@@ -3,7 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-from adaptix._internal.provider import LiteralProvider, LoadError
+from adaptix._internal.load_error import LoadError
+from adaptix._internal.provider.generic_provider import LiteralProvider
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 
 

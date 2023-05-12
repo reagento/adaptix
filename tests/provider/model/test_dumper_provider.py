@@ -6,7 +6,7 @@ import pytest
 
 from adaptix import Dumper, bound
 from adaptix._internal.common import Catchable
-from adaptix._internal.model_tools import (
+from adaptix._internal.model_tools.definitions import (
     Accessor,
     AttrAccessor,
     DefaultFactory,
@@ -16,18 +16,25 @@ from adaptix._internal.model_tools import (
     OutputField,
     OutputFigure,
 )
-from adaptix._internal.provider import (
-    BuiltinOutputCreationMaker,
-    DumperRequest,
-    ModelDumperProvider,
-    NameSanitizer,
-    OutputFigureRequest,
+from adaptix._internal.provider.model.basic_gen import NameSanitizer
+from adaptix._internal.provider.model.crown_definitions import (
+    ExtraExtract,
+    ExtraTargets,
+    OutDictCrown,
+    OutFieldCrown,
+    OutListCrown,
+    OutNoneCrown,
+    OutputNameLayout,
     OutputNameLayoutRequest,
-    ValueProvider,
+)
+from adaptix._internal.provider.model.definitions import OutputFigureRequest
+from adaptix._internal.provider.model.dumper_provider import (
+    BuiltinOutputCreationMaker,
+    ModelDumperProvider,
     make_output_extraction,
 )
-from adaptix._internal.provider.model import OutDictCrown, OutFieldCrown, OutListCrown, OutNoneCrown, OutputNameLayout
-from adaptix._internal.provider.model.crown_definitions import ExtraExtract, ExtraTargets
+from adaptix._internal.provider.provider_template import ValueProvider
+from adaptix._internal.provider.request_cls import DumperRequest
 from adaptix._internal.struct_path import Attr, PathElement, PathElementMarker
 from adaptix._internal.utils import SingletonMeta
 from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_path

@@ -6,20 +6,21 @@ from typing import Any, Tuple
 import pytest
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
-from adaptix._internal.model_tools import (
+from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     DefaultFactory,
     DefaultValue,
     Figure,
     InputField,
     InputFigure,
+    IntrospectionImpossible,
     NoDefault,
     OutputField,
     OutputFigure,
     ParamKind,
-    get_attrs_figure,
+    ParamKwargs,
 )
-from adaptix._internal.model_tools.definitions import IntrospectionImpossible, ParamKwargs
+from adaptix._internal.model_tools.introspection import get_attrs_figure
 from tests_helpers import ATTRS_WITH_ALIAS, requires
 
 pytest.importorskip("attrs")

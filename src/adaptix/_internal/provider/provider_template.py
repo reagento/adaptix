@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Type, TypeVar, final
+from typing import Generic, Optional, Type, TypeVar, final
 
 from ..common import Dumper, Loader, TypeHint
+from ..essential import CannotProvide, Mediator, Request
 from ..type_tools import normalize_type
-from .essential import Mediator
+from .provider_wrapper import RequestClassDeterminedProvider
 from .request_cls import DumperRequest, LoaderRequest, LocMap, TypeHintLoc
 from .request_filtering import (
     AnyRequestChecker,
@@ -81,3 +82,21 @@ class ABCProxy(LoaderProvider, DumperProvider):
                 loc_map=LocMap(TypeHintLoc(type=self._impl))
             )
         )
+
+
+class ValueProvider(RequestClassDeterminedProvider, Generic[T]):
+    def __init__(self, request_cls: Type[Request[T]], value: T):
+        self._request_cls = request_cls
+        self._value = value
+
+    def apply_provider(self, mediator: Mediator, request: Request):
+        if not isinstance(request, self._request_cls):
+            raise CannotProvide
+
+        return self._value
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self._request_cls}, {self._value})"
+
+    def maybe_can_process_request_cls(self, request_cls: Type[Request]) -> bool:
+        return issubclass(request_cls, self._request_cls)

@@ -1,5 +1,6 @@
-from ...code_tools import CodeBuilder, ContextNamespace
-from ...model_tools import InputField, ParamKind
+from ...code_tools.compiler import CodeBuilder
+from ...code_tools.context_namespace import ContextNamespace
+from ...model_tools.definitions import InputField, ParamKind
 from .crown_definitions import ExtraKwargs, ExtraSaturate, ExtraTargets, InpExtraMove
 from .definitions import CodeGenerator, InputFigure, VarBinder
 

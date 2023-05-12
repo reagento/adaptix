@@ -6,10 +6,14 @@ import pytest
 
 from adaptix import CannotProvide, Chain, P, Request, Retort, loader
 from adaptix._internal.common import TypeHint
-from adaptix._internal.model_tools import NoDefault
-from adaptix._internal.provider import create_request_checker
+from adaptix._internal.model_tools.definitions import NoDefault
 from adaptix._internal.provider.request_cls import FieldLoc, GenericParamLoc, LocatedRequest, LocMap, TypeHintLoc
-from adaptix._internal.provider.request_filtering import AnyRequestChecker, RequestPattern, StackEndRC
+from adaptix._internal.provider.request_filtering import (
+    AnyRequestChecker,
+    RequestPattern,
+    StackEndRC,
+    create_request_checker,
+)
 from adaptix._internal.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 from tests_helpers import full_match_regex_str
 

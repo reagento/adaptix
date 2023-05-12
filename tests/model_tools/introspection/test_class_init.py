@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
-from adaptix._internal.model_tools import (
+from adaptix._internal.model_tools.definitions import (
     DefaultValue,
     Figure,
     InputField,
@@ -13,9 +13,9 @@ from adaptix._internal.model_tools import (
     IntrospectionImpossible,
     NoDefault,
     ParamKind,
-    get_class_init_figure,
+    ParamKwargs,
 )
-from adaptix._internal.model_tools.definitions import ParamKwargs
+from adaptix._internal.model_tools.introspection import get_class_init_figure
 from tests_helpers import requires
 
 

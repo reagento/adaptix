@@ -3,20 +3,23 @@ from dataclasses import replace
 from typing import Any, Container, Generic, Iterable, Optional, TypeVar, Union, cast
 
 from ...common import TypeHint
-from ...model_tools import (
+from ...essential import CannotProvide, Mediator
+from ...model_tools.definitions import (
     DescriptorAccessor,
+    FigureIntrospector,
+    InputFigure,
     IntrospectionImpossible,
     OutputField,
     OutputFigure,
+)
+from ...model_tools.introspection import (
     get_attrs_figure,
     get_class_init_figure,
     get_dataclass_figure,
     get_named_tuple_figure,
     get_typed_dict_figure,
 )
-from ...model_tools.definitions import FigureIntrospector, InputFigure
 from ...type_tools.generic_resolver import GenericResolver, MembersStorage
-from ..essential import CannotProvide, Mediator
 from ..provider_template import ProviderWithAttachableRC
 from ..request_cls import LocatedRequest, TypeHintLoc
 from ..request_filtering import create_request_checker

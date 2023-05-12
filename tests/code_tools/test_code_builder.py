@@ -1,4 +1,4 @@
-from adaptix._internal.code_tools import CodeBuilder
+from adaptix._internal.code_tools.code_builder import CodeBuilder
 
 
 def test_append_lines():

@@ -2,9 +2,10 @@ import contextlib
 from string import Template
 from typing import Dict, NamedTuple, Optional
 
-from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr, get_literal_from_factory
-from ...code_tools.utils import is_singleton
-from ...model_tools import DefaultFactory, DefaultValue, OutputField
+from ...code_tools.code_builder import CodeBuilder
+from ...code_tools.context_namespace import ContextNamespace
+from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
+from ...model_tools.definitions import DefaultFactory, DefaultValue, OutputField
 from .crown_definitions import (
     CrownPathElem,
     OutCrown,

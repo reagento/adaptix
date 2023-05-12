@@ -3,7 +3,8 @@ from types import MappingProxyType
 from typing import TypedDict
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_PY_39
-from adaptix._internal.model_tools import (
+from adaptix._internal.model_tools.definitions import (
+    Figure,
     InputField,
     InputFigure,
     ItemAccessor,
@@ -11,9 +12,8 @@ from adaptix._internal.model_tools import (
     OutputField,
     OutputFigure,
     ParamKind,
-    get_typed_dict_figure,
 )
-from adaptix._internal.model_tools.definitions import Figure
+from adaptix._internal.model_tools.introspection import get_typed_dict_figure
 from tests_helpers import requires
 
 

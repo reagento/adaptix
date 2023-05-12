@@ -4,7 +4,8 @@ from typing import Dict, Mapping, Optional, Set
 
 from adaptix._internal.provider.model.special_cases_optimization import as_is_stub
 
-from ...code_tools import CodeBuilder, ContextNamespace
+from ...code_tools.code_builder import CodeBuilder
+from ...code_tools.context_namespace import ContextNamespace
 from ...common import Loader
 from ...load_error import (
     ExtraFieldsError,
@@ -14,7 +15,7 @@ from ...load_error import (
     NoRequiredItemsError,
     TypeLoadError,
 )
-from ...model_tools import InputField, InputFigure
+from ...model_tools.definitions import InputField, InputFigure
 from ...struct_path import append_path, extend_path
 from .crown_definitions import (
     CrownPath,

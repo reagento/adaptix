@@ -19,10 +19,9 @@ from typing import (
 )
 
 from ...common import EllipsisType, VarTuple
-from ...model_tools import BaseField, DefaultFactory, DefaultValue, InputField, NoDefault, OutputField
+from ...essential import CannotProvide, Mediator
+from ...model_tools.definitions import BaseField, DefaultFactory, DefaultValue, InputField, NoDefault, OutputField
 from ...utils import Omittable
-from ..essential import CannotProvide, Mediator
-from ..model import Sieve
 from ..model.crown_definitions import (
     DictExtraPolicy,
     ExtraCollect,
@@ -43,6 +42,7 @@ from ..model.crown_definitions import (
     OutFieldCrown,
     OutNoneCrown,
     OutputNameLayoutRequest,
+    Sieve,
 )
 from ..model.fields import field_to_loc_map
 from ..model.special_cases_optimization import with_default_clause

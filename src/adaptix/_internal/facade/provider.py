@@ -6,28 +6,14 @@ from types import MappingProxyType
 from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 from ..common import Catchable, Dumper, Loader, TypeHint, VarTuple
-from ..model_tools import Default, DescriptorAccessor, NoDefault, OutputField, get_callable_figure
-from ..provider import (
-    BoundingProvider,
-    Chain,
-    ChainingProvider,
-    DumperRequest,
-    EnumExactValueProvider,
-    EnumNameProvider,
-    EnumValueProvider,
-    LoaderRequest,
-    LoadError,
-    ModelLoaderProvider,
-    NameSanitizer,
-    NameStyle,
-    OrRequestChecker,
-    PropertyAdder,
-    Provider,
-    ValidationError,
-    ValueProvider,
-    create_request_checker,
-)
-from ..provider.model.loader_provider import InlinedInputExtractionMaker, make_input_creation
+from ..essential import Provider
+from ..load_error import LoadError, ValidationError
+from ..model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
+from ..model_tools.introspection import get_callable_figure
+from ..provider.enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
+from ..provider.model.basic_gen import NameSanitizer
+from ..provider.model.figure_provider import PropertyAdder
+from ..provider.model.loader_provider import InlinedInputExtractionMaker, ModelLoaderProvider, make_input_creation
 from ..provider.model.special_cases_optimization import as_is_stub
 from ..provider.name_layout.base import ExtraIn, ExtraOut
 from ..provider.name_layout.component import (
@@ -38,8 +24,19 @@ from ..provider.name_layout.component import (
     SievesOverlay,
     StructureOverlay,
 )
+from ..provider.name_style import NameStyle
 from ..provider.overlay_schema import OverlayProvider
-from ..provider.request_filtering import AnyRequestChecker, Pred, RequestChecker, RequestPattern
+from ..provider.provider_template import ValueProvider
+from ..provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider
+from ..provider.request_cls import DumperRequest, LoaderRequest
+from ..provider.request_filtering import (
+    AnyRequestChecker,
+    OrRequestChecker,
+    Pred,
+    RequestChecker,
+    RequestPattern,
+    create_request_checker,
+)
 from ..utils import Omittable, Omitted
 
 T = TypeVar('T')

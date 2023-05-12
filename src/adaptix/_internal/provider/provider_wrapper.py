@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Generic, Optional, Type, TypeVar
+from typing import Optional, Type, TypeVar
 
-from .essential import CannotProvide, Mediator, Provider, Request
+from ..essential import CannotProvide, Mediator, Provider, Request
 from .request_filtering import ProviderWithRC, RequestChecker
 
 T = TypeVar('T')
@@ -33,24 +33,6 @@ class BoundingProvider(RequestClassDeterminedProvider, ProviderWithRC):
 
     def get_request_checker(self) -> Optional[RequestChecker]:
         return self._request_checker
-
-
-class ValueProvider(RequestClassDeterminedProvider, Generic[T]):
-    def __init__(self, request_cls: Type[Request[T]], value: T):
-        self._request_cls = request_cls
-        self._value = value
-
-    def apply_provider(self, mediator: Mediator, request: Request):
-        if not isinstance(request, self._request_cls):
-            raise CannotProvide
-
-        return self._value
-
-    def __repr__(self):
-        return f"{type(self).__name__}({self._request_cls}, {self._value})"
-
-    def maybe_can_process_request_cls(self, request_cls: Type[Request]) -> bool:
-        return issubclass(request_cls, self._request_cls)
 
 
 class ConcatProvider(RequestClassDeterminedProvider):

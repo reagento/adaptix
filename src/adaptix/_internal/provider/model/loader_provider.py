@@ -1,9 +1,11 @@
 from typing import Mapping, Protocol, Tuple
 
-from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
+from ...code_tools.compiler import BasicClosureCompiler
+from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Loader
-from ..essential import CannotProvide, Mediator
-from ..model.definitions import CodeGenerator, InputFigure, InputFigureRequest, VarBinder
+from ...essential import CannotProvide, Mediator
+from ...model_tools.definitions import InputFigure
+from ..model.definitions import CodeGenerator, InputFigureRequest, VarBinder
 from ..model.input_extraction_gen import BuiltinInputExtractionGen
 from ..provider_template import LoaderProvider
 from ..request_cls import DebugPathRequest, LoaderRequest, TypeHintLoc

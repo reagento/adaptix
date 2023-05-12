@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import Protocol, TypeVar
 
-from ...code_tools import CodeBuilder, ContextNamespace, MangledConstant, PrefixManglerBase, mangling_method
-from ...model_tools import BaseField, InputFigure, OutputFigure
+from ...code_tools.code_builder import CodeBuilder
+from ...code_tools.context_namespace import ContextNamespace
+from ...code_tools.prefix_mangler import MangledConstant, PrefixManglerBase, mangling_method
+from ...model_tools.definitions import BaseField, InputFigure, OutputFigure
 from ..request_cls import LocatedRequest
 
 T = TypeVar('T')

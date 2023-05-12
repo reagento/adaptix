@@ -2,9 +2,11 @@ from abc import ABC, abstractmethod
 from typing import AbstractSet, Mapping, Sequence, Tuple, TypeVar, Union
 
 from adaptix._internal.provider.model.crown_definitions import (
+    DictExtraPolicy,
     Extractor,
     ExtraForbid,
     ExtraKwargs,
+    ExtraSkip,
     InpExtraMove,
     InputNameLayoutRequest,
     LeafInpCrown,
@@ -12,11 +14,11 @@ from adaptix._internal.provider.model.crown_definitions import (
     OutExtraMove,
     OutputNameLayoutRequest,
     Saturator,
+    Sieve,
 )
 
 from ...common import VarTuple
-from ..essential import Mediator
-from ..model import DictExtraPolicy, ExtraSkip, Sieve
+from ...essential import Mediator
 
 T = TypeVar('T')
 

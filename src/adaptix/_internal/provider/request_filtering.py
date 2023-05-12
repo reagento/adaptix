@@ -6,9 +6,9 @@ from inspect import isabstract
 from typing import Any, ClassVar, Iterable, Optional, Pattern, Protocol, Sequence, Tuple, Type, TypeVar, Union
 
 from ..common import TypeHint, VarTuple
+from ..essential import CannotProvide, Mediator, Provider, Request
 from ..type_tools import BaseNormType, NormTV, is_parametrized, is_protocol, is_subclass_soft, normalize_type
 from ..type_tools.normalize_type import NotSubscribedError
-from .essential import CannotProvide, Mediator, Provider, Request
 from .request_cls import FieldLoc, GenericParamLoc, LocatedRequest, Location, TypeHintLoc
 
 T = TypeVar('T')

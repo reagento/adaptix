@@ -1,8 +1,8 @@
 from typing import Optional, TypeVar, Union
 
-from adaptix._internal.load_error import TypeLoadError
-from adaptix._internal.model_tools import DefaultFactory, DefaultValue
-from adaptix._internal.provider.model.crown_definitions import Sieve
+from ...load_error import TypeLoadError
+from ...model_tools.definitions import DefaultFactory, DefaultValue
+from ...provider.model.crown_definitions import Sieve
 
 as_is_stub = lambda x: x  # noqa: E731  # pylint: disable=unnecessary-lambda-assignment
 

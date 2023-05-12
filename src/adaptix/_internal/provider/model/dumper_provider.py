@@ -1,8 +1,9 @@
 from typing import Protocol, Tuple
 
-from ...code_tools import BasicClosureCompiler, BuiltinContextNamespace
+from ...code_tools.compiler import BasicClosureCompiler
+from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Dumper
-from ..essential import CannotProvide, Mediator
+from ...essential import CannotProvide, Mediator
 from ..provider_template import DumperProvider
 from ..request_cls import DebugPathRequest, DumperRequest, TypeHintLoc
 from .basic_gen import (

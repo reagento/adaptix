@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, Generic, Mapping, MutableMapping, Sequence, TypeVar, Union
 
 from ...common import VarTuple
-from ...model_tools import BaseFigure, DefaultFactory, DefaultValue, InputFigure, OutputFigure
+from ...model_tools.definitions import BaseFigure, DefaultFactory, DefaultValue, InputFigure, OutputFigure
 from ...utils import SingletonMeta
 from ..request_cls import LocatedRequest
 

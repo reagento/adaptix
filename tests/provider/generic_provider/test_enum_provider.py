@@ -1,7 +1,7 @@
 from enum import Enum, IntEnum
 
 from adaptix import dumper, enum_by_value, loader
-from adaptix._internal.provider import EnumExactValueProvider, EnumNameProvider
+from adaptix._internal.provider.enum_provider import EnumExactValueProvider, EnumNameProvider
 from adaptix.load_error import BadVariantError, MsgError
 from tests_helpers import TestRetort, parametrize_bool, raises_path
 

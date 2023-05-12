@@ -1,9 +1,11 @@
 from string import Template
 from typing import Dict, Mapping
 
-from ...code_tools import CodeBuilder, ContextNamespace, get_literal_expr
+from ...code_tools.code_builder import CodeBuilder
+from ...code_tools.context_namespace import ContextNamespace
+from ...code_tools.utils import get_literal_expr
 from ...common import Dumper
-from ...model_tools import AttrAccessor, ItemAccessor, OutputField, OutputFigure
+from ...model_tools.definitions import AttrAccessor, ItemAccessor, OutputField, OutputFigure
 from ...struct_path import append_path, extend_path
 from .crown_definitions import ExtraExtract, ExtraTargets, OutExtraMove
 from .definitions import CodeGenerator, VarBinder

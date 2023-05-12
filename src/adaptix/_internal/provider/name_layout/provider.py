@@ -1,14 +1,17 @@
 from typing import TypeVar
 
-from ...model_tools import InputFigure, OutputFigure
-from ..essential import Mediator
-from ..model import DictExtraPolicy, InputNameLayout, OutputNameLayout
+from adaptix._internal.essential import Mediator
+
+from ...model_tools.definitions import InputFigure, OutputFigure
 from ..model.crown_definitions import (
     BranchInpCrown,
     BranchOutCrown,
+    DictExtraPolicy,
+    InputNameLayout,
     InputNameLayoutRequest,
     LeafInpCrown,
     LeafOutCrown,
+    OutputNameLayout,
     OutputNameLayoutRequest,
     Sieve,
 )

@@ -4,7 +4,8 @@ from typing import Callable, List, Literal, Optional, Union
 import pytest
 
 from adaptix import Retort, dumper, loader
-from adaptix._internal.provider import LiteralProvider, LoadError, TypeLoadError, UnionLoadError, UnionProvider
+from adaptix._internal.load_error import LoadError, TypeLoadError, UnionLoadError
+from adaptix._internal.provider.generic_provider import LiteralProvider, UnionProvider
 from tests_helpers import TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 

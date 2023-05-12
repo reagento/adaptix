@@ -4,8 +4,8 @@ from typing import Any, Dict, Optional, Union
 
 import pytest
 
-from adaptix import bound, name_mapping
-from adaptix._internal.model_tools import (
+from adaptix import NameStyle, Provider, bound, name_mapping
+from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     Default,
     DefaultFactory,
@@ -18,49 +18,46 @@ from adaptix._internal.model_tools import (
     ParamKind,
     ParamKwargs,
 )
-from adaptix._internal.provider import (
-    BuiltinInputExtractionMaker,
-    BuiltinOutputCreationMaker,
-    InputFigureRequest,
-    InputNameLayoutRequest,
-    ModelDumperProvider,
-    ModelLoaderProvider,
-    NameSanitizer,
-    NameStyle,
-    OutputFigureRequest,
-    OutputNameLayoutRequest,
-    Provider,
-    ValueProvider,
-    make_input_creation,
-    make_output_extraction,
-)
-from adaptix._internal.provider.model import (
-    ExtraForbid,
-    ExtraSkip,
-    InpDictCrown,
-    InpFieldCrown,
-    InputNameLayout,
-    OutDictCrown,
-    OutFieldCrown,
-    OutputNameLayout,
-)
+from adaptix._internal.provider.model.basic_gen import NameSanitizer
 from adaptix._internal.provider.model.crown_definitions import (
     ExtraCollect,
     ExtraExtract,
+    ExtraForbid,
     ExtraKwargs,
     ExtraSaturate,
+    ExtraSkip,
     ExtraTargets,
+    InpDictCrown,
+    InpFieldCrown,
     InpListCrown,
     InpNoneCrown,
+    InputNameLayout,
+    InputNameLayoutRequest,
+    OutDictCrown,
+    OutFieldCrown,
     OutListCrown,
     OutNoneCrown,
+    OutputNameLayout,
+    OutputNameLayoutRequest,
 )
-from adaptix._internal.provider.name_layout import (
+from adaptix._internal.provider.model.definitions import InputFigureRequest, OutputFigureRequest
+from adaptix._internal.provider.model.dumper_provider import (
+    BuiltinOutputCreationMaker,
+    ModelDumperProvider,
+    make_output_extraction,
+)
+from adaptix._internal.provider.model.loader_provider import (
+    BuiltinInputExtractionMaker,
+    ModelLoaderProvider,
+    make_input_creation,
+)
+from adaptix._internal.provider.name_layout.component import (
     BuiltinExtraMoveAndPoliciesMaker,
-    BuiltinNameLayoutProvider,
     BuiltinSievesMaker,
     BuiltinStructureMaker,
 )
+from adaptix._internal.provider.name_layout.provider import BuiltinNameLayoutProvider
+from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import DumperRequest, FieldLoc, LoaderRequest, LocMap, TypeHintLoc
 from adaptix._internal.provider.request_filtering import AnyMapped, AnyRequestChecker, P
 from tests_helpers import TestRetort, full_match_regex_str, type_of

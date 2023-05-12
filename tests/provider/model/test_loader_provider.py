@@ -6,34 +6,37 @@ import pytest
 
 from adaptix import ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
-from adaptix._internal.model_tools import InputField, InputFigure, NoDefault, ParamKind, ParamKwargs
-from adaptix._internal.provider import (
-    BuiltinInputExtractionMaker,
-    ExtraFieldsError,
-    ExtraItemsError,
-    InputFigureRequest,
-    InputNameLayoutRequest,
-    LoaderRequest,
-    LoadError,
-    ModelLoaderProvider,
-    NameSanitizer,
-    NoRequiredFieldsError,
-    NoRequiredItemsError,
-    TypeLoadError,
-    ValueProvider,
-    make_input_creation,
-)
-from adaptix._internal.provider.model import (
+from adaptix._internal.model_tools.definitions import InputField, InputFigure, NoDefault, ParamKind, ParamKwargs
+from adaptix._internal.provider.model.basic_gen import NameSanitizer
+from adaptix._internal.provider.model.crown_definitions import (
     ExtraCollect,
     ExtraForbid,
+    ExtraSaturate,
     ExtraSkip,
+    ExtraTargets,
     InpDictCrown,
     InpFieldCrown,
     InpListCrown,
     InpNoneCrown,
     InputNameLayout,
+    InputNameLayoutRequest,
 )
-from adaptix._internal.provider.model.crown_definitions import ExtraSaturate, ExtraTargets
+from adaptix._internal.provider.model.definitions import InputFigureRequest
+from adaptix._internal.provider.model.loader_provider import (
+    BuiltinInputExtractionMaker,
+    ModelLoaderProvider,
+    make_input_creation,
+)
+from adaptix._internal.provider.provider_template import ValueProvider
+from adaptix._internal.provider.request_cls import LoaderRequest
+from adaptix.load_error import (
+    ExtraFieldsError,
+    ExtraItemsError,
+    LoadError,
+    NoRequiredFieldsError,
+    NoRequiredItemsError,
+    TypeLoadError,
+)
 from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 

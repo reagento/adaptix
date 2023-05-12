@@ -3,8 +3,8 @@ from itertools import islice
 from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Set, Tuple, Type, TypeVar
 
 from ..common import TypeHint
-from ..provider import CannotProvide, Mediator, Provider, Request
-from ..provider.provider_basics import RequestClassDeterminedProvider
+from ..essential import CannotProvide, Mediator, Provider, Request
+from ..provider.provider_wrapper import RequestClassDeterminedProvider
 from ..provider.request_filtering import ExactOriginMergedProvider, ExactOriginRC, ProviderWithRC
 from ..utils import ClassDispatcher
 

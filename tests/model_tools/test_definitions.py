@@ -1,6 +1,6 @@
 import pytest
 
-from adaptix._internal.model_tools import (
+from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     InputField,
     InputFigure,

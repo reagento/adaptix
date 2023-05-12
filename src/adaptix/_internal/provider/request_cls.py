@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Any, Mapping, TypeVar
 
+from adaptix._internal.essential import CannotProvide, Request
+
 from ..common import Dumper, Loader, TypeHint
-from ..model_tools import Accessor, Default, ParamKind
-from ..provider.essential import CannotProvide, Request
+from ..model_tools.definitions import Accessor, Default, ParamKind
 from ..utils import ClassMap
 
 T = TypeVar('T')

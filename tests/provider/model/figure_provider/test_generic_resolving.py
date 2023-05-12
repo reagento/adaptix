@@ -6,7 +6,7 @@ from pytest import param
 
 from adaptix import CannotProvide, Retort, TypeHint
 from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
-from adaptix._internal.provider import InputFigureRequest, OutputFigureRequest
+from adaptix._internal.provider.model.definitions import InputFigureRequest, OutputFigureRequest
 from adaptix._internal.provider.model.figure_provider import provide_generic_resolved_figure
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
 from tests_helpers import pretty_typehint_test_id

@@ -1,4 +1,4 @@
-from ...model_tools import BaseField, InputField, OutputField
+from ...model_tools.definitions import BaseField, InputField, OutputField
 from ..request_cls import FieldLoc, InputFieldLoc, LocMap, OutputFieldLoc, TypeHintLoc
 
 

@@ -9,38 +9,7 @@ from typing import Any, ByteString, Iterable, Mapping, MutableMapping, Optional,
 from uuid import UUID
 
 from ..common import Dumper, Loader, TypeHint, VarTuple
-from ..provider import (
-    ATTRS_FIGURE_PROVIDER,
-    CLASS_INIT_FIGURE_PROVIDER,
-    DATACLASS_FIGURE_PROVIDER,
-    NAMED_TUPLE_FIGURE_PROVIDER,
-    TYPED_DICT_FIGURE_PROVIDER,
-    ABCProxy,
-    BuiltinInputExtractionMaker,
-    BuiltinOutputCreationMaker,
-    BytearrayBase64Provider,
-    BytesBase64Provider,
-    DictProvider,
-    DumperRequest,
-    EnumExactValueProvider,
-    IsoFormatProvider,
-    IterableProvider,
-    LiteralProvider,
-    LoaderRequest,
-    ModelDumperProvider,
-    ModelLoaderProvider,
-    NameSanitizer,
-    NewTypeUnwrappingProvider,
-    NoneProvider,
-    Provider,
-    RegexPatternProvider,
-    Request,
-    SecondsTimedeltaProvider,
-    TypeHintLoc,
-    TypeHintTagsUnwrappingProvider,
-    UnionProvider,
-    ValueProvider,
-)
+from ..essential import Provider, Request
 from ..provider.concrete_provider import (
     BOOL_LOADER_PROVIDER,
     COMPLEX_LOADER_PROVIDER,
@@ -49,15 +18,44 @@ from ..provider.concrete_provider import (
     FRACTION_LOADER_PROVIDER,
     INT_LOADER_PROVIDER,
     STR_LOADER_PROVIDER,
+    BytearrayBase64Provider,
+    BytesBase64Provider,
+    IsoFormatProvider,
+    NoneProvider,
+    RegexPatternProvider,
+    SecondsTimedeltaProvider,
 )
-from ..provider.model import ExtraSkip, make_input_creation, make_output_extraction
-from ..provider.name_layout import (
-    BuiltinExtraMoveAndPoliciesMaker,
-    BuiltinNameLayoutProvider,
-    BuiltinSievesMaker,
-    BuiltinStructureMaker,
+from ..provider.enum_provider import EnumExactValueProvider
+from ..provider.generic_provider import (
+    DictProvider,
+    IterableProvider,
+    LiteralProvider,
+    NewTypeUnwrappingProvider,
+    TypeHintTagsUnwrappingProvider,
+    UnionProvider,
 )
-from ..provider.request_cls import DebugPathRequest, LocMap, StrictCoercionRequest
+from ..provider.model.basic_gen import NameSanitizer
+from ..provider.model.crown_definitions import ExtraSkip
+from ..provider.model.dumper_provider import BuiltinOutputCreationMaker, ModelDumperProvider, make_output_extraction
+from ..provider.model.figure_provider import (
+    ATTRS_FIGURE_PROVIDER,
+    CLASS_INIT_FIGURE_PROVIDER,
+    DATACLASS_FIGURE_PROVIDER,
+    NAMED_TUPLE_FIGURE_PROVIDER,
+    TYPED_DICT_FIGURE_PROVIDER,
+)
+from ..provider.model.loader_provider import BuiltinInputExtractionMaker, ModelLoaderProvider, make_input_creation
+from ..provider.name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
+from ..provider.name_layout.provider import BuiltinNameLayoutProvider
+from ..provider.provider_template import ABCProxy, ValueProvider
+from ..provider.request_cls import (
+    DebugPathRequest,
+    DumperRequest,
+    LoaderRequest,
+    LocMap,
+    StrictCoercionRequest,
+    TypeHintLoc,
+)
 from ..provider.request_filtering import AnyRequestChecker
 from ..retort import OperatingRetort
 from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
@@ -77,7 +75,7 @@ class FilledRetort(OperatingRetort, ABC):
         IsoFormatProvider(time),
         SecondsTimedeltaProvider(),
 
-        EnumExactValueProvider(),  # it has higher priority than int for IntEnum
+        EnumExactValueProvider(),  # it has higher priority than scalar types for Enum with mixins
 
         INT_LOADER_PROVIDER,
         as_is_dumper(int),

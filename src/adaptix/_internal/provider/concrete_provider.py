@@ -7,11 +7,10 @@ from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from typing import Generic, Type, TypeVar, Union
 
-from adaptix._internal.provider.model.special_cases_optimization import none_loader
-
 from ..common import Dumper, Loader
+from ..essential import CannotProvide, Mediator
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
-from .essential import CannotProvide, Mediator
+from .model.special_cases_optimization import none_loader
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC, for_predicate
 from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
 from .request_filtering import create_request_checker

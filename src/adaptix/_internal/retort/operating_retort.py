@@ -1,7 +1,8 @@
 from abc import ABC
 from typing import TypeVar
 
-from ..provider import CannotProvide, DumperRequest, LoaderRequest, Mediator, Provider, Request
+from ..essential import CannotProvide, Mediator, Provider, Request
+from ..provider.request_cls import DumperRequest, LoaderRequest
 from .base_retort import BaseRetort
 from .mediator import RecursionResolving, StubsRecursionResolver
 
