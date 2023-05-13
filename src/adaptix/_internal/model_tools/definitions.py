@@ -118,6 +118,10 @@ class ItemAccessor(Accessor):
         return hash((self.item_name, self.is_required))
 
 
+def is_valid_field_id(value: str) -> bool:
+    return value.isidentifier()
+
+
 @dataclass(frozen=True)
 class BaseField:
     type: TypeHint
@@ -129,7 +133,7 @@ class BaseField:
     metadata: Mapping[Any, Any] = field(hash=False)
 
     def __post_init__(self):
-        if not self.id.isidentifier():
+        if not is_valid_field_id(self.id):
             raise ValueError(f"name of field must be python identifier, now it is a {self.id!r}")
 
 

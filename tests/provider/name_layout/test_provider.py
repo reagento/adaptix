@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Union
 
 import pytest
 
-from adaptix import NameStyle, Provider, bound, name_mapping
+from adaptix import AnyMapped, NameStyle, Provider, bound, name_mapping
 from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     Default,
@@ -59,7 +59,7 @@ from adaptix._internal.provider.name_layout.component import (
 from adaptix._internal.provider.name_layout.provider import BuiltinNameLayoutProvider
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import DumperRequest, FieldLoc, LoaderRequest, LocMap, TypeHintLoc
-from adaptix._internal.provider.request_filtering import AnyMapped, AnyRequestChecker, P
+from adaptix._internal.provider.request_filtering import AnyRequestChecker, P
 from tests_helpers import TestRetort, full_match_regex_str, type_of
 
 
@@ -223,7 +223,7 @@ def assert_flat_name_mapping(
         DEFAULT_NAME_MAPPING,
     )
     assert {
-        crown.name: key  # type: ignore
+        crown.id: key  # type: ignore
         for key, crown in layouts.inp.crown.map.items()  # type: ignore
     } == {
         key: mapped_key
@@ -416,9 +416,9 @@ def test_gaps_filling():
         inp=InputNameLayout(
             crown=InpListCrown(
                 map=[
-                    InpFieldCrown(name='a'),
+                    InpFieldCrown(id='a'),
                     InpNoneCrown(),
-                    InpFieldCrown(name='b'),
+                    InpFieldCrown(id='b'),
                 ],
                 extra_policy=ExtraSkip()
             ),
@@ -427,9 +427,9 @@ def test_gaps_filling():
         out=OutputNameLayout(
             crown=OutListCrown(
                 map=[
-                    OutFieldCrown(name='a'),
+                    OutFieldCrown(id='a'),
                     OutNoneCrown(filler=DefaultValue(value=None)),
-                    OutFieldCrown(name='b')
+                    OutFieldCrown(id='b')
                 ]
             ),
             extra_move=None
@@ -459,24 +459,24 @@ def test_structure_flattening():
         inp=InputNameLayout(
             crown=InpDictCrown(
                 map={
-                    'f': InpFieldCrown(name='f'),
+                    'f': InpFieldCrown(id='f'),
                     'w': InpListCrown(
                         map=[
-                            InpFieldCrown(name='d'),
+                            InpFieldCrown(id='d'),
                         ],
                         extra_policy=ExtraSkip(),
                     ),
                     'x': InpDictCrown(
                         map={
-                            'e': InpFieldCrown(name='e'),
+                            'e': InpFieldCrown(id='e'),
                             'y': InpListCrown(
                                 map=[
-                                    InpFieldCrown(name='a'),
-                                    InpFieldCrown(name='b'),
+                                    InpFieldCrown(id='a'),
+                                    InpFieldCrown(id='b'),
                                 ],
                                 extra_policy=ExtraSkip(),
                             ),
-                            'z': InpFieldCrown(name='c'),
+                            'z': InpFieldCrown(id='c'),
                         },
                         extra_policy=ExtraSkip()
                     ),
@@ -488,22 +488,22 @@ def test_structure_flattening():
         out=OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    'f': OutFieldCrown(name='f'),
+                    'f': OutFieldCrown(id='f'),
                     'w': OutListCrown(
                         map=[
-                            OutFieldCrown(name='d'),
+                            OutFieldCrown(id='d'),
                         ]
                     ),
                     'x': OutDictCrown(
                         map={
-                            'e': OutFieldCrown(name='e'),
+                            'e': OutFieldCrown(id='e'),
                             'y': OutListCrown(
                                 map=[
-                                    OutFieldCrown(name='a'),
-                                    OutFieldCrown(name='b'),
+                                    OutFieldCrown(id='a'),
+                                    OutFieldCrown(id='b'),
                                 ]
                             ),
-                            'z': OutFieldCrown(name='c')
+                            'z': OutFieldCrown(id='c')
                         },
                         sieves={}
                     )

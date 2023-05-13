@@ -97,7 +97,7 @@ def _inner_collect_used_direct_fields(crown: BaseCrown) -> Iterable[str]:
             for sub_crown in crown.map
         )
     if isinstance(crown, BaseFieldCrown):
-        return [crown.name]
+        return [crown.id]
     if isinstance(crown, BaseNoneCrown):
         return []
     raise TypeError
@@ -140,7 +140,7 @@ def _inner_get_extra_targets_at_crown(extra_targets: Container[str], crown: Base
             for sub_crown in crown.map
         )
     if isinstance(crown, BaseFieldCrown):
-        return [crown.name] if crown.name in extra_targets else []
+        return [crown.id] if crown.id in extra_targets else []
     if isinstance(crown, BaseNoneCrown):
         return []
     raise TypeError
@@ -165,8 +165,8 @@ def get_optional_fields_at_list_crown(
     if isinstance(crown, BaseListCrown):
         return _concatenate_iters(
             (
-                [sub_crown.name]
-                if fields_map[sub_crown.name].is_optional else
+                [sub_crown.id]
+                if fields_map[sub_crown.id].is_optional else
                 []
             )
             if isinstance(sub_crown, BaseFieldCrown) else

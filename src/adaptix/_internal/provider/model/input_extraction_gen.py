@@ -98,8 +98,8 @@ class GenState:
         self._parent_path = past_parent
 
     def get_field(self, crown: InpFieldCrown) -> InputField:
-        self.field_id2path[crown.name] = self._path
-        return self._name_to_field[crown.name]
+        self.field_id2path[crown.id] = self._path
+        return self._name_to_field[crown.id]
 
     def with_parent_path(self) -> "GenState":
         # pylint: disable=protected-access

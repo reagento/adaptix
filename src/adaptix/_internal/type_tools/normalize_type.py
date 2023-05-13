@@ -692,7 +692,7 @@ class TypeNormalizer:
             or isinstance(origin, type)
             or origin in self.ALLOWED_ZERO_PARAMS_ORIGINS
         ):
-            raise ValueError(f'Can not normalize {tp}')
+            raise ValueError(f'Can not normalize {tp!r}')
 
         return _NormType(
             origin,

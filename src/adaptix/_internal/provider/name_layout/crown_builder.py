@@ -35,11 +35,11 @@ PathedLeafs = Sequence[PathWithLeaf[LeafCr]]
 
 
 class BaseCrownBuilder(ABC, Generic[LeafCr, DictCr, ListCr]):
-    def build_crown(self, path_to_leaf: PathsTo[LeafCr]) -> Union[DictCr, ListCr]:
-        if not path_to_leaf:
+    def build_crown(self, paths_to_leaves: PathsTo[LeafCr]) -> Union[DictCr, ListCr]:
+        if not paths_to_leaves:
             return self._make_dict_crown(current_path=(), paths_with_leafs=[])
 
-        paths_with_leafs = [PathWithLeaf(path, leaf) for path, leaf in path_to_leaf.items()]
+        paths_with_leafs = [PathWithLeaf(path, leaf) for path, leaf in paths_to_leaves.items()]
         paths_with_leafs.sort(key=lambda x: x.path)
         return cast(Union[DictCr, ListCr], self._build_crown(paths_with_leafs, 0))
 

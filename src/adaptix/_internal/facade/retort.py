@@ -169,7 +169,7 @@ class AdornedRetort(OperatingRetort):
     def __init__(
         self,
         *,
-        recipe: Optional[Iterable[Provider]] = None,
+        recipe: Iterable[Provider] = (),
         strict_coercion: bool = True,
         debug_path: bool = True,
     ):

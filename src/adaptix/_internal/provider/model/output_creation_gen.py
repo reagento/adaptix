@@ -189,7 +189,7 @@ class BuiltinOutputCreationGen(CodeGenerator):
                 return self._get_element_expr_for_none_crown(state, key, crown)
 
             if isinstance(crown, OutFieldCrown):
-                field = self._name_to_field[crown.name]
+                field = self._name_to_field[crown.id]
                 if field.is_required:
                     field_expr = state.binder.field(field)
                 else:
@@ -205,7 +205,7 @@ class BuiltinOutputCreationGen(CodeGenerator):
         if not isinstance(crown, OutFieldCrown):
             return True
 
-        return self._name_to_field[crown.name].is_required
+        return self._name_to_field[crown.id].is_required
 
     def _gen_dict_crown(self, builder: CodeBuilder, state: GenState, crown: OutDictCrown):
         for key, value in crown.map.items():
@@ -244,10 +244,10 @@ class BuiltinOutputCreationGen(CodeGenerator):
         key: str,
         sub_crown: OutCrown
     ):
-        if isinstance(sub_crown, OutFieldCrown) and self._name_to_field[sub_crown.name].is_optional:
+        if isinstance(sub_crown, OutFieldCrown) and self._name_to_field[sub_crown.id].is_optional:
             builder += f"""
                 try:
-                    value = {state.binder.opt_fields}[{sub_crown.name!r}]
+                    value = {state.binder.opt_fields}[{sub_crown.id!r}]
                 except KeyError:
                     pass
                 else:
@@ -328,7 +328,7 @@ class BuiltinOutputCreationGen(CodeGenerator):
         builder += "]"
 
     def _gen_field_crown(self, builder: CodeBuilder, state: GenState, crown: OutFieldCrown):
-        state.field_id2path[crown.name] = state.path
+        state.field_id2path[crown.id] = state.path
 
     def _gen_none_crown(self, builder: CodeBuilder, state: GenState, crown: OutNoneCrown):
         pass

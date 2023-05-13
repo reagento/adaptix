@@ -124,7 +124,7 @@ def test_mutation_tracking(session_factory):
     There are 3 workarounds to solve this problem:
     1) Modify the entire object graph to track mutation at any edge.
        See for details https://docs.sqlalchemy.org/en/20/orm/extensions/mutable.html
-    2) Save a copy of the dataclass copy at the 'after_attach' event
+    2) Save a copy of the dataclass at the 'after_attach' event
        and compares it with an actual object at 'before_flush'.
        If it differs, mark the instance as dirty via `flag_modified`.
        This will work only if `session.flush()` is called directly.

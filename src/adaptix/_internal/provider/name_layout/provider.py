@@ -52,10 +52,10 @@ class BuiltinNameLayoutProvider(StaticProvider):
         self,
         mediator: Mediator,
         shape: InputShape,
-        path_to_leaf: PathsTo[LeafInpCrown],
+        paths_to_leaves: PathsTo[LeafInpCrown],
         extra_policies: PathsTo[DictExtraPolicy],
     ) -> BranchInpCrown:
-        return InpCrownBuilder(extra_policies).build_crown(path_to_leaf)
+        return InpCrownBuilder(extra_policies).build_crown(paths_to_leaves)
 
     @static_provision_action
     def _provide_output_name_layout(self, mediator: Mediator, request: OutputNameLayoutRequest) -> OutputNameLayout:
@@ -74,7 +74,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
         self,
         mediator: Mediator,
         shape: OutputShape,
-        path_to_leaf: PathsTo[LeafOutCrown],
+        paths_to_leaves: PathsTo[LeafOutCrown],
         path_to_sieve: PathsTo[Sieve],
     ) -> BranchOutCrown:
-        return OutCrownBuilder(path_to_sieve).build_crown(path_to_leaf)
+        return OutCrownBuilder(path_to_sieve).build_crown(paths_to_leaves)

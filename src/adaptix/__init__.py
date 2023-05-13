@@ -17,7 +17,7 @@ from ._internal.facade import (
     validator,
 )
 from ._internal.model_tools.introspection import TypedDictAt38Warning
-from ._internal.provider.request_filtering import AnyMapped
+from ._internal.provider.name_layout.name_mapping import AnyMapped
 from ._internal.utils import Omittable, Omitted
 from .provider import (
     CannotProvide,

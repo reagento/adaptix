@@ -3,7 +3,7 @@ from inspect import isfunction
 from typing import Callable, ClassVar, Dict, Iterable, Type, TypeVar, final, overload
 
 from ..essential import CannotProvide, Mediator, Provider, Request
-from ..type_tools import is_subclass_soft, normalize_type, strip_tags
+from ..type_tools import get_all_type_hints, is_subclass_soft, normalize_type, strip_tags
 from ..utils import ClassDispatcher
 from .provider_wrapper import RequestClassDeterminedProvider
 
@@ -63,16 +63,17 @@ def _infer_rc(func) -> Type[Request]:
 
     params = list(signature.parameters.values())
 
-    if len(params) != 3:
+    if len(params) < 3:
         raise ValueError("Can not infer request class from callable")
 
     if params[2].annotation == signature.empty:
         raise ValueError("Can not infer request class from callable")
 
-    request_tp = strip_tags(normalize_type(params[2].annotation))
+    type_hints = get_all_type_hints(func)
+    request_tp = strip_tags(normalize_type(type_hints[params[2].name]))
 
     if is_subclass_soft(request_tp.origin, Request):
-        return params[2].annotation
+        return request_tp.source
 
     raise TypeError("Request parameter must be subclass of Request")
 

@@ -52,7 +52,7 @@ class BaseNoneCrown:
 
 @dataclass
 class BaseFieldCrown:
-    name: str
+    id: str
 
 
 BranchBaseCrown = Union[BaseDictCrown, BaseListCrown]

@@ -1,5 +1,5 @@
 from abc import ABC, ABCMeta, abstractmethod
-from typing import ClassVar, Iterable, Optional, Sequence, TypeVar
+from typing import ClassVar, Iterable, Sequence, TypeVar
 
 from ..common import VarTuple
 from ..essential import Mediator, Provider, Request
@@ -44,13 +44,12 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
         )
         cls._full_class_recipe = recipe_sum
 
-    def __init__(self, recipe: Optional[Iterable[Provider]]):
-        self._inc_instance_recipe = () if recipe is None else tuple(recipe)
+    def __init__(self, recipe: Iterable[Provider] = ()):
+        self._inc_instance_recipe = tuple(recipe)
         self._calculate_derived()
 
-    @abstractmethod
     def _get_config_recipe(self) -> VarTuple[Provider]:
-        ...
+        return ()
 
     def _get_full_recipe(self) -> Sequence[Provider]:
         return self._full_recipe

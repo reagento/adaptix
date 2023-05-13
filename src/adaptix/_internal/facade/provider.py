@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import re
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, TypeVar, Union
 
 from ..common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ..essential import Provider
@@ -16,13 +15,13 @@ from ..provider.model.loader_provider import InlinedInputExtractionMaker, ModelL
 from ..provider.model.shape_provider import PropertyAdder
 from ..provider.model.special_cases_optimization import as_is_stub
 from ..provider.name_layout.base import ExtraIn, ExtraOut
-from ..provider.name_layout.component import (
-    ExtraMoveAndPoliciesOverlay,
-    NameMapStack,
-    RawKey,
-    RawPath,
-    SievesOverlay,
-    StructureOverlay,
+from ..provider.name_layout.component import ExtraMoveAndPoliciesOverlay, SievesOverlay, StructureOverlay
+from ..provider.name_layout.name_mapping import (
+    AsListNameMappingProvider,
+    ConstNameMappingProvider,
+    DictNameMappingProvider,
+    FuncNameMappingProvider,
+    NameMap,
 )
 from ..provider.name_style import NameStyle
 from ..provider.overlay_schema import OverlayProvider
@@ -137,30 +136,34 @@ def constructor(pred: Pred, func: Callable) -> Provider:
     )
 
 
-NameMap = Mapping[Union[str, re.Pattern], Union[RawKey, Iterable[RawKey]]]
+def _add_as_list(providers: VarTuple[Provider], as_list: bool) -> VarTuple[Provider]:
+    if as_list:
+        return providers + (AsListNameMappingProvider(), )
+    return providers
 
 
-def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> Omittable[NameMapStack]:
+def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider]:
     if isinstance(name_map, Omitted):
-        return name_map
-
-    result: List[Tuple[re.Pattern, RawPath]] = []
-    for pattern, path in name_map.items():
-        path_tuple: VarTuple[RawKey]
-        if isinstance(path, (str, int)) or path is Ellipsis:
-            path_tuple = (path, )
-        else:
-            path_tuple = tuple(path)
-            if not path_tuple:
-                raise ValueError(f"Path for field {pattern!r} can not be empty iterable")
-
-        result.append(
-            (
-                pattern if isinstance(pattern, re.Pattern) else re.compile(pattern),
-                path_tuple
-            )
+        return ()
+    if isinstance(name_map, Mapping):
+        return (
+            DictNameMappingProvider(name_map),
         )
-
+    result: List[Provider] = []
+    for element in name_map:
+        if isinstance(element, Mapping):
+            result.append(
+                DictNameMappingProvider(element)
+            )
+        elif isinstance(element, tuple):
+            pred, value = element
+            result.append(
+                FuncNameMappingProvider(create_request_checker(pred), value)
+                if callable(value) else
+                ConstNameMappingProvider(create_request_checker(pred), value)
+            )
+        else:
+            result.append(element)
     return tuple(result)
 
 
@@ -188,6 +191,7 @@ def name_mapping(
     only: Omittable[Union[Iterable[Pred], Pred]] = Omitted(),
     # mutating names of presented fields
     map: Omittable[NameMap] = Omitted(),  # noqa: A002
+    as_list: bool = False,
     trim_trailing_underscore: Omittable[bool] = Omitted(),
     name_style: Omittable[Optional[NameStyle]] = Omitted(),
     # filtering of dumped data
@@ -221,7 +225,7 @@ def name_mapping(
                 StructureOverlay(
                     skip=_name_mapping_convert_preds(skip),
                     only=_name_mapping_convert_preds(only),
-                    map=_name_mapping_convert_map(map),
+                    map=_add_as_list(_name_mapping_convert_map(map), as_list),
                     trim_trailing_underscore=trim_trailing_underscore,
                     name_style=name_style,
                 ),

@@ -410,18 +410,3 @@ class RequestPattern:
 
 
 P = RequestPattern(stack=())
-
-
-@dataclass(frozen=True)
-class NameMappingRuleRequest(LocatedRequest):
-    is_mapped: bool
-
-
-class AnyMapped(RequestChecker):
-    """Selects only directly mapped fields.
-    It works only inside parameters of :func:`name_mapping`
-    """
-
-    def check_request(self, mediator: DirectMediator, request: Request) -> None:
-        if not isinstance(request, NameMappingRuleRequest) or not request.is_mapped:
-            raise CannotProvide
