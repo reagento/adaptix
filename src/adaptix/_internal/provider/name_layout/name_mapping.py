@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from typing import Callable, Iterable, Mapping, Optional, Tuple, Union
 
 from ...common import EllipsisType
-from ...essential import CannotProvide, Mediator, Provider, Request
+from ...essential import CannotProvide, Mediator, Provider
 from ...model_tools.definitions import BaseField, BaseShape, is_valid_field_id
 from ...struct_path import Path
 from ..request_cls import LocatedRequest
-from ..request_filtering import DirectMediator, Pred, ProviderWithRC, RequestChecker
+from ..request_filtering import Pred, ProviderWithRC, RequestChecker
 from ..static_provider import StaticProvider, static_provision_action
 from .base import Key
 
@@ -103,14 +103,4 @@ class AsListNameMappingProvider(StaticProvider):
 
 @dataclass(frozen=True)
 class NameMappingFilterRequest(LocatedRequest[None]):
-    is_mapped: bool
-
-
-class AnyMapped(RequestChecker):
-    """Selects only directly mapped fields.
-    It works only inside parameters of :func:`name_mapping`
-    """
-
-    def check_request(self, mediator: DirectMediator, request: Request) -> None:
-        if not isinstance(request, NameMappingFilterRequest) or not request.is_mapped:
-            raise CannotProvide
+    pass

@@ -17,7 +17,6 @@ from ._internal.facade import (
     validator,
 )
 from ._internal.model_tools.introspection import TypedDictAt38Warning
-from ._internal.provider.name_layout.name_mapping import AnyMapped
 from ._internal.utils import Omittable, Omitted
 from .provider import (
     CannotProvide,
@@ -56,7 +55,6 @@ __all__ = (
     'enum_by_name',
     'enum_by_value',
     'name_mapping',
-    'AnyMapped',
     'AdornedRetort',
     'FilledRetort',
     'Retort',

@@ -1,20 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import (
-    AbstractSet,
-    Callable,
-    DefaultDict,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
 
 from ...common import VarTuple
 from ...essential import CannotProvide, Mediator, Provider
@@ -82,7 +68,7 @@ AnyField = Union[InputField, OutputField]
 LeafCr = TypeVar('LeafCr', bound=LeafBaseCrown)
 FieldCr = TypeVar('FieldCr', bound=BaseFieldCrown)
 F = TypeVar('F', bound=BaseField)
-MappingTriplet = Tuple[F, Optional[Path], bool]
+FieldAndPath = Tuple[F, Optional[Path]]
 
 
 def location_to_string(request: LocatedRequest) -> str:
@@ -96,8 +82,8 @@ def location_to_string(request: LocatedRequest) -> str:
     return ''
 
 
-def apply_rc(mediator: Mediator, request_checker: RequestChecker, field: BaseField, is_mapped: bool) -> bool:
-    request = NameMappingFilterRequest(loc_map=field_to_loc_map(field), is_mapped=is_mapped)
+def apply_rc(mediator: Mediator, request_checker: RequestChecker, field: BaseField) -> bool:
+    request = NameMappingFilterRequest(loc_map=field_to_loc_map(field))
     try:
         request_checker.check_request(
             ExtraStackMediator(mediator, [request]),
@@ -126,7 +112,7 @@ class BuiltinStructureMaker(StructureMaker):
         request: BaseNameLayoutRequest,
         schema: StructureSchema,
         extra_move: Union[InpExtraMove, OutExtraMove],
-    ) -> Iterable[MappingTriplet]:
+    ) -> Iterable[FieldAndPath]:
         extra_targets = extra_move.fields if isinstance(extra_move, ExtraTargets) else ()
         map_provider = self._create_map_provider(schema)
         for field in request.shape.fields:
@@ -142,28 +128,26 @@ class BuiltinStructureMaker(StructureMaker):
                         loc_map=field_to_loc_map(field),
                     )
                 )
-                is_mapped = True
             except CannotProvide:
                 path = self._make_non_mapped_path(schema, field)
-                is_mapped = False
 
             if path is None:
-                yield field, path, is_mapped
+                yield field, None
             elif (
-                not apply_rc(mediator, schema.skip, field, is_mapped)
-                and apply_rc(mediator, schema.only, field, is_mapped)
+                not apply_rc(mediator, schema.skip, field)
+                and apply_rc(mediator, schema.only, field)
             ):
-                yield field, path, is_mapped
+                yield field, path
             else:
-                yield field, None, is_mapped
+                yield field, None
 
     def _validate_structure(
         self,
         request: LocatedRequest,
-        fields_to_paths: Iterable[MappingTriplet],
+        fields_to_paths: Iterable[FieldAndPath],
     ) -> None:
         paths_to_fields: DefaultDict[Path, List[AnyField]] = defaultdict(list)
-        for field, path, _is_mapped in fields_to_paths:
+        for field, path in fields_to_paths:
             if path is not None:
                 paths_to_fields[path].append(field)
 
@@ -179,7 +163,7 @@ class BuiltinStructureMaker(StructureMaker):
 
         optional_fields_at_list = [
             field.id
-            for field, path, is_mapped in fields_to_paths
+            for field, path in fields_to_paths
             if path is not None and field.is_optional and isinstance(path[-1], int)
         ]
         if optional_fields_at_list:
@@ -223,13 +207,13 @@ class BuiltinStructureMaker(StructureMaker):
     def _make_paths_to_leaves(
         self,
         request: LocatedRequest,
-        fields_to_paths: Iterable[MappingTriplet],
+        fields_to_paths: Iterable[FieldAndPath],
         field_crown: Callable[[str], FieldCr],
         gaps_filler: Callable[[Path], LeafCr],
     ) -> PathsTo[Union[FieldCr, LeafCr]]:
         paths_to_leaves: Dict[Path, Union[FieldCr, LeafCr]] = {
             path: field_crown(field.id)
-            for field, path, is_mapped in fields_to_paths
+            for field, path in fields_to_paths
             if path is not None
         }
 
@@ -253,14 +237,14 @@ class BuiltinStructureMaker(StructureMaker):
         mediator: Mediator,
         request: InputNameLayoutRequest,
         extra_move: InpExtraMove,
-    ) -> Tuple[PathsTo[LeafInpCrown], AbstractSet[str]]:
+    ) -> PathsTo[LeafInpCrown]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_map)
-        fields_to_paths: List[MappingTriplet[InputField]] = list(
+        fields_to_paths: List[FieldAndPath[InputField]] = list(
             self._map_fields(mediator, request, schema, extra_move)
         )
         skipped_required_fields = [
             field.id
-            for field, path, is_mapped in fields_to_paths
+            for field, path in fields_to_paths
             if path is None and field.is_required
         ]
         if skipped_required_fields:
@@ -268,24 +252,20 @@ class BuiltinStructureMaker(StructureMaker):
                 f"Required fields {skipped_required_fields} are skipped" + location_to_string(request)
             )
         self._validate_structure(request, fields_to_paths)
-        paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, InpFieldCrown, self._fill_input_gap)
-        mapped_fields = {field.id for field, path, is_mapped in fields_to_paths if is_mapped}
-        return paths_to_leaves, mapped_fields
+        return self._make_paths_to_leaves(request, fields_to_paths, InpFieldCrown, self._fill_input_gap)
 
     def make_out_structure(
         self,
         mediator: Mediator,
         request: OutputNameLayoutRequest,
         extra_move: OutExtraMove,
-    ) -> Tuple[PathsTo[LeafOutCrown], AbstractSet[str]]:
+    ) -> PathsTo[LeafOutCrown]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_map)
-        fields_to_paths: List[MappingTriplet[OutputField]] = list(
+        fields_to_paths: List[FieldAndPath[OutputField]] = list(
             self._map_fields(mediator, request, schema, extra_move)
         )
         self._validate_structure(request, fields_to_paths)
-        paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, OutFieldCrown, self._fill_output_gap)
-        mapped_fields = {field.id for field, path, is_mapped in fields_to_paths if is_mapped}
-        return paths_to_leaves, mapped_fields
+        return self._make_paths_to_leaves(request, fields_to_paths, OutFieldCrown, self._fill_output_gap)
 
 
 @dataclass
@@ -315,15 +295,13 @@ class BuiltinSievesMaker(SievesMaker):
         mediator: Mediator,
         request: OutputNameLayoutRequest,
         paths_to_leaves: PathsTo[LeafOutCrown],
-        mapped_fields: AbstractSet[str],
     ) -> PathsTo[Sieve]:
         schema = provide_schema(SievesOverlay, mediator, request.loc_map)
         result = {}
         for path, leaf in paths_to_leaves.items():
             if isinstance(leaf, OutFieldCrown):
                 field = request.shape.fields_dict[leaf.id]
-                is_mapped = field.id in mapped_fields
-                if field.default != NoDefault() and apply_rc(mediator, schema.omit_default, field, is_mapped):
+                if field.default != NoDefault() and apply_rc(mediator, schema.omit_default, field):
                     result[path] = self._create_sieve(field)
         return result
 
@@ -395,7 +373,6 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         mediator: Mediator,
         request: InputNameLayoutRequest,
         paths_to_leaves: PathsTo[LeafInpCrown],
-        mapped_fields: AbstractSet[str],
     ) -> PathsTo[DictExtraPolicy]:
         schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_map)
         policy = self._get_extra_policy(schema)

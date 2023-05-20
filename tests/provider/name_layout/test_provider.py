@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Union
 
 import pytest
 
-from adaptix import AnyMapped, NameStyle, Provider, bound, name_mapping
+from adaptix import NameStyle, Provider, bound, name_mapping
 from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
     Default,
@@ -332,69 +332,6 @@ def test_name_filtering():
         ),
         {
             'a': 'a',
-            'b': None,
-            'c': None,
-        },
-    )
-
-
-def test_any_mapped():
-    assert_flat_name_mapping(
-        name_mapping(
-            skip=[],
-            only=AnyMapped(),
-            map={},
-        ),
-        {
-            'a': None,
-            'b': None,
-            'c': None,
-        },
-    )
-    assert_flat_name_mapping(
-        name_mapping(
-            skip=[],
-            only=AnyMapped(),
-            map={'a': 'z'},
-        ),
-        {
-            'a': 'z',
-            'b': None,
-            'c': None,
-        },
-    )
-    assert_flat_name_mapping(
-        name_mapping(
-            skip=[],
-            only=P['a'] | AnyMapped(),
-            map={'b': 'y'}
-        ),
-        {
-            'a': 'a',
-            'b': 'y',
-            'c': None,
-        },
-    )
-    assert_flat_name_mapping(
-        name_mapping(
-            skip=['b'],
-            only=AnyMapped(),
-            map={'a': 'z', 'b': 'y'}
-        ),
-        {
-            'a': 'z',
-            'b': None,
-            'c': None,
-        },
-    )
-    assert_flat_name_mapping(
-        name_mapping(
-            skip=[],
-            only=AnyMapped() & ~P['b'],
-            map={'a': 'z', 'b': 'y'}
-        ),
-        {
-            'a': 'z',
             'b': None,
             'c': None,
         },

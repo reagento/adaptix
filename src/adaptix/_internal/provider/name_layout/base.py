@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import AbstractSet, Mapping, Sequence, Tuple, TypeVar, Union
+from typing import Mapping, Sequence, TypeVar, Union
 
 from adaptix._internal.provider.model.crown_definitions import (
     DictExtraPolicy,
@@ -56,7 +56,7 @@ class StructureMaker(ABC):
         mediator: Mediator,
         request: InputNameLayoutRequest,
         extra_move: InpExtraMove,
-    ) -> Tuple[PathsTo[LeafInpCrown], AbstractSet[str]]:
+    ) -> PathsTo[LeafInpCrown]:
         ...
 
     @abstractmethod
@@ -65,7 +65,7 @@ class StructureMaker(ABC):
         mediator: Mediator,
         request: OutputNameLayoutRequest,
         extra_move: OutExtraMove,
-    ) -> Tuple[PathsTo[LeafOutCrown], AbstractSet[str]]:
+    ) -> PathsTo[LeafOutCrown]:
         ...
 
 
@@ -76,7 +76,6 @@ class SievesMaker(ABC):
         mediator: Mediator,
         request: OutputNameLayoutRequest,
         paths_to_leaves: PathsTo[LeafOutCrown],
-        mapped_fields: AbstractSet[str],
     ) -> PathsTo[Sieve]:
         ...
 
@@ -88,6 +87,5 @@ class ExtraPoliciesMaker(ABC):
         mediator: Mediator,
         request: InputNameLayoutRequest,
         paths_to_leaves: PathsTo[LeafInpCrown],
-        mapped_fields: AbstractSet[str],
     ) -> PathsTo[DictExtraPolicy]:
         ...
