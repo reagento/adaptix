@@ -64,6 +64,12 @@ RULES = [
         error_msg='Use type_tools.get_all_type_hints() instead of typing.get_type_hints()',
         exclude=['src/adaptix/_internal/type_tools/basic_utils.py'],
     ),
+    ImportRule(
+        module='_decimal',
+        variable='Decimal',
+        error_msg='Import Decimal from public module "decimal"',
+        exclude=[],
+    ),
 ]
 
 
