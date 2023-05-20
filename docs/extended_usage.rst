@@ -24,7 +24,7 @@ it derives implicit parameters based on ``TypeVar`` properties.
      - ``Any``
    * - ``B = TypeVar('B', bound=Book)``
      - ``Book``
-   * - ``A = TypeVar('A', str, bytes)``
+   * - ``C = TypeVar('C', str, bytes)``
      - ``Union[str, bytes]``
 
 
@@ -71,7 +71,7 @@ Sometimes you have JSON with keys that leave much to be desired.
 For example, they might be invalid Python identifiers or just have unclear meanings.
 The simplest way to fix it is to use :paramref:`.name_mapping.map` to rename it.
 
-.. literalinclude:: examples/extended_usage/mutating_field_name.py
+.. literalinclude:: examples/extended_usage/field_renaming.py
 
 The keys of ``map`` refers to the field name at model definition,
 and values contain a new field name.
