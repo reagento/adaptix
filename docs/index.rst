@@ -8,6 +8,7 @@ Adaptix
    overview
    tutorial
    examples
+   extended_usage
    specific_types_behavior
    API Reference <api_reference/modules>
 

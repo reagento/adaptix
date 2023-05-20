@@ -6,8 +6,8 @@ from pytest import param, register_assert_rewrite
 
 from adaptix._internal.feature_requirement import HAS_PY_310
 
-DOCS_ROOT_PARENT = Path(__file__).parent.parent
-DOCS_EXAMPLES_ROOT = DOCS_ROOT_PARENT / 'docs' / 'examples'
+REPO_ROOT = Path(__file__).parent.parent
+DOCS_EXAMPLES_ROOT = REPO_ROOT / 'docs' / 'examples'
 EXCLUDE = ['__init__.py']
 GLOB = '*.py'
 
@@ -25,7 +25,7 @@ def pytest_generate_tests(metafunc):
         ["import_path", "case_id"],
         [
             param(
-                '.'.join((path_to_test.parent / path_to_test.stem).relative_to(DOCS_ROOT_PARENT).parts),
+                '.'.join((path_to_test.parent / path_to_test.stem).relative_to(REPO_ROOT).parts),
                 str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT)),
                 id=str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT)),
             )

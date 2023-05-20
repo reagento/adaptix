@@ -6,6 +6,8 @@ from typing import Callable
 
 
 class NameStyle(Enum):
+    """An enumeration of different naming conventions"""
+
     LOWER_SNAKE = "snake_case"
     CAMEL_SNAKE = "camel_Snake"
     PASCAL_SNAKE = "Pascal_Snake"

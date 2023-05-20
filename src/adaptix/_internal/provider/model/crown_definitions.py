@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generic, Mapping, MutableMapping, Sequence, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, Mapping, Sequence, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools.definitions import BaseShape, DefaultFactory, DefaultValue, InputShape, OutputShape
@@ -145,7 +145,7 @@ class ExtraTargets:
     fields: VarTuple[str]
 
 
-Saturator = Callable[[T, MutableMapping[str, Any]], None]
+Saturator = Callable[[T, Mapping[str, Any]], None]
 Extractor = Callable[[T], Mapping[str, Any]]
 
 

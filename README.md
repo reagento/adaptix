@@ -62,7 +62,7 @@ assert retort.dump(book) == data
 * Support [dozens](https://adaptix.readthedocs.io/en/latest/specific_types_behavior.html) of types,
   including different model kinds:
   ``@dataclass``, ``TypedDict``, ``NamedTuple``, and [``attrs``](https://www.attrs.org/en/stable/)
-* Working with cyclic-referenced structures (such as linked lists or trees).
+* Working with self-referenced data types (such as linked lists or trees).
 * Saving [path](https://adaptix.readthedocs.io/en/latest/tutorial.html#struct-path)
   where an exception is raised (including unexpected errors).
 * Easy [integration](https://adaptix.readthedocs.io/en/latest/tutorial.html#struct-path)

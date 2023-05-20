@@ -217,6 +217,18 @@ def name_mapping(
     trim trailing underscore and convert name style.
 
     The field must follow snake_case to could be converted.
+
+    :param only:
+    :param pred:
+    :param skip:
+    :param map:
+    :param as_list:
+    :param trim_trailing_underscore:
+    :param name_style:
+    :param omit_default:
+    :param extra_in:
+    :param extra_out:
+    :param chain:
     """
     return bound(
         pred,

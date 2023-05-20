@@ -10,7 +10,7 @@ Also, this example shows some other advanced concepts like
 adding support for custom types (`PhoneNumber` and `Money`)
 and provider chaining.
 
-Another important idea of this example is that there are no general retort objects.
+Another important concept behind this example is that there are no general retort objects.
 You can define a retort configured to work with a specific type
 and then includes this retort to another responsible for the entire API endpoints.
 
