@@ -100,7 +100,7 @@ class ExcPathRenderer:
 
 def default_path_processor(path):
     return [
-        element if isinstance(element, (int, str)) else str(element)
+        element if isinstance(element, (int, str)) else repr(element)
         for element in path
     ]
 

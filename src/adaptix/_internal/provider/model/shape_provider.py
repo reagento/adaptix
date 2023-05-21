@@ -115,15 +115,15 @@ class PropertyAdder(StaticProvider):
         return signature.return_annotation
 
 
-Fig = TypeVar('Fig', bound=Union[InputShape, OutputShape])
+ShapeT = TypeVar('ShapeT', bound=Union[InputShape, OutputShape])
 
 
-class ShapeGenericResolver(Generic[Fig]):
-    def __init__(self, mediator: Mediator, initial_request: LocatedRequest[Fig]):
+class ShapeGenericResolver(Generic[ShapeT]):
+    def __init__(self, mediator: Mediator, initial_request: LocatedRequest[ShapeT]):
         self._mediator = mediator
         self._initial_request = initial_request
 
-    def provide(self) -> Fig:
+    def provide(self) -> ShapeT:
         resolver = GenericResolver(self._get_members)
         members_storage = resolver.get_resolved_members(
             self._initial_request.loc_map[TypeHintLoc].type
@@ -138,7 +138,7 @@ class ShapeGenericResolver(Generic[Fig]):
             )
         )
 
-    def _get_members(self, tp) -> MembersStorage[str, Optional[Fig]]:
+    def _get_members(self, tp) -> MembersStorage[str, Optional[ShapeT]]:
         try:
             shape = self._mediator.provide(
                 replace(
@@ -159,7 +159,7 @@ class ShapeGenericResolver(Generic[Fig]):
         )
 
 
-def provide_generic_resolved_shape(mediator: Mediator, request: LocatedRequest[Fig]) -> Fig:
+def provide_generic_resolved_shape(mediator: Mediator, request: LocatedRequest[ShapeT]) -> ShapeT:
     if not request.loc_map.has(TypeHintLoc):
         return mediator.provide(request)
     return ShapeGenericResolver(mediator, request).provide()

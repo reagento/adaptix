@@ -188,10 +188,10 @@ def get_wild_extra_targets(shape: BaseShape, extra_move: Union[InpExtraMove, Out
     ]
 
 
-Fig = TypeVar('Fig', bound=BaseShape)
+ShapeT = TypeVar('ShapeT', bound=BaseShape)
 
 
-def strip_shape_fields(shape: Fig, skipped_fields: Collection[str]) -> Fig:
+def strip_shape_fields(shape: ShapeT, skipped_fields: Collection[str]) -> ShapeT:
     return replace(
         shape,
         fields=tuple(

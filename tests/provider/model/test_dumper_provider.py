@@ -50,7 +50,7 @@ def field(name: str, accessor: Accessor):
     )
 
 
-def figure(*fields: OutputField):
+def shape(*fields: OutputField):
     return OutputShape(fields=fields, overriden_types=frozenset(fld.id for fld in fields))
 
 
@@ -79,7 +79,7 @@ def dummy_items(**kwargs: Any):
 
 
 def make_dumper_getter(
-    fig: OutputShape,
+    shape: OutputShape,
     name_layout: OutputNameLayout,
     debug_path: bool,
     debug_ctx: DebugCtx,
@@ -87,7 +87,7 @@ def make_dumper_getter(
     def getter():
         retort = TestRetort(
             recipe=[
-                ValueProvider(OutputShapeRequest, fig),
+                ValueProvider(OutputShapeRequest, shape),
                 ValueProvider(OutputNameLayoutRequest, name_layout),
                 bound(int, ValueProvider(DumperRequest, int_dumper)),
                 ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
@@ -187,7 +187,7 @@ def acc_schema(request):
 @parametrize_bool('is_required_a', 'is_required_b')
 def test_flat(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required_b)),
         ),
@@ -270,7 +270,7 @@ def test_flat(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
 
 def test_wild_extra_targets(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', is_required=True)),
         ),
         name_layout=OutputNameLayout(
@@ -294,7 +294,7 @@ def test_wild_extra_targets(debug_ctx, debug_path, acc_schema):
 @parametrize_bool('is_required_a', 'is_required_b')
 def test_one_extra_target(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required=is_required_b)),
         ),
@@ -367,7 +367,7 @@ def test_several_extra_target(
     debug_ctx, debug_path, is_required_a, is_required_b, is_required_c, is_required_d, acc_schema
 ):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required=is_required_b)),
             field('c', acc_schema.accessor_maker('c', is_required=is_required_c)),
@@ -457,7 +457,7 @@ def my_extractor(obj):
 @parametrize_bool('is_required_a')
 def test_extra_extract(debug_ctx, debug_path, is_required_a, acc_schema):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required=True)),
         ),
@@ -511,7 +511,7 @@ def test_extra_extract(debug_ctx, debug_path, is_required_a, acc_schema):
 
 def test_optional_fields_at_list(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', is_required=True)),
             field('b', acc_schema.accessor_maker('b', is_required=False)),
         ),
@@ -549,7 +549,7 @@ class FlatMap:
 )
 def test_flat_mapping(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema, mp):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field(mp.a.field, acc_schema.accessor_maker('a', is_required_a)),
             field(mp.b.field, acc_schema.accessor_maker('b', is_required_b)),
         ),
@@ -632,7 +632,7 @@ def test_flat_mapping(debug_ctx, debug_path, is_required_a, is_required_b, acc_s
 
 def test_direct_list(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', True)),
             field('b', acc_schema.accessor_maker('b', True)),
         ),
@@ -681,7 +681,7 @@ def list_skipper(data):
 
 def test_structure_flattening(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', True)),
             field('b', acc_schema.accessor_maker('b', True)),
             field('c', acc_schema.accessor_maker('c', True)),
@@ -858,7 +858,7 @@ def test_structure_flattening(debug_ctx, debug_path, acc_schema):
 @parametrize_bool('is_required_a', 'is_required_b')
 def test_extra_target_at_crown(debug_ctx, debug_path, acc_schema, is_required_a, is_required_b):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required_b)),
         ),
@@ -880,7 +880,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, acc_schema, is_required_a,
     )
 
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', is_required_a)),
             field('b', acc_schema.accessor_maker('b', is_required_b)),
         ),
@@ -910,7 +910,7 @@ class SomeClass:
 @parametrize_bool('is_required_a')
 def test_none_crown_at_dict_crown(debug_ctx, debug_path, acc_schema, is_required_a):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', is_required_a)),
         ),
         name_layout=OutputNameLayout(
@@ -935,7 +935,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, acc_schema, is_required
 
 def test_none_crown_at_list_crown(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
-        fig=figure(
+        shape=shape(
             field('a', acc_schema.accessor_maker('a', True)),
         ),
         name_layout=OutputNameLayout(

@@ -70,7 +70,7 @@ def field(name: str, param_kind: ParamKind, is_required: bool):
     )
 
 
-def figure(*fields: InputField, kwargs: Optional[ParamKwargs] = None):
+def shape(*fields: InputField, kwargs: Optional[ParamKwargs] = None):
     return InputShape(
         fields=fields,
         constructor=gauge,
@@ -86,7 +86,7 @@ def int_loader(data):
 
 
 def make_loader_getter(
-    fig: InputShape,
+    shape: InputShape,
     name_layout: InputNameLayout,
     debug_path: bool,
     debug_ctx: DebugCtx,
@@ -94,7 +94,7 @@ def make_loader_getter(
     def getter():
         retort = TestRetort(
             recipe=[
-                ValueProvider(InputShapeRequest, fig),
+                ValueProvider(InputShapeRequest, shape),
                 ValueProvider(InputNameLayoutRequest, name_layout),
                 bound(int, ValueProvider(LoaderRequest, int_loader)),
                 ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
@@ -120,7 +120,7 @@ def extra_policy(request):
 
 def test_direct(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
@@ -178,7 +178,7 @@ def test_direct(debug_ctx, debug_path, extra_policy):
 @pytest.mark.parametrize('extra_policy', [ExtraSkip(), ExtraForbid()])
 def test_direct_list(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
@@ -224,7 +224,7 @@ def test_direct_list(debug_ctx, debug_path, extra_policy):
 
 def test_extra_forbid(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
@@ -258,7 +258,7 @@ def test_extra_forbid(debug_ctx, debug_path):
 
 def test_creation(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_ONLY, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
             field('c', ParamKind.POS_OR_KW, is_required=False),
@@ -288,7 +288,7 @@ def test_creation(debug_ctx, debug_path, extra_policy):
 
 def test_extra_kwargs(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_ONLY, is_required=True),
             kwargs=ParamKwargs(Any),
         ),
@@ -312,7 +312,7 @@ def test_extra_kwargs(debug_ctx, debug_path):
 
 def test_wild_extra_targets(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(
@@ -336,7 +336,7 @@ def test_wild_extra_targets(debug_ctx, debug_path):
 @parametrize_bool('is_required')
 def test_extra_targets_one(debug_ctx, debug_path, is_required):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=is_required),
         ),
@@ -363,7 +363,7 @@ def test_extra_targets_one(debug_ctx, debug_path, is_required):
 @parametrize_bool('is_required_first', 'is_required_second')
 def test_extra_targets_two(debug_ctx, debug_path, is_required_first, is_required_second):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=is_required_first),
             field('c', ParamKind.KW_ONLY, is_required=is_required_second),
@@ -392,7 +392,7 @@ def test_extra_targets_two(debug_ctx, debug_path, is_required_first, is_required
 
 def test_extra_saturate(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_ONLY, is_required=True),
         ),
         name_layout=InputNameLayout(
@@ -415,7 +415,7 @@ def test_extra_saturate(debug_ctx, debug_path):
 
 def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
             kwargs=ParamKwargs(Any),
@@ -450,7 +450,7 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
 
 def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
@@ -469,7 +469,7 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
     pytest.raises(ValueError, loader_getter).match(full_match_regex_str("Required fields ['b'] are skipped"))
 
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
@@ -490,7 +490,7 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
 
 def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=True),
         ),
@@ -512,7 +512,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
     )
 
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
         ),
@@ -536,7 +536,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
 
 def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
         ),
@@ -561,7 +561,7 @@ def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
 @parametrize_bool('is_required')
 def test_flat_mapping(debug_ctx, debug_path, is_required):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('b', ParamKind.POS_OR_KW, is_required=False),
             field('e', ParamKind.KW_ONLY, is_required=is_required),
@@ -592,7 +592,7 @@ def test_flat_mapping(debug_ctx, debug_path, is_required):
     assert loader({'m_a': 1, 'm_b': 2, 'b': 3}) == gauge(1, b=2, e={'b': 3})
 
 
-COMPLEX_STRUCTURE_FIGURE = figure(
+COMPLEX_STRUCTURE_SHAPE = shape(
     field('a', ParamKind.KW_ONLY, is_required=True),
     field('b', ParamKind.KW_ONLY, is_required=True),
     field('c', ParamKind.KW_ONLY, is_required=True),
@@ -637,7 +637,7 @@ COMPLEX_STRUCTURE_CROWN = InpDictCrown(
 
 def test_structure_flattening(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
-        fig=COMPLEX_STRUCTURE_FIGURE,
+        shape=COMPLEX_STRUCTURE_SHAPE,
         name_layout=InputNameLayout(
             crown=COMPLEX_STRUCTURE_CROWN,
             extra_move=ExtraTargets(('extra',)),
@@ -747,7 +747,7 @@ def _replace_value_by_path(data, path, new_value):
 )
 def test_error_path_at_complex_structure(debug_ctx, debug_path, error_path):
     loader_getter = make_loader_getter(
-        fig=COMPLEX_STRUCTURE_FIGURE,
+        shape=COMPLEX_STRUCTURE_SHAPE,
         name_layout=InputNameLayout(
             crown=COMPLEX_STRUCTURE_CROWN,
             extra_move=ExtraTargets(('extra',)),
@@ -781,7 +781,7 @@ def test_error_path_at_complex_structure(debug_ctx, debug_path, error_path):
 
 def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
             field('extra', ParamKind.KW_ONLY, is_required=True),
         ),
@@ -820,7 +820,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
 @pytest.mark.parametrize('extra_policy', [ExtraSkip(), ExtraForbid()])
 def test_none_crown_at_list_crown(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
-        fig=figure(
+        shape=shape(
             field('a', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(

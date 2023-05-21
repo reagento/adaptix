@@ -18,18 +18,18 @@ def assert_fields_types(tp: TypeHint, expected: Mapping[str, TypeHint]) -> None:
     retort = Retort()
     mediator = retort._create_mediator(request_stack=())
 
-    input_figure = provide_generic_resolved_shape(
+    input_shape = provide_generic_resolved_shape(
         mediator,
         InputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
     )
-    input_field_types = {field.id: field.type for field in input_figure.fields}
+    input_field_types = {field.id: field.type for field in input_shape.fields}
     assert input_field_types == expected
 
-    output_figure = provide_generic_resolved_shape(
+    output_shape = provide_generic_resolved_shape(
         mediator,
         OutputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
     )
-    output_field_types = {field.id: field.type for field in output_figure.fields}
+    output_field_types = {field.id: field.type for field in output_shape.fields}
     assert output_field_types == expected
 
 
