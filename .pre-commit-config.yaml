@@ -1,4 +1,16 @@
-files: '(src/.*)|(tests/.*)|(tests_helpers/.*)|(^examples/.*)|(docs/examples/tutorial/.*)|(benchmarks/.*)'
+files: |-
+  (?x)
+  ^(?:
+       (src/.*)
+      |(tests/.*)
+      |(tests_helpers/.*)
+      |(examples/.*)
+      |(docs/examples/.*)
+      |(benchmarks/.*)
+      |(scripts/.*)
+      |(tasks\.py)
+  )$
+
 default_stages:
   - commit
   - push

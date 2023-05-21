@@ -26,7 +26,11 @@ class DistributionVersionRequirement(Requirement):
         super().__init__()
 
     def _evaluate(self) -> bool:
-        current_version = Version(importlib.metadata.version(self.distribution))
+        try:
+            distribution = importlib.metadata.distribution(self.distribution)
+        except importlib.metadata.PackageNotFoundError:
+            return False
+        current_version = Version(distribution.version)
         return current_version >= self.required_version
 
 

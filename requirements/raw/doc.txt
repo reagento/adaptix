@@ -1,9 +1,9 @@
-sphinx==5.3.0
-sphinx-copybutton==0.5.1
-sphinx-design==0.3.0
+sphinx==6.2.1
+sphinx-copybutton==0.5.2
+sphinx-design==0.4.1
 sphinx-paramlinks==0.5.4
 myst-parser==1.0.0
 sphinxext-opengraph==0.8.2
 
 sphinxcontrib-apidoc==0.3.0
-furo==2023.3.27
+furo==2023.5.20

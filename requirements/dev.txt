@@ -14,14 +14,13 @@ annotated-types==0.4.0
     # via pydantic
 astpath[xpath]==0.9.0
     # via -r requirements/raw/lint.txt
-astroid==2.15.2
+astroid==2.15.5
     # via pylint
-attrs==22.2.0
+attrs==23.1.0
     # via
     #   -r requirements/raw/test_extra_new.txt
     #   cattrs
     #   flake8-bugbear
-    #   pytest
 babel==2.11.0
     # via sphinx
 bandit==1.7.5
@@ -52,10 +51,8 @@ colorama==0.4.6
     #   tox
 contourpy==1.0.7
     # via matplotlib
-coverage[toml]==7.2.3
-    # via
-    #   -r requirements/raw/dev.txt
-    #   pytest-cov
+coverage==7.2.5
+    # via -r requirements/raw/dev.txt
 cycler==0.11.0
     # via matplotlib
 dataclass-factory==2.16
@@ -64,7 +61,7 @@ dill==0.3.6
     # via pylint
 distlib==0.3.6
     # via virtualenv
-dlint==0.14.0
+dlint==0.14.1
     # via -r requirements/raw/lint.txt
 docutils==0.18.1
     # via
@@ -89,13 +86,13 @@ flake8==6.0.0
     #   flake8-mutable
     #   flake8-noqa
     #   flake8-polyfill
-flake8-bugbear==23.3.23
+flake8-bugbear==23.5.9
     # via -r requirements/raw/lint.txt
 flake8-builtins==2.1.0
     # via -r requirements/raw/lint.txt
 flake8-cognitive-complexity==0.1.0
     # via -r requirements/raw/lint.txt
-flake8-comprehensions==3.11.1
+flake8-comprehensions==3.12.0
     # via -r requirements/raw/lint.txt
 flake8-debugger==4.1.2
     # via -r requirements/raw/lint.txt
@@ -107,7 +104,7 @@ flake8-polyfill==1.0.2
     # via -r requirements/raw/lint.txt
 fonttools==4.38.0
     # via matplotlib
-furo==2023.3.27
+furo==2023.5.20
     # via -r requirements/raw/doc.txt
 gitdb==4.0.10
     # via gitpython
@@ -123,6 +120,8 @@ imagesize==1.4.1
     # via sphinx
 iniconfig==2.0.0
     # via pytest
+invoke==2.1.2
+    # via -r requirements/raw/dev.txt
 isort==5.12.0
     # via pylint
 jinja2==3.1.2
@@ -162,7 +161,7 @@ mdurl==0.1.2
     # via markdown-it-py
 msgspec==0.13.1
     # via -r requirements/raw/bench.txt
-mypy==1.2.0
+mypy==1.3.0
     # via -r requirements/raw/lint.txt
 mypy-extensions==1.0.0
     # via mypy
@@ -174,7 +173,7 @@ numpy==1.24.2
     # via
     #   contourpy
     #   matplotlib
-packaging==23.0
+packaging==23.1
     # via
     #   -r requirements/raw/test_extra_none.txt
     #   build
@@ -188,7 +187,7 @@ pbr==5.11.1
     # via
     #   sphinxcontrib-apidoc
     #   stevedore
-phonenumberslite==8.13.8
+phonenumberslite==8.13.11
     # via -r requirements/raw/test_extra_none.txt
 pillow==9.4.0
     # via matplotlib
@@ -203,7 +202,7 @@ pluggy==1.0.0
     # via
     #   pytest
     #   tox
-pre-commit==3.2.2
+pre-commit==3.3.2
     # via -r requirements/raw/lint.txt
 psutil==5.9.4
     # via -r requirements/raw/bench.txt
@@ -222,7 +221,7 @@ pygments==2.14.0
     #   furo
     #   rich
     #   sphinx
-pylint==2.17.2
+pylint==2.17.4
     # via -r requirements/raw/lint.txt
 pyparsing==3.0.9
     # via matplotlib
@@ -232,13 +231,10 @@ pyproject-api==1.5.1
     # via tox
 pyproject-hooks==1.0.0
     # via build
-pytest==7.2.2
+pytest==7.3.1
     # via
     #   -r requirements/raw/bench.txt
     #   -r requirements/raw/test_extra_none.txt
-    #   pytest-cov
-pytest-cov==4.0.0
-    # via -r requirements/raw/test_extra_none.txt
 python-dateutil==2.8.2
     # via matplotlib
 python-json-logger==2.0.7
@@ -268,7 +264,7 @@ snowballstemmer==2.2.0
     # via sphinx
 soupsieve==2.4
     # via beautifulsoup4
-sphinx==5.3.0
+sphinx==6.2.1
     # via
     #   -r requirements/raw/doc.txt
     #   furo
@@ -280,9 +276,9 @@ sphinx==5.3.0
     #   sphinxext-opengraph
 sphinx-basic-ng==1.0.0b1
     # via furo
-sphinx-copybutton==0.5.1
+sphinx-copybutton==0.5.2
     # via -r requirements/raw/doc.txt
-sphinx-design==0.3.0
+sphinx-design==0.4.1
     # via -r requirements/raw/doc.txt
 sphinx-paramlinks==0.5.4
     # via -r requirements/raw/doc.txt
@@ -302,7 +298,7 @@ sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
 sphinxext-opengraph==0.8.2
     # via -r requirements/raw/doc.txt
-sqlalchemy==2.0.10
+sqlalchemy==2.0.15
     # via -r requirements/raw/test_extra_none.txt
 stevedore==5.0.0
     # via bandit
@@ -311,7 +307,6 @@ toml==0.10.2
 tomli==2.0.1
     # via
     #   build
-    #   coverage
     #   mypy
     #   pylint
     #   pyproject-api
@@ -320,7 +315,7 @@ tomli==2.0.1
     #   tox
 tomlkit==0.11.6
     # via pylint
-tox==4.4.11
+tox==4.5.1
     # via -r requirements/raw/dev.txt
 typing-extensions==4.5.0
     # via
@@ -347,11 +342,11 @@ wrapt==1.14.1
     # via astroid
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==23.0.1
+pip==23.1.2
     # via
     #   -r requirements/raw/pre.txt
     #   pip-tools
-setuptools==67.6.1
+setuptools==67.8.0
     # via
     #   -r requirements/raw/dev.txt
     #   cognitive-complexity

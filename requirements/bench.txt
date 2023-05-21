@@ -9,9 +9,7 @@
 annotated-types==0.4.0
     # via pydantic
 attrs==22.2.0
-    # via
-    #   cattrs
-    #   pytest
+    # via cattrs
 cattrs==22.2.0
     # via -r requirements/raw/bench.txt
 contourpy==1.0.7
@@ -61,7 +59,7 @@ pyparsing==3.0.9
     # via matplotlib
 pyperf==2.5.0
     # via -r requirements/raw/bench.txt
-pytest==7.2.2
+pytest==7.3.1
     # via -r requirements/raw/bench.txt
 python-dateutil==2.8.2
     # via matplotlib

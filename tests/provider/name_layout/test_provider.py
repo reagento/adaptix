@@ -7,6 +7,8 @@ import pytest
 from adaptix import NameStyle, Provider, bound, name_mapping
 from adaptix._internal.model_tools.definitions import (
     AttrAccessor,
+    BaseField,
+    BaseShape,
     Default,
     DefaultFactory,
     DefaultValue,
@@ -169,7 +171,7 @@ DEFAULT_NAME_MAPPING = name_mapping(
     map={},
     trim_trailing_underscore=True,
     name_style=None,
-    omit_default=True,
+    omit_default=False,
     extra_in=ExtraSkip(),
     extra_out=ExtraSkip(),
 )
@@ -201,9 +203,7 @@ def test_default_parameters():
                     'b': OutFieldCrown('b_'),
                     'c': OutFieldCrown('c_'),
                 },
-                sieves={
-                    'c': type_of(FunctionType),
-                },
+                sieves={},
             ),
             extra_move=None,
         ),
@@ -338,6 +338,197 @@ def test_name_filtering():
     )
 
 
+def test_as_list():
+    assert make_layouts(
+        TestField('a'),
+        TestField('b'),
+        name_mapping(
+            map={},
+            as_list=True,
+        ),
+        DEFAULT_NAME_MAPPING,
+    ) == Layouts(
+        inp=InputNameLayout(
+            crown=InpListCrown(
+                map=[
+                    InpFieldCrown(id='a'),
+                    InpFieldCrown(id='b'),
+                ],
+                extra_policy=ExtraSkip()
+            ),
+            extra_move=None,
+        ),
+        out=OutputNameLayout(
+            crown=OutListCrown(
+                map=[
+                    OutFieldCrown(id='a'),
+                    OutFieldCrown(id='b')
+                ]
+            ),
+            extra_move=None
+        )
+    )
+
+    assert make_layouts(
+        TestField('a'),
+        TestField('b'),
+        TestField('c'),
+        name_mapping(
+            map={
+                'a': 1,
+                'b': 0,
+            },
+            as_list=True,
+        ),
+        DEFAULT_NAME_MAPPING,
+    ) == Layouts(
+        inp=InputNameLayout(
+            crown=InpListCrown(
+                map=[
+                    InpFieldCrown(id='b'),
+                    InpFieldCrown(id='a'),
+                    InpFieldCrown(id='c'),
+                ],
+                extra_policy=ExtraSkip()
+            ),
+            extra_move=None,
+        ),
+        out=OutputNameLayout(
+            crown=OutListCrown(
+                map=[
+                    OutFieldCrown(id='b'),
+                    OutFieldCrown(id='a'),
+                    OutFieldCrown(id='c')
+                ]
+            ),
+            extra_move=None
+        )
+    )
+
+
+def test_map_via_pred():
+    assert make_layouts(
+        TestField('a'),
+        TestField('b'),
+        TestField('c'),
+        name_mapping(
+            map=[
+                ('a|b', ('foo', ...))
+            ],
+        ),
+        DEFAULT_NAME_MAPPING,
+    ) == Layouts(
+        inp=InputNameLayout(
+            crown=InpDictCrown(
+                map={
+                    'foo': InpDictCrown(
+                        map={
+                            'a': InpFieldCrown('a'),
+                            'b': InpFieldCrown('b'),
+                        },
+                        extra_policy=ExtraSkip(),
+                    ),
+                    'c': InpFieldCrown('c'),
+                },
+                extra_policy=ExtraSkip(),
+            ),
+            extra_move=None,
+        ),
+        out=OutputNameLayout(
+            crown=OutDictCrown(
+                map={
+                    'foo': OutDictCrown(
+                        map={
+                            'a': OutFieldCrown('a'),
+                            'b': OutFieldCrown('b'),
+                        },
+                        sieves={},
+                    ),
+                    'c': OutFieldCrown('c'),
+                },
+                sieves={},
+            ),
+            extra_move=None
+        )
+    )
+
+
+def my_func_mapper(shape: BaseShape, field: BaseField):
+    return '$' + field.id
+
+
+def test_map_via_func():
+    assert make_layouts(
+        TestField('a'),
+        TestField('b'),
+        TestField('c'),
+        name_mapping(
+            map=[
+                ('a|b', my_func_mapper)
+            ],
+        ),
+        DEFAULT_NAME_MAPPING,
+    ) == Layouts(
+        inp=InputNameLayout(
+            crown=InpDictCrown(
+                map={
+                    '$a': InpFieldCrown('a'),
+                    '$b': InpFieldCrown('b'),
+                    'c': InpFieldCrown('c'),
+                },
+                extra_policy=ExtraSkip(),
+            ),
+            extra_move=None,
+        ),
+        out=OutputNameLayout(
+            crown=OutDictCrown(
+                map={
+                    '$a': OutFieldCrown('a'),
+                    '$b': OutFieldCrown('b'),
+                    'c': OutFieldCrown('c'),
+                },
+                sieves={},
+            ),
+            extra_move=None
+        )
+    )
+
+
+def test_map_to_none():
+    assert make_layouts(
+        TestField('a', is_required=False),
+        TestField('b', is_required=False),
+        TestField('c', is_required=False),
+        name_mapping(
+            map={
+                'b': None,
+            },
+        ),
+        DEFAULT_NAME_MAPPING,
+    ) == Layouts(
+        inp=InputNameLayout(
+            crown=InpDictCrown(
+                map={
+                    'a': InpFieldCrown('a'),
+                    'c': InpFieldCrown('c'),
+                },
+                extra_policy=ExtraSkip(),
+            ),
+            extra_move=None,
+        ),
+        out=OutputNameLayout(
+            crown=OutDictCrown(
+                map={
+                    'a': OutFieldCrown('a'),
+                    'c': OutFieldCrown('c'),
+                },
+                sieves={},
+            ),
+            extra_move=None
+        )
+    )
+
+
 def test_gaps_filling():
     assert make_layouts(
         TestField('a'),
@@ -457,6 +648,7 @@ def test_omit_default():
         TestField('a_', default=NoDefault()),
         TestField('b_', default=DefaultValue(0)),
         TestField('c_', default=DefaultFactory(list)),
+        name_mapping(omit_default=True),
         DEFAULT_NAME_MAPPING,
     )
     assert layouts == Layouts(

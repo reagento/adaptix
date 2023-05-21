@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from adaptix import Retort, name_mapping, NameStyle
+
+from adaptix import NameStyle, Retort, name_mapping
 
 
 @dataclass

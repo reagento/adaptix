@@ -20,9 +20,7 @@ test:
 
 .PHONY: cov
 cov:
-	@coverage erase
-	@tox -e $$(tox -l | grep -e '^py' | grep -v 'bench' | sort -r | tr '\n' ',') -p auto -- --cov adaptix --cov-append
-	@coverage xml
+	@inv cov
 
 
 .PHONY: setup
@@ -36,10 +34,7 @@ setup:
 
 .PHONY: deps-compile
 deps-compile:
-	@for file in requirements/raw/*.txt; do pip-compile "$${file}" -o requirements/$$(basename "$$file") -q --resolver=backtracking --allow-unsafe; done
-	@# pip-compile saves local packages by absolute path, fix it
-	@for file in requirements/*.txt; do sed -i -E "s/-e file:.+\/tests_helpers/-e .\/tests_helpers/" "$${file}"; done
-	@for file in requirements/*.txt; do sed -i -E "s/-e file:.+\/benchmarks/-e .\/benchmarks/" "$${file}"; done
+	@inv deps-compile
 
 
 .PHONY: venv-sync

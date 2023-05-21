@@ -24,7 +24,7 @@ docutils==0.18.1
     #   sphinx
 fonttools==4.39.3
     # via matplotlib
-furo==2023.3.27
+furo==2023.5.20
     # via -r requirements/raw/doc.txt
 idna==3.4
     # via requests
@@ -82,7 +82,7 @@ snowballstemmer==2.2.0
     # via sphinx
 soupsieve==2.4
     # via beautifulsoup4
-sphinx==5.3.0
+sphinx==6.2.1
     # via
     #   -r requirements/raw/doc.txt
     #   furo
@@ -94,9 +94,9 @@ sphinx==5.3.0
     #   sphinxext-opengraph
 sphinx-basic-ng==1.0.0b1
     # via furo
-sphinx-copybutton==0.5.1
+sphinx-copybutton==0.5.2
     # via -r requirements/raw/doc.txt
-sphinx-design==0.3.0
+sphinx-design==0.4.1
     # via -r requirements/raw/doc.txt
 sphinx-paramlinks==0.5.4
     # via -r requirements/raw/doc.txt

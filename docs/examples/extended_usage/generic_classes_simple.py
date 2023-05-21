@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Optional
+from typing import Generic, Optional, TypeVar
 
 from adaptix import Retort
 

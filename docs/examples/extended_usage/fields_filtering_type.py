@@ -1,7 +1,7 @@
 # mypy: disable-error-code="arg-type"
 from dataclasses import dataclass
 
-from adaptix import Retort, name_mapping, loader, dumper
+from adaptix import Retort, dumper, loader, name_mapping
 
 
 class HiddenStr(str):
