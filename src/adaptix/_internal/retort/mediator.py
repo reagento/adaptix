@@ -63,6 +63,8 @@ class BuiltinMediator(Mediator):
 
     def provide(self, request: Request[T], *, extra_stack: Sequence[Request[Any]] = ()) -> T:
         if request in self._request_stack:  # maybe we need to lookup in set for large request_stack
+            if request in self.recursion_stubs:
+                return self.recursion_stubs[request]
             try:
                 resolver = self._get_resolver(request)
             except KeyError:
