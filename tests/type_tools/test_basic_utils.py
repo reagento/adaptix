@@ -1,3 +1,4 @@
+import typing
 from collections import namedtuple
 from typing import (
     Any,
@@ -14,9 +15,17 @@ from typing import (
     runtime_checkable,
 )
 
-from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
+import pytest
+
+from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_STD_CLASSES_GENERICS
 from adaptix._internal.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
-from adaptix._internal.type_tools.basic_utils import get_type_vars_of_parametrized, is_parametrized
+from adaptix._internal.type_tools.basic_utils import (
+    get_type_vars_of_parametrized,
+    is_bare_generic,
+    is_generic,
+    is_parametrized,
+)
+from tests_helpers import if_list
 
 
 class NTParent(NamedTuple):
@@ -138,6 +147,14 @@ def test_is_user_defined_generic():
     assert not is_user_defined_generic(Tuple[V])
     assert not is_user_defined_generic(Tuple[int])
 
+    assert not is_user_defined_generic(Generic)
+    assert is_user_defined_generic(Generic[V])
+    # Generic[V][int] raises error
+
+    assert not is_user_defined_generic(Protocol)
+    assert is_user_defined_generic(Protocol[V])
+    # Protocol[V][int] raises error
+
 
 class Proto(Protocol[T]):
     pass
@@ -194,6 +211,72 @@ def test_is_parametrized():
     # do not test all special cases of typing like Annotated, rely on get_args
 
 
+@pytest.mark.parametrize(
+    ['tp', 'result'],
+    [
+        (list, bool(HAS_STD_CLASSES_GENERICS)),
+        (List, True),
+        (Dict, True),
+        (List[T], True),
+        (List[int], False),
+    ] + if_list(
+        HAS_STD_CLASSES_GENERICS,
+        lambda: [
+            (list[T], True),
+            (list[int], False),
+        ],
+    ) + [
+        (Gen, True),
+        (Gen[T], True),
+        (Gen[int], False),
+    ] + if_list(
+        HAS_ANNOTATED,
+        lambda: [
+            (typing.Annotated, False),
+            (typing.Annotated[int, 'meta'], False),
+            (typing.Annotated[T, 'meta'], True),
+            (typing.Annotated[list, 'meta'], True),
+            (typing.Annotated[list[T], 'meta'], True),
+        ],
+    ),
+)
+def test_is_generic(tp, result):
+    assert is_generic(tp) == result
+
+
+@pytest.mark.parametrize(
+    ['tp', 'result'],
+    [
+        (list, bool(HAS_STD_CLASSES_GENERICS)),
+        (List, True),
+        (Dict, True),
+        (List[T], False),
+        (List[int], False),
+    ] + if_list(
+        HAS_STD_CLASSES_GENERICS,
+        lambda: [
+            (list[T], False),
+            (list[int], False),
+        ],
+    ) + [
+        (Gen, True),
+        (Gen[T], False),
+        (Gen[int], False),
+    ] + if_list(
+        HAS_ANNOTATED,
+        lambda: [
+            (typing.Annotated, False),
+            (typing.Annotated[int, 'meta'], False),
+            (typing.Annotated[T, 'meta'], False),
+            (typing.Annotated[list, 'meta'], False),
+            (typing.Annotated[list[T], 'meta'], False),
+        ],
+    ),
+)
+def test_is_bare_generic(tp, result):
+    assert is_bare_generic(tp) == result
+
+
 def test_get_type_vars_of_parametrized():
     assert get_type_vars_of_parametrized(Gen[T]) == (T,)
     assert get_type_vars_of_parametrized(Gen[str]) == ()
@@ -245,3 +328,16 @@ def test_get_type_vars_of_parametrized():
     assert get_type_vars_of_parametrized(Generic) == ()
     assert get_type_vars_of_parametrized(Generic[T]) == (T, )
     assert get_type_vars_of_parametrized(Generic[T, V]) == (T, V)
+
+    if HAS_ANNOTATED:
+        assert get_type_vars_of_parametrized(typing.Annotated[int, 'meta']) == ()
+
+        assert get_type_vars_of_parametrized(typing.Annotated[list, 'meta']) == ()
+        assert get_type_vars_of_parametrized(typing.Annotated[list[int], 'meta']) == ()
+        assert get_type_vars_of_parametrized(typing.Annotated[list[T], 'meta']) == (T, )
+
+        assert get_type_vars_of_parametrized(typing.Annotated[Gen, 'meta']) == ()
+        assert get_type_vars_of_parametrized(typing.Annotated[Gen[T], 'meta']) == (T, )
+
+        assert get_type_vars_of_parametrized(typing.Annotated[Proto, 'meta']) == ()
+        assert get_type_vars_of_parametrized(typing.Annotated[Proto[T], 'meta']) == (T, )

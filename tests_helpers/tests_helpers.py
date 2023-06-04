@@ -8,12 +8,12 @@ from typing import Any, Callable, Optional, Type, TypeVar, Union
 import pytest
 from packaging.version import Version
 from sqlalchemy import Engine, create_engine
-from sqlalchemy.dialects.sqlite.pysqlite import SQLiteDialect_pysqlite
 
 from adaptix import AdornedRetort, CannotProvide, Mediator, Provider, Request
 from adaptix._internal.common import EllipsisType
 from adaptix._internal.feature_requirement import PythonImplementationRequirement, PythonVersionRequirement, Requirement
 from adaptix._internal.provider.model.basic_gen import CodeGenAccumulator
+from adaptix._internal.type_tools import is_parametrized
 from adaptix.struct_path import get_path
 
 T = TypeVar("T")
@@ -114,6 +114,10 @@ def parametrize_bool(param: str, *params: str):
     return decorator
 
 
+def if_list(flag: object, factory: Callable[[], list]) -> list:
+    return factory() if flag else []
+
+
 @dataclass
 class DebugCtx:
     accum: CodeGenAccumulator
@@ -171,6 +175,8 @@ def rollback_object_state(obj):
 
 
 def pretty_typehint_test_id(config, val, argname):
+    if is_parametrized(val):
+        return str(val)
     try:
         return val.__name__
     except AttributeError:

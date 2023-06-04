@@ -51,6 +51,7 @@ BUILDDIR      = docs-build
 .PHONY: doc
 doc:
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+	@echo "Open file://`pwd`/$(BUILDDIR)/html/index.html"
 
 .PHONY: doc-clean
 doc-clean:

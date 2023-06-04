@@ -1,21 +1,28 @@
+import collections.abc
+import typing
 from contextlib import nullcontext
 from dataclasses import dataclass
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, Generic, Iterable, List, Type, TypeVar, Union, overload
 
 import pytest
 
 from adaptix import CannotProvide, Chain, P, Request, Retort, loader
 from adaptix._internal.common import TypeHint
+from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import NoDefault
 from adaptix._internal.provider.request_cls import FieldLoc, GenericParamLoc, LocatedRequest, LocMap, TypeHintLoc
 from adaptix._internal.provider.request_filtering import (
     AnyRequestChecker,
+    ExactOriginRC,
+    ExactTypeRC,
+    OriginSubclassRC,
     RequestPattern,
     StackEndRC,
     create_request_checker,
 )
 from adaptix._internal.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
-from tests_helpers import full_match_regex_str
+from adaptix._internal.type_tools import normalize_type
+from tests_helpers import full_match_regex_str, if_list
 
 
 def create_mediator(*elements: Request[Any]):
@@ -266,3 +273,125 @@ def test_request_pattern_generic_arg_dict_override():
 
     loaded_dict = retort.load({10: 20}, Dict[int, int])
     assert loaded_dict == {11: 22}
+
+T = TypeVar('T')
+
+
+@overload
+def param_result(value: Any, *, result: Any):
+    ...
+
+
+@overload
+def param_result(value: Any, *, raises: Type[Exception]):
+    ...
+
+
+@overload
+def param_result(value: Any, *, raises: Type[Exception], exact_match: str):
+    ...
+
+
+@overload
+def param_result(value: Any, *, raises: Type[Exception], match: str):
+    ...
+
+
+def param_result(value, *, result=None, raises=None, exact_match=None, match=None):
+    if raises is not None:
+        context = pytest.raises(
+            raises, match=full_match_regex_str(exact_match) if exact_match is not None else match
+        )
+    else:
+        context = None
+    return pytest.param(value, result, context, id=str(value))
+
+
+class MyGeneric(Generic[T]):
+    pass
+
+
+@pytest.mark.parametrize(
+    ['value', 'result', 'context'],
+    [
+        param_result(
+            int,
+            result=ExactOriginRC(int),
+        ),
+        param_result(
+            List,
+            result=ExactOriginRC(list),
+        ),
+        param_result(
+            dict,
+            result=ExactOriginRC(dict),
+        ),
+        param_result(
+            Iterable,
+            result=OriginSubclassRC(collections.abc.Iterable),
+        ),
+        param_result(
+            Iterable[int],
+            result=ExactTypeRC(normalize_type(Iterable[int])),
+        ),
+        param_result(
+            List[int],
+            result=ExactTypeRC(normalize_type(List[int])),
+        ),
+        param_result(
+            List[T],
+            raises=ValueError,
+            exact_match='Can not create RequestChecker from typing.List[~T] generic alias (parametrized generic)',
+        ),
+        param_result(
+            Union,
+            result=ExactOriginRC(Union)
+        ),
+    ] + if_list(
+        HAS_ANNOTATED,
+        lambda: [
+            param_result(
+                typing.Annotated,
+                result=ExactOriginRC(typing.Annotated)
+            ),
+            param_result(
+                typing.Annotated[int, 'meta'],
+                result=ExactTypeRC(normalize_type(typing.Annotated[int, 'meta']))
+            ),
+            param_result(
+                typing.Annotated[List[int], 'meta'],
+                result=ExactTypeRC(normalize_type(typing.Annotated[list[int], 'meta']))
+            ),
+            param_result(
+                typing.Annotated[list, 'meta'],
+                raises=ValueError,
+                exact_match=(
+                    "Can not create RequestChecker from"
+                    " typing.Annotated[list, 'meta'] generic alias (parametrized generic)"
+                ),
+            ),
+            param_result(
+                typing.Annotated[List[T], 'meta'],
+                raises=ValueError,
+                exact_match=(
+                    "Can not create RequestChecker from"
+                    " typing.Annotated[typing.List[~T], 'meta'] generic alias (parametrized generic)"
+                ),
+            ),
+            param_result(
+                typing.Annotated[Dict[int, T], 'meta'],
+                raises=ValueError,
+                exact_match=(
+                    "Can not create RequestChecker from"
+                    " typing.Annotated[typing.Dict[int, ~T], 'meta'] generic alias (parametrized generic)"
+                ),
+            ),
+        ]
+    ),
+)
+def test_create_request_checker(value, result, context):
+    if context is None:
+        assert create_request_checker(value) == result
+    else:
+        with context:
+            create_request_checker(value)

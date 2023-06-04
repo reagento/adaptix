@@ -1,4 +1,5 @@
 import types
+import typing
 from typing import (
     Any,
     Dict,
@@ -16,6 +17,7 @@ from typing import (
 
 from ..common import TypeHint, VarTuple
 from ..feature_requirement import HAS_ANNOTATED, HAS_PY_39, HAS_STD_CLASSES_GENERICS
+from .constants import BUILTIN_ORIGIN_TO_TYPEVARS
 
 TYPED_DICT_MCS = type(types.new_class("_TypedDictSample", (TypedDict,), {}))
 
@@ -61,18 +63,6 @@ def is_named_tuple_class(tp) -> bool:
     )
 
 
-def get_type_vars(tp: TypeHint) -> VarTuple[TypeVar]:
-    return getattr(tp, '__parameters__', ())
-
-
-def is_user_defined_generic(tp) -> bool:
-    return bool(get_type_vars(tp)) and is_subclass_soft(strip_alias(tp), Generic)
-
-
-def is_generic(tp) -> bool:
-    return bool(get_type_vars(tp))
-
-
 def is_protocol(tp):
     if not isinstance(tp, type):
         return False
@@ -93,6 +83,42 @@ else:
 
 def is_parametrized(tp: TypeHint) -> bool:
     return bool(get_args(tp))
+
+
+def get_type_vars(tp: TypeHint) -> VarTuple[TypeVar]:
+    return getattr(tp, '__parameters__', ())
+
+
+def is_user_defined_generic(tp) -> bool:
+    return bool(get_type_vars(tp)) and is_subclass_soft(strip_alias(tp), Generic)
+
+
+def is_generic(tp) -> bool:
+    return (
+        bool(get_type_vars(tp))
+        or (
+            strip_alias(tp) in BUILTIN_ORIGIN_TO_TYPEVARS
+            and not is_parametrized(tp)
+            and (
+                bool(HAS_STD_CLASSES_GENERICS) or not isinstance(tp, type)
+            )
+        )
+        or (
+            bool(HAS_ANNOTATED)
+            and get_origin(tp) == typing.Annotated
+            and is_generic(tp.__origin__)
+        )
+    )
+
+
+def is_bare_generic(tp) -> bool:
+    return (
+        (
+            is_generic(strip_alias(tp))
+            or is_generic(tp)  # for 3.8 and List (list is not generic)
+        )
+        and not is_parametrized(tp)
+    )
 
 
 def get_type_vars_of_parametrized(tp: TypeHint) -> VarTuple[TypeVar]:

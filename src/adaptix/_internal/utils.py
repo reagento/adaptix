@@ -1,3 +1,4 @@
+import itertools
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from copy import copy
@@ -22,6 +23,8 @@ from typing import (
     ValuesView,
     final,
 )
+
+from adaptix._internal.feature_requirement import HAS_PY_310
 
 C = TypeVar('C', bound='Cloneable')
 
@@ -100,17 +103,19 @@ class SingletonMeta(type):
 
 T = TypeVar('T')
 
+if HAS_PY_310:
+    pairs = itertools.pairwise  # pylint: disable=invalid-name
+else:
+    def pairs(iterable: Iterable[T]) -> Iterable[Tuple[T, T]]:  # type: ignore[no-redef]
+        it = iter(iterable)
+        try:
+            past = next(it)
+        except StopIteration:
+            return
 
-def pairs(iterable: Iterable[T]) -> Iterable[Tuple[T, T]]:
-    it = iter(iterable)
-    try:
-        past = next(it)
-    except StopIteration:
-        return
-
-    for current in it:
-        yield past, current
-        past = current
+        for current in it:
+            yield past, current
+            past = current
 
 
 class Omitted(metaclass=SingletonMeta):

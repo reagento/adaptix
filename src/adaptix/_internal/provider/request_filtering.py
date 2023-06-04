@@ -7,7 +7,16 @@ from typing import Any, ClassVar, Iterable, Optional, Pattern, Protocol, Sequenc
 
 from ..common import TypeHint, VarTuple
 from ..essential import CannotProvide, Mediator, Provider, Request
-from ..type_tools import BaseNormType, NormTV, is_parametrized, is_protocol, is_subclass_soft, normalize_type
+from ..type_tools import (
+    BaseNormType,
+    NormTV,
+    is_bare_generic,
+    is_generic,
+    is_parametrized,
+    is_protocol,
+    is_subclass_soft,
+    normalize_type,
+)
 from ..type_tools.normalize_type import NotSubscribedError
 from .request_cls import FieldLoc, GenericParamLoc, LocatedRequest, Location, TypeHintLoc
 
@@ -295,6 +304,12 @@ def _create_non_type_hint_request_checker(pred: Pred) -> Optional[RequestChecker
     return None
 
 
+def _create_request_checker_by_origin(origin):
+    if is_protocol(origin) or isabstract(origin):
+        return OriginSubclassRC(origin)
+    return ExactOriginRC(origin)
+
+
 def create_request_checker(pred: Pred) -> RequestChecker:
     result = _create_non_type_hint_request_checker(pred)
     if result is not None:
@@ -310,12 +325,17 @@ def create_request_checker(pred: Pred) -> RequestChecker:
     if isinstance(norm, NormTV):
         raise ValueError(f'Can not create RequestChecker from {pred} type var')
 
-    if is_parametrized(pred):
-        return ExactTypeRC(norm)
+    if is_bare_generic(pred):
+        return _create_request_checker_by_origin(norm.origin)
 
-    if is_protocol(norm.origin) or isabstract(norm.origin):
-        return OriginSubclassRC(norm.origin)
-    return ExactOriginRC(norm.origin)
+    if is_generic(pred):
+        raise ValueError(
+            f'Can not create RequestChecker from {pred} generic alias (parametrized generic)'
+        )
+
+    if not is_generic(norm.origin) and not is_parametrized(pred):
+        return _create_request_checker_by_origin(norm.origin)   # this is only an optimization
+    return ExactTypeRC(norm)
 
 
 Pat = TypeVar('Pat', bound='RequestPattern')
