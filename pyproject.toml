@@ -5,7 +5,7 @@ build-backend = 'setuptools.build_meta'
 [project]
 name = 'adaptix'
 version = '3.0.0a4'
-description = 'An utility class for creating instances of dataclasses'
+description = 'An extremely flexible and configurable data model conversion library'
 readme = 'README.md'
 requires-python = '>=3.8'
 
