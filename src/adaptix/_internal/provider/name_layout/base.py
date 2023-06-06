@@ -27,8 +27,8 @@ ExtraIn = Union[ExtraSkip, str, Sequence[str], ExtraForbid, ExtraKwargs, Saturat
 ExtraOut = Union[ExtraSkip, str, Sequence[str], Extractor]
 
 Key = Union[str, int]
-Path = VarTuple[Key]
-PathsTo = Mapping[Path, T]
+KeyPath = VarTuple[Key]
+PathsTo = Mapping[KeyPath, T]
 
 
 class ExtraMoveMaker(ABC):

@@ -171,6 +171,7 @@ DEFAULT_NAME_MAPPING = name_mapping(
     map={},
     trim_trailing_underscore=True,
     name_style=None,
+    as_list=False,
     omit_default=False,
     extra_in=ExtraSkip(),
     extra_out=ExtraSkip(),
@@ -1214,6 +1215,97 @@ def test_chaining_priority():
         OutputNameLayout(
             crown=OutDictCrown(
                 map={'x': OutFieldCrown('a')},
+                sieves={},
+            ),
+            extra_move=None,
+        ),
+    )
+
+
+def test_ellipsis_replacing_str_key():
+    layouts = make_layouts(
+        TestField('a_'),
+        TestField('b'),
+        name_mapping(
+            name_style=NameStyle.UPPER,
+            map=[
+                ('.*', ('data', ...)),
+            ],
+        ),
+        DEFAULT_NAME_MAPPING,
+    )
+    assert layouts == Layouts(
+        InputNameLayout(
+            crown=InpDictCrown(
+                map={
+                    'data': InpDictCrown(
+                        map={
+                            'A': InpFieldCrown('a_'),
+                            'B': InpFieldCrown('b'),
+                        },
+                        extra_policy=ExtraSkip(),
+                    ),
+                },
+                extra_policy=ExtraSkip(),
+            ),
+            extra_move=None,
+        ),
+        OutputNameLayout(
+            crown=OutDictCrown(
+                map={
+                    'data': OutDictCrown(
+                        map={
+                            'A': OutFieldCrown('a_'),
+                            'B': OutFieldCrown('b'),
+                        },
+                        sieves={},
+                    ),
+                },
+                sieves={},
+            ),
+            extra_move=None,
+        ),
+    )
+
+
+def test_ellipsis_replacing_int_key():
+    layouts = make_layouts(
+        TestField('a_'),
+        TestField('b'),
+        name_mapping(
+            as_list=True,
+            map=[
+                ('.*', ('data', ...)),
+            ],
+        ),
+        DEFAULT_NAME_MAPPING,
+    )
+    assert layouts == Layouts(
+        InputNameLayout(
+            crown=InpDictCrown(
+                map={
+                    'data': InpListCrown(
+                        map=[
+                            InpFieldCrown('a_'),
+                            InpFieldCrown('b'),
+                        ],
+                        extra_policy=ExtraSkip(),
+                    ),
+                },
+                extra_policy=ExtraSkip(),
+            ),
+            extra_move=None,
+        ),
+        OutputNameLayout(
+            crown=OutDictCrown(
+                map={
+                    'data': OutListCrown(
+                        map=[
+                            OutFieldCrown('a_'),
+                            OutFieldCrown('b'),
+                        ],
+                    ),
+                },
                 sieves={},
             ),
             extra_move=None,

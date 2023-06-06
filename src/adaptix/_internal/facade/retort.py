@@ -134,6 +134,7 @@ class FilledRetort(OperatingRetort, ABC):
             map={},
             trim_trailing_underscore=True,
             name_style=None,
+            as_list=False,
             omit_default=False,
             extra_in=ExtraSkip(),
             extra_out=ExtraSkip(),

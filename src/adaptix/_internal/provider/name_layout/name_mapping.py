@@ -6,11 +6,10 @@ from typing import Callable, Iterable, Mapping, Optional, Tuple, Union
 from ...common import EllipsisType
 from ...essential import CannotProvide, Mediator, Provider
 from ...model_tools.definitions import BaseField, BaseShape, is_valid_field_id
-from ...struct_path import Path
 from ..request_cls import LocatedRequest
 from ..request_filtering import Pred, ProviderWithRC, RequestChecker
 from ..static_provider import StaticProvider, static_provision_action
-from .base import Key
+from .base import Key, KeyPath
 
 RawKey = Union[Key, EllipsisType]
 RawPath = Iterable[RawKey]
@@ -29,24 +28,25 @@ NameMap = Union[
 
 
 @dataclass(frozen=True)
-class NameMappingRequest(LocatedRequest[Optional[Path]]):
+class NameMappingRequest(LocatedRequest[Optional[KeyPath]]):
     shape: BaseShape
     field: BaseField
+    generated_key: Key
 
 
-def resolve_map_result(field_id: str, map_result: MapResult) -> Optional[Path]:
+def resolve_map_result(generated_key: Key, map_result: MapResult) -> Optional[KeyPath]:
     if map_result is None:
         return None
     if isinstance(map_result, (str, int)):
         return (map_result, )
     if isinstance(map_result, EllipsisType):
-        return (field_id, )
-    return tuple(field_id if isinstance(key, EllipsisType) else key for key in map_result)
+        return (generated_key,)
+    return tuple(generated_key if isinstance(key, EllipsisType) else key for key in map_result)
 
 
 class DictNameMappingProvider(StaticProvider):
     def __init__(self, name_map: Mapping[str, MapResult]):
-        self._name_map = {key: resolve_map_result(key, map_result) for key, map_result in name_map.items()}
+        self._name_map = name_map
         self._validate()
 
     def _validate(self) -> None:
@@ -58,11 +58,12 @@ class DictNameMappingProvider(StaticProvider):
             )
 
     @static_provision_action
-    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[Path]:
+    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
         try:
-            return self._name_map[request.field.id]
+            map_result = self._name_map[request.field.id]
         except KeyError:
             raise CannotProvide
+        return resolve_map_result(request.generated_key, map_result)
 
 
 class ConstNameMappingProvider(StaticProvider, ProviderWithRC):
@@ -74,9 +75,9 @@ class ConstNameMappingProvider(StaticProvider, ProviderWithRC):
         return self._request_checker
 
     @static_provision_action
-    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[Path]:
+    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
         self._request_checker.check_request(mediator, request)
-        return resolve_map_result(request.field.id, self._result)
+        return resolve_map_result(request.generated_key, self._result)
 
 
 class FuncNameMappingProvider(StaticProvider, ProviderWithRC):
@@ -88,17 +89,10 @@ class FuncNameMappingProvider(StaticProvider, ProviderWithRC):
         return self._request_checker
 
     @static_provision_action
-    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[Path]:
+    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
         self._request_checker.check_request(mediator, request)
         result = self._func(request.shape, request.field)
-        return resolve_map_result(request.field.id, result)
-
-
-class AsListNameMappingProvider(StaticProvider):
-    @static_provision_action
-    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[Path]:
-        idx = request.shape.fields.index(request.field)
-        return (idx, )
+        return resolve_map_result(request.generated_key, result)
 
 
 @dataclass(frozen=True)
