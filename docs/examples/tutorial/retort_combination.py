@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import List
 
@@ -23,8 +23,8 @@ class LiteraryWork:
 
 literature_retort = Retort(
     recipe=[
-        loader(datetime, datetime.fromtimestamp),
-        dumper(datetime, datetime.timestamp),
+        loader(datetime, lambda x: datetime.fromtimestamp(x, tz=timezone.utc)),
+        dumper(datetime, lambda x: x.timestamp()),
         enum_by_name(LiteraryGenre),
     ],
 )
@@ -64,7 +64,7 @@ assert person == Person(
             id=7397,
             name="Fahrenheit 451",
             genre=LiteraryGenre.PROSE,
-            uploaded_at=datetime(2023, 1, 30, 23, 38, 33),
+            uploaded_at=datetime(2023, 1, 30, 20, 38, 33, tzinfo=timezone.utc),
         )
     ]
 )

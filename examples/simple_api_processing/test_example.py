@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .models import Alert, Forecast, ForecastPack, Weather
 from .retort import OPEN_WEATHER_RETORT
@@ -72,7 +72,7 @@ OFFICIAL_EXAMPLE_LOADED = ForecastPack(
     timezone='America/New_York',
     timezone_offset=-18000,
     current=Forecast(
-        timestamp=datetime(2022, 3, 3, 17, 44, 58),
+        timestamp=datetime(2022, 3, 3, 14, 44, 58, tzinfo=timezone.utc),
         weather=[
             Weather(
                 id=802,
@@ -83,12 +83,12 @@ OFFICIAL_EXAMPLE_LOADED = ForecastPack(
         ],
         clouds=40,
         dew_point=275.99,
-        sunrise=datetime(2022, 3, 3, 14, 28, 2),
-        sunset=datetime(2022, 3, 4, 1, 52, 9),
+        sunrise=datetime(2022, 3, 3, 11, 28, 2, tzinfo=timezone.utc),
+        sunset=datetime(2022, 3, 3, 22, 52, 9, tzinfo=timezone.utc),
     ),
     hourly=[
         Forecast(
-            timestamp=datetime(2022, 3, 3, 17, 0),
+            timestamp=datetime(2022, 3, 3, 14, 0, tzinfo=timezone.utc),
             weather=[
                 Weather(id=803, name='Clouds', description='broken clouds', icon_id='04d'),
             ],
@@ -100,22 +100,22 @@ OFFICIAL_EXAMPLE_LOADED = ForecastPack(
     ],
     daily=[
         Forecast(
-            timestamp=datetime(2022, 3, 3, 20, 0),
+            timestamp=datetime(2022, 3, 3, 17, 0, tzinfo=timezone.utc),
             weather=[
                 Weather(id=500, name='Rain', description='light rain', icon_id='10d'),
             ],
             clouds=49,
             dew_point=273.12,
-            sunrise=datetime(2022, 3, 3, 14, 28, 2),
-            sunset=datetime(2022, 3, 4, 1, 52, 9),
+            sunrise=datetime(2022, 3, 3, 11, 28, 2, tzinfo=timezone.utc),
+            sunset=datetime(2022, 3, 3, 22, 52, 9, tzinfo=timezone.utc),
         )
     ],
     alerts=[
         Alert(
             sender_name='NWS Philadelphia - Mount Holly (New Jersey, Delaware, Southeastern Pennsylvania)',
             event='Small Craft Advisory',
-            start=datetime(2022, 3, 4, 1, 0),
-            end=datetime(2022, 3, 4, 11, 0),
+            start=datetime(2022, 3, 3, 22, 0, tzinfo=timezone.utc),
+            end=datetime(2022, 3, 4, 8, 0, tzinfo=timezone.utc),
             description='...',
         ),
     ]

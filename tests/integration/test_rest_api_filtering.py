@@ -71,13 +71,12 @@ MinMaxInt = MinMax[int]
 SimpleFilter = Union[None, List, MinMax, Dict[str, MinMaxFloat]]
 
 
-@dataclass
 class Order(Enum):
     asc = "asc"
     desc = "desc"
 
 
-@dataclass
+@dataclass(frozen=True)
 class PagingRequest:
     offset: int = 0
     limit: int = 20
@@ -116,7 +115,7 @@ class SortBy(Enum):
     active_from = "active_from"
 
 
-@dataclass
+@dataclass(frozen=True)
 class SortingParams:
     sort_by: SortBy = SortBy.active_from
     order: Order = Order.desc

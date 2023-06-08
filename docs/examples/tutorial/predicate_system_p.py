@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 
 from adaptix import P, Retort, loader
@@ -30,7 +30,7 @@ data = {
         {
             "id": 193,
             "name": "Kate",
-            "created_at": "2023-01-29T21:26:28.026860",
+            "created_at": "2023-01-29T21:26:28.026860+00:00",
         }
     ],
     "books": [
@@ -44,7 +44,7 @@ data = {
 
 retort = Retort(
     recipe=[
-        loader(P[Book].created_at, datetime.fromtimestamp),
+        loader(P[Book].created_at, lambda x: datetime.fromtimestamp(x, tz=timezone.utc)),
     ],
 )
 
@@ -55,14 +55,14 @@ assert bookshop == Bookshop(
         Person(
             id=193,
             name='Kate',
-            created_at=datetime(2023, 1, 29, 21, 26, 28, 26860),
+            created_at=datetime(2023, 1, 29, 21, 26, 28, 26860, tzinfo=timezone.utc),
         ),
     ],
     books=[
         Book(
             name='Fahrenheit 451',
             price=100,
-            created_at=datetime(2023, 1, 28, 23, 41, 48, 599962),
+            created_at=datetime(2023, 1, 28, 20, 41, 48, 599962, tzinfo=timezone.utc),
         ),
     ]
 )

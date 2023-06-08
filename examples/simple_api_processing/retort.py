@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from adaptix import Retort, dumper, loader, name_mapping
 
@@ -22,7 +22,8 @@ OPEN_WEATHER_RETORT = Retort(
         name_mapping(
             omit_default=True,
         ),
-        loader(datetime, datetime.fromtimestamp),  # default dumper and loader requires isoformat strings
-        dumper(datetime, datetime.timestamp),
+        # default dumper and loader requires isoformat strings
+        loader(datetime, lambda x: datetime.fromtimestamp(x, tz=timezone.utc)),
+        dumper(datetime, lambda x: x.astimezone(timezone.utc).timestamp()),
     ]
 )

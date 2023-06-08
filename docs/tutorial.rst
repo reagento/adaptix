@@ -91,8 +91,8 @@ The recipe consists of `providers`, each of which can precisely override one of 
 .. literalinclude:: examples/tutorial/retort_recipe_intro.py
 
 Default ``datetime`` loader accepts only ``str`` in ``ISO 8601`` format,
-``loader(datetime, datetime.fromtimestamp)`` replaces it with function ``datetime.fromtimestamp``
-that takes ``int`` representing ``Unix time``.
+``loader(datetime, lambda x: datetime.fromtimestamp(x, tz=timezone.utc))``
+replaces it with specified lambda function that takes ``int`` representing ``Unix time``.
 
 .. dropdown:: Same example but with dumper
 
