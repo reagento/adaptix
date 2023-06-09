@@ -144,19 +144,19 @@ def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider
         )
     result: List[Provider] = []
     for element in name_map:
-        if isinstance(element, Mapping):
+        if isinstance(element, Provider):
+            result.append(element)
+        elif isinstance(element, Mapping):
             result.append(
                 DictNameMappingProvider(element)
             )
-        elif isinstance(element, tuple):
+        else:
             pred, value = element
             result.append(
                 FuncNameMappingProvider(create_request_checker(pred), value)
                 if callable(value) else
                 ConstNameMappingProvider(create_request_checker(pred), value)
             )
-        else:
-            result.append(element)
     return tuple(result)
 
 

@@ -18,7 +18,7 @@ class FuncWrapper:
 
 
 class FuncRecursionResolver(StubsRecursionResolver):
-    def get_stub(self, request):
+    def create_stub(self, request):
         return FuncWrapper()
 
     def saturate_stub(self, actual, stub) -> None:

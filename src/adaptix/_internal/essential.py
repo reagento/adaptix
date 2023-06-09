@@ -17,23 +17,29 @@ class Request(Generic[T]):
 
 
 class CannotProvide(Exception):
+    is_terminal: bool
+
     def __init__(
         self,
         msg: Optional[str] = None,
-        sub_errors: Optional[Sequence['CannotProvide']] = None,
+        sub_errors: Sequence['CannotProvide'] = (),
+        is_terminal: bool = False
     ):
         """
         :param msg: Human-oriented description of error
         :param sub_errors: Errors caused this error
         """
-        if sub_errors is None:
-            sub_errors = []
         self.msg = msg
         self.sub_errors = sub_errors
-        super().__init__(self.msg, self.sub_errors)
+        self.is_terminal = is_terminal or any(sub_error.is_terminal for sub_error in sub_errors)
+        self._self_is_terminal = is_terminal
+        super().__init__(self.msg, self.sub_errors, self.is_terminal)
 
     def __repr__(self):
-        return f"{type(self).__name__}(msg={self.msg!r}, sub_errors={self.sub_errors!r})"
+        return (
+            f"{type(self).__name__}"
+            f"(msg={self.msg!r}, sub_errors={self.sub_errors!r}, is_terminal={self.is_terminal})"
+        )
 
 
 V = TypeVar('V')

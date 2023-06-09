@@ -13,7 +13,7 @@ T = TypeVar('T')
 
 class StubsRecursionResolver(ABC, Generic[T]):
     @abstractmethod
-    def get_stub(self, request: Request[T]) -> T:
+    def create_stub(self, request: Request[T]) -> T:
         ...
 
     @abstractmethod
@@ -58,11 +58,12 @@ class BuiltinMediator(Mediator):
         self.recursion_resolving = recursion_resolving
 
         self._request_stack = list(request_stack)
+        self._sent_request: Set[Request] = set()
         self.next_offset = 0
         self.recursion_stubs: Dict[Request, Any] = {}
 
     def provide(self, request: Request[T], *, extra_stack: Sequence[Request[Any]] = ()) -> T:
-        if request in self._request_stack:  # maybe we need to lookup in set for large request_stack
+        if request in self._sent_request:  # maybe we need to lookup in set for large request_stack
             if request in self.recursion_stubs:
                 return self.recursion_stubs[request]
             try:
@@ -70,16 +71,18 @@ class BuiltinMediator(Mediator):
             except KeyError:
                 raise RecursionError("Infinite recursion has been detected that can not be resolved") from None
 
-            stub = resolver.get_stub(request)
+            stub = resolver.create_stub(request)
             self.recursion_stubs[request] = stub
             return stub
 
         self._request_stack.extend(extra_stack)
         self._request_stack.append(request)
+        self._sent_request.add(request)
         try:
             result = self._provide_non_recursive(request, 0)
         finally:
             del self._request_stack[-1 - len(extra_stack):]
+            self._sent_request.discard(request)
 
         if request in self.recursion_stubs:
             resolver = self._get_resolver(request)
@@ -106,7 +109,10 @@ class BuiltinMediator(Mediator):
             self.next_offset = next_offset
             try:
                 result = provide_callable(self, request)
-            except CannotProvide:
+            except CannotProvide as e:
+                if e.is_terminal:
+                    self.next_offset = init_next_offset
+                    raise e
                 continue
 
             self.next_offset = init_next_offset
