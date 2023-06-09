@@ -247,7 +247,7 @@ def test_is_generic(tp, result):
 @pytest.mark.parametrize(
     ['tp', 'result'],
     [
-        (list, bool(HAS_STD_CLASSES_GENERICS)),
+        (list, True),
         (List, True),
         (Dict, True),
         (List[T], False),

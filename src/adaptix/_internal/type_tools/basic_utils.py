@@ -115,7 +115,11 @@ def is_bare_generic(tp) -> bool:
     return (
         (
             is_generic(strip_alias(tp))
-            or is_generic(tp)  # for 3.8 and List (list is not generic)
+            # for 3.8 and List (list is not generic)
+            or is_generic(tp)
+            # at 3.8 list is bare_generic but not generic
+            # (this function only need to create predicate)
+            or tp in BUILTIN_ORIGIN_TO_TYPEVARS
         )
         and not is_parametrized(tp)
     )
