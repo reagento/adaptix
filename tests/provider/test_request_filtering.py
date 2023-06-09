@@ -274,6 +274,7 @@ def test_request_pattern_generic_arg_dict_override():
     loaded_dict = retort.load({10: 20}, Dict[int, int])
     assert loaded_dict == {11: 22}
 
+
 T = TypeVar('T')
 
 

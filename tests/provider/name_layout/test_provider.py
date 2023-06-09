@@ -61,7 +61,7 @@ from adaptix._internal.provider.name_layout.component import (
 from adaptix._internal.provider.name_layout.provider import BuiltinNameLayoutProvider
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import DumperRequest, FieldLoc, LoaderRequest, LocMap, TypeHintLoc
-from adaptix._internal.provider.request_filtering import AnyRequestChecker, P
+from adaptix._internal.provider.request_filtering import AnyRequestChecker
 from tests_helpers import TestRetort, full_match_regex_str, type_of
 
 
