@@ -81,41 +81,59 @@ class DescriptorAccessor(Accessor, ABC):
         return hash((self._attr_name, self._access_error))
 
     def __repr__(self):
-        return f"{type(self)}(attr_name={self.attr_name}, access_error={self.access_error})"
+        return f"{type(self)}(attr_name={self.attr_name!r}, access_error={self.access_error})"
 
 
-class AttrAccessor(DescriptorAccessor):
-    def __init__(self, attr_name: str, is_required: bool):
-        access_error = None if is_required else AttributeError
-        super().__init__(attr_name, access_error)
-
-    @property
-    def is_required(self) -> bool:
-        return self.access_error is None
-
-    def __repr__(self):
-        return f"{type(self).__name__}(attr_name={self.attr_name}, is_required={self.is_required})"
-
-
-@dataclass(frozen=True)
 class ItemAccessor(Accessor):
-    item_name: str
-    is_required: bool
+    def __init__(self, key: Union[int, str], access_error: Optional[Catchable], path_element: PathElement):
+        self.key = key
+        self._access_error = access_error
+        self._path_element = path_element
 
     # noinspection PyMethodOverriding
     def getter(self, obj):
-        return obj[self.item_name]
+        return obj[self.key]
 
     @property
     def access_error(self) -> Optional[Catchable]:
-        return None if self.is_required else KeyError
+        return self._access_error
 
     @property
     def path_element(self) -> PathElement:
-        return self.item_name
+        return self._path_element
+
+    def __eq__(self, other):
+        if isinstance(other, ItemAccessor):
+            return (
+                self.key == other.key
+                and self._access_error == other._access_error
+                and self._path_element == other._path_element
+            )
+        return NotImplemented
 
     def __hash__(self):
-        return hash((self.item_name, self.is_required))
+        try:
+            return hash((self.key, self._access_error))
+        except TypeError:
+            return hash(self._access_error)
+
+    def __repr__(self):
+        return f"{type(self)}(key={self.key!r}, access_error={self.access_error}, path_element={self.path_element!r})"
+
+
+def create_attr_accessor(attr_name: str, is_required: bool) -> DescriptorAccessor:
+    return DescriptorAccessor(
+        attr_name=attr_name,
+        access_error=None if is_required else AttributeError,
+    )
+
+
+def create_key_accessor(key: Union[str, int], access_error: Optional[Catchable]) -> ItemAccessor:
+    return ItemAccessor(
+        key=key,
+        access_error=access_error,
+        path_element=key,
+    )
 
 
 def is_valid_field_id(value: str) -> bool:

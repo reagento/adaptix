@@ -7,7 +7,6 @@ from typing import Any, Dict
 
 from ..feature_requirement import HAS_ATTRS_PKG, HAS_PY_39
 from ..model_tools.definitions import (
-    AttrAccessor,
     BaseField,
     Default,
     DefaultFactory,
@@ -16,7 +15,6 @@ from ..model_tools.definitions import (
     InputField,
     InputShape,
     IntrospectionImpossible,
-    ItemAccessor,
     NoDefault,
     NoTargetPackage,
     OutputField,
@@ -24,6 +22,8 @@ from ..model_tools.definitions import (
     ParamKind,
     ParamKwargs,
     Shape,
+    create_attr_accessor,
+    create_key_accessor,
 )
 from ..type_tools import get_all_type_hints, is_named_tuple_class, is_typed_dict_class
 
@@ -148,9 +148,12 @@ def get_named_tuple_shape(tp) -> FullShape:
                     type=fld.type,
                     default=fld.default,
                     metadata=fld.metadata,
-                    accessor=AttrAccessor(attr_name=fld.id, is_required=True),
+                    accessor=create_key_accessor(
+                        key=idx,
+                        access_error=None,
+                    ),
                 )
-                for fld in input_shape.fields
+                for idx, fld in enumerate(input_shape.fields)
             ),
             overriden_types=overriden_types,
         )
@@ -222,7 +225,10 @@ def get_typed_dict_shape(tp) -> FullShape:
                     type=tp,
                     id=name,
                     default=NoDefault(),
-                    accessor=ItemAccessor(name, requirement_determinant(name)),
+                    accessor=create_key_accessor(
+                        key=name,
+                        access_error=None if requirement_determinant(name) else KeyError,
+                    ),
                     metadata=MappingProxyType({}),
                 )
                 for name, tp in type_hints
@@ -305,7 +311,7 @@ def get_dataclass_shape(tp) -> FullShape:
                     type=type_hints[field.name],
                     id=field.name,
                     default=get_dc_default(name_to_dc_field[field.name]),
-                    accessor=AttrAccessor(field.name, True),
+                    accessor=create_attr_accessor(attr_name=field.name, is_required=True),
                     metadata=field.metadata,
                 )
                 for field in dc_fields_public
@@ -466,7 +472,7 @@ def get_attrs_shape(tp) -> FullShape:
                 NoDefault()
             ),
             metadata=field.metadata,
-            accessor=AttrAccessor(field.id, is_required=True),
+            accessor=create_attr_accessor(field.id, is_required=True),
         )
         for field in param_name_to_base_field.values()
     )

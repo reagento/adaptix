@@ -5,7 +5,7 @@ from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr
 from ...common import Dumper
-from ...model_tools.definitions import AttrAccessor, ItemAccessor, OutputField, OutputShape
+from ...model_tools.definitions import DescriptorAccessor, ItemAccessor, OutputField, OutputShape
 from ...struct_path import append_path, extend_path
 from .crown_definitions import ExtraExtract, ExtraTargets, OutExtraMove
 from .definitions import CodeGenerator, VarBinder
@@ -72,12 +72,14 @@ class BuiltinOutputExtractionGen(CodeGenerator):
 
     def _gen_access_expr(self, binder: VarBinder, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         accessor = field.accessor
-        if isinstance(accessor, AttrAccessor):
+        if isinstance(accessor, DescriptorAccessor):
             if accessor.attr_name.isidentifier():
                 return f"{binder.data}.{accessor.attr_name}"
             return f"getattr({binder.data}, {accessor.attr_name!r})"
         if isinstance(accessor, ItemAccessor):
-            return f"{binder.data}[{accessor.item_name!r}]"
+            literal_expr = get_literal_expr(accessor.key)
+            if literal_expr is not None:
+                return f"{binder.data}[{literal_expr}]"
 
         accessor_getter = self._accessor_getter(field)
         ctx_namespace.add(accessor_getter, field.accessor.getter)

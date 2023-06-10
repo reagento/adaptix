@@ -8,13 +8,14 @@ from adaptix import Dumper, bound
 from adaptix._internal.common import Catchable
 from adaptix._internal.model_tools.definitions import (
     Accessor,
-    AttrAccessor,
     DefaultFactory,
     DefaultValue,
     ItemAccessor,
     NoDefault,
     OutputField,
     OutputShape,
+    create_attr_accessor,
+    create_key_accessor,
 )
 from adaptix._internal.provider.model.basic_gen import NameSanitizer
 from adaptix._internal.provider.model.crown_definitions import (
@@ -166,13 +167,20 @@ class MyAccessor(Accessor):
         return hash(self.value)
 
 
+def make_str_item_accessor(name: str, is_required: bool):
+    return create_key_accessor(
+        key=name,
+        access_error=None if is_required else KeyError,
+    )
+
+
 @pytest.fixture(
     params=[
         AccessSchema(
-            dummy=Dummy, accessor_maker=AttrAccessor, access_error=AttributeError, path_elem_maker=Attr,
+            dummy=Dummy, accessor_maker=create_attr_accessor, access_error=AttributeError, path_elem_maker=Attr,
         ),
         AccessSchema(
-            dummy=dummy_items, accessor_maker=ItemAccessor, access_error=KeyError, path_elem_maker=stub,
+            dummy=dummy_items, accessor_maker=make_str_item_accessor, access_error=KeyError, path_elem_maker=stub,
         ),
         AccessSchema(
             dummy=Dummy, accessor_maker=MyAccessor, access_error=MyAccessError, path_elem_maker=MyPathElemMarker,

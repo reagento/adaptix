@@ -1,13 +1,13 @@
 import pytest
 
 from adaptix._internal.model_tools.definitions import (
-    AttrAccessor,
     InputField,
     InputShape,
     NoDefault,
     OutputField,
     OutputShape,
     ParamKind,
+    create_attr_accessor,
 )
 
 
@@ -176,14 +176,14 @@ def test_name_duplicates():
                     id="a",
                     type=int,
                     default=NoDefault(),
-                    accessor=AttrAccessor("a", is_required=True),
+                    accessor=create_attr_accessor("a", is_required=True),
                     metadata={},
                 ),
                 OutputField(
                     id="a",
                     type=int,
                     default=NoDefault(),
-                    accessor=AttrAccessor("a", is_required=True),
+                    accessor=create_attr_accessor("a", is_required=True),
                     metadata={},
                 ),
             ),
@@ -239,14 +239,14 @@ def test_non_existing_fields_overriden_types():
                     id="a",
                     type=int,
                     default=NoDefault(),
-                    accessor=AttrAccessor("a", is_required=True),
+                    accessor=create_attr_accessor("a", is_required=True),
                     metadata={},
                 ),
                 OutputField(
                     id="b",
                     type=int,
                     default=NoDefault(),
-                    accessor=AttrAccessor("b", is_required=True),
+                    accessor=create_attr_accessor("b", is_required=True),
                     metadata={},
                 ),
             ),

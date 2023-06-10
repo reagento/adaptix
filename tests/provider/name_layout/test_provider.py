@@ -6,7 +6,6 @@ import pytest
 
 from adaptix import NameStyle, Provider, bound, name_mapping
 from adaptix._internal.model_tools.definitions import (
-    AttrAccessor,
     BaseField,
     BaseShape,
     Default,
@@ -19,6 +18,7 @@ from adaptix._internal.model_tools.definitions import (
     OutputShape,
     ParamKind,
     ParamKwargs,
+    create_attr_accessor,
 )
 from adaptix._internal.provider.model.basic_gen import NameSanitizer
 from adaptix._internal.provider.model.crown_definitions import (
@@ -112,7 +112,7 @@ def make_layouts(
                 type=Any,
                 default=fld.default,
                 metadata={},
-                accessor=AttrAccessor(
+                accessor=create_attr_accessor(
                     attr_name=fld.name,
                     is_required=fld.is_required,
                 ),
