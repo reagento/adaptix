@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 _BUILTINS_DICT = {
     getattr(builtins, name): (getattr(builtins, name), name)
     for name in sorted(dir(builtins))
-    if not name.startswith('__')
+    if not name.startswith('__') and name != '_'
 }
 
 
