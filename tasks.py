@@ -40,6 +40,7 @@ def deps_compile(c: Context):
             asynchronous=True,
         )
         for req in Path('.').glob('requirements/raw/*.txt')
+        if not req.name.startswith('_')
     ]
     for promise in promises:
         promise.join()

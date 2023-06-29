@@ -2,6 +2,7 @@ from functools import partial
 from typing import List
 
 import msgspec
+import pytest
 
 from benchmarks.pybench.bench_api import benchmark_plan
 from benchmarks.small_structures.common import create_book, create_dumped_book
@@ -35,14 +36,15 @@ class BookNoGC(msgspec.Struct, gc=False):
     reviews: List[ReviewNoGC]
 
 
-def test_loading():
+@pytest.mark.parametrize('strict', [False, True])
+def test_loading(strict):
     assert (
-        msgspec.from_builtins(create_dumped_book(reviews_count=1), Book)
+        msgspec.convert(create_dumped_book(reviews_count=1), Book, strict=strict)
         ==
         create_book(Book, Review, reviews_count=1)
     )
     assert (
-        msgspec.from_builtins(create_dumped_book(reviews_count=1), BookNoGC)
+        msgspec.convert(create_dumped_book(reviews_count=1), BookNoGC, strict=strict)
         ==
         create_book(BookNoGC, ReviewNoGC, reviews_count=1)
     )
@@ -61,14 +63,13 @@ def test_dumping():
     )
 
 
-def bench_loading(no_gc: bool, reviews_count: int):
-    if no_gc:
-        loader = partial(msgspec.from_builtins, type=BookNoGC)
-    else:
-        loader = partial(msgspec.from_builtins, type=Book)
-
+def bench_loading(no_gc: bool, strict: bool, reviews_count: int):
     data = create_dumped_book(reviews_count=reviews_count)
-    return benchmark_plan(loader, data)
+    return benchmark_plan(
+        partial(msgspec.convert, strict=strict),
+        data,
+        BookNoGC if no_gc else Book,
+    )
 
 
 def bench_dumping(no_gc: bool, reviews_count: int):

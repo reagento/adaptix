@@ -138,16 +138,12 @@ class SimpleUserSchema(Schema):
     def _to_model(self, data, **kwargs):
         return SimpleUser(**data)
 
-    SKIPPED_DEFAULTS = {
-        'name': None,
-        'email': None,
-        'starred_at': None,
-    }
+    SKIP_NONE = ['name', 'email', 'starred_at']
 
     @post_dump(pass_many=False)
     def _skip_default(self, data, **kwargs):
-        for key, value in self.SKIPPED_DEFAULTS.items():
-            if data[key] == value:
+        for key in self.SKIP_NONE:
+            if data[key] is None:
                 del data[key]
         return data
 

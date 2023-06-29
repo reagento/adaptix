@@ -1,35 +1,52 @@
 # pylint: disable=import-error,no-name-in-module
+import importlib.metadata
 import inspect
 import json
 import os
-import shutil
 import subprocess
 import sys
 from argparse import ArgumentParser, Namespace
+from copy import copy
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
 
 import pyperf
-from matplotlib import pyplot as plt
 from pyperf._cli import format_checks
 
-from benchmarks.pybench.matplotlib_utils import bar_left_aligned_label
-from benchmarks.pybench.utils import get_function_object_ref
+from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
-__all__ = ['BenchmarkDirector', 'BenchSchema', 'PlotParams']
+__all__ = (
+    'BenchmarkDirector',
+    'BenchSchema',
+    'PlotParams',
+    'CheckParams',
+    'BenchAccessor',
+)
+
+EnvSpec = Mapping[str, str]
 
 
-@dataclass
+@dataclass(frozen=True)
+class CheckParams:
+    stdev_rel_threshold: Optional[float] = None
+    ignore_pyperf_warnings: Optional[bool] = None
+
+
+@dataclass(frozen=True)
 class BenchSchema:
-    func: Callable
+    entry_point: Union[Callable, str]
     base: str
     tags: Iterable[str]
     kwargs: Mapping[str, Any]
+    used_distributions: Sequence[str]
+    skip_if: Optional[Callable[[EnvSpec], bool]] = None
+    check_params: Callable[[EnvSpec], CheckParams] = lambda env_spec: CheckParams()
 
 
-@dataclass
+@dataclass(frozen=True)
 class PlotParams:
     title: str
     fig_size: Tuple[float, float] = (8, 4.8)
@@ -37,17 +54,24 @@ class PlotParams:
     trim_after: Optional[float] = None
 
 
-@dataclass
-class CheckParams:
-    stddev_rel_threshold: float = 0.05
+BUILTIN_CHECK_PARAMS = CheckParams(
+    ignore_pyperf_warnings=False,
+)
 
 
 class BenchAccessor:
-    def __init__(self, data_dir: Path, env_spec: Mapping[str, str], schemas: List[BenchSchema]):
+    def __init__(
+        self,
+        data_dir: Path,
+        env_spec: EnvSpec,
+        check_params: Callable[[EnvSpec], CheckParams],
+        schemas: Sequence[BenchSchema],
+    ):
         self.data_dir = data_dir
         self.env_spec = env_spec
-        self.schemas = schemas
+        self.all_schemas = schemas
         self.id_to_schema: Dict[str, BenchSchema] = {self.get_id(schema): schema for schema in schemas}
+        self._base_check_params = check_params
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument('--data-dir', action='store', required=False, type=Path)
@@ -90,21 +114,54 @@ class BenchAccessor:
             return f"{schema.base}\n({tags_str})"
         return schema.base
 
+    def _chain_check_param(self, base_check_params: CheckParams, key: str, value: Any) -> Any:
+        if value is not None:
+            return value
+        base_value = getattr(base_check_params, key)
+        if base_value is not None:
+            return base_value
+        builtin_value = getattr(BUILTIN_CHECK_PARAMS, key)
+        if builtin_value is None:
+            raise ValueError(f'Check param {key!r} must be filled')
+        return builtin_value
+
+    def resolve_check_params(self, schema: BenchSchema) -> CheckParams:
+        base_check_params = self._base_check_params(self.env_spec)
+        return CheckParams(
+            **{
+                key: self._chain_check_param(base_check_params, key, value)
+                for key, value in vars(schema.check_params(self.env_spec)).items()
+            }
+        )
+
+    @cached_property
+    def schemas(self) -> Sequence[BenchSchema]:
+        return [
+            schema
+            for schema in self.all_schemas
+            if schema.skip_if is None or not schema.skip_if(self.env_spec)
+        ]
+
 
 class BenchChecker:
-    def __init__(self, check_params: CheckParams, accessor: BenchAccessor):
-        self.check_params = check_params
+    def __init__(self, accessor: BenchAccessor):
         self.accessor = accessor
 
     def add_arguments(self, parser: ArgumentParser) -> None:
-        pass
+        parser.add_argument(
+            '--local-id-list', action='store_true', required=False, default=False,
+            help='print only schema list with errors'
+        )
 
     def _process_pyperf_warnings(
         self,
         schema: BenchSchema,
         bench: pyperf.Benchmark,
+        check_params: CheckParams,
         warnings: Iterable[str],
     ) -> Iterable[str]:
+        if check_params.ignore_pyperf_warnings:
+            return []
         return [
             line
             for line in warnings
@@ -117,34 +174,41 @@ class BenchChecker:
             return None
 
         bench = pyperf.Benchmark.load(str(result_file_path))
-        warnings = self._process_pyperf_warnings(schema, bench, format_checks(bench))
-        self_warnings = self._check_yourself(schema, bench)
+        check_params = self.accessor.resolve_check_params(schema)
+        warnings = self._process_pyperf_warnings(schema, bench, check_params, format_checks(bench))
+        self_warnings = self._check_yourself(schema, bench, check_params)
         return [*warnings, *self_warnings]
 
-    def _check_yourself(self, schema: BenchSchema, bench: pyperf.Benchmark) -> Sequence[str]:
+    def _check_yourself(self, schema: BenchSchema, bench: pyperf.Benchmark, check_params: CheckParams) -> Sequence[str]:
         lines: List[str] = []
         stdev = bench.stdev()
         mean = bench.mean()
-        percent = stdev / mean
-        if percent >= self.check_params.stddev_rel_threshold:
+        rate = stdev / mean
+        if rate >= check_params.stdev_rel_threshold:
             lines.append(
-                f"the relative standard deviation is {percent:.1%},"
-                f" max allowed is {self.check_params.stddev_rel_threshold:.0%}"
+                f"the relative standard deviation is {rate:.1%},"
+                f" max allowed is {check_params.stdev_rel_threshold:.0%}"
             )
         return lines
 
-    def check_results(self):
+    def check_results(self, local_id_list: bool = False):
         lines = []
+        schemas_with_warnings = []
         for schema in self.accessor.schemas:
             warnings = self.get_warnings(schema)
             if warnings is None:
                 lines.append(f'Result file of {self.accessor.get_id(schema)!r}')
                 lines.append('')
+                schemas_with_warnings.append(schema)
             elif warnings:
                 lines.append(self.accessor.get_id(schema))
                 lines.extend(warnings)
+                schemas_with_warnings.append(schema)
 
-        print('\n'.join(lines))
+        if local_id_list:
+            print(json.dumps([self.accessor.get_local_id(schema) for schema in schemas_with_warnings]))
+        else:
+            print('\n'.join(lines))
 
 
 class BenchRunner:
@@ -174,6 +238,7 @@ class BenchRunner:
         missing: bool = False,
         unstable: bool = False,
     ) -> None:
+        schemas: Sequence[BenchSchema]
         if missing:
             schemas = [
                 schema for schema in self.accessor.schemas
@@ -215,26 +280,40 @@ class BenchRunner:
             self.run_one_benchmark(local_id_to_schema[tag])
 
     def run_one_benchmark(self, schema: BenchSchema) -> None:
-        sig = inspect.signature(schema.func)
         bench_id = self.accessor.get_id(schema)
+        sig = inspect.signature(
+            load_by_object_ref(schema.entry_point)
+            if isinstance(schema.entry_point, str) else
+            schema.entry_point
+        )
         result_file = self.accessor.bench_result_file(bench_id)
         with TemporaryDirectory() as dir_name:
             temp_file = Path(dir_name) / f"{bench_id}.json"
             print(f'start: {bench_id}')
             self.launch_benchmark(
                 bench_name=bench_id,
-                entrypoint=get_function_object_ref(schema.func),
+                entrypoint=(
+                    schema.entry_point
+                    if isinstance(schema.entry_point, str) else
+                    get_function_object_ref(schema.entry_point)
+                ),
                 params=[schema.kwargs[param] for param in sig.parameters.keys()],
                 extra_args=['-o', str(temp_file)]
             )
+            result_data = json.loads(temp_file.read_text())
+            result_data['pybench_data'] = {
+                'distributions': {
+                    dist: importlib.metadata.version(dist)
+                    for dist in schema.used_distributions
+                }
+            }
             result_file.write_text(
                 json.dumps(
-                    json.loads(temp_file.read_text()),
+                    result_data,
                     ensure_ascii=False,
-                    indent=4,
+                    check_circular=False,
                 )
             )
-            shutil.move(temp_file, result_file)
 
     def launch_benchmark(
         self,
@@ -287,6 +366,11 @@ class BenchPlotter:
         )
 
     def _render_plot(self, output: Path, dpi: float, benchmarks: Iterable[pyperf.Benchmark]) -> None:
+        # pylint: disable=import-outside-toplevel
+        from matplotlib import pyplot as plt
+
+        from benchmarks.pybench.matplotlib_utils import bar_left_aligned_label
+
         benchmarks = sorted(benchmarks, key=lambda b: b.mean())
         _, ax = plt.subplots(figsize=self.params.fig_size)
         x_pos = range(len(benchmarks))
@@ -331,20 +415,27 @@ class BenchPlotter:
         plt.savefig(output, dpi=dpi)
 
 
-def call_by_namespace(func: Callable, namespace: Namespace) -> Any:
+T = TypeVar('T')
+
+
+def call_by_namespace(func: Callable[..., T], namespace: Namespace) -> T:
     sig = inspect.signature(func)
     kwargs_for_func = (vars(namespace).keys() & sig.parameters.keys())
     return func(**{key: getattr(namespace, key) for key in kwargs_for_func})
 
 
+BD = TypeVar('BD', bound='BenchmarkDirector')
+
+
 class BenchmarkDirector:
     def __init__(
         self,
+        *,
         data_dir: Path,
         plot_params: PlotParams,
-        env_spec: Mapping[str, str],
+        env_spec: EnvSpec,
+        check_params: Callable[[EnvSpec], CheckParams],
         schemas: Iterable[BenchSchema] = (),
-        check_params: CheckParams = CheckParams(),
     ):
         self.data_dir = data_dir
         self.env_spec = env_spec
@@ -418,6 +509,7 @@ class BenchmarkDirector:
         return BenchAccessor(
             data_dir=self.data_dir,
             env_spec=self.env_spec,
+            check_params=self.check_params,
             schemas=self.schemas,
         )
 
@@ -428,7 +520,7 @@ class BenchmarkDirector:
         return BenchPlotter(self.plot_params, accessor)
 
     def make_bench_checker(self, accessor: BenchAccessor) -> BenchChecker:
-        return BenchChecker(self.check_params, accessor)
+        return BenchChecker(accessor)
 
     def _validate_schemas(self, accessor: BenchAccessor):
         local_id_set: Set[str] = set()
@@ -437,3 +529,8 @@ class BenchmarkDirector:
             if local_id in local_id_set:
                 raise ValueError(f'Local id {local_id} is duplicated')
             local_id_set.add(local_id)
+
+    def replace(self: BD, *, env_spec: EnvSpec) -> BD:
+        self_copy = copy(self)
+        self_copy.env_spec = env_spec
+        return self_copy

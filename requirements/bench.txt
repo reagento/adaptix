@@ -10,7 +10,7 @@ annotated-types==0.4.0
     # via pydantic
 attrs==22.2.0
     # via cattrs
-cattrs==22.2.0
+cattrs==23.1.2
     # via -r requirements/raw/bench.txt
 contourpy==1.0.7
     # via matplotlib
@@ -30,11 +30,11 @@ kiwisolver==1.4.4
     # via matplotlib
 marshmallow==3.19.0
     # via -r requirements/raw/bench.txt
-mashumaro==3.5
+mashumaro==3.8.1
     # via -r requirements/raw/bench.txt
 matplotlib==3.7.0
     # via -r requirements/raw/bench.txt
-msgspec==0.13.1
+msgspec==0.16.0 ; implementation_name != "pypy"
     # via -r requirements/raw/bench.txt
 numpy==1.24.2
     # via
@@ -44,20 +44,25 @@ packaging==23.0
     # via
     #   marshmallow
     #   matplotlib
+    #   plotly
     #   pytest
 pillow==9.4.0
     # via matplotlib
+plotly==5.15.0
+    # via -r requirements/raw/bench.txt
 pluggy==1.0.0
     # via pytest
-psutil==5.9.4
+psutil==5.9.5
+    # via
+    #   -r requirements/raw/bench.txt
+    #   pyperf
+pydantic==2.0b3
     # via -r requirements/raw/bench.txt
-pydantic==2.0a1
-    # via -r requirements/raw/bench.txt
-pydantic-core==0.22.0
+pydantic-core==0.39.0
     # via pydantic
 pyparsing==3.0.9
     # via matplotlib
-pyperf==2.5.0
+pyperf==2.6.1
     # via -r requirements/raw/bench.txt
 pytest==7.3.1
     # via -r requirements/raw/bench.txt
@@ -67,10 +72,13 @@ schematics==2.1.1
     # via -r requirements/raw/bench.txt
 six==1.16.0
     # via python-dateutil
+tenacity==8.2.2
+    # via plotly
 tomli==2.0.1
     # via pytest
-typing-extensions==4.4.0
+typing-extensions==4.6.3
     # via
+    #   cattrs
     #   mashumaro
     #   pydantic
     #   pydantic-core

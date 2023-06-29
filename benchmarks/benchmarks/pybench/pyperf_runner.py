@@ -1,4 +1,5 @@
 # pylint: disable=import-error,no-name-in-module
+import gc
 import json
 import os
 
@@ -14,6 +15,7 @@ def main():
 
     benchmark_plan = func(*params)
 
+    gc.collect()
     runner = pyperf.Runner()
     runner.bench_func(
         bench_name,

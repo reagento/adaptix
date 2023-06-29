@@ -1,14 +1,13 @@
 import sys
 from pathlib import Path
 
-from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, PlotParams
+from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams, PlotParams
 from benchmarks.small_structures import (
     bench_adaptix,
     bench_cattrs,
     bench_dataclass_factory,
     bench_marshmallow,
     bench_mashumaro,
-    bench_msgspec,
     bench_pydantic,
     bench_schematics,
 )
@@ -20,126 +19,169 @@ director = BenchmarkDirector(
     plot_params=PlotParams(
         title='Small Structures Benchmark (loading)',
         fig_size=(9, 7.5),
-        label_padding=40,
+        label_padding=5,
         trim_after=300,
     ),
     env_spec={
         'py': f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         'py_impl': sys.implementation.name,
     },
+    check_params=lambda env_spec: CheckParams(
+        stdev_rel_threshold=0.10 if env_spec['py_impl'] == 'pypy' else 0.04,
+    ),
 )
 
 director.add(
     BenchSchema(
-        func=bench_adaptix.bench_loading,
+        entry_point=bench_adaptix.bench_loading,
         base='adaptix',
         tags=['sc', 'dp'],
         kwargs={'strict_coercion': True, 'debug_path': True, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['adaptix'],
     ),
     BenchSchema(
-        func=bench_adaptix.bench_loading,
+        entry_point=bench_adaptix.bench_loading,
         base='adaptix',
         tags=['sc'],
         kwargs={'strict_coercion': True, 'debug_path': False, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['adaptix'],
     ),
     BenchSchema(
-        func=bench_adaptix.bench_loading,
+        entry_point=bench_adaptix.bench_loading,
         base='adaptix',
         tags=['dp'],
         kwargs={'strict_coercion': False, 'debug_path': True, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['adaptix'],
     ),
     BenchSchema(
-        func=bench_adaptix.bench_loading,
+        entry_point=bench_adaptix.bench_loading,
         base='adaptix',
         tags=[],
         kwargs={'strict_coercion': False, 'debug_path': False, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['adaptix'],
     ),
 )
 
 director.add(
     BenchSchema(
-        func=bench_mashumaro.bench_loading,
+        entry_point=bench_mashumaro.bench_dumping,
         base='mashumaro',
         tags=[],
-        kwargs={'reviews_count': REVIEWS_COUNT},
+        kwargs={'lazy_compilation': False, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['mashumaro'],
+    ),
+    BenchSchema(
+        entry_point=bench_mashumaro.bench_loading,
+        base='mashumaro',
+        tags=['lc'],
+        kwargs={'lazy_compilation': True, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['mashumaro'],
     ),
 )
 
 director.add(
     BenchSchema(
-        func=bench_pydantic.bench_loading,
+        entry_point=bench_pydantic.bench_loading,
         base='pydantic',
         tags=['strict'],
         kwargs={'strict': True, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['pydantic'],
     ),
     BenchSchema(
-        func=bench_pydantic.bench_loading,
+        entry_point=bench_pydantic.bench_loading,
         base='pydantic',
         tags=[],
         kwargs={'strict': False, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['pydantic'],
     ),
 )
 
 director.add(
     BenchSchema(
-        func=bench_cattrs.bench_loading,
+        entry_point=bench_cattrs.bench_loading,
         base='cattrs',
         tags=['dv'],
         kwargs={'detailed_validation': True, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['cattrs'],
     ),
     BenchSchema(
-        func=bench_cattrs.bench_loading,
+        entry_point=bench_cattrs.bench_loading,
         base='cattrs',
         tags=[],
         kwargs={'detailed_validation': False, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['cattrs'],
     ),
 )
 
 director.add(
     BenchSchema(
-        func=bench_schematics.bench_loading,
+        entry_point=bench_schematics.bench_loading,
         base='schematics',
         tags=[],
         kwargs={'reviews_count': REVIEWS_COUNT},
+        used_distributions=['schematics'],
     ),
 )
 
 director.add(
     BenchSchema(
-        func=bench_dataclass_factory.bench_loading,
+        entry_point=bench_dataclass_factory.bench_loading,
         base='dataclass_factory',
         tags=['dp'],
         kwargs={'debug_path': True, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['dataclass_factory'],
     ),
     BenchSchema(
-        func=bench_dataclass_factory.bench_loading,
+        entry_point=bench_dataclass_factory.bench_loading,
         base='dataclass_factory',
         tags=[],
         kwargs={'debug_path': False, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['dataclass_factory'],
     ),
 )
 
 director.add(
     BenchSchema(
-        func=bench_marshmallow.bench_loading,
+        entry_point=bench_marshmallow.bench_loading,
         base='marshmallow',
         tags=[],
         kwargs={'reviews_count': REVIEWS_COUNT},
+        used_distributions=['marshmallow'],
     ),
 )
 
 director.add(
     BenchSchema(
-        func=bench_msgspec.bench_loading,
+        entry_point='benchmarks.small_structures.bench_msgspec:bench_loading',
         base='msgspec',
         tags=[],
-        kwargs={'no_gc': False, 'reviews_count': REVIEWS_COUNT},
+        kwargs={'strict': False, 'no_gc': False, 'reviews_count': REVIEWS_COUNT},
+        skip_if=lambda env_spec: env_spec['py_impl'] == 'pypy',
+        used_distributions=['msgspec'],
     ),
     BenchSchema(
-        func=bench_msgspec.bench_loading,
+        entry_point='benchmarks.small_structures.bench_msgspec:bench_loading',
+        base='msgspec',
+        tags=['strict'],
+        kwargs={'strict': True, 'no_gc': False, 'reviews_count': REVIEWS_COUNT},
+        skip_if=lambda env_spec: env_spec['py_impl'] == 'pypy',
+        used_distributions=['msgspec'],
+    ),
+    BenchSchema(
+        entry_point='benchmarks.small_structures.bench_msgspec:bench_loading',
         base='msgspec',
         tags=['no_gc'],
-        kwargs={'no_gc': True, 'reviews_count': REVIEWS_COUNT},
+        kwargs={'strict': False, 'no_gc': True, 'reviews_count': REVIEWS_COUNT},
+        skip_if=lambda env_spec: env_spec['py_impl'] == 'pypy',
+        used_distributions=['msgspec'],
+    ),
+    BenchSchema(
+        entry_point='benchmarks.small_structures.bench_msgspec:bench_loading',
+        base='msgspec',
+        tags=['strict', 'no_gc'],
+        kwargs={'strict': True, 'no_gc': True, 'reviews_count': REVIEWS_COUNT},
+        skip_if=lambda env_spec: env_spec['py_impl'] == 'pypy',
+        used_distributions=['msgspec'],
     ),
 )
 

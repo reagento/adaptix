@@ -109,13 +109,13 @@ else:
     def pairs(iterable: Iterable[T]) -> Iterable[Tuple[T, T]]:  # type: ignore[no-redef]
         it = iter(iterable)
         try:
-            past = next(it)
+            prev = next(it)
         except StopIteration:
             return
 
         for current in it:
-            yield past, current
-            past = current
+            yield prev, current
+            prev = current
 
 
 class Omitted(metaclass=SingletonMeta):

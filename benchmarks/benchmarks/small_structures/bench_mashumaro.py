@@ -29,11 +29,31 @@ class Book(DataClassDictMixin):
     reviews: List[Review]
 
 
+@dataclass
+class ReviewLC(Review):
+    class Config(Review.Config):
+        lazy_compilation = True
+
+
+
+@dataclass
+class BookLC(Book):
+    reviews: List[ReviewLC]
+
+    class Config(BaseConfig):
+        lazy_compilation = True
+
+
 def test_loading():
     assert (
         Book.from_dict(create_dumped_book(reviews_count=1))
         ==
         create_book(Book, Review, reviews_count=1)
+    )
+    assert (
+        BookLC.from_dict(create_dumped_book(reviews_count=1))
+        ==
+        create_book(BookLC, ReviewLC, reviews_count=1)
     )
 
 
@@ -43,13 +63,24 @@ def test_dumping():
         ==
         create_dumped_book(reviews_count=1)
     )
+    assert (
+        create_book(BookLC, ReviewLC, reviews_count=1).to_dict()
+        ==
+        create_dumped_book(reviews_count=1)
+    )
 
 
-def bench_loading(reviews_count: int):
+def bench_loading(reviews_count: int, lazy_compilation: bool):
     data = create_dumped_book(reviews_count=reviews_count)
-    return benchmark_plan(Book.from_dict, data)
+    if lazy_compilation:
+        BookLC.from_dict(data)  # emit method compilation
+    loader = BookLC.from_dict if lazy_compilation else Book.from_dict
+    return benchmark_plan(loader, data)
 
 
-def bench_dumping(reviews_count: int):
+def bench_dumping(reviews_count: int, lazy_compilation: bool):
     data = create_book(Book, Review, reviews_count=reviews_count)
-    return benchmark_plan(Book.to_dict, data)
+    if lazy_compilation:
+        BookLC.to_dict(data)  # emit method compilation
+    dumper = BookLC.to_dict if lazy_compilation else Book.to_dict
+    return benchmark_plan(dumper, data)

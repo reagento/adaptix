@@ -3,6 +3,7 @@ from functools import partial
 from typing import List, Optional
 
 import msgspec
+import pytest
 
 from benchmarks.gh_issues.common import (
     AuthorAssociation,
@@ -198,9 +199,11 @@ class GetRepoIssuesResponseNoGC(msgspec.Struct, gc=False):
     data: List[IssueNoGC]
 
 
-def test_loading():
+
+@pytest.mark.parametrize('strict', [False, True])
+def test_loading(strict):
     assert (
-        msgspec.from_builtins(create_dumped_response(), GetRepoIssuesResponse)
+        msgspec.convert(create_dumped_response(), GetRepoIssuesResponse, strict=strict)
         ==
         create_response(
             GetRepoIssuesResponse,
@@ -212,7 +215,7 @@ def test_loading():
         )
     )
     assert (
-        msgspec.from_builtins(create_dumped_response(), GetRepoIssuesResponseNoGC)
+        msgspec.convert(create_dumped_response(), GetRepoIssuesResponseNoGC, strict=strict)
         ==
         create_response(
             GetRepoIssuesResponseNoGC,
@@ -256,14 +259,13 @@ def test_dumping():
     )
 
 
-def bench_loading(no_gc: bool):
-    if no_gc:
-        loader = partial(msgspec.from_builtins, type=GetRepoIssuesResponseNoGC)
-    else:
-        loader = partial(msgspec.from_builtins, type=GetRepoIssuesResponse)
-
+def bench_loading(no_gc: bool, strict: bool):
     data = create_dumped_response()
-    return benchmark_plan(loader, data)
+    return benchmark_plan(
+        partial(msgspec.convert, strict=strict),
+        data,
+        GetRepoIssuesResponseNoGC if no_gc else GetRepoIssuesResponse,
+    )
 
 
 def bench_dumping(no_gc: bool):
