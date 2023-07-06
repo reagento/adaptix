@@ -41,4 +41,4 @@ def bench_loading(reviews_count: int):
 
 def bench_dumping(reviews_count: int):
     data = create_book_schematics(reviews_count=reviews_count)
-    return benchmark_plan(Book.to_primitive, data)
+    return benchmark_plan(data.to_primitive)

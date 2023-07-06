@@ -20,8 +20,11 @@ cycler==0.11.0
     # via matplotlib
 docutils==0.18.1
     # via
+    #   docutils-stubs
     #   myst-parser
     #   sphinx
+docutils-stubs==0.0.22
+    # via -r requirements/raw/doc.txt
 fonttools==4.39.3
     # via matplotlib
 furo==2023.5.20

@@ -8,7 +8,7 @@ matplotlib==3.7.0
 plotly==5.15.0
 
 mashumaro==3.8.1
-pydantic==2.0b3
+pydantic==2.0
 cattrs==23.1.2
 schematics==2.1.1
 dataclass-factory==2.16

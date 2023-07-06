@@ -167,4 +167,4 @@ def bench_dumping():
         maker(Label),
         maker(SimpleUser),
     )
-    return benchmark_plan(GetRepoIssuesResponse.to_primitive, data)
+    return benchmark_plan(data.to_primitive)

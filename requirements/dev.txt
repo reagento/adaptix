@@ -65,8 +65,11 @@ dlint==0.14.1
     # via -r requirements/raw/lint.txt
 docutils==0.18.1
     # via
+    #   docutils-stubs
     #   myst-parser
     #   sphinx
+docutils-stubs==0.0.22
+    # via -r requirements/raw/doc.txt
 exceptiongroup==1.1.0
     # via
     #   cattrs
@@ -215,9 +218,9 @@ pycodestyle==2.10.0
     # via
     #   flake8
     #   flake8-debugger
-pydantic==2.0b3
+pydantic==2.0
     # via -r requirements/raw/bench.txt
-pydantic-core==0.39.0
+pydantic-core==2.0.1
     # via pydantic
 pyflakes==3.0.1
     # via flake8

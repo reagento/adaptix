@@ -310,8 +310,9 @@ def bench_loading(lazy_compilation: bool):
 
 
 def bench_dumping(lazy_compilation: bool):
-    data = create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)
     if lazy_compilation:
-        GetRepoIssuesResponseLC.to_dict(data)
-    dumper = GetRepoIssuesResponseLC.to_dict if lazy_compilation else GetRepoIssuesResponse.to_dict
-    return benchmark_plan(dumper, data)
+        data = create_response(GetRepoIssuesResponseLC, IssueLC, ReactionsLC, PullRequestLC, LabelLC, SimpleUserLC)
+        data.to_dict()
+    else:
+        data = create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)
+    return benchmark_plan(data.to_dict)

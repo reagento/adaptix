@@ -133,5 +133,4 @@ def bench_loading():
 
 def bench_dumping():
     data = create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)
-    dumper = GetRepoIssuesResponse.model_dump
-    return benchmark_plan(partial(dumper, mode='json', by_alias=True), data)
+    return benchmark_plan(lambda: data.model_dump(mode='json', by_alias=True))

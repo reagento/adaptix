@@ -79,8 +79,9 @@ def bench_loading(reviews_count: int, lazy_compilation: bool):
 
 
 def bench_dumping(reviews_count: int, lazy_compilation: bool):
-    data = create_book(Book, Review, reviews_count=reviews_count)
     if lazy_compilation:
-        BookLC.to_dict(data)  # emit method compilation
-    dumper = BookLC.to_dict if lazy_compilation else Book.to_dict
-    return benchmark_plan(dumper, data)
+        data = create_book(BookLC, ReviewLC, reviews_count=reviews_count)
+        data.to_dict()
+    else:
+        data = create_book(Book, Review, reviews_count=reviews_count)
+    return benchmark_plan(data.to_dict)

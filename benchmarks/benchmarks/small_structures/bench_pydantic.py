@@ -1,4 +1,3 @@
-from functools import partial
 from typing import List
 
 from pydantic import BaseModel, Field
@@ -85,9 +84,7 @@ def bench_loading(strict: bool, reviews_count: int):
 def bench_dumping(strict: bool, reviews_count: int):
     if strict:
         data = create_book(StrictBook, StrictReview, reviews_count=reviews_count)
-        dumper = StrictBook.model_dump
     else:
         data = create_book(Book, Review, reviews_count=reviews_count)
-        dumper = Book.model_dump
 
-    return benchmark_plan(partial(dumper, mode='json', by_alias=True), data)
+    return benchmark_plan(lambda: data.model_dump(mode='json', by_alias=True))

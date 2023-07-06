@@ -24,6 +24,7 @@ __all__ = (
     'PlotParams',
     'CheckParams',
     'BenchAccessor',
+    'BenchChecker',
 )
 
 EnvSpec = Mapping[str, str]
@@ -302,10 +303,13 @@ class BenchRunner:
             )
             result_data = json.loads(temp_file.read_text())
             result_data['pybench_data'] = {
+                'base': schema.base,
+                'tags': schema.tags,
+                'kwargs': schema.kwargs,
                 'distributions': {
                     dist: importlib.metadata.version(dist)
                     for dist in schema.used_distributions
-                }
+                },
             }
             result_file.write_text(
                 json.dumps(
