@@ -106,6 +106,8 @@ class HubDescription:
     x_bounder: AxisBounder
 
 
+RELEASE_DATA = Path(__file__).parent.parent / 'release_data'
+
 BENCHMARK_ENVS: Iterable[EnvDescription] = [
     EnvDescription(
         title='CPython 3.8',
@@ -398,7 +400,7 @@ class Orchestrator(HubProcessor):
 
     def run_case(self, hub_description: HubDescription, env_description: EnvDescription, case_state: CaseState) -> None:
         hub_module = hub_description.module
-        env = env_description.key
+        env = env_description.tox_env
         for _ in range(self.series):
             self.print(f'Running   hub: {hub_description.key:<30} env: {env}')
             self.run(f'tox exec -e {env} --skip-pkg-install -- python -m {hub_module} run --unstable')
@@ -413,9 +415,53 @@ class Orchestrator(HubProcessor):
 
 
 class Renderer(HubProcessor):
+    @classmethod
+    def add_arguments(cls, parser: ArgumentParser) -> None:
+        super().add_arguments(parser)
+        parser.add_argument(
+            '--output', '-o',
+            action='store',
+            required=False,
+        )
+
+    def __init__(
+        self,
+        include: Optional[Sequence[str]] = None,
+        exclude: Optional[Sequence[str]] = None,
+        output: Optional[str] = None
+    ):
+        super().__init__(include=include, exclude=exclude)
+        self.output = output
+
+    HTML_TEMPLATE = dedent(
+        '''
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+        </head>
+        <body>
+            {body}
+        </body>
+        </html>
+        '''
+    )
+
     def start(self) -> None:
+        body = ''
         for hub_description, env_to_director in self.load_directors(self.filtered_hubs()).items():
-            self.render_hub_from_directors(hub_description, env_to_director)
+            figure = self.render_hub_from_workbench(hub_description, env_to_director)
+            figure.update_layout(width=809)
+            body += plotly.offline.plot(
+                figure,
+                config={'displaylogo': False},
+                include_plotlyjs='cdn',
+                output_type='div'
+            )
+            body += '<p></p>'
+        output = 'benchmark_plots.html' if self.output is None else self.output
+        Path(output).write_text(self.HTML_TEMPLATE.format(body=body))
+        self.print(f'Open file://{Path(output).absolute()}')
 
     def _director_to_measures(self, director: BenchmarkDirector) -> Sequence[BenchmarkMeasure]:
         accessor = director.make_accessor()
@@ -459,24 +505,23 @@ class Renderer(HubProcessor):
                 for env, files in env_to_files.items()
             }
 
-    def render_hub_from_directors(
+    def render_hub_from_workbench(
         self,
         hub_description: HubDescription,
         env_to_director: Mapping[EnvDescription, BenchmarkDirector],
-    ) -> None:
+    ) -> go.Figure:
         env_to_measures = {
             env_description: self._director_to_measures(director)
             for env_description, director in env_to_director.items()
         }
-        figure = self.create_hub_plot(hub_description, env_to_measures)
-        plotly.offline.plot(figure, config={'displaylogo': False}, filename=f'{hub_description.key}.html')
+        return self.create_hub_plot(hub_description, env_to_measures)
 
     def render_hub_from_release(
         self,
         hub_description: HubDescription,
-    ) -> Mapping:
+    ) -> go.Figure:
         figure = self.create_hub_plot(hub_description, self._release_zip_to_measures(hub_description))
-        return figure.to_dict()
+        return figure
 
     BASE_RENAMING = {
         'pydantic': 'pydantic v2'
@@ -597,7 +642,6 @@ class Renderer(HubProcessor):
         ).update_xaxes(
             range=[0, hub_description.x_bounder.get_hub_x_bound(env_to_measures)],
         ).update_layout(
-            width=1000,
             height=height,
             xaxis_fixedrange=True,
             yaxis_fixedrange=True,
@@ -654,9 +698,6 @@ class HubValidator(HubProcessor):
             for dist, versions in dist_to_versions.items()
             if len(versions) > 1
         ]
-
-
-RELEASE_DATA = Path(__file__).parent.parent / 'benchmarks' / 'release_data'
 
 
 class Releaser(HubProcessor):
