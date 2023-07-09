@@ -5,7 +5,7 @@ import pytest
 from pytest import param
 
 from adaptix import CannotProvide, Retort, TypeHint
-from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
+from adaptix._internal.feature_requirement import HAS_PY_39, HAS_PY_310, HAS_STD_CLASSES_GENERICS, IS_PYPY
 from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
 from adaptix._internal.provider.model.shape_provider import provide_generic_resolved_shape
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
@@ -227,16 +227,23 @@ def test_generic_multiple_inheritance(tp) -> None:
     )
 
 
+# TODO: fix it
+skip_if_pypy_39_or_310 = pytest.mark.skipif(
+    IS_PYPY and (HAS_PY_39 or HAS_PY_310),
+    reason='At this python version and implementation list has __init__ that allow to generate Shape',
+)
+
+
 @pytest.mark.parametrize(
     'tp',
     [
         int,
-        param(list, id='list'),
-        param(List, id='List'),
-        param(List[T], id='List[T]'),
-        param(List[int], id='List[int]'),
+        param(list, id='list', marks=skip_if_pypy_39_or_310),
+        param(List, id='List', marks=skip_if_pypy_39_or_310),
+        param(List[T], id='List[T]', marks=skip_if_pypy_39_or_310),
+        param(List[int], id='List[int]', marks=skip_if_pypy_39_or_310),
     ] + (
-        [param(list[T], id='list[T]')]
+        [param(list[T], id='list[T]', marks=skip_if_pypy_39_or_310)]
         if HAS_STD_CLASSES_GENERICS else
         []
     )

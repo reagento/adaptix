@@ -28,7 +28,7 @@ the loader will pass only values of appropriate types listed at the ``Allowed st
 
    * - Type
      - Allowed strict origins
-     - dumping to
+     - Dumping to
    * - ``int``
      - ``int``
      - `no conversion`

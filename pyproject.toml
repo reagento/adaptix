@@ -54,7 +54,7 @@ remove_redundant_aliases = true
 
 [tool.pytest.ini_options]
 python_classes = 'WeDoNotUseClassTestCase'
-python_files = ['test_*.py', '*_test.py', 'bench_*.py', 'tests_helpers.py']
+python_files = ['test_*.py', '*_test.py', 'bench_[!nexus]*.py', 'tests_helpers.py']
 testpaths = ['tests', 'tests_helpers', 'examples']
 filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
 

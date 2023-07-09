@@ -6,7 +6,8 @@ external_retort = Retort(
     ]
 )
 
-# create retort to faster load data from internal trusted source where it already validated
+# create retort to faster load data from internal trusted source
+# where it already validated
 internal_retort = external_retort.replace(
     strict_coercion=False,
     debug_path=False,
