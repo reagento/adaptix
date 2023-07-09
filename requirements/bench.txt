@@ -12,44 +12,24 @@ attrs==22.2.0
     # via cattrs
 cattrs==23.1.2
     # via -r requirements/raw/bench.txt
-contourpy==1.0.7
-    # via matplotlib
-cycler==0.11.0
-    # via matplotlib
 dataclass-factory==2.16
     # via -r requirements/raw/bench.txt
 exceptiongroup==1.1.0
     # via
     #   cattrs
     #   pytest
-fonttools==4.38.0
-    # via matplotlib
 iniconfig==2.0.0
     # via pytest
-kiwisolver==1.4.4
-    # via matplotlib
 marshmallow==3.19.0
     # via -r requirements/raw/bench.txt
 mashumaro==3.8.1
     # via -r requirements/raw/bench.txt
-matplotlib==3.7.0
-    # via -r requirements/raw/bench.txt
 msgspec==0.16.0 ; implementation_name != "pypy"
     # via -r requirements/raw/bench.txt
-numpy==1.24.2
-    # via
-    #   contourpy
-    #   matplotlib
 packaging==23.0
     # via
     #   marshmallow
-    #   matplotlib
-    #   plotly
     #   pytest
-pillow==9.4.0
-    # via matplotlib
-plotly==5.15.0
-    # via -r requirements/raw/bench.txt
 pluggy==1.0.0
     # via pytest
 psutil==5.9.5
@@ -60,20 +40,12 @@ pydantic==2.0
     # via -r requirements/raw/bench.txt
 pydantic-core==2.0.1
     # via pydantic
-pyparsing==3.0.9
-    # via matplotlib
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
 pytest==7.3.1
     # via -r requirements/raw/bench.txt
-python-dateutil==2.8.2
-    # via matplotlib
 schematics==2.1.1
     # via -r requirements/raw/bench.txt
-six==1.16.0
-    # via python-dateutil
-tenacity==8.2.2
-    # via plotly
 tomli==2.0.1
     # via pytest
 typing-extensions==4.6.3

@@ -5,7 +5,5 @@ setuptools==67.8.0
 invoke==2.1.2
 
 -r lint.txt
--r doc.txt
--r test_extra_new.txt
--r bench.txt
+-r _bench-orchestrate.txt
 -r pre.txt

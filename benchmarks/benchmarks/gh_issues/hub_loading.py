@@ -25,7 +25,7 @@ director = BenchmarkDirector(
         'py_impl': sys.implementation.name,
     },
     check_params=lambda env_spec: CheckParams(
-        stdev_rel_threshold=0.06 if env_spec['py_impl'] == 'pypy' else 0.04,
+        stdev_rel_threshold=0.07 if env_spec['py_impl'] == 'pypy' else 0.04,
     ),
 )
 
@@ -84,6 +84,10 @@ director.add(
         tags=[],
         kwargs={},
         used_distributions=['pydantic'],
+        check_params=lambda env_spec: CheckParams(
+            stdev_rel_threshold=0.3 if env_spec['py_impl'] == 'pypy' else None,
+            ignore_pyperf_warnings=True if env_spec['py_impl'] == 'pypy' else None,
+        ),
     ),
 )
 

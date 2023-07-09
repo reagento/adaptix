@@ -4,8 +4,6 @@ pytest==7.3.1
 
 pyperf==2.6.1
 psutil==5.9.5
-matplotlib==3.7.0
-plotly==5.15.0
 
 mashumaro==3.8.1
 pydantic==2.0

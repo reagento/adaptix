@@ -136,7 +136,7 @@ mashumaro==3.8.1
     # via -r requirements/raw/bench.txt
 matplotlib==3.7.0
     # via
-    #   -r requirements/raw/bench.txt
+    #   -r requirements/raw/_bench-orchestrate.txt
     #   sphinxext-opengraph
 mccabe==0.7.0
     # via
@@ -181,7 +181,7 @@ platformdirs==3.0.0
     #   pylint
     #   virtualenv
 plotly==5.15.0
-    # via -r requirements/raw/bench.txt
+    # via -r requirements/raw/_bench-orchestrate.txt
 pluggy==1.0.0
     # via pytest
 pre-commit==3.3.2

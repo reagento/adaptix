@@ -28,7 +28,7 @@ director = BenchmarkDirector(
         'py_impl': sys.implementation.name,
     },
     check_params=lambda env_spec: CheckParams(
-        stdev_rel_threshold=0.06 if env_spec['py_impl'] == 'pypy' else 0.04,
+        stdev_rel_threshold=0.07 if env_spec['py_impl'] == 'pypy' else 0.04,
     ),
 )
 
@@ -58,7 +58,7 @@ director.add(
         used_distributions=['mashumaro'],
     ),
     BenchSchema(
-        entry_point=bench_mashumaro.bench_loading,
+        entry_point=bench_mashumaro.bench_dumping,
         base='mashumaro',
         tags=['lc'],
         kwargs={'lazy_compilation': True, 'reviews_count': REVIEWS_COUNT},

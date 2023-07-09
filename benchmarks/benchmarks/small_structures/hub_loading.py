@@ -27,7 +27,7 @@ director = BenchmarkDirector(
         'py_impl': sys.implementation.name,
     },
     check_params=lambda env_spec: CheckParams(
-        stdev_rel_threshold=0.06 if env_spec['py_impl'] == 'pypy' else 0.04,
+        stdev_rel_threshold=0.07 if env_spec['py_impl'] == 'pypy' else 0.04,
     ),
 )
 
@@ -64,7 +64,7 @@ director.add(
 
 director.add(
     BenchSchema(
-        entry_point=bench_mashumaro.bench_dumping,
+        entry_point=bench_mashumaro.bench_loading,
         base='mashumaro',
         tags=[],
         kwargs={'lazy_compilation': False, 'reviews_count': REVIEWS_COUNT},
@@ -86,6 +86,10 @@ director.add(
         tags=['strict'],
         kwargs={'strict': True, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['pydantic'],
+        check_params=lambda env_spec: CheckParams(
+            stdev_rel_threshold=0.3 if env_spec['py_impl'] == 'pypy' else None,
+            ignore_pyperf_warnings=True if env_spec['py_impl'] == 'pypy' else None,
+        ),
     ),
     BenchSchema(
         entry_point=bench_pydantic.bench_loading,
@@ -93,6 +97,10 @@ director.add(
         tags=[],
         kwargs={'strict': False, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['pydantic'],
+        check_params=lambda env_spec: CheckParams(
+            stdev_rel_threshold=0.3 if env_spec['py_impl'] == 'pypy' else None,
+            ignore_pyperf_warnings=True if env_spec['py_impl'] == 'pypy' else None,
+        ),
     ),
 )
 

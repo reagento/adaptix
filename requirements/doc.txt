@@ -4,12 +4,20 @@
 #
 #    pip-compile --allow-unsafe --output-file=requirements/doc.txt --resolver=backtracking requirements/raw/doc.txt
 #
+-e ./benchmarks
+    # via -r requirements/raw/bench.txt
 alabaster==0.7.13
     # via sphinx
+annotated-types==0.5.0
+    # via pydantic
+attrs==23.1.0
+    # via cattrs
 babel==2.11.0
     # via sphinx
 beautifulsoup4==4.11.2
     # via furo
+cattrs==23.1.2
+    # via -r requirements/raw/bench.txt
 certifi==2022.12.7
     # via requests
 charset-normalizer==3.0.1
@@ -18,6 +26,8 @@ contourpy==1.0.7
     # via matplotlib
 cycler==0.11.0
     # via matplotlib
+dataclass-factory==2.16
+    # via -r requirements/raw/bench.txt
 docutils==0.18.1
     # via
     #   docutils-stubs
@@ -25,6 +35,10 @@ docutils==0.18.1
     #   sphinx
 docutils-stubs==0.0.22
     # via -r requirements/raw/doc.txt
+exceptiongroup==1.1.2
+    # via
+    #   cattrs
+    #   pytest
 fonttools==4.39.3
     # via matplotlib
 furo==2023.5.20
@@ -33,6 +47,8 @@ idna==3.4
     # via requests
 imagesize==1.4.1
     # via sphinx
+iniconfig==2.0.0
+    # via pytest
 jinja2==3.1.2
     # via
     #   myst-parser
@@ -45,12 +61,18 @@ markdown-it-py==2.2.0
     #   myst-parser
 markupsafe==2.1.2
     # via jinja2
-matplotlib==3.7.1
+marshmallow==3.19.0
+    # via -r requirements/raw/bench.txt
+mashumaro==3.8.1
+    # via -r requirements/raw/bench.txt
+matplotlib==3.7.0
     # via sphinxext-opengraph
 mdit-py-plugins==0.3.5
     # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
+msgspec==0.16.0 ; implementation_name != "pypy"
+    # via -r requirements/raw/bench.txt
 myst-parser==1.0.0
     # via -r requirements/raw/doc.txt
 numpy==1.24.3
@@ -59,18 +81,34 @@ numpy==1.24.3
     #   matplotlib
 packaging==23.0
     # via
+    #   marshmallow
     #   matplotlib
+    #   pytest
     #   sphinx
 pbr==5.11.1
     # via sphinxcontrib-apidoc
 pillow==9.5.0
     # via matplotlib
+pluggy==1.2.0
+    # via pytest
+psutil==5.9.5
+    # via
+    #   -r requirements/raw/bench.txt
+    #   pyperf
+pydantic==2.0
+    # via -r requirements/raw/bench.txt
+pydantic-core==2.0.1
+    # via pydantic
 pygments==2.14.0
     # via
     #   furo
     #   sphinx
 pyparsing==3.0.9
     # via matplotlib
+pyperf==2.6.1
+    # via -r requirements/raw/bench.txt
+pytest==7.3.1
+    # via -r requirements/raw/bench.txt
 python-dateutil==2.8.2
     # via matplotlib
 pytz==2022.7.1
@@ -79,6 +117,8 @@ pyyaml==6.0
     # via myst-parser
 requests==2.28.2
     # via sphinx
+schematics==2.1.1
+    # via -r requirements/raw/bench.txt
 six==1.16.0
     # via python-dateutil
 snowballstemmer==2.2.0
@@ -119,5 +159,13 @@ sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
 sphinxext-opengraph==0.8.2
     # via -r requirements/raw/doc.txt
+tomli==2.0.1
+    # via pytest
+typing-extensions==4.7.1
+    # via
+    #   cattrs
+    #   mashumaro
+    #   pydantic
+    #   pydantic-core
 urllib3==1.26.14
     # via requests

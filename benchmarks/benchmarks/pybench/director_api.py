@@ -318,6 +318,11 @@ class BenchRunner:
                     check_circular=False,
                 )
             )
+            bench = pyperf.Benchmark.load(str(result_file))
+            check_params = self.accessor.resolve_check_params(schema)
+            rel_stddev = bench.stdev() / bench.mean()
+            print(f'Relative stdev is {rel_stddev:.1%} (max allowed is {check_params.stdev_rel_threshold:.1%})')
+            print()
 
     def launch_benchmark(
         self,

@@ -1,5 +1,5 @@
 -r test_extra_new.txt
--r bench.txt
+-r _bench-orchestrate.txt
 -r doc.txt
 
 pre-commit==3.3.2

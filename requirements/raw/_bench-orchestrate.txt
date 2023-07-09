@@ -1,0 +1,4 @@
+-r bench.txt
+
+matplotlib==3.7.0
+plotly==5.15.0
