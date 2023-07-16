@@ -4,7 +4,7 @@ from typing import List
 from marshmallow import Schema, fields, post_load
 
 from benchmarks.pybench.bench_api import benchmark_plan
-from benchmarks.small_structures.common import create_book, create_dumped_book
+from benchmarks.simple_structures.common import create_book, create_dumped_book
 
 
 @dataclass

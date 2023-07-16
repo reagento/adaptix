@@ -134,6 +134,16 @@ BENCHMARK_ENVS: Iterable[EnvDescription] = [
         key='pypy38',
         tox_env='pypy38-bench',
     ),
+    EnvDescription(
+        title='PyPy 3.9',
+        key='pypy39',
+        tox_env='pypy39-bench',
+    ),
+    EnvDescription(
+        title='PyPy 3.10',
+        key='pypy310',
+        tox_env='pypy310-bench',
+    ),
 ]
 KEY_TO_ENV = {
     env_description.key: env_description
@@ -142,18 +152,18 @@ KEY_TO_ENV = {
 
 BENCHMARK_HUBS: Iterable[HubDescription] = [
     HubDescription(
-        key='small_structures-loading',
-        title='Small Structures (loading)',
-        module='benchmarks.small_structures.hub_loading',
+        key='simple_structures-loading',
+        title='Simple Structures (loading)',
+        module='benchmarks.simple_structures.hub_loading',
         x_bounder=ClusterAxisBounder(
             last_cluster_idx=-2,
             boundary_rate=2,
         )
     ),
     HubDescription(
-        key='small_structures-dumping',
-        title='Small Structures (dumping)',
-        module='benchmarks.small_structures.hub_dumping',
+        key='simple_structures-dumping',
+        title='Simple Structures (dumping)',
+        module='benchmarks.simple_structures.hub_dumping',
         x_bounder=ClusterAxisBounder(
             last_cluster_idx=-3,
             boundary_rate=2,
@@ -187,16 +197,30 @@ KEY_TO_HUB = {
 class HubProcessor(Foundation, ABC):
     @classmethod
     def add_arguments(cls, parser: ArgumentParser) -> None:
-        selective_group = parser.add_mutually_exclusive_group()
-        selective_group.add_argument(
+        hub_selective_group = parser.add_mutually_exclusive_group()
+        hub_selective_group.add_argument(
             '--include', '-i',
             action='extend',
             nargs="+",
             required=False,
         )
-        selective_group.add_argument(
+        hub_selective_group.add_argument(
             '--exclude',
             '-e',
+            action='extend',
+            nargs="+",
+            required=False,
+        )
+        env_selective_group = parser.add_mutually_exclusive_group()
+        env_selective_group.add_argument(
+            '--env-include', '-ei',
+            action='extend',
+            nargs="+",
+            required=False,
+        )
+        env_selective_group.add_argument(
+            '--env-exclude',
+            '-ee',
             action='extend',
             nargs="+",
             required=False,
@@ -206,9 +230,13 @@ class HubProcessor(Foundation, ABC):
         self,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
+        env_include: Optional[Sequence[str]] = None,
+        env_exclude: Optional[Sequence[str]] = None,
     ):
         self.include = include
         self.exclude = exclude
+        self.env_include = env_include
+        self.env_exclude = env_exclude
 
     def filtered_hubs(self) -> Iterable[HubDescription]:
         if self.include:
@@ -230,6 +258,27 @@ class HubProcessor(Foundation, ABC):
                 if hub_description.key not in self.exclude
             ]
         return BENCHMARK_HUBS
+
+    def filtered_envs(self) -> Iterable[EnvDescription]:
+        if self.env_include:
+            wild_envs = set(self.env_exclude) - {env_description.key for env_description in BENCHMARK_ENVS}
+            if wild_envs:
+                raise ValueError(f"Unknown envs {wild_envs}")
+            return [
+                env_description
+                for env_description in BENCHMARK_ENVS
+                if env_description.key in self.env_include
+            ]
+        if self.env_exclude:
+            wild_envs = set(self.env_exclude) - {env_description.key for env_description in BENCHMARK_ENVS}
+            if wild_envs:
+                raise ValueError(f"Unknown envs {wild_envs}")
+            return [
+                env_description
+                for env_description in BENCHMARK_ENVS
+                if env_description.key not in self.env_exclude
+            ]
+        return BENCHMARK_ENVS
 
     def _submit_python(
         self,
@@ -261,7 +310,7 @@ class HubProcessor(Foundation, ABC):
             hub_to_env_to_future = {
                 hub_description: {
                     env_description: self._submit_python(executor, env_description, env_spec_printer)
-                    for env_description in BENCHMARK_ENVS
+                    for env_description in self.filtered_envs()
                 }
                 for hub_description, env_spec_printer in zip(hub_descriptions, env_spec_printers)
             }
@@ -284,11 +333,16 @@ class CaseState:
     accessor: BenchAccessor
     checker: BenchChecker
     local_ids_with_warnings: Sequence[str]
+    max_tries: Optional[int]
     tries_count: int = 0
 
     @property
     def is_completed(self) -> bool:
         return not self.local_ids_with_warnings
+
+    @property
+    def is_out_of_tries(self) -> bool:
+        return self.max_tries is not None and self.tries_count >= self.max_tries
 
 
 class Orchestrator(HubProcessor):
@@ -302,19 +356,35 @@ class Orchestrator(HubProcessor):
             type=int,
             default=2,
         )
+        parser.add_argument(
+            '--max-tries',
+            action='store',
+            required=False,
+            type=int,
+            default=None,
+        )
 
     def __init__(
         self,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
-        series: int = 2
+        env_include: Optional[Sequence[str]] = None,
+        env_exclude: Optional[Sequence[str]] = None,
+        series: int = 2,
+        max_tries: Optional[int] = None,
     ):
-        super().__init__(include=include, exclude=exclude)
+        super().__init__(
+            include=include,
+            exclude=exclude,
+            env_include=env_include,
+            env_exclude=env_exclude,
+        )
         self.series = series
+        self.max_tries = max_tries
 
     def start(self) -> None:
         self.print('Start environments preparation')
-        joined_envs = ",".join(env_description.tox_env for env_description in BENCHMARK_ENVS)
+        joined_envs = ",".join(env_description.tox_env for env_description in self.filtered_envs())
         self.run(f'tox --notest -p auto -e {joined_envs}')
 
         self.print('Loading all cases')
@@ -328,6 +398,8 @@ class Orchestrator(HubProcessor):
                     accessor=accessor,
                     checker=director.make_bench_checker(accessor),
                     local_ids_with_warnings=(),
+                    max_tries=self.max_tries,
+                    tries_count=0,
                 )
                 self.update_local_ids_with_warnings(case_state)
                 env_to_case_state[env_description] = case_state
@@ -335,6 +407,11 @@ class Orchestrator(HubProcessor):
             hub_to_env_to_case_state[hub_description] = env_to_case_state
 
         self.process_all_cases(hub_to_env_to_case_state)
+
+    def _render_tries(self, tries_max_size: int, case_state: CaseState) -> str:
+        if case_state.max_tries is None:
+            return str(case_state.tries_count).ljust(tries_max_size) + ' ' * (tries_max_size + 1)
+        return f'{str(case_state.tries_count).ljust(tries_max_size)}/{str(case_state.max_tries).ljust(tries_max_size)}'
 
     def _render_cases_to_complete(
         self,
@@ -354,10 +431,15 @@ class Orchestrator(HubProcessor):
             for env_to_case_state in hub_to_env_to_case_state.values()
             for env_description in env_to_case_state.keys()
         )
+        tries_max_size = max(
+            1 if case_state.max_tries is None else len(str(case_state.max_tries))
+            for env_to_case_state in hub_to_env_to_case_state.values()
+            for case_state in env_to_case_state.values()
+        )
         return '\n'.join(
             f'{hub_description.key.rjust(hub_max_size)} tries:  '
             + '  '.join(
-                f'{env_description.key.ljust(env_max_size)} - {case_state.tries_count:<2}'
+                f'{env_description.key.ljust(env_max_size)} - {self._render_tries(tries_max_size, case_state)}'
                 for env_description, case_state in env_to_case_state.items()
                 if not case_state.is_completed
             )
@@ -367,12 +449,12 @@ class Orchestrator(HubProcessor):
     def process_all_cases(
         self,
         hub_to_env_to_case_state: Mapping[HubDescription, Mapping[EnvDescription, CaseState]],
-    ):
+    ) -> None:
         while True:
             has_uncompleted = False
             for hub_description, env_to_case_state in hub_to_env_to_case_state.items():
                 for env_description, case_state in env_to_case_state.items():
-                    if case_state.is_completed:
+                    if case_state.is_completed or case_state.is_out_of_tries:
                         continue
 
                     has_uncompleted = True
@@ -407,11 +489,26 @@ class Orchestrator(HubProcessor):
             case_state.tries_count += 1
             self.update_local_ids_with_warnings(case_state)
             if case_state.is_completed:
-                self.run(f'tox exec -e {env} --skip-pkg-install -- python -m {hub_module} render')
+                case_state.director.make_bench_plotter(case_state.accessor).draw_plot(output=None, dpi=100)
                 return
             self.print('Got unstable results for ' + ' '.join(case_state.local_ids_with_warnings))
-            if case_state.tries_count >= 5:
-                self.print(f'WARNING: too many tries to get stable benchmark results -- {case_state.tries_count}')
+            if case_state.is_out_of_tries:
+                self.print(
+                    f'WARNING: too many tries to get stable benchmark results -- {case_state.tries_count},'
+                    f' restarting is stopped'
+                )
+                return
+
+
+def pyperf_bench_to_measure(data: Union[str, bytes]) -> BenchmarkMeasure:
+    pybench_data = json.loads(data)['pybench_data']
+    return BenchmarkMeasure(
+        base=pybench_data['base'],
+        tags=pybench_data['tags'],
+        kwargs=pybench_data['kwargs'],
+        distributions=pybench_data['distributions'],
+        pyperf=pyperf.Benchmark.loads(data)
+    )
 
 
 class Renderer(HubProcessor):
@@ -428,9 +525,16 @@ class Renderer(HubProcessor):
         self,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
+        env_include: Optional[Sequence[str]] = None,
+        env_exclude: Optional[Sequence[str]] = None,
         output: Optional[str] = None
     ):
-        super().__init__(include=include, exclude=exclude)
+        super().__init__(
+            include=include,
+            exclude=exclude,
+            env_include=env_include,
+            env_exclude=env_exclude,
+        )
         self.output = output
 
     HTML_TEMPLATE = dedent(
@@ -469,20 +573,10 @@ class Renderer(HubProcessor):
         for schema in accessor.schemas:
             path = accessor.bench_result_file(accessor.get_id(schema))
             measures.append(
-                self._pyperf_bench_to_measure(path.read_text())
+                pyperf_bench_to_measure(path.read_text())
             )
         measures.sort(key=lambda x: x.pyperf.mean())
         return measures
-
-    def _pyperf_bench_to_measure(self, data: Union[str, bytes]) -> BenchmarkMeasure:
-        pybench_data = json.loads(data)['pybench_data']
-        return BenchmarkMeasure(
-            base=pybench_data['base'],
-            tags=pybench_data['tags'],
-            kwargs=pybench_data['kwargs'],
-            distributions=pybench_data['distributions'],
-            pyperf=pyperf.Benchmark.loads(data)
-        )
 
     def _release_zip_to_measures(
         self,
@@ -497,7 +591,7 @@ class Renderer(HubProcessor):
             return {
                 env: sorted(
                     (
-                        self._pyperf_bench_to_measure(release_zip.read(file))
+                        pyperf_bench_to_measure(release_zip.read(file))
                         for file in files
                     ),
                     key=lambda x: x.pyperf.mean()
@@ -599,7 +693,7 @@ class Renderer(HubProcessor):
             for measures in env_to_measures.values()
         ]
         visible_by_default = next(
-            idx for idx, env_description in enumerate(BENCHMARK_ENVS)
+            idx for idx, env_description in enumerate(self.filtered_envs())
             if env_description.key == 'py311'
         )
         bar_charts[visible_by_default].update(visible=True)
@@ -611,7 +705,7 @@ class Renderer(HubProcessor):
                 'label': env_description.title,
                 'method': 'update',
             }
-            for env_idx, env_description in enumerate(BENCHMARK_ENVS)
+            for env_idx, env_description in enumerate(self.filtered_envs())
         ]
         height = max(len(measures) for accessor, measures in env_to_measures.items()) * 40 + 185
         # pylint: disable=no-member
@@ -645,7 +739,9 @@ class Renderer(HubProcessor):
             height=height,
             xaxis_fixedrange=True,
             yaxis_fixedrange=True,
-            modebar_remove=['zoom', 'pan', 'select', 'zoomIn', 'zoomOut', 'autoScale', 'resetScale', 'lasso2d']
+            modebar_remove=['zoom', 'pan', 'select', 'zoomIn', 'zoomOut', 'autoScale', 'resetScale', 'lasso2d'],
+            clickmode='none',
+            dragmode=False,
         ).update_layout(
             updatemenus=[
                 {
@@ -747,13 +843,17 @@ class Releaser(HubProcessor):
         }
 
 
-class HubListGetter(Foundation):
+class ListGetter(Foundation):
     @classmethod
     def add_arguments(cls, parser: ArgumentParser) -> None:
         pass
 
     def start(self) -> None:
+        self.print('Hubs:')
         self.print('\n'.join([hub_description.key for hub_description in BENCHMARK_HUBS]))
+        self.print()
+        self.print('Envs:')
+        self.print('\n'.join([env_description.key for env_description in BENCHMARK_ENVS]))
 
 
 COMMAND_TO_CLS = {
@@ -761,7 +861,7 @@ COMMAND_TO_CLS = {
     'render': Renderer,
     'validate': HubValidator,
     'release': Releaser,
-    'hub-list': HubListGetter,
+    'list': ListGetter,
 }
 
 

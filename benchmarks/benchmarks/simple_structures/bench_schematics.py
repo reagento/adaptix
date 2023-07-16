@@ -2,7 +2,7 @@ from schematics.models import Model
 from schematics.types import FloatType, IntType, ListType, ModelType, StringType
 
 from benchmarks.pybench.bench_api import benchmark_plan
-from benchmarks.small_structures.common import create_dumped_book
+from benchmarks.simple_structures.common import create_book, create_dumped_book
 
 
 class Review(Model):
@@ -18,17 +18,24 @@ class Book(Model):
     reviews = ListType(ModelType(Review), required=True)
 
 
-def create_book_schematics(*, reviews_count: int) -> Book:
-    return Book(create_dumped_book(reviews_count=reviews_count))
+def maker(model):
+    def wrapper(**kwargs):
+        return model(kwargs)
+
+    return wrapper
 
 
 def test_loading():
-    create_book_schematics(reviews_count=1)
+    assert (
+        Book(create_dumped_book(reviews_count=1))
+        ==
+        create_book(maker(Book), maker(Review), reviews_count=1)
+    )
 
 
 def test_dumping():
     assert (
-        create_book_schematics(reviews_count=1).to_primitive()
+        create_book(maker(Book), maker(Review), reviews_count=1).to_primitive()
         ==
         create_dumped_book(reviews_count=1)
     )
@@ -40,5 +47,5 @@ def bench_loading(reviews_count: int):
 
 
 def bench_dumping(reviews_count: int):
-    data = create_book_schematics(reviews_count=reviews_count)
+    data = create_book(maker(Book), maker(Review), reviews_count=reviews_count)
     return benchmark_plan(data.to_primitive)
