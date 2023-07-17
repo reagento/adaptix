@@ -1,3 +1,8 @@
+import importlib.util
+import sys
+
+import git
+
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -24,6 +29,12 @@ master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
 
+# I do not want to mutate sys.path
+spec = importlib.util.spec_from_file_location('custom_ext', './custom_ext/__init__.py')
+module = importlib.util.module_from_spec(spec)
+sys.modules['custom_ext'] = module
+spec.loader.exec_module(module)
+
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
@@ -38,6 +49,9 @@ extensions = [
     'sphinx_paramlinks',
     'myst_parser',
     'sphinxext.opengraph',
+
+    # local extensions
+    'custom_ext.bench_tools',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -78,3 +92,28 @@ apidoc_extra_args = ['--maxdepth', '1']
 paramlinks_hyperlink_param = 'name'
 
 add_function_parentheses = False
+
+repo = git.Repo(search_parent_directories=True)
+sha = repo.head.object.hexsha
+
+extlinks = {
+    'adaptix-view-repo': (
+        'https://github.com/reagento/dataclass-factory/tree/3.x/develop/%s',
+        '%s',
+    ),
+    'adaptix-repo-commit': (
+        f'https://github.com/reagento/dataclass-factory/{repo.head.object.hexsha}/%s',
+        '%s',
+    ),
+    'adaptix-view-repo-commit': (
+        f'https://github.com/reagento/dataclass-factory/tree/{repo.head.object.hexsha}/%s',
+        '%s',
+    ),
+}
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+}
+
+pygments_style = "tango"
+pygments_dark_style = "native"

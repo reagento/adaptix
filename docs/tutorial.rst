@@ -54,6 +54,7 @@ No changes are required, just specify the correct target type (e.g ``List[SomeCl
 
 Fields also can contain any supported collections.
 
+.. _retort-configuration:
 
 Retort configuration
 ======================

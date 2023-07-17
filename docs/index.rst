@@ -10,6 +10,7 @@ Adaptix
    examples
    extended_usage
    specific_types_behavior
+   benchmarks
    API Reference <api_reference/modules>
 
 

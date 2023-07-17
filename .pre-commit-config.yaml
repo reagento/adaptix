@@ -6,6 +6,7 @@ files: |-
       |(tests_helpers/.*)
       |(examples/.*)
       |(docs/examples/.*)
+      |(docs/custom_ext/.*)
       |(benchmarks/.*)
       |(scripts/.*)
       |(tasks\.py)

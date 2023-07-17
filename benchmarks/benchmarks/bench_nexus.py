@@ -511,6 +511,20 @@ def pyperf_bench_to_measure(data: Union[str, bytes]) -> BenchmarkMeasure:
     )
 
 
+@dataclass
+class ColorScheme:
+    bg_color: str
+    bar_color: str
+    bar_bordercolor: str
+    button_bordercolor: str
+    button_bgcolor: str
+    button_font_color: str
+    font_color: str
+    hoverlabel_bgcolor: str
+    template: str
+    updatemenus_showactive: bool
+
+
 class Renderer(HubProcessor):
     @classmethod
     def add_arguments(cls, parser: ArgumentParser) -> None:
@@ -613,8 +627,9 @@ class Renderer(HubProcessor):
     def render_hub_from_release(
         self,
         hub_description: HubDescription,
+        color_scheme: ColorScheme,
     ) -> go.Figure:
-        figure = self.create_hub_plot(hub_description, self._release_zip_to_measures(hub_description))
+        figure = self.create_hub_plot(hub_description, self._release_zip_to_measures(hub_description), color_scheme)
         return figure
 
     BASE_RENAMING = {
@@ -628,7 +643,32 @@ class Renderer(HubProcessor):
             return f"{base}<br>({tags_str})"
         return base
 
-    def _create_bar_chart(self, measures: Sequence[BenchmarkMeasure]) -> go.Bar:
+    LIGHT_COLOR_SCHEME = ColorScheme(
+        bg_color='white',
+        bar_color='rgba(129, 182, 230, 1.0)',
+        bar_bordercolor='rgba(17, 95, 143, 1.0)',
+        button_bordercolor='black',
+        button_bgcolor='white',
+        button_font_color='black',
+        font_color='black',
+        hoverlabel_bgcolor='white',
+        template='plotly_white',
+        updatemenus_showactive=True,
+    )
+    DARK_COLOR_SCHEME = ColorScheme(
+        bg_color='#131416',
+        bar_color='#1a687d',
+        bar_bordercolor='#4abdd4',
+        button_bordercolor='white',
+        button_bgcolor='#202020',
+        button_font_color='rgb(171, 171, 171)',
+        font_color='white',
+        hoverlabel_bgcolor='#202020',
+        template='plotly_dark',
+        updatemenus_showactive=False,
+    )
+
+    def _create_bar_chart(self, color_scheme: ColorScheme, measures: Sequence[BenchmarkMeasure]) -> go.Bar:
         return go.Bar(
             x=[
                 measure.pyperf.mean() * 10 ** 6
@@ -646,7 +686,7 @@ class Renderer(HubProcessor):
                 ],
                 'width': 4,
                 'thickness': 1.5,
-                'color': 'rgba(14, 83, 125, 1.0)',
+                'color': color_scheme.bar_bordercolor,
             },
             texttemplate='%{x:,.1f}',
             textposition='inside',
@@ -657,9 +697,9 @@ class Renderer(HubProcessor):
             },
             orientation='h',
             marker={
-                'color': 'rgba(129, 182, 230, 1.0)',
+                'color': color_scheme.bar_color,
                 'line': {
-                    'color': 'rgba(17, 95, 143, 1.0)',
+                    'color': color_scheme.bar_bordercolor,
                     'width': 1.2,
                 }
             },
@@ -687,9 +727,10 @@ class Renderer(HubProcessor):
         self,
         hub_description: HubDescription,
         env_to_measures: Mapping[EnvDescription, Sequence[BenchmarkMeasure]],
+        color_scheme: ColorScheme,
     ) -> go.Figure:
         bar_charts = [
-            self._create_bar_chart(measures).update(visible=False)
+            self._create_bar_chart(color_scheme, measures).update(visible=False)
             for measures in env_to_measures.values()
         ]
         visible_by_default = next(
@@ -726,17 +767,20 @@ class Renderer(HubProcessor):
             font={
                 'family': 'Helvetica',
                 'size': 12,
-                'color': 'Black',
+                'color': color_scheme.font_color,
             },
-            template='plotly_white',
+            template=color_scheme.template,
             margin_pad=10,
             hoverlabel={
-                "bgcolor": 'white'
+                "bgcolor": color_scheme.hoverlabel_bgcolor,
             },
+            paper_bgcolor=color_scheme.bg_color,
+            plot_bgcolor=color_scheme.bg_color,
         ).update_xaxes(
             range=[0, hub_description.x_bounder.get_hub_x_bound(env_to_measures)],
         ).update_layout(
             height=height,
+            autosize=True,
             xaxis_fixedrange=True,
             yaxis_fixedrange=True,
             modebar_remove=['zoom', 'pan', 'select', 'zoomIn', 'zoomOut', 'autoScale', 'resetScale', 'lasso2d'],
@@ -749,8 +793,12 @@ class Renderer(HubProcessor):
                     "direction": 'left',
                     "buttons": buttons,
                     "borderwidth": 0.5,
-                    'bordercolor': 'black',
-                    'showactive': True,
+                    'bordercolor': color_scheme.button_bordercolor,
+                    'bgcolor': color_scheme.button_bgcolor,
+                    'showactive': color_scheme.updatemenus_showactive,
+                    'font': {
+                        'color': color_scheme.button_font_color,
+                    },
                     'active': visible_by_default,
                     'x': 0.5,
                     'y': 1 + (64 / height),
