@@ -22,3 +22,6 @@ sphinx:
 
 formats:
   - htmlzip
+
+submodules:
+  recursive: true

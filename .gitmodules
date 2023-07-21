@@ -1,0 +1,4 @@
+[submodule "benchmark-data"]
+	path = benchmarks/release_data
+	url = https://github.com/reagento/adaptix-benchmarks-data
+	branch = main
