@@ -8,6 +8,7 @@ from ..essential import CannotProvide, Mediator
 from ..load_error import ExcludedTypeLoadError, LoadError, TypeLoadError, UnionLoadError
 from ..struct_path import append_path
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
+from ..type_tools.normalize_type import NotSubscribedError
 from ..utils import ClassDispatcher
 from .model.special_cases_optimization import as_is_stub
 from .provider_template import DumperProvider, LoaderProvider, for_predicate
@@ -50,7 +51,11 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
         loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
 
-        unwrapped = strip_tags(normalize_type(loc.type))
+        try:
+            norm = normalize_type(loc.type)
+        except NotSubscribedError:
+            raise CannotProvide
+        unwrapped = strip_tags(norm)
         if unwrapped.source == loc.type:  # type has not changed, continue search
             raise CannotProvide
 
