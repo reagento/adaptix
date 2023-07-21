@@ -111,8 +111,10 @@ furo==2023.5.20
     # via -r requirements/raw/doc.txt
 gitdb==4.0.10
     # via gitpython
-gitpython==3.1.31
-    # via bandit
+gitpython==3.1.32
+    # via
+    #   -r requirements/raw/doc.txt
+    #   bandit
 greenlet==2.0.2
     # via sqlalchemy
 identify==2.5.18

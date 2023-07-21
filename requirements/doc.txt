@@ -43,6 +43,10 @@ fonttools==4.39.3
     # via matplotlib
 furo==2023.5.20
     # via -r requirements/raw/doc.txt
+gitdb==4.0.10
+    # via gitpython
+gitpython==3.1.32
+    # via -r requirements/raw/doc.txt
 idna==3.4
     # via requests
 imagesize==1.4.1
@@ -121,6 +125,8 @@ schematics==2.1.1
     # via -r requirements/raw/bench.txt
 six==1.16.0
     # via python-dateutil
+smmap==5.0.0
+    # via gitdb
 snowballstemmer==2.2.0
     # via sphinx
 soupsieve==2.4

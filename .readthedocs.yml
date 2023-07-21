@@ -24,4 +24,5 @@ formats:
   - htmlzip
 
 submodules:
+  exclude: []
   recursive: true
