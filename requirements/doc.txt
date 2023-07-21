@@ -87,12 +87,15 @@ packaging==23.0
     # via
     #   marshmallow
     #   matplotlib
+    #   plotly
     #   pytest
     #   sphinx
 pbr==5.11.1
     # via sphinxcontrib-apidoc
 pillow==9.5.0
     # via matplotlib
+plotly==5.15.0
+    # via -r requirements/raw/doc.txt
 pluggy==1.2.0
     # via pytest
 psutil==5.9.5
@@ -165,6 +168,8 @@ sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
 sphinxext-opengraph==0.8.2
     # via -r requirements/raw/doc.txt
+tenacity==8.2.2
+    # via plotly
 tomli==2.0.1
     # via pytest
 typing-extensions==4.7.1

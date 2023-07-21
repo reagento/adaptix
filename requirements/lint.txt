@@ -183,7 +183,9 @@ platformdirs==3.0.0
     #   pylint
     #   virtualenv
 plotly==5.15.0
-    # via -r requirements/raw/_bench-orchestrate.txt
+    # via
+    #   -r requirements/raw/_bench-orchestrate.txt
+    #   -r requirements/raw/doc.txt
 pluggy==1.0.0
     # via pytest
 pre-commit==3.3.2
