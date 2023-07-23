@@ -46,10 +46,10 @@ class ReviewLC(DataClassDictMixin):
 
 
 @dataclass
-class BookLC(Book):
+class BookLC(DataClassDictMixin):
     id: int
     name: str
-    reviews: List[Review]
+    reviews: List[ReviewLC]
 
     class Config(BaseConfig):
         lazy_compilation = True
