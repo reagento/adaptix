@@ -523,6 +523,7 @@ class ColorScheme:
     hoverlabel_bgcolor: str
     template: str
     updatemenus_showactive: bool
+    selected_env_annotation_color: str
 
 
 class Renderer(HubProcessor):
@@ -654,6 +655,7 @@ class Renderer(HubProcessor):
         hoverlabel_bgcolor='white',
         template='plotly_white',
         updatemenus_showactive=True,
+        selected_env_annotation_color='rgb(171, 171, 171)',
     )
     DARK_COLOR_SCHEME = ColorScheme(
         bg_color='#131416',
@@ -666,6 +668,7 @@ class Renderer(HubProcessor):
         hoverlabel_bgcolor='#202020',
         template='plotly_dark',
         updatemenus_showactive=False,
+        selected_env_annotation_color='rgb(171, 171, 171)',
     )
 
     def _create_bar_chart(self, color_scheme: ColorScheme, measures: Sequence[BenchmarkMeasure]) -> go.Bar:
@@ -723,6 +726,8 @@ class Renderer(HubProcessor):
             ],
         )
 
+    DEFAULT_ENV_KEY = 'py311'
+
     def create_hub_plot(
         self,
         hub_description: HubDescription,
@@ -735,13 +740,14 @@ class Renderer(HubProcessor):
         ]
         visible_by_default = next(
             idx for idx, env_description in enumerate(self.filtered_envs())
-            if env_description.key == 'py311'
+            if env_description.key == self.DEFAULT_ENV_KEY
         )
         bar_charts[visible_by_default].update(visible=True)
         buttons = [
             {
                 'args': [
-                    {'visible': [env_idx == bar_idx for bar_idx in range(len(bar_charts))]}
+                    {'visible': [env_idx == bar_idx for bar_idx in range(len(bar_charts))]},
+                    {'annotations[0].text': env_description.title},
                 ],
                 'label': env_description.title,
                 'method': 'update',
@@ -806,6 +812,21 @@ class Renderer(HubProcessor):
                     'yanchor': 'top',
                 },
             ]
+        ).add_annotation(
+            xref="x domain",
+            yref="y domain",
+            x=0.95,
+            y=0.05,
+            text=next(
+                env_description.title for env_description in self.filtered_envs()
+                if env_description.key == self.DEFAULT_ENV_KEY
+            ),
+            xanchor='right',
+            showarrow=False,
+            font=dict(
+                size=13,
+                color=color_scheme.selected_env_annotation_color,
+            ),
         )
         return figure
 
