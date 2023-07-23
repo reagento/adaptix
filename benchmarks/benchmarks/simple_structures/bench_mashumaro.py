@@ -30,15 +30,26 @@ class Book(DataClassDictMixin):
 
 
 @dataclass
-class ReviewLC(Review):
-    class Config(Review.Config):
+class ReviewLC(DataClassDictMixin):
+    id: int
+    title: str
+    rating: float
+    content: str
+
+    class Config(BaseConfig):
+        aliases = {
+            "content": "text",
+        }
+        serialize_by_alias = True
         lazy_compilation = True
 
 
 
 @dataclass
 class BookLC(Book):
-    reviews: List[ReviewLC]
+    id: int
+    name: str
+    reviews: List[Review]
 
     class Config(BaseConfig):
         lazy_compilation = True
