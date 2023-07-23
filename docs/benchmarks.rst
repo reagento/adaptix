@@ -55,7 +55,7 @@ The library has to produce models from dict:
 
 
 :octicon:`mark-github` :adaptix-view-repo-commit:`Source Code <benchmarks/benchmarks/simple_structures/hub_loading.py>`
-:octicon:`file-zip` :adaptix-repo-commit:`Raw data <benchmarks/release_data/simple_structures-loading.zip>`
+:octicon:`file-zip` :adaptix-benchmarks-data:`Raw data <simple_structures-loading.zip>`
 
 
 .. centered:: Cases description
@@ -124,7 +124,7 @@ The library has to convert the model instance to dict used at loading benchmark:
 .. custom-bench-chart:: simple_structures-dumping
 
 :octicon:`mark-github` :adaptix-view-repo-commit:`Source Code <benchmarks/benchmarks/simple_structures/hub_dumping.py>`
-:octicon:`file-zip` :adaptix-repo-commit:`Raw data <benchmarks/release_data/simple_structures-dumping.zip>`
+:octicon:`file-zip` :adaptix-benchmarks-data:`Raw data <simple_structures-dumping.zip>`
 
 
 .. centered:: Cases description
@@ -200,7 +200,7 @@ The library has to produce models from dict:
 .. custom-bench-chart:: gh_issues-loading
 
 :octicon:`mark-github` :adaptix-view-repo-commit:`Source Code <benchmarks/benchmarks/gh_issues/hub_loading.py>`
-:octicon:`file-zip` :adaptix-repo-commit:`Raw data <benchmarks/release_data/gh_issues-loading.zip>`
+:octicon:`file-zip` :adaptix-benchmarks-data:`Raw data <gh_issues-loading.zip>`
 
 
 .. centered:: Cases description
@@ -286,7 +286,7 @@ The library has to convert the model instance to dict used at loading benchmark:
 .. custom-bench-chart:: gh_issues-dumping
 
 :octicon:`mark-github` :adaptix-view-repo-commit:`Source Code <benchmarks/benchmarks/gh_issues/hub_dumping.py>`
-:octicon:`file-zip` :adaptix-repo-commit:`Raw data <benchmarks/release_data/gh_dumping-loading.zip>`
+:octicon:`file-zip` :adaptix-benchmarks-data:`Raw data <gh_dumping-loading.zip>`
 
 .. centered:: Cases description
 

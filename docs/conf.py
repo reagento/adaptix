@@ -95,18 +95,19 @@ add_function_parentheses = False
 
 repo = git.Repo(search_parent_directories=True)
 sha = repo.head.object.hexsha
+benchmark_data_submodule = next(submodule for submodule in repo.submodules if submodule.name == 'benchmark-data')
 
 extlinks = {
     'adaptix-view-repo': (
         'https://github.com/reagento/dataclass-factory/tree/3.x/develop/%s',
         '%s',
     ),
-    'adaptix-repo-commit': (
-        f'https://github.com/reagento/dataclass-factory/{repo.head.object.hexsha}/%s',
-        '%s',
-    ),
     'adaptix-view-repo-commit': (
         f'https://github.com/reagento/dataclass-factory/tree/{repo.head.object.hexsha}/%s',
+        '%s',
+    ),
+    'adaptix-benchmarks-data': (
+        f'https://raw.githubusercontent.com/reagento/adaptix-benchmarks-data/{benchmark_data_submodule.hexsha}/%s',
         '%s',
     ),
 }
