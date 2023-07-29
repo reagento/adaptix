@@ -58,6 +58,7 @@ from ..provider.request_cls import (
 )
 from ..provider.request_filtering import AnyRequestChecker
 from ..retort import OperatingRetort
+from ..type_tools.basic_utils import is_generic_class
 from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
 
 
@@ -258,6 +259,11 @@ class AdornedRetort(OperatingRetort):
     def dump(self, data: Any, tp: Optional[TypeHint] = None, /) -> Any:
         if tp is None:
             tp = type(data)
+            if is_generic_class(tp):
+                raise ValueError(
+                    'Can not infer the actual type of generic class instance,'
+                    ' you have to explicitly pass the type of object'
+                )
         return self.get_dumper(tp)(data)
 
 

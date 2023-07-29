@@ -1,5 +1,7 @@
+import pytest
+
 from adaptix import Retort
-from tests_helpers import PlaceholderProvider
+from tests_helpers import PlaceholderProvider, full_match_regex_str
 
 
 def test_retort_replace():
@@ -29,3 +31,14 @@ def test_retort_extend():
 
 def test_hashability():
     hash(Retort())
+
+
+def test_generic_class_inferring():
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str(
+            'Can not infer the actual type of generic class instance,'
+            ' you have to explicitly pass the type of object'
+        ),
+    ):
+        Retort().dump([1, 2, 3])

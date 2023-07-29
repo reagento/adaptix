@@ -114,7 +114,7 @@ def parametrize_bool(param: str, *params: str):
     return decorator
 
 
-def if_list(flag: object, factory: Callable[[], list]) -> list:
+def cond_list(flag: object, factory: Callable[[], list]) -> list:
     return factory() if flag else []
 
 

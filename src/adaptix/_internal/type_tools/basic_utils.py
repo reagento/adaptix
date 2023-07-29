@@ -89,15 +89,17 @@ def get_type_vars(tp: TypeHint) -> VarTuple[TypeVar]:
     return getattr(tp, '__parameters__', ())
 
 
-def is_user_defined_generic(tp) -> bool:
+def is_user_defined_generic(tp: TypeHint) -> bool:
     return bool(get_type_vars(tp)) and is_subclass_soft(strip_alias(tp), Generic)
 
 
-def is_generic(tp) -> bool:
+def is_generic(tp: TypeHint) -> bool:
+    """Check if the type could be parameterized"""
     return (
         bool(get_type_vars(tp))
         or (
             strip_alias(tp) in BUILTIN_ORIGIN_TO_TYPEVARS
+            and tp != type
             and not is_parametrized(tp)
             and (
                 bool(HAS_STD_CLASSES_GENERICS) or not isinstance(tp, type)
@@ -111,17 +113,31 @@ def is_generic(tp) -> bool:
     )
 
 
-def is_bare_generic(tp) -> bool:
+def is_bare_generic(tp: TypeHint) -> bool:
+    """Check if the type could be parameterized, excluding type aliases (list[T] etc.)"""
     return (
         (
             is_generic(strip_alias(tp))
             # for 3.8 and List (list is not generic)
             or is_generic(tp)
             # at 3.8 list is bare_generic but not generic
-            # (this function only need to create predicate)
+            # (this function only needs to create predicate)
             or tp in BUILTIN_ORIGIN_TO_TYPEVARS
         )
         and not is_parametrized(tp)
+    )
+
+
+def is_generic_class(cls: type) -> bool:
+    """Check if the class represents a generic type.
+    This function is faster than ``.is_generic()``, but it is limited to testing only classes
+    """
+    return (
+        cls in BUILTIN_ORIGIN_TO_TYPEVARS
+        or (
+            issubclass(cls, Generic)  # type: ignore[arg-type]
+            and bool(cls.__parameters__)  # type: ignore[attr-defined]
+        )
     )
 
 

@@ -59,7 +59,7 @@ from adaptix._internal.type_tools.normalize_type import (
     _NormType,
     make_norm_type,
 )
-from tests_helpers import if_list, requires
+from tests_helpers import cond_list, requires
 
 MISSING = object()
 
@@ -301,7 +301,7 @@ def test_type(make_union):
 
 @pytest.mark.parametrize(
     'tp',
-    [ClassVar, InitVar] + if_list(HAS_TYPE_GUARD, lambda: [typing.TypeGuard]),
+    [ClassVar, InitVar] + cond_list(HAS_TYPE_GUARD, lambda: [typing.TypeGuard]),
 )
 def test_var_tag(tp):
     pytest.raises(NotSubscribedError, lambda: normalize_type(tp))

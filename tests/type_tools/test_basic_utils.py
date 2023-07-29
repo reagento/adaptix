@@ -1,3 +1,4 @@
+import collections
 import typing
 from collections import namedtuple
 from typing import (
@@ -10,6 +11,7 @@ from typing import (
     Protocol,
     SupportsInt,
     Tuple,
+    Type,
     TypeVar,
     Union,
     runtime_checkable,
@@ -23,9 +25,10 @@ from adaptix._internal.type_tools.basic_utils import (
     get_type_vars_of_parametrized,
     is_bare_generic,
     is_generic,
+    is_generic_class,
     is_parametrized,
 )
-from tests_helpers import if_list
+from tests_helpers import cond_list
 
 
 class NTParent(NamedTuple):
@@ -219,26 +222,29 @@ def test_is_parametrized():
         (Dict, True),
         (List[T], True),
         (List[int], False),
-    ] + if_list(
-        HAS_STD_CLASSES_GENERICS,
-        lambda: [
-            (list[T], True),
-            (list[int], False),
-        ],
-    ) + [
+        *cond_list(
+            HAS_STD_CLASSES_GENERICS,
+            lambda: [
+                (list[T], True),
+                (list[int], False),
+            ],
+        ),
         (Gen, True),
         (Gen[T], True),
         (Gen[int], False),
-    ] + if_list(
-        HAS_ANNOTATED,
-        lambda: [
-            (typing.Annotated, False),
-            (typing.Annotated[int, 'meta'], False),
-            (typing.Annotated[T, 'meta'], True),
-            (typing.Annotated[list, 'meta'], True),
-            (typing.Annotated[list[T], 'meta'], True),
-        ],
-    ),
+        *cond_list(
+            HAS_ANNOTATED,
+            lambda: [
+                (typing.Annotated, False),
+                (typing.Annotated[int, 'meta'], False),
+                (typing.Annotated[T, 'meta'], True),
+                (typing.Annotated[list, 'meta'], True),
+                (typing.Annotated[list[T], 'meta'], True),
+            ],
+        ),
+        (type, False),  # can not be parametrized
+        (Type, True),
+    ],
 )
 def test_is_generic(tp, result):
     assert is_generic(tp) == result
@@ -252,26 +258,27 @@ def test_is_generic(tp, result):
         (Dict, True),
         (List[T], False),
         (List[int], False),
-    ] + if_list(
-        HAS_STD_CLASSES_GENERICS,
-        lambda: [
-            (list[T], False),
-            (list[int], False),
-        ],
-    ) + [
+        *cond_list(
+            HAS_STD_CLASSES_GENERICS,
+            lambda: [
+                (list[T], False),
+                (list[int], False),
+            ],
+        ),
         (Gen, True),
         (Gen[T], False),
         (Gen[int], False),
-    ] + if_list(
-        HAS_ANNOTATED,
-        lambda: [
-            (typing.Annotated, False),
-            (typing.Annotated[int, 'meta'], False),
-            (typing.Annotated[T, 'meta'], False),
-            (typing.Annotated[list, 'meta'], False),
-            (typing.Annotated[list[T], 'meta'], False),
-        ],
-    ),
+        *cond_list(
+            HAS_ANNOTATED,
+            lambda: [
+                (typing.Annotated, False),
+                (typing.Annotated[int, 'meta'], False),
+                (typing.Annotated[T, 'meta'], False),
+                (typing.Annotated[list, 'meta'], False),
+                (typing.Annotated[list[T], 'meta'], False),
+            ],
+        )
+    ],
 )
 def test_is_bare_generic(tp, result):
     assert is_bare_generic(tp) == result
@@ -341,3 +348,88 @@ def test_get_type_vars_of_parametrized():
 
         assert get_type_vars_of_parametrized(typing.Annotated[Proto, 'meta']) == ()
         assert get_type_vars_of_parametrized(typing.Annotated[Proto[T], 'meta']) == (T, )
+
+
+@pytest.mark.parametrize(
+    ['cls', 'result'],
+    [
+        (int, False),
+        (bool, False),
+        (str, False),
+        (bytes, False),
+        (list, True),
+        (dict, True),
+        (type, True),
+        (set, True),
+        (frozenset, True),
+        (collections.deque, True),
+        (collections.ChainMap, True),
+        (collections.defaultdict, True),
+        (Gen, True),
+        (GenChildExplicit, False),
+    ],
+)
+def test_is_generic_class(cls, result):
+    assert is_generic_class(cls) == result
+
+
+class ListAliasChildGeneric(List):
+    pass
+
+
+class ListAliasChild(List[int]):
+    pass
+
+
+class DictAliasChildGeneric(Dict):
+    pass
+
+
+class DictAliasChild(Dict[str, str]):
+    pass
+
+
+@pytest.mark.parametrize(
+    ['cls', 'result'],
+    [
+        (ListAliasChildGeneric, False),
+        (ListAliasChild, False),
+        (DictAliasChildGeneric, False),
+        (DictAliasChild, False),
+    ],
+)
+def test_is_generic_class_builtin_alias_children(cls, result):
+    assert is_generic_class(cls) == result
+
+
+class ListChildGeneric(list):
+    pass
+
+
+class DictChildGeneric(dict):
+    pass
+
+
+def std_classes_parametrized():
+    class ListAliasChild(list[int]):
+        pass
+
+    class DictAliasChild(dict[str, str]):
+        pass
+
+    return [
+        (ListAliasChild, False),
+        (DictAliasChild, False),
+    ]
+
+
+@pytest.mark.parametrize(
+    ['cls', 'result'],
+    [
+        (ListChildGeneric, False),
+        (DictChildGeneric, False),
+        *cond_list(HAS_STD_CLASSES_GENERICS, std_classes_parametrized),
+    ],
+)
+def test_is_generic_class_builtin_children(cls, result):
+    assert is_generic_class(cls) == result

@@ -22,7 +22,7 @@ from adaptix._internal.provider.request_filtering import (
 )
 from adaptix._internal.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 from adaptix._internal.type_tools import normalize_type
-from tests_helpers import full_match_regex_str, if_list
+from tests_helpers import cond_list, full_match_regex_str
 
 
 def create_mediator(*elements: Request[Any]):
@@ -348,7 +348,7 @@ class MyGeneric(Generic[T]):
             Union,
             result=ExactOriginRC(Union)
         ),
-    ] + if_list(
+    ] + cond_list(
         HAS_ANNOTATED,
         lambda: [
             param_result(

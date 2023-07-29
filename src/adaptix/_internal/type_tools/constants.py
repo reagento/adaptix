@@ -1,4 +1,6 @@
 import collections
+import concurrent.futures
+import queue
 import re
 from typing import Mapping, TypeVar
 
@@ -23,4 +25,9 @@ BUILTIN_ORIGIN_TO_TYPEVARS: Mapping[type, VarTuple[TypeVar]] = {
     collections.defaultdict: (_T1, _T2),  # type: ignore[dict-item]
     collections.OrderedDict: (_T1, _T2),  # type: ignore[dict-item]
     collections.ChainMap: (_T1, _T2),  # type: ignore[dict-item]
+    queue.Queue: (_T1, ),  # type: ignore[dict-item]
+    queue.PriorityQueue: (_T1, ),  # type: ignore[dict-item]
+    queue.LifoQueue: (_T1, ),  # type: ignore[dict-item]
+    queue.SimpleQueue: (_T1, ),  # type: ignore[dict-item]
+    concurrent.futures.Future: (_T1, ),  # type: ignore[dict-item]
 }
