@@ -31,61 +31,61 @@ class PathWithLeaf(Generic[LeafCr]):
     leaf: LeafCr
 
 
-PathedLeafs = Sequence[PathWithLeaf[LeafCr]]
+PathedLeaves = Sequence[PathWithLeaf[LeafCr]]
 
 
 class BaseCrownBuilder(ABC, Generic[LeafCr, DictCr, ListCr]):
     def build_empty_crown(self, as_list: bool) -> Union[DictCr, ListCr]:
         if as_list:
-            return self._make_list_crown(current_path=(), paths_with_leafs=[])
-        return self._make_dict_crown(current_path=(), paths_with_leafs=[])
+            return self._make_list_crown(current_path=(), paths_with_leaves=[])
+        return self._make_dict_crown(current_path=(), paths_with_leaves=[])
 
     def build_crown(self, paths_to_leaves: PathsTo[LeafCr]) -> Union[DictCr, ListCr]:
-        paths_with_leafs = [PathWithLeaf(path, leaf) for path, leaf in paths_to_leaves.items()]
-        paths_with_leafs.sort(key=lambda x: x.path)
-        return cast(Union[DictCr, ListCr], self._build_crown(paths_with_leafs, 0))
+        paths_with_leaves = [PathWithLeaf(path, leaf) for path, leaf in paths_to_leaves.items()]
+        paths_with_leaves.sort(key=lambda x: x.path)
+        return cast(Union[DictCr, ListCr], self._build_crown(paths_with_leaves, 0))
 
-    def _build_crown(self, paths_with_leafs: PathedLeafs[LeafCr], path_offset: int) -> Union[LeafCr, DictCr, ListCr]:
-        if not paths_with_leafs:
+    def _build_crown(self, paths_with_leaves: PathedLeaves[LeafCr], path_offset: int) -> Union[LeafCr, DictCr, ListCr]:
+        if not paths_with_leaves:
             raise ValueError
 
         try:
-            first = paths_with_leafs[0].path[path_offset]
+            first = paths_with_leaves[0].path[path_offset]
         except IndexError:
-            if len(paths_with_leafs) != 1:
+            if len(paths_with_leaves) != 1:
                 raise ValueError
-            return paths_with_leafs[0].leaf
+            return paths_with_leaves[0].leaf
 
         if isinstance(first, str):
-            return self._make_dict_crown(paths_with_leafs[0].path[:path_offset], paths_with_leafs)
+            return self._make_dict_crown(paths_with_leaves[0].path[:path_offset], paths_with_leaves)
         if isinstance(first, int):
-            return self._make_list_crown(paths_with_leafs[0].path[:path_offset], paths_with_leafs)
+            return self._make_list_crown(paths_with_leaves[0].path[:path_offset], paths_with_leaves)
         raise RuntimeError
 
     def _get_dict_crown_map(
         self,
         current_path: KeyPath,
-        paths_with_leafs: PathedLeafs[LeafCr],
+        paths_with_leaves: PathedLeaves[LeafCr],
     ) -> Mapping[str, Union[LeafCr, DictCr, ListCr]]:
         return {
             cast(str, key): self._build_crown(list(path_group), len(current_path) + 1)
-            for key, path_group in groupby(paths_with_leafs, lambda x: x.path[len(current_path)])
+            for key, path_group in groupby(paths_with_leaves, lambda x: x.path[len(current_path)])
         }
 
     @abstractmethod
-    def _make_dict_crown(self, current_path: KeyPath, paths_with_leafs: PathedLeafs[LeafCr]) -> DictCr:
+    def _make_dict_crown(self, current_path: KeyPath, paths_with_leaves: PathedLeaves[LeafCr]) -> DictCr:
         ...
 
     def _get_list_crown_map(
         self,
         current_path: KeyPath,
-        paths_with_leafs: PathedLeafs[LeafCr],
+        paths_with_leaves: PathedLeaves[LeafCr],
     ) -> Sequence[Union[LeafCr, DictCr, ListCr]]:
         grouped_paths = [
             list(grouped_paths)
-            for key, grouped_paths in groupby(paths_with_leafs, lambda x: x.path[len(current_path)])
+            for key, grouped_paths in groupby(paths_with_leaves, lambda x: x.path[len(current_path)])
         ]
-        if paths_with_leafs and len(grouped_paths) != cast(int, paths_with_leafs[-1].path[len(current_path)]) + 1:
+        if paths_with_leaves and len(grouped_paths) != cast(int, paths_with_leaves[-1].path[len(current_path)]) + 1:
             raise ValueError(f"Found gaps in list mapping at {current_path}")
         return [
             self._build_crown(path_group, len(current_path) + 1)
@@ -93,7 +93,7 @@ class BaseCrownBuilder(ABC, Generic[LeafCr, DictCr, ListCr]):
         ]
 
     @abstractmethod
-    def _make_list_crown(self, current_path: KeyPath, paths_with_leafs: PathedLeafs[LeafCr]) -> ListCr:
+    def _make_list_crown(self, current_path: KeyPath, paths_with_leaves: PathedLeaves[LeafCr]) -> ListCr:
         ...
 
 
@@ -101,15 +101,15 @@ class InpCrownBuilder(BaseCrownBuilder[LeafInpCrown, InpDictCrown, InpListCrown]
     def __init__(self, extra_policies: PathsTo[DictExtraPolicy]):
         self.extra_policies = extra_policies
 
-    def _make_dict_crown(self, current_path: KeyPath, paths_with_leafs: PathedLeafs[LeafInpCrown]) -> InpDictCrown:
+    def _make_dict_crown(self, current_path: KeyPath, paths_with_leaves: PathedLeaves[LeafInpCrown]) -> InpDictCrown:
         return InpDictCrown(
-            map=self._get_dict_crown_map(current_path, paths_with_leafs),
+            map=self._get_dict_crown_map(current_path, paths_with_leaves),
             extra_policy=self.extra_policies[current_path],
         )
 
-    def _make_list_crown(self, current_path: KeyPath, paths_with_leafs: PathedLeafs[LeafInpCrown]) -> InpListCrown:
+    def _make_list_crown(self, current_path: KeyPath, paths_with_leaves: PathedLeaves[LeafInpCrown]) -> InpListCrown:
         return InpListCrown(
-            map=self._get_list_crown_map(current_path, paths_with_leafs),
+            map=self._get_list_crown_map(current_path, paths_with_leaves),
             extra_policy=cast(ListExtraPolicy, self.extra_policies[current_path]),
         )
 
@@ -118,19 +118,19 @@ class OutCrownBuilder(BaseCrownBuilder[LeafOutCrown, OutDictCrown, OutListCrown]
     def __init__(self, path_to_sieves: PathsTo[Sieve]):
         self.path_to_sieves = path_to_sieves
 
-    def _make_dict_crown(self, current_path: KeyPath, paths_with_leafs: PathedLeafs[LeafOutCrown]) -> OutDictCrown:
+    def _make_dict_crown(self, current_path: KeyPath, paths_with_leaves: PathedLeaves[LeafOutCrown]) -> OutDictCrown:
         key_to_sieve: Dict[str, Sieve] = {}
-        for leaf_with_path in paths_with_leafs:
+        for leaf_with_path in paths_with_leaves:
             sieve = self.path_to_sieves.get(leaf_with_path.path[:len(current_path) + 1])
             if sieve is not None:
                 key_to_sieve[cast(str, leaf_with_path.path[len(current_path)])] = sieve
 
         return OutDictCrown(
-            map=self._get_dict_crown_map(current_path, paths_with_leafs),
+            map=self._get_dict_crown_map(current_path, paths_with_leaves),
             sieves=key_to_sieve,
         )
 
-    def _make_list_crown(self, current_path: KeyPath, paths_with_leafs: PathedLeafs[LeafOutCrown]) -> OutListCrown:
+    def _make_list_crown(self, current_path: KeyPath, paths_with_leaves: PathedLeaves[LeafOutCrown]) -> OutListCrown:
         return OutListCrown(
-            map=self._get_list_crown_map(current_path, paths_with_leafs),
+            map=self._get_list_crown_map(current_path, paths_with_leaves),
         )
