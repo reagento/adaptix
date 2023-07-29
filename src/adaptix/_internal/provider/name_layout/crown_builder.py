@@ -35,10 +35,12 @@ PathedLeafs = Sequence[PathWithLeaf[LeafCr]]
 
 
 class BaseCrownBuilder(ABC, Generic[LeafCr, DictCr, ListCr]):
-    def build_crown(self, paths_to_leaves: PathsTo[LeafCr]) -> Union[DictCr, ListCr]:
-        if not paths_to_leaves:
-            return self._make_dict_crown(current_path=(), paths_with_leafs=[])
+    def build_empty_crown(self, as_list: bool) -> Union[DictCr, ListCr]:
+        if as_list:
+            return self._make_list_crown(current_path=(), paths_with_leafs=[])
+        return self._make_dict_crown(current_path=(), paths_with_leafs=[])
 
+    def build_crown(self, paths_to_leaves: PathsTo[LeafCr]) -> Union[DictCr, ListCr]:
         paths_with_leafs = [PathWithLeaf(path, leaf) for path, leaf in paths_to_leaves.items()]
         paths_with_leafs.sort(key=lambda x: x.path)
         return cast(Union[DictCr, ListCr], self._build_crown(paths_with_leafs, 0))
@@ -83,7 +85,7 @@ class BaseCrownBuilder(ABC, Generic[LeafCr, DictCr, ListCr]):
             list(grouped_paths)
             for key, grouped_paths in groupby(paths_with_leafs, lambda x: x.path[len(current_path)])
         ]
-        if len(grouped_paths) != cast(int, paths_with_leafs[-1].path[len(current_path)]) + 1:
+        if paths_with_leafs and len(grouped_paths) != cast(int, paths_with_leafs[-1].path[len(current_path)]) + 1:
             raise ValueError(f"Found gaps in list mapping at {current_path}")
         return [
             self._build_crown(path_group, len(current_path) + 1)

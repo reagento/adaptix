@@ -292,6 +292,12 @@ class BuiltinStructureMaker(StructureMaker):
         self._validate_structure(request, fields_to_paths)
         return self._make_paths_to_leaves(request, fields_to_paths, OutFieldCrown, self._fill_output_gap)
 
+    def empty_as_list_inp(self, mediator: Mediator, request: InputNameLayoutRequest) -> bool:
+        return provide_schema(StructureOverlay, mediator, request.loc_map).as_list
+
+    def empty_as_list_out(self, mediator: Mediator, request: OutputNameLayoutRequest) -> bool:
+        return provide_schema(StructureOverlay, mediator, request.loc_map).as_list
+
 
 @dataclass
 class SievesSchema(Schema):

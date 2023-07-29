@@ -1311,3 +1311,47 @@ def test_ellipsis_replacing_int_key():
             extra_move=None,
         ),
     )
+
+
+def test_empty_models_dict():
+    layouts = make_layouts(
+        DEFAULT_NAME_MAPPING,
+    )
+    assert layouts == Layouts(
+        InputNameLayout(
+            crown=InpDictCrown(
+                map={},
+                extra_policy=ExtraSkip(),
+            ),
+            extra_move=None,
+        ),
+        OutputNameLayout(
+            crown=OutDictCrown(
+                map={},
+                sieves={},
+            ),
+            extra_move=None,
+        ),
+    )
+
+
+def test_empty_models_list():
+    layouts = make_layouts(
+        name_mapping(as_list=True),
+        DEFAULT_NAME_MAPPING,
+    )
+    assert layouts == Layouts(
+        InputNameLayout(
+            crown=InpListCrown(
+                map=[],
+                extra_policy=ExtraSkip(),
+            ),
+            extra_move=None,
+        ),
+        OutputNameLayout(
+            crown=OutListCrown(
+                map=[],
+            ),
+            extra_move=None,
+        ),
+    )

@@ -68,6 +68,22 @@ class StructureMaker(ABC):
     ) -> PathsTo[LeafOutCrown]:
         ...
 
+    @abstractmethod
+    def empty_as_list_inp(
+        self,
+        mediator: Mediator,
+        request: InputNameLayoutRequest,
+    ) -> bool:
+        ...
+
+    @abstractmethod
+    def empty_as_list_out(
+        self,
+        mediator: Mediator,
+        request: OutputNameLayoutRequest,
+    ) -> bool:
+        ...
+
 
 class SievesMaker(ABC):
     @abstractmethod
