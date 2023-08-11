@@ -1,6 +1,8 @@
 from functools import wraps
 from typing import Any, Callable, Optional, overload
 
+from adaptix._internal.utils import get_prefix_groups
+
 
 class MangledConstant:
     def __init__(self, value: str):
@@ -49,11 +51,14 @@ def _get_obj_prefix(obj: Any) -> Optional[str]:
 
 class PrefixManglerBase:
     def __init_subclass__(cls, **kwargs):
-        cls._prefixes = [
+        prefixes = [
             prefix for prefix in (
                 _get_obj_prefix(getattr(cls, attr))
                 for attr in dir(cls)
             )
             if prefix is not None
         ]
-        # TODO: add validation that each prefix is not prefix of any prefix
+        prefix_groups = get_prefix_groups(prefixes)
+        if prefix_groups:
+            raise ValueError(f"Prefix overlapping {prefix_groups}")
+        cls._prefixes = prefixes

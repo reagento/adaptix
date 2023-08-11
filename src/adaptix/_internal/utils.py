@@ -14,14 +14,17 @@ from typing import (
     Iterable,
     Iterator,
     KeysView,
+    List,
     Mapping,
     Optional,
+    Protocol,
     Tuple,
     Type,
     TypeVar,
     Union,
     ValuesView,
     final,
+    overload,
 )
 
 from adaptix._internal.feature_requirement import HAS_PY_310
@@ -282,3 +285,54 @@ class ClassMap(Generic[H]):
                 if key not in classes
             }
         )
+
+
+ComparableSeqT = TypeVar('ComparableSeqT', bound='ComparableSequence')
+
+
+class ComparableSequence(Protocol[T]):
+    def __lt__(self, __other: T) -> bool:
+        ...
+
+    @overload
+    def __getitem__(self, index: int) -> T:
+        ...
+
+    @overload
+    def __getitem__(self: ComparableSeqT, index: slice) -> ComparableSeqT:
+        ...
+
+    def __iter__(self) -> Iterator[T]:
+        ...
+
+    def __len__(self) -> int:
+        ...
+
+    def __contains__(self, value: object) -> bool:
+        ...
+
+    def __reversed__(self) -> Iterator[T]:
+        ...
+
+
+def get_prefix_groups(values: Collection[ComparableSeqT]) -> Iterable[Tuple[ComparableSeqT, Iterable[ComparableSeqT]]]:
+    groups: List[Tuple[ComparableSeqT, List[ComparableSeqT]]] = []
+    sorted_values = iter(sorted(values))
+    current_group: List[ComparableSeqT] = []
+    try:
+        prefix = next(sorted_values)
+    except StopIteration:
+        return []
+
+    for value in sorted_values:
+        if value[:len(prefix)] == prefix:
+            current_group.append(value)
+        else:
+            if current_group:
+                groups.append((prefix, current_group))
+                current_group = []
+            prefix = value
+
+    if current_group:
+        groups.append((prefix, current_group))
+    return groups

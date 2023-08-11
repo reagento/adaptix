@@ -3,7 +3,7 @@ from copy import copy, deepcopy
 
 import pytest
 
-from adaptix._internal.utils import ClassDispatcher, SingletonMeta
+from adaptix._internal.utils import ClassDispatcher, SingletonMeta, get_prefix_groups
 
 
 class SomeSingleton(metaclass=SingletonMeta):
@@ -101,3 +101,40 @@ def test_dispatch_multi():
 
     dispatcher2 = ClassDispatcher({BaseRight: 2, BaseLeft: 1})
     assert dispatcher2.dispatch(Child) == 1
+
+
+@pytest.mark.parametrize(
+    ['values', 'result'],
+    [
+        (
+            [],
+            [],
+        ),
+        (
+            ['a'],
+            [],
+        ),
+        (
+            ['a', 'b'],
+            [],
+        ),
+        (
+            ['a', 'b', 'c'],
+            [],
+        ),
+        (
+            ['a', 'ab', 'ac'],
+            [('a', ['ab', 'ac'])],
+        ),
+        (
+            ['a', 'ab', 'ac', 'foo'],
+            [('a', ['ab', 'ac'])],
+        ),
+        (
+            ['a', 'ab', 'ac', 'foo', 'bar', 'bar1'],
+            [('a', ['ab', 'ac']), ('bar', ['bar1'])],
+        ),
+    ]
+)
+def test_get_prefix_groups(values, result):
+    assert get_prefix_groups(values) == result

@@ -1189,6 +1189,32 @@ def test_optional_field_at_list():
         )
 
 
+def test_one_path_is_prefix_of_another():
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str(
+            "Path to the field must not be a prefix of another path"
+            " at type <class 'tests.provider.name_layout.test_provider.Foo'> that situated at field 'foo'."
+            " Path [0] (field 'a') is prefix of [0, 'b'] (field 'b'), [0, 'c'] (field 'c')"
+        ),
+    ):
+        make_layouts(
+            TestField('a', is_required=True),
+            TestField('b', is_required=True),
+            TestField('c', is_required=True),
+            name_mapping(
+                map={
+                    'a': 0,
+                    'b': (0, 'b'),
+                    'c': (0, 'c'),
+                },
+            ),
+            DEFAULT_NAME_MAPPING,
+            loc_map=FIELD_LOC_MAP,
+        )
+
+
+
 def test_chaining_priority():
     layouts = make_layouts(
         TestField('a'),

@@ -14,7 +14,7 @@ from ...model_tools.definitions import (
     OutputField,
 )
 from ...retort.operating_retort import OperatingRetort
-from ...utils import Omittable
+from ...utils import Omittable, get_prefix_groups
 from ..model.crown_definitions import (
     BaseFieldCrown,
     BaseNameLayoutRequest,
@@ -186,6 +186,31 @@ class BuiltinStructureMaker(StructureMaker):
                 f"Paths {duplicates} pointed to several fields" + location_to_string(request)
             )
 
+        prefix_groups = get_prefix_groups([path for field, path in fields_to_paths if path is not None])
+        if prefix_groups:
+            details = '. '.join(
+                # pylint: disable=consider-using-f-string
+                'Path {prefix} (field {prefix_field!r}) is prefix of {paths}'.format(
+                    prefix=list(prefix),
+                    prefix_field=paths_to_fields[prefix][0].id,
+                    paths=', '.join(
+                        # pylint: disable=consider-using-f-string
+                        '{path} (field {path_field!r})'.format(
+                            path=list(path),
+                            path_field=paths_to_fields[path][0].id,
+                        )
+                        for path in paths
+                    ),
+                )
+                for prefix, paths in prefix_groups
+            )
+            raise ValueError(
+                'Path to the field must not be a prefix of another path'
+                + location_to_string(request)
+                + '. '
+                + details
+            )
+
         optional_fields_at_list = [
             field.id
             for field, path in fields_to_paths
@@ -276,8 +301,9 @@ class BuiltinStructureMaker(StructureMaker):
             raise ValueError(
                 f"Required fields {skipped_required_fields} are skipped" + location_to_string(request)
             )
+        paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, InpFieldCrown, self._fill_input_gap)
         self._validate_structure(request, fields_to_paths)
-        return self._make_paths_to_leaves(request, fields_to_paths, InpFieldCrown, self._fill_input_gap)
+        return paths_to_leaves
 
     def make_out_structure(
         self,
@@ -289,8 +315,9 @@ class BuiltinStructureMaker(StructureMaker):
         fields_to_paths: List[FieldAndPath[OutputField]] = list(
             self._map_fields(mediator, request, schema, extra_move)
         )
+        paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, OutFieldCrown, self._fill_output_gap)
         self._validate_structure(request, fields_to_paths)
-        return self._make_paths_to_leaves(request, fields_to_paths, OutFieldCrown, self._fill_output_gap)
+        return paths_to_leaves
 
     def empty_as_list_inp(self, mediator: Mediator, request: InputNameLayoutRequest) -> bool:
         return provide_schema(StructureOverlay, mediator, request.loc_map).as_list
