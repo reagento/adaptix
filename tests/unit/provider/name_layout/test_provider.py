@@ -921,7 +921,7 @@ def test_extra_at_list():
         ValueError,
         match=full_match_regex_str(
             "Can not use collecting extra_in with list mapping"
-            " at type <class 'tests.provider.name_layout.test_provider.Foo'>"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
         )
     ):
         make_layouts(
@@ -942,7 +942,7 @@ def test_extra_at_list():
         ValueError,
         match=full_match_regex_str(
             "Can not use collecting extra_in with list mapping"
-            " at type <class 'tests.provider.name_layout.test_provider.Foo'> that situated at field 'foo'"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'> that situated at field 'foo'"
         )
     ):
         make_layouts(
@@ -979,7 +979,7 @@ def test_required_field_skip():
     with pytest.raises(
         ValueError,
         match=full_match_regex_str(
-            "Required fields ['a'] are skipped at type <class 'tests.provider.name_layout.test_provider.Foo'>"
+            "Required fields ['a'] are skipped at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
         ),
     ):
         make_layouts(
@@ -995,7 +995,7 @@ def test_required_field_skip():
     with pytest.raises(
         ValueError,
         match=full_match_regex_str(
-            "Required fields ['a'] are skipped at type <class 'tests.provider.name_layout.test_provider.Foo'>"
+            "Required fields ['a'] are skipped at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
             " that situated at field 'foo'"
         ),
     ):
@@ -1032,7 +1032,7 @@ def test_inconsistent_path_elements():
     with pytest.raises(
         ValueError,
         match=full_match_regex_str(
-            "Inconsistent path elements at ('x',) at type <class 'tests.provider.name_layout.test_provider.Foo'>"
+            "Inconsistent path elements at ('x',) at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
         ),
     ):
         make_layouts(
@@ -1051,7 +1051,7 @@ def test_inconsistent_path_elements():
     with pytest.raises(
         ValueError,
         match=full_match_regex_str(
-            "Inconsistent path elements at ('x',) at type <class 'tests.provider.name_layout.test_provider.Foo'>"
+            "Inconsistent path elements at ('x',) at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
             " that situated at field 'foo'"
         ),
     ):
@@ -1092,7 +1092,7 @@ def test_duplicated_path():
         ValueError,
         match=full_match_regex_str(
             "Paths {('x',): ['a', 'b']} pointed to several fields"
-            " at type <class 'tests.provider.name_layout.test_provider.Foo'>"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
         ),
     ):
         make_layouts(
@@ -1112,7 +1112,7 @@ def test_duplicated_path():
         ValueError,
         match=full_match_regex_str(
             "Paths {('x',): ['a', 'b']} pointed to several fields"
-            " at type <class 'tests.provider.name_layout.test_provider.Foo'> that situated at field 'foo'"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'> that situated at field 'foo'"
         ),
     ):
         make_layouts(
@@ -1152,7 +1152,7 @@ def test_optional_field_at_list():
         ValueError,
         match=full_match_regex_str(
             "Optional fields ['b'] can not be mapped to list elements"
-            " at type <class 'tests.provider.name_layout.test_provider.Foo'>"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
         ),
     ):
         make_layouts(
@@ -1172,7 +1172,7 @@ def test_optional_field_at_list():
         ValueError,
         match=full_match_regex_str(
             "Optional fields ['b'] can not be mapped to list elements"
-            " at type <class 'tests.provider.name_layout.test_provider.Foo'> that situated at field 'foo'"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'> that situated at field 'foo'"
         ),
     ):
         make_layouts(
@@ -1194,7 +1194,7 @@ def test_one_path_is_prefix_of_another():
         ValueError,
         match=full_match_regex_str(
             "Path to the field must not be a prefix of another path"
-            " at type <class 'tests.provider.name_layout.test_provider.Foo'> that situated at field 'foo'."
+            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'> that situated at field 'foo'."
             " Path [0] (field 'a') is prefix of [0, 'b'] (field 'b'), [0, 'c'] (field 'c')"
         ),
     ):
