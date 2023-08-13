@@ -1,5 +1,6 @@
 import collections.abc
 from dataclasses import dataclass, replace
+from enum import EnumMeta
 from inspect import isabstract
 from typing import Any, Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, Union
 
@@ -71,6 +72,18 @@ def _is_exact_zero_or_one(arg):
     return type(arg) == int and arg in (0, 1)  # pylint: disable=unidiomatic-typecheck
 
 
+def _get_type(arg: Any) -> Any:
+    if isinstance(type(arg), EnumMeta):
+        return type(arg.value)
+    return type(arg)
+
+
+def _get_value(arg: Any) -> Any:
+    if isinstance(type(arg), EnumMeta):
+        return arg.value
+    return arg
+
+
 @dataclass
 @for_predicate(Literal)
 class LiteralProvider(LoaderProvider, DumperProvider):
@@ -85,13 +98,12 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         norm = normalize_type(get_type_from_request(request))
         strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
 
-        # TODO: add support for enum
         if strict_coercion and any(
-            isinstance(arg, bool) or _is_exact_zero_or_one(arg)
+            isinstance(arg, bool) or _is_exact_zero_or_one(arg) or isinstance(type(arg), EnumMeta)
             for arg in norm.args
         ):
             allowed_values = self._get_container(
-                [(type(el), el) for el in norm.args]
+                [(_get_type(el), _get_value(el)) for el in norm.args]
             )
 
             # since True == 1 and False == 0
