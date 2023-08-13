@@ -1,5 +1,6 @@
 from abc import ABC
-from enum import EnumMeta, Flag
+from enum import Enum, EnumMeta, Flag
+from typing import Any, Mapping, Optional, Type
 
 from ..common import Dumper, Loader, TypeHint
 from ..essential import CannotProvide, Mediator, Request
@@ -105,17 +106,41 @@ class EnumExactValueProvider(BaseEnumProvider):
         enum = get_type_from_request(request)
         variants = [case.value for case in enum]
 
-        def enum_exact_loader(data):
-            # since MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
-            if isinstance(data, enum):
-                raise BadVariantError(variants)
+        value_to_member = self._get_exact_value_to_member(enum)
+        if value_to_member is None:
+            def enum_exact_loader(data):
+                # since MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
+                if type(data) == enum:  # pylint: disable=unidiomatic-typecheck
+                    raise BadVariantError(variants)
 
+                try:
+                    return enum(data)
+                except ValueError:
+                    raise BadVariantError(variants)
+
+            return enum_exact_loader
+
+        def enum_exact_loader_v2m(data):
             try:
-                return enum(data)
-            except ValueError:
+                return value_to_member[data]
+            except KeyError:
+                raise BadVariantError(variants)
+            except TypeError:
                 raise BadVariantError(variants)
 
-        return enum_exact_loader
+        return enum_exact_loader_v2m
+
+    def _get_exact_value_to_member(self, enum: Type[Enum]) -> Optional[Mapping[Any, Any]]:
+        try:
+            value_to_member = {case.value: case for case in enum}
+        except TypeError:
+            return None
+
+        # pylint: disable=comparison-with-callable,protected-access
+        if enum._missing_ != Enum._missing_:
+            return None
+
+        return value_to_member
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return _enum_exact_value_dumper

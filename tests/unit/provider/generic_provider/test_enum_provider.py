@@ -1,5 +1,7 @@
 from enum import Enum, IntEnum
 
+import pytest
+
 from adaptix import dumper, enum_by_value, loader
 from adaptix._internal.provider.enum_provider import EnumExactValueProvider, EnumNameProvider
 from adaptix.load_error import BadVariantError, MsgError
@@ -14,15 +16,22 @@ class MyIntEnum(IntEnum):
     V1 = 1
 
 
+class MyEnumWithMissingHook(Enum):
+    V1 = '1'
+
+    @classmethod
+    def _missing_(cls, value: object) -> 'MyEnumWithMissingHook':
+        raise ValueError
+
+
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_name_provider(strict_coercion, debug_path):
     retort = TestRetort(
-        recipe=[
-            EnumNameProvider(),
-        ]
-    ).replace(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
+        recipe=[
+            EnumNameProvider(),
+        ],
     )
 
     loader = retort.get_loader(MyEnum)
@@ -50,19 +59,19 @@ def test_name_provider(strict_coercion, debug_path):
 
 
 @parametrize_bool('strict_coercion', 'debug_path')
-def test_exact_value_provider(strict_coercion, debug_path):
+@pytest.mark.parametrize('enum_cls', [MyEnum, MyEnumWithMissingHook])
+def test_exact_value_provider(strict_coercion, debug_path, enum_cls):
     retort = TestRetort(
-        recipe=[
-            EnumExactValueProvider(),
-        ]
-    ).replace(
         strict_coercion=strict_coercion,
         debug_path=debug_path,
+        recipe=[
+            EnumExactValueProvider(),
+        ],
     )
 
-    loader = retort.get_loader(MyEnum)
+    loader = retort.get_loader(enum_cls)
 
-    assert loader("1") == MyEnum.V1
+    assert loader("1") == enum_cls.V1
 
     raises_path(
         BadVariantError(['1']),
@@ -76,13 +85,23 @@ def test_exact_value_provider(strict_coercion, debug_path):
 
     raises_path(
         BadVariantError(['1']),
-        lambda: loader(MyEnum.V1)
+        lambda: loader(enum_cls.V1)
     )
 
-    dumper = retort.get_dumper(MyEnum)
+    dumper = retort.get_dumper(enum_cls)
 
-    assert dumper(MyEnum.V1) == "1"
+    assert dumper(enum_cls.V1) == "1"
 
+
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_exact_value_provider_int_enum(strict_coercion, debug_path):
+    retort = TestRetort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+        recipe=[
+            EnumExactValueProvider(),
+        ],
+    )
     int_enum_loader = retort.get_loader(MyIntEnum)
 
     assert int_enum_loader(1) == MyIntEnum.V1
