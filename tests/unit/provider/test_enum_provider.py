@@ -117,6 +117,19 @@ def test_exact_value_provider_int_enum(strict_coercion, debug_path):
     )
 
 
+@parametrize_bool('strict_coercion', 'debug_path')
+def test_exact_value_optimization(strict_coercion, debug_path):
+    retort = TestRetort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
+        recipe=[
+            EnumExactValueProvider(),
+        ],
+    )
+    assert retort.get_loader(MyEnum).__name__ == 'enum_exact_loader_v2m'
+    assert retort.get_loader(MyEnumWithMissingHook).__name__ == 'enum_exact_loader'
+
+
 def custom_string_dumper(value: str):
     return "PREFIX " + value
 

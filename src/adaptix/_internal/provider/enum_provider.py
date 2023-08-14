@@ -137,7 +137,7 @@ class EnumExactValueProvider(BaseEnumProvider):
             return None
 
         # pylint: disable=comparison-with-callable,protected-access
-        if enum._missing_ != Enum._missing_:
+        if getattr(enum._missing_, '__func__') != Enum._missing_.__func__:
             return None
 
         return value_to_member
