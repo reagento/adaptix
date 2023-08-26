@@ -268,6 +268,7 @@ def add_property(
         accessor=DescriptorAccessor(attr_name, access_error),
         default=default,
         metadata=metadata,
+        original=None,
     )
 
     return bound(

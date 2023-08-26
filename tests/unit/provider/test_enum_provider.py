@@ -137,14 +137,13 @@ def custom_string_dumper(value: str):
 @parametrize_bool('strict_coercion', 'debug_path')
 def test_value_provider(strict_coercion, debug_path):
     retort = TestRetort(
+        strict_coercion=strict_coercion,
+        debug_path=debug_path,
         recipe=[
             enum_by_value(MyEnum, tp=str),
             loader(str, str),
             dumper(str, custom_string_dumper),
-        ]
-    ).replace(
-        strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        ],
     )
 
     enum_loader = retort.get_loader(MyEnum)

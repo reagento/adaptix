@@ -40,6 +40,7 @@ from adaptix import TypeHint
 from adaptix._internal.feature_requirement import (
     HAS_ANNOTATED,
     HAS_PARAM_SPEC,
+    HAS_PY_310,
     HAS_STD_CLASSES_GENERICS,
     HAS_TYPE_ALIAS,
     HAS_TYPE_GUARD,
@@ -244,35 +245,42 @@ def test_special_generics():
     assert_normalize(Match[bytes], re.Match, [nt_zero(bytes)])
 
 
-def test_callable():
-    assert_normalize(
+@pytest.mark.parametrize(
+    'callable_tp',
+    [
         Callable,
+        *cond_list(HAS_STD_CLASSES_GENERICS, [c_abc.Callable]),
+    ]
+)
+def test_callable(callable_tp):
+    assert_normalize(
+        callable_tp,
         c_abc.Callable, [..., nt_zero(Any)],
     )
     assert_normalize(
-        Callable[..., Any],
+        callable_tp[..., Any],
         c_abc.Callable, [..., nt_zero(Any)],
     )
     assert_normalize(
-        Callable[..., int],
+        callable_tp[..., int],
         c_abc.Callable, [..., nt_zero(int)],
     )
     assert_normalize(
-        Callable[[str], int],
+        callable_tp[[str], int],
         c_abc.Callable, [(nt_zero(str),), nt_zero(int)],
     )
     assert_normalize(
-        Callable[[str, bytes], int],
+        callable_tp[[str, bytes], int],
         c_abc.Callable, [(nt_zero(str), nt_zero(bytes)), nt_zero(int)],
     )
 
     assert_normalize(
-        Callable[..., NoReturn],
+        callable_tp[..., NoReturn],
         c_abc.Callable, [..., nt_zero(NoReturn)],
     )
 
-    hash(normalize_type(Callable[..., int]))
-    hash(normalize_type(Callable[[int, str], int]))
+    hash(normalize_type(callable_tp[..., int]))
+    hash(normalize_type(callable_tp[[int, str], int]))
 
 
 def test_type(make_union):
@@ -301,7 +309,7 @@ def test_type(make_union):
 
 @pytest.mark.parametrize(
     'tp',
-    [ClassVar, InitVar] + cond_list(HAS_TYPE_GUARD, lambda: [typing.TypeGuard]),
+    [ClassVar, InitVar, *cond_list(HAS_TYPE_GUARD, lambda: [typing.TypeGuard])],
 )
 def test_var_tag(tp):
     pytest.raises(NotSubscribedError, lambda: normalize_type(tp))
@@ -309,6 +317,16 @@ def test_var_tag(tp):
     assert_normalize(
         tp[int],
         tp, [nt_zero(int)]
+    )
+
+
+@requires(HAS_PY_310)
+def test_kw_only():
+    from dataclasses import KW_ONLY
+
+    assert_normalize(
+        KW_ONLY,
+        KW_ONLY, []
     )
 
 

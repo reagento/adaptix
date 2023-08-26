@@ -5,7 +5,6 @@ show-source=False
 
 max-line-length=120
 
-application-import-names=adaptix
 exclude=
     .venv,
     docs,

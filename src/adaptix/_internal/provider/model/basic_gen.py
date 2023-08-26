@@ -21,7 +21,7 @@ from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
 from ...essential import Mediator, Request
-from ...model_tools.definitions import InputField, OutputField
+from ...model_tools.definitions import InputField, InputShape, OutputField, OutputShape
 from ..static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
     BaseCrown,
@@ -188,10 +188,34 @@ def get_wild_extra_targets(shape: BaseShape, extra_move: Union[InpExtraMove, Out
     ]
 
 
-ShapeT = TypeVar('ShapeT', bound=BaseShape)
+def strip_input_shape_fields(shape: InputShape, skipped_fields: Collection[str]) -> InputShape:
+    skipped_required_fields = [
+        field.id
+        for field in shape.fields
+        if field.is_required and field.id in skipped_fields
+    ]
+    if skipped_required_fields:
+        raise ValueError(
+            f"Required fields {skipped_required_fields} are skipped"
+        )
+    return replace(
+        shape,
+        fields=tuple(
+            field for field in shape.fields
+            if field.id not in skipped_fields
+        ),
+        params=tuple(
+            param for param in shape.params
+            if param.field_id not in skipped_fields
+        ),
+        overriden_types=frozenset(
+            field.id for field in shape.fields
+            if field.id not in skipped_fields
+        ),
+    )
 
 
-def strip_shape_fields(shape: ShapeT, skipped_fields: Collection[str]) -> ShapeT:
+def strip_output_shape_fields(shape: OutputShape, skipped_fields: Collection[str]) -> OutputShape:
     return replace(
         shape,
         fields=tuple(

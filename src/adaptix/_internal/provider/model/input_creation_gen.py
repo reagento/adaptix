@@ -27,20 +27,20 @@ class BuiltinInputCreationGen(CodeGenerator):
             fld.is_optional and not self._is_extra_target(fld)
             for fld in self._shape.fields
         )
-
         builder = CodeBuilder()
         ctx_namespace.add('constructor', self._shape.constructor)
 
         with builder("constructor("):
-            for field in self._shape.fields:
+            for param in self._shape.params:
+                field = self._shape.fields_dict[param.field_id]
 
                 if field.is_required or self._is_extra_target(field):
                     value = binder.field(field)
                 else:
                     continue
 
-                if field.param_kind == ParamKind.KW_ONLY:
-                    builder(f"{field.param_name}={value},")
+                if param.kind == ParamKind.KW_ONLY:
+                    builder(f"{param.name}={value},")
                 else:
                     builder(f"{value},")
 

@@ -16,6 +16,7 @@ from adaptix._internal.model_tools.definitions import (
     NoDefault,
     OutputField,
     OutputShape,
+    Param,
     ParamKind,
     ParamKwargs,
     create_attr_accessor,
@@ -67,7 +68,7 @@ from tests_helpers import TestRetort, full_match_regex_str, type_of
 
 @dataclass
 class TestField:
-    name: str
+    id: str
     is_required: bool = True
     default: Default = NoDefault()
 
@@ -91,35 +92,43 @@ def make_layouts(
     input_shape = InputShape(
         fields=tuple(
             InputField(
-                id=fld.name,
+                id=fld.id,
                 type=Any,
                 default=fld.default,
                 metadata={},
                 is_required=fld.is_required,
-                param_kind=ParamKind.POS_OR_KW,
-                param_name=fld.name,
+                original=None,
+            )
+            for fld in fields
+        ),
+        params=tuple(
+            Param(
+                field_id=fld.id,
+                name=fld.id,
+                kind=ParamKind.POS_OR_KW,
             )
             for fld in fields
         ),
         constructor=stub,
         kwargs=ParamKwargs(Any),
-        overriden_types=frozenset(fld.name for fld in fields),
+        overriden_types=frozenset(fld.id for fld in fields),
     )
     output_shape = OutputShape(
         fields=tuple(
             OutputField(
-                id=fld.name,
+                id=fld.id,
                 type=Any,
                 default=fld.default,
                 metadata={},
                 accessor=create_attr_accessor(
-                    attr_name=fld.name,
+                    attr_name=fld.id,
                     is_required=fld.is_required,
                 ),
+                original=None,
             )
             for fld in fields
         ),
-        overriden_types=frozenset(fld.name for fld in fields),
+        overriden_types=frozenset(fld.id for fld in fields),
     )
     retort = TestRetort(
         recipe=[

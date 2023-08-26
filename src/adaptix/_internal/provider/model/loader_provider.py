@@ -18,7 +18,7 @@ from .basic_gen import (
     get_skipped_fields,
     get_wild_extra_targets,
     has_collect_policy,
-    strip_shape_fields,
+    strip_input_shape_fields,
     stub_code_gen_hook,
 )
 from .crown_definitions import InpExtraMove, InputNameLayout, InputNameLayoutRequest
@@ -83,20 +83,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
             raise ValueError(
                 f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
             )
-
-        skipped_fields = get_skipped_fields(shape, name_layout)
-
-        skipped_required_fields = [
-            field.id
-            for field in shape.fields
-            if field.is_required and field.id in skipped_fields
-        ]
-        if skipped_required_fields:
-            raise ValueError(
-                f"Required fields {skipped_required_fields} are skipped"
-            )
-
-        return strip_shape_fields(shape, skipped_fields)
+        return strip_input_shape_fields(shape, get_skipped_fields(shape, name_layout))
 
     def _validate_params(self, processed_shape: InputShape, name_layout: InputNameLayout) -> None:
         if name_layout.extra_move is None and has_collect_policy(name_layout.crown):

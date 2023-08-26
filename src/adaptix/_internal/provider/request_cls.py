@@ -4,7 +4,7 @@ from typing import Any, Mapping, TypeVar
 from adaptix._internal.essential import CannotProvide, Request
 
 from ..common import Dumper, Loader, TypeHint
-from ..model_tools.definitions import Accessor, Default, ParamKind
+from ..model_tools.definitions import Accessor, Default
 from ..utils import ClassMap
 
 T = TypeVar('T')
@@ -30,8 +30,6 @@ class FieldLoc(Location):
 @dataclass(frozen=True)
 class InputFieldLoc(Location):
     is_required: bool
-    param_kind: ParamKind
-    param_name: str
 
 
 @dataclass(frozen=True)

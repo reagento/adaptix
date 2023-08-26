@@ -1,6 +1,7 @@
 import typing
 from types import MappingProxyType
 from typing import Any
+from unittest.mock import ANY
 
 import pytest
 
@@ -11,6 +12,7 @@ from adaptix._internal.model_tools.definitions import (
     InputShape,
     IntrospectionImpossible,
     NoDefault,
+    Param,
     ParamKind,
     ParamKwargs,
     Shape,
@@ -52,8 +54,7 @@ VALID_FIELDS = (
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
-        param_kind=ParamKind.POS_OR_KW,
-        param_name='a',
+        original=ANY,
     ),
     InputField(
         type=int,
@@ -61,8 +62,7 @@ VALID_FIELDS = (
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
-        param_kind=ParamKind.POS_OR_KW,
-        param_name='b',
+        original=ANY,
     ),
     InputField(
         type=str,
@@ -70,8 +70,7 @@ VALID_FIELDS = (
         default=DefaultValue('abc'),
         is_required=False,
         metadata=MappingProxyType({}),
-        param_kind=ParamKind.POS_OR_KW,
-        param_name='c',
+        original=ANY,
     ),
     InputField(
         type=Any,
@@ -79,11 +78,31 @@ VALID_FIELDS = (
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
-        param_kind=ParamKind.KW_ONLY,
-        param_name='d',
+        original=ANY,
     ),
 )
-
+VALID_PARAMS = (
+    Param(
+        field_id='a',
+        name='a',
+        kind=ParamKind.POS_OR_KW,
+    ),
+    Param(
+        field_id='b',
+        name='b',
+        kind=ParamKind.POS_OR_KW,
+    ),
+    Param(
+        field_id='c',
+        name='c',
+        kind=ParamKind.POS_OR_KW,
+    ),
+    Param(
+        field_id='d',
+        name='d',
+        kind=ParamKind.KW_ONLY,
+    ),
+)
 
 def test_extra_none():
     assert (
@@ -95,6 +114,7 @@ def test_extra_none():
                 kwargs=None,
                 fields=VALID_FIELDS,
                 overriden_types=frozenset(fld.id for fld in VALID_FIELDS),
+                params=VALID_PARAMS,
             ),
             output=None,
         )
@@ -111,6 +131,7 @@ def test_extra_kwargs():
                 kwargs=ParamKwargs(Any),
                 fields=VALID_FIELDS,
                 overriden_types=frozenset(fld.id for fld in VALID_FIELDS),
+                params=VALID_PARAMS,
             ),
             output=None,
         )
@@ -126,6 +147,7 @@ def test_extra_kwargs():
                 kwargs=ParamKwargs(str),
                 fields=VALID_FIELDS,
                 overriden_types=frozenset(fld.id for fld in VALID_FIELDS),
+                params=VALID_PARAMS,
             ),
             output=None,
         )
@@ -152,8 +174,7 @@ def test_pos_only():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_ONLY,
-                        param_name='a',
+                        original=ANY,
                     ),
                     InputField(
                         type=Any,
@@ -161,8 +182,19 @@ def test_pos_only():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='b',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_ONLY,
+                    ),
+                    Param(
+                        field_id='b',
+                        name='b',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'b'}),
@@ -191,8 +223,7 @@ def test_pos_only():
                         default=DefaultValue(None),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_ONLY,
-                        param_name='a',
+                        original=ANY,
                     ),
                     InputField(
                         type=Any,
@@ -200,8 +231,19 @@ def test_pos_only():
                         default=DefaultValue(None),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_ONLY,
-                        param_name='b',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_ONLY,
+                    ),
+                    Param(
+                        field_id='b',
+                        name='b',
+                        kind=ParamKind.POS_ONLY,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'b'}),
@@ -242,8 +284,14 @@ def test_annotated():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),

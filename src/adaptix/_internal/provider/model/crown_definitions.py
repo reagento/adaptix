@@ -91,9 +91,9 @@ InpCrown = Union[BranchInpCrown, LeafInpCrown]
 
 # --------  Output Crown -------- #
 
-# Sieve takes raw field value and determines if skip field.
+# Sieve takes source object and raw field value to determine if skip field.
 # True indicates to put field, False to skip.
-Sieve = Callable[[Any], bool]
+Sieve = Callable[[Any, Any], bool]
 
 
 @dataclass

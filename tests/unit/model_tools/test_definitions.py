@@ -6,9 +6,11 @@ from adaptix._internal.model_tools.definitions import (
     NoDefault,
     OutputField,
     OutputShape,
+    Param,
     ParamKind,
     create_attr_accessor,
 )
+from tests_helpers import full_match_regex_str
 
 
 def stub_constructor(*args, **kwargs):
@@ -24,7 +26,10 @@ def stub_constructor(*args, **kwargs):
     ]
 )
 def test_inconsistent_fields_order(first, second):
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match='^Inconsistent order of fields.*',
+    ):
         InputShape(
             constructor=stub_constructor,
             kwargs=None,
@@ -35,20 +40,30 @@ def test_inconsistent_fields_order(first, second):
                     default=NoDefault(),
                     is_required=True,
                     metadata={},
-                    param_kind=first,
-                    param_name='a',
+                    original=None,
                 ),
                 InputField(
-                    id="a",
+                    id="b",
                     type=int,
                     default=NoDefault(),
                     is_required=True,
                     metadata={},
-                    param_kind=second,
-                    param_name='a',
+                    original=None,
                 ),
             ),
-            overriden_types=frozenset({'a'}),
+            params=(
+                Param(
+                    field_id='a',
+                    name='a',
+                    kind=first,
+                ),
+                Param(
+                    field_id='b',
+                    name='b',
+                    kind=second,
+                ),
+            ),
+            overriden_types=frozenset({'a', 'b'}),
         )
 
 
@@ -63,8 +78,7 @@ def _make_triple_iff(first, second, third):
                 default=NoDefault(),
                 is_required=True,
                 metadata={},
-                param_kind=first,
-                param_name='a',
+                original=None,
             ),
             InputField(
                 id="b",
@@ -72,8 +86,7 @@ def _make_triple_iff(first, second, third):
                 default=NoDefault(),
                 is_required=False,
                 metadata={},
-                param_kind=second,
-                param_name='b',
+                original=None,
             ),
             InputField(
                 id="c",
@@ -81,8 +94,24 @@ def _make_triple_iff(first, second, third):
                 default=NoDefault(),
                 is_required=True,
                 metadata={},
-                param_kind=third,
-                param_name='c',
+                original=None,
+            ),
+        ),
+        params=(
+            Param(
+                field_id='a',
+                name='a',
+                kind=first,
+            ),
+            Param(
+                field_id='b',
+                name='b',
+                kind=second,
+            ),
+            Param(
+                field_id='c',
+                name='c',
+                kind=third,
             ),
         ),
         overriden_types=frozenset({'a', 'b', 'c'}),
@@ -114,8 +143,8 @@ def test_ok_non_required_field_order(first, second, third):
     _make_triple_iff(first, second, third)
 
 
-def test_name_duplicates():
-    with pytest.raises(ValueError):
+def test_field_id_duplicates():
+    with pytest.raises(ValueError, match=full_match_regex_str("Field ids {'a'} are duplicated")):
         InputShape(
             constructor=stub_constructor,
             kwargs=None,
@@ -126,8 +155,7 @@ def test_name_duplicates():
                     default=NoDefault(),
                     is_required=True,
                     metadata={},
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a1',
+                    original=None,
                 ),
                 InputField(
                     id="a",
@@ -135,14 +163,50 @@ def test_name_duplicates():
                     default=NoDefault(),
                     is_required=True,
                     metadata={},
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a2',
+                    original=None,
+                ),
+            ),
+            params=(
+                Param(
+                    field_id='a',
+                    name='a1',
+                    kind=ParamKind.POS_OR_KW,
+                ),
+                Param(
+                    field_id='a',
+                    name='a2',
+                    kind=ParamKind.POS_OR_KW,
                 ),
             ),
             overriden_types=frozenset({'a'}),
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=full_match_regex_str("Field ids {'a'} are duplicated")):
+        OutputShape(
+            fields=(
+                OutputField(
+                    id="a",
+                    type=int,
+                    default=NoDefault(),
+                    accessor=create_attr_accessor("a", is_required=True),
+                    metadata={},
+                    original=None,
+                ),
+                OutputField(
+                    id="a",
+                    type=int,
+                    default=NoDefault(),
+                    accessor=create_attr_accessor("a", is_required=True),
+                    metadata={},
+                    original=None,
+                ),
+            ),
+            overriden_types=frozenset({'a'}),
+        )
+
+
+def test_param_name_duplicates():
+    with pytest.raises(ValueError, match=full_match_regex_str("Parameter names {'a'} are duplicated")):
         InputShape(
             constructor=stub_constructor,
             kwargs=None,
@@ -153,8 +217,7 @@ def test_name_duplicates():
                     default=NoDefault(),
                     is_required=True,
                     metadata={},
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
+                    original=None,
                 ),
                 InputField(
                     id="a2",
@@ -162,50 +225,56 @@ def test_name_duplicates():
                     default=NoDefault(),
                     is_required=True,
                     metadata={},
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
+                    original=None,
                 ),
+            ),
+            params=(
+                Param(
+                    field_id='a1',
+                    name='a',
+                    kind=ParamKind.POS_OR_KW,
+                ),
+                Param(
+                    field_id='a2',
+                    name='a',
+                    kind=ParamKind.POS_OR_KW,
+                )
             ),
             overriden_types=frozenset({'a1', 'a2'}),
         )
 
-    with pytest.raises(ValueError):
-        OutputShape(
+
+def test_optional_and_positional_only():
+    with pytest.raises(ValueError, match=full_match_regex_str("Field 'a' can not be positional only and optional")):
+        InputShape(
+            constructor=stub_constructor,
+            kwargs=None,
             fields=(
-                OutputField(
+                InputField(
                     id="a",
                     type=int,
                     default=NoDefault(),
-                    accessor=create_attr_accessor("a", is_required=True),
+                    is_required=False,
                     metadata={},
+                    original=None,
                 ),
-                OutputField(
-                    id="a",
-                    type=int,
-                    default=NoDefault(),
-                    accessor=create_attr_accessor("a", is_required=True),
-                    metadata={},
+            ),
+            params=(
+                Param(
+                    field_id='a',
+                    name='a',
+                    kind=ParamKind.POS_ONLY,
                 ),
             ),
             overriden_types=frozenset({'a'}),
         )
 
 
-def test_optional_and_positional_only():
-    with pytest.raises(ValueError):
-        InputField(
-            id="a",
-            type=int,
-            default=NoDefault(),
-            is_required=False,
-            metadata={},
-            param_kind=ParamKind.POS_ONLY,
-            param_name='a',
-        )
-
-
 def test_non_existing_fields_overriden_types():
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str("overriden_types contains non existing fields frozenset({'c'})"),
+    ):
         InputShape(
             constructor=stub_constructor,
             kwargs=None,
@@ -216,8 +285,7 @@ def test_non_existing_fields_overriden_types():
                     default=NoDefault(),
                     is_required=True,
                     metadata={},
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='a',
+                    original=None,
                 ),
                 InputField(
                     id="b",
@@ -225,14 +293,28 @@ def test_non_existing_fields_overriden_types():
                     default=NoDefault(),
                     is_required=True,
                     metadata={},
-                    param_kind=ParamKind.POS_OR_KW,
-                    param_name='b',
+                    original=None,
+                ),
+            ),
+            params=(
+                Param(
+                    field_id='a',
+                    name='a',
+                    kind=ParamKind.POS_OR_KW,
+                ),
+                Param(
+                    field_id='b',
+                    name='b',
+                    kind=ParamKind.POS_OR_KW,
                 ),
             ),
             overriden_types=frozenset({'c'}),
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str("overriden_types contains non existing fields frozenset({'c'})"),
+    ):
         OutputShape(
             fields=(
                 OutputField(
@@ -241,6 +323,7 @@ def test_non_existing_fields_overriden_types():
                     default=NoDefault(),
                     accessor=create_attr_accessor("a", is_required=True),
                     metadata={},
+                    original=None,
                 ),
                 OutputField(
                     id="b",
@@ -248,7 +331,65 @@ def test_non_existing_fields_overriden_types():
                     default=NoDefault(),
                     accessor=create_attr_accessor("b", is_required=True),
                     metadata={},
+                    original=None,
                 ),
             ),
             overriden_types=frozenset({'c'}),
+        )
+
+
+def test_parameter_bound_to_non_existing_field():
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str("Parameters {'b': 'b'} bind to non-existing fields"),
+    ):
+        InputShape(
+            constructor=stub_constructor,
+            kwargs=None,
+            fields=(
+                InputField(
+                    id="a",
+                    type=int,
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata={},
+                    original=None,
+                ),
+            ),
+            params=(
+                Param(
+                    field_id='a',
+                    name='a',
+                    kind=ParamKind.POS_OR_KW,
+                ),
+                Param(
+                    field_id='b',
+                    name='b',
+                    kind=ParamKind.POS_OR_KW,
+                ),
+            ),
+            overriden_types=frozenset({'a'}),
+        )
+
+
+def test_field_without_parameters():
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str("Fields {'a'} do not bound to any parameter"),
+    ):
+        InputShape(
+            constructor=stub_constructor,
+            kwargs=None,
+            fields=(
+                InputField(
+                    id="a",
+                    type=int,
+                    default=NoDefault(),
+                    is_required=True,
+                    metadata={},
+                    original=None,
+                ),
+            ),
+            params=(),
+            overriden_types=frozenset({'a'}),
         )

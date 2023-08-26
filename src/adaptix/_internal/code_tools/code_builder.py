@@ -41,7 +41,7 @@ class CodeBuilder:
     __iadd__ = __call__
 
     def include(self: CB, line_or_text: str) -> CB:
-        """Add first line of input text to last line of builder and append other lines"""
+        """Add the first line of input text to the last line of builder and append other lines"""
         first_line, *other_lines = self._extract_lines(line_or_text)
 
         if self._lines:

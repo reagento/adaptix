@@ -19,3 +19,11 @@ def strip_tags(norm: BaseNormType) -> BaseNormType:
     if norm.origin in _TYPE_TAGS:
         return strip_tags(norm.args[0])
     return norm
+
+
+def is_class_var(norm: BaseNormType) -> bool:
+    if norm.origin == ClassVar:
+        return True
+    if norm.origin in _TYPE_TAGS:
+        return is_class_var(norm.args[0])
+    return False

@@ -6,7 +6,7 @@ import pytest
 
 from adaptix import ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
-from adaptix._internal.model_tools.definitions import InputField, InputShape, NoDefault, ParamKind, ParamKwargs
+from adaptix._internal.model_tools.definitions import InputField, InputShape, NoDefault, Param, ParamKind, ParamKwargs
 from adaptix._internal.provider.model.basic_gen import NameSanitizer
 from adaptix._internal.provider.model.crown_definitions import (
     ExtraCollect,
@@ -58,24 +58,37 @@ def gauge(*args, **kwargs):
     return Gauge(args, kwargs)
 
 
-def field(name: str, param_kind: ParamKind, is_required: bool):
-    return InputField(
-        type=int,
-        id=name,
-        default=NoDefault(),
-        is_required=is_required,
-        metadata=MappingProxyType({}),
-        param_kind=param_kind,
-        param_name=name,
-    )
+@dataclass
+class TestField:
+    id: str
+    param_kind: ParamKind
+    is_required: bool
 
 
-def shape(*fields: InputField, kwargs: Optional[ParamKwargs] = None):
+def shape(*fields: TestField, kwargs: Optional[ParamKwargs] = None):
     return InputShape(
-        fields=fields,
+        fields=tuple(
+            InputField(
+                type=int,
+                id=fld.id,
+                default=NoDefault(),
+                is_required=fld.is_required,
+                metadata=MappingProxyType({}),
+                original=None,
+            )
+            for fld in fields
+        ),
         constructor=gauge,
         kwargs=kwargs,
         overriden_types=frozenset(fld.id for fld in fields),
+        params=tuple(
+            Param(
+                field_id=fld.id,
+                name=fld.id,
+                kind=fld.param_kind,
+            )
+            for fld in fields
+        ),
     )
 
 
@@ -121,8 +134,8 @@ def extra_policy(request):
 def test_direct(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=True),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -179,8 +192,8 @@ def test_direct(debug_ctx, debug_path, extra_policy):
 def test_direct_list(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=True),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpListCrown(
@@ -225,8 +238,8 @@ def test_direct_list(debug_ctx, debug_path, extra_policy):
 def test_extra_forbid(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=True),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -259,11 +272,11 @@ def test_extra_forbid(debug_ctx, debug_path):
 def test_creation(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_ONLY, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=True),
-            field('c', ParamKind.POS_OR_KW, is_required=False),
-            field('d', ParamKind.KW_ONLY, is_required=True),
-            field('e', ParamKind.KW_ONLY, is_required=False),
+            TestField('a', ParamKind.POS_ONLY, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=True),
+            TestField('c', ParamKind.POS_OR_KW, is_required=False),
+            TestField('d', ParamKind.KW_ONLY, is_required=True),
+            TestField('e', ParamKind.KW_ONLY, is_required=False),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -289,7 +302,7 @@ def test_creation(debug_ctx, debug_path, extra_policy):
 def test_extra_kwargs(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_ONLY, is_required=True),
+            TestField('a', ParamKind.POS_ONLY, is_required=True),
             kwargs=ParamKwargs(Any),
         ),
         name_layout=InputNameLayout(
@@ -313,7 +326,7 @@ def test_extra_kwargs(debug_ctx, debug_path):
 def test_wild_extra_targets(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -337,8 +350,8 @@ def test_wild_extra_targets(debug_ctx, debug_path):
 def test_extra_targets_one(debug_ctx, debug_path, is_required):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=is_required),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=is_required),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -364,9 +377,9 @@ def test_extra_targets_one(debug_ctx, debug_path, is_required):
 def test_extra_targets_two(debug_ctx, debug_path, is_required_first, is_required_second):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=is_required_first),
-            field('c', ParamKind.KW_ONLY, is_required=is_required_second),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=is_required_first),
+            TestField('c', ParamKind.KW_ONLY, is_required=is_required_second),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -393,7 +406,7 @@ def test_extra_targets_two(debug_ctx, debug_path, is_required_first, is_required
 def test_extra_saturate(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_ONLY, is_required=True),
+            TestField('a', ParamKind.POS_ONLY, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -416,8 +429,8 @@ def test_extra_saturate(debug_ctx, debug_path):
 def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=False),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=False),
             kwargs=ParamKwargs(Any),
         ),
         name_layout=InputNameLayout(
@@ -451,8 +464,8 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_path):
 def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=True),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -470,8 +483,8 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
 
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=True),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -491,8 +504,8 @@ def test_skipped_required_field(debug_ctx, debug_path, extra_policy):
 def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=True),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -513,8 +526,8 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
 
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=False),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=False),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -537,8 +550,8 @@ def test_extra_target_at_crown(debug_ctx, debug_path, extra_policy):
 def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=False),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=False),
         ),
         name_layout=InputNameLayout(
             crown=InpListCrown(
@@ -562,9 +575,9 @@ def test_optional_fields_at_list(debug_ctx, debug_path, extra_policy):
 def test_flat_mapping(debug_ctx, debug_path, is_required):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('b', ParamKind.POS_OR_KW, is_required=False),
-            field('e', ParamKind.KW_ONLY, is_required=is_required),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=False),
+            TestField('e', ParamKind.KW_ONLY, is_required=is_required),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -593,13 +606,13 @@ def test_flat_mapping(debug_ctx, debug_path, is_required):
 
 
 COMPLEX_STRUCTURE_SHAPE = shape(
-    field('a', ParamKind.KW_ONLY, is_required=True),
-    field('b', ParamKind.KW_ONLY, is_required=True),
-    field('c', ParamKind.KW_ONLY, is_required=True),
-    field('d', ParamKind.KW_ONLY, is_required=True),
-    field('e', ParamKind.KW_ONLY, is_required=True),
-    field('f', ParamKind.KW_ONLY, is_required=True),
-    field('extra', ParamKind.KW_ONLY, is_required=True),
+    TestField('a', ParamKind.KW_ONLY, is_required=True),
+    TestField('b', ParamKind.KW_ONLY, is_required=True),
+    TestField('c', ParamKind.KW_ONLY, is_required=True),
+    TestField('d', ParamKind.KW_ONLY, is_required=True),
+    TestField('e', ParamKind.KW_ONLY, is_required=True),
+    TestField('f', ParamKind.KW_ONLY, is_required=True),
+    TestField('extra', ParamKind.KW_ONLY, is_required=True),
 )
 
 COMPLEX_STRUCTURE_CROWN = InpDictCrown(
@@ -782,8 +795,8 @@ def test_error_path_at_complex_structure(debug_ctx, debug_path, error_path):
 def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
-            field('extra', ParamKind.KW_ONLY, is_required=True),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('extra', ParamKind.KW_ONLY, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpDictCrown(
@@ -821,7 +834,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, extra_policy):
 def test_none_crown_at_list_crown(debug_ctx, debug_path, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
-            field('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
         ),
         name_layout=InputNameLayout(
             crown=InpListCrown(

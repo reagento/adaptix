@@ -14,8 +14,6 @@ def input_field_to_loc_map(field: InputField) -> LocMap:
         ),
         InputFieldLoc(
             is_required=field.is_required,
-            param_kind=field.param_kind,
-            param_name=field.param_name,
         )
     )
 

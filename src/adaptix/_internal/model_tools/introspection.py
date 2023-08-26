@@ -5,11 +5,12 @@ from inspect import Parameter, Signature
 from types import MappingProxyType
 from typing import Any, Dict
 
-from ..feature_requirement import HAS_ATTRS_PKG, HAS_PY_39
+from ..feature_requirement import HAS_ATTRS_PKG, HAS_PY_39, HAS_PY_310
 from ..model_tools.definitions import (
     BaseField,
     Default,
     DefaultFactory,
+    DefaultFactoryWithSelf,
     DefaultValue,
     FullShape,
     InputField,
@@ -19,13 +20,15 @@ from ..model_tools.definitions import (
     NoTargetPackage,
     OutputField,
     OutputShape,
+    Param,
     ParamKind,
     ParamKwargs,
     Shape,
     create_attr_accessor,
     create_key_accessor,
 )
-from ..type_tools import get_all_type_hints, is_named_tuple_class, is_typed_dict_class
+from ..type_tools import get_all_type_hints, is_named_tuple_class, is_typed_dict_class, normalize_type
+from ..type_tools.norm_utils import is_class_var
 
 try:
     import attrs
@@ -84,8 +87,16 @@ def get_callable_shape(func, params_slice=slice(0, None)) -> Shape[InputShape, N
                     is_required=_is_empty(param.default) or param.kind == Parameter.POSITIONAL_ONLY,
                     default=NoDefault() if _is_empty(param.default) else DefaultValue(param.default),
                     metadata=MappingProxyType({}),
-                    param_kind=_PARAM_KIND_CONV[param.kind],
-                    param_name=param.name,
+                    original=param,
+                )
+                for param in params
+                if param.kind != Parameter.VAR_KEYWORD
+            ),
+            params=tuple(
+                Param(
+                    field_id=param.name,
+                    kind=_PARAM_KIND_CONV[param.kind],
+                    name=param.name,
                 )
                 for param in params
                 if param.kind != Parameter.VAR_KEYWORD
@@ -130,9 +141,16 @@ def get_named_tuple_shape(tp) -> FullShape:
                     NoDefault()
                 ),
                 is_required=field_id not in tp._field_defaults,
-                param_name=field_id,
                 metadata=MappingProxyType({}),
-                param_kind=ParamKind.POS_OR_KW,
+                original=None,
+            )
+            for field_id in tp._fields
+        ),
+        params=tuple(
+            Param(
+                field_id=field_id,
+                name=field_id,
+                kind=ParamKind.POS_OR_KW,
             )
             for field_id in tp._fields
         ),
@@ -152,11 +170,12 @@ def get_named_tuple_shape(tp) -> FullShape:
                         key=idx,
                         access_error=None,
                     ),
+                    original=None,
                 )
                 for idx, fld in enumerate(input_shape.fields)
             ),
             overriden_types=overriden_types,
-        )
+        ),
     )
 
 
@@ -166,7 +185,7 @@ def get_named_tuple_shape(tp) -> FullShape:
 
 class TypedDictAt38Warning(UserWarning):
     """Runtime introspection of TypedDict at python3.8 does not support inheritance.
-    Please, update python or consider limitations suppressing this warning
+    Please update python or consider limitations suppressing this warning
     """
 
     def __str__(self):
@@ -194,7 +213,7 @@ def _get_td_hints(tp):
 
 
 def get_typed_dict_shape(tp) -> FullShape:
-    # __annotations__ of TypedDict contains also parents type hints unlike any other classes,
+    # __annotations__ of TypedDict contain also parents' type hints unlike any other classes,
     # so overriden_types always contains all fields
     if not is_typed_dict_class(tp):
         raise IntrospectionImpossible
@@ -211,8 +230,15 @@ def get_typed_dict_shape(tp) -> FullShape:
                     default=NoDefault(),
                     is_required=requirement_determinant(name),
                     metadata=MappingProxyType({}),
-                    param_kind=ParamKind.KW_ONLY,
-                    param_name=name,
+                    original=None,
+                )
+                for name, tp in type_hints
+            ),
+            params=tuple(
+                Param(
+                    field_id=name,
+                    name=name,
+                    kind=ParamKind.KW_ONLY,
                 )
                 for name, tp in type_hints
             ),
@@ -230,6 +256,7 @@ def get_typed_dict_shape(tp) -> FullShape:
                         access_error=None if requirement_determinant(name) else KeyError,
                     ),
                     metadata=MappingProxyType({}),
+                    original=None,
                 )
                 for name, tp in type_hints
             ),
@@ -245,7 +272,7 @@ def get_typed_dict_shape(tp) -> FullShape:
 def all_dc_fields(cls) -> Dict[str, DCField]:
     """Builtin introspection function hides
     some fields like InitVar or ClassVar.
-    That function return full dict
+    That function returns full dict
     """
     return cls.__dataclass_fields__
 
@@ -258,7 +285,7 @@ def get_dc_default(field: DCField) -> Default:
     return NoDefault()
 
 
-def create_inp_field_from_dc_fields(dc_field: DCField, type_hints):
+def _create_inp_field_from_dc_fields(dc_field: DCField, type_hints):
     default = get_dc_default(dc_field)
     return InputField(
         type=type_hints[dc_field.name],
@@ -266,9 +293,16 @@ def create_inp_field_from_dc_fields(dc_field: DCField, type_hints):
         default=default,
         is_required=default == NoDefault(),
         metadata=dc_field.metadata,
-        param_kind=ParamKind.POS_OR_KW,
-        param_name=dc_field.name,
+        original=dc_field,
     )
+
+
+if HAS_PY_310:
+    def _get_dc_param_kind(dc_field: DCField) -> ParamKind:
+        return ParamKind.KW_ONLY if dc_field.kw_only else ParamKind.POS_OR_KW
+else:
+    def _get_dc_param_kind(dc_field: DCField) -> ParamKind:
+        return ParamKind.POS_OR_KW
 
 
 def get_dataclass_shape(tp) -> FullShape:
@@ -296,7 +330,16 @@ def get_dataclass_shape(tp) -> FullShape:
         input=InputShape(
             constructor=tp,
             fields=tuple(
-                create_inp_field_from_dc_fields(name_to_dc_field[field_id], type_hints)
+                _create_inp_field_from_dc_fields(dc_field, type_hints)
+                for dc_field in name_to_dc_field.values()
+                if dc_field.init and not is_class_var(normalize_type(type_hints[dc_field.name]))
+            ),
+            params=tuple(
+                Param(
+                    field_id=field_id,
+                    name=field_id,
+                    kind=_get_dc_param_kind(name_to_dc_field[field_id]),
+                )
                 for field_id in init_params
             ),
             kwargs=None,
@@ -308,19 +351,20 @@ def get_dataclass_shape(tp) -> FullShape:
         output=OutputShape(
             fields=tuple(
                 OutputField(
-                    type=type_hints[field.name],
-                    id=field.name,
-                    default=get_dc_default(name_to_dc_field[field.name]),
-                    accessor=create_attr_accessor(attr_name=field.name, is_required=True),
-                    metadata=field.metadata,
+                    type=type_hints[dc_field.name],
+                    id=dc_field.name,
+                    default=get_dc_default(name_to_dc_field[dc_field.name]),
+                    accessor=create_attr_accessor(attr_name=dc_field.name, is_required=True),
+                    metadata=dc_field.metadata,
+                    original=dc_field,
                 )
-                for field in dc_fields_public
+                for dc_field in dc_fields_public
             ),
             overriden_types=frozenset(
-                field.name for field in dc_fields_public
-                if field.name in tp.__annotations__
+                dc_field.name for dc_field in dc_fields_public
+                if dc_field.name in tp.__annotations__
             ),
-        )
+        ),
     )
 
 
@@ -336,7 +380,6 @@ def get_class_init_shape(tp) -> Shape[InputShape, None]:
         tp.__init__,  # type: ignore[misc]
         slice(1, None)
     )
-
     return replace(
         shape,
         input=replace(
@@ -355,8 +398,7 @@ def _get_attrs_default(attrs_field) -> Default:
 
     if isinstance(default, attrs.Factory):  # type: ignore
         if default.takes_self:
-            # TODO: add support
-            raise ValueError("Factory with self parameter does not supported yet")
+            return DefaultFactoryWithSelf(default.factory)
         return DefaultFactory(default.factory)
 
     if default is attrs.NOTHING:
@@ -414,7 +456,90 @@ def _get_attrs_param_name(attrs_field):
     )
 
 
+def _get_attrs_input_shape(tp, attrs_fields, type_hints) -> InputShape:
+    param_name_to_field_from_attrs = {
+        _get_attrs_param_name(attrs_fld): InputField(
+            id=attrs_fld.name,
+            type=_get_attrs_field_type(attrs_fld, type_hints),
+            default=_get_attrs_default(attrs_fld),
+            metadata=attrs_fld.metadata,
+            original=attrs_fld,
+            is_required=_get_attrs_default(attrs_fld) == NoDefault(),
+        )
+        for attrs_fld in attrs_fields
+        if attrs_fld.init
+    }
+    init_shape = get_class_init_shape(tp)
+
+    if hasattr(tp, '__attrs_init__'):
+        fields = tuple(
+            InputField(
+                id=param_name_to_field_from_attrs[fld.id].id,
+                type=fld.type,
+                default=fld.default,
+                is_required=fld.is_required,
+                metadata=param_name_to_field_from_attrs[fld.id].metadata,
+                original=param_name_to_field_from_attrs[fld.id].original,
+            )
+            if fld.id in param_name_to_field_from_attrs else
+            fld
+            for fld in init_shape.input.fields
+        )
+        overriden_types = (
+            frozenset(fld.id for fld in fields)
+            if '__attrs_init__' in vars(tp) else
+            frozenset()
+        )
+    else:
+        fields = tuple(param_name_to_field_from_attrs.values())
+        overriden_types = frozenset(
+            attrs_fld.name
+            for attrs_fld in attrs_fields
+            if not attrs_fld.inherited and attrs_fld.init
+        )
+
+    return InputShape(
+        constructor=tp,
+        fields=fields,
+        overriden_types=overriden_types,
+        kwargs=init_shape.input.kwargs,
+        params=tuple(
+            Param(
+                field_id=(
+                    param_name_to_field_from_attrs[param.name].id
+                    if param.name in param_name_to_field_from_attrs else
+                    param.name
+                ),
+                name=param.name,
+                kind=param.kind,
+            )
+            for param in init_shape.input.params
+        ),
+    )
+
+
+def _get_attrs_output_shape(attrs_fields, type_hints) -> OutputShape:
+    output_fields = tuple(
+        OutputField(
+            id=attrs_fld.name,
+            type=_get_attrs_field_type(attrs_fld, type_hints),
+            default=_get_attrs_default(attrs_fld),
+            metadata=attrs_fld.metadata,
+            original=attrs_fld,
+            accessor=create_attr_accessor(attrs_fld.name, is_required=True),
+        )
+        for attrs_fld in attrs_fields
+    )
+    return OutputShape(
+        fields=output_fields,
+        overriden_types=frozenset(
+            attrs_fld.name for attrs_fld in attrs_fields if not attrs_fld.inherited
+        ),
+    )
+
+
 def get_attrs_shape(tp) -> FullShape:
+    # TODO: rework to extras
     if not HAS_ATTRS_PKG:
         raise NoTargetPackage
 
@@ -425,63 +550,13 @@ def get_attrs_shape(tp) -> FullShape:
     if not is_attrs:
         raise IntrospectionImpossible
 
-    type_hints = get_all_type_hints(tp)
-
     try:
         attrs_fields = attrs.fields(tp)
     except (TypeError, attrs.exceptions.NotAnAttrsClassError):
         raise IntrospectionImpossible
 
-    attrs_fields_dict = {
-        field.name: field for field in attrs_fields
-    }
-    param_name_to_base_field = {
-        _get_attrs_param_name(attrs_fld): BaseField(
-            # if field is not annotated, type attribute will store None value
-            type=_get_attrs_field_type(attrs_fld, type_hints),
-            default=_get_attrs_default(attrs_fld),
-            metadata=attrs_fld.metadata,
-            id=attrs_fld.name,
-        )
-        for attrs_fld in attrs_fields
-    }
-
-    has_custom_init = hasattr(tp, '__attrs_init__')
-
-    shape = get_class_init_shape(tp)
-    input_fields = tuple(
-        _process_attr_input_field(field, param_name_to_base_field, has_custom_init)
-        for field in shape.input.fields
-    )
-    input_shape = replace(
-        shape.input,
-        fields=input_fields,
-        overriden_types=frozenset(
-            (fld.id for fld in input_fields)
-            if has_custom_init else
-            (fld.id for fld in input_fields if not attrs_fields_dict[fld.id].inherited)
-        ),
-    )
-    output_fields = tuple(
-        OutputField(
-            id=field.id,
-            type=field.type,
-            default=(
-                input_shape.fields_dict[field.id].default
-                if field.id in input_shape.fields_dict else
-                NoDefault()
-            ),
-            metadata=field.metadata,
-            accessor=create_attr_accessor(field.id, is_required=True),
-        )
-        for field in param_name_to_base_field.values()
-    )
+    type_hints = get_all_type_hints(tp)
     return Shape(
-        input=input_shape,
-        output=OutputShape(
-            fields=output_fields,
-            overriden_types=frozenset(
-                fld.id for fld in output_fields if not attrs_fields_dict[fld.id].inherited
-            ),
-        ),
+        input=_get_attrs_input_shape(tp, attrs_fields, type_hints),
+        output=_get_attrs_output_shape(attrs_fields, type_hints),
     )

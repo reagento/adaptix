@@ -5,7 +5,7 @@ from typing import Dict, NamedTuple, Optional
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
-from ...model_tools.definitions import DefaultFactory, DefaultValue, OutputField
+from ...model_tools.definitions import DefaultFactory, DefaultFactoryWithSelf, DefaultValue, OutputField
 from .crown_definitions import (
     CrownPathElem,
     OutCrown,
@@ -300,9 +300,11 @@ class BuiltinOutputCreationGen(CodeGenerator):
         if isinstance(default_clause, DefaultValue):
             literal_expr = get_literal_expr(default_clause.value)
             if literal_expr is not None:
-                if is_singleton(default_clause.value):
-                    return f"{input_expr} is not {literal_expr}"
-                return f"{input_expr} != {literal_expr}"
+                return (
+                    f"{input_expr} is not {literal_expr}"
+                    if is_singleton(default_clause.value) else
+                    f"{input_expr} != {literal_expr}"
+                )
             default_clause_var = state.default_clause(key)
             state.ctx_namespace.add(default_clause_var, default_clause.value)
             return f"{input_expr} != {default_clause_var}"
@@ -314,6 +316,11 @@ class BuiltinOutputCreationGen(CodeGenerator):
             default_clause_var = state.default_clause(key)
             state.ctx_namespace.add(default_clause_var, default_clause.factory)
             return f"{input_expr} != {default_clause_var}()"
+
+        if isinstance(default_clause, DefaultFactoryWithSelf):
+            default_clause_var = state.default_clause(key)
+            state.ctx_namespace.add(default_clause_var, default_clause.factory)
+            return f"{input_expr} != {default_clause_var}({state.binder.data})"
 
         raise TypeError
 

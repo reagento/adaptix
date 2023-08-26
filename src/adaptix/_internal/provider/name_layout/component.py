@@ -8,6 +8,7 @@ from ...model_tools.definitions import (
     BaseField,
     BaseShape,
     DefaultFactory,
+    DefaultFactoryWithSelf,
     DefaultValue,
     InputField,
     NoDefault,
@@ -340,11 +341,15 @@ class BuiltinSievesMaker(SievesMaker):
     def _create_sieve(self, field: OutputField) -> Sieve:
         if isinstance(field.default, DefaultValue):
             default_value = field.default.value
-            return with_default_clause(lambda x: x != default_value, field.default)
+            return with_default_clause(field.default, lambda obj, value: value != default_value)
 
         if isinstance(field.default, DefaultFactory):
             default_factory = field.default.factory
-            return with_default_clause(lambda x: x != default_factory(), field.default)
+            return with_default_clause(field.default, lambda obj, value: value != default_factory())
+
+        if isinstance(field.default, DefaultFactoryWithSelf):
+            default_factory_with_self = field.default.factory
+            return with_default_clause(field.default, lambda obj, value: value != default_factory_with_self(obj))
 
         raise ValueError
 

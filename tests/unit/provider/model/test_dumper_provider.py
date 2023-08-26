@@ -41,18 +41,27 @@ from adaptix._internal.utils import SingletonMeta
 from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_path
 
 
-def field(name: str, accessor: Accessor):
-    return OutputField(
-        type=int,
-        id=name,
-        default=NoDefault(),
-        accessor=accessor,
-        metadata=MappingProxyType({}),
+@dataclass
+class TestField:
+    id: str
+    accessor: Accessor
+
+
+def shape(*fields: TestField):
+    return OutputShape(
+        fields=tuple(
+            OutputField(
+                type=int,
+                id=fld.id,
+                default=NoDefault(),
+                accessor=fld.accessor,
+                metadata=MappingProxyType({}),
+                original=None,
+            )
+            for fld in fields
+        ),
+        overriden_types=frozenset(fld.id for fld in fields),
     )
-
-
-def shape(*fields: OutputField):
-    return OutputShape(fields=fields, overriden_types=frozenset(fld.id for fld in fields))
 
 
 def int_dumper(data):
@@ -196,8 +205,8 @@ def acc_schema(request):
 def test_flat(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', is_required_a)),
-            field('b', acc_schema.accessor_maker('b', is_required_b)),
+            TestField('a', acc_schema.accessor_maker('a', is_required_a)),
+            TestField('b', acc_schema.accessor_maker('b', is_required_b)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -279,7 +288,7 @@ def test_flat(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
 def test_wild_extra_targets(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', is_required=True)),
+            TestField('a', acc_schema.accessor_maker('a', is_required=True)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -303,8 +312,8 @@ def test_wild_extra_targets(debug_ctx, debug_path, acc_schema):
 def test_one_extra_target(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
-            field('b', acc_schema.accessor_maker('b', is_required=is_required_b)),
+            TestField('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
+            TestField('b', acc_schema.accessor_maker('b', is_required=is_required_b)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -376,10 +385,10 @@ def test_several_extra_target(
 ):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
-            field('b', acc_schema.accessor_maker('b', is_required=is_required_b)),
-            field('c', acc_schema.accessor_maker('c', is_required=is_required_c)),
-            field('d', acc_schema.accessor_maker('d', is_required=is_required_d)),
+            TestField('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
+            TestField('b', acc_schema.accessor_maker('b', is_required=is_required_b)),
+            TestField('c', acc_schema.accessor_maker('c', is_required=is_required_c)),
+            TestField('d', acc_schema.accessor_maker('d', is_required=is_required_d)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -466,8 +475,8 @@ def my_extractor(obj):
 def test_extra_extract(debug_ctx, debug_path, is_required_a, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
-            field('b', acc_schema.accessor_maker('b', is_required=True)),
+            TestField('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
+            TestField('b', acc_schema.accessor_maker('b', is_required=True)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -520,8 +529,8 @@ def test_extra_extract(debug_ctx, debug_path, is_required_a, acc_schema):
 def test_optional_fields_at_list(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', is_required=True)),
-            field('b', acc_schema.accessor_maker('b', is_required=False)),
+            TestField('a', acc_schema.accessor_maker('a', is_required=True)),
+            TestField('b', acc_schema.accessor_maker('b', is_required=False)),
         ),
         name_layout=OutputNameLayout(
             crown=OutListCrown(
@@ -558,8 +567,8 @@ class FlatMap:
 def test_flat_mapping(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema, mp):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field(mp.a.field, acc_schema.accessor_maker('a', is_required_a)),
-            field(mp.b.field, acc_schema.accessor_maker('b', is_required_b)),
+            TestField(mp.a.field, acc_schema.accessor_maker('a', is_required_a)),
+            TestField(mp.b.field, acc_schema.accessor_maker('b', is_required_b)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -641,8 +650,8 @@ def test_flat_mapping(debug_ctx, debug_path, is_required_a, is_required_b, acc_s
 def test_direct_list(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', True)),
-            field('b', acc_schema.accessor_maker('b', True)),
+            TestField('a', acc_schema.accessor_maker('a', True)),
+            TestField('b', acc_schema.accessor_maker('b', True)),
         ),
         name_layout=OutputNameLayout(
             crown=OutListCrown(
@@ -690,15 +699,15 @@ def list_skipper(data):
 def test_structure_flattening(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', True)),
-            field('b', acc_schema.accessor_maker('b', True)),
-            field('c', acc_schema.accessor_maker('c', True)),
-            field('d', acc_schema.accessor_maker('d', True)),
-            field('e', acc_schema.accessor_maker('e', True)),
-            field('f', acc_schema.accessor_maker('f', True)),
-            field('g', acc_schema.accessor_maker('g', True)),
-            field('h', acc_schema.accessor_maker('h', True)),
-            field('extra', acc_schema.accessor_maker('extra', True)),
+            TestField('a', acc_schema.accessor_maker('a', True)),
+            TestField('b', acc_schema.accessor_maker('b', True)),
+            TestField('c', acc_schema.accessor_maker('c', True)),
+            TestField('d', acc_schema.accessor_maker('d', True)),
+            TestField('e', acc_schema.accessor_maker('e', True)),
+            TestField('f', acc_schema.accessor_maker('f', True)),
+            TestField('g', acc_schema.accessor_maker('g', True)),
+            TestField('h', acc_schema.accessor_maker('h', True)),
+            TestField('extra', acc_schema.accessor_maker('extra', True)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -867,8 +876,8 @@ def test_structure_flattening(debug_ctx, debug_path, acc_schema):
 def test_extra_target_at_crown(debug_ctx, debug_path, acc_schema, is_required_a, is_required_b):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', is_required_a)),
-            field('b', acc_schema.accessor_maker('b', is_required_b)),
+            TestField('a', acc_schema.accessor_maker('a', is_required_a)),
+            TestField('b', acc_schema.accessor_maker('b', is_required_b)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -889,8 +898,8 @@ def test_extra_target_at_crown(debug_ctx, debug_path, acc_schema, is_required_a,
 
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', is_required_a)),
-            field('b', acc_schema.accessor_maker('b', is_required_b)),
+            TestField('a', acc_schema.accessor_maker('a', is_required_a)),
+            TestField('b', acc_schema.accessor_maker('b', is_required_b)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -919,7 +928,7 @@ class SomeClass:
 def test_none_crown_at_dict_crown(debug_ctx, debug_path, acc_schema, is_required_a):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', is_required_a)),
+            TestField('a', acc_schema.accessor_maker('a', is_required_a)),
         ),
         name_layout=OutputNameLayout(
             crown=OutDictCrown(
@@ -944,7 +953,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, acc_schema, is_required
 def test_none_crown_at_list_crown(debug_ctx, debug_path, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
-            field('a', acc_schema.accessor_maker('a', True)),
+            TestField('a', acc_schema.accessor_maker('a', True)),
         ),
         name_layout=OutputNameLayout(
             crown=OutListCrown(

@@ -14,7 +14,7 @@ from .basic_gen import (
     get_optional_fields_at_list_crown,
     get_skipped_fields,
     get_wild_extra_targets,
-    strip_shape_fields,
+    strip_output_shape_fields,
     stub_code_gen_hook,
 )
 from .crown_definitions import OutExtraMove, OutputNameLayout, OutputNameLayoutRequest
@@ -106,7 +106,7 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
                 f"Extra targets {extra_targets_at_crown} are found at crown"
             )
 
-        return strip_shape_fields(shape, get_skipped_fields(shape, name_layout))
+        return strip_output_shape_fields(shape, get_skipped_fields(shape, name_layout))
 
     def _create_creation_gen(
         self,

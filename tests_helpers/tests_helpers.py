@@ -114,8 +114,10 @@ def parametrize_bool(param: str, *params: str):
     return decorator
 
 
-def cond_list(flag: object, factory: Callable[[], list]) -> list:
-    return factory() if flag else []
+def cond_list(flag: object, lst: Union[Callable[[], list], list]) -> list:
+    if flag:
+        return lst() if callable(lst) else lst
+    return []
 
 
 @dataclass

@@ -1,4 +1,5 @@
 # pylint: disable=inconsistent-return-statements,comparison-with-callable
+import dataclasses
 import sys
 import types
 import typing
@@ -33,7 +34,14 @@ from typing import (
 )
 
 from ..common import TypeHint, VarTuple
-from ..feature_requirement import HAS_ANNOTATED, HAS_PARAM_SPEC, HAS_TYPE_ALIAS, HAS_TYPE_GUARD, HAS_TYPE_UNION_OP
+from ..feature_requirement import (
+    HAS_ANNOTATED,
+    HAS_PARAM_SPEC,
+    HAS_PY_310,
+    HAS_TYPE_ALIAS,
+    HAS_TYPE_GUARD,
+    HAS_TYPE_UNION_OP,
+)
 from .basic_utils import create_union, eval_forward_ref, is_new_type, is_subclass_soft, strip_alias
 from .implicit_params import ImplicitParamsGetter
 
@@ -664,6 +672,8 @@ class TypeNormalizer:
 
     if HAS_TYPE_ALIAS:
         ALLOWED_ZERO_PARAMS_ORIGINS.add(typing.TypeAlias)
+    if HAS_PY_310:
+        ALLOWED_ZERO_PARAMS_ORIGINS.add(dataclasses.KW_ONLY)
 
     def _norm_generic_arg(self, arg):
         if arg is Ellipsis:
@@ -692,7 +702,7 @@ class TypeNormalizer:
             or isinstance(origin, type)
             or origin in self.ALLOWED_ZERO_PARAMS_ORIGINS
         ):
-            raise ValueError(f'Can not normalize {tp!r}')
+            raise ValueError(f'Can not normalize value {tp!r}')
 
         return _NormType(
             origin,

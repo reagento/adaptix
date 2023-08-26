@@ -2,12 +2,14 @@ import typing
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Tuple
+from unittest.mock import ANY
 
 import pytest
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     DefaultFactory,
+    DefaultFactoryWithSelf,
     DefaultValue,
     InputField,
     InputShape,
@@ -15,6 +17,7 @@ from adaptix._internal.model_tools.definitions import (
     NoDefault,
     OutputField,
     OutputShape,
+    Param,
     ParamKind,
     ParamKwargs,
     Shape,
@@ -26,7 +29,11 @@ from tests_helpers import ATTRS_WITH_ALIAS, requires
 pytest.importorskip("attrs")
 
 import attr
-from attrs import define, field
+from attrs import Factory, define, field
+
+
+def int_factory_with_self(x):
+    return 0
 
 
 @define
@@ -41,6 +48,7 @@ class NewStyle:
     g: list = field(factory=list)
     h: str = field(default='', metadata={'meta': 'data'})
     i: 'int' = field(default=3)
+    j: int = field(default=Factory(int_factory_with_self, takes_self=True))
 
 
 def test_new_style():
@@ -58,8 +66,7 @@ def test_new_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
                     ),
                     InputField(
                         type=str,
@@ -67,53 +74,7 @@ def test_new_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='b',
-                    ),
-                    InputField(
-                        type=int,
-                        id='e',
-                        default=DefaultValue(1),
-                        is_required=False,
-                        metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='e',
-                    ),
-                    InputField(
-                        type=int,
-                        id='f',
-                        default=DefaultValue(2),
-                        is_required=False,
-                        metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='f',
-                    ),
-                    InputField(
-                        type=list,
-                        id='g',
-                        default=DefaultFactory(list),
-                        is_required=False,
-                        metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='g',
-                    ),
-                    InputField(
-                        type=str,
-                        id='h',
-                        default=DefaultValue(''),
-                        is_required=False,
-                        metadata=MappingProxyType({'meta': 'data'}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='h',
-                    ),
-                    InputField(
-                        type=int,
-                        id='i',
-                        default=DefaultValue(3),
-                        is_required=False,
-                        metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='i',
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -121,11 +82,105 @@ def test_new_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.KW_ONLY,
-                        param_name='d',
+                        original=ANY,
+                    ),
+                    InputField(
+                        type=int,
+                        id='e',
+                        default=DefaultValue(1),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    InputField(
+                        type=int,
+                        id='f',
+                        default=DefaultValue(2),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    InputField(
+                        type=list,
+                        id='g',
+                        default=DefaultFactory(list),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    InputField(
+                        type=str,
+                        id='h',
+                        default=DefaultValue(''),
+                        is_required=False,
+                        metadata=MappingProxyType({'meta': 'data'}),
+                        original=ANY,
+                    ),
+                    InputField(
+                        type=int,
+                        id='i',
+                        default=DefaultValue(3),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    InputField(
+                        type=int,
+                        id='j',
+                        default=DefaultFactoryWithSelf(int_factory_with_self),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
-                overriden_types=frozenset({'a', '_b', 'd', 'e', 'f', 'g', 'h', 'i'}),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='_b',
+                        name='b',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='e',
+                        name='e',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='f',
+                        name='f',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='g',
+                        name='g',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='h',
+                        name='h',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='i',
+                        name='i',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='j',
+                        name='j',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='d',
+                        name='d',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                ),
+                overriden_types=frozenset({'a', '_b', 'd', 'e', 'f', 'g', 'h', 'i', 'j'}),
             ),
             output=OutputShape(
                 fields=(
@@ -135,6 +190,7 @@ def test_new_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=str,
@@ -142,6 +198,7 @@ def test_new_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('_b', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=str,
@@ -149,6 +206,7 @@ def test_new_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('c', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -156,6 +214,7 @@ def test_new_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('d', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -163,6 +222,7 @@ def test_new_style():
                         default=DefaultValue(1),
                         accessor=create_attr_accessor('e', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -170,6 +230,7 @@ def test_new_style():
                         default=DefaultValue(2),
                         accessor=create_attr_accessor('f', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=list,
@@ -177,6 +238,7 @@ def test_new_style():
                         default=DefaultFactory(list),
                         accessor=create_attr_accessor('g', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=str,
@@ -184,6 +246,7 @@ def test_new_style():
                         default=DefaultValue(''),
                         accessor=create_attr_accessor('h', is_required=True),
                         metadata=MappingProxyType({'meta': 'data'}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -191,9 +254,18 @@ def test_new_style():
                         default=DefaultValue(3),
                         accessor=create_attr_accessor('i', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    OutputField(
+                        type=int,
+                        id='j',
+                        default=DefaultFactoryWithSelf(int_factory_with_self),
+                        accessor=create_attr_accessor('j', is_required=True),
+                        metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
-                overriden_types=frozenset({'a', '_b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'}),
+                overriden_types=frozenset({'a', '_b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'}),
             ),
         )
     )
@@ -221,8 +293,7 @@ def test_old_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -230,8 +301,19 @@ def test_old_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='b',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='b',
+                        name='b',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'b'}),
@@ -244,6 +326,7 @@ def test_old_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -251,6 +334,7 @@ def test_old_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('b', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'b'}),
@@ -289,8 +373,7 @@ def test_custom_init():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
                     ),
                     InputField(
                         type=str,
@@ -298,8 +381,7 @@ def test_custom_init():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({'meta': 'data'}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='b',
+                        original=ANY,
                     ),
                     InputField(
                         type=Any,
@@ -307,8 +389,24 @@ def test_custom_init():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='c',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='b',
+                        name='b',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='_c',
+                        name='c',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'b', '_c'}),
@@ -321,13 +419,15 @@ def test_custom_init():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
                         id='b',
-                        default=NoDefault(),
+                        default=DefaultFactory(int_factory),
                         accessor=create_attr_accessor('b', is_required=True),
                         metadata=MappingProxyType({'meta': 'data'}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -335,13 +435,15 @@ def test_custom_init():
                         default=NoDefault(),
                         accessor=create_attr_accessor('_c', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
                         id='d',
-                        default=NoDefault(),
+                        default=DefaultValue(value=10),
                         accessor=create_attr_accessor('d', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'b', '_c', 'd'}),
@@ -374,8 +476,7 @@ def test_custom_init_unknown_params():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
                     ),
                     InputField(
                         type=str,
@@ -383,8 +484,7 @@ def test_custom_init_unknown_params():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='b',
+                        original=ANY,
                     ),
                     InputField(
                         type=bytes,
@@ -392,8 +492,24 @@ def test_custom_init_unknown_params():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='c',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='b',
+                        name='b',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='c',
+                        name='c',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'b', 'c'}),
@@ -406,6 +522,7 @@ def test_custom_init_unknown_params():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=dict,
@@ -413,6 +530,7 @@ def test_custom_init_unknown_params():
                         default=NoDefault(),
                         accessor=create_attr_accessor('other', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'other'}),
@@ -452,8 +570,14 @@ def test_custom_init_kwargs():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -466,6 +590,7 @@ def test_custom_init_kwargs():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -487,8 +612,14 @@ def test_custom_init_kwargs():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -501,6 +632,7 @@ def test_custom_init_kwargs():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -529,8 +661,14 @@ def test_none_attr():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -543,6 +681,7 @@ def test_none_attr():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -574,8 +713,14 @@ def test_none_attr_custom_init():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -588,6 +733,7 @@ def test_none_attr_custom_init():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -616,8 +762,14 @@ def test_annotated():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -630,6 +782,7 @@ def test_annotated():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a'}),
@@ -675,8 +828,7 @@ def test_inheritance_new_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='b',
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -684,8 +836,7 @@ def test_inheritance_new_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -693,8 +844,24 @@ def test_inheritance_new_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='c',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='b',
+                        name='b',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='c',
+                        name='c',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'c'}),
@@ -707,6 +874,7 @@ def test_inheritance_new_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('b', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -714,6 +882,7 @@ def test_inheritance_new_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -721,6 +890,7 @@ def test_inheritance_new_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('c', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'c'}),
@@ -756,8 +926,7 @@ def test_inheritance_old_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='b',
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -765,8 +934,7 @@ def test_inheritance_old_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='a',
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -774,8 +942,24 @@ def test_inheritance_old_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='c',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='b',
+                        name='b',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='a',
+                        name='a',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='c',
+                        name='c',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'c'}),
@@ -788,6 +972,7 @@ def test_inheritance_old_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('b', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -795,6 +980,7 @@ def test_inheritance_old_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('a', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -802,6 +988,7 @@ def test_inheritance_old_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('c', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'a', 'c'}),
@@ -831,8 +1018,7 @@ def test_alias_new_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='foo1',
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -840,8 +1026,19 @@ def test_alias_new_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='foo2',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='foo',
+                        name='foo1',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='_foo',
+                        name='foo2',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'foo', '_foo'}),
@@ -854,6 +1051,7 @@ def test_alias_new_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('foo', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -861,6 +1059,7 @@ def test_alias_new_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('_foo', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'foo', '_foo'}),
@@ -890,8 +1089,7 @@ def test_alias_old_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='foo1',
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -899,8 +1097,19 @@ def test_alias_old_style():
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
-                        param_kind=ParamKind.POS_OR_KW,
-                        param_name='foo2',
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='foo',
+                        name='foo1',
+                        kind=ParamKind.POS_OR_KW,
+                    ),
+                    Param(
+                        field_id='_foo',
+                        name='foo2',
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({'foo', '_foo'}),
@@ -913,6 +1122,7 @@ def test_alias_old_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('foo', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                     OutputField(
                         type=int,
@@ -920,6 +1130,7 @@ def test_alias_old_style():
                         default=NoDefault(),
                         accessor=create_attr_accessor('_foo', is_required=True),
                         metadata=MappingProxyType({}),
+                        original=ANY,
                     ),
                 ),
                 overriden_types=frozenset({'foo', '_foo'}),

@@ -8,6 +8,7 @@ from ..common import Catchable, TypeHint, VarTuple
 from ..struct_path import Attr, PathElement
 from ..utils import SingletonMeta, pairs
 
+S = TypeVar('S')
 T = TypeVar('T')
 
 
@@ -31,7 +32,12 @@ class DefaultFactory(Generic[T]):
     factory: Callable[[], T]
 
 
-Default = Union[NoDefault, DefaultValue[T], DefaultFactory[T]]
+@dataclass(frozen=True)
+class DefaultFactoryWithSelf(Generic[S, T]):
+    factory: Callable[[S], T]
+
+
+Default = Union[NoDefault, DefaultValue[Any], DefaultFactory[Any], DefaultFactoryWithSelf[Any, Any]]
 
 
 class Accessor(Hashable, ABC):
@@ -142,42 +148,27 @@ def is_valid_field_id(value: str) -> bool:
 
 @dataclass(frozen=True)
 class BaseField:
-    type: TypeHint
     id: str
+    type: TypeHint
     default: Default
+    metadata: Mapping[Any, Any] = field(hash=False)
     # Mapping almost never defines __hash__,
     # so it will be more convenient to exclude this field
     # from hash computation
-    metadata: Mapping[Any, Any] = field(hash=False)
+    original: Any = field(hash=False)
 
     def __post_init__(self):
         if not is_valid_field_id(self.id):
-            raise ValueError(f"name of field must be python identifier, now it is a {self.id!r}")
-
-
-class ParamKind(Enum):
-    POS_ONLY = 0
-    POS_OR_KW = 1
-    KW_ONLY = 3  # 2 is for VAR_POS
+            raise ValueError(f"Field id must be python identifier, now it is a {self.id!r}")
 
 
 @dataclass(frozen=True)
 class InputField(BaseField):
     is_required: bool
-    param_kind: ParamKind
-    param_name: str
 
     @property
     def is_optional(self):
         return not self.is_required
-
-    def __post_init__(self):
-        super().__post_init__()
-        if not self.param_name.isidentifier():
-            raise ValueError(f"param_name must be python identifier, now it is a {self.param_name!r}")
-
-        if self.param_kind == ParamKind.POS_ONLY and not self.is_required:
-            raise ValueError(f"{type(self)} can not be positional only and optional")
 
 
 @dataclass(frozen=True)
@@ -195,7 +186,7 @@ class OutputField(BaseField):
 
 @dataclass(frozen=True)
 class BaseShape:
-    """Signature of class. Divided into 2 parts: input and output.
+    """Signature of class, it is divided into two parts: input and output.
     See doc :class InputShape: and :class OutputShape: for more details
     """
     fields: VarTuple[BaseField]
@@ -209,15 +200,37 @@ class BaseShape:
                 fld.id for fld in self.fields
                 if fld.id in field_ids
             }
-            raise ValueError(f"Field names {duplicates} are duplicated")
+            raise ValueError(f"Field ids {duplicates} are duplicated")
 
         wild_overriden_types = self.overriden_types - field_ids
         if wild_overriden_types:
-            raise ValueError(f"overriden_types contains non existing fields {wild_overriden_types} ")
+            raise ValueError(f"overriden_types contains non existing fields {wild_overriden_types}")
+
+    def __post_init__(self):
+        super().__setattr__('fields_dict', {fld.id: fld for fld in self.fields})
+        self._validate()
+
+
+class ParamKind(Enum):
+    POS_ONLY = 0
+    POS_OR_KW = 1
+    KW_ONLY = 3  # 2 is for VAR_POS
+
+
+@dataclass(frozen=True)
+class Param:
+    field_id: str
+    name: str
+    kind: ParamKind
+
+    def _validate(self) -> None:
+        if not self.name.isidentifier():
+            raise ValueError(f"Parameter name must be python identifier, now it is a {self.name!r}")
+        if not is_valid_field_id(self.field_id):
+            raise ValueError(f"Field id must be python identifier, now it is a {self.field_id!r}")
 
     def __post_init__(self):
         self._validate()
-        super().__setattr__('fields_dict', {fld.id: fld for fld in self.fields})
 
 
 @dataclass(frozen=True)
@@ -229,10 +242,11 @@ class ParamKwargs:
 class InputShape(BaseShape, Generic[T]):
     """Description of desired object creation
 
-    :param constructor: callable that produces an instance of the class.
-    :param fields: parameters of the constructor
+    :param constructor: Callable that produces an instance of the class.
+    :param fields: Parameters of the constructor
     """
     fields: VarTuple[InputField]
+    params: VarTuple[Param]
     kwargs: Optional[ParamKwargs]
     constructor: Callable[..., T]
     fields_dict: Mapping[str, InputField] = field(init=False, hash=False, repr=False, compare=False)
@@ -241,40 +255,51 @@ class InputShape(BaseShape, Generic[T]):
     def allow_kwargs(self) -> bool:
         return self.kwargs is not None
 
-    def _validate(self):
+    def _validate(self):  # noqa: CCR001
         super()._validate()
 
-        param_names = {fld.param_name for fld in self.fields}
-        if len(param_names) != len(self.fields):
+        param_names = {param.name for param in self.params}
+        if len(param_names) != len(self.params):
             duplicates = {
-                fld.param_name for fld in self.fields
-                if fld.param_name in param_names
+                param.name for param in self.params
+                if param.name in param_names
             }
-            raise ValueError(f"Param names {duplicates} are duplicated")
+            raise ValueError(f"Parameter names {duplicates} are duplicated")
 
-        for past, current in pairs(self.fields):
-            if past.param_kind.value > current.param_kind.value:
+        wild_params = {param.name: param.field_id for param in self.params if param.field_id not in self.fields_dict}
+        if wild_params:
+            raise ValueError(f'Parameters {wild_params} bind to non-existing fields')
+
+        wild_fields = self.fields_dict.keys() - {param.field_id for param in self.params}
+        if wild_fields:
+            raise ValueError(f'Fields {wild_fields} do not bound to any parameter')
+
+        for past, current in pairs(self.params):
+            if past.kind.value > current.kind.value:
                 raise ValueError(
-                    f"Inconsistent order of fields,"
-                    f" {current.param_kind} must be after {past.param_kind}"
+                    f"Inconsistent order of fields, {current.kind} must be after {past.kind}"
                 )
 
             if (
-                past.is_optional
-                and current.is_required
-                and current.param_kind != ParamKind.KW_ONLY
+                self.fields_dict[past.field_id].is_optional
+                and self.fields_dict[current.field_id].is_required
+                and current.kind != ParamKind.KW_ONLY
             ):
                 raise ValueError(
                     f"All not required fields must be after required ones"
                     f" except {ParamKind.KW_ONLY} fields"
                 )
 
+        for param in self.params:
+            if param.kind == ParamKind.POS_ONLY and self.fields_dict[param.field_id].is_optional:
+                raise ValueError(f"Field {param.field_id!r} can not be positional only and optional")
+
 
 @dataclass(frozen=True)
 class OutputShape(BaseShape):
     """Description of extraction data from an object
 
-    :param fields: fields (can be not only attributes) of object
+    :param fields: Fields (can be not only attributes) of an object
     """
     fields: VarTuple[OutputField]
     fields_dict: Mapping[str, OutputField] = field(init=False, hash=False, repr=False, compare=False)
