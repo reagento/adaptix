@@ -68,7 +68,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
 
 
 def _is_exact_zero_or_one(arg):
-    return type(arg) == int and arg in (0, 1)  # pylint: disable=unidiomatic-typecheck
+    return type(arg) is int and arg in (0, 1)  # pylint: disable=unidiomatic-typecheck
 
 
 @dataclass
@@ -373,7 +373,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         def iter_loader_dp_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Mapping)
-            if type(data) == str:  # pylint: disable=unidiomatic-typecheck
+            if type(data) is str:  # pylint: disable=unidiomatic-typecheck
                 raise ExcludedTypeLoadError(str)
 
             try:
@@ -389,7 +389,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         def iter_loader_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Mapping)
-            if type(data) == str:  # pylint: disable=unidiomatic-typecheck
+            if type(data) is str:  # pylint: disable=unidiomatic-typecheck
                 raise ExcludedTypeLoadError(str)
 
             try:

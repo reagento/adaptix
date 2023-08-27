@@ -36,7 +36,7 @@ def deps_compile(c: Context):
     promises = [
         c.run(
             f'pip-compile {req} -o {Path("requirements") / req.name}'
-            ' -q --resolver=backtracking --allow-unsafe',
+            ' -q --resolver=backtracking --allow-unsafe --strip-extras',
             asynchronous=True,
         )
         for req in Path('.').glob('requirements/raw/*.txt')

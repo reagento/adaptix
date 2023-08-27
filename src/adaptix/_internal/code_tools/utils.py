@@ -38,31 +38,31 @@ def _parenthesize(parentheses: str, elements) -> str:
 
 def _get_complex_literal_expr(obj: object) -> Optional[str]:
     # pylint: disable=unidiomatic-typecheck,too-many-return-statements
-    if type(obj) == list:
+    if type(obj) is list:
         return _parenthesize("[]", obj)
 
-    if type(obj) == tuple:
+    if type(obj) is tuple:
         return _parenthesize("()", obj)
 
-    if type(obj) == set:
+    if type(obj) is set:
         if obj:
             return _parenthesize("{}", obj)
         return "set()"
 
-    if type(obj) == frozenset:
+    if type(obj) is frozenset:
         if obj:
             return "frozenset(" + _parenthesize("{}", obj) + ")"
         return "frozenset()"
 
-    if type(obj) == slice:
+    if type(obj) is slice:
         parts = (obj.start, obj.step, obj.stop)
         return "slice" + _parenthesize("()", parts)
 
-    if type(obj) == range:
+    if type(obj) is range:
         parts = (obj.start, obj.step, obj.stop)
         return "range" + _parenthesize("()", parts)
 
-    if type(obj) == dict:
+    if type(obj) is dict:
         body = ", ".join(
             f"{_provide_lit_expr(key)}: {_provide_lit_expr(value)}"
             for key, value in obj.items()

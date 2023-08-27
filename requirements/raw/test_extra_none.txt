@@ -1,7 +1,7 @@
 pytest==7.3.1
 -e ./tests_helpers
 
-phonenumberslite==8.13.11
+phonenumberslite==8.13.19
 python-json-logger==2.0.7
 packaging==23.1
-sqlalchemy==2.0.15
+sqlalchemy==2.0.20

@@ -110,7 +110,7 @@ class EnumExactValueProvider(BaseEnumProvider):
         if value_to_member is None:
             def enum_exact_loader(data):
                 # since MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
-                if type(data) == enum:  # pylint: disable=unidiomatic-typecheck
+                if type(data) is enum:  # pylint: disable=unidiomatic-typecheck
                     raise BadVariantError(variants)
 
                 try:

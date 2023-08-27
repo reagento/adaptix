@@ -132,7 +132,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
             raise CannotProvide
         return replace(
             members_storage.meta,
-            fields=tuple(
+            fields=tuple(  # type: ignore[arg-type]
                 replace(fld, type=members_storage.members[fld.id])
                 for fld in members_storage.meta.fields
             )
