@@ -220,22 +220,28 @@ class AdornedRetort(OperatingRetort):
             return self._loader_cache[tp]
         except KeyError:
             pass
-        loader_ = self._facade_provide(
-            LoaderRequest(loc_map=LocMap(TypeHintLoc(type=tp)))
-        )
+        loader_ = self._make_loader(tp)
         self._loader_cache[tp] = loader_
         return loader_
+
+    def _make_loader(self, tp: Type[T]) -> Loader[T]:
+        return self._facade_provide(
+            LoaderRequest(loc_map=LocMap(TypeHintLoc(type=tp)))
+        )
 
     def get_dumper(self, tp: Type[T]) -> Dumper[T]:
         try:
             return self._dumper_cache[tp]
         except KeyError:
             pass
-        dumper_ = self._facade_provide(
-            DumperRequest(loc_map=LocMap(TypeHintLoc(type=tp)))
-        )
+        dumper_ = self._make_dumper(tp)
         self._dumper_cache[tp] = dumper_
         return dumper_
+
+    def _make_dumper(self, tp: Type[T]) -> Dumper[T]:
+        return self._facade_provide(
+            DumperRequest(loc_map=LocMap(TypeHintLoc(type=tp)))
+        )
 
     @overload
     def load(self, data: Any, tp: Type[T], /) -> T:
