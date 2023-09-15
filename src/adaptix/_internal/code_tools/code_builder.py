@@ -25,6 +25,10 @@ class CodeBuilder:
         return [line_or_text]
 
     def _add_indenting_lines(self, lines: Iterable[str]):
+        if self._cur_indent == 0:
+            self._lines.extend(lines)
+            return
+
         indent = " " * self._cur_indent
         self._lines.extend(
             indent + line

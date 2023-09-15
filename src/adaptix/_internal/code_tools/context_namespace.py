@@ -17,6 +17,6 @@ class BuiltinContextNamespace(ContextNamespace):
 
     def add(self, name: str, value: object) -> None:
         if name in self.dict:
-            raise KeyError("Key duplication")
+            raise KeyError(f"Key {name} is duplicated")
 
         self.dict[name] = value
