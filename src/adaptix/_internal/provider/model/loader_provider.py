@@ -5,10 +5,11 @@ from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Loader
 from ...essential import CannotProvide, Mediator
 from ...model_tools.definitions import InputShape
+from ..definitions import DebugTrail
 from ..model.definitions import CodeGenerator, InputShapeRequest, VarBinder
 from ..model.input_extraction_gen import BuiltinInputExtractionGen
 from ..provider_template import LoaderProvider
-from ..request_cls import DebugPathRequest, LoaderRequest, TypeHintLoc
+from ..request_cls import DebugTrailRequest, LoaderRequest, TypeHintLoc
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -72,8 +73,8 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
             )
             for field in processed_shape.fields
         }
-        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
-        extraction_gen = self._create_extraction_gen(debug_path, shape, name_layout, field_loaders)
+        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
+        extraction_gen = self._create_extraction_gen(debug_trail, shape, name_layout, field_loaders)
 
         return extraction_gen, shape, name_layout.extra_move
 
@@ -109,7 +110,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
 
     def _create_extraction_gen(
         self,
-        debug_path: bool,
+        debug_trail: DebugTrail,
         shape: InputShape,
         name_layout: InputNameLayout,
         field_loaders: Mapping[str, Loader],
@@ -117,7 +118,7 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
         return BuiltinInputExtractionGen(
             shape=shape,
             name_layout=name_layout,
-            debug_path=debug_path,
+            debug_trail=debug_trail,
             field_loaders=field_loaders,
         )
 

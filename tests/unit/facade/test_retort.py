@@ -1,14 +1,14 @@
 import pytest
 
-from adaptix import Retort
+from adaptix import DebugTrail, Retort
 from tests_helpers import PlaceholderProvider, full_match_regex_str
 
 
 def test_retort_replace():
-    retort1 = Retort(debug_path=False)
-    replaced_retort1 = retort1.replace(debug_path=True)
+    retort1 = Retort(debug_trail=DebugTrail.DISABLE)
+    replaced_retort1 = retort1.replace(debug_trail=DebugTrail.ALL)
 
-    assert replaced_retort1._debug_path is True
+    assert replaced_retort1._debug_trail == DebugTrail.ALL
     assert not replaced_retort1._loader_cache and not replaced_retort1._dumper_cache
 
     retort2 = Retort(strict_coercion=False)

@@ -6,6 +6,7 @@ from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
 from ...model_tools.definitions import DefaultFactory, DefaultFactoryWithSelf, DefaultValue, OutputField
+from ..definitions import DebugTrail
 from .crown_definitions import (
     CrownPathElem,
     OutCrown,
@@ -94,10 +95,10 @@ class ElementExpr(NamedTuple):
 
 
 class BuiltinOutputCreationGen(CodeGenerator):
-    def __init__(self, shape: OutputShape, name_layout: OutputNameLayout, debug_path: bool):
+    def __init__(self, shape: OutputShape, name_layout: OutputNameLayout, debug_trail: DebugTrail):
         self._shape = shape
         self._name_layout = name_layout
-        self._debug_path = debug_path
+        self._debug_trail = debug_trail
 
         self._name_to_field: Dict[str, OutputField] = {field.id: field for field in self._shape.fields}
 

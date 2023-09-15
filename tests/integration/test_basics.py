@@ -3,9 +3,9 @@ from typing import Any
 
 import pytest
 
-from adaptix import Retort
+from adaptix import DebugTrail, Retort
 from adaptix.load_error import TypeLoadError
-from adaptix.struct_path import get_path
+from adaptix.struct_trail import get_trail
 
 
 @dataclass
@@ -40,7 +40,7 @@ def test_simple_int(accum):
     with pytest.raises(TypeLoadError) as exc_info:
         loader({'field1': 1, 'field2': '1'})
 
-    assert list(get_path(exc_info.value)) == ['field2']
+    assert list(get_trail(exc_info.value)) == ['field2']
 
     dumper = retort.get_dumper(ExampleInt)
     assert dumper(ExampleInt(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
@@ -54,8 +54,8 @@ def test_simple_int_lax_coercion(accum):
     assert loader({'field1': 1, 'field2': '1'}) == ExampleInt(field1=1, field2=1)
 
 
-def test_simple_int_no_debug_path(accum):
-    retort = Retort(recipe=[accum], debug_path=False)
+def test_simple_int_dt_disable(accum):
+    retort = Retort(recipe=[accum], debug_trail=DebugTrail.DISABLE)
     loader = retort.get_loader(ExampleInt)
 
     assert loader({'field1': 1, 'field2': 1}) == ExampleInt(field1=1, field2=1)
@@ -63,7 +63,7 @@ def test_simple_int_no_debug_path(accum):
     with pytest.raises(TypeLoadError) as exc_info:
         loader({'field1': 1, 'field2': '1'})
 
-    assert list(get_path(exc_info.value)) == []
+    assert list(get_trail(exc_info.value)) == []
 
     dumper = retort.get_dumper(ExampleInt)
     assert dumper(ExampleInt(field1=1, field2=1)) == {'field1': 1, 'field2': 1}

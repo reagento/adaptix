@@ -3,10 +3,11 @@ from typing import Callable, List, Literal, Optional, Union
 
 import pytest
 
-from adaptix import Retort, dumper, loader
+from adaptix import DebugTrail, Retort, dumper, loader
+from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.load_error import LoadError, TypeLoadError, UnionLoadError
 from adaptix._internal.provider.generic_provider import LiteralProvider, UnionProvider
-from tests_helpers import TestRetort, full_match_regex_str, parametrize_bool, raises_path
+from tests_helpers import TestRetort, raises_exc
 
 
 @dataclass
@@ -47,77 +48,112 @@ def retort():
     )
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_loading(retort, strict_coercion, debug_path):
-    loader = retort.replace(
+def test_loading(retort, strict_coercion, debug_trail):
+    loader_ = retort.replace(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
     ).get_loader(
         Union[int, str],
     )
 
-    assert loader(1) == 1
-    assert loader('a') == 'a'
+    assert loader_(1) == 1
+    assert loader_('a') == 'a'
 
-    if debug_path:
-        raises_path(
-            UnionLoadError,
-            lambda: loader([]),
-            path=[],
-            match=full_match_regex_str(
-                "[TypeLoadError(expected_type=<class 'int'>), TypeLoadError(expected_type=<class 'str'>)]"
+    if debug_trail == DebugTrail.DISABLE:
+        raises_exc(
+            LoadError(),
+            lambda: loader_([]),
+        )
+    elif debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
+        raises_exc(
+            UnionLoadError(
+                f'while loading {Union[int, str]}',
+                [
+                    TypeLoadError(int),
+                    TypeLoadError(str),
+                ]
             ),
-        )
-    else:
-        raises_path(
-            LoadError,
-            lambda: loader([]),
-            path=[],
-            match='',
+            lambda: loader_([]),
         )
 
 
-@parametrize_bool('debug_path')
-def test_dumping(retort, debug_path):
-    dumper = retort.replace(
-        debug_path=debug_path,
+def bad_string_loader(data):
+    if isinstance(data, str):
+        return data
+    raise TypeError  # must raise LoadError instance (TypeLoadError)
+
+
+def bad_int_loader(data):
+    if isinstance(data, int):
+        return data
+    raise TypeError  # must raise LoadError instance (TypeLoadError)
+
+
+def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
+    loader_ = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).extend(
+        recipe=[
+            loader(str, bad_string_loader),
+            loader(int, bad_int_loader),
+        ],
+    ).get_loader(
+        Union[int, str],
+    )
+
+    if debug_trail in (DebugTrail.DISABLE, DebugTrail.FIRST):
+        raises_exc(
+            TypeError(),
+            lambda: loader_([]),
+        )
+    elif debug_trail == DebugTrail.ALL:
+        raises_exc(
+            CompatExceptionGroup(
+                f'while loading {Union[int, str]}',
+                [
+                    TypeError(),
+                    TypeError(),
+                ]
+            ),
+            lambda: loader_([]),
+        )
+
+
+def test_dumping(retort, debug_trail):
+    dumper_ = retort.replace(
+        debug_trail=debug_trail,
     ).get_dumper(
         Union[int, str]
     )
 
-    assert dumper(1) == 1
-    assert dumper('a') == 'a'
+    assert dumper_(1) == 1
+    assert dumper_('a') == 'a'
 
-    raises_path(
-        KeyError,
-        lambda: dumper([]),
-        path=[],
-        match=full_match_regex_str("<class 'list'>"),
+    raises_exc(
+        KeyError(list),
+        lambda: dumper_([]),
     )
 
 
-@parametrize_bool('debug_path')
-def test_dumping_of_none(retort, debug_path):
-    dumper = retort.replace(
-        debug_path=debug_path,
+def test_dumping_of_none(retort, debug_trail):
+    dumper_ = retort.replace(
+        debug_trail=debug_trail,
     ).get_dumper(
         Union[int, str, None]
     )
 
-    assert dumper(1) == 1
-    assert dumper('a') == 'a'
-    assert dumper(None) == None
+    assert dumper_(1) == 1
+    assert dumper_('a') == 'a'
+    assert dumper_(None) == None
 
-    raises_path(
-        KeyError,
-        lambda: dumper([]),
-        path=[],
-        match=full_match_regex_str("<class 'list'>"),
+    raises_exc(
+        KeyError(list),
+        lambda: dumper_([]),
     )
 
 
-@parametrize_bool('debug_path')
-def test_dumping_subclass(retort, debug_path):
+def test_dumping_subclass(retort, debug_trail):
     @dataclass
     class Parent:
         foo: int
@@ -126,28 +162,25 @@ def test_dumping_subclass(retort, debug_path):
     class Child(Parent):
         bar: int
 
-    dumper = Retort(
-        debug_path=debug_path,
+    dumper_ = Retort(
+        debug_trail=debug_trail,
     ).get_dumper(
         Union[Parent, str]
     )
 
-    assert dumper(Parent(foo=1)) == {'foo': 1}
-    assert dumper(Child(foo=1, bar=2)) == {'foo': 1}
-    assert dumper('a') == 'a'
+    assert dumper_(Parent(foo=1)) == {'foo': 1}
+    assert dumper_(Child(foo=1, bar=2)) == {'foo': 1}
+    assert dumper_('a') == 'a'
 
-    raises_path(
-        KeyError,
-        lambda: dumper([]),
-        path=[],
-        match=full_match_regex_str("<class 'list'>"),
+    raises_exc(
+        KeyError(list),
+        lambda: dumper_([]),
     )
 
 
-@parametrize_bool('debug_path')
-def test_optional_dumping(retort, debug_path):
+def test_optional_dumping(retort, debug_trail):
     opt_dumper = retort.replace(
-        debug_path=debug_path,
+        debug_trail=debug_trail,
     ).get_dumper(
         Optional[str],
     )
@@ -155,33 +188,27 @@ def test_optional_dumping(retort, debug_path):
     assert opt_dumper('a') == 'a'
     assert opt_dumper(None) is None
 
-    raises_path(
-        TypeError,
+    raises_exc(
+        TypeError(list),
         lambda: opt_dumper([]),
-        path=[],
-        match=full_match_regex_str("<class 'list'>"),
     )
 
 
-@parametrize_bool('debug_path')
-def test_bad_optional_dumping(retort, debug_path):
-    raises_path(
-        exc=ValueError,
-        func=lambda: retort.replace(
-            debug_path=debug_path,
-        ).get_dumper(
-            Union[int, Callable[[int], str]],
-        ),
-        path=[],
-        match=full_match_regex_str(
+def test_bad_optional_dumping(retort, debug_trail):
+    raises_exc(
+        exc=ValueError(
             "Can not create dumper for typing.Union[int, typing.Callable[[int], str]]."
             " All cases of union must be class, but found [typing.Callable[[int], str]]"
         ),
+        func=lambda: retort.replace(
+            debug_trail=debug_trail,
+        ).get_dumper(
+            Union[int, Callable[[int], str]],
+        ),
     )
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_literal(strict_coercion, debug_path):
+def test_literal(strict_coercion, debug_trail):
     retort = TestRetort(
         recipe=[
             LiteralProvider(),
@@ -191,35 +218,36 @@ def test_literal(strict_coercion, debug_path):
         ]
     )
 
-    loader = retort.replace(
+    loader_ = retort.replace(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
     ).get_loader(
         Literal['a', None],
     )
 
-    assert loader('a') == 'a'
-    assert loader(None) is None
+    assert loader_('a') == 'a'
+    assert loader_(None) is None
 
-    if debug_path:
-        raises_path(
-            UnionLoadError([TypeLoadError(None), LoadError()]),
-            lambda: loader('b'),
-            path=[],
-        )
-    else:
-        raises_path(
+    if debug_trail == DebugTrail.DISABLE:
+        raises_exc(
             LoadError(),
-            lambda: loader('b'),
-            path=[],
+            lambda: loader_('b'),
+        )
+    elif debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
+        raises_exc(
+            UnionLoadError(
+                f'while loading {Literal["a", None]}',
+                [TypeLoadError(None), LoadError()]
+            ),
+            lambda: loader_('b'),
         )
 
-    dumper = retort.replace(
-        debug_path=debug_path,
+    dumper_ = retort.replace(
+        debug_trail=debug_trail,
     ).get_dumper(
         Literal['a', None],
     )
 
-    assert dumper('a') == 'a'
-    assert dumper(None) is None
-    assert dumper('b') == 'b'
+    assert dumper_('a') == 'a'
+    assert dumper_(None) is None
+    assert dumper_('b') == 'b'

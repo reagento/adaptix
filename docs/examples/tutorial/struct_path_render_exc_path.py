@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from adaptix import Retort
 from adaptix.load_error import TypeLoadError
-from adaptix.struct_path import ExcPathRenderer, PathedException
+from adaptix.struct_trail import ExcPathRenderer, PathedException
 
 
 @dataclass
@@ -35,4 +35,4 @@ try:
 except PathedException as e:
     assert isinstance(e.exc, TypeLoadError)
     assert list(e.path) == ['author', 'id']
-    assert str(e) == "at ['author', 'id'] was raised TypeLoadError: <class 'str'>"
+    assert str(e) == "at ['author', 'id'] was raised TypeLoadError: expected_type=<class 'str'>"

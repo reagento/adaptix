@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Optional, Type
 
 import pytest
 
-from adaptix import Dumper, bound
+from adaptix import DebugTrail, Dumper, bound
 from adaptix._internal.common import Catchable
 from adaptix._internal.model_tools.definitions import (
     Accessor,
@@ -36,9 +36,9 @@ from adaptix._internal.provider.model.dumper_provider import (
 )
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import DumperRequest
-from adaptix._internal.struct_path import Attr, PathElement, PathElementMarker
+from adaptix._internal.struct_trail import Attr, TrailElement, TrailElementMarker
 from adaptix._internal.utils import SingletonMeta
-from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_path
+from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc
 
 
 @dataclass
@@ -91,7 +91,7 @@ def dummy_items(**kwargs: Any):
 def make_dumper_getter(
     shape: OutputShape,
     name_layout: OutputNameLayout,
-    debug_path: bool,
+    debug_trail: DebugTrail,
     debug_ctx: DebugCtx,
 ) -> Callable[[], Dumper]:
     def getter():
@@ -106,7 +106,7 @@ def make_dumper_getter(
         )
 
         dumper = retort.replace(
-            debug_path=debug_path
+            debug_trail=debug_trail
         ).get_dumper(
             Dummy,
         )
@@ -145,7 +145,7 @@ class MyAccessError(Exception):
 
 
 @dataclass
-class MyPathElemMarker(PathElementMarker):
+class MyTrailElemMarker(TrailElementMarker):
     value: Any
 
 
@@ -169,8 +169,8 @@ class MyAccessor(Accessor):
         return None if self.is_required else MyAccessError
 
     @property
-    def path_element(self) -> PathElement:
-        return MyPathElemMarker(self.value)
+    def trail_element(self) -> TrailElement:
+        return MyTrailElemMarker(self.value)
 
     def __hash__(self) -> int:
         return hash(self.value)
@@ -192,7 +192,7 @@ def make_str_item_accessor(name: str, is_required: bool):
             dummy=dummy_items, accessor_maker=make_str_item_accessor, access_error=KeyError, path_elem_maker=stub,
         ),
         AccessSchema(
-            dummy=Dummy, accessor_maker=MyAccessor, access_error=MyAccessError, path_elem_maker=MyPathElemMarker,
+            dummy=Dummy, accessor_maker=MyAccessor, access_error=MyAccessError, path_elem_maker=MyTrailElemMarker,
         )
     ],
     ids=['attrs', 'items', 'custom'],
@@ -202,7 +202,7 @@ def acc_schema(request):
 
 
 @parametrize_bool('is_required_a', 'is_required_b')
-def test_flat(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
+def test_flat(debug_ctx, debug_trail, is_required_a, is_required_b, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', is_required_a)),
@@ -220,7 +220,7 @@ def test_flat(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
             ),
             extra_move=None,
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
 
@@ -237,22 +237,22 @@ def test_flat(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
     assert dumper(acc_schema.dummy(a=Skip(), b=Skip(), c=3)) == {'a': Skip()}
 
     if is_required_a:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy()),
-            path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
         )
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(b=1)),
-            path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
         )
 
     if is_required_b:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(a=1)),
-            path=[acc_schema.path_elem_maker('b')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('b')] if debug_trail != DebugTrail.DISABLE else [],
         )
 
     if not is_required_a:
@@ -266,26 +266,26 @@ def test_flat(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
     if not is_required_a and not is_required_b:
         assert dumper(acc_schema.dummy()) == {}
 
-    raises_path(
+    raises_exc(
         SomeError(),
         lambda: dumper(acc_schema.dummy(a=SomeError(), b=Skip())),
-        path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
-    raises_path(
+    raises_exc(
         SomeError(),
         lambda: dumper(acc_schema.dummy(a=1, b=SomeError())),
-        path=[acc_schema.path_elem_maker('b')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('b')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
-    raises_path(
+    raises_exc(
         SomeError(0),
         lambda: dumper(acc_schema.dummy(a=SomeError(0), b=SomeError(1))),
-        path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
 
-def test_wild_extra_targets(debug_ctx, debug_path, acc_schema):
+def test_wild_extra_targets(debug_ctx, debug_trail, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', is_required=True)),
@@ -299,7 +299,7 @@ def test_wild_extra_targets(debug_ctx, debug_path, acc_schema):
             ),
             extra_move=ExtraTargets(('b',)),
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
 
@@ -309,7 +309,7 @@ def test_wild_extra_targets(debug_ctx, debug_path, acc_schema):
 
 
 @parametrize_bool('is_required_a', 'is_required_b')
-def test_one_extra_target(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema):
+def test_one_extra_target(debug_ctx, debug_trail, is_required_a, is_required_b, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
@@ -324,7 +324,7 @@ def test_one_extra_target(debug_ctx, debug_path, is_required_a, is_required_b, a
             ),
             extra_move=ExtraTargets(('b',)),
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
     dumper = dumper_getter()
@@ -333,22 +333,22 @@ def test_one_extra_target(debug_ctx, debug_path, is_required_a, is_required_b, a
     assert dumper(acc_schema.dummy(a=1, b={'b': 2})) == {'a': 1, 'b': 2}
 
     if is_required_a:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy()),
-            path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
         )
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(b=1)),
-            path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
         )
 
     if is_required_b:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(a=1)),
-            path=[acc_schema.path_elem_maker('b')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('b')] if debug_trail != DebugTrail.DISABLE else [],
         )
 
     if not is_required_a:
@@ -360,28 +360,28 @@ def test_one_extra_target(debug_ctx, debug_path, is_required_a, is_required_b, a
     if not is_required_a and not is_required_b:
         assert dumper(acc_schema.dummy()) == {}
 
-    raises_path(
+    raises_exc(
         SomeError(),
         lambda: dumper(acc_schema.dummy(a=SomeError(), b=Skip())),
-        path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
-    raises_path(
+    raises_exc(
         SomeError(),
         lambda: dumper(acc_schema.dummy(a=1, b=SomeError())),
-        path=[acc_schema.path_elem_maker('b')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('b')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
-    raises_path(
+    raises_exc(
         SomeError(0),
         lambda: dumper(acc_schema.dummy(a=SomeError(0), b=SomeError(1))),
-        path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
 
 @parametrize_bool('is_required_a', 'is_required_b', 'is_required_c', 'is_required_d')
 def test_several_extra_target(
-    debug_ctx, debug_path, is_required_a, is_required_b, is_required_c, is_required_d, acc_schema
+    debug_ctx, debug_trail, is_required_a, is_required_b, is_required_c, is_required_d, acc_schema
 ):
     dumper_getter = make_dumper_getter(
         shape=shape(
@@ -399,7 +399,7 @@ def test_several_extra_target(
             ),
             extra_move=ExtraTargets(('b', 'c', 'd')),
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
     dumper = dumper_getter()
@@ -423,29 +423,29 @@ def test_several_extra_target(
     )
 
     if is_required_b:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(a=1, c={'c1': 2})),
-            path=[acc_schema.path_elem_maker('b')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('b')] if debug_trail != DebugTrail.DISABLE else [],
         )
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(a=1)),
-            path=[acc_schema.path_elem_maker('b')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('b')] if debug_trail != DebugTrail.DISABLE else [],
         )
 
     if is_required_c:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(a=1, b={'b1': 2})),
-            path=[acc_schema.path_elem_maker('c')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('c')] if debug_trail != DebugTrail.DISABLE else [],
         )
 
     if is_required_c and not is_required_b:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(a=1)),
-            path=[acc_schema.path_elem_maker('c')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('c')] if debug_trail != DebugTrail.DISABLE else [],
         )
 
     requirement = {
@@ -472,7 +472,7 @@ def my_extractor(obj):
 
 
 @parametrize_bool('is_required_a')
-def test_extra_extract(debug_ctx, debug_path, is_required_a, acc_schema):
+def test_extra_extract(debug_ctx, debug_trail, is_required_a, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', is_required=is_required_a)),
@@ -487,7 +487,7 @@ def test_extra_extract(debug_ctx, debug_path, is_required_a, acc_schema):
             ),
             extra_move=ExtraExtract(my_extractor),
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
     dumper = dumper_getter()
@@ -502,31 +502,31 @@ def test_extra_extract(debug_ctx, debug_path, is_required_a, acc_schema):
     assert dumper(acc_schema.dummy(a=1)) == {'a': 1}
 
     if is_required_a:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy()),
-            path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
         )
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(b=1)),
-            path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+            trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
         )
 
-    raises_path(
+    raises_exc(
         SomeError(),
         lambda: dumper(acc_schema.dummy(a=1, b=SomeError())),
-        path=[],
+        trail=[],
     )
 
-    raises_path(
+    raises_exc(
         SomeError(0),
         lambda: dumper(acc_schema.dummy(a=SomeError(0), b=SomeError(1))),
-        path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
 
-def test_optional_fields_at_list(debug_ctx, debug_path, acc_schema):
+def test_optional_fields_at_list(debug_ctx, debug_trail, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', is_required=True)),
@@ -541,7 +541,7 @@ def test_optional_fields_at_list(debug_ctx, debug_path, acc_schema):
             ),
             extra_move=None,
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
 
@@ -564,7 +564,7 @@ class FlatMap:
     ],
     ids=['as_is', 'diff']
 )
-def test_flat_mapping(debug_ctx, debug_path, is_required_a, is_required_b, acc_schema, mp):
+def test_flat_mapping(debug_ctx, debug_trail, is_required_a, is_required_b, acc_schema, mp):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField(mp.a.field, acc_schema.accessor_maker('a', is_required_a)),
@@ -582,7 +582,7 @@ def test_flat_mapping(debug_ctx, debug_path, is_required_a, is_required_b, acc_s
             ),
             extra_move=None,
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
 
@@ -599,22 +599,22 @@ def test_flat_mapping(debug_ctx, debug_path, is_required_a, is_required_b, acc_s
     assert dumper(acc_schema.dummy(a=Skip(), b=Skip(), c=3)) == {mp.a.mapped: Skip()}
 
     if is_required_a:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy()),
-            path=[acc_schema.path_elem_maker(mp.a.field)] if debug_path else [],
+            trail=[acc_schema.path_elem_maker(mp.a.field)] if debug_trail != DebugTrail.DISABLE else [],
         )
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(b=1)),
-            path=[acc_schema.path_elem_maker(mp.a.field)] if debug_path else [],
+            trail=[acc_schema.path_elem_maker(mp.a.field)] if debug_trail != DebugTrail.DISABLE else [],
         )
 
     if is_required_b:
-        raises_path(
+        raises_exc(
             acc_schema.access_error,
             lambda: dumper(acc_schema.dummy(a=1)),
-            path=[acc_schema.path_elem_maker(mp.b.field)] if debug_path else [],
+            trail=[acc_schema.path_elem_maker(mp.b.field)] if debug_trail != DebugTrail.DISABLE else [],
         )
 
     if not is_required_a:
@@ -628,26 +628,26 @@ def test_flat_mapping(debug_ctx, debug_path, is_required_a, is_required_b, acc_s
     if not is_required_a and not is_required_b:
         assert dumper(acc_schema.dummy()) == {}
 
-    raises_path(
+    raises_exc(
         SomeError(),
         lambda: dumper(acc_schema.dummy(a=SomeError(), b=Skip())),
-        path=[acc_schema.path_elem_maker(mp.a.field)] if debug_path else [],
+        trail=[acc_schema.path_elem_maker(mp.a.field)] if debug_trail != DebugTrail.DISABLE else [],
     )
 
-    raises_path(
+    raises_exc(
         SomeError(),
         lambda: dumper(acc_schema.dummy(a=1, b=SomeError())),
-        path=[acc_schema.path_elem_maker(mp.b.field)] if debug_path else [],
+        trail=[acc_schema.path_elem_maker(mp.b.field)] if debug_trail != DebugTrail.DISABLE else [],
     )
 
-    raises_path(
+    raises_exc(
         SomeError(0),
         lambda: dumper(acc_schema.dummy(a=SomeError(0), b=SomeError(1))),
-        path=[acc_schema.path_elem_maker(mp.a.field)] if debug_path else [],
+        trail=[acc_schema.path_elem_maker(mp.a.field)] if debug_trail != DebugTrail.DISABLE else [],
     )
 
 
-def test_direct_list(debug_ctx, debug_path, acc_schema):
+def test_direct_list(debug_ctx, debug_trail, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', True)),
@@ -662,29 +662,29 @@ def test_direct_list(debug_ctx, debug_path, acc_schema):
             ),
             extra_move=None,
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
 
     dumper = dumper_getter()
     assert dumper(acc_schema.dummy(a=1, b=2)) == [1, 2]
 
-    raises_path(
+    raises_exc(
         SomeError(1),
         lambda: dumper(acc_schema.dummy(a=SomeError(1), b=2)),
-        path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
-    raises_path(
+    raises_exc(
         SomeError(1),
         lambda: dumper(acc_schema.dummy(a=SomeError(1), b=SomeError(2))),
-        path=[acc_schema.path_elem_maker('a')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('a')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
-    raises_path(
+    raises_exc(
         SomeError(2),
         lambda: dumper(acc_schema.dummy(a=1, b=SomeError(2))),
-        path=[acc_schema.path_elem_maker('b')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('b')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
 
@@ -696,7 +696,7 @@ def list_skipper(data):
     return Skip() not in data
 
 
-def test_structure_flattening(debug_ctx, debug_path, acc_schema):
+def test_structure_flattening(debug_ctx, debug_trail, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', True)),
@@ -755,7 +755,7 @@ def test_structure_flattening(debug_ctx, debug_path, acc_schema):
             ),
             extra_move=ExtraTargets(('extra',)),
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
     dumper = dumper_getter()
@@ -865,15 +865,15 @@ def test_structure_flattening(debug_ctx, debug_path, acc_schema):
         'v': 'foo',  # sorry, merging is not implemented
     }
 
-    raises_path(
+    raises_exc(
         SomeError(5),
         lambda: dumper(acc_schema.dummy(a=1, b=2, c=3, d=4, e=SomeError(5), f=6, g=Skip(), h=Skip(), extra={})),
-        path=[acc_schema.path_elem_maker('e')] if debug_path else [],
+        trail=[acc_schema.path_elem_maker('e')] if debug_trail != DebugTrail.DISABLE else [],
     )
 
 
 @parametrize_bool('is_required_a', 'is_required_b')
-def test_extra_target_at_crown(debug_ctx, debug_path, acc_schema, is_required_a, is_required_b):
+def test_extra_target_at_crown(debug_ctx, debug_trail, acc_schema, is_required_a, is_required_b):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', is_required_a)),
@@ -889,7 +889,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, acc_schema, is_required_a,
             ),
             extra_move=ExtraTargets(('b',)),
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, dumper_getter).match(
@@ -911,7 +911,7 @@ def test_extra_target_at_crown(debug_ctx, debug_path, acc_schema, is_required_a,
             ),
             extra_move=ExtraTargets(('b',)),
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, dumper_getter).match(
@@ -925,7 +925,7 @@ class SomeClass:
 
 
 @parametrize_bool('is_required_a')
-def test_none_crown_at_dict_crown(debug_ctx, debug_path, acc_schema, is_required_a):
+def test_none_crown_at_dict_crown(debug_ctx, debug_trail, acc_schema, is_required_a):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', is_required_a)),
@@ -942,7 +942,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, acc_schema, is_required
             ),
             extra_move=None,
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
     dumper = dumper_getter()
@@ -950,7 +950,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_path, acc_schema, is_required
     assert dumper(acc_schema.dummy(a=1)) == {'w': None, 'x': SomeClass(2), 'y': 1, 'z': []}
 
 
-def test_none_crown_at_list_crown(debug_ctx, debug_path, acc_schema):
+def test_none_crown_at_list_crown(debug_ctx, debug_trail, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField('a', acc_schema.accessor_maker('a', True)),
@@ -966,7 +966,7 @@ def test_none_crown_at_list_crown(debug_ctx, debug_path, acc_schema):
             ),
             extra_move=None,
         ),
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
     dumper = dumper_getter()

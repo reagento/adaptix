@@ -25,6 +25,7 @@ from ..provider.concrete_provider import (
     RegexPatternProvider,
     SecondsTimedeltaProvider,
 )
+from ..provider.definitions import DebugTrail
 from ..provider.enum_provider import EnumExactValueProvider
 from ..provider.generic_provider import (
     DictProvider,
@@ -49,7 +50,7 @@ from ..provider.name_layout.component import BuiltinExtraMoveAndPoliciesMaker, B
 from ..provider.name_layout.provider import BuiltinNameLayoutProvider
 from ..provider.provider_template import ABCProxy, ValueProvider
 from ..provider.request_cls import (
-    DebugPathRequest,
+    DebugTrailRequest,
     DumperRequest,
     LoaderRequest,
     LocMap,
@@ -58,6 +59,7 @@ from ..provider.request_cls import (
 )
 from ..provider.request_filtering import AnyRequestChecker
 from ..retort import OperatingRetort
+from ..struct_trail import render_trail_as_note
 from ..type_tools.basic_utils import is_generic_class
 from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
 
@@ -173,10 +175,10 @@ class AdornedRetort(OperatingRetort):
         *,
         recipe: Iterable[Provider] = (),
         strict_coercion: bool = True,
-        debug_path: bool = True,
+        debug_trail: DebugTrail = DebugTrail.ALL,
     ):
         self._strict_coercion = strict_coercion
-        self._debug_path = debug_path
+        self._debug_trail = debug_trail
         super().__init__(recipe)
 
     def _calculate_derived(self):
@@ -188,15 +190,15 @@ class AdornedRetort(OperatingRetort):
         self: AR,
         *,
         strict_coercion: Optional[bool] = None,
-        debug_path: Optional[bool] = None,
+        debug_trail: Optional[DebugTrail] = None,
     ) -> AR:
         # pylint: disable=protected-access
         with self._clone() as clone:
             if strict_coercion is not None:
                 clone._strict_coercion = strict_coercion
 
-            if debug_path is not None:
-                clone._debug_path = debug_path
+            if debug_trail is not None:
+                clone._debug_trail = debug_trail
 
         return clone
 
@@ -212,7 +214,7 @@ class AdornedRetort(OperatingRetort):
     def _get_config_recipe(self) -> VarTuple[Provider]:
         return (
             ValueProvider(StrictCoercionRequest, self._strict_coercion),
-            ValueProvider(DebugPathRequest, self._debug_path),
+            ValueProvider(DebugTrailRequest, self._debug_trail),
         )
 
     def get_loader(self, tp: Type[T]) -> Loader[T]:
@@ -225,9 +227,20 @@ class AdornedRetort(OperatingRetort):
         return loader_
 
     def _make_loader(self, tp: Type[T]) -> Loader[T]:
-        return self._facade_provide(
+        loader_ = self._facade_provide(
             LoaderRequest(loc_map=LocMap(TypeHintLoc(type=tp)))
         )
+        if self._debug_trail == DebugTrail.FIRST:
+            def trail_rendering_wrapper(data):
+                try:
+                    return loader_(data)
+                except Exception as e:
+                    render_trail_as_note(e)
+                    raise
+
+            return trail_rendering_wrapper
+
+        return loader_
 
     def get_dumper(self, tp: Type[T]) -> Dumper[T]:
         try:
@@ -239,9 +252,20 @@ class AdornedRetort(OperatingRetort):
         return dumper_
 
     def _make_dumper(self, tp: Type[T]) -> Dumper[T]:
-        return self._facade_provide(
+        dumper_ = self._facade_provide(
             DumperRequest(loc_map=LocMap(TypeHintLoc(type=tp)))
         )
+        if self._debug_trail == DebugTrail.FIRST:
+            def trail_rendering_wrapper(data):
+                try:
+                    return dumper_(data)
+                except Exception as e:
+                    render_trail_as_note(e)
+                    raise
+
+            return trail_rendering_wrapper
+
+        return dumper_
 
     @overload
     def load(self, data: Any, tp: Type[T], /) -> T:

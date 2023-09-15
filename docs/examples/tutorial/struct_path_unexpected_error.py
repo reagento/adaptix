@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from adaptix import Retort, loader
-from adaptix.struct_path import Attr, get_path
+from adaptix.struct_trail import Attr, get_trail
 
 
 @dataclass
@@ -41,7 +41,7 @@ try:
     retort.load(data, Book)
 except Exception as e:
     assert isinstance(e, ArithmeticError)
-    assert list(get_path(e)) == ['title']
+    assert list(get_trail(e)) == ['title']
 
 book = Book(
     title="Fahrenheit 451",
@@ -53,4 +53,4 @@ try:
     retort.dump(book)
 except Exception as e:
     assert isinstance(e, AttributeError)
-    assert list(get_path(e)) == [Attr('author'), Attr('id')]
+    assert list(get_trail(e)) == [Attr('author'), Attr('id')]

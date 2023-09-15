@@ -5,6 +5,7 @@ from adaptix._internal.load_error import (
     ExtraFieldsError,
     ExtraItemsError,
     LoadError,
+    LoadExceptionGroup,
     MsgError,
     NoRequiredFieldsError,
     NoRequiredItemsError,
@@ -16,6 +17,7 @@ from adaptix._internal.load_error import (
 
 __all__ = (
     'LoadError',
+    'LoadExceptionGroup',
     'MsgError',
     'ExtraFieldsError',
     'ExtraItemsError',

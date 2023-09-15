@@ -10,11 +10,12 @@ from packaging.version import Version
 from sqlalchemy import Engine, create_engine
 
 from adaptix import AdornedRetort, CannotProvide, Mediator, Provider, Request
-from adaptix._internal.common import EllipsisType
+from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import PythonImplementationRequirement, PythonVersionRequirement, Requirement
 from adaptix._internal.provider.model.basic_gen import CodeGenAccumulator
+from adaptix._internal.struct_trail import Trail, extend_trail
 from adaptix._internal.type_tools import is_parametrized
-from adaptix.struct_path import get_path
+from adaptix.struct_trail import get_trail
 
 T = TypeVar("T")
 
@@ -69,33 +70,47 @@ class TestRetort(AdornedRetort):
 E = TypeVar('E', bound=Exception)
 
 
-def raises_path(
+def _compare_exc_instance(exc: Exception, reference: Exception):
+    if is_dataclass(reference):
+        assert type(exc) == type(reference)
+        assert asdict(exc) == asdict(reference)
+        assert list(get_trail(exc)) == list(get_trail(reference))
+        if isinstance(reference, CompatExceptionGroup):
+            for sub_exc, sub_reference in zip(exc.exceptions, reference.exceptions):
+                _compare_exc_instance(sub_exc, sub_reference)
+    elif isinstance(reference, CompatExceptionGroup):
+        assert type(exc) == type(reference)
+        assert exc.message == reference.message
+        assert list(get_trail(exc)) == list(get_trail(reference))
+        for sub_exc, sub_reference in zip(exc.exceptions, reference.exceptions):
+            _compare_exc_instance(sub_exc, sub_reference)
+    else:
+        assert type(exc) == type(reference)
+        assert exc.args == reference.args
+        assert list(get_trail(exc)) == list(get_trail(reference))
+
+
+def raises_exc(
     exc: Union[Type[E], E],
     func: Callable[[], Any],
     *,
-    path: Union[list, None, EllipsisType] = Ellipsis,
+    trail: Optional[Trail] = None,
     match: Optional[str] = None,
 ) -> E:
     exc_type = exc if isinstance(exc, type) else type(exc)
+    if trail is not None and get_trail(exc):
+        raise ValueError('Reference exception must not have trail if trail parameter is passed')
 
     with pytest.raises(exc_type, match=match) as exc_info:
         func()
 
-    assert exc_type == exc_info.type
-
-    if not isinstance(exc, type):
-        if is_dataclass(exc):
-            assert asdict(exc_info.value) == asdict(exc)
-        else:
-            raise TypeError("Can compare only dataclass instances")
-
-    if not isinstance(path, EllipsisType):
-        extracted_path = get_path(exc_info.value)
-        if path is None:
-            assert extracted_path is None
-        else:
-            assert extracted_path is not None
-            assert list(extracted_path) == list(path)
+    if isinstance(exc, type):
+        if trail is not None:
+            assert list(get_trail(exc_info.value)) == trail
+    else:
+        if trail is not None:
+            extend_trail(exc, trail)
+        _compare_exc_instance(exc_info.value, exc)
 
     return exc_info.value
 

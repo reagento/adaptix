@@ -9,7 +9,7 @@ from ..request_cls import LocatedRequest
 T = TypeVar('T')
 
 CrownPathElem = Union[str, int]
-CrownPath = VarTuple[CrownPathElem]  # subset of struct_path.Path
+CrownPath = VarTuple[CrownPathElem]  # subset of struct_path.Trail
 
 
 # Policies how to process extra data

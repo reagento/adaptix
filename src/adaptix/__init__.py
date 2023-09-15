@@ -17,6 +17,7 @@ from ._internal.facade import (
     validator,
 )
 from ._internal.model_tools.introspection import TypedDictAt38Warning
+from ._internal.provider.definitions import DebugTrail
 from ._internal.utils import Omittable, Omitted
 from .provider import (
     CannotProvide,
@@ -43,6 +44,7 @@ __all__ = (
     'Dumper',
     'Loader',
     'TypeHint',
+    'DebugTrail',
     'loader',
     'dumper',
     'as_is_dumper',

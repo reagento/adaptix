@@ -6,6 +6,7 @@ from adaptix._internal.essential import CannotProvide, Request
 from ..common import Dumper, Loader, TypeHint
 from ..model_tools.definitions import Accessor, Default
 from ..utils import ClassMap
+from .definitions import DebugTrail
 
 T = TypeVar('T')
 
@@ -69,5 +70,5 @@ class StrictCoercionRequest(LocatedRequest[bool]):
     pass
 
 
-class DebugPathRequest(LocatedRequest[bool]):
+class DebugTrailRequest(LocatedRequest[DebugTrail]):
     pass

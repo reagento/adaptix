@@ -1,6 +1,6 @@
 from copy import deepcopy
 from decimal import Decimal
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 
 import phonenumbers
 
@@ -8,14 +8,16 @@ from adaptix.load_error import (
     BadVariantError,
     ExtraFieldsError,
     LoadError,
+    LoadExceptionGroup,
     TypeLoadError,
     UnionLoadError,
     ValidationError,
     ValueLoadError,
 )
-from tests_helpers import raises_path
+from adaptix.struct_trail import extend_trail
+from tests_helpers import raises_exc
 
-from .models import NotifyEmail, NotifyPhone, Receipt, ReceiptType, RecItem, Taxation
+from .models import NotifyEmail, NotifyPhone, NotifyTarget, Receipt, ReceiptType, RecItem, Taxation
 from .money import rubles
 from .retort import INNER_RECEIPT_RETORT, OUTER_RECEIPT_RETORT
 
@@ -67,10 +69,10 @@ def test_outer_loading_basic():
 def test_outer_loading_no_rec_items():
     no_rec_items_data = change(outer_sample_data, ["items"], [])
 
-    raises_path(
+    raises_exc(
         ValidationError('At least one item must be presented'),
         lambda: outer_receipt_loader(no_rec_items_data),
-        path=['items'],
+        trail=['items'],
     )
 
 
@@ -92,70 +94,98 @@ def test_outer_loading_bad_phone():
 
     bad_phone_data = change(outer_sample_data, ["notify", 0], {"type": "phone", "value": "+1-541-754-3010"})
 
-    raises_path(
+    raises_exc(
         UnionLoadError(
+            f'while loading {Optional[List[NotifyTarget]]}',
             [
                 TypeLoadError(expected_type=None),
-                UnionLoadError(
+                LoadExceptionGroup(
+                    f'while loading iterable {list}',
                     [
-                        LoadError(),
-                        ValueLoadError(msg='Bad phone number'),
+                        extend_trail(
+                            UnionLoadError(
+                                f'while loading {NotifyTarget}',
+                                [
+                                    extend_trail(LoadError(), ['type']),
+                                    extend_trail(ValueLoadError(msg='Bad phone number'), ['value']),
+                                ]
+                            ),
+                            [0],
+                        )
                     ]
                 ),
             ]
         ),
         lambda: outer_receipt_loader(bad_phone_data),
-        path=['notify'],  # I do not know how to fix that
+        trail=['notify'],
     )
 
 
 def test_outer_loading_bad_receipt_type():
     bad_receipt_type_data = change(outer_sample_data, ["type"], "BAD_TYPE")
 
-    raises_path(
+    raises_exc(
         BadVariantError(['INCOME', 'INCOME_REFUND']),
         lambda: outer_receipt_loader(bad_receipt_type_data),
-        path=['type'],
+        trail=['type'],
     )
 
 
 def test_outer_loading_with_version_tag():
     with_version_data = change(outer_sample_data, ["version"], 1)
 
-    raises_path(
+    raises_exc(
         ExtraFieldsError(['version']),
         lambda: outer_receipt_loader(with_version_data),
-        path=[],
+        trail=[],
     )
 
 
 def test_outer_loading_bad_item_quantity():
     bad_quantity_data = change(outer_sample_data, ["items", 0, "quantity"], Decimal(0))
 
-    raises_path(
-        ValidationError('Value must be > 0'),
+    raises_exc(
+        LoadExceptionGroup(
+            f'while loading iterable {list}',
+            [
+                extend_trail(ValidationError('Value must be > 0'), [0, "quantity"]),
+            ]
+        ),
         lambda: outer_receipt_loader(bad_quantity_data),
-        path=["items", 0, "quantity"],
+        trail=["items"],
     )
 
 
 def test_outer_loading_bad_item_price():
     bad_price_data = change(outer_sample_data, ["items", 0, "price"], Decimal(-10))
 
-    raises_path(
-        ValidationError('Value must be >= 0'),
+    raises_exc(
+        LoadExceptionGroup(
+            f'while loading iterable {list}',
+            [
+                extend_trail(ValidationError('Value must be >= 0'), [0, 'price'])
+            ],
+        ),
         lambda: outer_receipt_loader(bad_price_data),
-        path=["items", 0, "price"],
+        trail=["items"],
     )
 
 
 def test_outer_loading_bad_item_name():
     bad_name_data = change(outer_sample_data, ["items", 0, "name"], 'Matchbox 🔥')
 
-    raises_path(
-        ValueLoadError("Char '🔥' can not be represented at CP866"),
+    raises_exc(
+        LoadExceptionGroup(
+            f'while loading iterable {list}',
+            [
+                extend_trail(
+                    ValueLoadError("Char '🔥' can not be represented at CP866"),
+                    [0, 'name'],
+                )
+            ]
+        ),
         lambda: outer_receipt_loader(bad_name_data),
-        path=["items", 0, "name"],
+        trail=["items"],
     )
 
 

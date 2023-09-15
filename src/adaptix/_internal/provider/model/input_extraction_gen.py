@@ -16,7 +16,8 @@ from ...load_error import (
     TypeLoadError,
 )
 from ...model_tools.definitions import InputField, InputShape
-from ...struct_path import append_path, extend_path
+from ...struct_trail import append_trail, extend_trail
+from ..definitions import DebugTrail
 from .crown_definitions import (
     CrownPath,
     CrownPathElem,
@@ -121,12 +122,12 @@ class BuiltinInputExtractionGen(CodeGenerator):
         self,
         shape: InputShape,
         name_layout: InputNameLayout,
-        debug_path: bool,
+        debug_trail: DebugTrail,
         field_loaders: Mapping[str, Loader],
     ):
         self._shape = shape
         self._name_layout = name_layout
-        self._debug_path = debug_path
+        self._debug_trail = debug_trail
         self._name_to_field: Dict[str, InputField] = {
             field.id: field for field in self._shape.fields
         }
@@ -154,8 +155,8 @@ class BuiltinInputExtractionGen(CodeGenerator):
         ]:
             ctx_namespace.add(exception.__name__, exception)
 
-        ctx_namespace.add("append_path", append_path)
-        ctx_namespace.add("extend_path", extend_path)
+        ctx_namespace.add("append_trail", append_trail)
+        ctx_namespace.add("extend_trail", extend_trail)
 
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
@@ -169,12 +170,12 @@ class BuiltinInputExtractionGen(CodeGenerator):
         builder = CodeBuilder()
         self._gen_header(builder, state)
 
-        has_opt_fields = any(
+        has_optional_fields = any(
             fld.is_optional and not self._is_extra_target(fld)
             for fld in self._shape.fields
         )
 
-        if has_opt_fields:
+        if has_optional_fields:
             builder += f"{binder.opt_fields} = {{}}"
 
         builder.extend(crown_builder)
@@ -222,12 +223,12 @@ class BuiltinInputExtractionGen(CodeGenerator):
             raise TypeError
 
     def _wrap_error(self, error_expr: str, path: CrownPath) -> str:
-        if self._debug_path:
+        if self._debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
             if len(path) == 0:
                 return error_expr
             if len(path) == 1:
-                return f"append_path({error_expr}, {path[0]!r})"
-            return f"extend_path({error_expr}, {path!r})"
+                return f"append_trail({error_expr}, {path[0]!r})"
+            return f"extend_trail({error_expr}, {path!r})"
         return error_expr
 
     def _gen_var_assigment_from_data(
@@ -402,7 +403,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
         else:
             processing_expr = f'{field_loader}({data_for_loader})'
 
-        if self._debug_path and state.path:
+        if self._debug_trail in (DebugTrail.FIRST, DebugTrail.ALL) and state.path:
             builder(
                 f"""
                 try:
@@ -418,7 +419,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
     def _gen_extra_targets_assigment(self, builder: CodeBuilder, state: GenState):
         # Saturate extra targets with data.
-        # If extra data is not collected, loader of required field will get empty dict
+        # If extra data is not collected, loader of the required field will get empty dict
         extra_move = self._name_layout.extra_move
 
         if not isinstance(extra_move, ExtraTargets):

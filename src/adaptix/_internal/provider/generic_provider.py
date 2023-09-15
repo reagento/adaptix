@@ -4,16 +4,18 @@ from inspect import isabstract
 from typing import Any, Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, Union
 
 from ..common import Dumper, Loader
+from ..compat import CompatExceptionGroup
 from ..essential import CannotProvide, Mediator
-from ..load_error import ExcludedTypeLoadError, LoadError, TypeLoadError, UnionLoadError
-from ..struct_path import append_path
+from ..load_error import ExcludedTypeLoadError, LoadError, LoadExceptionGroup, TypeLoadError, UnionLoadError
+from ..struct_trail import ItemKey, append_trail, render_trail_as_note
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
 from ..type_tools.normalize_type import NotSubscribedError
 from ..utils import ClassDispatcher
+from .definitions import DebugTrail
 from .model.special_cases_optimization import as_is_stub
 from .provider_template import DumperProvider, LoaderProvider, for_predicate
 from .request_cls import (
-    DebugPathRequest,
+    DebugTrailRequest,
     DumperRequest,
     GenericParamLoc,
     LoaderRequest,
@@ -119,21 +121,23 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 class UnionProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = normalize_type(get_type_from_request(request))
-        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
+        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
 
         if self._is_single_optional(norm):
-            non_optional = next(case for case in norm.args if case.origin is not None)
-            non_optional_loader = mediator.provide(
+            not_none = next(case for case in norm.args if case.origin is not None)
+            not_none_loader = mediator.provide(
                 LoaderRequest(
                     loc_map=LocMap(
-                        TypeHintLoc(type=non_optional.source),
+                        TypeHintLoc(type=not_none.source),
                         GenericParamLoc(pos=0),
                     )
                 )
             )
-            if debug_path:
-                return self._single_optional_dp_loader(non_optional_loader)
-            return self._single_optional_non_dp_loader(non_optional_loader)
+            if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
+                return self._single_optional_dt_loader(norm.source, not_none_loader)
+            if debug_trail == DebugTrail.DISABLE:
+                return self._single_optional_dt_disable_loader(not_none_loader)
+            raise ValueError
 
         loaders = tuple(
             mediator.provide(
@@ -146,43 +150,34 @@ class UnionProvider(LoaderProvider, DumperProvider):
             )
             for i, tp in enumerate(norm.args)
         )
-        if debug_path:
-            return self._get_loader_dp(loaders)
-        return self._get_loader_non_dp(loaders)
+        if debug_trail == DebugTrail.DISABLE:
+            return self._get_loader_dt_disable(loaders)
+        if debug_trail == DebugTrail.FIRST:
+            return self._get_loader_dt_first(norm.source, loaders)
+        if debug_trail == DebugTrail.ALL:
+            return self._get_loader_dt_all(norm.source, loaders)
+        raise ValueError
 
-    def _single_optional_non_dp_loader(self, loader: Loader) -> Loader:
-        def optional_non_dp_loader(data):
+    def _single_optional_dt_disable_loader(self, loader: Loader) -> Loader:
+        def optional_dt_disable_loader(data):
             if data is None:
                 return None
             return loader(data)
 
-        return optional_non_dp_loader
+        return optional_dt_disable_loader
 
-    def _single_optional_dp_loader(self, loader: Loader) -> Loader:
-        def optional_dp_loader(data):
+    def _single_optional_dt_loader(self, tp, loader: Loader) -> Loader:
+        def optional_dt_loader(data):
             if data is None:
                 return None
             try:
                 return loader(data)
             except LoadError as e:
-                raise UnionLoadError([TypeLoadError(None), e])
+                raise UnionLoadError(f'while loading {tp}', [TypeLoadError(None), e])
 
-        return optional_dp_loader
+        return optional_dt_loader
 
-    def _get_loader_dp(self, loader_iter: Iterable[Loader]) -> Loader:
-        def union_loader_dp(data):
-            errors = []
-            for loader in loader_iter:
-                try:
-                    return loader(data)
-                except LoadError as e:
-                    errors.append(e)
-
-            raise UnionLoadError(errors)
-
-        return union_loader_dp
-
-    def _get_loader_non_dp(self, loader_iter: Iterable[Loader]) -> Loader:
+    def _get_loader_dt_disable(self, loader_iter: Iterable[Loader]) -> Loader:
         def union_loader(data):
             for loader in loader_iter:
                 try:
@@ -192,6 +187,41 @@ class UnionProvider(LoaderProvider, DumperProvider):
             raise LoadError
 
         return union_loader
+
+    def _get_loader_dt_first(self, tp, loader_iter: Iterable[Loader]) -> Loader:
+        def union_loader_dt_first(data):
+            errors = []
+            for loader in loader_iter:
+                try:
+                    return loader(data)
+                except LoadError as e:
+                    errors.append(e)
+
+            raise UnionLoadError(f'while loading {tp}', errors)
+
+        return union_loader_dt_first
+
+    def _get_loader_dt_all(self, tp, loader_iter: Iterable[Loader]) -> Loader:
+        def union_loader_dt_all(data):
+            errors = []
+            has_unexpected_error = False
+            for loader in loader_iter:
+                try:
+                    result = loader(data)
+                except LoadError as e:
+                    errors.append(e)
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    errors.append(e)
+                    has_unexpected_error = True
+                else:
+                    if not has_unexpected_error:
+                        return result
+
+            if has_unexpected_error:
+                raise CompatExceptionGroup(f'while loading {tp}', errors)
+            raise UnionLoadError(f'while loading {tp}', errors)
+
+        return union_loader_dt_all
 
     def _is_single_optional(self, norm: BaseNormType) -> bool:
         return len(norm.args) == 2 and None in [case.origin for case in norm.args]
@@ -206,18 +236,18 @@ class UnionProvider(LoaderProvider, DumperProvider):
         # TODO: allow use Literal[..., None] with non single optional
 
         if self._is_single_optional(norm):
-            non_optional = next(case for case in norm.args if case.origin is not None)
-            non_optional_dumper = mediator.provide(
+            not_none = next(case for case in norm.args if case.origin is not None)
+            not_none_dumper = mediator.provide(
                 DumperRequest(
                     loc_map=LocMap(
-                        TypeHintLoc(type=non_optional.source),
+                        TypeHintLoc(type=not_none.source),
                         GenericParamLoc(pos=0),
                     )
                 )
             )
-            if non_optional_dumper == as_is_stub:
+            if not_none_dumper == as_is_stub:
                 return as_is_stub
-            return self._get_single_optional_dumper(non_optional_dumper)
+            return self._get_single_optional_dumper(not_none_dumper)
 
         non_class_origins = [case.source for case in norm.args if not self._is_class_origin(case.origin)]
         if non_class_origins:
@@ -321,45 +351,79 @@ class IterableProvider(LoaderProvider, DumperProvider):
             )
         )
         strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
-        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
+        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
         return self._make_loader(
+            origin=norm.origin,
             iter_factory=iter_factory,
             arg_loader=arg_loader,
             strict_coercion=strict_coercion,
-            debug_path=debug_path,
+            debug_trail=debug_trail,
         )
 
-    def _create_debug_path_iter_mapper(self, converter):
-        def iter_mapper(iterable):
+    def _create_dt_first_iter_loader(self, origin, loader):
+        def iter_loader_dt_first(iterable):
             idx = 0
 
             for el in iterable:
                 try:
-                    yield converter(el)
+                    yield loader(el)
                 except Exception as e:
-                    append_path(e, idx)
-                    raise e
+                    append_trail(e, idx)
+                    raise
 
                 idx += 1
 
-        return iter_mapper
+        return iter_loader_dt_first
 
-    def _make_loader(self, *, iter_factory, arg_loader, strict_coercion: bool, debug_path: bool):
-        if debug_path:
-            iter_mapper = self._create_debug_path_iter_mapper(arg_loader)
+    def _create_dt_all_iter_loader(self, origin, loader):
+        def iter_loader_dt_all(iterable):
+            idx = 0
+            errors = []
+            has_unexpected_error = False
 
+            for el in iterable:
+                try:
+                    yield loader(el)
+                except LoadError as e:
+                    errors.append(append_trail(e, idx))
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    errors.append(append_trail(e, idx))
+                    has_unexpected_error = True
+
+                idx += 1
+
+            if errors:
+                if has_unexpected_error:
+                    raise CompatExceptionGroup(
+                        f'while loading iterable {origin}',
+                        [render_trail_as_note(e) for e in errors],
+                    )
+                raise LoadExceptionGroup(
+                    f'while loading iterable {origin}',
+                    [render_trail_as_note(e) for e in errors],
+                )
+
+        return iter_loader_dt_all
+
+    def _make_loader(self, *, origin, iter_factory, arg_loader, strict_coercion: bool, debug_trail: DebugTrail):
+        if debug_trail == DebugTrail.DISABLE:
             if strict_coercion:
-                return self._get_dp_sc_loader(iter_factory, iter_mapper)
+                return self._get_dt_disable_sc_loader(iter_factory, arg_loader)
+            return self._get_dt_disable_non_sc_loader(iter_factory, arg_loader)
 
-            return self._get_dp_non_sc_loader(iter_factory, iter_mapper)
+        if debug_trail == DebugTrail.FIRST:
+            iter_mapper = self._create_dt_first_iter_loader(origin, arg_loader)
+        elif debug_trail == DebugTrail.ALL:
+            iter_mapper = self._create_dt_all_iter_loader(origin, arg_loader)
+        else:
+            raise ValueError
 
         if strict_coercion:
-            return self._get_non_dp_sc_loader(iter_factory, arg_loader)
+            return self._get_dt_sc_loader(iter_factory, iter_mapper)
+        return self._get_dt_non_sc_loader(iter_factory, iter_mapper)
 
-        return self._get_non_dp_non_sc_loader(iter_factory, arg_loader)
-
-    def _get_dp_non_sc_loader(self, iter_factory, iter_mapper):
-        def iter_loader_dp(data):
+    def _get_dt_non_sc_loader(self, iter_factory, iter_mapper):
+        def iter_loader_dt(data):
             try:
                 value_iter = iter(data)
             except TypeError:
@@ -367,10 +431,10 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
             return iter_factory(iter_mapper(value_iter))
 
-        return iter_loader_dp
+        return iter_loader_dt
 
-    def _get_dp_sc_loader(self, iter_factory, iter_mapper):
-        def iter_loader_dp_sc(data):
+    def _get_dt_sc_loader(self, iter_factory, iter_mapper):
+        def iter_loader_dt_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Mapping)
             if type(data) is str:  # pylint: disable=unidiomatic-typecheck
@@ -383,9 +447,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
             return iter_factory(iter_mapper(value_iter))
 
-        return iter_loader_dp_sc
+        return iter_loader_dt_sc
 
-    def _get_non_dp_sc_loader(self, iter_factory, arg_loader):
+    def _get_dt_disable_sc_loader(self, iter_factory, arg_loader):
         def iter_loader_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Mapping)
@@ -401,7 +465,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
         return iter_loader_sc
 
-    def _get_non_dp_non_sc_loader(self, iter_factory, arg_loader):
+    def _get_dt_disable_non_sc_loader(self, iter_factory, arg_loader):
         def iter_loader(data):
             try:
                 map_iter = map(arg_loader, data)
@@ -424,27 +488,66 @@ class IterableProvider(LoaderProvider, DumperProvider):
                 )
             )
         )
-        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
+        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
         return self._make_dumper(
+            origin=norm.origin,
             iter_factory=iter_factory,
             arg_dumper=arg_dumper,
-            debug_path=debug_path,
+            debug_trail=debug_trail,
         )
 
-    def _make_dumper(self, *, iter_factory, arg_dumper, debug_path: bool):
-        if debug_path:
-            iter_mapper = self._create_debug_path_iter_mapper(arg_dumper)
-            return self._get_dp_dumper(iter_factory, iter_mapper)
+    def _make_dumper(self, *, origin, iter_factory, arg_dumper, debug_trail: DebugTrail):
+        if debug_trail == DebugTrail.DISABLE:
+            return self._get_dt_disable_dumper(iter_factory, arg_dumper)
+        if debug_trail == DebugTrail.FIRST:
+            return self._get_dt_dumper(iter_factory, self._create_dt_first_iter_dumper(origin, arg_dumper))
+        if debug_trail == DebugTrail.ALL:
+            return self._get_dt_dumper(iter_factory, self._create_dt_all_iter_dumper(origin, arg_dumper))
+        raise ValueError
 
-        return self._get_non_dp_dumper(iter_factory, arg_dumper)
+    def _create_dt_first_iter_dumper(self, origin, dumper):
+        def iter_dumper_dt_first(iterable):
+            idx = 0
 
-    def _get_dp_dumper(self, iter_factory, iter_mapper):
-        def iter_dp_dumper(data):
-            return iter_factory(iter_mapper(data))
+            for el in iterable:
+                try:
+                    yield dumper(el)
+                except Exception as e:
+                    append_trail(e, idx)
+                    raise
 
-        return iter_dp_dumper
+                idx += 1
 
-    def _get_non_dp_dumper(self, iter_factory, arg_dumper: Dumper):
+        return iter_dumper_dt_first
+
+    def _create_dt_all_iter_dumper(self, origin, dumper):
+        def iter_dumper_dt_all(iterable):
+            idx = 0
+            errors = []
+
+            for el in iterable:
+                try:
+                    yield dumper(el)
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    errors.append(append_trail(e, idx))
+
+                idx += 1
+
+            if errors:
+                raise CompatExceptionGroup(
+                    f'while dumping iterable {origin}',
+                    [render_trail_as_note(e) for e in errors],
+                )
+
+        return iter_dumper_dt_all
+
+    def _get_dt_dumper(self, iter_factory, iter_dumper):
+        def iter_dt_dumper(data):
+            return iter_factory(iter_dumper(data))
+
+        return iter_dt_dumper
+
+    def _get_dt_disable_dumper(self, iter_factory, arg_dumper: Dumper):
         def iter_dumper(data):
             return iter_factory(map(arg_dumper, data))
 
@@ -476,50 +579,25 @@ class DictProvider(LoaderProvider, DumperProvider):
                 )
             )
         )
-        debug_path = mediator.provide(
-            DebugPathRequest(loc_map=request.loc_map)
+        debug_trail = mediator.provide(
+            DebugTrailRequest(loc_map=request.loc_map)
         )
         return self._make_loader(
             key_loader=key_loader,
             value_loader=value_loader,
-            debug_path=debug_path,
+            debug_trail=debug_trail,
         )
 
-    def _make_loader(self, key_loader: Loader, value_loader: Loader, debug_path: bool):
-        if debug_path:
-            return self._get_loader_dp(
-                key_loader=key_loader,
-                value_loader=value_loader,
-            )
+    def _make_loader(self, key_loader: Loader, value_loader: Loader, debug_trail: DebugTrail):
+        if debug_trail == DebugTrail.DISABLE:
+            return self._get_loader_dt_disable(key_loader, value_loader)
+        if debug_trail == DebugTrail.FIRST:
+            return self._get_loader_dt_first(key_loader, value_loader)
+        if debug_trail == DebugTrail.ALL:
+            return self._get_loader_dt_all(key_loader, value_loader)
+        raise ValueError
 
-        return self._get_loader_non_dp(
-            key_loader=key_loader,
-            value_loader=value_loader,
-        )
-
-    def _get_loader_dp(self, key_loader: Loader, value_loader: Loader):
-        def dict_loader_dp(data):
-            try:
-                items_method = data.items
-            except AttributeError:
-                raise TypeLoadError(CollectionsMapping)
-
-            result = {}
-            for k, v in items_method():
-                try:
-                    loaded_key = key_loader(k)
-                    loaded_value = value_loader(v)
-                except Exception as e:
-                    append_path(e, k)
-                    raise e
-
-                result[loaded_key] = loaded_value
-
-            return result
-
-        return dict_loader_dp
-
-    def _get_loader_non_dp(self, key_loader: Loader, value_loader: Loader):
+    def _get_loader_dt_disable(self, key_loader: Loader, value_loader: Loader):
         def dict_loader(data):
             try:
                 items_method = data.items
@@ -533,6 +611,77 @@ class DictProvider(LoaderProvider, DumperProvider):
             return result
 
         return dict_loader
+
+    def _get_loader_dt_first(self, key_loader: Loader, value_loader: Loader):
+        def dict_loader_dt_first(data):
+            try:
+                items_method = data.items
+            except AttributeError:
+                raise TypeLoadError(CollectionsMapping)
+
+            result = {}
+            for k, v in items_method():
+                try:
+                    loaded_key = key_loader(k)
+                except Exception as e:
+                    append_trail(e, ItemKey(k))
+                    raise
+
+                try:
+                    loaded_value = value_loader(v)
+                except Exception as e:
+                    append_trail(e, k)
+                    raise
+
+                result[loaded_key] = loaded_value
+
+            return result
+
+        return dict_loader_dt_first
+
+    def _get_loader_dt_all(self, key_loader: Loader, value_loader: Loader):  # noqa: C901,CCR001
+        def dict_loader_dt_all(data):  # noqa: CCR001
+            try:
+                items_method = data.items
+            except AttributeError:
+                raise TypeLoadError(CollectionsMapping)
+
+            result = {}
+            errors = []
+            has_unexpected_error = False
+            for k, v in items_method():
+                try:
+                    loaded_key = key_loader(k)
+                except LoadError as e:
+                    errors.append(append_trail(e, ItemKey(k)))
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    errors.append(append_trail(e, ItemKey(k)))
+                    has_unexpected_error = True
+
+                try:
+                    loaded_value = value_loader(v)
+                except LoadError as e:
+                    errors.append(append_trail(e, k))
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    errors.append(append_trail(e, k))
+                    has_unexpected_error = True
+
+                if not errors:
+                    result[loaded_key] = loaded_value
+
+            if errors:
+                if has_unexpected_error:
+                    raise CompatExceptionGroup(
+                        f'while loading {dict}',
+                        [render_trail_as_note(e) for e in errors],
+                    )
+                raise LoadExceptionGroup(
+                    f'while loading {dict}',
+                    [render_trail_as_note(e) for e in errors],
+                )
+            return result
+
+        return dict_loader_dt_all
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
@@ -553,46 +702,88 @@ class DictProvider(LoaderProvider, DumperProvider):
                 )
             )
         )
-        debug_path = mediator.provide(
-            DebugPathRequest(loc_map=request.loc_map)
+        debug_trail = mediator.provide(
+            DebugTrailRequest(loc_map=request.loc_map)
         )
         return self._make_dumper(
             key_dumper=key_dumper,
             value_dumper=value_dumper,
-            debug_path=debug_path
+            debug_trail=debug_trail,
         )
 
-    def _make_dumper(self, key_dumper: Dumper, value_dumper: Dumper, debug_path: bool):
-        if debug_path:
-            return self._get_dumper_dp(
+    def _make_dumper(self, key_dumper: Dumper, value_dumper: Dumper, debug_trail: DebugTrail):
+        if debug_trail == DebugTrail.DISABLE:
+            return self._get_dumper_dt_disable(
                 key_dumper=key_dumper,
                 value_dumper=value_dumper,
             )
-        return self._get_dumper_non_dp(
-            key_dumper=key_dumper,
-            value_dumper=value_dumper,
-        )
+        if debug_trail == DebugTrail.FIRST:
+            return self._get_dumper_dt_first(
+                key_dumper=key_dumper,
+                value_dumper=value_dumper,
+            )
+        if debug_trail == DebugTrail.ALL:
+            return self._get_dumper_dt_all(
+                key_dumper=key_dumper,
+                value_dumper=value_dumper,
+            )
+        raise ValueError
 
-    def _get_dumper_dp(self, key_dumper, value_dumper):
-        def dict_dumper_dp(data: Mapping):
-            result = {}
-            for k, v in data.items():
-                try:
-                    result[key_dumper(k)] = value_dumper(v)
-                except Exception as e:
-                    append_path(e, k)
-                    raise e
-
-            return result
-
-        return dict_dumper_dp
-
-    def _get_dumper_non_dp(self, key_dumper, value_dumper):
-        def dict_dumper(data: Mapping):
+    def _get_dumper_dt_disable(self, key_dumper, value_dumper):
+        def dict_dumper_dt_disable(data: Mapping):
             result = {}
             for k, v in data.items():
                 result[key_dumper(k)] = value_dumper(v)
 
             return result
 
-        return dict_dumper
+        return dict_dumper_dt_disable
+
+    def _get_dumper_dt_first(self, key_dumper, value_dumper):
+        def dict_dumper_dt_first(data: Mapping):
+            result = {}
+            for k, v in data.items():
+                try:
+                    dumped_key = key_dumper(k)
+                except Exception as e:
+                    append_trail(e, ItemKey(k))
+                    raise
+
+                try:
+                    dumped_value = value_dumper(v)
+                except Exception as e:
+                    append_trail(e, k)
+                    raise
+
+                result[dumped_key] = dumped_value
+
+            return result
+
+        return dict_dumper_dt_first
+
+    def _get_dumper_dt_all(self, key_dumper, value_dumper):
+        def dict_dumper_dt_all(data: Mapping):
+            result = {}
+            errors = []
+            for k, v in data.items():
+                try:
+                    dumped_key = key_dumper(k)
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    errors.append(append_trail(e, ItemKey(k)))
+
+                try:
+                    dumped_value = value_dumper(v)
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    errors.append(append_trail(e, k))
+
+                if not errors:
+                    result[dumped_key] = dumped_value
+
+            if errors:
+                raise CompatExceptionGroup(
+                    f'while dumping {dict}',
+                    [render_trail_as_note(e) for e in errors],
+                )
+            return result
+
+        return dict_dumper_dt_all

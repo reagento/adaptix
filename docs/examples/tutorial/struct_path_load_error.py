@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from adaptix import Retort
 from adaptix.load_error import LoadError, TypeLoadError
-from adaptix.struct_path import get_path
+from adaptix.struct_trail import get_trail
 
 
 @dataclass
@@ -34,4 +34,4 @@ try:
 except LoadError as e:
     assert isinstance(e, TypeLoadError)
     assert e.expected_type == str
-    assert list(get_path(e)) == ['author', 'id']
+    assert list(get_trail(e)) == ['author', 'id']

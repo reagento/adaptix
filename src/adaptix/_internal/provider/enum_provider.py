@@ -103,7 +103,9 @@ class EnumExactValueProvider(BaseEnumProvider):
     """
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = get_type_from_request(request)
+        return self._make_loader(get_type_from_request(request))
+
+    def _make_loader(self, enum):
         variants = [case.value for case in enum]
 
         value_to_member = self._get_exact_value_to_member(enum)

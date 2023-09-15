@@ -5,49 +5,49 @@ from collections import deque
 import pytest
 from pythonjsonlogger import jsonlogger
 
-from adaptix.struct_path import StructPathRendererFilter, append_path, extend_path, get_path
+from adaptix.struct_trail import StructPathRendererFilter, append_trail, extend_trail, get_trail
 from tests_helpers import rollback_object_state
 
 
-def _raw_path(obj: object):
+def _raw_trail(obj: object):
     # noinspection PyProtectedMember
-    return obj._adaptix_struct_path  # type: ignore[attr-defined]
+    return obj._adaptix_struct_trail  # type: ignore[attr-defined]
 
 
-def test_append_path():
+def test_append_trail():
     exc = Exception()
 
-    append_path(exc, 'foo')
-    assert _raw_path(exc) == deque(['foo'])
-    append_path(exc, 'bar')
-    assert _raw_path(exc) == deque(['bar', 'foo'])
-    append_path(exc, 3)
-    assert _raw_path(exc) == deque([3, 'bar', 'foo'])
+    append_trail(exc, 'foo')
+    assert _raw_trail(exc) == deque(['foo'])
+    append_trail(exc, 'bar')
+    assert _raw_trail(exc) == deque(['bar', 'foo'])
+    append_trail(exc, 3)
+    assert _raw_trail(exc) == deque([3, 'bar', 'foo'])
 
 
-def test_extend_path():
+def test_extend_trail():
     exc = Exception()
 
-    extend_path(exc, ['a', 'b'])
-    assert _raw_path(exc) == deque(['a', 'b'])
-    extend_path(exc, ['c', 'd'])
-    assert _raw_path(exc) == deque(['c', 'd', 'a', 'b'])
+    extend_trail(exc, ['a', 'b'])
+    assert _raw_trail(exc) == deque(['a', 'b'])
+    extend_trail(exc, ['c', 'd'])
+    assert _raw_trail(exc) == deque(['c', 'd', 'a', 'b'])
 
 
-def test_get_path():
+def test_get_trail():
     exc = Exception()
 
-    pytest.raises(AttributeError, lambda: _raw_path(exc))
-    assert list(get_path(exc)) == []
+    pytest.raises(AttributeError, lambda: _raw_trail(exc))
+    assert list(get_trail(exc)) == []
 
-    append_path(exc, 'foo')
+    append_trail(exc, 'foo')
 
-    assert list(get_path(exc)) == ['foo']
+    assert list(get_trail(exc)) == ['foo']
 
     new_exc = Exception()
-    append_path(new_exc, 'bar')
+    append_trail(new_exc, 'bar')
 
-    assert list(get_path(new_exc)) == ['bar']
+    assert list(get_trail(new_exc)) == ['bar']
 
 
 @pytest.fixture()
@@ -68,7 +68,7 @@ def test_struct_path_renderer_filter(caplog, temp_logger):
     assert caplog.records[-1].struct_path == []
 
     try:
-        raise extend_path(ValueError(), ['a', 'b'])
+        raise extend_trail(ValueError(), ['a', 'b'])
     except Exception:
         temp_logger.exception('unexpected exception')
     assert caplog.records[-1].struct_path == ['a', 'b']
@@ -82,7 +82,7 @@ def test_struct_path_renderer_with_pythonjsonlogger(caplog, temp_logger):
         caplog.handler.setFormatter(jsonlogger.JsonFormatter())
 
         try:
-            raise extend_path(ValueError(), ['a', 'b'])
+            raise extend_trail(ValueError(), ['a', 'b'])
         except Exception:
             temp_logger.exception('unexpected exception')
 

@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, Callable, FrozenSet, Generic, Hashable, Mapping, Optional, TypeVar, Union
 
 from ..common import Catchable, TypeHint, VarTuple
-from ..struct_path import Attr, PathElement
+from ..struct_trail import Attr, TrailElement
 from ..utils import SingletonMeta, pairs
 
 S = TypeVar('S')
@@ -53,7 +53,7 @@ class Accessor(Hashable, ABC):
 
     @property
     @abstractmethod
-    def path_element(self) -> PathElement:
+    def trail_element(self) -> TrailElement:
         ...
 
 
@@ -71,7 +71,7 @@ class DescriptorAccessor(Accessor, ABC):
         return self._access_error
 
     @property
-    def path_element(self) -> PathElement:
+    def trail_element(self) -> TrailElement:
         return Attr(self.attr_name)
 
     @property
@@ -91,7 +91,7 @@ class DescriptorAccessor(Accessor, ABC):
 
 
 class ItemAccessor(Accessor):
-    def __init__(self, key: Union[int, str], access_error: Optional[Catchable], path_element: PathElement):
+    def __init__(self, key: Union[int, str], access_error: Optional[Catchable], path_element: TrailElement):
         self.key = key
         self._access_error = access_error
         self._path_element = path_element
@@ -105,7 +105,7 @@ class ItemAccessor(Accessor):
         return self._access_error
 
     @property
-    def path_element(self) -> PathElement:
+    def trail_element(self) -> TrailElement:
         return self._path_element
 
     def __eq__(self, other):
@@ -124,7 +124,7 @@ class ItemAccessor(Accessor):
             return hash(self._access_error)
 
     def __repr__(self):
-        return f"{type(self)}(key={self.key!r}, access_error={self.access_error}, path_element={self.path_element!r})"
+        return f"{type(self)}(key={self.key!r}, access_error={self.access_error}, path_element={self.trail_element!r})"
 
 
 def create_attr_accessor(attr_name: str, is_required: bool) -> DescriptorAccessor:

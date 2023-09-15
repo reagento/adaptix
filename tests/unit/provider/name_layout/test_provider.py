@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Union
 
 import pytest
 
-from adaptix import NameStyle, Provider, bound, name_mapping
+from adaptix import DebugTrail, NameStyle, Provider, bound, name_mapping
 from adaptix._internal.model_tools.definitions import (
     BaseField,
     BaseShape,
@@ -148,7 +148,7 @@ def make_layouts(
         ]
     ).replace(
         strict_coercion=True,
-        debug_path=True,
+        debug_trail=DebugTrail.ALL,
     )
     inp_request = InputNameLayoutRequest(
         loc_map=loc_map,

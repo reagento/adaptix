@@ -5,7 +5,7 @@ from pythonjsonlogger import jsonlogger
 
 from adaptix import Retort
 from adaptix.load_error import LoadError
-from adaptix.struct_path import StructPathRendererFilter
+from adaptix.struct_trail import StructPathRendererFilter
 
 
 @dataclass

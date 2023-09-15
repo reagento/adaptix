@@ -12,8 +12,3 @@ def debug_ctx():
 
 def pytest_make_parametrize_id(config, val, argname):
     return str(val)
-
-
-@pytest.fixture(params=[False, True], ids=['debug_path=False', 'debug_path=True'])
-def debug_path(request):
-    return request.param

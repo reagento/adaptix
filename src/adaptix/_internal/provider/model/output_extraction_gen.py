@@ -6,7 +6,8 @@ from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr
 from ...common import Dumper
 from ...model_tools.definitions import DescriptorAccessor, ItemAccessor, OutputField, OutputShape
-from ...struct_path import append_path, extend_path
+from ...struct_trail import append_trail, extend_trail
+from ..definitions import DebugTrail
 from .crown_definitions import ExtraExtract, ExtraTargets, OutExtraMove
 from .definitions import CodeGenerator, VarBinder
 from .special_cases_optimization import as_is_stub
@@ -17,12 +18,12 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         self,
         shape: OutputShape,
         extra_move: OutExtraMove,
-        debug_path: bool,
+        debug_trail: DebugTrail,
         fields_dumpers: Mapping[str, Dumper],
     ):
         self._shape = shape
         self._extra_move = extra_move
-        self._debug_path = debug_path
+        self._debug_trail = debug_trail
         self._fields_dumpers = fields_dumpers
         self._extra_targets = (
             self._extra_move.fields
@@ -33,8 +34,8 @@ class BuiltinOutputExtractionGen(CodeGenerator):
     def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         builder = CodeBuilder()
 
-        ctx_namespace.add("append_path", append_path)
-        ctx_namespace.add("extend_path", extend_path)
+        ctx_namespace.add("append_trail", append_trail)
+        ctx_namespace.add("extend_trail", extend_trail)
         name_to_fields = {field.id: field for field in self._shape.fields}
 
         for field_id, dumper in self._fields_dumpers.items():
@@ -89,7 +90,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
         return f"path_element_{field.id}"
 
     def _gen_path_element_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
-        path_element = field.accessor.path_element
+        path_element = field.accessor.trail_element
         literal_expr = get_literal_expr(path_element)
         if literal_expr is not None:
             return literal_expr
@@ -116,12 +117,12 @@ class BuiltinOutputExtractionGen(CodeGenerator):
             dumper = self._dumper(field)
             on_access_ok_stmt = Template(on_access_ok).substitute(expr=f"{dumper}({raw_access_expr})")
 
-        if self._debug_path:
+        if self._debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
             builder += f"""
                 try:
                     {on_access_ok_stmt}
                 except Exception as e:
-                    append_path(e, {path_element_expr})
+                    append_trail(e, {path_element_expr})
                     raise e
             """
         else:
@@ -163,7 +164,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
             access_error_var = self._get_access_error_var_name(field)
             ctx_namespace.add(access_error_var, access_error)
 
-        if self._debug_path:
+        if self._debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
             builder += f"""
                 try:
                     {raw_field} = {raw_access_expr}
@@ -173,7 +174,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
                     try:
                         {on_access_ok_stmt}
                     except Exception as e:
-                        append_path(e, {path_element_expr})
+                        append_trail(e, {path_element_expr})
                         raise e
             """
         else:

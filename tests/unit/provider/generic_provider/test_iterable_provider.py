@@ -19,11 +19,14 @@ from typing import (
 
 import pytest
 
-from adaptix import NoSuitableProvider, Retort, dumper
+from adaptix import DebugTrail, NoSuitableProvider, Retort, dumper, loader
+from adaptix._internal.compat import CompatExceptionGroup
+from adaptix._internal.load_error import LoadExceptionGroup
 from adaptix._internal.provider.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.provider.generic_provider import IterableProvider
+from adaptix._internal.struct_trail import append_trail
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
-from tests_helpers import TestRetort, parametrize_bool, raises_path
+from tests_helpers import TestRetort, raises_exc
 
 
 def string_dumper(data):
@@ -43,11 +46,10 @@ def retort():
     )
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_mapping_providing(retort, strict_coercion, debug_path):
+def test_mapping_providing(retort, strict_coercion, debug_trail):
     retort = retort.replace(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
     )
 
     with pytest.raises(NoSuitableProvider):
@@ -63,54 +65,115 @@ def test_mapping_providing(retort, strict_coercion, debug_path):
         retort.get_loader(collections.Counter)
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_loading(retort, strict_coercion, debug_path):
-    loader = retort.replace(
+def test_loading(retort, strict_coercion, debug_trail):
+    loader_ = retort.replace(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
     ).get_loader(List[str])
 
-    assert loader(["a", "b", "c"]) == ["a", "b", "c"]
-    assert loader(("a", "b", "c")) == ["a", "b", "c"]
-    assert loader(deque(["a", "b", "c"])) == ["a", "b", "c"]
+    assert loader_(["a", "b", "c"]) == ["a", "b", "c"]
+    assert loader_(("a", "b", "c")) == ["a", "b", "c"]
+    assert loader_(deque(["a", "b", "c"])) == ["a", "b", "c"]
 
-    raises_path(
+    raises_exc(
         TypeLoadError(Iterable),
-        lambda: loader(123),
-        path=[],
+        lambda: loader_(123),
     )
 
     if not strict_coercion:
-        assert loader({"a": 0, "b": 0, "c": 0}) == ["a", "b", "c"]
-        assert loader(collections.OrderedDict({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
-        assert loader(collections.ChainMap({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
-        assert loader("abc") == ["a", "b", "c"]
+        assert loader_({"a": 0, "b": 0, "c": 0}) == ["a", "b", "c"]
+        assert loader_(collections.OrderedDict({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
+        assert loader_(collections.ChainMap({"a": 0, "b": 0, "c": 0})) == ["a", "b", "c"]
+        assert loader_("abc") == ["a", "b", "c"]
 
     if strict_coercion:
-        raises_path(
+        raises_exc(
             ExcludedTypeLoadError(Mapping),
-            lambda: loader({"a": 0, "b": 0, "c": 0}),
-            path=[],
+            lambda: loader_({"a": 0, "b": 0, "c": 0}),
+            trail=[],
         )
-        raises_path(
+        raises_exc(
             ExcludedTypeLoadError(Mapping),
-            lambda: loader(collections.ChainMap({"a": 0, "b": 0, "c": 0})),
-            path=[],
+            lambda: loader_(collections.ChainMap({"a": 0, "b": 0, "c": 0})),
+            trail=[],
         )
-        raises_path(
+        raises_exc(
             ExcludedTypeLoadError(str),
-            lambda: loader("abc"),
-            path=[],
+            lambda: loader_("abc"),
+            trail=[],
         )
-        raises_path(
-            TypeLoadError(str),
-            lambda: loader([1, 2, 3]),
-            path=[0] if debug_path else [],
+        if debug_trail == DebugTrail.ALL:
+            raises_exc(
+                LoadExceptionGroup(
+                    "while loading iterable <class 'list'>",
+                    [
+                        append_trail(TypeLoadError(str), 0),
+                        append_trail(TypeLoadError(str), 1),
+                        append_trail(TypeLoadError(str), 2),
+                    ]
+                ),
+                lambda: loader_([1, 2, 3]),
+            )
+            raises_exc(
+                LoadExceptionGroup(
+                    "while loading iterable <class 'list'>",
+                    [
+                        append_trail(TypeLoadError(str), 1),
+                        append_trail(TypeLoadError(str), 2),
+                    ]
+                ),
+                lambda: loader_(["1", 2, 3]),
+            )
+        else:
+            raises_exc(
+                TypeLoadError(str),
+                lambda: loader_([1, 2, 3]),
+                trail=[] if debug_trail == DebugTrail.DISABLE else [0],
+            )
+            raises_exc(
+                TypeLoadError(str),
+                lambda: loader_(["1", 2, 3]),
+                trail=[] if debug_trail == DebugTrail.DISABLE else [1],
+            )
+
+
+def bad_string_loader(data):
+    if isinstance(data, str):
+        return data
+    raise TypeError  # must raise LoadError instance (TypeLoadError)
+
+
+def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
+    loader_ = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail
+    ).extend(
+        recipe=[
+            loader(str, bad_string_loader),
+        ]
+    ).get_loader(List[str])
+
+    if debug_trail == DebugTrail.DISABLE:
+        raises_exc(
+            TypeError(),
+            lambda: loader_(["1", 2, 3]),
         )
-        raises_path(
-            TypeLoadError(str),
-            lambda: loader(["1", 2, 3]),
-            path=[1] if debug_path else [],
+    elif debug_trail == DebugTrail.FIRST:
+        raises_exc(
+            TypeError(),
+            lambda: loader_(["1", 2, 3]),
+            trail=[1],
+        )
+    elif debug_trail == DebugTrail.ALL:
+        raises_exc(
+            CompatExceptionGroup(
+                "while loading iterable <class 'list'>",
+                [
+                    append_trail(TypeError(), 1),
+                    append_trail(TypeError(), 2),
+                ]
+            ),
+            lambda: loader_(["1", 2, 3]),
         )
 
 
@@ -128,35 +191,33 @@ def test_specific_type_loading(tp, factory):
     assert loaded == factory(['a', 'b', 'c'])
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_abc_impl(retort, strict_coercion, debug_path):
+def test_abc_impl(retort, strict_coercion, debug_trail):
     retort = retort.replace(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
     )
 
     for tp in [Iterable, Reversible, Collection, Sequence]:
-        loader = retort.get_loader(tp[str])
-        assert loader(["a", "b", "c"]) == ("a", "b", "c")
+        loader_ = retort.get_loader(tp[str])
+        assert loader_(["a", "b", "c"]) == ("a", "b", "c")
 
     for tp in [MutableSequence, List]:
-        loader = retort.get_loader(tp[str])
-        assert loader(["a", "b", "c"]) == ["a", "b", "c"]
+        loader_ = retort.get_loader(tp[str])
+        assert loader_(["a", "b", "c"]) == ["a", "b", "c"]
 
     for tp in [AbstractSet, FrozenSet]:
-        loader = retort.get_loader(tp[str])
+        loader_ = retort.get_loader(tp[str])
 
-        assert loader(["a", "b", "c"]) == frozenset(["a", "b", "c"])
+        assert loader_(["a", "b", "c"]) == frozenset(["a", "b", "c"])
 
     for tp in [MutableSet, Set]:
-        loader = retort.get_loader(tp[str])
-        assert loader(["a", "b", "c"]) == {"a", "b", "c"}
+        loader_ = retort.get_loader(tp[str])
+        assert loader_(["a", "b", "c"]) == {"a", "b", "c"}
 
 
-@parametrize_bool('debug_path')
-def test_dumping(retort, debug_path):
+def test_dumping(retort, debug_trail):
     retort = retort.replace(
-        debug_path=debug_path
+        debug_trail=debug_trail
     )
     list_dumper = retort.get_dumper(List[str])
     assert list_dumper(["a", "b"]) == ["a", "b"]
@@ -168,14 +229,38 @@ def test_dumping(retort, debug_path):
     assert iterable_dumper(['1', '2']) == ("1", "2")
     assert iterable_dumper({"a": 0, "b": 0}) == ("a", "b")
 
-    raises_path(
-        TypeError,
-        lambda: iterable_dumper([10, '20']),
-        path=[0] if debug_path else [],
-    )
-
-    raises_path(
-        TypeError,
-        lambda: iterable_dumper(['10', 20]),
-        path=[1] if debug_path else [],
-    )
+    if debug_trail == DebugTrail.DISABLE:
+        raises_exc(
+            TypeError(),
+            lambda: iterable_dumper([10, '20']),
+        )
+        raises_exc(
+            TypeError(),
+            lambda: iterable_dumper(['10', 20]),
+        )
+    elif debug_trail == DebugTrail.FIRST:
+        raises_exc(
+            TypeError(),
+            lambda: iterable_dumper([10, '20']),
+            trail=[0],
+        )
+        raises_exc(
+            TypeError(),
+            lambda: iterable_dumper(['10', 20]),
+            trail=[1],
+        )
+    elif debug_trail == DebugTrail.ALL:
+        raises_exc(
+            CompatExceptionGroup(
+                "while dumping iterable <class 'collections.abc.Iterable'>",
+                [append_trail(TypeError(), 0)]
+            ),
+            lambda: iterable_dumper([10, '20']),
+        )
+        raises_exc(
+            CompatExceptionGroup(
+                "while dumping iterable <class 'collections.abc.Iterable'>",
+                [append_trail(TypeError(), 1)]
+            ),
+            lambda: iterable_dumper(['10', 20]),
+        )

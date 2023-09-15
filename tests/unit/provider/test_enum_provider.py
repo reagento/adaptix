@@ -5,7 +5,7 @@ import pytest
 from adaptix import dumper, enum_by_value, loader
 from adaptix._internal.provider.enum_provider import EnumExactValueProvider, EnumNameProvider
 from adaptix.load_error import BadVariantError, MsgError
-from tests_helpers import TestRetort, parametrize_bool, raises_path
+from tests_helpers import TestRetort, raises_exc
 
 
 class MyEnum(Enum):
@@ -24,11 +24,10 @@ class MyEnumWithMissingHook(Enum):
         raise ValueError
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_name_provider(strict_coercion, debug_path):
+def test_name_provider(strict_coercion, debug_trail):
     retort = TestRetort(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         recipe=[
             EnumNameProvider(),
         ],
@@ -38,17 +37,17 @@ def test_name_provider(strict_coercion, debug_path):
 
     assert loader("V1") == MyEnum.V1
 
-    raises_path(
+    raises_exc(
         BadVariantError(['V1']),
         lambda: loader("1")
     )
 
-    raises_path(
+    raises_exc(
         BadVariantError(['V1']),
         lambda: loader(1)
     )
 
-    raises_path(
+    raises_exc(
         BadVariantError(['V1']),
         lambda: loader(MyEnum.V1)
     )
@@ -58,12 +57,11 @@ def test_name_provider(strict_coercion, debug_path):
     assert dumper(MyEnum.V1) == "V1"
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
 @pytest.mark.parametrize('enum_cls', [MyEnum, MyEnumWithMissingHook])
-def test_exact_value_provider(strict_coercion, debug_path, enum_cls):
+def test_exact_value_provider(strict_coercion, debug_trail, enum_cls):
     retort = TestRetort(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         recipe=[
             EnumExactValueProvider(),
         ],
@@ -73,17 +71,17 @@ def test_exact_value_provider(strict_coercion, debug_path, enum_cls):
 
     assert loader("1") == enum_cls.V1
 
-    raises_path(
+    raises_exc(
         BadVariantError(['1']),
         lambda: loader("V1")
     )
 
-    raises_path(
+    raises_exc(
         BadVariantError(['1']),
         lambda: loader(1)
     )
 
-    raises_path(
+    raises_exc(
         BadVariantError(['1']),
         lambda: loader(enum_cls.V1)
     )
@@ -93,11 +91,10 @@ def test_exact_value_provider(strict_coercion, debug_path, enum_cls):
     assert dumper(enum_cls.V1) == "1"
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_exact_value_provider_int_enum(strict_coercion, debug_path):
+def test_exact_value_provider_int_enum(strict_coercion, debug_trail):
     retort = TestRetort(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         recipe=[
             EnumExactValueProvider(),
         ],
@@ -106,39 +103,30 @@ def test_exact_value_provider_int_enum(strict_coercion, debug_path):
 
     assert int_enum_loader(1) == MyIntEnum.V1
 
-    raises_path(
+    raises_exc(
         BadVariantError([1]),
         lambda: int_enum_loader(MyEnum.V1),
     )
 
-    raises_path(
+    raises_exc(
         BadVariantError([1]),
         lambda: int_enum_loader("V1")
     )
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_exact_value_optimization(strict_coercion, debug_path):
-    retort = TestRetort(
-        strict_coercion=strict_coercion,
-        debug_path=debug_path,
-        recipe=[
-            EnumExactValueProvider(),
-        ],
-    )
-    assert retort.get_loader(MyEnum).__name__ == 'enum_exact_loader_v2m'
-    assert retort.get_loader(MyEnumWithMissingHook).__name__ == 'enum_exact_loader'
+def test_exact_value_optimization(strict_coercion, debug_trail):
+    assert EnumExactValueProvider()._make_loader(MyEnum).__name__ == 'enum_exact_loader_v2m'
+    assert EnumExactValueProvider()._make_loader(MyEnumWithMissingHook).__name__ == 'enum_exact_loader'
 
 
 def custom_string_dumper(value: str):
     return "PREFIX " + value
 
 
-@parametrize_bool('strict_coercion', 'debug_path')
-def test_value_provider(strict_coercion, debug_path):
+def test_value_provider(strict_coercion, debug_trail):
     retort = TestRetort(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         recipe=[
             enum_by_value(MyEnum, tp=str),
             loader(str, str),
@@ -151,12 +139,12 @@ def test_value_provider(strict_coercion, debug_path):
     assert enum_loader("1") == MyEnum.V1
     assert enum_loader(1) == MyEnum.V1
 
-    raises_path(
+    raises_exc(
         MsgError('Bad enum value'),
         lambda: enum_loader("V1")
     )
 
-    raises_path(
+    raises_exc(
         MsgError('Bad enum value'),
         lambda: enum_loader(MyEnum.V1)
     )

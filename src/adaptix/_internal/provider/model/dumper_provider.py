@@ -4,8 +4,9 @@ from ...code_tools.compiler import BasicClosureCompiler
 from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Dumper
 from ...essential import CannotProvide, Mediator
+from ..definitions import DebugTrail
 from ..provider_template import DumperProvider
-from ..request_cls import DebugPathRequest, DumperRequest, TypeHintLoc
+from ..request_cls import DebugTrailRequest, DumperRequest, TypeHintLoc
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
@@ -59,11 +60,11 @@ def make_output_extraction(
         )
         for field in shape.fields
     }
-    debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
+    debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
     return BuiltinOutputExtractionGen(
         shape=shape,
         extra_move=extra_move,
-        debug_path=debug_path,
+        debug_trail=debug_trail,
         fields_dumpers=field_dumpers,
     )
 
@@ -80,8 +81,8 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
         )
 
         processed_shape = self._process_shape(shape, name_layout)
-        debug_path = mediator.provide(DebugPathRequest(loc_map=request.loc_map))
-        creation_gen = self._create_creation_gen(debug_path, processed_shape, name_layout)
+        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
+        creation_gen = self._create_creation_gen(debug_trail, processed_shape, name_layout)
         return creation_gen, processed_shape, name_layout.extra_move
 
     def _process_shape(self, shape: OutputShape, name_layout: OutputNameLayout) -> OutputShape:
@@ -110,14 +111,14 @@ class BuiltinOutputCreationMaker(OutputCreationMaker):
 
     def _create_creation_gen(
         self,
-        debug_path: bool,
+        debug_trail: DebugTrail,
         shape: OutputShape,
         name_layout: OutputNameLayout,
     ) -> CodeGenerator:
         return BuiltinOutputCreationGen(
             shape=shape,
             name_layout=name_layout,
-            debug_path=debug_path,
+            debug_trail=debug_trail,
         )
 
 
