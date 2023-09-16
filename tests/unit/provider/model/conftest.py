@@ -1,7 +1,7 @@
 import pytest
+from tests_helpers import DebugCtx
 
 from adaptix._internal.provider.model.basic_gen import CodeGenAccumulator
-from tests_helpers import DebugCtx
 
 
 @pytest.fixture

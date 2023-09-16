@@ -3,7 +3,6 @@ files: |-
   ^(?:
        (src/.*)
       |(tests/.*)
-      |(tests_helpers/.*)
       |(examples/.*)
       |(docs/examples/.*)
       |(docs/custom_ext/.*)

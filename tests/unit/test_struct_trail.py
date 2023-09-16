@@ -4,9 +4,9 @@ from collections import deque
 
 import pytest
 from pythonjsonlogger import jsonlogger
+from tests_helpers import rollback_object_state
 
 from adaptix.struct_trail import StructPathRendererFilter, append_trail, extend_trail, get_trail
-from tests_helpers import rollback_object_state
 
 
 def _raw_trail(obj: object):

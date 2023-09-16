@@ -2,6 +2,8 @@ import typing
 from types import MappingProxyType
 from typing import TypedDict
 
+from tests_helpers import requires
+
 from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_PY_39
 from adaptix._internal.model_tools.definitions import (
     InputField,
@@ -15,7 +17,6 @@ from adaptix._internal.model_tools.definitions import (
     create_key_accessor,
 )
 from adaptix._internal.model_tools.introspection import get_typed_dict_shape
-from tests_helpers import requires
 
 
 class Foo(TypedDict, total=True):

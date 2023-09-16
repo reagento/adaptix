@@ -1,4 +1,5 @@
 import pytest
+from tests_helpers import full_match_regex_str
 
 from adaptix._internal.model_tools.definitions import (
     InputField,
@@ -10,7 +11,6 @@ from adaptix._internal.model_tools.definitions import (
     ParamKind,
     create_attr_accessor,
 )
-from tests_helpers import full_match_regex_str
 
 
 def stub_constructor(*args, **kwargs):

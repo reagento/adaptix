@@ -6,7 +6,7 @@
 #
 -e ./benchmarks
     # via -r requirements/raw/bench.txt
--e ./tests_helpers
+-e ./tests/tests_helpers
     # via -r requirements/raw/test_extra_none.txt
 alabaster==0.7.13
     # via sphinx
@@ -170,7 +170,7 @@ pbr==5.11.1
     # via
     #   sphinxcontrib-apidoc
     #   stevedore
-phonenumberslite==8.13.19
+phonenumberslite==8.13.20
     # via -r requirements/raw/test_extra_none.txt
 pillow==9.5.0
     # via matplotlib
@@ -184,7 +184,7 @@ plotly==5.15.0
     #   -r requirements/raw/doc.txt
 pluggy==1.0.0
     # via pytest
-pre-commit==3.3.3
+pre-commit==3.4.0
     # via -r requirements/raw/lint.txt
 psutil==5.9.5
     # via
@@ -211,7 +211,7 @@ pyparsing==3.0.9
     # via matplotlib
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
-pytest==7.3.1
+pytest==7.4.2
     # via
     #   -r requirements/raw/bench.txt
     #   -r requirements/raw/test_extra_none.txt

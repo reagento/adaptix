@@ -18,6 +18,7 @@ from typing import (
 )
 
 import pytest
+from tests_helpers import TestRetort, raises_exc
 
 from adaptix import DebugTrail, NoSuitableProvider, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
@@ -26,7 +27,6 @@ from adaptix._internal.provider.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.provider.generic_provider import IterableProvider
 from adaptix._internal.struct_trail import append_trail
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
-from tests_helpers import TestRetort, raises_exc
 
 
 def string_dumper(data):

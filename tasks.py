@@ -36,7 +36,7 @@ def deps_compile(c: Context):
     promises = [
         c.run(
             f'pip-compile {req} -o {Path("requirements") / req.name}'
-            ' -q --resolver=backtracking --allow-unsafe --strip-extras',
+            ' -q --allow-unsafe --strip-extras',
             asynchronous=True,
         )
         for req in Path('.').glob('requirements/raw/*.txt')
@@ -46,5 +46,5 @@ def deps_compile(c: Context):
         promise.join()
 
     for file in Path('.').glob('requirements/*.txt'):
-        c.run(fr'sed -i -E "s/-e file:.+\/tests_helpers/-e .\/tests_helpers/" {file}')
+        c.run(fr'sed -i -E "s/-e file:.+\/tests\/tests_helpers/-e .\/tests\/tests_helpers/" {file}')
         c.run(fr'sed -i -E "s/-e file:.+\/benchmarks/-e .\/benchmarks/" {file}')

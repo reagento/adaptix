@@ -4,6 +4,8 @@ from types import MappingProxyType
 from typing import Any, NamedTuple
 from unittest.mock import ANY
 
+from tests_helpers import requires
+
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     DefaultValue,
@@ -18,7 +20,6 @@ from adaptix._internal.model_tools.definitions import (
     create_key_accessor,
 )
 from adaptix._internal.model_tools.introspection import get_named_tuple_shape
-from tests_helpers import requires
 
 
 def test_order_ab():

@@ -18,6 +18,7 @@ from typing import (
 )
 
 import pytest
+from tests_helpers import cond_list
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_STD_CLASSES_GENERICS
 from adaptix._internal.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
@@ -28,7 +29,6 @@ from adaptix._internal.type_tools.basic_utils import (
     is_generic_class,
     is_parametrized,
 )
-from tests_helpers import cond_list
 
 
 class NTParent(NamedTuple):

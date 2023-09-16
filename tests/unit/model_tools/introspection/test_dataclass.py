@@ -5,6 +5,7 @@ from typing import ClassVar
 from unittest.mock import ANY
 
 import pytest
+from tests_helpers import requires
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_PY_310
 from adaptix._internal.model_tools.definitions import (
@@ -21,7 +22,6 @@ from adaptix._internal.model_tools.definitions import (
     create_attr_accessor,
 )
 from adaptix._internal.model_tools.introspection import get_dataclass_shape
-from tests_helpers import requires
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 

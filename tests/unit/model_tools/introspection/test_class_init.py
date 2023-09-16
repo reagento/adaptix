@@ -4,6 +4,7 @@ from typing import Any
 from unittest.mock import ANY
 
 import pytest
+from tests_helpers import requires
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
@@ -18,7 +19,6 @@ from adaptix._internal.model_tools.definitions import (
     Shape,
 )
 from adaptix._internal.model_tools.introspection import get_class_init_shape
-from tests_helpers import requires
 
 
 class Valid1:

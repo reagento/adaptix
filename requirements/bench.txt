@@ -38,7 +38,7 @@ pydantic-core==2.0.1
     # via pydantic
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
-pytest==7.3.1
+pytest==7.4.2
     # via -r requirements/raw/bench.txt
 schematics==2.1.1
     # via -r requirements/raw/bench.txt

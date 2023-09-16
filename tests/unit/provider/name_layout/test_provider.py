@@ -3,6 +3,7 @@ from types import FunctionType
 from typing import Any, Dict, Optional, Union
 
 import pytest
+from tests_helpers import TestRetort, full_match_regex_str, type_of
 
 from adaptix import DebugTrail, NameStyle, Provider, bound, name_mapping
 from adaptix._internal.model_tools.definitions import (
@@ -63,7 +64,6 @@ from adaptix._internal.provider.name_layout.provider import BuiltinNameLayoutPro
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import DumperRequest, FieldLoc, LoaderRequest, LocMap, TypeHintLoc
 from adaptix._internal.provider.request_filtering import AnyRequestChecker
-from tests_helpers import TestRetort, full_match_regex_str, type_of
 
 
 @dataclass

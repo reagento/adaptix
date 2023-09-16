@@ -5,6 +5,7 @@ from typing import Any, Tuple
 from unittest.mock import ANY
 
 import pytest
+from tests_helpers import ATTRS_WITH_ALIAS, requires
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
@@ -24,7 +25,6 @@ from adaptix._internal.model_tools.definitions import (
     create_attr_accessor,
 )
 from adaptix._internal.model_tools.introspection import get_attrs_shape
-from tests_helpers import ATTRS_WITH_ALIAS, requires
 
 pytest.importorskip("attrs")
 

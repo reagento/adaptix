@@ -3,6 +3,7 @@ from types import MappingProxyType, SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Type
 
 import pytest
+from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc
 
 from adaptix import DebugTrail, Dumper, bound
 from adaptix._internal.common import Catchable
@@ -10,7 +11,6 @@ from adaptix._internal.model_tools.definitions import (
     Accessor,
     DefaultFactory,
     DefaultValue,
-    ItemAccessor,
     NoDefault,
     OutputField,
     OutputShape,
@@ -38,7 +38,6 @@ from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import DumperRequest
 from adaptix._internal.struct_trail import Attr, TrailElement, TrailElementMarker
 from adaptix._internal.utils import SingletonMeta
-from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc
 
 
 @dataclass

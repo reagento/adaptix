@@ -35,6 +35,7 @@ from typing import (
 from uuid import uuid4
 
 import pytest
+from tests_helpers import cond_list, requires
 
 from adaptix import TypeHint
 from adaptix._internal.feature_requirement import (
@@ -60,7 +61,6 @@ from adaptix._internal.type_tools.normalize_type import (
     _NormType,
     make_norm_type,
 )
-from tests_helpers import cond_list, requires
 
 MISSING = object()
 

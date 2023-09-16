@@ -1,7 +1,7 @@
 import pytest
+from tests_helpers import PlaceholderProvider, full_match_regex_str
 
 from adaptix import DebugTrail, Retort
-from tests_helpers import PlaceholderProvider, full_match_regex_str
 
 
 def test_retort_replace():

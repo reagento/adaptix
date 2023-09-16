@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Any, List, Optional, Union
 
 import phonenumbers
+from tests_helpers import raises_exc
 
 from adaptix.load_error import (
     BadVariantError,
@@ -15,7 +16,6 @@ from adaptix.load_error import (
     ValueLoadError,
 )
 from adaptix.struct_trail import extend_trail
-from tests_helpers import raises_exc
 
 from .models import NotifyEmail, NotifyPhone, NotifyTarget, Receipt, ReceiptType, RecItem, Taxation
 from .money import rubles

@@ -3,13 +3,13 @@ from typing import Any, Dict, Generic, List, Mapping, TypeVar
 
 import pytest
 from pytest import param
+from tests_helpers import pretty_typehint_test_id
 
 from adaptix import CannotProvide, Retort, TypeHint
 from adaptix._internal.feature_requirement import HAS_PY_39, HAS_PY_310, HAS_STD_CLASSES_GENERICS, IS_PYPY
 from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
 from adaptix._internal.provider.model.shape_provider import provide_generic_resolved_shape
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
-from tests_helpers import pretty_typehint_test_id
 
 pytest_make_parametrize_id = pretty_typehint_test_id
 
@@ -291,7 +291,6 @@ def test_generic_mixed_inheritance():
         Child21,
         {'b': str, 'a': int, 'c': bool},
     )
-
 
 
 def test_generic_parents_with_type_override():

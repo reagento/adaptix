@@ -2,7 +2,6 @@
 import pytest
 from sqlalchemy import insert, select, update
 from sqlalchemy.orm import sessionmaker
-
 from tests_helpers import create_sa_engine
 
 from .audit_logs import UserChanged, UserCreated
