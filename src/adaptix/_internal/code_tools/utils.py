@@ -1,4 +1,5 @@
 import builtins
+import math
 from typing import Any, Dict, Optional
 
 _BUILTINS_DICT = {
@@ -9,7 +10,12 @@ _BUILTINS_DICT = {
 
 
 def get_literal_expr(obj: object) -> Optional[str]:
-    if type(obj) in (int, float, str, bytes, bytearray):
+    # pylint: disable=unidiomatic-typecheck,too-many-return-statements
+    if type(obj) in (int, str, bytes, bytearray):
+        return repr(obj)
+    if type(obj) is float:
+        if math.isinf(obj) or math.isnan(obj):
+            return None
         return repr(obj)
 
     try:
