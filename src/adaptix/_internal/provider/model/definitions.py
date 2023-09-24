@@ -25,7 +25,7 @@ class VarBinder(PrefixManglerBase):
     extra = MangledConstant("extra")
     opt_fields = MangledConstant("opt_fields")
 
-    @mangling_method("field_")
+    @mangling_method(prefix="field_")
     def field(self, field: BaseField) -> str:
         return field.id
 

@@ -81,14 +81,18 @@ BaseExcT = TypeVar('BaseExcT', bound=BaseException)
 
 if HAS_NATIVE_EXC_GROUP:
     def render_trail_as_note(exc: BaseExcT) -> BaseExcT:
-        exc.add_note(f'Exception was caused at {list(get_trail(exc))}')
+        trail = get_trail(exc)
+        if trail:
+            exc.add_note(f'Exception was caused at {list(trail)}')
         return exc
 else:
     def render_trail_as_note(exc: BaseExcT) -> BaseExcT:
-        if hasattr(exc, '__notes__'):
-            exc.__notes__.append(f'Exception was caused at {list(get_trail(exc))}')
-        else:
-            exc.__notes__ = [f'Exception was caused at {list(get_trail(exc))}']
+        trail = get_trail(exc)
+        if trail:
+            if hasattr(exc, '__notes__'):
+                exc.__notes__.append(f'Exception was caused at {list(trail)}')
+            else:
+                exc.__notes__ = [f'Exception was caused at {list(trail)}']
         return exc
 
 

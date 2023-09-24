@@ -9,7 +9,7 @@ from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.load_error import LoadExceptionGroup
 from adaptix._internal.provider.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.provider.generic_provider import DictProvider
-from adaptix._internal.struct_trail import ItemKey, append_trail
+from adaptix._internal.struct_trail import ItemKey, append_trail, extend_trail
 from adaptix.load_error import TypeLoadError
 
 
@@ -71,14 +71,12 @@ def test_loading(retort, strict_coercion, debug_trail):
             )
         elif debug_trail == DebugTrail.FIRST:
             raises_exc(
-                TypeLoadError(str),
+                extend_trail(TypeLoadError(str), ['c']),
                 lambda: loader_({'a': 'b', 'c': 0}),
-                trail=['c'],
             )
             raises_exc(
-                TypeLoadError(str),
+                extend_trail(TypeLoadError(str), [ItemKey(0)]),
                 lambda: loader_({'a': 'b', 0: 'd'}),
-                trail=[ItemKey(0)],
             )
         elif debug_trail == DebugTrail.ALL:
             raises_exc(
@@ -126,14 +124,12 @@ def test_loader_unexpected_error(retort, strict_coercion, debug_trail):
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            TypeError(),
+            extend_trail(TypeError(), ['c']),
             lambda: loader_({'a': 'b', 'c': 0}),
-            trail=['c'],
         )
         raises_exc(
-            TypeError(),
+            extend_trail(TypeError(), [ItemKey(0)]),
             lambda: loader_({'a': 'b', 0: 'd'}),
-            trail=[ItemKey(0)],
         )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
@@ -172,14 +168,12 @@ def test_dumping(retort, debug_trail):
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            TypeError(),
+            extend_trail(TypeError(), ['c']),
             lambda: dumper_({'a': 'b', 'c': 0}),
-            trail=['c'],
         )
         raises_exc(
-            TypeError(),
+            extend_trail(TypeError(), [ItemKey(0)]),
             lambda: dumper_({'a': 'b', 0: 'd'}),
-            trail=[ItemKey(0)],
         )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(

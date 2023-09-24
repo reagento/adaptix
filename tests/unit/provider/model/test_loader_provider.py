@@ -7,6 +7,7 @@ from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametriz
 
 from adaptix import DebugTrail, ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
+from adaptix._internal.load_error import LoadExceptionGroup
 from adaptix._internal.model_tools.definitions import InputField, InputShape, NoDefault, Param, ParamKind, ParamKwargs
 from adaptix._internal.provider.model.basic_gen import NameSanitizer
 from adaptix._internal.provider.model.crown_definitions import (
@@ -30,6 +31,7 @@ from adaptix._internal.provider.model.loader_provider import (
 )
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import LoaderRequest
+from adaptix._internal.struct_trail import extend_trail, get_trail
 from adaptix.load_error import (
     ExtraFieldsError,
     ExtraItemsError,
@@ -38,6 +40,7 @@ from adaptix.load_error import (
     NoRequiredItemsError,
     TypeLoadError,
 )
+from tests.conftest import ByTrailSelector
 
 
 @dataclass
@@ -99,9 +102,11 @@ def int_loader(data):
 
 
 def make_loader_getter(
+    *,
     shape: InputShape,
     name_layout: InputNameLayout,
     debug_trail: DebugTrail,
+    strict_coercion: bool = True,
     debug_ctx: DebugCtx,
 ) -> Callable[[], Loader]:
     def getter():
@@ -117,7 +122,7 @@ def make_loader_getter(
 
         loader = retort.replace(
             debug_trail=debug_trail,
-            strict_coercion=False,
+            strict_coercion=strict_coercion,
         ).get_loader(
             Gauge,
         )
@@ -131,7 +136,7 @@ def extra_policy(request):
     return request.param
 
 
-def test_direct(debug_ctx, debug_trail, extra_policy):
+def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField('a', ParamKind.POS_OR_KW, is_required=True),
@@ -164,32 +169,49 @@ def test_direct(debug_ctx, debug_trail, extra_policy):
         assert loader({'a': 1, 'b': 2, 'c': 3}) == gauge(1, 2)
     if extra_policy == ExtraForbid():
         raises_exc(
-            ExtraFieldsError({'c'}),
+            trail_select(
+                disable=ExtraFieldsError({'c'}),
+                first=ExtraFieldsError({'c'}),
+                all=LoadExceptionGroup(
+                    f'while loading model {gauge}',
+                    [ExtraFieldsError({'c'})],
+                ),
+            ),
             lambda: loader({'a': 1, 'b': 2, 'c': 3}),
-            trail=[],
         )
 
     raises_exc(
-        LoadError(),
+        trail_select(
+            disable=LoadError(),
+            first=extend_trail(LoadError(), ['b']),
+            all=LoadExceptionGroup(
+                f'while loading model {gauge}',
+                [extend_trail(LoadError(), ['b'])],
+            ),
+        ),
         lambda: loader({'a': 1, 'b': LoadError()}),
-        trail=['b'] if debug_trail != DebugTrail.DISABLE else [],
     )
 
     raises_exc(
-        NoRequiredFieldsError(['b']),
+        trail_select(
+            disable=NoRequiredFieldsError(['b']),
+            first=NoRequiredFieldsError(['b']),
+            all=LoadExceptionGroup(
+                f'while loading model {gauge}',
+                [NoRequiredFieldsError(['b'])],
+            ),
+        ),
         lambda: loader({'a': 1}),
-        trail=[],
     )
 
     raises_exc(
         TypeLoadError(dict),
         lambda: loader("bad input value"),
-        trail=[],
     )
 
 
 @pytest.mark.parametrize('extra_policy', [ExtraSkip(), ExtraForbid()])
-def test_direct_list(debug_ctx, debug_trail, extra_policy):
+def test_direct_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_coercion):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField('a', ParamKind.POS_OR_KW, is_required=True),
@@ -206,6 +228,7 @@ def test_direct_list(debug_ctx, debug_trail, extra_policy):
             extra_move=None,
         ),
         debug_trail=debug_trail,
+        strict_coercion=strict_coercion,
         debug_ctx=debug_ctx,
     )
 
@@ -217,25 +240,118 @@ def test_direct_list(debug_ctx, debug_trail, extra_policy):
 
     if extra_policy == ExtraForbid():
         raises_exc(
-            ExtraItemsError(2),
+            trail_select(
+                disable=ExtraItemsError(2),
+                first=ExtraItemsError(2),
+                all=LoadExceptionGroup(
+                    f'while loading model {gauge}',
+                    [ExtraItemsError(2)],
+                ),
+            ),
             lambda: loader([1, 2, 3]),
-            trail=[],
         )
 
     raises_exc(
-        NoRequiredItemsError(2),
+        trail_select(
+            disable=NoRequiredItemsError(2),
+            first=NoRequiredItemsError(2),
+            all=LoadExceptionGroup(
+                f'while loading model {gauge}',
+                [NoRequiredItemsError(2)],
+            ),
+        ),
         lambda: loader([10]),
-        trail=[],
     )
+
+    if strict_coercion:
+        raises_exc(
+            trail_select(
+                disable=TypeLoadError(list),
+                first=TypeLoadError(list),
+                all=LoadExceptionGroup(
+                    f'while loading model {gauge}',
+                    [TypeLoadError(list)],
+                ),
+            ),
+            lambda: loader(123),
+        )
+    else:
+        assert loader("ab") == gauge('a', 'b')
+
+
+@pytest.mark.parametrize('extra_policy', [ExtraSkip(), ExtraForbid()])
+def test_direct_list_all(debug_ctx, extra_policy):
+    debug_trail = DebugTrail.ALL
+    trail_select = ByTrailSelector(debug_trail)
+    strict_coercion = True
+    loader_getter = make_loader_getter(
+        shape=shape(
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=True),
+        ),
+        name_layout=InputNameLayout(
+            crown=InpListCrown(
+                [
+                    InpFieldCrown('a'),
+                    InpFieldCrown('b'),
+                ],
+                extra_policy=extra_policy,
+            ),
+            extra_move=None,
+        ),
+        debug_trail=debug_trail,
+        strict_coercion=strict_coercion,
+        debug_ctx=debug_ctx,
+    )
+
+    loader = loader_getter()
+    assert loader([1, 2]) == gauge(1, 2)
+
+    if extra_policy == ExtraSkip():
+        assert loader([1, 2, 3]) == gauge(1, 2)
+
+    if extra_policy == ExtraForbid():
+        raises_exc(
+            trail_select(
+                disable=ExtraItemsError(2),
+                first=ExtraItemsError(2),
+                all=LoadExceptionGroup(
+                    f'while loading model {gauge}',
+                    [ExtraItemsError(2)],
+                ),
+            ),
+            lambda: loader([1, 2, 3]),
+        )
 
     raises_exc(
-        TypeLoadError(list),
-        lambda: loader("bad input value"),
-        trail=[],
+        trail_select(
+            disable=NoRequiredItemsError(2),
+            first=NoRequiredItemsError(2),
+            all=LoadExceptionGroup(
+                f'while loading model {gauge}',
+                [NoRequiredItemsError(2)],
+            ),
+        ),
+        lambda: loader([10]),
     )
 
+    if strict_coercion:
+        raises_exc(
+            trail_select(
+                disable=TypeLoadError(list),
+                first=TypeLoadError(list),
+                all=LoadExceptionGroup(
+                    f'while loading model {gauge}',
+                    [TypeLoadError(list)],
+                ),
+            ),
+            lambda: loader(123),
+        )
+    else:
+        assert loader("ab") == gauge('a', 'b')
 
-def test_extra_forbid(debug_ctx, debug_trail):
+
+def test_extra_forbid(debug_ctx, debug_trail, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField('a', ParamKind.POS_OR_KW, is_required=True),
@@ -258,14 +374,26 @@ def test_extra_forbid(debug_ctx, debug_trail):
     loader = loader_getter()
 
     raises_exc(
-        ExtraFieldsError({'c'}),
+        trail_select(
+            disable=ExtraFieldsError({'c'}),
+            first=ExtraFieldsError({'c'}),
+            all=LoadExceptionGroup(
+                f'while loading model {gauge}',
+                [ExtraFieldsError({'c'})],
+            )
+        ),
         lambda: loader({'a': 1, 'b': 2, 'c': 3}),
-        trail=[],
     )
     raises_exc(
-        ExtraFieldsError({'c', 'd'}),
+        trail_select(
+            disable=ExtraFieldsError({'c', 'd'}),
+            first=ExtraFieldsError({'c', 'd'}),
+            all=LoadExceptionGroup(
+                f'while loading model {gauge}',
+                [ExtraFieldsError({'c', 'd'})],
+            )
+        ),
         lambda: loader({'a': 1, 'b': 2, 'c': 3, 'd': 4}),
-        trail=[],
     )
 
 
@@ -449,9 +577,10 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_trail):
     loader = loader_getter()
 
     raises_exc(
+        LoadExceptionGroup(f'while loading model {gauge}', [NoRequiredFieldsError(['m_a'])])
+        if debug_trail == DebugTrail.ALL else
         NoRequiredFieldsError(['m_a']),
         lambda: loader({'a': 1, 'b': 2}),
-        trail=[],
     )
 
     assert loader({'m_a': 1, 'b': 'this value is not loaded'}) == gauge(1, b='this value is not loaded')
@@ -572,7 +701,7 @@ def test_optional_fields_at_list(debug_ctx, debug_trail, extra_policy):
 
 
 @parametrize_bool('is_required')
-def test_flat_mapping(debug_ctx, debug_trail, is_required):
+def test_flat_mapping(debug_ctx, debug_trail, is_required, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField('a', ParamKind.POS_OR_KW, is_required=True),
@@ -595,9 +724,12 @@ def test_flat_mapping(debug_ctx, debug_trail, is_required):
     loader = loader_getter()
 
     raises_exc(
-        NoRequiredFieldsError(['m_a']),
+        trail_select(
+            disable=NoRequiredFieldsError(['m_a']),
+            first=NoRequiredFieldsError(['m_a']),
+            all=LoadExceptionGroup(f'while loading model {gauge}', [NoRequiredFieldsError(['m_a']),])
+        ),
         lambda: loader({'a': 1, 'b': 2}),
-        trail=[],
     )
 
     assert loader({'m_a': 1, 'b': 2}) == gauge(1, e={'b': 2})
@@ -706,7 +838,10 @@ def test_structure_flattening(debug_ctx, debug_trail):
     )
 
     raises_exc(
-        TypeLoadError(dict),
+        extend_trail(
+            TypeLoadError(dict),
+            ['z'] if debug_trail != DebugTrail.DISABLE else [],
+        ),
         lambda: loader(
             {
                 'z': 'this is not a dict',
@@ -718,11 +853,13 @@ def test_structure_flattening(debug_ctx, debug_trail):
                 ],
             }
         ),
-        trail=['z'] if debug_trail != DebugTrail.DISABLE else []
     )
 
     raises_exc(
-        TypeLoadError(list),
+        extend_trail(
+            TypeLoadError(list),
+            ['v'] if debug_trail != DebugTrail.DISABLE else [],
+        ),
         lambda: loader(
             {
                 'z': {
@@ -733,7 +870,6 @@ def test_structure_flattening(debug_ctx, debug_trail):
                 'v': 'this is not a list',
             }
         ),
-        trail=['v'] if debug_trail != DebugTrail.DISABLE else []
     )
 
 
@@ -758,7 +894,7 @@ def _replace_value_by_path(data, path, new_value):
         ['v', 2, 0]
     ],
 )
-def test_error_path_at_complex_structure(debug_ctx, debug_trail, error_path):
+def test_error_path_at_complex_structure(debug_ctx, debug_trail, error_path, trail_select):
     loader_getter = make_loader_getter(
         shape=COMPLEX_STRUCTURE_SHAPE,
         name_layout=InputNameLayout(
@@ -786,13 +922,16 @@ def test_error_path_at_complex_structure(debug_ctx, debug_trail, error_path):
     _replace_value_by_path(data, error_path, LoadError())
 
     raises_exc(
-        LoadError(),
+        trail_select(
+            disable=LoadError(),
+            first=extend_trail(LoadError(), error_path),
+            all=LoadExceptionGroup(f'while loading model {gauge}', [extend_trail(LoadError(), error_path)]),
+        ),
         lambda: loader(data),
-        trail=error_path if debug_trail != DebugTrail.DISABLE else []
     )
 
 
-def test_none_crown_at_dict_crown(debug_ctx, debug_trail, extra_policy):
+def test_none_crown_at_dict_crown(debug_ctx, debug_trail, extra_policy, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField('a', ParamKind.POS_OR_KW, is_required=True),
@@ -824,14 +963,17 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_trail, extra_policy):
 
     if extra_policy == ExtraForbid():
         raises_exc(
-            ExtraFieldsError({'c'}),
+            trail_select(
+                disable=ExtraFieldsError({'c'}),
+                first=ExtraFieldsError({'c'}),
+                all=LoadExceptionGroup(f'while loading model {gauge}', [ExtraFieldsError({'c'})]),
+            ),
             lambda: loader({'a': 1, 'b': 2, 'c': 3}),
-            trail=[],
         )
 
 
 @pytest.mark.parametrize('extra_policy', [ExtraSkip(), ExtraForbid()])
-def test_none_crown_at_list_crown(debug_ctx, debug_trail, extra_policy):
+def test_none_crown_at_list_crown(debug_ctx, debug_trail, extra_policy, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField('a', ParamKind.POS_OR_KW, is_required=True),
@@ -855,9 +997,12 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, extra_policy):
     assert loader([1, 2, 3]) == gauge(2)
 
     raises_exc(
-        NoRequiredItemsError(3),
+        trail_select(
+            disable=NoRequiredItemsError(3),
+            first=NoRequiredItemsError(3),
+            all=LoadExceptionGroup(f'while loading model {gauge}', [NoRequiredItemsError(3)]),
+        ),
         lambda: loader([1, 2]),
-        trail=[],
     )
 
     if extra_policy == ExtraSkip():
@@ -865,7 +1010,10 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, extra_policy):
 
     if extra_policy == ExtraForbid():
         raises_exc(
-            ExtraItemsError(3),
+            trail_select(
+                disable=ExtraItemsError(3),
+                first=ExtraItemsError(3),
+                all=LoadExceptionGroup(f'while loading model {gauge}', [ExtraItemsError(3)]),
+            ),
             lambda: loader([1, 2, 3, 4]),
-            trail=[],
         )

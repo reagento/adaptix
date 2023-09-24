@@ -37,6 +37,7 @@ class DistributionVersionRequirement(Requirement):
 
 ATTRS_WITH_ALIAS = DistributionVersionRequirement('attrs', '22.2.0')
 
+
 def requires(
     requirement: Union[
         PythonVersionRequirement,
@@ -94,23 +95,14 @@ def raises_exc(
     exc: Union[Type[E], E],
     func: Callable[[], Any],
     *,
-    trail: Optional[Trail] = None,
     match: Optional[str] = None,
 ) -> E:
     exc_type = exc if isinstance(exc, type) else type(exc)
-    if trail is not None and get_trail(exc):
-        raise ValueError('Reference exception must not have trail if trail parameter is passed')
 
     with pytest.raises(exc_type, match=match) as exc_info:
         func()
 
-    if isinstance(exc, type):
-        if trail is not None:
-            assert list(get_trail(exc_info.value)) == trail
-    else:
-        if trail is not None:
-            extend_trail(exc, trail)
-        _compare_exc_instance(exc_info.value, exc)
+    _compare_exc_instance(exc_info.value, exc)
 
     return exc_info.value
 
@@ -154,28 +146,6 @@ class PlaceholderProvider(Provider):
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
         raise CannotProvide
-
-
-class CustomEqual:
-    def __init__(self, func, repr_str):
-        self.func = func
-        self.repr_str = repr_str
-
-    def __eq__(self, other):
-        return self.func(other)
-
-    def __repr__(self):
-        return self.repr_str
-
-    def __str__(self):
-        return self.repr_str
-
-
-def type_of(tp: type) -> Any:
-    def type_of_equal(other):
-        return isinstance(other, tp)
-
-    return CustomEqual(type_of_equal, f"type_of({tp.__qualname__})")
 
 
 def full_match_regex_str(string_to_match: str) -> str:

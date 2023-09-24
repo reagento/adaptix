@@ -10,6 +10,7 @@ from adaptix._internal.struct_trail import (
     append_trail,
     extend_trail,
     get_trail,
+    render_trail_as_note,
 )
 
 __all__ = (
@@ -24,4 +25,5 @@ __all__ = (
     'append_trail',
     'extend_trail',
     'get_trail',
+    'render_trail_as_note',
 )

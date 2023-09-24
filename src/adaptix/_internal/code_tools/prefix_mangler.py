@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable, Optional, overload
+from typing import Any, Callable, Optional, TypeVar, overload
 
 from adaptix._internal.utils import get_prefix_groups
 
@@ -30,15 +30,18 @@ class MangledConstant:
         raise AttributeError("Can not rewrite MangledConstant at instance")
 
 
-def mangling_method(prefix: str):
-    def decorator(func: Callable[..., str]) -> Callable[..., str]:
+ReturnsStrT = TypeVar('ReturnsStrT', bound=Callable[..., str])
+
+
+def mangling_method(*, prefix: str):
+    def decorator(func: ReturnsStrT) -> ReturnsStrT:
         @wraps(func)
         def wrapped_method(self, *args, **kwargs):
             return prefix + func(self, *args, **kwargs)
 
         # pylint: disable=protected-access
         wrapped_method._mangling_method_prefix = prefix  # type: ignore[attr-defined]
-        return wrapped_method
+        return wrapped_method  # type: ignore[return-value]
 
     return decorator
 

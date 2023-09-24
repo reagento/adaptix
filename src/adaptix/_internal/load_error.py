@@ -85,7 +85,7 @@ class NoRequiredFieldsError(LoadError):
 @custom_exception
 @dataclass(eq=False)
 class NoRequiredItemsError(LoadError):
-    list_len: int
+    expected_len: int
 
 
 @custom_exception

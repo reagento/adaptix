@@ -59,6 +59,8 @@ dataclass-factory==2.16
     # via -r requirements/raw/bench.txt
 dill==0.3.6
     # via pylint
+dirty-equals==0.6.0
+    # via -r requirements/raw/test_extra_none.txt
 distlib==0.3.7
     # via virtualenv
 dlint==0.14.1
@@ -248,7 +250,9 @@ python-dateutil==2.8.2
 python-json-logger==2.0.7
     # via -r requirements/raw/test_extra_none.txt
 pytz==2022.7.1
-    # via babel
+    # via
+    #   babel
+    #   dirty-equals
 pyyaml==6.0
     # via
     #   bandit

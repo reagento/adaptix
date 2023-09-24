@@ -3,7 +3,8 @@ from types import FunctionType
 from typing import Any, Dict, Optional, Union
 
 import pytest
-from tests_helpers import TestRetort, full_match_regex_str, type_of
+from dirty_equals import IsInstance
+from tests_helpers import TestRetort, full_match_regex_str
 
 from adaptix import DebugTrail, NameStyle, Provider, bound, name_mapping
 from adaptix._internal.model_tools.definitions import (
@@ -662,7 +663,7 @@ def test_omit_default():
         DEFAULT_NAME_MAPPING,
     )
     assert layouts == Layouts(
-        type_of(InputNameLayout),
+        IsInstance(InputNameLayout),
         OutputNameLayout(
             crown=OutDictCrown(
                 map={
@@ -671,8 +672,8 @@ def test_omit_default():
                     'c': OutFieldCrown('c_'),
                 },
                 sieves={
-                    'b': type_of(FunctionType),
-                    'c': type_of(FunctionType),
+                    'b': IsInstance(FunctionType),
+                    'c': IsInstance(FunctionType),
                 },
             ),
             extra_move=None,
@@ -689,7 +690,7 @@ def test_omit_default():
         DEFAULT_NAME_MAPPING,
     )
     assert layouts == Layouts(
-        type_of(InputNameLayout),
+        IsInstance(InputNameLayout),
         OutputNameLayout(
             crown=OutDictCrown(
                 map={
@@ -769,7 +770,7 @@ def test_input_extra_dict(extra_in, extra_policy, extra_move):
             ),
             extra_move=extra_move,
         ),
-        type_of(OutputNameLayout),
+        IsInstance(OutputNameLayout),
     )
 
 
@@ -815,7 +816,7 @@ def test_output_extra_dict(extra_out, extra_move):
         DEFAULT_NAME_MAPPING,
     )
     assert layouts == Layouts(
-        type_of(InputNameLayout),
+        IsInstance(InputNameLayout),
         OutputNameLayout(
             crown=OutDictCrown(
                 map={} if isinstance(extra_move, ExtraTargets) else {'a': OutFieldCrown('a')},

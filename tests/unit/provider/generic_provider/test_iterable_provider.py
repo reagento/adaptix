@@ -25,7 +25,7 @@ from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.load_error import LoadExceptionGroup
 from adaptix._internal.provider.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.provider.generic_provider import IterableProvider
-from adaptix._internal.struct_trail import append_trail
+from adaptix._internal.struct_trail import append_trail, extend_trail
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
 
 
@@ -90,17 +90,14 @@ def test_loading(retort, strict_coercion, debug_trail):
         raises_exc(
             ExcludedTypeLoadError(Mapping),
             lambda: loader_({"a": 0, "b": 0, "c": 0}),
-            trail=[],
         )
         raises_exc(
             ExcludedTypeLoadError(Mapping),
             lambda: loader_(collections.ChainMap({"a": 0, "b": 0, "c": 0})),
-            trail=[],
         )
         raises_exc(
             ExcludedTypeLoadError(str),
             lambda: loader_("abc"),
-            trail=[],
         )
         if debug_trail == DebugTrail.ALL:
             raises_exc(
@@ -126,14 +123,18 @@ def test_loading(retort, strict_coercion, debug_trail):
             )
         else:
             raises_exc(
-                TypeLoadError(str),
+                extend_trail(
+                    TypeLoadError(str),
+                    [] if debug_trail == DebugTrail.DISABLE else [0],
+                ),
                 lambda: loader_([1, 2, 3]),
-                trail=[] if debug_trail == DebugTrail.DISABLE else [0],
             )
             raises_exc(
-                TypeLoadError(str),
+                extend_trail(
+                    TypeLoadError(str),
+                    [] if debug_trail == DebugTrail.DISABLE else [1]
+                ),
                 lambda: loader_(["1", 2, 3]),
-                trail=[] if debug_trail == DebugTrail.DISABLE else [1],
             )
 
 
@@ -160,9 +161,8 @@ def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            TypeError(),
+            extend_trail(TypeError(), [1]),
             lambda: loader_(["1", 2, 3]),
-            trail=[1],
         )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
@@ -240,14 +240,12 @@ def test_dumping(retort, debug_trail):
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            TypeError(),
+            extend_trail(TypeError(), [0]),
             lambda: iterable_dumper([10, '20']),
-            trail=[0],
         )
         raises_exc(
-            TypeError(),
+            extend_trail(TypeError(), [1]),
             lambda: iterable_dumper(['10', 20]),
-            trail=[1],
         )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(

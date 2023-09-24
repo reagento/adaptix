@@ -6,6 +6,8 @@
 #
 -e ./tests/tests_helpers
     # via -r requirements/raw/test_extra_none.txt
+dirty-equals==0.6.0
+    # via -r requirements/raw/test_extra_none.txt
 greenlet==2.0.2
     # via sqlalchemy
 iniconfig==2.0.0
@@ -22,6 +24,8 @@ pytest==7.4.2
     # via -r requirements/raw/test_extra_none.txt
 python-json-logger==2.0.7
     # via -r requirements/raw/test_extra_none.txt
+pytz==2023.3.post1
+    # via dirty-equals
 sqlalchemy==2.0.20
     # via -r requirements/raw/test_extra_none.txt
 typing-extensions==4.5.0

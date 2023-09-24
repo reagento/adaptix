@@ -1,14 +1,17 @@
 import contextlib
+from collections import deque
 from textwrap import dedent
-from typing import Generator, Iterable, List, Sequence, TypeVar
+from typing import Deque, Generator, Iterable, Sequence, TypeVar
 
 CB = TypeVar('CB', bound='CodeBuilder')
 
 
 class CodeBuilder:
+    __slots__ = ('_lines', '_current_indent', '_indent_delta')
+
     def __init__(self, indent_delta: int = 4):
-        self._lines: List[str] = []
-        self._cur_indent = 0
+        self._lines: Deque[str] = deque()
+        self._current_indent = 0
         self._indent_delta = indent_delta
 
     @property
@@ -24,12 +27,12 @@ class CodeBuilder:
             return dedent(line_or_text).strip("\n").split("\n")
         return [line_or_text]
 
-    def _add_indenting_lines(self, lines: Iterable[str]):
-        if self._cur_indent == 0:
+    def _add_indented_lines(self, lines: Iterable[str]):
+        if self._current_indent == 0:
             self._lines.extend(lines)
             return
 
-        indent = " " * self._cur_indent
+        indent = " " * self._current_indent
         self._lines.extend(
             indent + line
             for line in lines
@@ -38,7 +41,7 @@ class CodeBuilder:
     def __call__(self: CB, line_or_text: str) -> CB:
         """Append lines to builder"""
         lines = self._extract_lines(line_or_text)
-        self._add_indenting_lines(lines)
+        self._add_indented_lines(lines)
         return self
 
     __add__ = __call__
@@ -52,7 +55,7 @@ class CodeBuilder:
             self._lines[-1] += first_line
         else:
             self._lines.append(first_line)
-        self._add_indenting_lines(other_lines)
+        self._add_indented_lines(other_lines)
         return self
 
     __lshift__ = include
@@ -64,21 +67,25 @@ class CodeBuilder:
 
     @contextlib.contextmanager
     def indent(self, indent_delta: int) -> Generator[None, None, None]:
-        self._cur_indent += indent_delta
+        self._current_indent += indent_delta
         try:
             yield
         finally:
-            self._cur_indent -= indent_delta
+            self._current_indent -= indent_delta
 
     def __enter__(self):
-        self._cur_indent += self._indent_delta
+        self._current_indent += self._indent_delta
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._cur_indent -= self._indent_delta
+        self._current_indent -= self._indent_delta
 
     def extend(self: CB, other: CB) -> CB:
-        self._add_indenting_lines(other.lines)
+        self._add_indented_lines(other._lines)  # pylint: disable=protected-access
+        return self
+
+    def extend_above(self: CB, other: CB) -> CB:
+        self._lines.extendleft(reversed(other._lines))  # pylint: disable=protected-access
         return self
 
     def string(self) -> str:
-        return "\n".join(self.lines)
+        return "\n".join(self._lines)

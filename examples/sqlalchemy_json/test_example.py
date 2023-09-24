@@ -118,7 +118,7 @@ def test_update(session):
 def test_mutation_tracking(session_factory):
     """SQLAlchemy flushes object only if there are some that are marked as modified (dirty).
     The instance becomes dirty when ``__setattr__`` is invoked.
-    So, SQLAlchemy can not track the mutation of object associated with attribute.
+    So, SQLAlchemy cannot track the mutation of object associated with attribute.
 
     There are 3 workarounds to solve this problem:
     1) Modify the entire object graph to track mutation at any edge.

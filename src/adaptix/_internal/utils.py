@@ -315,7 +315,9 @@ class ComparableSequence(Protocol[T]):
         ...
 
 
-def get_prefix_groups(values: Collection[ComparableSeqT]) -> Iterable[Tuple[ComparableSeqT, Iterable[ComparableSeqT]]]:
+def get_prefix_groups(
+    values: Collection[ComparableSeqT],
+) -> Collection[Tuple[ComparableSeqT, Iterable[ComparableSeqT]]]:
     groups: List[Tuple[ComparableSeqT, List[ComparableSeqT]]] = []
     sorted_values = iter(sorted(values))
     current_group: List[ComparableSeqT] = []
