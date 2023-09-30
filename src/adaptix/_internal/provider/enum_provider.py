@@ -45,7 +45,7 @@ class EnumNameProvider(BaseEnumProvider):
             try:
                 return enum[data]
             except KeyError:
-                raise BadVariantError(variants)
+                raise BadVariantError(variants) from None
             except TypeError:
                 raise BadVariantError(variants)
 
@@ -126,7 +126,7 @@ class EnumExactValueProvider(BaseEnumProvider):
             try:
                 return value_to_member[data]
             except KeyError:
-                raise BadVariantError(variants)
+                raise BadVariantError(variants) from None
             except TypeError:
                 raise BadVariantError(variants)
 

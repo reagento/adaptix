@@ -70,9 +70,14 @@ def test_outer_loading_no_rec_items():
     no_rec_items_data = change(outer_sample_data, ["items"], [])
 
     raises_exc(
-        extend_trail(
-            ValidationError('At least one item must be presented'),
-            ['items'],
+        LoadExceptionGroup(
+            f'while loading model {Receipt}',
+            [
+                extend_trail(
+                    ValidationError('At least one item must be presented'),
+                    ['items'],
+                )
+            ]
         ),
         lambda: outer_receipt_loader(no_rec_items_data),
     )
@@ -97,29 +102,44 @@ def test_outer_loading_bad_phone():
     bad_phone_data = change(outer_sample_data, ["notify", 0], {"type": "phone", "value": "+1-541-754-3010"})
 
     raises_exc(
-        extend_trail(
-            UnionLoadError(
-                f'while loading {Optional[List[NotifyTarget]]}',
-                [
-                    TypeLoadError(expected_type=None),
-                    LoadExceptionGroup(
-                        f'while loading iterable {list}',
+        LoadExceptionGroup(
+            f'while loading model {Receipt}',
+            [
+                extend_trail(
+                    UnionLoadError(
+                        f'while loading {Optional[List[NotifyTarget]]}',
                         [
-                            extend_trail(
-                                UnionLoadError(
-                                    f'while loading {NotifyTarget}',
-                                    [
-                                        extend_trail(LoadError(), ['type']),
-                                        extend_trail(ValueLoadError(msg='Bad phone number'), ['value']),
-                                    ]
-                                ),
-                                [0],
-                            )
-                        ]
+                            TypeLoadError(expected_type=None),
+                            LoadExceptionGroup(
+                                f'while loading iterable {list}',
+                                [
+                                    extend_trail(
+                                        UnionLoadError(
+                                            f'while loading {NotifyTarget}',
+                                            [
+                                                LoadExceptionGroup(
+                                                    f'while loading model {NotifyEmail}',
+                                                    [
+                                                        extend_trail(LoadError(), ['type'])
+                                                    ]
+                                                ),
+                                                LoadExceptionGroup(
+                                                    f'while loading model {NotifyPhone}',
+                                                    [
+                                                        extend_trail(ValueLoadError(msg='Bad phone number'), ['value'])
+                                                    ]
+                                                ),
+                                            ],
+                                        ),
+                                        [0],
+                                    )
+                                ],
+                            ),
+                        ],
                     ),
-                ]
-            ),
-            ['notify']
+                    ['notify']
+                ),
+            ],
         ),
         lambda: outer_receipt_loader(bad_phone_data),
     )
@@ -129,7 +149,10 @@ def test_outer_loading_bad_receipt_type():
     bad_receipt_type_data = change(outer_sample_data, ["type"], "BAD_TYPE")
 
     raises_exc(
-        extend_trail(BadVariantError(['INCOME', 'INCOME_REFUND']), ['type']),
+        LoadExceptionGroup(
+            f'while loading model {Receipt}',
+            [extend_trail(BadVariantError(['INCOME', 'INCOME_REFUND']), ['type'])]
+        ),
         lambda: outer_receipt_loader(bad_receipt_type_data),
     )
 
@@ -147,14 +170,30 @@ def test_outer_loading_bad_item_quantity():
     bad_quantity_data = change(outer_sample_data, ["items", 0, "quantity"], Decimal(0))
 
     raises_exc(
-        extend_trail(
-            LoadExceptionGroup(
-                f'while loading iterable {list}',
-                [
-                    extend_trail(ValidationError('Value must be > 0'), [0, "quantity"]),
-                ]
-            ),
-            ["items"]
+        LoadExceptionGroup(
+            f'while loading model {Receipt}',
+            [
+                extend_trail(
+                    LoadExceptionGroup(
+                        f'while loading iterable {list}',
+                        [
+                            extend_trail(
+                                LoadExceptionGroup(
+                                    f'while loading model {RecItem!r}',
+                                    [
+                                        extend_trail(
+                                            ValidationError('Value must be > 0'),
+                                            ['quantity'],
+                                        ),
+                                    ]
+                                ),
+                                [0],
+                            ),
+                        ]
+                    ),
+                    ["items"],
+                )
+            ]
         ),
         lambda: outer_receipt_loader(bad_quantity_data),
     )
@@ -164,14 +203,30 @@ def test_outer_loading_bad_item_price():
     bad_price_data = change(outer_sample_data, ["items", 0, "price"], Decimal(-10))
 
     raises_exc(
-        extend_trail(
-            LoadExceptionGroup(
-                f'while loading iterable {list}',
-                [
-                    extend_trail(ValidationError('Value must be >= 0'), [0, 'price'])
-                ],
-            ),
-            ["items"],
+        LoadExceptionGroup(
+            f'while loading model {Receipt}',
+            [
+                extend_trail(
+                    LoadExceptionGroup(
+                        f'while loading iterable {list}',
+                        [
+                            extend_trail(
+                                LoadExceptionGroup(
+                                    f'while loading model {RecItem}',
+                                    [
+                                        extend_trail(
+                                            ValidationError('Value must be >= 0'),
+                                            ['price'],
+                                        )
+                                    ]
+                                ),
+                                [0],
+                            )
+                        ],
+                    ),
+                    ["items"],
+                ),
+            ]
         ),
         lambda: outer_receipt_loader(bad_price_data),
     )
@@ -181,17 +236,30 @@ def test_outer_loading_bad_item_name():
     bad_name_data = change(outer_sample_data, ["items", 0, "name"], 'Matchbox 🔥')
 
     raises_exc(
-        extend_trail(
-            LoadExceptionGroup(
-                f'while loading iterable {list}',
-                [
-                    extend_trail(
-                        ValueLoadError("Char '🔥' can not be represented at CP866"),
-                        [0, 'name'],
-                    )
-                ]
-            ),
-            ["items"]
+        LoadExceptionGroup(
+            f'while loading model {Receipt}',
+            [
+                extend_trail(
+                    LoadExceptionGroup(
+                        f'while loading iterable {list}',
+                        [
+                            extend_trail(
+                                LoadExceptionGroup(
+                                    f'while loading model {RecItem}',
+                                    [
+                                        extend_trail(
+                                            ValueLoadError("Char '🔥' can not be represented at CP866"),
+                                            ['name'],
+                                        )
+                                    ]
+                                ),
+                                [0],
+                            )
+                        ]
+                    ),
+                    ["items"]
+                ),
+            ]
         ),
         lambda: outer_receipt_loader(bad_name_data),
     )

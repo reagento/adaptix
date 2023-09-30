@@ -84,6 +84,7 @@ _CLS_TO_FACTORY_LITERAL: Dict[Any, str] = {
     tuple: '()',
     str: '""',
     bytes: 'b""',
+    type(None): 'None',
 }
 
 

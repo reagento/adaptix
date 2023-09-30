@@ -1,9 +1,10 @@
+import dataclasses
 import importlib.metadata
 import re
 from contextlib import contextmanager
 from copy import copy
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Callable, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Iterable, Optional, Type, TypeVar, Union
 
 import pytest
 from packaging.version import Version
@@ -71,24 +72,31 @@ class TestRetort(AdornedRetort):
 E = TypeVar('E', bound=Exception)
 
 
-def _compare_exc_instance(exc: Exception, reference: Exception):
-    if is_dataclass(reference):
-        assert type(exc) == type(reference)
-        assert asdict(exc) == asdict(reference)
-        assert list(get_trail(exc)) == list(get_trail(reference))
-        if isinstance(reference, CompatExceptionGroup):
-            for sub_exc, sub_reference in zip(exc.exceptions, reference.exceptions):
-                _compare_exc_instance(sub_exc, sub_reference)
-    elif isinstance(reference, CompatExceptionGroup):
-        assert type(exc) == type(reference)
-        assert exc.message == reference.message
-        assert list(get_trail(exc)) == list(get_trail(reference))
-        for sub_exc, sub_reference in zip(exc.exceptions, reference.exceptions):
-            _compare_exc_instance(sub_exc, sub_reference)
-    else:
-        assert type(exc) == type(reference)
-        assert exc.args == reference.args
-        assert list(get_trail(exc)) == list(get_trail(reference))
+def _tech_fields(exc: Exception):
+    return {'__type__': type(exc), '__trail__': list(get_trail(exc))}
+
+
+def _repr_value(obj: Exception):
+    if isinstance(obj, CompatExceptionGroup):
+        return {
+            **_tech_fields(obj),
+            'message': obj.message,
+            'exceptions': [_repr_value(exc) for exc in obj.exceptions],
+        }
+    if isinstance(obj, Exception) and is_dataclass(obj):
+        result = {
+            **_tech_fields(obj),
+            **{fld.name: _repr_value(getattr(obj, fld.name)) for fld in dataclasses.fields(obj)},
+        }
+        if isinstance(obj, CompatExceptionGroup):
+            result['exceptions'] = [_repr_value(exc) for exc in obj.exceptions]
+        return result
+    if isinstance(obj, Exception):
+        return {
+            **_tech_fields(obj),
+            'args': [_repr_value(arg) for arg in obj.args]
+        }
+    return obj
 
 
 def raises_exc(
@@ -102,7 +110,7 @@ def raises_exc(
     with pytest.raises(exc_type, match=match) as exc_info:
         func()
 
-    _compare_exc_instance(exc_info.value, exc)
+    assert _repr_value(exc_info.value) == _repr_value(exc)
 
     return exc_info.value
 

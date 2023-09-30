@@ -7,6 +7,7 @@ from ...code_tools.context_namespace import ContextNamespace
 from ...common import Loader
 from ...compat import CompatExceptionGroup
 from ...load_error import (
+    ExcludedTypeLoadError,
     ExtraFieldsError,
     ExtraItemsError,
     LoadError,
@@ -36,47 +37,30 @@ from .definitions import CodeGenerator, VarBinder
 from .special_cases_optimization import as_is_stub
 
 
-class GenState:
+class Namer:
     KNOWN_KEYS = 'known_keys'
+    HAS_NOT_FOUND_ERROR = 'has_not_found_error'
 
     def __init__(
         self,
-        builder: CodeBuilder,
-        binder: VarBinder,
-        ctx_namespace: ContextNamespace,
-        name_to_field: Dict[str, InputField],
         debug_trail: DebugTrail,
-        root_crown: InpCrown,
+        binder: VarBinder,
+        path_to_suffix: Mapping[CrownPath, str],
+        path: CrownPath,
     ):
-        self.builder = builder
-        self.binder = binder
-        self.ctx_namespace = ctx_namespace
         self.debug_trail = debug_trail
-        self._name_to_field = name_to_field
-
-        self.field_id_to_path: Dict[str, CrownPath] = {}
-        self.path_to_suffix: Dict[CrownPath, str] = {}
-
-        self._last_path_idx = 0
-        self._path: CrownPath = ()
-        self._parent_path: Optional[CrownPath] = None
-        self._crown_stack: List[InpCrown] = [root_crown]
-
-        self.checked_type_paths: Set[CrownPath] = set()
-
-    def _get_path_idx(self, path: CrownPath) -> str:
-        try:
-            return self.path_to_suffix[path]
-        except KeyError:
-            self._last_path_idx += 1
-            suffix = str(self._last_path_idx)
-            self.path_to_suffix[path] = suffix
-            return suffix
+        self.binder = binder
+        self.path_to_suffix = path_to_suffix
+        self._path = path
 
     def _with_path_suffix(self, basis: str, path: CrownPath) -> str:
         if not path:
             return basis
-        return basis + '_' + self._get_path_idx(path)
+        return basis + '_' + self.path_to_suffix[path]
+
+    @property
+    def path(self) -> CrownPath:
+        return self._path
 
     @property
     def v_data(self) -> str:
@@ -91,30 +75,58 @@ class GenState:
         return self._with_path_suffix(self.binder.extra, self._path)
 
     @property
-    def v_parent_data(self) -> str:
-        return self._with_path_suffix(self.binder.data, self.parent_path)
+    def v_has_not_found_error(self) -> str:
+        return self._with_path_suffix(self.HAS_NOT_FOUND_ERROR, self._path)
+
+    def with_trail(self, error_expr: str) -> str:
+        if self.debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
+            if len(self._path) == 0:
+                return error_expr
+            if len(self._path) == 1:
+                return f"append_trail({error_expr}, {self._path[0]!r})"
+            return f"extend_trail({error_expr}, {self._path!r})"
+        return error_expr
+
+    def emit_error(self, error_expr: str) -> str:
+        if self.debug_trail == DebugTrail.ALL:
+            return f"errors.append({self.with_trail(error_expr)})"
+        return f"raise {self.with_trail(error_expr)}"
+
+
+class GenState(Namer):
+    path_to_suffix: Dict[CrownPath, str]
+
+    def __init__(
+        self,
+        builder: CodeBuilder,
+        binder: VarBinder,
+        ctx_namespace: ContextNamespace,
+        name_to_field: Dict[str, InputField],
+        debug_trail: DebugTrail,
+        root_crown: InpCrown,
+    ):
+        self.builder = builder
+        self.ctx_namespace = ctx_namespace
+        self._name_to_field = name_to_field
+
+        self.field_id_to_path: Dict[str, CrownPath] = {}
+
+        self._last_path_idx = 0
+        self._parent_path: Optional[CrownPath] = None
+        self._crown_stack: List[InpCrown] = [root_crown]
+
+        self.checked_type_paths: Set[CrownPath] = set()
+        super().__init__(debug_trail=debug_trail, binder=binder, path_to_suffix={}, path=())
 
     @property
-    def v_parent_extra(self) -> str:
-        return self._with_path_suffix(self.binder.extra, self.parent_path)
+    def parent(self) -> Namer:
+        return Namer(self.debug_trail, self.binder, self.path_to_suffix, self.parent_path)
 
     def v_field_loader(self, field_id: str) -> str:
         return f"loader_{field_id}"
 
     def v_raw_field(self, field: InputField) -> str:
         return f"r_{field.id}"
-
-    @property
-    def v_errors(self) -> str:
-        return "errors"
-
-    @property
-    def v_has_unexpected_error(self) -> str:
-        return "has_unexpected_error"
-
-    @property
-    def path(self) -> CrownPath:
-        return self._path
 
     @property
     def parent_path(self) -> CrownPath:
@@ -134,6 +146,8 @@ class GenState:
         self._parent_path = self._path
         self._path += (key,)
         self._crown_stack.append(crown)
+        self._last_path_idx += 1
+        self.path_to_suffix[self._path] = str(self._last_path_idx)
         yield
         self._crown_stack.pop(-1)
         self._path = past
@@ -142,29 +156,6 @@ class GenState:
     def get_field(self, crown: InpFieldCrown) -> InputField:
         self.field_id_to_path[crown.id] = self._path
         return self._name_to_field[crown.id]
-
-    def with_trail(self, error_expr: str, path: Optional[CrownPath] = None) -> str:
-        if path is None:
-            path = self._path
-        if self.debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
-            if len(path) == 0:
-                return error_expr
-            if len(path) == 1:
-                return f"append_trail({error_expr}, {path[0]!r})"
-            return f"extend_trail({error_expr}, {path!r})"
-        return error_expr
-
-    def emit_error(self, error_expr: str) -> str:
-        if self.debug_trail == DebugTrail.ALL:
-            return f"{self.v_errors}.append({self.with_trail(error_expr, self.path)})"
-        return "raise " + self.with_trail(error_expr, self.path)
-
-    def emit_error_for_from_data_assigment(self, error_expr: str) -> str:
-        if self.debug_trail == DebugTrail.ALL:
-            if isinstance(self._path[-1], str):
-                return f"{self.v_errors}.append({self.with_trail(error_expr, self.parent_path)})"
-            return 'pass'
-        return "raise " + self.with_trail(error_expr, self.parent_path)
 
 
 class BuiltinInputExtractionGen(CodeGenerator):
@@ -220,7 +211,8 @@ class BuiltinInputExtractionGen(CodeGenerator):
             append_trail, extend_trail, render_trail_as_note,
             ExtraFieldsError, ExtraItemsError,
             NoRequiredFieldsError, NoRequiredItemsError,
-            TypeLoadError, LoadError, LoadExceptionGroup,
+            TypeLoadError, ExcludedTypeLoadError,
+            LoadError, LoadExceptionGroup,
         ):
             state.ctx_namespace.add(named_value.__name__, named_value)  # type: ignore[attr-defined]
 
@@ -229,8 +221,9 @@ class BuiltinInputExtractionGen(CodeGenerator):
         state.ctx_namespace.add('CollectionsSequence', collections.abc.Sequence)
 
         if self._debug_trail == DebugTrail.ALL:
-            state.builder += f"{state.v_errors} = []"
-            state.builder += f"{state.v_has_unexpected_error} = False"
+            state.builder += "errors = []"
+            state.builder += "has_unexpected_error = False"
+            state.ctx_namespace.add('constructor', self._shape.constructor)
 
         has_optional_fields = any(
             fld.is_optional and not self._is_extra_target(fld)
@@ -245,18 +238,17 @@ class BuiltinInputExtractionGen(CodeGenerator):
         self._gen_extra_targets_assigment(state)
 
         if self._debug_trail == DebugTrail.ALL:
-            state.ctx_namespace.add('constructor', self._shape.constructor)
             state.builder(
-                f"""
-                if {state.v_errors}:
-                    if {state.v_has_unexpected_error}:
+                """
+                if errors:
+                    if has_unexpected_error:
                         raise CompatExceptionGroup(
-                            f'while loading model {{constructor}}',
-                            [render_trail_as_note(e) for e in {state.v_errors}],
+                            f'while loading model {constructor}',
+                            [render_trail_as_note(e) for e in errors],
                         )
                     raise LoadExceptionGroup(
-                        f'while loading model {{constructor}}',
-                        [render_trail_as_note(e) for e in {state.v_errors}],
+                        f'while loading model {constructor}',
+                        [render_trail_as_note(e) for e in errors],
                     )
                 """
             )
@@ -306,34 +298,66 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
             raise TypeError
 
+    def _gen_raise_bad_type_error(
+        self,
+        state: GenState,
+        bad_type_load_error: str,
+        namer: Optional[Namer] = None,
+    ) -> None:
+        if namer is None:
+            namer = state
+
+        if not namer.path and self._debug_trail == DebugTrail.ALL:
+            state.builder(
+                f"""
+                raise LoadExceptionGroup(
+                    f'while loading model {{constructor}}',
+                    [render_trail_as_note({namer.with_trail(bad_type_load_error)})],
+                )
+                """
+            )
+        else:
+            state.builder(
+                f'raise {namer.with_trail(bad_type_load_error)}'
+            )
+
     def _gen_assigment_from_parent_data(self, state: GenState, *, assign_to: str, ignore_lookup_error=False):
         last_path_el = state.path[-1]
         if isinstance(last_path_el, str):
             lookup_error = 'KeyError'
             bad_type_error = '(TypeError, IndexError)'
             bad_type_load_error = 'TypeLoadError(dict)'
-            not_found_error = f"NoRequiredFieldsError([{last_path_el!r}])"
+            not_found_error = f"NoRequiredFieldsError({state.parent.v_known_keys} - set({state.parent.v_data}))"
         else:
             lookup_error = 'IndexError'
             bad_type_error = '(TypeError, KeyError)'
             bad_type_load_error = 'TypeLoadError(list)'
             not_found_error = f"NoRequiredItemsError({len(state.parent_crown.map)})"
 
-        state.builder(
+        with state.builder(
             f"""
-            try:
-                {assign_to} = {state.v_parent_data}[{last_path_el!r}]
-            except {lookup_error}:
-                {'pass' if ignore_lookup_error else state.emit_error_for_from_data_assigment(not_found_error)}
+                try:
+                    {assign_to} = {state.parent.v_data}[{last_path_el!r}]
+                except {lookup_error}:
             """,
-        )
+        ):
+            if ignore_lookup_error:
+                state.builder += 'pass'
+            elif self._debug_trail == DebugTrail.ALL:
+                if isinstance(state.path[-1], str):
+                    state.builder += f"""
+                        if not {state.parent.v_has_not_found_error}:
+                            errors.append({state.parent.with_trail(not_found_error)})
+                            {state.parent.v_has_not_found_error} = True
+                    """
+                else:
+                    state.builder += 'pass'
+            else:
+                state.builder += f"raise {state.parent.with_trail(not_found_error)}"
+
         if state.parent_path not in state.checked_type_paths:
-            state.builder(
-                f"""
-                except {bad_type_error}:
-                    raise {state.with_trail(bad_type_load_error, state.parent_path)}
-                """
-            )
+            with state.builder(f'except {bad_type_error}:'):
+                self._gen_raise_bad_type_error(state, bad_type_load_error, namer=state.parent)
             state.checked_type_paths.add(state.parent_path)
 
         if self._debug_trail == DebugTrail.FIRST:
@@ -348,8 +372,8 @@ class BuiltinInputExtractionGen(CodeGenerator):
             state.builder(
                 f"""
                 except Exception as e:
-                    {state.v_errors}.append({state.with_trail('e')})
-                    {state.v_has_unexpected_error} = True
+                    errors.append({state.with_trail('e')})
+                    has_unexpected_error = True
                 """
             )
 
@@ -357,63 +381,73 @@ class BuiltinInputExtractionGen(CodeGenerator):
         if not state.path:
             return
 
-        state.builder(f"{state.v_parent_extra}[{state.path[-1]!r}] = {state.v_extra}")
+        state.builder(f"{state.parent.v_extra}[{state.path[-1]!r}] = {state.v_extra}")
+        state.builder.empty_line()
+
+    @contextlib.contextmanager
+    def _maybe_wrap_with_type_load_error_catching(self, state: GenState):
+        if self._debug_trail != DebugTrail.ALL or not state.path:
+            yield
+            return
+
+        with state.builder('try:'):
+            yield
+        state.builder(
+            """
+            except (TypeLoadError, ExcludedTypeLoadError) as e:
+                errors.append(e)
+            """
+        )
+        state.builder.empty_line()
 
     def _gen_dict_crown(self, state: GenState, crown: InpDictCrown):
+        state.ctx_namespace.add(state.v_known_keys, set(crown.map.keys()))
+
         if state.path:
             self._gen_assigment_from_parent_data(state, assign_to=state.v_data)
             state.builder.empty_line()
 
         if self._can_collect_extra:
-            state.builder(f"{state.v_extra} = {{}}")
+            state.builder += f"{state.v_extra} = {{}}"
+        if self._debug_trail == DebugTrail.ALL:
+            state.builder += f"{state.v_has_not_found_error} = False"
 
-        for key, value in crown.map.items():
-            self._gen_crown_dispatch(state, value, key)
+        with self._maybe_wrap_with_type_load_error_catching(state):
+            if crown.map:
+                for key, value in crown.map.items():
+                    self._gen_crown_dispatch(state, value, key)
+            else:
+                with state.builder(f'if not isinstance({state.v_data}, CollectionsMapping):'):
+                    self._gen_raise_bad_type_error(state, 'TypeLoadError(dict)')
+                state.builder.empty_line()
 
-        if not crown.map:
-            state.builder(
-                f"""
-                if not isinstance({state.v_data}, CollectionsMapping):
-                    raise {state.with_trail('TypeLoadError(dict)')}
+            data = state.v_data
+            extra = state.v_extra
+            if crown.extra_policy == ExtraForbid():
+                state.builder += f"""
+                    {extra}_set = set({data}) - {state.v_known_keys}
+                    if {extra}_set:
+                        {state.emit_error(f"ExtraFieldsError({extra}_set)")}
                 """
-            )
-            state.builder.empty_line()
-
-        if crown.extra_policy in (ExtraForbid(), ExtraCollect()):
-            state.ctx_namespace.add(state.v_known_keys, set(crown.map.keys()))
-
-        data = state.v_data
-        extra = state.v_extra
-        if crown.extra_policy == ExtraForbid():
-            state.builder += f"""
-                {extra}_set = set({data}) - {state.v_known_keys}
-                if {extra}_set:
-                    {state.emit_error(f"ExtraFieldsError({extra}_set)")}
-            """
-            state.builder.empty_line()
-        elif crown.extra_policy == ExtraCollect():
-            state.builder += f"""
-                for key in set({data}) - {state.v_known_keys}:
-                    {extra}[key] = {data}[key]
-            """
-            state.builder.empty_line()
+                state.builder.empty_line()
+            elif crown.extra_policy == ExtraCollect():
+                state.builder += f"""
+                    for key in set({data}) - {state.v_known_keys}:
+                        {extra}[key] = {data}[key]
+                """
+                state.builder.empty_line()
 
         if self._can_collect_extra:
             self._gen_add_self_extra_to_parent_extra(state)
+
+    def _gen_forbidden_sequence_check(self, state: GenState) -> None:
+        with state.builder(f'if type({state.v_data}) is str:'):
+            self._gen_raise_bad_type_error(state, 'ExcludedTypeLoadError(str)')
 
     def _gen_list_crown(self, state: GenState, crown: InpListCrown):
         if state.path:
             self._gen_assigment_from_parent_data(state, assign_to=state.v_data)
             state.builder.empty_line()
-
-        if self._strict_coercion:
-            state.builder(
-                # TODO: fix raise
-                f"""
-                if type({state.v_data}) is str:
-                    raise {state.with_trail('TypeLoadError(list)')}
-                """
-            )
 
         if self._can_collect_extra:
             list_literal: list = [
@@ -422,33 +456,33 @@ class BuiltinInputExtractionGen(CodeGenerator):
             ]
             state.builder(f"{state.v_extra} = {list_literal!r}")
 
-        for key, value in enumerate(crown.map):
-            self._gen_crown_dispatch(state, value, key)
+        with self._maybe_wrap_with_type_load_error_catching(state):
+            if self._strict_coercion:
+                self._gen_forbidden_sequence_check(state)
 
-        if not crown.map:
-            state.builder(
-                f"""
-                if not isinstance({state.v_data}, CollectionsSequence):
-                    raise {state.with_trail('TypeLoadError(list)')}
+            if crown.map:
+                for key, value in enumerate(crown.map):
+                    self._gen_crown_dispatch(state, value, key)
+            else:
+                with state.builder(f'if not isinstance({state.v_data}, CollectionsSequence):'):
+                    self._gen_raise_bad_type_error(state, 'TypeLoadError(list)')
+                state.builder.empty_line()
+
+            list_len = len(crown.map)
+
+            if crown.extra_policy == ExtraForbid():
+                state.builder += f"""
+                    if len({state.v_data}) != {list_len}:
+                        if len({state.v_data}) < {list_len}:
+                            {state.emit_error(f"NoRequiredItemsError({list_len})")}
+                        else:
+                            {state.emit_error(f"ExtraItemsError({list_len})")}
                 """
-            )
-            state.builder.empty_line()
-
-        list_len = len(crown.map)
-
-        if crown.extra_policy == ExtraForbid():
-            state.builder += f"""
-                if len({state.v_data}) != {list_len}:
+            else:
+                state.builder += f"""
                     if len({state.v_data}) < {list_len}:
                         {state.emit_error(f"NoRequiredItemsError({list_len})")}
-                    else:
-                        {state.emit_error(f"ExtraItemsError({list_len})")}
-            """
-        else:
-            state.builder += f"""
-                if len({state.v_data}) < {list_len}:
-                    {state.emit_error(f"NoRequiredItemsError({list_len})")}
-            """
+                """
 
         if self._can_collect_extra:
             self._gen_add_self_extra_to_parent_extra(state)
