@@ -5,7 +5,7 @@ import pytest
 from tests_helpers import raises_exc
 
 from adaptix import DebugTrail, Retort
-from adaptix._internal.load_error import LoadExceptionGroup
+from adaptix._internal.load_error import AggregateLoadError
 from adaptix._internal.struct_trail import extend_trail
 from adaptix.load_error import TypeLoadError
 from adaptix.struct_trail import get_trail
@@ -41,7 +41,7 @@ def test_simple_int(accum):
     assert loader({'field1': 1, 'field2': 1}) == ExampleInt(field1=1, field2=1)
 
     raises_exc(
-        LoadExceptionGroup(
+        AggregateLoadError(
             f'while loading model {ExampleInt}',
             [
                 extend_trail(

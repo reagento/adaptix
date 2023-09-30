@@ -47,12 +47,26 @@ class LoadError(Exception):
 @custom_exception(str_by_fields=False)
 @dataclass(eq=False, init=False)
 class LoadExceptionGroup(CompatExceptionGroup, LoadError):
+    """The base class integrating ``ExceptionGroup`` into the ``LoadError`` hierarchy"""
+
     message: str
     exceptions: VarTuple[LoadError]
 
     if TYPE_CHECKING:
         def __init__(self, message: str, exceptions: Sequence[LoadError]):
             pass
+
+
+@custom_exception(str_by_fields=False)
+@dataclass(eq=False, init=False)
+class AggregateLoadError(LoadExceptionGroup):
+    """The class collecting distinct load errors"""
+
+
+@custom_exception(str_by_fields=False)
+@dataclass(eq=False, init=False)
+class UnionLoadError(LoadExceptionGroup):
+    pass
 
 
 @custom_exception(str_by_fields=False)
@@ -96,14 +110,8 @@ class TypeLoadError(LoadError):
 
 @custom_exception
 @dataclass(eq=False)
-class ExcludedTypeLoadError(LoadError):
+class ExcludedTypeLoadError(TypeLoadError):
     excluded_type: TypeHint
-
-
-@custom_exception(str_by_fields=False)
-@dataclass(eq=False, init=False)
-class UnionLoadError(LoadExceptionGroup):
-    pass
 
 
 @custom_exception(str_by_fields=False)

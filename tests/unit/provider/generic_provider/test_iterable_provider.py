@@ -22,7 +22,7 @@ from tests_helpers import TestRetort, raises_exc
 
 from adaptix import DebugTrail, NoSuitableProvider, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.load_error import LoadExceptionGroup
+from adaptix._internal.load_error import AggregateLoadError
 from adaptix._internal.provider.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.provider.generic_provider import IterableProvider
 from adaptix._internal.struct_trail import append_trail, extend_trail
@@ -88,20 +88,20 @@ def test_loading(retort, strict_coercion, debug_trail):
 
     if strict_coercion:
         raises_exc(
-            ExcludedTypeLoadError(Mapping),
+            ExcludedTypeLoadError(Iterable, Mapping),
             lambda: loader_({"a": 0, "b": 0, "c": 0}),
         )
         raises_exc(
-            ExcludedTypeLoadError(Mapping),
+            ExcludedTypeLoadError(Iterable, Mapping),
             lambda: loader_(collections.ChainMap({"a": 0, "b": 0, "c": 0})),
         )
         raises_exc(
-            ExcludedTypeLoadError(str),
+            ExcludedTypeLoadError(Iterable, str),
             lambda: loader_("abc"),
         )
         if debug_trail == DebugTrail.ALL:
             raises_exc(
-                LoadExceptionGroup(
+                AggregateLoadError(
                     "while loading iterable <class 'list'>",
                     [
                         append_trail(TypeLoadError(str), 0),
@@ -112,7 +112,7 @@ def test_loading(retort, strict_coercion, debug_trail):
                 lambda: loader_([1, 2, 3]),
             )
             raises_exc(
-                LoadExceptionGroup(
+                AggregateLoadError(
                     "while loading iterable <class 'list'>",
                     [
                         append_trail(TypeLoadError(str), 1),

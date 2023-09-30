@@ -7,11 +7,11 @@ from ...code_tools.context_namespace import ContextNamespace
 from ...common import Loader
 from ...compat import CompatExceptionGroup
 from ...load_error import (
+    AggregateLoadError,
     ExcludedTypeLoadError,
     ExtraFieldsError,
     ExtraItemsError,
     LoadError,
-    LoadExceptionGroup,
     NoRequiredFieldsError,
     NoRequiredItemsError,
     TypeLoadError,
@@ -212,7 +212,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
             ExtraFieldsError, ExtraItemsError,
             NoRequiredFieldsError, NoRequiredItemsError,
             TypeLoadError, ExcludedTypeLoadError,
-            LoadError, LoadExceptionGroup,
+            LoadError, AggregateLoadError,
         ):
             state.ctx_namespace.add(named_value.__name__, named_value)  # type: ignore[attr-defined]
 
@@ -246,7 +246,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                             f'while loading model {constructor}',
                             [render_trail_as_note(e) for e in errors],
                         )
-                    raise LoadExceptionGroup(
+                    raise AggregateLoadError(
                         f'while loading model {constructor}',
                         [render_trail_as_note(e) for e in errors],
                     )
@@ -310,7 +310,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
         if not namer.path and self._debug_trail == DebugTrail.ALL:
             state.builder(
                 f"""
-                raise LoadExceptionGroup(
+                raise AggregateLoadError(
                     f'while loading model {{constructor}}',
                     [render_trail_as_note({namer.with_trail(bad_type_load_error)})],
                 )
@@ -326,12 +326,12 @@ class BuiltinInputExtractionGen(CodeGenerator):
         if isinstance(last_path_el, str):
             lookup_error = 'KeyError'
             bad_type_error = '(TypeError, IndexError)'
-            bad_type_load_error = 'TypeLoadError(dict)'
+            bad_type_load_error = 'TypeLoadError(CollectionsMapping)'
             not_found_error = f"NoRequiredFieldsError({state.parent.v_known_keys} - set({state.parent.v_data}))"
         else:
             lookup_error = 'IndexError'
             bad_type_error = '(TypeError, KeyError)'
-            bad_type_load_error = 'TypeLoadError(list)'
+            bad_type_load_error = 'TypeLoadError(CollectionsSequence)'
             not_found_error = f"NoRequiredItemsError({len(state.parent_crown.map)})"
 
         with state.builder(
@@ -394,7 +394,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
             yield
         state.builder(
             """
-            except (TypeLoadError, ExcludedTypeLoadError) as e:
+            except TypeLoadError as e:
                 errors.append(e)
             """
         )
@@ -418,7 +418,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                     self._gen_crown_dispatch(state, value, key)
             else:
                 with state.builder(f'if not isinstance({state.v_data}, CollectionsMapping):'):
-                    self._gen_raise_bad_type_error(state, 'TypeLoadError(dict)')
+                    self._gen_raise_bad_type_error(state, 'TypeLoadError(CollectionsMapping)')
                 state.builder.empty_line()
 
             data = state.v_data
@@ -442,7 +442,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
 
     def _gen_forbidden_sequence_check(self, state: GenState) -> None:
         with state.builder(f'if type({state.v_data}) is str:'):
-            self._gen_raise_bad_type_error(state, 'ExcludedTypeLoadError(str)')
+            self._gen_raise_bad_type_error(state, 'ExcludedTypeLoadError(CollectionsSequence, str)')
 
     def _gen_list_crown(self, state: GenState, crown: InpListCrown):
         if state.path:
@@ -465,7 +465,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                     self._gen_crown_dispatch(state, value, key)
             else:
                 with state.builder(f'if not isinstance({state.v_data}, CollectionsSequence):'):
-                    self._gen_raise_bad_type_error(state, 'TypeLoadError(list)')
+                    self._gen_raise_bad_type_error(state, 'TypeLoadError(CollectionsSequence)')
                 state.builder.empty_line()
 
             list_len = len(crown.map)

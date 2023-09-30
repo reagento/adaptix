@@ -6,7 +6,7 @@ from typing import Any, Callable, Collection, Container, Dict, Iterable, Literal
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
 from ..essential import CannotProvide, Mediator
-from ..load_error import ExcludedTypeLoadError, LoadError, LoadExceptionGroup, TypeLoadError, UnionLoadError
+from ..load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError, UnionLoadError
 from ..struct_trail import ItemKey, append_trail, render_trail_as_note
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
 from ..type_tools.normalize_type import NotSubscribedError
@@ -398,7 +398,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
                         f'while loading iterable {origin}',
                         [render_trail_as_note(e) for e in errors],
                     )
-                raise LoadExceptionGroup(
+                raise AggregateLoadError(
                     f'while loading iterable {origin}',
                     [render_trail_as_note(e) for e in errors],
                 )
@@ -436,9 +436,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
     def _get_dt_sc_loader(self, iter_factory, iter_mapper):
         def iter_loader_dt_sc(data):
             if isinstance(data, CollectionsMapping):
-                raise ExcludedTypeLoadError(Mapping)
+                raise ExcludedTypeLoadError(Iterable, Mapping)
             if type(data) is str:  # pylint: disable=unidiomatic-typecheck
-                raise ExcludedTypeLoadError(str)
+                raise ExcludedTypeLoadError(Iterable, str)
 
             try:
                 value_iter = iter(data)
@@ -452,9 +452,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
     def _get_dt_disable_sc_loader(self, iter_factory, arg_loader):
         def iter_loader_sc(data):
             if isinstance(data, CollectionsMapping):
-                raise ExcludedTypeLoadError(Mapping)
+                raise ExcludedTypeLoadError(Iterable, Mapping)
             if type(data) is str:  # pylint: disable=unidiomatic-typecheck
-                raise ExcludedTypeLoadError(str)
+                raise ExcludedTypeLoadError(Iterable, str)
 
             try:
                 map_iter = map(arg_loader, data)
@@ -675,7 +675,7 @@ class DictProvider(LoaderProvider, DumperProvider):
                         f'while loading {dict}',
                         [render_trail_as_note(e) for e in errors],
                     )
-                raise LoadExceptionGroup(
+                raise AggregateLoadError(
                     f'while loading {dict}',
                     [render_trail_as_note(e) for e in errors],
                 )

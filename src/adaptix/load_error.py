@@ -1,4 +1,5 @@
 from adaptix._internal.load_error import (
+    AggregateLoadError,
     BadVariantError,
     DatetimeFormatMismatch,
     ExcludedTypeLoadError,
@@ -18,13 +19,14 @@ from adaptix._internal.load_error import (
 __all__ = (
     'LoadError',
     'LoadExceptionGroup',
+    'AggregateLoadError',
     'MsgError',
     'ExtraFieldsError',
     'ExtraItemsError',
     'TypeLoadError',
+    'ExcludedTypeLoadError',
     'NoRequiredFieldsError',
     'NoRequiredItemsError',
-    'ExcludedTypeLoadError',
     'UnionLoadError',
     'ValueLoadError',
     'ValidationError',
