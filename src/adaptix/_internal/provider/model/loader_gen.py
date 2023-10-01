@@ -16,7 +16,7 @@ from ...load_error import (
     NoRequiredItemsError,
     TypeLoadError,
 )
-from ...model_tools.definitions import InputField, InputShape
+from ...model_tools.definitions import InputField, InputShape, ParamKind
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
 from ..definitions import DebugTrail
 from .crown_definitions import (
@@ -25,6 +25,8 @@ from .crown_definitions import (
     CrownPathElem,
     ExtraCollect,
     ExtraForbid,
+    ExtraKwargs,
+    ExtraSaturate,
     ExtraTargets,
     InpCrown,
     InpDictCrown,
@@ -38,25 +40,20 @@ from .special_cases_optimization import as_is_stub
 
 
 class Namer:
-    KNOWN_KEYS = 'known_keys'
-    HAS_NOT_FOUND_ERROR = 'has_not_found_error'
-
     def __init__(
         self,
         debug_trail: DebugTrail,
-        binder: VarBinder,
         path_to_suffix: Mapping[CrownPath, str],
         path: CrownPath,
     ):
         self.debug_trail = debug_trail
-        self.binder = binder
         self.path_to_suffix = path_to_suffix
         self._path = path
 
-    def _with_path_suffix(self, basis: str, path: CrownPath) -> str:
-        if not path:
+    def _with_path_suffix(self, basis: str) -> str:
+        if not self._path:
             return basis
-        return basis + '_' + self.path_to_suffix[path]
+        return basis + '_' + self.path_to_suffix[self._path]
 
     @property
     def path(self) -> CrownPath:
@@ -64,19 +61,19 @@ class Namer:
 
     @property
     def v_data(self) -> str:
-        return self._with_path_suffix(self.binder.data, self._path)
+        return self._with_path_suffix('data')
 
     @property
     def v_known_keys(self) -> str:
-        return self._with_path_suffix(self.KNOWN_KEYS, self._path)
+        return self._with_path_suffix('known_keys')
 
     @property
     def v_extra(self) -> str:
-        return self._with_path_suffix(self.binder.extra, self._path)
+        return self._with_path_suffix('extra')
 
     @property
     def v_has_not_found_error(self) -> str:
-        return self._with_path_suffix(self.HAS_NOT_FOUND_ERROR, self._path)
+        return self._with_path_suffix('has_not_found_error')
 
     def with_trail(self, error_expr: str) -> str:
         if self.debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
@@ -99,7 +96,6 @@ class GenState(Namer):
     def __init__(
         self,
         builder: CodeBuilder,
-        binder: VarBinder,
         ctx_namespace: ContextNamespace,
         name_to_field: Dict[str, InputField],
         debug_trail: DebugTrail,
@@ -116,16 +112,19 @@ class GenState(Namer):
         self._crown_stack: List[InpCrown] = [root_crown]
 
         self.checked_type_paths: Set[CrownPath] = set()
-        super().__init__(debug_trail=debug_trail, binder=binder, path_to_suffix={}, path=())
+        super().__init__(debug_trail=debug_trail, path_to_suffix={}, path=())
 
     @property
     def parent(self) -> Namer:
-        return Namer(self.debug_trail, self.binder, self.path_to_suffix, self.parent_path)
+        return Namer(self.debug_trail, self.path_to_suffix, self.parent_path)
 
     def v_field_loader(self, field_id: str) -> str:
         return f"loader_{field_id}"
 
     def v_raw_field(self, field: InputField) -> str:
+        return f"r_{field.id}"
+
+    def v_field(self, field: InputField) -> str:
         return f"r_{field.id}"
 
     @property
@@ -158,8 +157,8 @@ class GenState(Namer):
         return self._name_to_field[crown.id]
 
 
-class BuiltinInputExtractionGen(CodeGenerator):
-    """BuiltinInputExtractionGen generates code that extracts raw values from input data,
+class BuiltinInputModelLoaderGen(CodeGenerator):
+    """BuiltinInputModelLoaderGen generates code that extracts raw values from input data,
     calls loaders and stores results to variables.
     """
 
@@ -191,18 +190,24 @@ class BuiltinInputExtractionGen(CodeGenerator):
             field.id in self._name_layout.extra_move.fields
         )
 
-    def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
+    def _create_state(self, ctx_namespace: ContextNamespace) -> GenState:
         return GenState(
             builder=CodeBuilder(),
-            binder=binder,
             ctx_namespace=ctx_namespace,
             name_to_field=self._name_to_field,
             debug_trail=self._debug_trail,
             root_crown=self._name_layout.crown,
         )
 
-    def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
-        state = self._create_state(binder, ctx_namespace)
+    @property
+    def has_optional_fields(self):
+        return any(
+            fld.is_optional and not self._is_extra_target(fld)
+            for fld in self._shape.fields
+        )
+
+    def produce_code(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
+        state = self._create_state(ctx_namespace)
 
         for field_id, loader in self._field_loaders.items():
             state.ctx_namespace.add(state.v_field_loader(field_id), loader)
@@ -225,11 +230,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
             state.builder += "has_unexpected_error = False"
             state.ctx_namespace.add('constructor', self._shape.constructor)
 
-        has_optional_fields = any(
-            fld.is_optional and not self._is_extra_target(fld)
-            for fld in self._shape.fields
-        )
-        if has_optional_fields:
+        if self.has_optional_fields:
             state.builder += f"{binder.opt_fields} = {{}}"
 
         if not self._gen_root_crown_dispatch(state, self._name_layout.crown):
@@ -254,6 +255,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
             )
             state.builder.empty_line()
 
+        self._gen_constructor_call(state)
         self._gen_header(state)
         return state.builder
 
@@ -274,6 +276,42 @@ class BuiltinInputExtractionGen(CodeGenerator):
             header_builder.empty_line()
 
         state.builder.extend_above(header_builder)
+
+    def _gen_constructor_call(self, state: GenState) -> None:
+        state.ctx_namespace.add('constructor', self._shape.constructor)
+
+        constructor_builder = CodeBuilder()
+        with constructor_builder("constructor("):
+            for param in self._shape.params:
+                field = self._shape.fields_dict[param.field_id]
+
+                if field.is_required or self._is_extra_target(field):
+                    value = state.v_field(field)
+                else:
+                    continue
+
+                if param.kind == ParamKind.KW_ONLY:
+                    constructor_builder(f"{param.name}={value},")
+                else:
+                    constructor_builder(f"{value},")
+
+            if self.has_optional_fields:
+                constructor_builder("**opt_fields,")
+
+            if self._name_layout.extra_move == ExtraKwargs():
+                constructor_builder(f"**{state.v_extra},")
+
+        constructor_builder += ")"
+
+        if isinstance(self._name_layout.extra_move, ExtraSaturate):
+            state.ctx_namespace.add('saturator', self._name_layout.extra_move.func)
+            state.builder += "result = "
+            state.builder.extend_including(constructor_builder)
+            state.builder += f"saturator(result, {state.v_extra})"
+            state.builder += "return result"
+        else:
+            state.builder += "return "
+            state.builder.extend_including(constructor_builder)
 
     def _gen_root_crown_dispatch(self, state: GenState, crown: InpCrown) -> bool:
         """Returns True if code is generated"""
@@ -490,10 +528,10 @@ class BuiltinInputExtractionGen(CodeGenerator):
     def _gen_field_crown(self, state: GenState, crown: InpFieldCrown):
         field = state.get_field(crown)
         if field.is_required:
-            field_assign_to = state.binder.field(field)
+            field_assign_to = state.v_field(field)
             ignore_lookup_error = False
         else:
-            field_assign_to = f"{state.binder.opt_fields}[{field.id!r}]"
+            field_assign_to = f"opt_fields[{field.id!r}]"
             ignore_lookup_error = True
 
         self._gen_assigment_from_parent_data(
@@ -550,7 +588,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                 field = self._name_to_field[target]
 
                 self._gen_field_assigment(
-                    assign_to=state.binder.field(field),
+                    assign_to=state.v_field(field),
                     field_id=target,
                     loader_arg=state.v_extra,
                     state=state,
@@ -560,7 +598,7 @@ class BuiltinInputExtractionGen(CodeGenerator):
                 field = self._name_to_field[target]
                 if field.is_required:
                     self._gen_field_assigment(
-                        assign_to=state.binder.field(field),
+                        assign_to=state.v_field(field),
                         field_id=target,
                         loader_arg="{}",
                         state=state,

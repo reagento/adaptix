@@ -1,5 +1,6 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Protocol, TypeVar
+from typing import TypeVar
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
@@ -30,6 +31,7 @@ class VarBinder(PrefixManglerBase):
         return field.id
 
 
-class CodeGenerator(Protocol):
-    def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
+class CodeGenerator(ABC):
+    @abstractmethod
+    def produce_code(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         ...

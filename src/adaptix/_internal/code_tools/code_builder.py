@@ -1,5 +1,6 @@
 import contextlib
 from collections import deque
+from itertools import islice
 from textwrap import dedent
 from typing import Deque, Generator, Iterable, Sequence, TypeVar
 
@@ -44,19 +45,20 @@ class CodeBuilder:
         self._add_indented_lines(lines)
         return self
 
-    __add__ = __call__
     __iadd__ = __call__
 
     def include(self: CB, line_or_text: str) -> CB:
         """Add the first line of input text to the last line of builder and append other lines"""
         first_line, *other_lines = self._extract_lines(line_or_text)
-
-        if self._lines:
-            self._lines[-1] += first_line
-        else:
-            self._lines.append(first_line)
+        self._include_line(first_line)
         self._add_indented_lines(other_lines)
         return self
+
+    def _include_line(self, line: str) -> None:
+        if self._lines:
+            self._lines[-1] += line
+        else:
+            self._lines.append(line)
 
     __lshift__ = include
     __ilshift__ = include
@@ -81,6 +83,14 @@ class CodeBuilder:
 
     def extend(self: CB, other: CB) -> CB:
         self._add_indented_lines(other._lines)  # pylint: disable=protected-access
+        return self
+
+    def extend_including(self: CB, other: CB) -> CB:
+        # pylint: disable=protected-access
+        if not other._lines:
+            return self
+        self._include_line(other._lines[0])
+        self._add_indented_lines(islice(other._lines, 1, None))
         return self
 
     def extend_above(self: CB, other: CB) -> CB:

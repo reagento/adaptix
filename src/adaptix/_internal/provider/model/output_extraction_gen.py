@@ -31,7 +31,7 @@ class BuiltinOutputExtractionGen(CodeGenerator):
             else ()
         )
 
-    def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
+    def produce_code(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         builder = CodeBuilder()
 
         ctx_namespace.add("append_trail", append_trail)

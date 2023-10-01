@@ -41,7 +41,6 @@ from .crown_definitions import (
     InpNoneCrown,
     OutExtraMove,
 )
-from .definitions import VarBinder
 
 
 @dataclass
@@ -249,11 +248,11 @@ class NameSanitizer:
 def compile_closure_with_globals_capturing(
     compiler: ClosureCompiler,
     code_gen_hook: CodeGenHook,
-    binder: VarBinder,
     namespace: Dict[str, object],
     body_builders: Iterable[CodeBuilder],
     *,
     closure_name: str,
+    closure_params: str,
     file_name: str,
 ):
     builder = CodeBuilder()
@@ -270,7 +269,7 @@ def compile_closure_with_globals_capturing(
 
     builder.empty_line()
 
-    with builder(f"def {closure_name}({binder.data}):"):
+    with builder(f"def {closure_name}({closure_params}):"):
         for body_builder in body_builders:
             builder.extend(body_builder)
 

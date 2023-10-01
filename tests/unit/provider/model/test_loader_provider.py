@@ -25,11 +25,7 @@ from adaptix._internal.provider.model.crown_definitions import (
     InputNameLayoutRequest,
 )
 from adaptix._internal.provider.model.definitions import InputShapeRequest
-from adaptix._internal.provider.model.loader_provider import (
-    BuiltinInputExtractionMaker,
-    ModelLoaderProvider,
-    make_input_creation,
-)
+from adaptix._internal.provider.model.loader_provider import ModelLoaderProvider
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import LoaderRequest
 from adaptix._internal.struct_trail import extend_trail, get_trail
@@ -115,7 +111,7 @@ def make_loader_getter(
                 ValueProvider(InputShapeRequest, shape),
                 ValueProvider(InputNameLayoutRequest, name_layout),
                 bound(int, ValueProvider(LoaderRequest, int_loader)),
-                ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
+                ModelLoaderProvider(),
                 debug_ctx.accum,
             ]
         )

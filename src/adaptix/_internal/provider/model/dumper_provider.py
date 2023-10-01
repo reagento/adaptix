@@ -145,19 +145,19 @@ class ModelDumperProvider(DumperProvider):
         binder = self._get_binder()
         ctx_namespace = BuiltinContextNamespace()
 
-        extraction_code_builder = extraction_gen(binder, ctx_namespace)
-        creation_code_builder = creation_gen(binder, ctx_namespace)
+        extraction_code_builder = extraction_gen.produce_code(binder, ctx_namespace)
+        creation_code_builder = creation_gen.produce_code(binder, ctx_namespace)
 
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
             code_gen_hook=code_gen_hook,
-            binder=binder,
             namespace=ctx_namespace.dict,
             body_builders=[
                 extraction_code_builder,
                 creation_code_builder,
             ],
             closure_name=self._get_closure_name(request),
+            closure_params=binder.data,
             file_name=self._get_file_name(request),
         )
 

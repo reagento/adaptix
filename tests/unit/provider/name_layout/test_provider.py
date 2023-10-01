@@ -51,11 +51,7 @@ from adaptix._internal.provider.model.dumper_provider import (
     ModelDumperProvider,
     make_output_extraction,
 )
-from adaptix._internal.provider.model.loader_provider import (
-    BuiltinInputExtractionMaker,
-    ModelLoaderProvider,
-    make_input_creation,
-)
+from adaptix._internal.provider.model.loader_provider import ModelLoaderProvider
 from adaptix._internal.provider.name_layout.component import (
     BuiltinExtraMoveAndPoliciesMaker,
     BuiltinSievesMaker,
@@ -144,7 +140,7 @@ def make_layouts(
             bound(Any, ValueProvider(LoaderRequest, stub)),
             ValueProvider(InputShapeRequest, input_shape),
             ValueProvider(OutputShapeRequest, output_shape),
-            ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
+            ModelLoaderProvider(),
             ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
         ]
     ).replace(

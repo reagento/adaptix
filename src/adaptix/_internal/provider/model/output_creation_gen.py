@@ -8,6 +8,7 @@ from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_s
 from ...model_tools.definitions import DefaultFactory, DefaultFactoryWithSelf, DefaultValue, OutputField
 from ..definitions import DebugTrail
 from .crown_definitions import (
+    CrownPath,
     CrownPathElem,
     OutCrown,
     OutDictCrown,
@@ -18,7 +19,6 @@ from .crown_definitions import (
     Sieve,
 )
 from .definitions import CodeGenerator, OutputShape, VarBinder
-from .input_extraction_gen import CrownPath
 from .special_cases_optimization import get_default_clause
 
 
@@ -120,7 +120,7 @@ class BuiltinOutputCreationGen(CodeGenerator):
     def _create_state(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> GenState:
         return GenState(binder, ctx_namespace, self._name_to_field)
 
-    def __call__(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
+    def produce_code(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
         crown_builder = CodeBuilder()
         state = self._create_state(binder, ctx_namespace)
 

@@ -38,7 +38,7 @@ from ..provider.generic_provider import (
 from ..provider.model.basic_gen import NameSanitizer
 from ..provider.model.crown_definitions import ExtraSkip
 from ..provider.model.dumper_provider import BuiltinOutputCreationMaker, ModelDumperProvider, make_output_extraction
-from ..provider.model.loader_provider import BuiltinInputExtractionMaker, ModelLoaderProvider, make_input_creation
+from ..provider.model.loader_provider import ModelLoaderProvider
 from ..provider.model.shape_provider import (
     ATTRS_SHAPE_PROVIDER,
     CLASS_INIT_SHAPE_PROVIDER,
@@ -148,7 +148,7 @@ class FilledRetort(OperatingRetort, ABC):
             extra_move_maker=BuiltinExtraMoveAndPoliciesMaker(),
             extra_policies_maker=BuiltinExtraMoveAndPoliciesMaker(),
         ),
-        ModelLoaderProvider(NameSanitizer(), BuiltinInputExtractionMaker(), make_input_creation),
+        ModelLoaderProvider(),
         ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
 
         NAMED_TUPLE_SHAPE_PROVIDER,

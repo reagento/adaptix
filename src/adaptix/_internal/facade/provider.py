@@ -10,8 +10,7 @@ from ..load_error import LoadError, ValidationError
 from ..model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
 from ..model_tools.introspection import get_callable_shape
 from ..provider.enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
-from ..provider.model.basic_gen import NameSanitizer
-from ..provider.model.loader_provider import InlinedInputExtractionMaker, ModelLoaderProvider, make_input_creation
+from ..provider.model.loader_provider import InlinedShapeModelLoaderProvider
 from ..provider.model.shape_provider import PropertyAdder
 from ..provider.model.special_cases_optimization import as_is_stub
 from ..provider.name_layout.base import ExtraIn, ExtraOut
@@ -127,11 +126,7 @@ def constructor(pred: Pred, func: Callable) -> Provider:
     input_shape = get_callable_shape(func).input
     return bound(
         pred,
-        ModelLoaderProvider(
-            NameSanitizer(),
-            InlinedInputExtractionMaker(input_shape),
-            make_input_creation,
-        ),
+        InlinedShapeModelLoaderProvider(shape=input_shape),
     )
 
 

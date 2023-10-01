@@ -1,4 +1,4 @@
-from typing import Mapping, Protocol, Tuple
+from typing import Mapping
 
 from ...code_tools.compiler import BasicClosureCompiler
 from ...code_tools.context_namespace import BuiltinContextNamespace
@@ -7,7 +7,7 @@ from ...essential import CannotProvide, Mediator
 from ...model_tools.definitions import InputShape
 from ..definitions import DebugTrail
 from ..model.definitions import CodeGenerator, InputShapeRequest, VarBinder
-from ..model.input_extraction_gen import BuiltinInputExtractionGen
+from ..model.loader_gen import BuiltinInputModelLoaderGen
 from ..provider_template import LoaderProvider
 from ..request_cls import DebugTrailRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
 from .basic_gen import (
@@ -22,62 +22,108 @@ from .basic_gen import (
     strip_input_shape_fields,
     stub_code_gen_hook,
 )
-from .crown_definitions import InpExtraMove, InputNameLayout, InputNameLayoutRequest
+from .crown_definitions import InputNameLayout, InputNameLayoutRequest
 from .fields import input_field_to_loc_map
-from .input_creation_gen import BuiltinInputCreationGen
 from .shape_provider import provide_generic_resolved_shape
 
 
-class InputExtractionMaker(Protocol):
-    def __call__(
-        self,
-        mediator: Mediator,
-        request: LoaderRequest,
-    ) -> Tuple[CodeGenerator, InputShape, InpExtraMove]:
-        ...
+class ModelLoaderProvider(LoaderProvider):
+    def __init__(self, *, name_sanitizer: NameSanitizer = NameSanitizer()):
+        self._name_sanitizer = name_sanitizer
 
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        loader_gen = self._fetch_model_loader_gen(mediator, request)
+        binder = self._get_binder()
+        ctx_namespace = BuiltinContextNamespace()
+        loader_code_builder = loader_gen.produce_code(binder, ctx_namespace)
 
-class InputCreationMaker(Protocol):
-    def __call__(
+        try:
+            code_gen_hook = mediator.provide(CodeGenHookRequest())
+        except CannotProvide:
+            code_gen_hook = stub_code_gen_hook
+
+        return compile_closure_with_globals_capturing(
+            compiler=self._get_compiler(),
+            code_gen_hook=code_gen_hook,
+            namespace=ctx_namespace.dict,
+            body_builders=[loader_code_builder],
+            closure_name=self._get_closure_name(request),
+            closure_params='data',
+            file_name=self._get_file_name(request),
+        )
+
+    def _fetch_model_loader_gen(self, mediator: Mediator, request: LoaderRequest) -> CodeGenerator:
+        shape = self._fetch_shape(mediator, request)
+        name_layout = self._fetch_name_layout(mediator, request, shape)
+        shape = self._process_shape(shape, name_layout)
+        self._validate_params(shape, name_layout)
+
+        field_loaders = {
+            field.id: mediator.provide(
+                LoaderRequest(loc_map=input_field_to_loc_map(field))
+            )
+            for field in shape.fields
+        }
+        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
+        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
+        return self._create_model_loader_gen(
+            debug_trail=debug_trail,
+            strict_coercion=strict_coercion,
+            shape=shape,
+            name_layout=name_layout,
+            field_loaders=field_loaders,
+        )
+
+    def _create_model_loader_gen(
         self,
-        mediator: Mediator,
-        request: LoaderRequest,
+        debug_trail: DebugTrail,
+        strict_coercion: bool,
         shape: InputShape,
-        extra_move: InpExtraMove,
+        name_layout: InputNameLayout,
+        field_loaders: Mapping[str, Loader],
     ) -> CodeGenerator:
-        ...
+        return BuiltinInputModelLoaderGen(
+            shape=shape,
+            name_layout=name_layout,
+            debug_trail=debug_trail,
+            strict_coercion=strict_coercion,
+            field_loaders=field_loaders,
+        )
 
+    def _get_closure_name(self, request: LoaderRequest) -> str:
+        if request.loc_map.has(TypeHintLoc):
+            tp = request.loc_map[TypeHintLoc].type
+            if isinstance(tp, type):
+                name = tp.__name__
+            else:
+                name = str(tp)
+        else:
+            name = ''
 
-class BuiltinInputExtractionMaker(InputExtractionMaker):
+        s_name = self._name_sanitizer.sanitize(name)
+        if s_name != "":
+            s_name = "_" + s_name
+        return "model_loader" + s_name
+
+    def _get_file_name(self, request: LoaderRequest) -> str:
+        return self._get_closure_name(request)
+
+    def _get_compiler(self):
+        return BasicClosureCompiler()
+
+    def _get_binder(self):
+        return VarBinder()
+
     def _fetch_shape(self, mediator: Mediator, request: LoaderRequest) -> InputShape:
         return provide_generic_resolved_shape(mediator, InputShapeRequest(loc_map=request.loc_map))
 
-    def __call__(self, mediator: Mediator, request: LoaderRequest) -> Tuple[CodeGenerator, InputShape, InpExtraMove]:
-        shape = self._fetch_shape(mediator, request)
-
-        name_layout: InputNameLayout = mediator.provide(
+    def _fetch_name_layout(self, mediator: Mediator, request: LoaderRequest, shape: InputShape) -> InputNameLayout:
+        return mediator.provide(
             InputNameLayoutRequest(
                 loc_map=request.loc_map,
                 shape=shape,
             )
         )
-
-        processed_shape = self._process_shape(shape, name_layout)
-        self._validate_params(processed_shape, name_layout)
-
-        field_loaders = {
-            field.id: mediator.provide(
-                LoaderRequest(
-                    loc_map=input_field_to_loc_map(field),
-                )
-            )
-            for field in processed_shape.fields
-        }
-        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
-        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
-        extraction_gen = self._create_extraction_gen(debug_trail, strict_coercion, shape, name_layout, field_loaders)
-
-        return extraction_gen, shape, name_layout.extra_move
 
     def _process_shape(self, shape: InputShape, name_layout: InputNameLayout) -> InputShape:
         wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)
@@ -109,100 +155,11 @@ class BuiltinInputExtractionMaker(InputExtractionMaker):
                 f"Optional fields {optional_fields_at_list_crown} are found at list crown"
             )
 
-    def _create_extraction_gen(
-        self,
-        debug_trail: DebugTrail,
-        strict_coercion: bool,
-        shape: InputShape,
-        name_layout: InputNameLayout,
-        field_loaders: Mapping[str, Loader],
-    ) -> CodeGenerator:
-        return BuiltinInputExtractionGen(
-            shape=shape,
-            name_layout=name_layout,
-            debug_trail=debug_trail,
-            strict_coercion=strict_coercion,
-            field_loaders=field_loaders,
-        )
 
-
-class InlinedInputExtractionMaker(BuiltinInputExtractionMaker):
-    def __init__(self, shape: InputShape):
+class InlinedShapeModelLoaderProvider(ModelLoaderProvider):
+    def __init__(self, *, name_sanitizer: NameSanitizer = NameSanitizer(), shape: InputShape):
+        super().__init__(name_sanitizer=name_sanitizer)
         self._shape = shape
-        super().__init__()
 
     def _fetch_shape(self, mediator: Mediator, request: LoaderRequest) -> InputShape:
         return self._shape
-
-
-def make_input_creation(
-    mediator: Mediator,
-    request: LoaderRequest,
-    shape: InputShape,
-    extra_move: InpExtraMove,
-) -> CodeGenerator:
-    return BuiltinInputCreationGen(shape=shape, extra_move=extra_move)
-
-
-class ModelLoaderProvider(LoaderProvider):
-    def __init__(
-        self,
-        name_sanitizer: NameSanitizer,
-        extraction_maker: InputExtractionMaker,
-        creation_maker: InputCreationMaker,
-    ):
-        self._name_sanitizer = name_sanitizer
-        self._extraction_maker = extraction_maker
-        self._creation_maker = creation_maker
-
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        extraction_gen, shape, extra_move = self._extraction_maker(mediator, request)
-        creation_gen = self._creation_maker(mediator, request, shape, extra_move)
-
-        try:
-            code_gen_hook = mediator.provide(CodeGenHookRequest())
-        except CannotProvide:
-            code_gen_hook = stub_code_gen_hook
-
-        binder = self._get_binder()
-        ctx_namespace = BuiltinContextNamespace()
-
-        extraction_code_builder = extraction_gen(binder, ctx_namespace)
-        creation_code_builder = creation_gen(binder, ctx_namespace)
-
-        return compile_closure_with_globals_capturing(
-            compiler=self._get_compiler(),
-            code_gen_hook=code_gen_hook,
-            binder=binder,
-            namespace=ctx_namespace.dict,
-            body_builders=[
-                extraction_code_builder,
-                creation_code_builder,
-            ],
-            closure_name=self._get_closure_name(request),
-            file_name=self._get_file_name(request),
-        )
-
-    def _get_closure_name(self, request: LoaderRequest) -> str:
-        if request.loc_map.has(TypeHintLoc):
-            tp = request.loc_map[TypeHintLoc].type
-            if isinstance(tp, type):
-                name = tp.__name__
-            else:
-                name = str(tp)
-        else:
-            name = ''
-
-        s_name = self._name_sanitizer.sanitize(name)
-        if s_name != "":
-            s_name = "_" + s_name
-        return "model_loader" + s_name
-
-    def _get_file_name(self, request: LoaderRequest) -> str:
-        return self._get_closure_name(request)
-
-    def _get_compiler(self):
-        return BasicClosureCompiler()
-
-    def _get_binder(self):
-        return VarBinder()
