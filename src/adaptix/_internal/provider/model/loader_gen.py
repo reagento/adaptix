@@ -35,7 +35,7 @@ from .crown_definitions import (
     InpNoneCrown,
     InputNameLayout,
 )
-from .definitions import CodeGenerator, VarBinder
+from .definitions import CodeGenerator
 from .special_cases_optimization import as_is_stub
 
 
@@ -206,7 +206,7 @@ class BuiltinModelLoaderGen(CodeGenerator):
             for fld in self._shape.fields
         )
 
-    def produce_code(self, binder: VarBinder, ctx_namespace: ContextNamespace) -> CodeBuilder:
+    def produce_code(self, ctx_namespace: ContextNamespace) -> CodeBuilder:
         state = self._create_state(ctx_namespace)
 
         for field_id, loader in self._field_loaders.items():
@@ -231,7 +231,7 @@ class BuiltinModelLoaderGen(CodeGenerator):
             state.ctx_namespace.add('constructor', self._shape.constructor)
 
         if self.has_optional_fields:
-            state.builder += f"{binder.opt_fields} = {{}}"
+            state.builder += "opt_fields = {}"
 
         if not self._gen_root_crown_dispatch(state, self._name_layout.crown):
             raise TypeError

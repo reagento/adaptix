@@ -6,7 +6,7 @@ from ...common import Loader
 from ...essential import CannotProvide, Mediator
 from ...model_tools.definitions import InputShape
 from ..definitions import DebugTrail
-from ..model.definitions import CodeGenerator, InputShapeRequest, VarBinder
+from ..model.definitions import CodeGenerator, InputShapeRequest
 from ..model.loader_gen import BuiltinModelLoaderGen
 from ..provider_template import LoaderProvider
 from ..request_cls import DebugTrailRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
@@ -33,9 +33,8 @@ class ModelLoaderProvider(LoaderProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         loader_gen = self._fetch_model_loader_gen(mediator, request)
-        binder = self._get_binder()
         ctx_namespace = BuiltinContextNamespace()
-        loader_code_builder = loader_gen.produce_code(binder, ctx_namespace)
+        loader_code_builder = loader_gen.produce_code(ctx_namespace)
 
         try:
             code_gen_hook = mediator.provide(CodeGenHookRequest())
@@ -110,9 +109,6 @@ class ModelLoaderProvider(LoaderProvider):
 
     def _get_compiler(self):
         return BasicClosureCompiler()
-
-    def _get_binder(self):
-        return VarBinder()
 
     def _fetch_shape(self, mediator: Mediator, request: LoaderRequest) -> InputShape:
         return provide_generic_resolved_shape(mediator, InputShapeRequest(loc_map=request.loc_map))

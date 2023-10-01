@@ -19,7 +19,7 @@ from .basic_gen import (
     stub_code_gen_hook,
 )
 from .crown_definitions import OutputNameLayout, OutputNameLayoutRequest
-from .definitions import CodeGenerator, OutputShape, OutputShapeRequest, VarBinder
+from .definitions import CodeGenerator, OutputShape, OutputShapeRequest
 from .dumper_gen import BuiltinModelDumperGen
 from .fields import output_field_to_loc_map
 from .shape_provider import provide_generic_resolved_shape
@@ -31,9 +31,8 @@ class ModelDumperProvider(DumperProvider):
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         dumper_gen = self._fetch_model_dumper_gen(mediator, request)
-        binder = self._get_binder()
         ctx_namespace = BuiltinContextNamespace()
-        dumper_code_builder = dumper_gen.produce_code(binder, ctx_namespace)
+        dumper_code_builder = dumper_gen.produce_code(ctx_namespace)
 
         try:
             code_gen_hook = mediator.provide(CodeGenHookRequest())
@@ -46,7 +45,7 @@ class ModelDumperProvider(DumperProvider):
             namespace=ctx_namespace.dict,
             body_builders=[dumper_code_builder],
             closure_name=self._get_closure_name(request),
-            closure_params=binder.data,
+            closure_params='data',
             file_name=self._get_file_name(request),
         )
 
@@ -105,9 +104,6 @@ class ModelDumperProvider(DumperProvider):
 
     def _get_compiler(self):
         return BasicClosureCompiler()
-
-    def _get_binder(self):
-        return VarBinder()
 
     def _fetch_shape(self, mediator: Mediator, request: DumperRequest) -> OutputShape:
         return provide_generic_resolved_shape(mediator, OutputShapeRequest(loc_map=request.loc_map))
