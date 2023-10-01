@@ -1,4 +1,4 @@
-from typing import Protocol, Tuple
+from typing import Mapping
 
 from ...code_tools.compiler import BasicClosureCompiler
 from ...code_tools.context_namespace import BuiltinContextNamespace
@@ -18,147 +18,71 @@ from .basic_gen import (
     strip_output_shape_fields,
     stub_code_gen_hook,
 )
-from .crown_definitions import OutExtraMove, OutputNameLayout, OutputNameLayoutRequest
+from .crown_definitions import OutputNameLayout, OutputNameLayoutRequest
 from .definitions import CodeGenerator, OutputShape, OutputShapeRequest, VarBinder
+from .dumper_gen import BuiltinModelDumperGen
 from .fields import output_field_to_loc_map
-from .output_creation_gen import BuiltinOutputCreationGen
-from .output_extraction_gen import BuiltinOutputExtractionGen
 from .shape_provider import provide_generic_resolved_shape
 
 
-class OutputExtractionMaker(Protocol):
-    def __call__(
-        self,
-        mediator: Mediator,
-        request: DumperRequest,
-        shape: OutputShape,
-        extra_move: OutExtraMove,
-    ) -> CodeGenerator:
-        ...
-
-
-class OutputCreationMaker(Protocol):
-    def __call__(
-        self,
-        mediator: Mediator,
-        request: DumperRequest,
-    ) -> Tuple[CodeGenerator, OutputShape, OutExtraMove]:
-        ...
-
-
-def make_output_extraction(
-    mediator: Mediator,
-    request: DumperRequest,
-    shape: OutputShape,
-    extra_move: OutExtraMove,
-) -> CodeGenerator:
-    field_dumpers = {
-        field.id: mediator.provide(
-            DumperRequest(
-                loc_map=output_field_to_loc_map(field),
-            )
-        )
-        for field in shape.fields
-    }
-    debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
-    return BuiltinOutputExtractionGen(
-        shape=shape,
-        extra_move=extra_move,
-        debug_trail=debug_trail,
-        fields_dumpers=field_dumpers,
-    )
-
-
-class BuiltinOutputCreationMaker(OutputCreationMaker):
-    def __call__(self, mediator: Mediator, request: DumperRequest) -> Tuple[CodeGenerator, OutputShape, OutExtraMove]:
-        shape = provide_generic_resolved_shape(mediator, OutputShapeRequest(loc_map=request.loc_map))
-
-        name_layout = mediator.provide(
-            OutputNameLayoutRequest(
-                loc_map=request.loc_map,
-                shape=shape,
-            )
-        )
-
-        processed_shape = self._process_shape(shape, name_layout)
-        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
-        creation_gen = self._create_creation_gen(debug_trail, processed_shape, name_layout)
-        return creation_gen, processed_shape, name_layout.extra_move
-
-    def _process_shape(self, shape: OutputShape, name_layout: OutputNameLayout) -> OutputShape:
-        optional_fields_at_list_crown = get_optional_fields_at_list_crown(
-            {field.id: field for field in shape.fields},
-            name_layout.crown,
-        )
-        if optional_fields_at_list_crown:
-            raise ValueError(
-                f"Optional fields {optional_fields_at_list_crown} are found at list crown"
-            )
-
-        wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)
-        if wild_extra_targets:
-            raise ValueError(
-                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
-            )
-
-        extra_targets_at_crown = get_extra_targets_at_crown(name_layout)
-        if extra_targets_at_crown:
-            raise ValueError(
-                f"Extra targets {extra_targets_at_crown} are found at crown"
-            )
-
-        return strip_output_shape_fields(shape, get_skipped_fields(shape, name_layout))
-
-    def _create_creation_gen(
-        self,
-        debug_trail: DebugTrail,
-        shape: OutputShape,
-        name_layout: OutputNameLayout,
-    ) -> CodeGenerator:
-        return BuiltinOutputCreationGen(
-            shape=shape,
-            name_layout=name_layout,
-            debug_trail=debug_trail,
-        )
-
-
 class ModelDumperProvider(DumperProvider):
-    def __init__(
-        self,
-        name_sanitizer: NameSanitizer,
-        extraction_maker: OutputExtractionMaker,
-        creation_maker: OutputCreationMaker,
-    ):
+    def __init__(self, *, name_sanitizer: NameSanitizer = NameSanitizer()):
         self._name_sanitizer = name_sanitizer
-        self._extraction_maker = extraction_maker
-        self._creation_maker = creation_maker
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        creation_gen, shape, extra_move = self._creation_maker(mediator, request)
-        extraction_gen = self._extraction_maker(mediator, request, shape, extra_move)
+        dumper_gen = self._fetch_model_dumper_gen(mediator, request)
+        binder = self._get_binder()
+        ctx_namespace = BuiltinContextNamespace()
+        dumper_code_builder = dumper_gen.produce_code(binder, ctx_namespace)
 
         try:
             code_gen_hook = mediator.provide(CodeGenHookRequest())
         except CannotProvide:
             code_gen_hook = stub_code_gen_hook
 
-        binder = self._get_binder()
-        ctx_namespace = BuiltinContextNamespace()
-
-        extraction_code_builder = extraction_gen.produce_code(binder, ctx_namespace)
-        creation_code_builder = creation_gen.produce_code(binder, ctx_namespace)
-
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
             code_gen_hook=code_gen_hook,
             namespace=ctx_namespace.dict,
-            body_builders=[
-                extraction_code_builder,
-                creation_code_builder,
-            ],
+            body_builders=[dumper_code_builder],
             closure_name=self._get_closure_name(request),
             closure_params=binder.data,
             file_name=self._get_file_name(request),
+        )
+
+    def _fetch_model_dumper_gen(self, mediator: Mediator, request: DumperRequest) -> CodeGenerator:
+        shape = self._fetch_shape(mediator, request)
+        name_layout = self._fetch_name_layout(mediator, request, shape)
+        shape = self._process_shape(shape, name_layout)
+
+        fields_dumpers = {
+            field.id: mediator.provide(
+                DumperRequest(
+                    loc_map=output_field_to_loc_map(field),
+                )
+            )
+            for field in shape.fields
+        }
+        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
+        return self._create_model_dumper_gen(
+            debug_trail=debug_trail,
+            shape=shape,
+            name_layout=name_layout,
+            fields_dumpers=fields_dumpers,
+        )
+
+    def _create_model_dumper_gen(
+        self,
+        debug_trail: DebugTrail,
+        shape: OutputShape,
+        name_layout: OutputNameLayout,
+        fields_dumpers: Mapping[str, Dumper],
+    ) -> CodeGenerator:
+        return BuiltinModelDumperGen(
+            shape=shape,
+            name_layout=name_layout,
+            debug_trail=debug_trail,
+            fields_dumpers=fields_dumpers,
         )
 
     def _get_closure_name(self, request: DumperRequest) -> str:
@@ -184,3 +108,38 @@ class ModelDumperProvider(DumperProvider):
 
     def _get_binder(self):
         return VarBinder()
+
+    def _fetch_shape(self, mediator: Mediator, request: DumperRequest) -> OutputShape:
+        return provide_generic_resolved_shape(mediator, OutputShapeRequest(loc_map=request.loc_map))
+
+    def _fetch_name_layout(self, mediator: Mediator, request: DumperRequest, shape: OutputShape) -> OutputNameLayout:
+        return mediator.provide(
+            OutputNameLayoutRequest(
+                loc_map=request.loc_map,
+                shape=shape,
+            )
+        )
+
+    def _process_shape(self, shape: OutputShape, name_layout: OutputNameLayout) -> OutputShape:
+        optional_fields_at_list_crown = get_optional_fields_at_list_crown(
+            {field.id: field for field in shape.fields},
+            name_layout.crown,
+        )
+        if optional_fields_at_list_crown:
+            raise ValueError(
+                f"Optional fields {optional_fields_at_list_crown} are found at list crown"
+            )
+
+        wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)
+        if wild_extra_targets:
+            raise ValueError(
+                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
+            )
+
+        extra_targets_at_crown = get_extra_targets_at_crown(name_layout)
+        if extra_targets_at_crown:
+            raise ValueError(
+                f"Extra targets {extra_targets_at_crown} are found at crown"
+            )
+
+        return strip_output_shape_fields(shape, get_skipped_fields(shape, name_layout))

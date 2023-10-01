@@ -35,9 +35,8 @@ from ..provider.generic_provider import (
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
-from ..provider.model.basic_gen import NameSanitizer
 from ..provider.model.crown_definitions import ExtraSkip
-from ..provider.model.dumper_provider import BuiltinOutputCreationMaker, ModelDumperProvider, make_output_extraction
+from ..provider.model.dumper_provider import ModelDumperProvider
 from ..provider.model.loader_provider import ModelLoaderProvider
 from ..provider.model.shape_provider import (
     ATTRS_SHAPE_PROVIDER,
@@ -149,7 +148,7 @@ class FilledRetort(OperatingRetort, ABC):
             extra_policies_maker=BuiltinExtraMoveAndPoliciesMaker(),
         ),
         ModelLoaderProvider(),
-        ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
+        ModelDumperProvider(),
 
         NAMED_TUPLE_SHAPE_PROVIDER,
         TYPED_DICT_SHAPE_PROVIDER,

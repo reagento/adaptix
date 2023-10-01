@@ -157,8 +157,8 @@ class GenState(Namer):
         return self._name_to_field[crown.id]
 
 
-class BuiltinInputModelLoaderGen(CodeGenerator):
-    """BuiltinInputModelLoaderGen generates code that extracts raw values from input data,
+class BuiltinModelLoaderGen(CodeGenerator):
+    """BuiltinModelLoaderGen generates code that extracts raw values from input data,
     calls loaders and stores results to variables.
     """
 

@@ -46,11 +46,7 @@ from adaptix._internal.provider.model.crown_definitions import (
     OutputNameLayoutRequest,
 )
 from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
-from adaptix._internal.provider.model.dumper_provider import (
-    BuiltinOutputCreationMaker,
-    ModelDumperProvider,
-    make_output_extraction,
-)
+from adaptix._internal.provider.model.dumper_provider import ModelDumperProvider
 from adaptix._internal.provider.model.loader_provider import ModelLoaderProvider
 from adaptix._internal.provider.name_layout.component import (
     BuiltinExtraMoveAndPoliciesMaker,
@@ -141,7 +137,7 @@ def make_layouts(
             ValueProvider(InputShapeRequest, input_shape),
             ValueProvider(OutputShapeRequest, output_shape),
             ModelLoaderProvider(),
-            ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
+            ModelDumperProvider(),
         ]
     ).replace(
         strict_coercion=True,

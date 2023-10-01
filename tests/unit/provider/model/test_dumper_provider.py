@@ -18,7 +18,6 @@ from adaptix._internal.model_tools.definitions import (
     create_attr_accessor,
     create_key_accessor,
 )
-from adaptix._internal.provider.model.basic_gen import NameSanitizer
 from adaptix._internal.provider.model.crown_definitions import (
     ExtraExtract,
     ExtraTargets,
@@ -30,11 +29,7 @@ from adaptix._internal.provider.model.crown_definitions import (
     OutputNameLayoutRequest,
 )
 from adaptix._internal.provider.model.definitions import OutputShapeRequest
-from adaptix._internal.provider.model.dumper_provider import (
-    BuiltinOutputCreationMaker,
-    ModelDumperProvider,
-    make_output_extraction,
-)
+from adaptix._internal.provider.model.dumper_provider import ModelDumperProvider
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import DumperRequest
 from adaptix._internal.struct_trail import Attr, TrailElement, TrailElementMarker, extend_trail
@@ -100,7 +95,7 @@ def make_dumper_getter(
                 ValueProvider(OutputShapeRequest, shape),
                 ValueProvider(OutputNameLayoutRequest, name_layout),
                 bound(int, ValueProvider(DumperRequest, int_dumper)),
-                ModelDumperProvider(NameSanitizer(), make_output_extraction, BuiltinOutputCreationMaker()),
+                ModelDumperProvider(),
                 debug_ctx.accum,
             ]
         )

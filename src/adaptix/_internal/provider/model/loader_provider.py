@@ -7,7 +7,7 @@ from ...essential import CannotProvide, Mediator
 from ...model_tools.definitions import InputShape
 from ..definitions import DebugTrail
 from ..model.definitions import CodeGenerator, InputShapeRequest, VarBinder
-from ..model.loader_gen import BuiltinInputModelLoaderGen
+from ..model.loader_gen import BuiltinModelLoaderGen
 from ..provider_template import LoaderProvider
 from ..request_cls import DebugTrailRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
 from .basic_gen import (
@@ -82,7 +82,7 @@ class ModelLoaderProvider(LoaderProvider):
         name_layout: InputNameLayout,
         field_loaders: Mapping[str, Loader],
     ) -> CodeGenerator:
-        return BuiltinInputModelLoaderGen(
+        return BuiltinModelLoaderGen(
             shape=shape,
             name_layout=name_layout,
             debug_trail=debug_trail,
