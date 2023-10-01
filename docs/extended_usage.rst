@@ -30,7 +30,7 @@ it derives implicit parameters based on ``TypeVar`` properties.
 
 You should always pass concrete type to the second argument :meth:`.Retort.dump` method.
 There is no way to determine the type parameter of an object at runtime due to type erasure.
-So, the taken data will be treated as a non-parametrized generic.
+If you pass non-parametrized generic, retort will raise error.
 
 
 Recursive data types
