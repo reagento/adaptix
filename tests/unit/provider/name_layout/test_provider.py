@@ -559,7 +559,7 @@ def test_gaps_filling():
             crown=OutListCrown(
                 map=[
                     OutFieldCrown(id='a'),
-                    OutNoneCrown(filler=DefaultValue(value=None)),
+                    OutNoneCrown(placeholder=DefaultValue(value=None)),
                     OutFieldCrown(id='b')
                 ]
             ),

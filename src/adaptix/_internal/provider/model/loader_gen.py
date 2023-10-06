@@ -157,8 +157,8 @@ class GenState(Namer):
         return self._name_to_field[crown.id]
 
 
-class BuiltinModelLoaderGen(CodeGenerator):
-    """BuiltinModelLoaderGen generates code that extracts raw values from input data,
+class ModelLoaderGen(CodeGenerator):
+    """ModelLoaderGen generates code that extracts raw values from input data,
     calls loaders and stores results to variables.
     """
 
@@ -169,6 +169,7 @@ class BuiltinModelLoaderGen(CodeGenerator):
         debug_trail: DebugTrail,
         strict_coercion: bool,
         field_loaders: Mapping[str, Loader],
+        model_identity: str,
     ):
         self._shape = shape
         self._name_layout = name_layout
@@ -178,6 +179,7 @@ class BuiltinModelLoaderGen(CodeGenerator):
             field.id: field for field in self._shape.fields
         }
         self._field_loaders = field_loaders
+        self._model_identity = model_identity
 
     @property
     def _can_collect_extra(self) -> bool:
@@ -228,7 +230,7 @@ class BuiltinModelLoaderGen(CodeGenerator):
         if self._debug_trail == DebugTrail.ALL:
             state.builder += "errors = []"
             state.builder += "has_unexpected_error = False"
-            state.ctx_namespace.add('constructor', self._shape.constructor)
+            state.ctx_namespace.add('model_identity', self._model_identity)
 
         if self.has_optional_fields:
             state.builder += "opt_fields = {}"
@@ -244,11 +246,11 @@ class BuiltinModelLoaderGen(CodeGenerator):
                 if errors:
                     if has_unexpected_error:
                         raise CompatExceptionGroup(
-                            f'while loading model {constructor}',
+                            f'while loading model {model_identity}',
                             [render_trail_as_note(e) for e in errors],
                         )
                     raise AggregateLoadError(
-                        f'while loading model {constructor}',
+                        f'while loading model {model_identity}',
                         [render_trail_as_note(e) for e in errors],
                     )
                 """
@@ -349,7 +351,7 @@ class BuiltinModelLoaderGen(CodeGenerator):
             state.builder(
                 f"""
                 raise AggregateLoadError(
-                    f'while loading model {{constructor}}',
+                    f'while loading model {{model_identity}}',
                     [render_trail_as_note({namer.with_trail(bad_type_load_error)})],
                 )
                 """

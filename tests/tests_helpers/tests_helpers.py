@@ -3,18 +3,17 @@ import importlib.metadata
 import re
 from contextlib import contextmanager
 from copy import copy
-from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Callable, Iterable, Optional, Type, TypeVar, Union
+from dataclasses import dataclass, is_dataclass
+from typing import Any, Callable, Optional, Type, TypeVar, Union
 
 import pytest
 from packaging.version import Version
 from sqlalchemy import Engine, create_engine
 
-from adaptix import AdornedRetort, CannotProvide, Mediator, Provider, Request
+from adaptix import AdornedRetort, CannotProvide, DebugTrail, Mediator, Provider, Request
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import PythonImplementationRequirement, PythonVersionRequirement, Requirement
 from adaptix._internal.provider.model.basic_gen import CodeGenAccumulator
-from adaptix._internal.struct_trail import Trail, extend_trail
 from adaptix._internal.type_tools import is_parametrized
 from adaptix.struct_trail import get_trail
 
@@ -183,3 +182,22 @@ def pretty_typehint_test_id(config, val, argname):
 
 def create_sa_engine(**kwargs) -> Engine:
     return create_engine("sqlite://", **kwargs)
+
+
+T1 = TypeVar('T1')
+T2 = TypeVar('T2')
+T3 = TypeVar('T3')
+
+
+class ByTrailSelector:
+    def __init__(self, debug_trail: DebugTrail):
+        self.debug_trail = debug_trail
+
+    def __call__(self, *, disable: T1, first: T2, all: T3) -> Union[T1, T2, T3]:
+        if self.debug_trail == DebugTrail.DISABLE:
+            return disable
+        if self.debug_trail == DebugTrail.FIRST:
+            return first
+        if self.debug_trail == DebugTrail.ALL:
+            return all
+        raise ValueError

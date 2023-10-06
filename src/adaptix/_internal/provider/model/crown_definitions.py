@@ -116,12 +116,12 @@ class OutListCrown(BaseListCrown['OutCrown']):
     pass
 
 
-Filler = Union[DefaultValue, DefaultFactory]
+Placeholder = Union[DefaultValue, DefaultFactory]
 
 
 @dataclass
 class OutNoneCrown(BaseNoneCrown):
-    filler: Filler
+    placeholder: Placeholder
 
 
 @dataclass

@@ -281,7 +281,7 @@ class BuiltinStructureMaker(StructureMaker):
         return InpNoneCrown()
 
     def _fill_output_gap(self, path: KeyPath) -> LeafOutCrown:
-        return OutNoneCrown(filler=DefaultValue(None))
+        return OutNoneCrown(placeholder=DefaultValue(None))
 
     def make_inp_structure(
         self,

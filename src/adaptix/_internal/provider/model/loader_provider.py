@@ -7,7 +7,7 @@ from ...essential import CannotProvide, Mediator
 from ...model_tools.definitions import InputShape
 from ..definitions import DebugTrail
 from ..model.definitions import CodeGenerator, InputShapeRequest
-from ..model.loader_gen import BuiltinModelLoaderGen
+from ..model.loader_gen import ModelLoaderGen
 from ..provider_template import LoaderProvider
 from ..request_cls import DebugTrailRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
 from .basic_gen import (
@@ -71,6 +71,20 @@ class ModelLoaderProvider(LoaderProvider):
             shape=shape,
             name_layout=name_layout,
             field_loaders=field_loaders,
+            model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
+        )
+
+    def _fetch_model_identity(
+        self,
+        mediator: Mediator,
+        request: LoaderRequest,
+        shape: InputShape,
+        name_layout: InputNameLayout,
+    ) -> str:
+        return (
+            repr(request.loc_map[TypeHintLoc].type)
+            if request.loc_map.has(TypeHintLoc) else
+            repr(shape.constructor)
         )
 
     def _create_model_loader_gen(
@@ -80,13 +94,15 @@ class ModelLoaderProvider(LoaderProvider):
         shape: InputShape,
         name_layout: InputNameLayout,
         field_loaders: Mapping[str, Loader],
+        model_identity: str,
     ) -> CodeGenerator:
-        return BuiltinModelLoaderGen(
+        return ModelLoaderGen(
             shape=shape,
             name_layout=name_layout,
             debug_trail=debug_trail,
             strict_coercion=strict_coercion,
             field_loaders=field_loaders,
+            model_identity=model_identity,
         )
 
     def _get_closure_name(self, request: LoaderRequest) -> str:

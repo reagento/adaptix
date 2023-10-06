@@ -1,5 +1,6 @@
 import builtins
 import math
+from enum import Enum
 from typing import Any, Dict, Optional
 
 _BUILTINS_DICT = {
@@ -99,4 +100,4 @@ _SINGLETONS = {None, Ellipsis, NotImplemented}
 
 
 def is_singleton(obj: object) -> bool:
-    return obj in _SINGLETONS or isinstance(obj, bool)
+    return obj in _SINGLETONS or isinstance(obj, (bool, Enum))

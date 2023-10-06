@@ -1,11 +1,12 @@
 import contextlib
 from string import Template
-from typing import Dict, Mapping, NamedTuple, Optional
+from typing import Dict, Mapping, NamedTuple
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
 from ...common import Dumper
+from ...compat import CompatExceptionGroup
 from ...model_tools.definitions import (
     DefaultFactory,
     DefaultFactoryWithSelf,
@@ -15,7 +16,7 @@ from ...model_tools.definitions import (
     OutputField,
     OutputShape,
 )
-from ...struct_trail import append_trail, extend_trail
+from ...struct_trail import append_trail, extend_trail, render_trail_as_note
 from ..definitions import DebugTrail
 from .crown_definitions import (
     CrownPath,
@@ -35,24 +36,23 @@ from .special_cases_optimization import as_is_stub, get_default_clause
 
 
 class GenState:
-    def __init__(self, ctx_namespace: ContextNamespace, name_to_field: Dict[str, OutputField]):
+    def __init__(self, builder: CodeBuilder, ctx_namespace: ContextNamespace):
+        self.builder = builder
         self.ctx_namespace = ctx_namespace
-        self._name_to_field = name_to_field
 
-        self.field_id2path: Dict[str, CrownPath] = {}
-        self.path2suffix: Dict[CrownPath, str] = {}
+        self.field_id_to_path: Dict[str, CrownPath] = {}
+        self.path_to_suffix: Dict[CrownPath, str] = {}
 
         self._last_path_idx = 0
         self._path: CrownPath = ()
-        self._parent_path: Optional[CrownPath] = None
 
-    def _get_path_idx(self, path: CrownPath) -> str:
+    def _ensure_path_idx(self, path: CrownPath) -> str:
         try:
-            return self.path2suffix[path]
+            return self.path_to_suffix[path]
         except KeyError:
             self._last_path_idx += 1
             suffix = str(self._last_path_idx)
-            self.path2suffix[path] = suffix
+            self.path_to_suffix[path] = suffix
             return suffix
 
     @property
@@ -64,40 +64,28 @@ class GenState:
         past = self._path
 
         self._path += (key,)
+        self._ensure_path_idx(self._path)
         yield
         self._path = past
 
-    def crown_var(self) -> str:
-        return self._crown_var_for_path(self._path)
+    def _with_path_suffix(self, basis: str, extra_path: CrownPath = ()) -> str:
+        if not self._path and not extra_path:
+            return basis
+        return basis + '_' + self._ensure_path_idx(self._path + extra_path)
 
-    def crown_var_self(self) -> str:
-        return self._crown_var_for_path(self._path)
+    @property
+    def v_crown(self) -> str:
+        return self._with_path_suffix('result')
 
-    def _crown_var_for_path(self, path: CrownPath) -> str:
-        if not path:
-            return "result"
+    @property
+    def v_placeholder(self) -> str:
+        return self._with_path_suffix('placeholder')
 
-        return 'result_' + self._get_path_idx(path)
+    def v_sieve(self, key: CrownPathElem) -> str:
+        return self._with_path_suffix('sieve', (key,))
 
-    def filler(self) -> str:
-        if not self._path:
-            return "filler"
-
-        return 'filler_' + self._get_path_idx(self._path)
-
-    def sieve(self, key: CrownPathElem) -> str:
-        path = self._path + (key,)
-        if not path:
-            return "sieve"
-
-        return 'sieve_' + self._get_path_idx(path)
-
-    def default_clause(self, key: CrownPathElem) -> str:
-        path = self._path + (key,)
-        if not path:
-            return "dfl"
-
-        return 'dfl_' + self._get_path_idx(path)
+    def v_default(self, key: CrownPathElem) -> str:
+        return self._with_path_suffix('dfl', (key,))
 
 
 class ElementExpr(NamedTuple):
@@ -105,13 +93,14 @@ class ElementExpr(NamedTuple):
     can_inline: bool
 
 
-class BuiltinModelDumperGen(CodeGenerator):
+class ModelDumperGen(CodeGenerator):
     def __init__(
         self,
         shape: OutputShape,
         name_layout: OutputNameLayout,
         debug_trail: DebugTrail,
         fields_dumpers: Mapping[str, Dumper],
+        model_identity: str,
     ):
         self._shape = shape
         self._name_layout = name_layout
@@ -123,15 +112,20 @@ class BuiltinModelDumperGen(CodeGenerator):
             else ()
         )
         self._id_to_field: Dict[str, OutputField] = {field.id: field for field in self._shape.fields}
+        self._model_identity = model_identity
 
     def produce_code(self, ctx_namespace: ContextNamespace) -> CodeBuilder:
         builder = CodeBuilder()
 
+        ctx_namespace.add('CompatExceptionGroup', CompatExceptionGroup)
         ctx_namespace.add("append_trail", append_trail)
         ctx_namespace.add("extend_trail", extend_trail)
-
         for field_id, dumper in self._fields_dumpers.items():
-            ctx_namespace.add(self._dumper(self._id_to_field[field_id]), dumper)
+            ctx_namespace.add(self._v_dumper(self._id_to_field[field_id]), dumper)
+
+        if self._debug_trail == DebugTrail.ALL:
+            builder('errors = []')
+            builder.empty_line()
 
         if any(field.is_optional for field in self._shape.fields):
             builder("opt_fields = {}")
@@ -142,43 +136,47 @@ class BuiltinModelDumperGen(CodeGenerator):
                 self._gen_field_extraction(
                     builder, ctx_namespace, field,
                     on_access_error="pass",
-                    on_access_ok_req=f"{self.v_field(field)} = $expr",
+                    on_access_ok_req=f"{self._v_field(field)} = $expr",
                     on_access_ok_opt=f"opt_fields[{field.id!r}] = $expr",
                 )
 
         self._gen_extra_extraction(builder, ctx_namespace)
 
-        crown_builder = CodeBuilder()
-        state = self._create_state(ctx_namespace)
+        state = self._create_state(builder, ctx_namespace)
 
-        if not self._gen_root_crown_dispatch(crown_builder, state, self._name_layout.crown):
+        if not self._gen_root_crown_dispatch(state, self._name_layout.crown):
             raise TypeError
 
         if self._name_layout.extra_move is None:
-            crown_builder += f"return {state.crown_var_self()}"
+            state.builder += f"return {state.v_crown}"
         else:
-            crown_builder += Template("return {**$var_self, **extra}").substitute(
-                var_self=state.crown_var_self(),
+            state.builder += Template("return {**$var_self, **extra}").substitute(
+                var_self=state.v_crown,
             )
 
-        self._gen_header(builder, state)
-        builder.extend(crown_builder)
+        self._gen_header(state)
         return builder
 
     def _is_extra_target(self, field: OutputField) -> bool:
         return field.id in self._extra_targets
 
-    def v_field(self, field: OutputField) -> str:
+    def _v_field(self, field: OutputField) -> str:
         return field.id
 
-    def _dumper(self, field: OutputField) -> str:
+    def _v_dumper(self, field: OutputField) -> str:
         return f"dumper_{field.id}"
 
-    def _raw_field(self, field: OutputField) -> str:
+    def _v_raw_field(self, field: OutputField) -> str:
         return f"r_{field.id}"
 
-    def _accessor_getter(self, field: OutputField) -> str:
+    def _v_accessor_getter(self, field: OutputField) -> str:
         return f"accessor_getter_{field.id}"
+
+    def _v_trail_element(self, field: OutputField) -> str:
+        return f"trail_element_{field.id}"
+
+    def _v_access_error(self, field: OutputField) -> str:
+        return f"access_error_{field.id}"
 
     def _gen_access_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
         accessor = field.accessor
@@ -191,22 +189,19 @@ class BuiltinModelDumperGen(CodeGenerator):
             if literal_expr is not None:
                 return f"data[{literal_expr}]"
 
-        accessor_getter = self._accessor_getter(field)
+        accessor_getter = self._v_accessor_getter(field)
         ctx_namespace.add(accessor_getter, field.accessor.getter)
         return f"{accessor_getter}(data)"
 
-    def _get_path_element_var_name(self, field: OutputField) -> str:
-        return f"path_element_{field.id}"
-
-    def _gen_path_element_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
-        path_element = field.accessor.trail_element
-        literal_expr = get_literal_expr(path_element)
+    def _get_trail_element_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
+        trail_element = field.accessor.trail_element
+        literal_expr = get_literal_expr(trail_element)
         if literal_expr is not None:
             return literal_expr
 
-        pe_var_name = self._get_path_element_var_name(field)
-        ctx_namespace.add(pe_var_name, path_element)
-        return pe_var_name
+        v_trail_element = self._v_trail_element(field)
+        ctx_namespace.add(v_trail_element, trail_element)
+        return v_trail_element
 
     def _gen_required_field_extraction(
         self,
@@ -217,29 +212,33 @@ class BuiltinModelDumperGen(CodeGenerator):
         on_access_ok: str,
     ):
         raw_access_expr = self._gen_access_expr(ctx_namespace, field)
-        path_element_expr = self._gen_path_element_expr(ctx_namespace, field)
+        v_element_expr = self._get_trail_element_expr(ctx_namespace, field)
 
         if self._fields_dumpers[field.id] == as_is_stub:
             on_access_ok_stmt = Template(on_access_ok).substitute(expr=raw_access_expr)
         else:
-            dumper = self._dumper(field)
+            dumper = self._v_dumper(field)
             on_access_ok_stmt = Template(on_access_ok).substitute(expr=f"{dumper}({raw_access_expr})")
 
-        if self._debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
+        if self._debug_trail == DebugTrail.ALL:
             builder += f"""
                 try:
                     {on_access_ok_stmt}
                 except Exception as e:
-                    append_trail(e, {path_element_expr})
-                    raise e
+                    errors.append(append_trail(e, {v_element_expr}))
+            """
+        elif self._debug_trail == DebugTrail.FIRST:
+            builder += f"""
+                try:
+                    {on_access_ok_stmt}
+                except Exception as e:
+                    append_trail(e, {v_element_expr})
+                    raise
             """
         else:
             builder += on_access_ok_stmt
 
         builder.empty_line()
-
-    def _get_access_error_var_name(self, field: OutputField) -> str:
-        return f"access_error_{field.id}"
 
     def _gen_optional_field_extraction(
         self,
@@ -251,44 +250,55 @@ class BuiltinModelDumperGen(CodeGenerator):
         on_access_ok: str,
     ):
         raw_access_expr = self._gen_access_expr(ctx_namespace, field)
-        path_element_expr = self._gen_path_element_expr(ctx_namespace, field)
+        path_element_expr = self._get_trail_element_expr(ctx_namespace, field)
 
-        raw_field = self._raw_field(field)
-
+        v_raw_field = self._v_raw_field(field)
         if self._fields_dumpers[field.id] == as_is_stub:
             on_access_ok_stmt = Template(on_access_ok).substitute(
-                expr=raw_field,
+                expr=v_raw_field,
             )
         else:
-            dumper = self._dumper(field)
+            dumper = self._v_dumper(field)
             on_access_ok_stmt = Template(on_access_ok).substitute(
-                expr=f"{dumper}({raw_field})",
+                expr=f"{dumper}({v_raw_field})",
             )
 
         access_error = field.accessor.access_error
-        access_error_var = get_literal_expr(access_error)
-        if access_error_var is None:
-            access_error_var = self._get_access_error_var_name(field)
-            ctx_namespace.add(access_error_var, access_error)
+        access_error_expr = get_literal_expr(access_error)
+        if access_error_expr is None:
+            access_error_expr = self._v_access_error(field)
+            ctx_namespace.add(access_error_expr, access_error)
 
-        if self._debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
+        if self._debug_trail == DebugTrail.ALL:
             builder += f"""
                 try:
-                    {raw_field} = {raw_access_expr}
-                except {access_error_var}:
+                    {v_raw_field} = {raw_access_expr}
+                except {access_error_expr}:
+                    {on_access_error}
+                else:
+                    try:
+                        {on_access_ok_stmt}
+                    except Exception as e:
+                        errors.append(append_trail(e, {path_element_expr}))
+            """
+        elif self._debug_trail == DebugTrail.FIRST:
+            builder += f"""
+                try:
+                    {v_raw_field} = {raw_access_expr}
+                except {access_error_expr}:
                     {on_access_error}
                 else:
                     try:
                         {on_access_ok_stmt}
                     except Exception as e:
                         append_trail(e, {path_element_expr})
-                        raise e
+                        raise
             """
         else:
             builder += f"""
                 try:
-                    {raw_field} = {raw_access_expr}
-                except {access_error_var}:
+                    {v_raw_field} = {raw_access_expr}
+                except {access_error_expr}:
                     {on_access_error}
                 else:
                     {on_access_ok_stmt}
@@ -318,6 +328,22 @@ class BuiltinModelDumperGen(CodeGenerator):
                 on_access_error=on_access_error,
             )
 
+    def _gen_raising_extraction_errors(self, builder: CodeBuilder, ctx_namespace):
+        if self._debug_trail != DebugTrail.ALL:
+            return
+
+        ctx_namespace.add('model_identity', self._model_identity)
+        ctx_namespace.add('render_trail_as_note', render_trail_as_note)
+        builder(
+            """
+            if errors:
+                raise CompatExceptionGroup(
+                    f'while dumping model {model_identity}',
+                    [render_trail_as_note(e) for e in errors],
+                )
+            """
+        )
+
     def _gen_extra_extraction(
         self,
         builder: CodeBuilder,
@@ -327,11 +353,10 @@ class BuiltinModelDumperGen(CodeGenerator):
             self._gen_extra_target_extraction(builder, ctx_namespace)
         elif isinstance(self._name_layout.extra_move, ExtraExtract):
             self._gen_extra_extract_extraction(builder, ctx_namespace, self._name_layout.extra_move)
-        elif self._name_layout.extra_move is not None:
+        elif self._name_layout.extra_move is None:
+            self._gen_raising_extraction_errors(builder, ctx_namespace)
+        else:
             raise ValueError
-
-    def _get_extra_stack_name(self):
-        return "extra_stack"
 
     def _gen_extra_target_extraction(
         self,
@@ -347,6 +372,7 @@ class BuiltinModelDumperGen(CodeGenerator):
                 on_access_ok_req="extra = $expr",
                 on_access_ok_opt="extra = $expr",
             )
+            self._gen_raising_extraction_errors(builder, ctx_namespace)
 
         elif all(field.is_required for field in self._id_to_field.values()):
             for field_id in self._extra_targets:
@@ -354,34 +380,33 @@ class BuiltinModelDumperGen(CodeGenerator):
 
                 self._gen_required_field_extraction(
                     builder, ctx_namespace, field,
-                    on_access_ok=f"{self.v_field(field)} = $expr",
+                    on_access_ok=f"{self._v_field(field)} = $expr",
                 )
 
+            self._gen_raising_extraction_errors(builder, ctx_namespace)
             builder += 'extra = {'
             builder <<= ", ".join(
-                "**" + self.v_field(self._id_to_field[field_id])
+                "**" + self._v_field(self._id_to_field[field_id])
                 for field_id in self._extra_targets
             )
             builder <<= '}'
         else:
-            extra_stack = self._get_extra_stack_name()
-
-            builder += f"{extra_stack} = []"
-
+            builder += "extra_stack = []"
             for field_id in self._extra_targets:
                 field = self._id_to_field[field_id]
 
                 self._gen_field_extraction(
                     builder, ctx_namespace, field,
-                    on_access_ok_req=f"{extra_stack}.append($expr)",
-                    on_access_ok_opt=f"{extra_stack}.append($expr)",
+                    on_access_ok_req="extra_stack.append($expr)",
+                    on_access_ok_opt="extra_stack.append($expr)",
                     on_access_error="pass",
                 )
 
-            builder += f"""
-                extra = {{
-                    key: value for extra_element in {extra_stack} for key, value in extra_element.items()
-                }}
+            self._gen_raising_extraction_errors(builder, ctx_namespace)
+            builder += """
+                extra = {
+                    key: value for extra_element in extra_stack for key, value in extra_element.items()
+                }
             """
 
     def _gen_extra_extract_extraction(
@@ -391,83 +416,97 @@ class BuiltinModelDumperGen(CodeGenerator):
         extra_move: ExtraExtract,
     ):
         ctx_namespace.add('extractor', extra_move.func)
-        builder += "extra = extractor(data)"
+
+        if self._debug_trail == DebugTrail.ALL:
+            builder += """
+                try:
+                    extra = extractor(data)
+                except Exception as e:
+                    errors.append(e)
+            """
+        else:
+            builder += "extra = extractor(data)"
+
+        self._gen_raising_extraction_errors(builder, ctx_namespace)
         builder.empty_line()
 
-    def _gen_header(self, builder: CodeBuilder, state: GenState):
-        if state.path2suffix:
+    def _gen_header(self, state: GenState):
+        builder = CodeBuilder()
+        if state.path_to_suffix:
             builder += "# suffix to path"
-            for path, suffix in state.path2suffix.items():
+            for path, suffix in state.path_to_suffix.items():
                 builder += f"# {suffix} -> {list(path)}"
 
             builder.empty_line()
 
-        if state.field_id2path:
+        if state.field_id_to_path:
             builder += "# field to path"
-            for f_name, path in state.field_id2path.items():
+            for f_name, path in state.field_id_to_path.items():
                 builder += f"# {f_name} -> {list(path)}"
 
             builder.empty_line()
 
-    def _create_state(self, ctx_namespace: ContextNamespace) -> GenState:
-        return GenState(ctx_namespace, self._id_to_field)
+        state.builder.extend_above(builder)
 
-    def _gen_root_crown_dispatch(self, builder: CodeBuilder, state: GenState, crown: OutCrown):
+    def _create_state(self, builder: CodeBuilder, ctx_namespace: ContextNamespace) -> GenState:
+        return GenState(builder, ctx_namespace)
+
+    def _gen_root_crown_dispatch(self, state: GenState, crown: OutCrown):
         if isinstance(crown, OutDictCrown):
-            self._gen_dict_crown(builder, state, crown)
+            self._gen_dict_crown(state, crown)
         elif isinstance(crown, OutListCrown):
-            self._gen_list_crown(builder, state, crown)
+            self._gen_list_crown(state, crown)
         else:
             return False
         return True
 
-    def _gen_crown_dispatch(self, builder: CodeBuilder, state: GenState, sub_crown: OutCrown, key: CrownPathElem):
+    def _gen_crown_dispatch(self, state: GenState, sub_crown: OutCrown, key: CrownPathElem):
         with state.add_key(key):
-            if self._gen_root_crown_dispatch(builder, state, sub_crown):
+            if self._gen_root_crown_dispatch(state, sub_crown):
                 return
             if isinstance(sub_crown, OutFieldCrown):
-                self._gen_field_crown(builder, state, sub_crown)
+                self._gen_field_crown(state, sub_crown)
                 return
             if isinstance(sub_crown, OutNoneCrown):
-                self._gen_none_crown(builder, state, sub_crown)
+                self._gen_none_crown(state, sub_crown)
                 return
 
             raise TypeError
 
-    def _get_element_expr_for_none_crown(self, state: GenState, key: CrownPathElem, crown: OutNoneCrown) -> ElementExpr:
-        if isinstance(crown.filler, DefaultFactory):
-            literal_expr = get_literal_from_factory(crown.filler.factory)
+    def _get_element_expr_for_none_crown(self, state: GenState, crown: OutNoneCrown) -> ElementExpr:
+        if isinstance(crown.placeholder, DefaultFactory):
+            literal_expr = get_literal_from_factory(crown.placeholder.factory)
             if literal_expr is not None:
                 return ElementExpr(literal_expr, can_inline=True)
 
-            state.ctx_namespace.add(state.filler(), crown.filler.factory)
-            return ElementExpr(state.filler() + '()', can_inline=False)
+            state.ctx_namespace.add(state.v_placeholder, crown.placeholder.factory)
+            return ElementExpr(state.v_placeholder + '()', can_inline=False)
 
-        if isinstance(crown.filler, DefaultValue):
-            literal_expr = get_literal_expr(crown.filler.value)
+        if isinstance(crown.placeholder, DefaultValue):
+            literal_expr = get_literal_expr(crown.placeholder.value)
             if literal_expr is not None:
                 return ElementExpr(literal_expr, can_inline=True)
 
-            state.ctx_namespace.add(state.filler(), crown.filler.value)
-            return ElementExpr(state.filler(), can_inline=True)
+            state.ctx_namespace.add(state.v_placeholder, crown.placeholder.value)
+            return ElementExpr(state.v_placeholder, can_inline=True)
 
         raise TypeError
 
     def _get_element_expr(self, state: GenState, key: CrownPathElem, crown: OutCrown) -> ElementExpr:
         with state.add_key(key):
             if isinstance(crown, OutNoneCrown):
-                return self._get_element_expr_for_none_crown(state, key, crown)
+                return self._get_element_expr_for_none_crown(state, crown)
 
             if isinstance(crown, OutFieldCrown):
                 field = self._id_to_field[crown.id]
                 if field.is_required:
-                    field_expr = self.v_field(field)
+                    field_expr = self._v_field(field)
                 else:
                     raise ValueError("Can not generate ElementExpr for optional field")
                 return ElementExpr(field_expr, can_inline=True)
 
             if isinstance(crown, (OutDictCrown, OutListCrown)):
-                return ElementExpr(state.crown_var(), can_inline=True)
+                return ElementExpr(state.v_crown, can_inline=True)
 
             raise TypeError
 
@@ -477,95 +516,89 @@ class BuiltinModelDumperGen(CodeGenerator):
 
         return self._id_to_field[crown.id].is_required
 
-    def _gen_dict_crown(self, builder: CodeBuilder, state: GenState, crown: OutDictCrown):
+    def _gen_dict_crown(self, state: GenState, crown: OutDictCrown):
         for key, value in crown.map.items():
-            self._gen_crown_dispatch(builder, state, value, key)
+            self._gen_crown_dispatch(state, value, key)
 
         required_keys = [
             key for key, sub_crown in crown.map.items()
             if key not in crown.sieves and self._is_required_crown(sub_crown)
         ]
-
-        self_var = state.crown_var_self()
-
         if required_keys:
-            with builder(f"{self_var} = {{"):
+            with state.builder(f"{state.v_crown} = {{"):
                 for key in required_keys:
-                    builder += f"{key!r}: {self._get_element_expr(state, key, crown.map[key]).expr},"
+                    state.builder += f"{key!r}: {self._get_element_expr(state, key, crown.map[key]).expr},"
 
-            builder += "}"
+            state.builder += "}"
         else:
-            builder += f"{self_var} = {{}}"
+            state.builder += f"{state.v_crown} = {{}}"
 
         for key, sub_crown in crown.map.items():
             if key in required_keys:
                 continue
 
-            self._gen_dict_optional_crown_fragment(builder, state, crown, key, sub_crown)
+            self._gen_dict_optional_crown_fragment(state, crown, key, sub_crown)
 
         if not crown.map:
-            builder.empty_line()
+            state.builder.empty_line()
 
     def _gen_dict_optional_crown_fragment(
         self,
-        builder: CodeBuilder,
         state: GenState,
         crown: OutDictCrown,
         key: str,
         sub_crown: OutCrown
     ):
         if isinstance(sub_crown, OutFieldCrown) and self._id_to_field[sub_crown.id].is_optional:
-            builder += f"""
+            with state.builder(
+                f"""
                 try:
                     value = opt_fields[{sub_crown.id!r}]
                 except KeyError:
                     pass
                 else:
-            """
-            with builder:
+                """
+            ):
                 if key in crown.sieves:
                     self._gen_dict_sieved_append(
-                        builder, state, crown.sieves[key], key,
-                        element_expr=ElementExpr('value', can_inline=True)
+                        state, crown.sieves[key], key,
+                        element_expr=ElementExpr('value', can_inline=True),
                     )
                 else:
-                    self_var = state.crown_var_self()
-                    builder(f"{self_var}[{key!r}] = value")
+                    state.builder(f"{state.v_crown}[{key!r}] = value")
         else:
             element_expr = self._get_element_expr(state, key, sub_crown)
             self._gen_dict_sieved_append(
-                builder, state, crown.sieves[key], key, element_expr
+                state, crown.sieves[key], key, element_expr
             )
 
     def _gen_dict_sieved_append(
         self,
-        builder: CodeBuilder,
         state: GenState,
         sieve: Sieve,
         key: str,
         element_expr: ElementExpr,
     ):
-        self_var = state.crown_var_self()
-        condition = self._gen_sieve_condition(state, sieve, key, element_expr.expr)
+        condition = self._get_sieve_condition(state, sieve, key, element_expr.expr)
         if element_expr.can_inline:
-            builder += f"""
+            state.builder += f"""
                 if {condition}:
-                    {self_var}[{key!r}] = {element_expr.expr}
+                    {state.v_crown}[{key!r}] = {element_expr.expr}
             """
         else:
-            builder += f"""
+            state.builder += f"""
                 value = {element_expr.expr}
                 if {condition}:
-                    {self_var}[{key!r}] = value
+                    {state.v_crown}[{key!r}] = value
             """
-        builder.empty_line()
+        state.builder.empty_line()
 
-    def _gen_sieve_condition(self, state: GenState, sieve: Sieve, key: str, input_expr: str) -> str:
+    def _get_sieve_condition(self, state: GenState, sieve: Sieve, key: str, input_expr: str) -> str:
         default_clause = get_default_clause(sieve)
         if default_clause is None:
-            sieve_var = state.sieve(key)
-            state.ctx_namespace.add(sieve_var, sieve)
-            return f'{sieve_var}({input_expr})'
+            v_sieve = state.v_sieve(key)
+            state.ctx_namespace.add(v_sieve, sieve)
+            return f'{v_sieve}({input_expr})'
 
         if isinstance(default_clause, DefaultValue):
             literal_expr = get_literal_expr(default_clause.value)
@@ -575,37 +608,37 @@ class BuiltinModelDumperGen(CodeGenerator):
                     if is_singleton(default_clause.value) else
                     f"{input_expr} != {literal_expr}"
                 )
-            default_clause_var = state.default_clause(key)
-            state.ctx_namespace.add(default_clause_var, default_clause.value)
-            return f"{input_expr} != {default_clause_var}"
+            v_default = state.v_default(key)
+            state.ctx_namespace.add(v_default, default_clause.value)
+            return f"{input_expr} != {v_default}"
 
         if isinstance(default_clause, DefaultFactory):
             literal_expr = get_literal_from_factory(default_clause.factory)
             if literal_expr is not None:
                 return f"{input_expr} != {literal_expr}"
-            default_clause_var = state.default_clause(key)
-            state.ctx_namespace.add(default_clause_var, default_clause.factory)
-            return f"{input_expr} != {default_clause_var}()"
+            v_default = state.v_default(key)
+            state.ctx_namespace.add(v_default, default_clause.factory)
+            return f"{input_expr} != {v_default}()"
 
         if isinstance(default_clause, DefaultFactoryWithSelf):
-            default_clause_var = state.default_clause(key)
-            state.ctx_namespace.add(default_clause_var, default_clause.factory)
-            return f"{input_expr} != {default_clause_var}(data)"
+            v_default = state.v_default(key)
+            state.ctx_namespace.add(v_default, default_clause.factory)
+            return f"{input_expr} != {v_default}(data)"
 
         raise TypeError
 
-    def _gen_list_crown(self, builder: CodeBuilder, state: GenState, crown: OutListCrown):
+    def _gen_list_crown(self, state: GenState, crown: OutListCrown):
         for i, sub_crown in enumerate(crown.map):
-            self._gen_crown_dispatch(builder, state, sub_crown, i)
+            self._gen_crown_dispatch(state, sub_crown, i)
 
-        with builder(f"{state.crown_var_self()} = ["):
+        with state.builder(f"{state.v_crown} = ["):
             for i, sub_crown in enumerate(crown.map):
-                builder += self._get_element_expr(state, i, sub_crown).expr + ","
+                state.builder += self._get_element_expr(state, i, sub_crown).expr + ","
 
-        builder += "]"
+        state.builder += "]"
 
-    def _gen_field_crown(self, builder: CodeBuilder, state: GenState, crown: OutFieldCrown):
-        state.field_id2path[crown.id] = state.path
+    def _gen_field_crown(self, state: GenState, crown: OutFieldCrown):
+        state.field_id_to_path[crown.id] = state.path
 
-    def _gen_none_crown(self, builder: CodeBuilder, state: GenState, crown: OutNoneCrown):
+    def _gen_none_crown(self, state: GenState, crown: OutNoneCrown):
         pass

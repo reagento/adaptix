@@ -10,16 +10,12 @@ from typing import Generic, Type, TypeVar, Union
 from ..common import Dumper, Loader
 from ..essential import CannotProvide, Mediator
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
-from .model.special_cases_optimization import none_loader
+from .model.special_cases_optimization import as_is_stub, none_loader
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC, for_predicate
 from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
 from .request_filtering import create_request_checker
 
 T = TypeVar('T')
-
-
-def stub(arg):
-    return arg
 
 
 @dataclass
@@ -100,7 +96,7 @@ class NoneProvider(LoaderProvider, DumperProvider):
         return none_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return stub
+        return as_is_stub
 
 
 class Base64DumperMixin(DumperProvider):

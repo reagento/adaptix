@@ -20,7 +20,7 @@ from .basic_gen import (
 )
 from .crown_definitions import OutputNameLayout, OutputNameLayoutRequest
 from .definitions import CodeGenerator, OutputShape, OutputShapeRequest
-from .dumper_gen import BuiltinModelDumperGen
+from .dumper_gen import ModelDumperGen
 from .fields import output_field_to_loc_map
 from .shape_provider import provide_generic_resolved_shape
 
@@ -68,6 +68,20 @@ class ModelDumperProvider(DumperProvider):
             shape=shape,
             name_layout=name_layout,
             fields_dumpers=fields_dumpers,
+            model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
+        )
+
+    def _fetch_model_identity(
+        self,
+        mediator: Mediator,
+        request: DumperRequest,
+        shape: OutputShape,
+        name_layout: OutputNameLayout,
+    ) -> str:
+        return (
+            repr(request.loc_map[TypeHintLoc].type)
+            if request.loc_map.has(TypeHintLoc) else
+            '<unknown model>'
         )
 
     def _create_model_dumper_gen(
@@ -76,12 +90,14 @@ class ModelDumperProvider(DumperProvider):
         shape: OutputShape,
         name_layout: OutputNameLayout,
         fields_dumpers: Mapping[str, Dumper],
+        model_identity: str,
     ) -> CodeGenerator:
-        return BuiltinModelDumperGen(
+        return ModelDumperGen(
             shape=shape,
             name_layout=name_layout,
             debug_trail=debug_trail,
             fields_dumpers=fields_dumpers,
+            model_identity=model_identity,
         )
 
     def _get_closure_name(self, request: DumperRequest) -> str:
