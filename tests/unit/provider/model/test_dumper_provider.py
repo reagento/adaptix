@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Optional, Type
 from unittest.mock import ANY
 
 import pytest
-from tests_helpers import ByTrailSelector, DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc
+from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc
 
 from adaptix import DebugTrail, Dumper, bound
 from adaptix._internal.common import Catchable

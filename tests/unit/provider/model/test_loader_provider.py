@@ -520,9 +520,9 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_trail, trail_select):
 
     raises_exc(
         trail_select(
-            disable=NoRequiredFieldsError({'m_a', 'm_b'}),
-            first=NoRequiredFieldsError({'m_a', 'm_b'}),
-            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredFieldsError({'m_a', 'm_b'})])
+            disable=NoRequiredFieldsError({'m_a'}),
+            first=NoRequiredFieldsError({'m_a'}),
+            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredFieldsError({'m_a'})])
         ),
         lambda: loader({'a': 1, 'b': 2}),
     )
@@ -669,9 +669,9 @@ def test_flat_mapping(debug_ctx, debug_trail, is_required, trail_select):
 
     raises_exc(
         trail_select(
-            disable=NoRequiredFieldsError({'m_a', 'm_b'}),
-            first=NoRequiredFieldsError({'m_a', 'm_b'}),
-            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredFieldsError({'m_a', 'm_b'})])
+            disable=NoRequiredFieldsError({'m_a'}),
+            first=NoRequiredFieldsError({'m_a'}),
+            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredFieldsError({'m_a'})])
         ),
         lambda: loader({'a': 1, 'b': 2}),
     )

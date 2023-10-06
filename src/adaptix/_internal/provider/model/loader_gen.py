@@ -68,6 +68,10 @@ class Namer:
         return self._with_path_suffix('known_keys')
 
     @property
+    def v_required_keys(self) -> str:
+        return self._with_path_suffix('required_keys')
+
+    @property
     def v_extra(self) -> str:
         return self._with_path_suffix('extra')
 
@@ -367,7 +371,7 @@ class ModelLoaderGen(CodeGenerator):
             lookup_error = 'KeyError'
             bad_type_error = '(TypeError, IndexError)'
             bad_type_load_error = 'TypeLoadError(CollectionsMapping)'
-            not_found_error = f"NoRequiredFieldsError({state.parent.v_known_keys} - set({state.parent.v_data}))"
+            not_found_error = f"NoRequiredFieldsError({state.parent.v_required_keys} - set({state.parent.v_data}))"
         else:
             lookup_error = 'IndexError'
             bad_type_error = '(TypeError, KeyError)'
@@ -440,8 +444,15 @@ class ModelLoaderGen(CodeGenerator):
         )
         state.builder.empty_line()
 
+    def _get_dict_crown_required_keys(self, crown: InpDictCrown) -> Set[str]:
+        return set(
+            key for key, value in crown.map.items()
+            if not (isinstance(value, InpFieldCrown) and self._name_to_field[value.id].is_optional)
+        )
+
     def _gen_dict_crown(self, state: GenState, crown: InpDictCrown):
         state.ctx_namespace.add(state.v_known_keys, set(crown.map.keys()))
+        state.ctx_namespace.add(state.v_required_keys, self._get_dict_crown_required_keys(crown))
 
         if state.path:
             self._gen_assigment_from_parent_data(state, assign_to=state.v_data)
