@@ -1,12 +1,19 @@
 import collections.abc
 from dataclasses import dataclass, replace
 from inspect import isabstract
-from typing import Any, Callable, Collection, Container, Dict, Iterable, Literal, Mapping, Tuple, Union
+from typing import Any, Callable, Collection, Dict, Iterable, Literal, Mapping, Tuple, Union
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
 from ..essential import CannotProvide, Mediator
-from ..load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError, UnionLoadError
+from ..load_error import (
+    AggregateLoadError,
+    BadVariantError,
+    ExcludedTypeLoadError,
+    LoadError,
+    TypeLoadError,
+    UnionLoadError,
+)
 from ..struct_trail import ItemKey, append_trail, render_trail_as_note
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
 from ..type_tools.normalize_type import NotSubscribedError
@@ -78,7 +85,7 @@ def _is_exact_zero_or_one(arg):
 class LiteralProvider(LoaderProvider, DumperProvider):
     tuple_size_limit: int = 4
 
-    def _get_container(self, args: Collection) -> Container:
+    def _get_allowed_values_collection(self, args: Collection) -> Collection:
         if len(args) > self.tuple_size_limit:
             return set(args)
         return tuple(args)
@@ -92,7 +99,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             isinstance(arg, bool) or _is_exact_zero_or_one(arg)
             for arg in norm.args
         ):
-            allowed_values = self._get_container(
+            allowed_values = self._get_allowed_values_collection(
                 [(type(el), el) for el in norm.args]
             )
 
@@ -100,16 +107,16 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             def literal_loader_sc(data):
                 if (type(data), data) in allowed_values:
                     return data
-                raise LoadError
+                raise BadVariantError(allowed_values)
 
             return literal_loader_sc
 
-        allowed_values = self._get_container(norm.args)
+        allowed_values = self._get_allowed_values_collection(norm.args)
 
         def literal_loader(data):
             if data in allowed_values:
                 return data
-            raise LoadError
+            raise BadVariantError(allowed_values)
 
         return literal_loader
 

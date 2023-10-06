@@ -445,10 +445,10 @@ class ModelLoaderGen(CodeGenerator):
         state.builder.empty_line()
 
     def _get_dict_crown_required_keys(self, crown: InpDictCrown) -> Set[str]:
-        return set(
+        return {
             key for key, value in crown.map.items()
             if not (isinstance(value, InpFieldCrown) and self._name_to_field[value.id].is_optional)
-        )
+        }
 
     def _gen_dict_crown(self, state: GenState, crown: InpDictCrown):
         state.ctx_namespace.add(state.v_known_keys, set(crown.map.keys()))
