@@ -1,0 +1,19 @@
++ Exception Group Traceback (most recent call last):
+|   File "/.../docs/examples/tutorial/validators.py", line 24, in <module>
+|     retort.load(data, Book)
+|   File "/.../adaptix/_internal/facade/retort.py", line 278, in load
+|     return self.get_loader(tp)(data)
+|            ^^^^^^^^^^^^^^^^^^^^^^^^^
+|   File "model_loader_Book", line 76, in model_loader_Book
+| adaptix.load_error.AggregateLoadError: while loading model <class '__main__.Book'> (1 sub-exception)
++-+---------------- 1 ----------------
+  | Traceback (most recent call last):
+  |   File "model_loader_Book", line 51, in model_loader_Book
+  |   File "/.../adaptix/_internal/provider/provider_wrapper.py", line 86, in chain_processor
+  |     return second(first(data))
+  |            ^^^^^^^^^^^^^^^^^^^
+  |   File "/.../adaptix/_internal/facade/provider.py", line 360, in validating_loader
+  |     raise exception_factory(data)
+  | adaptix.load_error.ValidationError: value must be greater or equal 0
+  | Exception was caused at ['price']
+  +------------------------------------

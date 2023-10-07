@@ -1,29 +1,21 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 from adaptix import Retort, loader
 from adaptix.struct_trail import Attr, get_trail
 
 
 @dataclass
-class Person:
-    id: str
-    name: str
-
-
-@dataclass
 class Book:
     title: str
     price: int
-    author: Person
+    created_at: datetime
 
 
 data = {
     "title": "Fahrenheit 451",
     "price": 100,
-    "author": {
-        "id": '2ce5bc44e1384d91ba6767a8013ae505',
-        "name": "Ray Bradbury",
-    },
+    "created_at": '2023-10-07T16:25:19.303579',
 }
 
 
@@ -34,23 +26,27 @@ def broken_title_loader(data):
 retort = Retort(
     recipe=[
         loader('title', broken_title_loader),
-    ]
+    ],
 )
 
 try:
     retort.load(data, Book)
 except Exception as e:
-    assert isinstance(e, ArithmeticError)
-    assert list(get_trail(e)) == ['title']
+    assert isinstance(e, ExceptionGroup)
+    assert len(e.exceptions) == 1
+    assert isinstance(e.exceptions[0], ArithmeticError)
+    assert list(get_trail(e.exceptions[0])) == ['title']
 
 book = Book(
     title="Fahrenheit 451",
     price=100,
-    author=None,  # type: ignore[arg-type]
+    created_at=None,  # type: ignore[arg-type]
 )
 
 try:
     retort.dump(book)
 except Exception as e:
-    assert isinstance(e, AttributeError)
-    assert list(get_trail(e)) == [Attr('author'), Attr('id')]
+    assert isinstance(e, ExceptionGroup)
+    assert len(e.exceptions) == 1
+    assert isinstance(e.exceptions[0], TypeError)
+    assert list(get_trail(e.exceptions[0])) == [Attr('created_at')]

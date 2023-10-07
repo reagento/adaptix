@@ -1,0 +1,23 @@
++ Exception Group Traceback (most recent call last):
+|   File "/.../docs/examples/tutorial/load_error.py", line 20, in <module>
+|     retort.load(data, Book)
+|   File "/.../adaptix/_internal/facade/retort.py", line 278, in load
+|     return self.get_loader(tp)(data)
+|            ^^^^^^^^^^^^^^^^^^^^^^^^^
+|   File "model_loader_Book", line 93, in model_loader_Book
+| adaptix.load_error.AggregateLoadError: while loading model <class '__main__.Book'> (2 sub-exceptions)
++-+---------------- 1 ----------------
+  | Traceback (most recent call last):
+  |   File "model_loader_Book", line 68, in model_loader_Book
+  |   File "/.../adaptix/_internal/provider/concrete_provider.py", line 192, in int_strict_coercion_loader
+  |     raise TypeLoadError(int)
+  | adaptix.load_error.TypeLoadError: expected_type=<class 'int'>
+  | Exception was caused at ['price']
+  +---------------- 2 ----------------
+  | Traceback (most recent call last):
+  |   File "model_loader_Book", line 83, in model_loader_Book
+  |   File "/.../adaptix/_internal/provider/concrete_provider.py", line 242, in str_strict_coercion_loader
+  |     raise TypeLoadError(str)
+  | adaptix.load_error.TypeLoadError: expected_type=<class 'str'>
+  | Exception was caused at ['title']
+  +------------------------------------

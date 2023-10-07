@@ -159,15 +159,6 @@ def full_match_regex_str(string_to_match: str) -> str:
     return '^' + re.escape(string_to_match) + '$'
 
 
-@contextmanager
-def rollback_object_state(obj):
-    state_copy = copy(obj.__dict__)
-    try:
-        yield obj
-    finally:
-        obj.__dict__ = state_copy
-
-
 def pretty_typehint_test_id(config, val, argname):
     if is_parametrized(val):
         return str(val)

@@ -9,7 +9,6 @@ from adaptix.load_error import (
     AggregateLoadError,
     BadVariantError,
     ExtraFieldsError,
-    LoadError,
     TypeLoadError,
     UnionLoadError,
     ValidationError,
@@ -19,7 +18,7 @@ from adaptix.struct_trail import extend_trail
 
 from .models import NotifyEmail, NotifyPhone, NotifyTarget, Receipt, ReceiptType, RecItem, Taxation
 from .money import rubles
-from .retort import INNER_RECEIPT_RETORT, OUTER_RECEIPT_RETORT
+from .retort import inner_receipt_retort, outer_receipt_retort
 
 
 def change(data, path: List[Union[str, int]], new_value: Any):
@@ -48,7 +47,7 @@ outer_sample_data = {
     ],
 }
 
-outer_receipt_loader = OUTER_RECEIPT_RETORT.get_loader(Receipt)
+outer_receipt_loader = outer_receipt_retort.get_loader(Receipt)
 
 
 def test_outer_loading_basic():
@@ -120,7 +119,7 @@ def test_outer_loading_bad_phone():
                                                 AggregateLoadError(
                                                     f'while loading model {NotifyEmail}',
                                                     [
-                                                        extend_trail(LoadError(), ['type'])
+                                                        extend_trail(BadVariantError({'email'}), ['type'])
                                                     ]
                                                 ),
                                                 AggregateLoadError(
@@ -311,7 +310,7 @@ def test_inner():
         taxation=Taxation.USN_MINUS,
         notify=[NotifyEmail("mail@example.com")],
     )
-    loaded_data = INNER_RECEIPT_RETORT.load(data, Receipt)
+    loaded_data = inner_receipt_retort.load(data, Receipt)
     assert loaded_data == receipt
-    dumped_data = INNER_RECEIPT_RETORT.dump(receipt)
+    dumped_data = inner_receipt_retort.dump(receipt)
     assert dumped_data == data

@@ -1,12 +1,8 @@
-import json
-import logging
 from collections import deque
 
 import pytest
-from pythonjsonlogger import jsonlogger
-from tests_helpers import rollback_object_state
 
-from adaptix.struct_trail import StructPathRendererFilter, append_trail, extend_trail, get_trail
+from adaptix.struct_trail import append_trail, extend_trail, get_trail
 
 
 def _raw_trail(obj: object):
@@ -48,43 +44,3 @@ def test_get_trail():
     append_trail(new_exc, 'bar')
 
     assert list(get_trail(new_exc)) == ['bar']
-
-
-@pytest.fixture()
-def temp_logger():
-    logger = logging.getLogger('temp_test_logger')
-    with rollback_object_state(logger):
-        yield logger
-
-
-def test_struct_path_renderer_filter(caplog, temp_logger):
-    caplog.set_level(logging.DEBUG, temp_logger.name)
-    temp_logger.addFilter(StructPathRendererFilter())
-
-    try:
-        raise ValueError
-    except Exception:
-        temp_logger.exception('unexpected exception')
-    assert caplog.records[-1].struct_path == []
-
-    try:
-        raise extend_trail(ValueError(), ['a', 'b'])
-    except Exception:
-        temp_logger.exception('unexpected exception')
-    assert caplog.records[-1].struct_path == ['a', 'b']
-
-
-def test_struct_path_renderer_with_pythonjsonlogger(caplog, temp_logger):
-    caplog.set_level(logging.DEBUG, temp_logger.name)
-    temp_logger.addFilter(StructPathRendererFilter())
-
-    with rollback_object_state(caplog.handler):
-        caplog.handler.setFormatter(jsonlogger.JsonFormatter())
-
-        try:
-            raise extend_trail(ValueError(), ['a', 'b'])
-        except Exception:
-            temp_logger.exception('unexpected exception')
-
-        assert len(caplog.records) == 1
-        assert json.loads(caplog.text)['struct_path'] == ['a', 'b']

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from adaptix import P, Retort, validator
-from adaptix.load_error import LoadError, ValidationError
+from adaptix.load_error import AggregateLoadError, LoadError, ValidationError
 
 
 @dataclass
@@ -23,13 +23,18 @@ retort = Retort(
 
 try:
     retort.load(data, Book)
-except ValidationError as e:
-    assert e.msg == "value must be greater or equal 0"
+except AggregateLoadError as e:
+    assert len(e.exceptions) == 1
+    assert isinstance(e.exceptions[0], ValidationError)
+    assert e.exceptions[0].msg == "value must be greater or equal 0"
 
 
 class BelowZero(LoadError):
     def __init__(self, actual_value: int):
         self.actual_value = actual_value
+
+    def __str__(self):
+        return f'actual_value={self.actual_value}'
 
 
 retort = Retort(
@@ -40,5 +45,7 @@ retort = Retort(
 
 try:
     retort.load(data, Book)
-except BelowZero as e:
-    assert e.actual_value == -10
+except AggregateLoadError as e:
+    assert len(e.exceptions) == 1
+    assert isinstance(e.exceptions[0], BelowZero)
+    assert e.exceptions[0].actual_value == -10

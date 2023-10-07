@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from pytest import param, register_assert_rewrite
 
-from adaptix._internal.feature_requirement import HAS_PY_310
+from adaptix._internal.feature_requirement import HAS_PY_311
 
 REPO_ROOT = Path(__file__).parent.parent
 DOCS_EXAMPLES_ROOT = REPO_ROOT / 'docs' / 'examples'
@@ -35,8 +35,8 @@ def pytest_generate_tests(metafunc):
 
 
 def test_example(import_path: str, case_id: str):
-    if case_id == 'tutorial/struct_path_renderer_filter' and not HAS_PY_310:
-        pytest.skip('Need Python >= 3.10')
+    if case_id == 'tutorial/unexpected_error' and not HAS_PY_311:
+        pytest.skip('Need Python >= 3.11')
 
     register_assert_rewrite(import_path)
     importlib.import_module(import_path)

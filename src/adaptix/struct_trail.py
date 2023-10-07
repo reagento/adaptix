@@ -1,9 +1,6 @@
 from adaptix._internal.struct_trail import (
     Attr,
-    ExcPathRenderer,
     ItemKey,
-    PathedException,
-    StructPathRendererFilter,
     Trail,
     TrailElement,
     TrailElementMarker,
@@ -14,9 +11,6 @@ from adaptix._internal.struct_trail import (
 )
 
 __all__ = (
-    'StructPathRendererFilter',
-    'PathedException',
-    'ExcPathRenderer',
     'TrailElement',
     'TrailElementMarker',
     'Attr',

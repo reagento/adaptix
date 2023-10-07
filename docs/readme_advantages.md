@@ -8,10 +8,8 @@
   including different model kinds:
   ``@dataclass``, ``TypedDict``, ``NamedTuple``, and [``attrs``](https://www.attrs.org/en/stable/)
 * Working with self-referenced data types (such as linked lists or trees).
-* Saving [path](https://adaptix.readthedocs.io/en/latest/tutorial.html#struct-path)
+* Saving [path](https://adaptix.readthedocs.io/en/latest/tutorial.html#error-handling)
   where an exception is raised (including unexpected errors).
-* Easy [integration](https://adaptix.readthedocs.io/en/latest/tutorial.html#struct-path)
-  with Sentry, Datadog, and other monitoring systems.
 * Machine-readable [errors](https://adaptix.readthedocs.io/en/latest/tutorial.html#error-handling)
   that could be dumped.
 * Support for user-defined generic models.

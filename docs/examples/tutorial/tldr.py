@@ -16,6 +16,7 @@ data = {
     "price": 100,
 }
 
+# Retort is meant to be global constant or just one-time created
 retort = Retort()
 
 book = retort.load(data, Book)

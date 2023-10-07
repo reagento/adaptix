@@ -23,10 +23,10 @@ It can create models from mapping (loading) and create mappings from the model (
 .. literalinclude:: examples/tutorial/tldr.py
    :lines: 2-
 
-All typing information is retrieved from your annotations, so it is not required from you to provide any schema
+All typing information is retrieved from your annotations, so is not required from you to provide any additional schema
 or even change your dataclass decorators or class bases.
 
-In provided example ``book.author == "Unknown author"`` because normal dataclass constructor is called.
+In the provided example ``book.author == "Unknown author"`` because normal dataclass constructor is called.
 
 It is better to create a retort only once because all loaders are cached inside it after the first usage.
 Otherwise, the structure of your classes will be analyzed again and again for every new instance of Retort.
@@ -37,7 +37,7 @@ Nested objects
 
 Nested objects are supported out of the box. It is surprising,
 but you do not have to do anything except define your dataclasses.
-For example, you expect that author of the Book is an instance of a Person, but in the dumped form it is a dictionary.
+For example, you expect that the author of the Book is an instance of a Person, but in the dumped form it is a dictionary.
 
 Declare your dataclasses as usual and then just load your data.
 
@@ -59,16 +59,17 @@ Fields also can contain any supported collections.
 Retort configuration
 ======================
 
-There are two options that :class:`.Retort` constructor takes.
+There are two parameters that :class:`.Retort` constructor takes.
 
-:paramref:`debug_path` parameter is responsible for saving path where exception was caused.
-You can disable this option if data is loading or dumping from a trusted source where an error is unlikely.
-It will slightly improve performance if no error will be caused and will have more impact if an exception will be raised.
-More detail about working with the saved path in :ref:`Struct path`
-
+:paramref:`debug_trail` is responsible for saving the place where the exception was caused.
+By default, retort saves all raised errors (including unexpected ones) and the path to them.
+If data is loading or dumping from a trusted source where an error is unlikely,
+you can change this behavior to saving only the first error with trail or without trail.
+It will slightly improve performance if no error is caused and will have more impact if an exception is raised.
+More details about working with the saved trail in :ref:`Error handling`
 
 :paramref:`strict_coercion` affects only the loading process.
-If it is enabled (this is default state) type will be converted only two conditions passed:
+If it is enabled (this is the default state) type will be converted only two conditions passed:
 
 #. There is only one way to produce casting
 #. No information will be lost
@@ -93,9 +94,9 @@ The recipe consists of `providers`, each of which can precisely override one of 
 
 Default ``datetime`` loader accepts only ``str`` in ``ISO 8601`` format,
 ``loader(datetime, lambda x: datetime.fromtimestamp(x, tz=timezone.utc))``
-replaces it with specified lambda function that takes ``int`` representing ``Unix time``.
+replaces it with a specified lambda function that takes ``int`` representing ``Unix time``.
 
-.. dropdown:: Same example but with dumper
+.. dropdown:: Same example but with a dumper
 
   .. literalinclude:: examples/tutorial/retort_recipe_intro_dumper.py
 
@@ -163,10 +164,10 @@ Some facts about ``P``:
 Retort extension and combination
 -------------------------------------
 
-No changes can be done after the retort creation.
+No changes can be made after the retort creation.
 You can only make new retort object based on the existing one
 
-:meth:`~.Retort.replace` method using to change scalar options ``debug_path`` and ``strict_coercion``
+:meth:`~.Retort.replace` method using to change scalar options ``debug_trail`` and ``strict_coercion``
 
 .. literalinclude:: examples/tutorial/retort_replace.py
 
@@ -176,14 +177,14 @@ This allows following the DRY principle.
 .. literalinclude:: examples/tutorial/retort_extend.py
 
 You can include one retort to another,
-it allows to separates creation of loaders and dumpers for specific types into isolated layers.
+it allows to separate creation of loaders and dumpers for specific types into isolated layers.
 
 .. literalinclude:: examples/tutorial/retort_combination.py
 
 In this example, loader and dumper for ``LiteraryWork`` will be created by ``literature_retort``
-(note that ``debug_path`` and ``strict_coercion`` options of upper-level retort do not affects inner retorts).
+(note that ``debug_trail`` and ``strict_coercion`` options of upper-level retort do not affects inner retorts).
 
-Retort is provider that proxies search into own recipe, so if you pass retort without a :func:`.bound` wrapper,
+Retort is provider that proxies search into their own recipe, so if you pass retort without a :func:`.bound` wrapper,
 it will be used for all loaders and dumpers, overriding all subsequent providers.
 
 
@@ -191,7 +192,7 @@ Provider chaining
 =========================
 
 Sometimes you want to add some additional data processing before or after the existing converter
-instead of fully replacement of it. This is called `chaining`.
+instead of fully replacing it. This is called `chaining`.
 
 The third parameter of :func:`.loader` and :func:`.dumper` control the chaining process.
 :attr:`.Chain.FIRST` means that the result of the given function
@@ -212,59 +213,61 @@ If the test function returns ``False``, the exception will be raised.
 You can pass an exception factory
 that returns the actual exception or pass the string to raise :class:`~.load_error.ValidationError` instance.
 
+.. dropdown:: Traceback of raised errors
+
+  .. literalinclude:: examples/tutorial/validators_1.pytb
+
+  .. literalinclude:: examples/tutorial/validators_2.pytb
+
 
 Error handling
 ==================
 
 All loaders have to throw :class:`~.load_error.LoadError` to signal invalid input data.
 Other exceptions mean errors at loaders themselves.
-All builtin :class:`~.load_error.LoadError` children are listed at :mod:`adaptix.load_error` subpackage
+All builtin :class:`~.load_error.LoadError` children have listed at :mod:`adaptix.load_error` subpackage
 and designed to produce machine-readable structured errors.
 
-.. literalinclude:: examples/tutorial/load_error.py
+.. literalinclude:: examples/tutorial/load_error_dt_all.py
 
+.. dropdown:: Traceback of raised error (``DebugTrail.ALL``)
 
-Struct path
------------------
+  .. literalinclude:: examples/tutorial/load_error_dt_all.pytb
 
-Also, builtin loaders and dumpers save path where error was caused.
-This path acts like `JSONPath <https://www.ietf.org/archive/id/draft-ietf-jsonpath-base-09.txt>`_
-and point to location inside the input data.
+By default, all thrown errors are collected into :class:`~.load_error.AggregateLoadError`,
+each exception has an additional note describing path of place where the error is caused.
+This path is called a ``Struct trail`` and acts like
+`JSONPath <https://www.ietf.org/archive/id/draft-ietf-jsonpath-base-09.txt>`_
+pointing to location inside the input data.
 
-.. literalinclude:: examples/tutorial/struct_path_load_error.py
+For Python versions less than 3.11, an extra package ``exceptiongroup`` is used.
+This package patch some functions from ``traceback``
+during import to backport ``ExceptionGroup`` rendering to early versions.
+More details at `documentation <https://pypi.org/project/exceptiongroup/>`_.
 
-Furthermore, the path is saved for any unexpected errors:
+By default, all collection-like and model-like loaders wrap all errors into :class:`~.load_error.AggregateLoadError`.
+Order of errors inside :class:`~.load_error.AggregateLoadError` is not guaranteed
+and it could be changed at any release. Each sub-exception contains a trail relative to the parent exception.
 
-.. literalinclude:: examples/tutorial/struct_path_unexpected_error.py
+You can set ``debug_trail=DebugTrail.FIRST`` at Retort to raise only the first met error.
 
-As you can see, path elements after dumping are wrapped in :class:`~.struct_path.Attr`.
+.. dropdown:: Traceback of raised error (``DebugTrail.FIRST``)
+
+  .. literalinclude:: examples/tutorial/load_error_dt_first.pytb
+
+Changing ``debug_trail`` to ``DebugTrail.DISABLE`` make the raised exception act like any normal exception.
+
+.. dropdown:: Traceback of raised error (``DebugTrail.DISABLE``)
+
+  .. literalinclude:: examples/tutorial/load_error_dt_disable.pytb
+
+If there is at least one unexpected error :class:`~.load_error.AggregateLoadError`
+is replaced by standard `ExceptionGroup <https://docs.python.org/3/library/exceptions.html#ExceptionGroup>`_.
+For the dumping process any exception is unexpected, so it always will be wrapped with ``ExceptionGroup``
+
+.. literalinclude:: examples/tutorial/unexpected_error.py
+
+Trail of exception is stored at a special private attribute and could be accessed via :class:`~.struct_trail.get_trail`.
+
+As you can see, trail elements after dumping are wrapped in :class:`~.struct_trail.Attr`.
 It is necessary because ``str`` or ``int`` instances mean that data can be accessed via ``[]``.
-
-The path is stored at a special private attribute in the exception object,
-so it is not shown at ``__str__`` or ``__repr__`` of exception.
-There are two helpers to solve this problem.
-
-First is :class:`~.struct_path.ExcPathRenderer` context manager.
-It reraises all exceptions as :class:`~.struct_path.PathedException`
-that shows path and origin error at ``__str__``.
-This tool should be used only for debugging, developing, and prototyping but never in production.
-
-.. literalinclude:: examples/tutorial/struct_path_render_exc_path.py
-
-The second helper is intended to use at production.
-:class:`~.struct_path.StructPathRendererFilter` extracts the path from the exception and injects it as ``struct_path``
-attribute of `LogRecord <https://docs.python.org/3/library/logging.html#logging.LogRecord>`_.
-You only need to attach the Filter to the corresponding logger (or handler).
-This allows to integrate adaptix with error monitoring tools like `Sentry <https://sentry.io/for/python/>`_
-or `Datadog <https://docs.datadoghq.com/integrations/python/>`_ using one additional line.
-
-.. literalinclude:: examples/tutorial/struct_path_renderer_filter_json.py
-
-.. dropdown:: Struct path rendering with builtin formatter
-
-  No builtin formatter can render all passed extra data.
-  You can only specify the concrete field or create a custom formatter.
-
-  This example works only at python 3.10 and more.
-
-  .. literalinclude:: examples/tutorial/struct_path_renderer_filter.py

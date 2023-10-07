@@ -56,7 +56,7 @@ def forbid_version_key(data):
     return data
 
 
-_BASE_RETORT = Retort(
+_base_retort = Retort(
     recipe=[
         loader(Money, money_loader),
         dumper(Money, Money.rubles),
@@ -74,13 +74,13 @@ _BASE_RETORT = Retort(
 )
 
 
-INNER_RECEIPT_RETORT = _BASE_RETORT.extend(
+inner_receipt_retort = _base_retort.extend(
     recipe=[
         name_mapping(extra_in=ExtraSkip()),
     ],
 )
 
-OUTER_RECEIPT_RETORT = _BASE_RETORT.extend(
+outer_receipt_retort = _base_retort.extend(
     recipe=[
         validator(List[RecItem], lambda x: len(x) > 0, 'At least one item must be presented'),
         validator(P[RecItem].quantity, lambda x: x > Decimal(0), 'Value must be > 0'),
