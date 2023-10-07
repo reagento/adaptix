@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from tests_helpers import TestRetort, raises_exc
 
-from adaptix._internal.load_error import LoadError
+from adaptix._internal.load_error import BadVariantError
 from adaptix._internal.provider.generic_provider import LiteralProvider
 
 
@@ -30,21 +30,17 @@ def test_loader_base(retort, strict_coercion, debug_trail):
     assert loader(10) == 10
 
     raises_exc(
-        LoadError(),
+        BadVariantError({'a', 'b', 10}),
         lambda: loader("c")
     )
 
 
-def rnd():
-    return uuid4().hex
-
-
 def _is_exact_zero(arg):
-    return type(arg) == int and arg == 0
+    return type(arg) is int and arg == 0
 
 
 def _is_exact_one(arg):
-    return type(arg) == int and arg == 1
+    return type(arg) is int and arg == 1
 
 
 def test_strict_coercion(retort, debug_trail):
@@ -53,40 +49,42 @@ def test_strict_coercion(retort, debug_trail):
     # so Literal[0, 1] sometimes returns Literal[False, True]
     # and vice versa.
     # We add a random string at the end to suppress caching
-    int_loader = retort.replace(
+    rnd_val1 = uuid4().hex
+    literal_loader = retort.replace(
         strict_coercion=True,
         debug_trail=debug_trail,
     ).get_loader(
-        Literal[0, 1, rnd()]
+        Literal[0, 1, rnd_val1]
     )
 
-    assert _is_exact_zero(int_loader(0))
-    assert _is_exact_one(int_loader(1))
+    assert _is_exact_zero(literal_loader(0))
+    assert _is_exact_one(literal_loader(1))
 
     raises_exc(
-        LoadError(),
-        lambda: int_loader(False)
+        BadVariantError({0, 1, rnd_val1}),
+        lambda: literal_loader(False)
     )
     raises_exc(
-        LoadError(),
-        lambda: int_loader(True)
+        BadVariantError({0, 1, rnd_val1}),
+        lambda: literal_loader(True)
     )
 
+    rnd_val2 = uuid4().hex
     bool_loader = retort.replace(
         strict_coercion=True,
         debug_trail=debug_trail,
     ).get_loader(
-        Literal[False, True, rnd()]
+        Literal[False, True, rnd_val2]
     )
 
     assert bool_loader(False) is False
     assert bool_loader(True) is True
 
     raises_exc(
-        LoadError(),
+        BadVariantError({False, True, rnd_val2}),
         lambda: bool_loader(0)
     )
     raises_exc(
-        LoadError(),
+        BadVariantError({False, True, rnd_val2}),
         lambda: bool_loader(1)
     )

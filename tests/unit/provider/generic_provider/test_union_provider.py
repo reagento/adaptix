@@ -6,7 +6,7 @@ from tests_helpers import TestRetort, raises_exc
 
 from adaptix import DebugTrail, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.load_error import LoadError, TypeLoadError, UnionLoadError
+from adaptix._internal.load_error import BadVariantError, LoadError, TypeLoadError, UnionLoadError
 from adaptix._internal.provider.generic_provider import LiteralProvider, UnionProvider
 
 
@@ -230,14 +230,14 @@ def test_literal(strict_coercion, debug_trail):
 
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
-            LoadError(),
+            BadVariantError({'a'}),
             lambda: loader_('b'),
         )
     elif debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
         raises_exc(
             UnionLoadError(
                 f'while loading {Literal["a", None]}',
-                [TypeLoadError(None), LoadError()]
+                [TypeLoadError(None), BadVariantError({'a'})]
             ),
             lambda: loader_('b'),
         )

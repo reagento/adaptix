@@ -99,24 +99,26 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             isinstance(arg, bool) or _is_exact_zero_or_one(arg)
             for arg in norm.args
         ):
-            allowed_values = self._get_allowed_values_collection(
+            allowed_values_with_types = self._get_allowed_values_collection(
                 [(type(el), el) for el in norm.args]
             )
+            allowed_values_repr = set(norm.args)
 
             # since True == 1 and False == 0
             def literal_loader_sc(data):
-                if (type(data), data) in allowed_values:
+                if (type(data), data) in allowed_values_with_types:
                     return data
-                raise BadVariantError(allowed_values)
+                raise BadVariantError(allowed_values_repr)
 
             return literal_loader_sc
 
         allowed_values = self._get_allowed_values_collection(norm.args)
+        allowed_values_repr = set(norm.args)
 
         def literal_loader(data):
             if data in allowed_values:
                 return data
-            raise BadVariantError(allowed_values)
+            raise BadVariantError(allowed_values_repr)
 
         return literal_loader
 
