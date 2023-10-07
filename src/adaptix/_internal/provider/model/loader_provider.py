@@ -7,7 +7,7 @@ from ...essential import CannotProvide, Mediator
 from ...model_tools.definitions import InputShape
 from ..definitions import DebugTrail
 from ..model.definitions import CodeGenerator, InputShapeRequest
-from ..model.loader_gen import ModelLoaderGen
+from ..model.loader_gen import ModelLoaderGen, ModelLoaderProps
 from ..provider_template import LoaderProvider
 from ..request_cls import DebugTrailRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
 from .basic_gen import (
@@ -28,8 +28,14 @@ from .shape_provider import provide_generic_resolved_shape
 
 
 class ModelLoaderProvider(LoaderProvider):
-    def __init__(self, *, name_sanitizer: NameSanitizer = NameSanitizer()):
+    def __init__(
+        self,
+        *,
+        name_sanitizer: NameSanitizer = NameSanitizer(),
+        props: ModelLoaderProps = ModelLoaderProps(),
+    ):
         self._name_sanitizer = name_sanitizer
+        self._props = props
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         loader_gen = self._fetch_model_loader_gen(mediator, request)
@@ -103,6 +109,7 @@ class ModelLoaderProvider(LoaderProvider):
             strict_coercion=strict_coercion,
             field_loaders=field_loaders,
             model_identity=model_identity,
+            props=self._props,
         )
 
     def _get_closure_name(self, request: LoaderRequest) -> str:
@@ -169,8 +176,14 @@ class ModelLoaderProvider(LoaderProvider):
 
 
 class InlinedShapeModelLoaderProvider(ModelLoaderProvider):
-    def __init__(self, *, name_sanitizer: NameSanitizer = NameSanitizer(), shape: InputShape):
-        super().__init__(name_sanitizer=name_sanitizer)
+    def __init__(
+        self,
+        *,
+        name_sanitizer: NameSanitizer = NameSanitizer(),
+        props: ModelLoaderProps = ModelLoaderProps(),
+        shape: InputShape,
+    ):
+        super().__init__(name_sanitizer=name_sanitizer, props=props)
         self._shape = shape
 
     def _fetch_shape(self, mediator: Mediator, request: LoaderRequest) -> InputShape:

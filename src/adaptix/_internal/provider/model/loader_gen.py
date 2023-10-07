@@ -1,9 +1,11 @@
 import collections.abc
 import contextlib
+from dataclasses import dataclass
 from typing import Dict, List, Mapping, Optional, Set
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
+from ...code_tools.utils import get_literal_expr, get_literal_from_factory
 from ...common import Loader
 from ...compat import CompatExceptionGroup
 from ...load_error import (
@@ -16,7 +18,7 @@ from ...load_error import (
     NoRequiredItemsError,
     TypeLoadError,
 )
-from ...model_tools.definitions import InputField, InputShape, ParamKind
+from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
 from ..definitions import DebugTrail
 from .crown_definitions import (
@@ -129,7 +131,7 @@ class GenState(Namer):
         return f"r_{field.id}"
 
     def v_field(self, field: InputField) -> str:
-        return f"r_{field.id}"
+        return f"f_{field.id}"
 
     @property
     def parent_path(self) -> CrownPath:
@@ -161,6 +163,11 @@ class GenState(Namer):
         return self._name_to_field[crown.id]
 
 
+@dataclass
+class ModelLoaderProps:
+    use_default_for_omitted: bool = True
+
+
 class ModelLoaderGen(CodeGenerator):
     """ModelLoaderGen generates code that extracts raw values from input data,
     calls loaders and stores results to variables.
@@ -174,16 +181,21 @@ class ModelLoaderGen(CodeGenerator):
         strict_coercion: bool,
         field_loaders: Mapping[str, Loader],
         model_identity: str,
+        props: ModelLoaderProps,
     ):
         self._shape = shape
         self._name_layout = name_layout
         self._debug_trail = debug_trail
         self._strict_coercion = strict_coercion
-        self._name_to_field: Dict[str, InputField] = {
+        self._id_to_field: Dict[str, InputField] = {
             field.id: field for field in self._shape.fields
+        }
+        self._field_id_to_param: Dict[str, Param] = {
+            param.field_id: param for param in self._shape.params
         }
         self._field_loaders = field_loaders
         self._model_identity = model_identity
+        self._props = props
 
     @property
     def _can_collect_extra(self) -> bool:
@@ -200,17 +212,19 @@ class ModelLoaderGen(CodeGenerator):
         return GenState(
             builder=CodeBuilder(),
             ctx_namespace=ctx_namespace,
-            name_to_field=self._name_to_field,
+            name_to_field=self._id_to_field,
             debug_trail=self._debug_trail,
             root_crown=self._name_layout.crown,
         )
 
     @property
-    def has_optional_fields(self):
-        return any(
-            fld.is_optional and not self._is_extra_target(fld)
-            for fld in self._shape.fields
-        )
+    def has_packed_fields(self):
+        return any(self._is_packed_field(fld) for fld in self._shape.fields)
+
+    def _is_packed_field(self, field: InputField) -> bool:
+        if self._props.use_default_for_omitted and isinstance(field.default, (DefaultValue, DefaultFactory)):
+            return False
+        return field.is_optional and not self._is_extra_target(field)
 
     def produce_code(self, ctx_namespace: ContextNamespace) -> CodeBuilder:
         state = self._create_state(ctx_namespace)
@@ -236,8 +250,8 @@ class ModelLoaderGen(CodeGenerator):
             state.builder += "has_unexpected_error = False"
             state.ctx_namespace.add('model_identity', self._model_identity)
 
-        if self.has_optional_fields:
-            state.builder += "opt_fields = {}"
+        if self.has_packed_fields:
+            state.builder += "packed_fields = {}"
 
         if not self._gen_root_crown_dispatch(state, self._name_layout.crown):
             raise TypeError
@@ -291,7 +305,7 @@ class ModelLoaderGen(CodeGenerator):
             for param in self._shape.params:
                 field = self._shape.fields_dict[param.field_id]
 
-                if field.is_required or self._is_extra_target(field):
+                if not self._is_packed_field(field):
                     value = state.v_field(field)
                 else:
                     continue
@@ -301,8 +315,8 @@ class ModelLoaderGen(CodeGenerator):
                 else:
                     constructor_builder(f"{value},")
 
-            if self.has_optional_fields:
-                constructor_builder("**opt_fields,")
+            if self.has_packed_fields:
+                constructor_builder("**packed_fields,")
 
             if self._name_layout.extra_move == ExtraKwargs():
                 constructor_builder(f"**{state.v_extra},")
@@ -365,7 +379,13 @@ class ModelLoaderGen(CodeGenerator):
                 f'raise {namer.with_trail(bad_type_load_error)}'
             )
 
-    def _gen_assigment_from_parent_data(self, state: GenState, *, assign_to: str, ignore_lookup_error=False):
+    def _gen_assigment_from_parent_data(
+        self,
+        state: GenState,
+        *,
+        assign_to: str,
+        on_lookup_error: Optional[str] = None,
+    ):
         last_path_el = state.path[-1]
         if isinstance(last_path_el, str):
             lookup_error = 'KeyError'
@@ -385,9 +405,11 @@ class ModelLoaderGen(CodeGenerator):
                 except {lookup_error}:
             """,
         ):
-            if ignore_lookup_error:
-                state.builder += 'pass'
-            elif self._debug_trail == DebugTrail.ALL:
+            if on_lookup_error is not None:
+                state.builder += on_lookup_error
+            elif self._debug_trail != DebugTrail.ALL:
+                state.builder += f"raise {state.parent.with_trail(not_found_error)}"
+            else:
                 if isinstance(state.path[-1], str):
                     state.builder += f"""
                         if not {state.parent.v_has_not_found_error}:
@@ -396,8 +418,6 @@ class ModelLoaderGen(CodeGenerator):
                     """
                 else:
                     state.builder += 'pass'
-            else:
-                state.builder += f"raise {state.parent.with_trail(not_found_error)}"
 
         if state.parent_path not in state.checked_type_paths:
             with state.builder(f'except {bad_type_error}:'):
@@ -447,7 +467,7 @@ class ModelLoaderGen(CodeGenerator):
     def _get_dict_crown_required_keys(self, crown: InpDictCrown) -> Set[str]:
         return {
             key for key, value in crown.map.items()
-            if not (isinstance(value, InpFieldCrown) and self._name_to_field[value.id].is_optional)
+            if not (isinstance(value, InpFieldCrown) and self._id_to_field[value.id].is_optional)
         }
 
     def _gen_dict_crown(self, state: GenState, crown: InpDictCrown):
@@ -538,19 +558,38 @@ class ModelLoaderGen(CodeGenerator):
         if self._can_collect_extra:
             self._gen_add_self_extra_to_parent_extra(state)
 
+    def _get_default_clause_expr(self, state: GenState, field: InputField) -> str:
+        if isinstance(field.default, DefaultValue):
+            literal_expr = get_literal_expr(field.default.value)
+            if literal_expr is not None:
+                return literal_expr
+            state.ctx_namespace.add(f'dfl_{field.id}', field.default.value)
+            return f'dfl_{field.id}'
+        if isinstance(field.default, DefaultFactory):
+            literal_expr = get_literal_from_factory(field.default.factory)
+            if literal_expr is not None:
+                return literal_expr
+            state.ctx_namespace.add(f'dfl_{field.id}', field.default.factory)
+            return f'dfl_{field.id}()'
+        raise ValueError
+
     def _gen_field_crown(self, state: GenState, crown: InpFieldCrown):
         field = state.get_field(crown)
-        if field.is_required:
+        if self._is_packed_field(field):
+            param_name = self._field_id_to_param[field.id].name
+            field_assign_to = f"packed_fields[{param_name!r}]"
+            on_lookup_error = 'pass'
+        elif field.is_optional:
             field_assign_to = state.v_field(field)
-            ignore_lookup_error = False
+            on_lookup_error = f'{state.v_field(field)} = {self._get_default_clause_expr(state, field)}'
         else:
-            field_assign_to = f"opt_fields[{field.id!r}]"
-            ignore_lookup_error = True
+            field_assign_to = state.v_field(field)
+            on_lookup_error = None
 
         self._gen_assigment_from_parent_data(
             state=state,
             assign_to=state.v_raw_field(field),
-            ignore_lookup_error=ignore_lookup_error,
+            on_lookup_error=on_lookup_error,
         )
         with state.builder('else:'):
             self._gen_field_assigment(
@@ -598,7 +637,7 @@ class ModelLoaderGen(CodeGenerator):
 
         if self._name_layout.crown.extra_policy == ExtraCollect():
             for target in extra_move.fields:
-                field = self._name_to_field[target]
+                field = self._id_to_field[target]
 
                 self._gen_field_assigment(
                     assign_to=state.v_field(field),
@@ -608,7 +647,7 @@ class ModelLoaderGen(CodeGenerator):
                 )
         else:
             for target in extra_move.fields:
-                field = self._name_to_field[target]
+                field = self._id_to_field[target]
                 if field.is_required:
                     self._gen_field_assigment(
                         assign_to=state.v_field(field),

@@ -1,4 +1,5 @@
 import itertools
+import re
 import string
 from dataclasses import dataclass, replace
 from typing import (
@@ -229,20 +230,15 @@ def strip_output_shape_fields(shape: OutputShape, skipped_fields: Collection[str
 
 
 class NameSanitizer:
-    _AVAILABLE_CHARS = set(string.ascii_letters + string.digits)
+    _BAD_CHARS = re.compile(r'\W')
+    _TRANSLATE_MAP = str.maketrans({'.': '_', '[': '_'})
 
     def sanitize(self, name: str) -> str:
         if name == "":
             return ""
 
-        first_letter = name[0]
-
-        if first_letter not in string.ascii_letters:
-            return self.sanitize(name[1:])
-
-        return first_letter + "".join(
-            c for c in name[1:] if c in self._AVAILABLE_CHARS
-        )
+        first_letter = name[0] if name[0] in string.ascii_letters else '_'
+        return first_letter + self._BAD_CHARS.sub('', name[1:].translate(self._TRANSLATE_MAP))
 
 
 def compile_closure_with_globals_capturing(

@@ -153,8 +153,9 @@ class FilledRetort(OperatingRetort, ABC):
         NAMED_TUPLE_SHAPE_PROVIDER,
         TYPED_DICT_SHAPE_PROVIDER,
         DATACLASS_SHAPE_PROVIDER,
-        CLASS_INIT_SHAPE_PROVIDER,
         ATTRS_SHAPE_PROVIDER,
+
+        CLASS_INIT_SHAPE_PROVIDER,
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),
