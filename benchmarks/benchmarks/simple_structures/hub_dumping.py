@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+from adaptix import DebugTrail
 from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams, PlotParams
 from benchmarks.simple_structures import (
     bench_adaptix,
@@ -36,15 +37,22 @@ director.add(
     BenchSchema(
         entry_point=bench_adaptix.bench_dumping,
         base='adaptix',
-        tags=['dp'],
-        kwargs={'debug_path': True, 'reviews_count': REVIEWS_COUNT},
+        tags=['dt_all'],
+        kwargs={'debug_trail': DebugTrail.ALL.value, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['adaptix'],
     ),
     BenchSchema(
         entry_point=bench_adaptix.bench_dumping,
         base='adaptix',
-        tags=[],
-        kwargs={'debug_path': False, 'reviews_count': REVIEWS_COUNT},
+        tags=['dt_first'],
+        kwargs={'debug_trail': DebugTrail.FIRST.value, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['adaptix'],
+    ),
+    BenchSchema(
+        entry_point=bench_adaptix.bench_dumping,
+        base='adaptix',
+        tags=['dt_disable'],
+        kwargs={'debug_trail':  DebugTrail.DISABLE.value, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['adaptix'],
     ),
 )
@@ -73,6 +81,10 @@ director.add(
         tags=['strict'],
         kwargs={'strict': True, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['pydantic'],
+        check_params=lambda env_spec: CheckParams(
+            stdev_rel_threshold=0.15 if env_spec['py_impl'] == 'pypy' else None,
+            ignore_pyperf_warnings=True if env_spec['py_impl'] == 'pypy' else None,
+        ),
     ),
     BenchSchema(
         entry_point=bench_pydantic.bench_dumping,
@@ -80,6 +92,10 @@ director.add(
         tags=[],
         kwargs={'strict': False, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['pydantic'],
+        check_params=lambda env_spec: CheckParams(
+            stdev_rel_threshold=0.15 if env_spec['py_impl'] == 'pypy' else None,
+            ignore_pyperf_warnings=True if env_spec['py_impl'] == 'pypy' else None,
+        ),
     ),
 )
 
@@ -142,7 +158,7 @@ director.add(
 
 director.add(
     BenchSchema(
-        entry_point='benchmarks.small_structures.bench_msgspec:bench_dumping',
+        entry_point='benchmarks.simple_structures.bench_msgspec:bench_dumping',
         base='msgspec',
         tags=[],
         kwargs={'no_gc': False, 'reviews_count': REVIEWS_COUNT},
@@ -150,7 +166,7 @@ director.add(
         used_distributions=['msgspec'],
     ),
     BenchSchema(
-        entry_point='benchmarks.small_structures.bench_msgspec:bench_dumping',
+        entry_point='benchmarks.simple_structures.bench_msgspec:bench_dumping',
         base='msgspec',
         tags=['no_gc'],
         kwargs={'no_gc': True, 'reviews_count': REVIEWS_COUNT},

@@ -40,7 +40,7 @@ class SimpleUser(DataClassDictMixin):
     starred_at: Optional[datetime] = None
 
     class Config:
-        omit_none = True
+        omit_default = True
 
 
 @dataclass
@@ -83,13 +83,8 @@ class PullRequest(DataClassDictMixin):
     url: Optional[str]
     merged_at: Optional[datetime] = None
 
-    SKIP_NONE = ['merged_at']
-
-    def __post_serialize__(self, data: Dict[Any, Any]) -> Dict[Any, Any]:
-        for key in self.SKIP_NONE:
-            if data[key] is None:
-                del data[key]
-        return data
+    class Config(BaseConfig):
+        omit_default = True
 
 
 @dataclass
@@ -124,13 +119,8 @@ class Issue(DataClassDictMixin):
     timeline_url: Optional[str] = None
     body: Optional[str] = None
 
-    SKIP_NONE = ['reactions', 'pull_request', 'body_html', 'body_text', 'timeline_url', 'body']
-
-    def __post_serialize__(self, data: Dict[Any, Any]) -> Dict[Any, Any]:
-        for key in self.SKIP_NONE:
-            if data[key] is None:
-                del data[key]
-        return data
+    class Config(BaseConfig):
+        omit_default = True
 
 
 @dataclass
@@ -163,7 +153,7 @@ class SimpleUserLC(DataClassDictMixin):
     starred_at: Optional[datetime] = None
 
     class Config:
-        omit_none = True
+        omit_default = True
         lazy_compilation = True
 
 
@@ -211,15 +201,8 @@ class PullRequestLC(DataClassDictMixin):
     url: Optional[str]
     merged_at: Optional[datetime] = None
 
-    SKIP_NONE = ['merged_at']
-
-    def __post_serialize__(self, data: Dict[Any, Any]) -> Dict[Any, Any]:
-        for key in self.SKIP_NONE:
-            if data[key] is None:
-                del data[key]
-        return data
-
     class Config:
+        omit_default = True
         lazy_compilation = True
 
 
@@ -255,15 +238,8 @@ class IssueLC(DataClassDictMixin):
     timeline_url: Optional[str] = None
     body: Optional[str] = None
 
-    SKIP_NONE = ['reactions', 'pull_request', 'body_html', 'body_text', 'timeline_url', 'body']
-
-    def __post_serialize__(self, data: Dict[Any, Any]) -> Dict[Any, Any]:
-        for key in self.SKIP_NONE:
-            if data[key] is None:
-                del data[key]
-        return data
-
     class Config:
+        omit_default = True
         lazy_compilation = True
 
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from adaptix import Retort, name_mapping
+from adaptix import DebugTrail, Retort, name_mapping
 from benchmarks.pybench.bench_api import benchmark_plan
 from benchmarks.simple_structures.common import create_book, create_dumped_book
 
@@ -44,19 +44,19 @@ def test_dumping():
     )
 
 
-def bench_loading(strict_coercion: bool, debug_path: bool, reviews_count: int):
+def bench_loading(strict_coercion: bool, debug_trail: str, reviews_count: int):
     loader = retort.replace(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=DebugTrail(debug_trail),
     ).get_loader(Book)
 
     data = create_dumped_book(reviews_count=reviews_count)
     return benchmark_plan(loader, data)
 
 
-def bench_dumping(debug_path: bool, reviews_count: int):
+def bench_dumping(debug_trail: str, reviews_count: int):
     dumper = retort.replace(
-        debug_path=debug_path,
+        debug_trail=DebugTrail(debug_trail),
     ).get_dumper(Book)
 
     data = create_book(Book, Review, reviews_count=reviews_count)

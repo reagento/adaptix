@@ -53,6 +53,7 @@ class PlotParams:
     fig_size: Tuple[float, float] = (8, 4.8)
     label_padding: float = 0
     trim_after: Optional[float] = None
+    label_format: str = '.1f'
 
 
 BUILTIN_CHECK_PARAMS = CheckParams(
@@ -406,7 +407,7 @@ class BenchPlotter:
             hbars,
             padding=self.params.label_padding,
             fontsize=9,
-            labels=[f'{mean:.1f}' for mean in means],
+            labels=[format(mean, self.params.label_format) for mean in means],
         )
         ax.set_xlabel('Time (μs)')
         ax.set_yticks(x_pos)

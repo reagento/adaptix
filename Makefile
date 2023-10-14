@@ -5,17 +5,17 @@ lint:
 
 .PHONY: test-all
 test-all:
-	@tox -e $$(tox -l | grep '^py' | tr '\n' ',')
+	@tox -e $$(tox list --no-desc | grep '^py' | tr '\n' ',')
 
 
 .PHONY: test-all-p
 test-all-p:
-	@tox -e $$(tox -l | grep '^py' | sort -r | tr '\n' ',') -p auto
+	@tox -e $$(tox list --no-desc | grep '^py' | sort -r | tr '\n' ',') -p auto
 
 
 .PHONY: test
 test:
-	@tox -e $$(tox -l | grep '^py' | grep 'new$$' | tr '\n' ',')
+	@tox -e $$(tox list --no-desc | grep '^py' | grep 'new$$' | tr '\n' ',')
 
 
 .PHONY: cov

@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+from adaptix import DebugTrail
 from benchmarks.gh_issues import (
     bench_adaptix,
     bench_asdict,
@@ -34,15 +35,22 @@ director.add(
     BenchSchema(
         entry_point=bench_adaptix.bench_dumping,
         base='adaptix',
-        tags=['dp'],
-        kwargs={'debug_path': True},
+        tags=['dt_all'],
+        kwargs={'debug_trail': DebugTrail.ALL.value},
         used_distributions=['adaptix'],
     ),
     BenchSchema(
         entry_point=bench_adaptix.bench_dumping,
         base='adaptix',
-        tags=[],
-        kwargs={'debug_path': False},
+        tags=['dt_first'],
+        kwargs={'debug_trail': DebugTrail.FIRST.value},
+        used_distributions=['adaptix'],
+    ),
+    BenchSchema(
+        entry_point=bench_adaptix.bench_dumping,
+        base='adaptix',
+        tags=['dt_disable'],
+        kwargs={'debug_trail': DebugTrail.DISABLE.value},
         used_distributions=['adaptix'],
     ),
 )
@@ -71,6 +79,10 @@ director.add(
         tags=[],
         kwargs={},
         used_distributions=['pydantic'],
+        check_params=lambda env_spec: CheckParams(
+            stdev_rel_threshold=0.15 if env_spec['py_impl'] == 'pypy' else None,
+            ignore_pyperf_warnings=True if env_spec['py_impl'] == 'pypy' else None,
+        ),
     ),
 )
 

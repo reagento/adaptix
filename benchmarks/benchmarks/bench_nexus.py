@@ -130,6 +130,11 @@ BENCHMARK_ENVS: Iterable[EnvDescription] = [
         tox_env='py311-bench',
     ),
     EnvDescription(
+        title='CPython 3.12',
+        key='py312',
+        tox_env='py312-bench',
+    ),
+    EnvDescription(
         title='PyPy 3.8',
         key='pypy38',
         tox_env='pypy38-bench',
@@ -184,7 +189,7 @@ BENCHMARK_HUBS: Iterable[HubDescription] = [
         module='benchmarks.gh_issues.hub_dumping',
         x_bounder=ClusterAxisBounder(
             last_cluster_idx=-3,
-            boundary_rate=2,
+            boundary_rate=1.5,
         )
     ),
 ]
@@ -199,7 +204,8 @@ class HubProcessor(Foundation, ABC):
     def add_arguments(cls, parser: ArgumentParser) -> None:
         hub_selective_group = parser.add_mutually_exclusive_group()
         hub_selective_group.add_argument(
-            '--include', '-i',
+            '--include',
+            '-i',
             action='extend',
             nargs="+",
             required=False,
@@ -213,7 +219,8 @@ class HubProcessor(Foundation, ABC):
         )
         env_selective_group = parser.add_mutually_exclusive_group()
         env_selective_group.add_argument(
-            '--env-include', '-ei',
+            '--env-include',
+            '-ei',
             action='extend',
             nargs="+",
             required=False,
@@ -531,7 +538,8 @@ class Renderer(HubProcessor):
     def add_arguments(cls, parser: ArgumentParser) -> None:
         super().add_arguments(parser)
         parser.add_argument(
-            '--output', '-o',
+            '--output',
+            '-o',
             action='store',
             required=False,
         )
@@ -623,7 +631,7 @@ class Renderer(HubProcessor):
             env_description: self._director_to_measures(director)
             for env_description, director in env_to_director.items()
         }
-        return self.create_hub_plot(hub_description, env_to_measures)
+        return self.create_hub_plot(hub_description, env_to_measures, self.LIGHT_COLOR_SCHEME)
 
     def render_hub_from_release(
         self,

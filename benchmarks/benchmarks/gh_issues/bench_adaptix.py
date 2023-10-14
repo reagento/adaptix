@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
 
-from adaptix import Retort, name_mapping
+from adaptix import DebugTrail, Retort, name_mapping
 from benchmarks.gh_issues.common import (
     AuthorAssociation,
     IssueState,
@@ -142,19 +142,19 @@ def test_dumping():
     )
 
 
-def bench_loading(strict_coercion: bool, debug_path: bool):
+def bench_loading(strict_coercion: bool, debug_trail: str):
     loader = retort.replace(
         strict_coercion=strict_coercion,
-        debug_path=debug_path,
+        debug_trail=DebugTrail(debug_trail),
     ).get_loader(GetRepoIssuesResponse)
 
     data = create_dumped_response()
     return benchmark_plan(loader, data)
 
 
-def bench_dumping(debug_path: bool):
+def bench_dumping(debug_trail: str):
     dumper = retort.replace(
-        debug_path=debug_path,
+        debug_trail=DebugTrail(debug_trail),
     ).get_dumper(GetRepoIssuesResponse)
 
     data = create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)

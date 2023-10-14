@@ -61,9 +61,9 @@ markdown-it-py==2.2.0
     #   myst-parser
 markupsafe==2.1.2
     # via jinja2
-marshmallow==3.19.0
+marshmallow==3.20.1
     # via -r requirements/raw/bench.txt
-mashumaro==3.8.1
+mashumaro==3.10
     # via -r requirements/raw/bench.txt
 matplotlib==3.7.0
     # via sphinxext-opengraph
@@ -71,7 +71,7 @@ mdit-py-plugins==0.3.5
     # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
-msgspec==0.16.0 ; implementation_name != "pypy"
+msgspec==0.18.4 ; implementation_name != "pypy"
     # via -r requirements/raw/bench.txt
 myst-parser==1.0.0
     # via -r requirements/raw/doc.txt
@@ -98,9 +98,9 @@ psutil==5.9.5
     # via
     #   -r requirements/raw/bench.txt
     #   pyperf
-pydantic==2.0
+pydantic==2.4.2
     # via -r requirements/raw/bench.txt
-pydantic-core==2.0.1
+pydantic-core==2.10.1
     # via pydantic
 pygments==2.14.0
     # via

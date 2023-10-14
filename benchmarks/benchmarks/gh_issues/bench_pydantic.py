@@ -1,5 +1,4 @@
 from datetime import datetime
-from functools import partial
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -70,7 +69,7 @@ class PullRequest(BaseModel):
     html_url: Optional[str]
     patch_url: Optional[str]
     url: Optional[str]
-    merged_at: Optional[datetime] = Field(None, include=True)
+    merged_at: Optional[datetime] = None
 
 
 class Issue(BaseModel):
@@ -133,4 +132,4 @@ def bench_loading():
 
 def bench_dumping():
     data = create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)
-    return benchmark_plan(lambda: data.model_dump(mode='json', by_alias=True))
+    return benchmark_plan(lambda: data.model_dump(mode='json', by_alias=True, exclude_defaults=True))

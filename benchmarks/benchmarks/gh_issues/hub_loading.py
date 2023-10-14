@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+from adaptix import DebugTrail
 from benchmarks.gh_issues import (
     bench_adaptix,
     bench_cattrs,
@@ -33,29 +34,43 @@ director.add(
     BenchSchema(
         entry_point=bench_adaptix.bench_loading,
         base='adaptix',
-        tags=['sc', 'dp'],
-        kwargs={'strict_coercion': True, 'debug_path': True},
+        tags=['sc', 'dt_all'],
+        kwargs={'strict_coercion': True, 'debug_trail': DebugTrail.ALL.value},
         used_distributions=['adaptix'],
     ),
     BenchSchema(
         entry_point=bench_adaptix.bench_loading,
         base='adaptix',
-        tags=['sc'],
-        kwargs={'strict_coercion': True, 'debug_path': False},
+        tags=['sc', 'dt_first'],
+        kwargs={'strict_coercion': True, 'debug_trail': DebugTrail.FIRST.value},
         used_distributions=['adaptix'],
     ),
     BenchSchema(
         entry_point=bench_adaptix.bench_loading,
         base='adaptix',
-        tags=['dp'],
-        kwargs={'strict_coercion': False, 'debug_path': True},
+        tags=['sc', 'dt_disable'],
+        kwargs={'strict_coercion': True, 'debug_trail': DebugTrail.DISABLE.value},
         used_distributions=['adaptix'],
     ),
     BenchSchema(
         entry_point=bench_adaptix.bench_loading,
         base='adaptix',
-        tags=[],
-        kwargs={'strict_coercion': False, 'debug_path': False},
+        tags=['dt_all'],
+        kwargs={'strict_coercion': False, 'debug_trail': DebugTrail.ALL.value},
+        used_distributions=['adaptix'],
+    ),
+    BenchSchema(
+        entry_point=bench_adaptix.bench_loading,
+        base='adaptix',
+        tags=['dt_first'],
+        kwargs={'strict_coercion': False, 'debug_trail': DebugTrail.FIRST.value},
+        used_distributions=['adaptix'],
+    ),
+    BenchSchema(
+        entry_point=bench_adaptix.bench_loading,
+        base='adaptix',
+        tags=['dt_disable'],
+        kwargs={'strict_coercion': False, 'debug_trail': DebugTrail.DISABLE.value},
         used_distributions=['adaptix'],
     ),
 )

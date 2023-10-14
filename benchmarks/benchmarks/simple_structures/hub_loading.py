@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+from adaptix import DebugTrail
 from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams, PlotParams
 from benchmarks.simple_structures import (
     bench_adaptix,
@@ -35,29 +36,43 @@ director.add(
     BenchSchema(
         entry_point=bench_adaptix.bench_loading,
         base='adaptix',
-        tags=['sc', 'dp'],
-        kwargs={'strict_coercion': True, 'debug_path': True, 'reviews_count': REVIEWS_COUNT},
+        tags=['sc', 'dt_all'],
+        kwargs={'strict_coercion': True, 'debug_trail': DebugTrail.ALL.value, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['adaptix'],
     ),
     BenchSchema(
         entry_point=bench_adaptix.bench_loading,
         base='adaptix',
-        tags=['sc'],
-        kwargs={'strict_coercion': True, 'debug_path': False, 'reviews_count': REVIEWS_COUNT},
+        tags=['sc', 'dt_first'],
+        kwargs={'strict_coercion': True, 'debug_trail': DebugTrail.FIRST.value, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['adaptix'],
     ),
     BenchSchema(
         entry_point=bench_adaptix.bench_loading,
         base='adaptix',
-        tags=['dp'],
-        kwargs={'strict_coercion': False, 'debug_path': True, 'reviews_count': REVIEWS_COUNT},
+        tags=['sc', 'dt_disable'],
+        kwargs={'strict_coercion': True, 'debug_trail': DebugTrail.DISABLE.value, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['adaptix'],
     ),
     BenchSchema(
         entry_point=bench_adaptix.bench_loading,
         base='adaptix',
-        tags=[],
-        kwargs={'strict_coercion': False, 'debug_path': False, 'reviews_count': REVIEWS_COUNT},
+        tags=['dt_all'],
+        kwargs={'strict_coercion': False, 'debug_trail': DebugTrail.ALL.value, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['adaptix'],
+    ),
+    BenchSchema(
+        entry_point=bench_adaptix.bench_loading,
+        base='adaptix',
+        tags=['dt_first'],
+        kwargs={'strict_coercion': False, 'debug_trail': DebugTrail.FIRST.value, 'reviews_count': REVIEWS_COUNT},
+        used_distributions=['adaptix'],
+    ),
+    BenchSchema(
+        entry_point=bench_adaptix.bench_loading,
+        base='adaptix',
+        tags=['dt_disable'],
+        kwargs={'strict_coercion': False, 'debug_trail': DebugTrail.DISABLE.value, 'reviews_count': REVIEWS_COUNT},
         used_distributions=['adaptix'],
     ),
 )
@@ -160,7 +175,7 @@ director.add(
 
 director.add(
     BenchSchema(
-        entry_point='benchmarks.small_structures.bench_msgspec:bench_loading',
+        entry_point='benchmarks.simple_structures.bench_msgspec:bench_loading',
         base='msgspec',
         tags=[],
         kwargs={'strict': False, 'no_gc': False, 'reviews_count': REVIEWS_COUNT},
@@ -168,7 +183,7 @@ director.add(
         used_distributions=['msgspec'],
     ),
     BenchSchema(
-        entry_point='benchmarks.small_structures.bench_msgspec:bench_loading',
+        entry_point='benchmarks.simple_structures.bench_msgspec:bench_loading',
         base='msgspec',
         tags=['strict'],
         kwargs={'strict': True, 'no_gc': False, 'reviews_count': REVIEWS_COUNT},
@@ -176,7 +191,7 @@ director.add(
         used_distributions=['msgspec'],
     ),
     BenchSchema(
-        entry_point='benchmarks.small_structures.bench_msgspec:bench_loading',
+        entry_point='benchmarks.simple_structures.bench_msgspec:bench_loading',
         base='msgspec',
         tags=['no_gc'],
         kwargs={'strict': False, 'no_gc': True, 'reviews_count': REVIEWS_COUNT},
@@ -184,7 +199,7 @@ director.add(
         used_distributions=['msgspec'],
     ),
     BenchSchema(
-        entry_point='benchmarks.small_structures.bench_msgspec:bench_loading',
+        entry_point='benchmarks.simple_structures.bench_msgspec:bench_loading',
         base='msgspec',
         tags=['strict', 'no_gc'],
         kwargs={'strict': True, 'no_gc': True, 'reviews_count': REVIEWS_COUNT},

@@ -146,9 +146,9 @@ markdown-it-py==2.2.0
     #   rich
 markupsafe==2.1.2
     # via jinja2
-marshmallow==3.19.0
+marshmallow==3.20.1
     # via -r requirements/raw/bench.txt
-mashumaro==3.8.1
+mashumaro==3.10
     # via -r requirements/raw/bench.txt
 matplotlib==3.7.0
     # via
@@ -162,7 +162,7 @@ mdit-py-plugins==0.3.5
     # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
-msgspec==0.16.0 ; implementation_name != "pypy"
+msgspec==0.18.4 ; implementation_name != "pypy"
     # via -r requirements/raw/bench.txt
 mypy==1.5.1
     # via -r requirements/raw/lint.txt
@@ -220,9 +220,9 @@ pycodestyle==2.11.0
     # via
     #   flake8
     #   flake8-debugger
-pydantic==2.0
+pydantic==2.4.2
     # via -r requirements/raw/bench.txt
-pydantic-core==2.0.1
+pydantic-core==2.10.1
     # via pydantic
 pyflakes==3.1.0
     # via flake8

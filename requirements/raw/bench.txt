@@ -5,10 +5,10 @@ pytest==7.4.2
 pyperf==2.6.1
 psutil==5.9.5
 
-mashumaro==3.8.1
-pydantic==2.0
+mashumaro==3.10
+pydantic==2.4.2
 cattrs==23.1.2
 schematics==2.1.1
 dataclass-factory==2.16
-marshmallow==3.19.0
-msgspec==0.16.0; implementation_name != "pypy"
+marshmallow==3.20.1
+msgspec==0.18.4; implementation_name != "pypy"

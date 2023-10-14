@@ -16,11 +16,11 @@ dataclass-factory==2.16
     # via -r requirements/raw/bench.txt
 iniconfig==2.0.0
     # via pytest
-marshmallow==3.19.0
+marshmallow==3.20.1
     # via -r requirements/raw/bench.txt
-mashumaro==3.8.1
+mashumaro==3.10
     # via -r requirements/raw/bench.txt
-msgspec==0.16.0 ; implementation_name != "pypy"
+msgspec==0.18.4 ; implementation_name != "pypy"
     # via -r requirements/raw/bench.txt
 packaging==23.0
     # via
@@ -32,9 +32,9 @@ psutil==5.9.5
     # via
     #   -r requirements/raw/bench.txt
     #   pyperf
-pydantic==2.0
+pydantic==2.4.2
     # via -r requirements/raw/bench.txt
-pydantic-core==2.0.1
+pydantic-core==2.10.1
     # via pydantic
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
