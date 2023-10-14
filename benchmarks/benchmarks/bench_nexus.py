@@ -162,7 +162,7 @@ BENCHMARK_HUBS: Iterable[HubDescription] = [
         module='benchmarks.simple_structures.hub_loading',
         x_bounder=ClusterAxisBounder(
             last_cluster_idx=-2,
-            boundary_rate=2,
+            boundary_rate=3,
         )
     ),
     HubDescription(

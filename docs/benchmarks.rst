@@ -65,7 +65,8 @@ The library has to produce models from dict:
 
     .. grid-item-card:: adaptix
 
-        ``dp`` expresses that ``debug_path`` option of ``Retort`` is turned on
+        ``dt_all``, ``dt_first`` and ``dt_disable`` expresses that ``debug_trail`` parameter of ``Retort``
+        set to ``DebugTrail.ALL``, ``DebugTrail.FIRST``, ``DebugTrail.DISABLE``
         (:ref:`doc <retort-configuration>`)
 
         ``sc`` refers to that ``strict_coercion`` option of ``Retort`` is activated
@@ -134,7 +135,8 @@ The library has to convert the model instance to dict used at loading benchmark:
 
     .. grid-item-card:: adaptix
 
-        ``dp`` expresses that ``debug_path`` option of ``Retort`` is turned on
+        ``dt_all``, ``dt_first`` and ``dt_disable`` expresses that ``debug_trail`` parameter of ``Retort``
+        set to ``DebugTrail.ALL``, ``DebugTrail.FIRST``, ``DebugTrail.DISABLE``
         (:ref:`doc <retort-configuration>`)
 
     .. grid-item-card:: msgspec
@@ -210,7 +212,8 @@ The library has to produce models from dict:
 
     .. grid-item-card:: adaptix
 
-        ``dp`` expresses that ``debug_path`` option of ``Retort`` is turned on
+        ``dt_all``, ``dt_first`` and ``dt_disable`` expresses that ``debug_trail`` parameter of ``Retort``
+        set to ``DebugTrail.ALL``, ``DebugTrail.FIRST``, ``DebugTrail.DISABLE``
         (:ref:`doc <retort-configuration>`)
 
         ``sc`` refers to that ``strict_coercion`` option of ``Retort`` is activated
@@ -295,7 +298,8 @@ The library has to convert the model instance to dict used at loading benchmark:
 
     .. grid-item-card:: adaptix
 
-        ``dp`` expresses that ``debug_path`` option of ``Retort`` is turned on
+        ``dt_all``, ``dt_first`` and ``dt_disable`` expresses that ``debug_trail`` parameter of ``Retort``
+        set to ``DebugTrail.ALL``, ``DebugTrail.FIRST``, ``DebugTrail.DISABLE``
         (:ref:`doc <retort-configuration>`)
 
     .. grid-item-card:: msgspec
@@ -335,9 +339,6 @@ Notes about implementation:
 
 * **cattrs** can not process datetime out of the box.
   Custom unstructure hook ``datetime.isoformat`` was used.
-
-* **marshmallow** can not skip ``None`` values for specific fields out of the box.
-  ``@post_dump`` is used to remove these fields.
 
 * **mashumaro** can not skip ``None`` values for specific fields out of the box.
   ``__post_serialize__`` is used to eliminate these fields.
