@@ -5,10 +5,8 @@ import pytest
 from tests_helpers import raises_exc
 
 from adaptix import DebugTrail, Retort
-from adaptix._internal.load_error import AggregateLoadError
-from adaptix._internal.struct_trail import extend_trail
-from adaptix.load_error import TypeLoadError
-from adaptix.struct_trail import get_trail
+from adaptix.load_error import AggregateLoadError, TypeLoadError
+from adaptix.struct_trail import extend_trail, get_trail
 
 
 @dataclass
@@ -17,7 +15,7 @@ class ExampleAny:
     field2: Any
 
 
-def test_simple(accum):
+def test_any(accum):
     retort = Retort(recipe=[accum])
 
     loader = retort.get_loader(ExampleAny)
@@ -28,12 +26,28 @@ def test_simple(accum):
 
 
 @dataclass
+class ExampleObject:
+    field1: object
+    field2: object
+
+
+def test_object(accum):
+    retort = Retort(recipe=[accum])
+
+    loader = retort.get_loader(ExampleObject)
+    assert loader({'field1': 1, 'field2': 1}) == ExampleObject(field1=1, field2=1)
+
+    dumper = retort.get_dumper(ExampleObject)
+    assert dumper(ExampleObject(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
+
+
+@dataclass
 class ExampleInt:
     field1: int
     field2: int
 
 
-def test_simple_int(accum):
+def test_int(accum):
     retort = Retort(recipe=[accum])
 
     loader = retort.get_loader(ExampleInt)
@@ -57,7 +71,7 @@ def test_simple_int(accum):
     assert dumper(ExampleInt(field1=1, field2=1)) == {'field1': 1, 'field2': 1}
 
 
-def test_simple_int_lax_coercion(accum):
+def test_int_lax_coercion(accum):
     retort = Retort(recipe=[accum], strict_coercion=False)
     loader = retort.get_loader(ExampleInt)
 
@@ -65,7 +79,7 @@ def test_simple_int_lax_coercion(accum):
     assert loader({'field1': 1, 'field2': '1'}) == ExampleInt(field1=1, field2=1)
 
 
-def test_simple_int_dt_disable(accum):
+def test_int_dt_disable(accum):
     retort = Retort(recipe=[accum], debug_trail=DebugTrail.DISABLE)
     loader = retort.get_loader(ExampleInt)
 

@@ -71,6 +71,8 @@ class FilledRetort(OperatingRetort, ABC):
 
         as_is_loader(Any),
         as_is_dumper(Any),
+        as_is_loader(object),
+        as_is_dumper(object),
 
         IsoFormatProvider(datetime),
         IsoFormatProvider(date),
