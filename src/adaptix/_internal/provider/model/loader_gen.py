@@ -117,7 +117,7 @@ class GenState(Namer):
         self._parent_path: Optional[CrownPath] = None
         self._crown_stack: List[InpCrown] = [root_crown]
 
-        self.checked_type_paths: Set[CrownPath] = set()
+        self.type_checked_type_paths: Set[CrownPath] = set()
         super().__init__(debug_trail=debug_trail, path_to_suffix={}, path=())
 
     @property
@@ -244,6 +244,7 @@ class ModelLoaderGen(CodeGenerator):
         state.ctx_namespace.add('CompatExceptionGroup', CompatExceptionGroup)
         state.ctx_namespace.add('CollectionsMapping', collections.abc.Mapping)
         state.ctx_namespace.add('CollectionsSequence', collections.abc.Sequence)
+        state.ctx_namespace.add('sentinel', object())
 
         if self._debug_trail == DebugTrail.ALL:
             state.builder += "errors = []"
@@ -419,11 +420,14 @@ class ModelLoaderGen(CodeGenerator):
                 else:
                     state.builder += 'pass'
 
-        if state.parent_path not in state.checked_type_paths:
+        if state.parent_path not in state.type_checked_type_paths:
             with state.builder(f'except {bad_type_error}:'):
                 self._gen_raise_bad_type_error(state, bad_type_load_error, namer=state.parent)
-            state.checked_type_paths.add(state.parent_path)
+            state.type_checked_type_paths.add(state.parent_path)
 
+        self._gen_unexpected_exc_catching(state)
+
+    def _gen_unexpected_exc_catching(self, state: GenState):
         if self._debug_trail == DebugTrail.FIRST:
             state.builder(
                 f"""
@@ -484,13 +488,14 @@ class ModelLoaderGen(CodeGenerator):
             state.builder += f"{state.v_has_not_found_error} = False"
 
         with self._maybe_wrap_with_type_load_error_catching(state):
-            if crown.map:
-                for key, value in crown.map.items():
-                    self._gen_crown_dispatch(state, value, key)
-            else:
+            for key, value in crown.map.items():
+                self._gen_crown_dispatch(state, value, key)
+
+            if state.path not in state.type_checked_type_paths:
                 with state.builder(f'if not isinstance({state.v_data}, CollectionsMapping):'):
                     self._gen_raise_bad_type_error(state, 'TypeLoadError(CollectionsMapping)')
                 state.builder.empty_line()
+                state.type_checked_type_paths.add(state.path)
 
             data = state.v_data
             extra = state.v_extra
@@ -531,13 +536,14 @@ class ModelLoaderGen(CodeGenerator):
             if self._strict_coercion:
                 self._gen_forbidden_sequence_check(state)
 
-            if crown.map:
-                for key, value in enumerate(crown.map):
-                    self._gen_crown_dispatch(state, value, key)
-            else:
+            for key, value in enumerate(crown.map):
+                self._gen_crown_dispatch(state, value, key)
+
+            if state.path not in state.type_checked_type_paths:
                 with state.builder(f'if not isinstance({state.v_data}, CollectionsSequence):'):
                     self._gen_raise_bad_type_error(state, 'TypeLoadError(CollectionsSequence)')
                 state.builder.empty_line()
+                state.type_checked_type_paths.add(state.path)
 
             list_len = len(crown.map)
 
@@ -575,30 +581,107 @@ class ModelLoaderGen(CodeGenerator):
 
     def _gen_field_crown(self, state: GenState, crown: InpFieldCrown):
         field = state.get_field(crown)
-        if self._is_packed_field(field):
-            param_name = self._field_id_to_param[field.id].name
-            field_assign_to = f"packed_fields[{param_name!r}]"
-            on_lookup_error = 'pass'
-        elif field.is_optional:
-            field_assign_to = state.v_field(field)
-            on_lookup_error = f'{state.v_field(field)} = {self._get_default_clause_expr(state, field)}'
-        else:
-            field_assign_to = state.v_field(field)
-            on_lookup_error = None
-
-        self._gen_assigment_from_parent_data(
-            state=state,
-            assign_to=state.v_raw_field(field),
-            on_lookup_error=on_lookup_error,
-        )
-        with state.builder('else:'):
-            self._gen_field_assigment(
-                assign_to=field_assign_to,
-                field_id=field.id,
-                loader_arg=state.v_raw_field(field),
+        if field.is_required:
+            self._gen_assigment_from_parent_data(
                 state=state,
+                assign_to=state.v_raw_field(field),
             )
+            with state.builder('else:'):
+                self._gen_field_assigment(
+                    assign_to=state.v_field(field),
+                    field_id=field.id,
+                    loader_arg=state.v_raw_field(field),
+                    state=state,
+                )
+        else:
+            if self._is_packed_field(field):
+                param_name = self._field_id_to_param[field.id].name
+                assign_to = f"packed_fields[{param_name!r}]"
+                on_lookup_error = 'pass'
+            else:
+                assign_to = state.v_field(field)
+                on_lookup_error = f'{state.v_field(field)} = {self._get_default_clause_expr(state, field)}'
+
+            if isinstance(state.path[-1], int):
+                self._gen_assigment_from_parent_data(
+                    state=state,
+                    assign_to=state.v_raw_field(field),
+                    on_lookup_error=on_lookup_error,
+                )
+                with state.builder('else:'):
+                    self._gen_field_assigment(
+                        assign_to=assign_to,
+                        field_id=field.id,
+                        loader_arg=state.v_raw_field(field),
+                        state=state,
+                    )
+            else:
+                self._gen_optional_field_extraction_from_mapping(
+                    state=state,
+                    field=field,
+                    assign_to=assign_to,
+                    on_lookup_error=on_lookup_error,
+                )
+
         state.builder.empty_line()
+
+    def _gen_optional_field_extraction_from_mapping(
+        self,
+        state: GenState,
+        *,
+        field: InputField,
+        assign_to: str,
+        on_lookup_error: str,
+    ):
+        if state.parent_path in state.type_checked_type_paths:
+            with state.builder(f"if {state.path[-1]!r} in {state.parent.v_data}:"):
+                self._gen_field_assigment(
+                    assign_to=assign_to,
+                    field_id=field.id,
+                    loader_arg=f'{state.parent.v_data}[{state.path[-1]!r}]',
+                    state=state,
+                )
+            state.builder(
+                f"""
+                else:
+                    {on_lookup_error}
+                """
+            )
+            return
+
+        with state.builder(
+            f"""
+            try:
+                getter = {state.parent.v_data}.get
+            except AttributeError:
+            """
+        ):
+            self._gen_raise_bad_type_error(state, 'TypeLoadError(CollectionsMapping)', namer=state.parent)
+            state.type_checked_type_paths.add(state.parent_path)
+
+        self._gen_unexpected_exc_catching(state)
+        with state.builder("else:"):
+            state.builder(
+                f"""
+                try:
+                    value = getter({state.path[-1]!r}, sentinel)
+                """
+            )
+            self._gen_unexpected_exc_catching(state)
+            with state.builder("else:"):
+                with state.builder(
+                    f"""
+                    if value is sentinel:
+                        {on_lookup_error}
+                    else:
+                    """
+                ):
+                    self._gen_field_assigment(
+                        assign_to=assign_to,
+                        field_id=field.id,
+                        loader_arg='value',
+                        state=state,
+                    )
 
     def _gen_field_assigment(
         self,

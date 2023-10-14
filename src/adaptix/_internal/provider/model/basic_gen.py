@@ -23,6 +23,7 @@ from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
 from ...essential import Mediator, Request
 from ...model_tools.definitions import InputField, InputShape, OutputField, OutputShape
+from ..request_cls import LocatedRequest, TypeHintLoc
 from ..static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
     BaseCrown,
@@ -76,6 +77,23 @@ class CodeGenAccumulator(StaticProvider):
             self.list.append((request_stack, data))
 
         return hook
+
+    @property
+    def code_pairs(self):
+        return [
+            (request_stack[-2].loc_map[TypeHintLoc].type, hook_data.source)
+            for request_stack, hook_data in self.list
+            if (
+                len(request_stack) >= 2
+                and isinstance(request_stack[-2], LocatedRequest)
+                and request_stack[-2].loc_map.has(TypeHintLoc)
+                and request_stack[-2].loc_map[TypeHintLoc].type
+            )
+        ]
+
+    @property
+    def code_dict(self):
+        return dict(self.code_pairs)
 
 
 T = TypeVar('T')
