@@ -15,8 +15,6 @@ python:
      - method: pip
        path: .
 
-   system_packages: false
-
 sphinx:
   configuration: docs/conf.py
 
