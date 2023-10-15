@@ -14,6 +14,6 @@
   |            ^^^^^^^^^^^^^^^^^^^
   |   File "/.../adaptix/_internal/facade/provider.py", line 360, in validating_loader
   |     raise exception_factory(data)
-  | adaptix.load_error.ValidationError: value must be greater or equal 0
+  | adaptix.load_error.ValidationError: msg='value must be greater or equal 0', input_value=-10
   | Exception was caused at ['price']
   +------------------------------------

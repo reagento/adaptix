@@ -11,4 +11,4 @@ Traceback (most recent call last):
   File "model_loader_Book", line 59, in model_loader_Book
   File "/.../adaptix/_internal/provider/concrete_provider.py", line 192, in int_strict_coercion_loader
     raise TypeLoadError(int)
-adaptix.load_error.TypeLoadError: expected_type=<class 'int'>
+adaptix.load_error.TypeLoadError: expected_type=<class 'int'>, input_value='Fahrenheit 451'
