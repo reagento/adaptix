@@ -340,5 +340,5 @@ Notes about implementation:
 * **cattrs** can not process datetime out of the box.
   Custom unstructure hook ``datetime.isoformat`` was used.
 
-* **mashumaro** can not skip ``None`` values for specific fields out of the box.
-  ``__post_serialize__`` is used to eliminate these fields.
+* **marshmallow** can not skip ``None`` values for specific fields out of the box.
+  ``@post_dump`` is used to remove these fields.
