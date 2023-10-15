@@ -73,7 +73,7 @@ def test_outer_loading_no_rec_items():
             f'while loading model {Receipt}',
             [
                 extend_trail(
-                    ValidationError('At least one item must be presented'),
+                    ValidationError('At least one item must be presented', []),
                     ['items'],
                 )
             ]
@@ -108,7 +108,7 @@ def test_outer_loading_bad_phone():
                     UnionLoadError(
                         f'while loading {Optional[List[NotifyTarget]]}',
                         [
-                            TypeLoadError(expected_type=None),
+                            TypeLoadError(None, [{"type": "phone", "value": "+1-541-754-3010"}]),
                             AggregateLoadError(
                                 f'while loading iterable {list}',
                                 [
@@ -119,13 +119,19 @@ def test_outer_loading_bad_phone():
                                                 AggregateLoadError(
                                                     f'while loading model {NotifyEmail}',
                                                     [
-                                                        extend_trail(BadVariantError({'email'}), ['type'])
+                                                        extend_trail(
+                                                            BadVariantError({'email'}, 'phone'),
+                                                            ['type']
+                                                        )
                                                     ]
                                                 ),
                                                 AggregateLoadError(
                                                     f'while loading model {NotifyPhone}',
                                                     [
-                                                        extend_trail(ValueLoadError(msg='Bad phone number'), ['value'])
+                                                        extend_trail(
+                                                            ValueLoadError('Bad phone number', "+1-541-754-3010"),
+                                                            ['value']
+                                                        )
                                                     ]
                                                 ),
                                             ],
@@ -150,7 +156,7 @@ def test_outer_loading_bad_receipt_type():
     raises_exc(
         AggregateLoadError(
             f'while loading model {Receipt}',
-            [extend_trail(BadVariantError(['INCOME', 'INCOME_REFUND']), ['type'])]
+            [extend_trail(BadVariantError(['INCOME', 'INCOME_REFUND'], 'BAD_TYPE'), ['type'])]
         ),
         lambda: outer_receipt_loader(bad_receipt_type_data),
     )
@@ -160,7 +166,7 @@ def test_outer_loading_with_version_tag():
     with_version_data = change(outer_sample_data, ["version"], 1)
 
     raises_exc(
-        ExtraFieldsError(['version']),
+        ExtraFieldsError(['version'], with_version_data),
         lambda: outer_receipt_loader(with_version_data),
     )
 
@@ -181,7 +187,7 @@ def test_outer_loading_bad_item_quantity():
                                     f'while loading model {RecItem!r}',
                                     [
                                         extend_trail(
-                                            ValidationError('Value must be > 0'),
+                                            ValidationError('Value must be > 0', 0),
                                             ['quantity'],
                                         ),
                                     ]
@@ -214,7 +220,7 @@ def test_outer_loading_bad_item_price():
                                     f'while loading model {RecItem}',
                                     [
                                         extend_trail(
-                                            ValidationError('Value must be >= 0'),
+                                            ValidationError('Value must be >= 0', rubles(-10)),
                                             ['price'],
                                         )
                                     ]
@@ -247,7 +253,7 @@ def test_outer_loading_bad_item_name():
                                     f'while loading model {RecItem}',
                                     [
                                         extend_trail(
-                                            ValueLoadError("Char '🔥' can not be represented at CP866"),
+                                            ValueLoadError("Char '🔥' can not be represented at CP866", 'Matchbox 🔥'),
                                             ['name'],
                                         )
                                     ]

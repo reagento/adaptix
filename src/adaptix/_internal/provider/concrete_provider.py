@@ -35,9 +35,9 @@ class IsoFormatProvider(ForAnyDateTime, LoaderProvider, DumperProvider):
             try:
                 return raw_loader(data)
             except TypeError:
-                raise TypeLoadError(str)
+                raise TypeLoadError(str, data)
             except ValueError:
-                raise ValueLoadError("Invalid isoformat string")
+                raise ValueLoadError("Invalid isoformat string", data)
 
         return isoformat_loader
 
@@ -57,9 +57,9 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
             try:
                 return datetime.strptime(data, fmt)
             except ValueError:
-                raise DatetimeFormatMismatch(fmt)
+                raise DatetimeFormatMismatch(fmt, data)
             except TypeError:
-                raise TypeLoadError(str)
+                raise TypeLoadError(str, data)
 
         return datetime_format_loader
 
@@ -81,7 +81,7 @@ class SecondsTimedeltaProvider(LoaderProvider, DumperProvider):
 
         def timedelta_loader(data):
             if type(data) not in ok_types:
-                raise TypeLoadError(Union[int, float, Decimal])
+                raise TypeLoadError(Union[int, float, Decimal], data)
             return timedelta(seconds=int(data), microseconds=int(data % 1 * 10 ** 6))
 
         return timedelta_loader
@@ -117,15 +117,15 @@ class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
             try:
                 encoded = data.encode('ascii')
             except AttributeError:
-                raise TypeLoadError(str)
+                raise TypeLoadError(str, data)
 
             if not B64_PATTERN.fullmatch(encoded):
-                raise ValueLoadError('Bad base64 string')
+                raise ValueLoadError('Bad base64 string', data)
 
             try:
                 return a2b_base64(encoded)
             except binascii.Error as e:
-                raise ValueLoadError(str(e))
+                raise ValueLoadError(str(e), data)
 
         return bytes_base64_loader
 
@@ -161,12 +161,12 @@ class RegexPatternProvider(LoaderProvider, DumperProvider):
 
         def regex_loader(data):
             if not isinstance(data, str):
-                raise TypeLoadError(str)
+                raise TypeLoadError(str, data)
 
             try:
                 return re_compile(data, flags)
             except re.error as e:
-                raise ValueLoadError(str(e))
+                raise ValueLoadError(str(e), data)
 
         return regex_loader
 
@@ -189,7 +189,7 @@ class ScalarLoaderProvider(LoaderProvider, Generic[T]):
 def int_strict_coercion_loader(data):
     if type(data) is int:  # pylint: disable=unidiomatic-typecheck
         return data
-    raise TypeLoadError(int)
+    raise TypeLoadError(int, data)
 
 
 def int_lax_coercion_loader(data):
@@ -198,10 +198,10 @@ def int_lax_coercion_loader(data):
     except ValueError as e:
         e_str = str(e)
         if e_str.startswith('invalid literal'):
-            raise ValueLoadError("Bad string format")
-        raise ValueLoadError(e_str)
+            raise ValueLoadError("Bad string format", data)
+        raise ValueLoadError(e_str, data)
     except TypeError:
-        raise TypeLoadError(Union[int, float, str])
+        raise TypeLoadError(Union[int, float, str], data)
 
 
 INT_LOADER_PROVIDER = ScalarLoaderProvider(
@@ -214,7 +214,7 @@ INT_LOADER_PROVIDER = ScalarLoaderProvider(
 def float_strict_coercion_loader(data):
     if type(data) in (float, int):
         return float(data)
-    raise TypeLoadError(Union[float, int])
+    raise TypeLoadError(Union[float, int], data)
 
 
 def float_lax_coercion_loader(data):
@@ -223,10 +223,10 @@ def float_lax_coercion_loader(data):
     except ValueError as e:
         e_str = str(e)
         if e_str.startswith('could not convert string'):
-            raise ValueLoadError("Bad string format")
-        raise ValueLoadError(e_str)
+            raise ValueLoadError("Bad string format", data)
+        raise ValueLoadError(e_str, data)
     except TypeError:
-        raise TypeLoadError(Union[int, float, str])
+        raise TypeLoadError(Union[int, float, str], data)
 
 
 FLOAT_LOADER_PROVIDER = ScalarLoaderProvider(
@@ -239,7 +239,7 @@ FLOAT_LOADER_PROVIDER = ScalarLoaderProvider(
 def str_strict_coercion_loader(data):
     if type(data) is str:  # pylint: disable=unidiomatic-typecheck
         return data
-    raise TypeLoadError(str)
+    raise TypeLoadError(str, data)
 
 
 STR_LOADER_PROVIDER = ScalarLoaderProvider(
@@ -252,7 +252,7 @@ STR_LOADER_PROVIDER = ScalarLoaderProvider(
 def bool_strict_coercion_loader(data):
     if type(data) is bool:  # pylint: disable=unidiomatic-typecheck
         return data
-    raise TypeLoadError(bool)
+    raise TypeLoadError(bool, data)
 
 
 BOOL_LOADER_PROVIDER = ScalarLoaderProvider(
@@ -267,21 +267,21 @@ def decimal_strict_coercion_loader(data):
         try:
             return Decimal(data)
         except InvalidOperation:
-            raise ValueLoadError("Bad string format")
+            raise ValueLoadError("Bad string format", data)
     if type(data) is Decimal:  # pylint: disable=unidiomatic-typecheck
         return data
-    raise TypeLoadError(Union[str, Decimal])
+    raise TypeLoadError(Union[str, Decimal], data)
 
 
 def decimal_lax_coercion_loader(data):
     try:
         return Decimal(data)
     except InvalidOperation:
-        raise ValueLoadError("Bad string format")
+        raise ValueLoadError("Bad string format", data)
     except TypeError:
-        raise TypeLoadError(Union[str, Decimal])
+        raise TypeLoadError(Union[str, Decimal], data)
     except ValueError as e:
-        raise ValueLoadError(str(e))
+        raise ValueLoadError(str(e), data)
 
 
 DECIMAL_LOADER_PROVIDER = ScalarLoaderProvider(
@@ -296,20 +296,20 @@ def fraction_strict_coercion_loader(data):
         try:
             return Fraction(data)
         except ValueError:
-            raise ValueLoadError("Bad string format")
-    raise TypeLoadError(Union[str, Fraction])
+            raise ValueLoadError("Bad string format", data)
+    raise TypeLoadError(Union[str, Fraction], data)
 
 
 def fraction_lax_coercion_loader(data):
     try:
         return Fraction(data)
     except TypeError:
-        raise TypeLoadError(Union[str, Fraction])
+        raise TypeLoadError(Union[str, Fraction], data)
     except ValueError as e:
         str_e = str(e)
         if str_e.startswith('Invalid literal'):
-            raise ValueLoadError("Bad string format")
-        raise ValueLoadError(str(e))
+            raise ValueLoadError("Bad string format", data)
+        raise ValueLoadError(str(e), data)
 
 
 FRACTION_LOADER_PROVIDER = ScalarLoaderProvider(
@@ -324,17 +324,17 @@ def complex_strict_coercion_loader(data):
         try:
             return complex(data)
         except ValueError:
-            raise ValueLoadError("Bad string format")
-    raise TypeLoadError(Union[str, complex])
+            raise ValueLoadError("Bad string format", data)
+    raise TypeLoadError(Union[str, complex], data)
 
 
 def complex_lax_coercion_loader(data):
     try:
         return complex(data)
     except TypeError:
-        raise TypeLoadError(Union[str, complex])
+        raise TypeLoadError(Union[str, complex], data)
     except ValueError:
-        raise ValueLoadError("Bad string format")
+        raise ValueLoadError("Bad string format", data)
 
 
 COMPLEX_LOADER_PROVIDER = ScalarLoaderProvider(

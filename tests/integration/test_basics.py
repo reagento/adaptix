@@ -59,7 +59,7 @@ def test_int(accum):
             f'while loading model {ExampleInt}',
             [
                 extend_trail(
-                    TypeLoadError(int),
+                    TypeLoadError(int, '1'),
                     ['field2'],
                 )
             ]

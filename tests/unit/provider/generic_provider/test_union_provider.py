@@ -20,7 +20,7 @@ def make_loader(tp: type):
     def tp_loader(data):
         if isinstance(data, tp):
             return data
-        raise TypeLoadError(tp)
+        raise TypeLoadError(tp, data)
 
     return loader(tp, tp_loader)
 
@@ -69,8 +69,8 @@ def test_loading(retort, strict_coercion, debug_trail):
             UnionLoadError(
                 f'while loading {Union[int, str]}',
                 [
-                    TypeLoadError(int),
-                    TypeLoadError(str),
+                    TypeLoadError(int, []),
+                    TypeLoadError(str, []),
                 ]
             ),
             lambda: loader_([]),
@@ -230,14 +230,14 @@ def test_literal(strict_coercion, debug_trail):
 
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
-            BadVariantError({'a'}),
+            BadVariantError({'a'}, 'b'),
             lambda: loader_('b'),
         )
     elif debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
         raises_exc(
             UnionLoadError(
                 f'while loading {Literal["a", None]}',
-                [TypeLoadError(None), BadVariantError({'a'})]
+                [TypeLoadError(None, 'b'), BadVariantError({'a'}, 'b')]
             ),
             lambda: loader_('b'),
         )

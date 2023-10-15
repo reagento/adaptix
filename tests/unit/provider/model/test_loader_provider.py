@@ -163,16 +163,17 @@ def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
     if extra_policy == ExtraSkip():
         assert loader({'a': 1, 'b': 2, 'c': 3}) == gauge(1, 2)
     if extra_policy == ExtraForbid():
+        data = {'a': 1, 'b': 2, 'c': 3}
         raises_exc(
             trail_select(
-                disable=ExtraFieldsError({'c'}),
-                first=ExtraFieldsError({'c'}),
+                disable=ExtraFieldsError({'c'}, data),
+                first=ExtraFieldsError({'c'}, data),
                 all=AggregateLoadError(
                     f'while loading model {Gauge}',
-                    [ExtraFieldsError({'c'})],
+                    [ExtraFieldsError({'c'}, data)],
                 ),
             ),
-            lambda: loader({'a': 1, 'b': 2, 'c': 3}),
+            lambda: loader(data),
         )
 
     raises_exc(
@@ -187,13 +188,14 @@ def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
         lambda: loader({'a': 1, 'b': LoadError()}),
     )
 
+    data = {'a': 1}
     raises_exc(
         trail_select(
-            disable=NoRequiredFieldsError({'b'}),
-            first=NoRequiredFieldsError({'b'}),
+            disable=NoRequiredFieldsError({'b'}, data),
+            first=NoRequiredFieldsError({'b'}, data),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [NoRequiredFieldsError({'b'})],
+                [NoRequiredFieldsError({'b'}, data)],
             ),
         ),
         lambda: loader({'a': 1}),
@@ -201,11 +203,11 @@ def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
 
     raises_exc(
         trail_select(
-            disable=TypeLoadError(CollectionsMapping),
-            first=TypeLoadError(CollectionsMapping),
+            disable=TypeLoadError(CollectionsMapping, "bad input value"),
+            first=TypeLoadError(CollectionsMapping, "bad input value"),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [TypeLoadError(CollectionsMapping)],
+                [TypeLoadError(CollectionsMapping, "bad input value")],
             ),
         ),
         lambda: loader("bad input value"),
@@ -241,38 +243,40 @@ def test_direct_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_
         assert loader([1, 2, 3]) == gauge(1, 2)
 
     if extra_policy == ExtraForbid():
+        data = [1, 2, 3]
         raises_exc(
             trail_select(
-                disable=ExtraItemsError(2),
-                first=ExtraItemsError(2),
+                disable=ExtraItemsError(2, data),
+                first=ExtraItemsError(2, data),
                 all=AggregateLoadError(
                     f'while loading model {Gauge}',
-                    [ExtraItemsError(2)],
+                    [ExtraItemsError(2, data)],
                 ),
             ),
-            lambda: loader([1, 2, 3]),
+            lambda: loader(data),
         )
 
+    data = [10]
     raises_exc(
         trail_select(
-            disable=NoRequiredItemsError(2),
-            first=NoRequiredItemsError(2),
+            disable=NoRequiredItemsError(2, data),
+            first=NoRequiredItemsError(2, data),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [NoRequiredItemsError(2)],
+                [NoRequiredItemsError(2, data)],
             ),
         ),
-        lambda: loader([10]),
+        lambda: loader(data),
     )
 
     if strict_coercion:
         raises_exc(
             trail_select(
-                disable=ExcludedTypeLoadError(CollectionsSequence, str),
-                first=ExcludedTypeLoadError(CollectionsSequence, str),
+                disable=ExcludedTypeLoadError(CollectionsSequence, str, 'ab'),
+                first=ExcludedTypeLoadError(CollectionsSequence, str, 'ab'),
                 all=AggregateLoadError(
                     f'while loading model {Gauge}',
-                    [ExcludedTypeLoadError(CollectionsSequence, str)],
+                    [ExcludedTypeLoadError(CollectionsSequence, str, 'ab')],
                 ),
             ),
             lambda: loader('ab'),
@@ -282,11 +286,11 @@ def test_direct_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_
 
     raises_exc(
         trail_select(
-            disable=TypeLoadError(CollectionsSequence),
-            first=TypeLoadError(CollectionsSequence),
+            disable=TypeLoadError(CollectionsSequence, 123),
+            first=TypeLoadError(CollectionsSequence, 123),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [TypeLoadError(CollectionsSequence)],
+                [TypeLoadError(CollectionsSequence, 123)],
             ),
         ),
         lambda: loader(123),
@@ -315,27 +319,29 @@ def test_extra_forbid(debug_ctx, debug_trail, trail_select):
 
     loader = loader_getter()
 
+    data = {'a': 1, 'b': 2, 'c': 3}
     raises_exc(
         trail_select(
-            disable=ExtraFieldsError({'c'}),
-            first=ExtraFieldsError({'c'}),
+            disable=ExtraFieldsError({'c'}, data),
+            first=ExtraFieldsError({'c'}, data),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [ExtraFieldsError({'c'})],
+                [ExtraFieldsError({'c'}, data)],
             )
         ),
-        lambda: loader({'a': 1, 'b': 2, 'c': 3}),
+        lambda: loader(data),
     )
+    data = {'a': 1, 'b': 2, 'c': 3, 'd': 4}
     raises_exc(
         trail_select(
-            disable=ExtraFieldsError({'c', 'd'}),
-            first=ExtraFieldsError({'c', 'd'}),
+            disable=ExtraFieldsError({'c', 'd'}, data),
+            first=ExtraFieldsError({'c', 'd'}, data),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [ExtraFieldsError({'c', 'd'})],
+                [ExtraFieldsError({'c', 'd'}, data)],
             )
         ),
-        lambda: loader({'a': 1, 'b': 2, 'c': 3, 'd': 4}),
+        lambda: loader(data),
     )
 
 
@@ -518,13 +524,14 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_trail, trail_select):
     )
     loader = loader_getter()
 
+    data = {'a': 1, 'b': 2}
     raises_exc(
         trail_select(
-            disable=NoRequiredFieldsError({'m_a'}),
-            first=NoRequiredFieldsError({'m_a'}),
-            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredFieldsError({'m_a'})])
+            disable=NoRequiredFieldsError({'m_a'}, data),
+            first=NoRequiredFieldsError({'m_a'}, data),
+            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredFieldsError({'m_a'}, data)])
         ),
-        lambda: loader({'a': 1, 'b': 2}),
+        lambda: loader(data),
     )
 
     assert loader({'m_a': 1, 'b': 'this value is not loaded'}) == gauge(1, b='this value is not loaded')
@@ -667,13 +674,14 @@ def test_flat_mapping(debug_ctx, debug_trail, is_required, trail_select):
     )
     loader = loader_getter()
 
+    data = {'a': 1, 'b': 2}
     raises_exc(
         trail_select(
-            disable=NoRequiredFieldsError({'m_a'}),
-            first=NoRequiredFieldsError({'m_a'}),
-            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredFieldsError({'m_a'})])
+            disable=NoRequiredFieldsError({'m_a'}, data),
+            first=NoRequiredFieldsError({'m_a'}, data),
+            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredFieldsError({'m_a'}, data)])
         ),
-        lambda: loader({'a': 1, 'b': 2}),
+        lambda: loader(data),
     )
 
     assert loader({'m_a': 1, 'b': 2}) == gauge(1, e={'b': 2})
@@ -783,11 +791,11 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select):
 
     raises_exc(
         trail_select(
-            disable=TypeLoadError(CollectionsMapping),
-            first=extend_trail(TypeLoadError(CollectionsMapping), ['z']),
+            disable=TypeLoadError(CollectionsMapping, 'this is not a dict'),
+            first=extend_trail(TypeLoadError(CollectionsMapping, 'this is not a dict'), ['z']),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [extend_trail(TypeLoadError(CollectionsMapping), ['z'])],
+                [extend_trail(TypeLoadError(CollectionsMapping, 'this is not a dict'), ['z'])],
             ),
         ),
         lambda: loader(
@@ -805,11 +813,11 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select):
 
     raises_exc(
         trail_select(
-            disable=TypeLoadError(CollectionsSequence),
-            first=extend_trail(TypeLoadError(CollectionsSequence), ['v']),
+            disable=TypeLoadError(CollectionsSequence, None),
+            first=extend_trail(TypeLoadError(CollectionsSequence, None), ['v']),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [extend_trail(TypeLoadError(CollectionsSequence), ['v'])],
+                [extend_trail(TypeLoadError(CollectionsSequence, None), ['v'])],
             ),
         ),
         lambda: loader(
@@ -826,11 +834,11 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select):
 
     raises_exc(
         trail_select(
-            disable=ExcludedTypeLoadError(CollectionsSequence, str),
-            first=extend_trail(ExcludedTypeLoadError(CollectionsSequence, str), ['v']),
+            disable=ExcludedTypeLoadError(CollectionsSequence, str, 'this is not a list'),
+            first=extend_trail(ExcludedTypeLoadError(CollectionsSequence, str, 'this is not a list'), ['v']),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [extend_trail(ExcludedTypeLoadError(CollectionsSequence, str), ['v'])],
+                [extend_trail(ExcludedTypeLoadError(CollectionsSequence, str, 'this is not a list'), ['v'])],
             ),
         ),
         lambda: loader(
@@ -935,13 +943,14 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_trail, extra_policy, trail_se
         assert loader({'a': 1, 'b': 2, 'c': 3}) == gauge(1, extra={'c': 3})
 
     if extra_policy == ExtraForbid():
+        data = {'a': 1, 'b': 2, 'c': 3}
         raises_exc(
             trail_select(
-                disable=ExtraFieldsError({'c'}),
-                first=ExtraFieldsError({'c'}),
-                all=AggregateLoadError(f'while loading model {Gauge}', [ExtraFieldsError({'c'})]),
+                disable=ExtraFieldsError({'c'}, data),
+                first=ExtraFieldsError({'c'}, data),
+                all=AggregateLoadError(f'while loading model {Gauge}', [ExtraFieldsError({'c'}, data)]),
             ),
-            lambda: loader({'a': 1, 'b': 2, 'c': 3}),
+            lambda: loader(data),
         )
 
 
@@ -969,26 +978,28 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, extra_policy, trail_se
 
     assert loader([1, 2, 3]) == gauge(2)
 
+    data = [1, 2]
     raises_exc(
         trail_select(
-            disable=NoRequiredItemsError(3),
-            first=NoRequiredItemsError(3),
-            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredItemsError(3)]),
+            disable=NoRequiredItemsError(3, data),
+            first=NoRequiredItemsError(3, data),
+            all=AggregateLoadError(f'while loading model {Gauge}', [NoRequiredItemsError(3, data)]),
         ),
-        lambda: loader([1, 2]),
+        lambda: loader(data),
     )
 
     if extra_policy == ExtraSkip():
         assert loader([1, 2, 3, 4]) == gauge(2)
 
     if extra_policy == ExtraForbid():
+        data = [1, 2, 3, 4]
         raises_exc(
             trail_select(
-                disable=ExtraItemsError(3),
-                first=ExtraItemsError(3),
-                all=AggregateLoadError(f'while loading model {Gauge}', [ExtraItemsError(3)]),
+                disable=ExtraItemsError(3, data),
+                first=ExtraItemsError(3, data),
+                all=AggregateLoadError(f'while loading model {Gauge}', [ExtraItemsError(3, data)]),
             ),
-            lambda: loader([1, 2, 3, 4]),
+            lambda: loader(data),
         )
 
 
@@ -1017,34 +1028,36 @@ def test_exception_collection(debug_ctx):
         AggregateLoadError(
             f'while loading model {Gauge}',
             [
-                extend_trail(ValueLoadError('error at a'), ['a']),
-                extend_trail(ValueLoadError('error at b'), ['b']),
+                extend_trail(ValueLoadError('error at a', ...), ['a']),
+                extend_trail(ValueLoadError('error at b', ...), ['b']),
             ]
         ),
-        lambda: loader({'a': ValueLoadError('error at a'), 'b': ValueLoadError('error at b')}),
+        lambda: loader({'a': ValueLoadError('error at a', ...), 'b': ValueLoadError('error at b', ...)}),
     )
 
+    data = {'a': ValueLoadError('error at a', ...)}
     raises_exc(
         AggregateLoadError(
             f'while loading model {Gauge}',
             [
-                extend_trail(ValueLoadError('error at a'), ['a']),
-                NoRequiredFieldsError({'b'}),
+                extend_trail(ValueLoadError('error at a', ...), ['a']),
+                NoRequiredFieldsError({'b'}, data),
             ]
         ),
-        lambda: loader({'a': ValueLoadError('error at a')}),
+        lambda: loader(data),
     )
 
+    data = {'a': ValueLoadError('error at a', ...), 'c': 3}
     raises_exc(
         AggregateLoadError(
             f'while loading model {Gauge}',
             [
-                extend_trail(ValueLoadError('error at a'), ['a']),
-                NoRequiredFieldsError({'b'}),
-                ExtraFieldsError({'c'}),
+                extend_trail(ValueLoadError('error at a', ...), ['a']),
+                NoRequiredFieldsError({'b'}, data),
+                ExtraFieldsError({'c'}, data),
             ]
         ),
-        lambda: loader({'a': ValueLoadError('error at a'), 'c': 3}),
+        lambda: loader(data),
     )
 
 
@@ -1073,18 +1086,18 @@ def test_empty_dict(debug_ctx, debug_trail, extra_policy, trail_select):
 
     raises_exc(
         trail_select(
-            disable=TypeLoadError(CollectionsMapping),
-            first=TypeLoadError(CollectionsMapping),
-            all=AggregateLoadError(f'while loading model {Gauge}', [TypeLoadError(CollectionsMapping)]),
+            disable=TypeLoadError(CollectionsMapping, []),
+            first=TypeLoadError(CollectionsMapping, []),
+            all=AggregateLoadError(f'while loading model {Gauge}', [TypeLoadError(CollectionsMapping, [])]),
         ),
         lambda: loader([]),
     )
 
     raises_exc(
         trail_select(
-            disable=TypeLoadError(CollectionsMapping),
-            first=TypeLoadError(CollectionsMapping),
-            all=AggregateLoadError(f'while loading model {Gauge}', [TypeLoadError(CollectionsMapping)]),
+            disable=TypeLoadError(CollectionsMapping, None),
+            first=TypeLoadError(CollectionsMapping, None),
+            all=AggregateLoadError(f'while loading model {Gauge}', [TypeLoadError(CollectionsMapping, None)]),
         ),
         lambda: loader(None),
     )
@@ -1111,18 +1124,18 @@ def test_empty_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_c
 
     raises_exc(
         trail_select(
-            disable=TypeLoadError(CollectionsSequence),
-            first=TypeLoadError(CollectionsSequence),
-            all=AggregateLoadError(f'while loading model {Gauge}', [TypeLoadError(CollectionsSequence)]),
+            disable=TypeLoadError(CollectionsSequence, {}),
+            first=TypeLoadError(CollectionsSequence, {}),
+            all=AggregateLoadError(f'while loading model {Gauge}', [TypeLoadError(CollectionsSequence, {})]),
         ),
         lambda: loader({}),
     )
 
     raises_exc(
         trail_select(
-            disable=TypeLoadError(CollectionsSequence),
-            first=TypeLoadError(CollectionsSequence),
-            all=AggregateLoadError(f'while loading model {Gauge}', [TypeLoadError(CollectionsSequence)]),
+            disable=TypeLoadError(CollectionsSequence, None),
+            first=TypeLoadError(CollectionsSequence, None),
+            all=AggregateLoadError(f'while loading model {Gauge}', [TypeLoadError(CollectionsSequence, None)]),
         ),
         lambda: loader(None),
     )
@@ -1130,11 +1143,11 @@ def test_empty_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_c
     if strict_coercion:
         raises_exc(
             trail_select(
-                disable=ExcludedTypeLoadError(CollectionsSequence, str),
-                first=ExcludedTypeLoadError(CollectionsSequence, str),
+                disable=ExcludedTypeLoadError(CollectionsSequence, str, ''),
+                first=ExcludedTypeLoadError(CollectionsSequence, str, ''),
                 all=AggregateLoadError(
                     f'while loading model {Gauge}',
-                    [ExcludedTypeLoadError(CollectionsSequence, str)],
+                    [ExcludedTypeLoadError(CollectionsSequence, str, '')],
                 ),
             ),
             lambda: loader(''),
@@ -1147,9 +1160,9 @@ def test_empty_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_c
         elif extra_policy == ExtraForbid():
             raises_exc(
                 trail_select(
-                    disable=ExtraItemsError(0),
-                    first=ExtraItemsError(0),
-                    all=AggregateLoadError(f'while loading model {Gauge}', [ExtraItemsError(0)]),
+                    disable=ExtraItemsError(0, 'abc'),
+                    first=ExtraItemsError(0, 'abc'),
+                    all=AggregateLoadError(f'while loading model {Gauge}', [ExtraItemsError(0, 'abc')]),
                 ),
                 lambda: loader('abc'),
             )

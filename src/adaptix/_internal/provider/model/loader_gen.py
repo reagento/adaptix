@@ -391,13 +391,17 @@ class ModelLoaderGen(CodeGenerator):
         if isinstance(last_path_el, str):
             lookup_error = 'KeyError'
             bad_type_error = '(TypeError, IndexError)'
-            bad_type_load_error = 'TypeLoadError(CollectionsMapping)'
-            not_found_error = f"NoRequiredFieldsError({state.parent.v_required_keys} - set({state.parent.v_data}))"
+            bad_type_load_error = f'TypeLoadError(CollectionsMapping, {state.parent.v_data})'
+            not_found_error = (
+                "NoRequiredFieldsError("
+                f"{state.parent.v_required_keys} - set({state.parent.v_data}), {state.parent.v_data}"
+                ")"
+            )
         else:
             lookup_error = 'IndexError'
             bad_type_error = '(TypeError, KeyError)'
-            bad_type_load_error = 'TypeLoadError(CollectionsSequence)'
-            not_found_error = f"NoRequiredItemsError({len(state.parent_crown.map)})"
+            bad_type_load_error = f'TypeLoadError(CollectionsSequence, {state.parent.v_data})'
+            not_found_error = f"NoRequiredItemsError({len(state.parent_crown.map)}, {state.parent.v_data})"
 
         with state.builder(
             f"""
@@ -493,23 +497,21 @@ class ModelLoaderGen(CodeGenerator):
 
             if state.path not in state.type_checked_type_paths:
                 with state.builder(f'if not isinstance({state.v_data}, CollectionsMapping):'):
-                    self._gen_raise_bad_type_error(state, 'TypeLoadError(CollectionsMapping)')
+                    self._gen_raise_bad_type_error(state, f'TypeLoadError(CollectionsMapping, {state.v_data})')
                 state.builder.empty_line()
                 state.type_checked_type_paths.add(state.path)
 
-            data = state.v_data
-            extra = state.v_extra
             if crown.extra_policy == ExtraForbid():
                 state.builder += f"""
-                    {extra}_set = set({data}) - {state.v_known_keys}
-                    if {extra}_set:
-                        {state.emit_error(f"ExtraFieldsError({extra}_set)")}
+                    {state.v_extra}_set = set({state.v_data}) - {state.v_known_keys}
+                    if {state.v_extra}_set:
+                        {state.emit_error(f"ExtraFieldsError({state.v_extra}_set, {state.v_data})")}
                 """
                 state.builder.empty_line()
             elif crown.extra_policy == ExtraCollect():
                 state.builder += f"""
-                    for key in set({data}) - {state.v_known_keys}:
-                        {extra}[key] = {data}[key]
+                    for key in set({state.v_data}) - {state.v_known_keys}:
+                        {state.v_extra}[key] = {state.v_data}[key]
                 """
                 state.builder.empty_line()
 
@@ -518,7 +520,7 @@ class ModelLoaderGen(CodeGenerator):
 
     def _gen_forbidden_sequence_check(self, state: GenState) -> None:
         with state.builder(f'if type({state.v_data}) is str:'):
-            self._gen_raise_bad_type_error(state, 'ExcludedTypeLoadError(CollectionsSequence, str)')
+            self._gen_raise_bad_type_error(state, f'ExcludedTypeLoadError(CollectionsSequence, str, {state.v_data})')
 
     def _gen_list_crown(self, state: GenState, crown: InpListCrown):
         if state.path:
@@ -541,24 +543,23 @@ class ModelLoaderGen(CodeGenerator):
 
             if state.path not in state.type_checked_type_paths:
                 with state.builder(f'if not isinstance({state.v_data}, CollectionsSequence):'):
-                    self._gen_raise_bad_type_error(state, 'TypeLoadError(CollectionsSequence)')
+                    self._gen_raise_bad_type_error(state, f'TypeLoadError(CollectionsSequence, {state.v_data})')
                 state.builder.empty_line()
                 state.type_checked_type_paths.add(state.path)
 
-            list_len = len(crown.map)
-
+            expected_len = len(crown.map)
             if crown.extra_policy == ExtraForbid():
                 state.builder += f"""
-                    if len({state.v_data}) != {list_len}:
-                        if len({state.v_data}) < {list_len}:
-                            {state.emit_error(f"NoRequiredItemsError({list_len})")}
+                    if len({state.v_data}) != {expected_len}:
+                        if len({state.v_data}) < {expected_len}:
+                            {state.emit_error(f"NoRequiredItemsError({expected_len}, {state.v_data})")}
                         else:
-                            {state.emit_error(f"ExtraItemsError({list_len})")}
+                            {state.emit_error(f"ExtraItemsError({expected_len}, {state.v_data})")}
                 """
             else:
                 state.builder += f"""
-                    if len({state.v_data}) < {list_len}:
-                        {state.emit_error(f"NoRequiredItemsError({list_len})")}
+                    if len({state.v_data}) < {expected_len}:
+                        {state.emit_error(f"NoRequiredItemsError({expected_len}, {state.v_data})")}
                 """
 
         if self._can_collect_extra:
@@ -656,7 +657,11 @@ class ModelLoaderGen(CodeGenerator):
             except AttributeError:
             """
         ):
-            self._gen_raise_bad_type_error(state, 'TypeLoadError(CollectionsMapping)', namer=state.parent)
+            self._gen_raise_bad_type_error(
+                state,
+                f'TypeLoadError(CollectionsMapping, {state.parent.v_data})',
+                namer=state.parent,
+            )
             state.type_checked_type_paths.add(state.parent_path)
 
         self._gen_unexpected_exc_catching(state)

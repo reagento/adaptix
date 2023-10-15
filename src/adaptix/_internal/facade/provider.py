@@ -349,7 +349,7 @@ def validator(
 ) -> Provider:
     # pylint: disable=C3001
     exception_factory = (
-        (lambda x: ValidationError(error))
+        (lambda x: ValidationError(error, x))
         if error is None or isinstance(error, str) else
         error
     )

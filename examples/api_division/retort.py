@@ -25,7 +25,7 @@ def string_cp866_mutator(data: str):
         t_data.encode("cp866", "strict")
     except UnicodeEncodeError as e:
         bad_char = e.object[e.start: e.end]  # pylint: disable=unsubscriptable-object
-        raise ValueLoadError(f'Char {bad_char!r} can not be represented at CP866')
+        raise ValueLoadError(f'Char {bad_char!r} can not be represented at CP866', data)
     return t_data
 
 
@@ -33,12 +33,12 @@ def outer_phonenumber_loader(data: str):
     try:
         phone_number = phonenumbers.parse(data)
     except phonenumbers.NumberParseException:
-        raise ValueLoadError('Bad phone number')
+        raise ValueLoadError('Bad phone number', data)
 
     expected = phonenumbers.format_number(phone_number, phonenumbers.PhoneNumberFormat.E164)
 
     if data != expected:
-        raise ValueLoadError('Bad phone number')
+        raise ValueLoadError('Bad phone number', data)
 
     return phone_number
 
@@ -47,12 +47,12 @@ def money_loader(data):
     try:
         return Money.from_decimal_rubles(data)
     except TooPreciseAmount:
-        raise ValueLoadError("Rubles cannot have more than 2 decimal places")
+        raise ValueLoadError("Rubles cannot have more than 2 decimal places", data)
 
 
 def forbid_version_key(data):
     if isinstance(data, dict) and 'version' in data:
-        raise ExtraFieldsError(['version'])
+        raise ExtraFieldsError(['version'], data)
     return data
 
 

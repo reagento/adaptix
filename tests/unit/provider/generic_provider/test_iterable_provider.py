@@ -76,7 +76,7 @@ def test_loading(retort, strict_coercion, debug_trail):
     assert loader_(deque(["a", "b", "c"])) == ["a", "b", "c"]
 
     raises_exc(
-        TypeLoadError(Iterable),
+        TypeLoadError(Iterable, 123),
         lambda: loader_(123),
     )
 
@@ -88,15 +88,15 @@ def test_loading(retort, strict_coercion, debug_trail):
 
     if strict_coercion:
         raises_exc(
-            ExcludedTypeLoadError(Iterable, Mapping),
+            ExcludedTypeLoadError(Iterable, Mapping, {"a": 0, "b": 0, "c": 0}),
             lambda: loader_({"a": 0, "b": 0, "c": 0}),
         )
         raises_exc(
-            ExcludedTypeLoadError(Iterable, Mapping),
+            ExcludedTypeLoadError(Iterable, Mapping, {"a": 0, "b": 0, "c": 0}),
             lambda: loader_(collections.ChainMap({"a": 0, "b": 0, "c": 0})),
         )
         raises_exc(
-            ExcludedTypeLoadError(Iterable, str),
+            ExcludedTypeLoadError(Iterable, str, "abc"),
             lambda: loader_("abc"),
         )
         if debug_trail == DebugTrail.ALL:
@@ -104,9 +104,9 @@ def test_loading(retort, strict_coercion, debug_trail):
                 AggregateLoadError(
                     "while loading iterable <class 'list'>",
                     [
-                        append_trail(TypeLoadError(str), 0),
-                        append_trail(TypeLoadError(str), 1),
-                        append_trail(TypeLoadError(str), 2),
+                        append_trail(TypeLoadError(str, 1), 0),
+                        append_trail(TypeLoadError(str, 2), 1),
+                        append_trail(TypeLoadError(str, 3), 2),
                     ]
                 ),
                 lambda: loader_([1, 2, 3]),
@@ -115,8 +115,8 @@ def test_loading(retort, strict_coercion, debug_trail):
                 AggregateLoadError(
                     "while loading iterable <class 'list'>",
                     [
-                        append_trail(TypeLoadError(str), 1),
-                        append_trail(TypeLoadError(str), 2),
+                        append_trail(TypeLoadError(str, 2), 1),
+                        append_trail(TypeLoadError(str, 3), 2),
                     ]
                 ),
                 lambda: loader_(["1", 2, 3]),
@@ -124,14 +124,14 @@ def test_loading(retort, strict_coercion, debug_trail):
         else:
             raises_exc(
                 extend_trail(
-                    TypeLoadError(str),
+                    TypeLoadError(str, 1),
                     [] if debug_trail == DebugTrail.DISABLE else [0],
                 ),
                 lambda: loader_([1, 2, 3]),
             )
             raises_exc(
                 extend_trail(
-                    TypeLoadError(str),
+                    TypeLoadError(str, 2),
                     [] if debug_trail == DebugTrail.DISABLE else [1]
                 ),
                 lambda: loader_(["1", 2, 3]),

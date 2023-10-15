@@ -45,9 +45,9 @@ class EnumNameProvider(BaseEnumProvider):
             try:
                 return enum[data]
             except KeyError:
-                raise BadVariantError(variants) from None
+                raise BadVariantError(variants, data) from None
             except TypeError:
-                raise BadVariantError(variants)
+                raise BadVariantError(variants, data)
 
         return enum_loader
 
@@ -74,7 +74,7 @@ class EnumValueProvider(BaseEnumProvider):
             try:
                 return enum(loaded_value)
             except ValueError:
-                raise MsgError("Bad enum value")
+                raise MsgError("Bad enum value", data)
 
         return enum_loader
 
@@ -113,12 +113,12 @@ class EnumExactValueProvider(BaseEnumProvider):
             def enum_exact_loader(data):
                 # since MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
                 if type(data) is enum:  # pylint: disable=unidiomatic-typecheck
-                    raise BadVariantError(variants)
+                    raise BadVariantError(variants, data)
 
                 try:
                     return enum(data)
                 except ValueError:
-                    raise BadVariantError(variants)
+                    raise BadVariantError(variants, data) from None
 
             return enum_exact_loader
 
@@ -126,9 +126,9 @@ class EnumExactValueProvider(BaseEnumProvider):
             try:
                 return value_to_member[data]
             except KeyError:
-                raise BadVariantError(variants) from None
+                raise BadVariantError(variants, data) from None
             except TypeError:
-                raise BadVariantError(variants)
+                raise BadVariantError(variants, data)
 
         return enum_exact_loader_v2m
 

@@ -50,46 +50,46 @@ def test_loading(retort, strict_coercion, debug_trail):
     assert loader_(MyMapping({'a': 'b', 'c': 'd'})) == {'a': 'b', 'c': 'd'}
 
     raises_exc(
-        TypeLoadError(collections.abc.Mapping),
+        TypeLoadError(collections.abc.Mapping, 123),
         lambda: loader_(123),
     )
 
     raises_exc(
-        TypeLoadError(collections.abc.Mapping),
+        TypeLoadError(collections.abc.Mapping, ['a', 'b', 'c']),
         lambda: loader_(['a', 'b', 'c']),
     )
 
     if strict_coercion:
         if debug_trail == DebugTrail.DISABLE:
             raises_exc(
-                TypeLoadError(str),
+                TypeLoadError(str, 0),
                 lambda: loader_({'a': 'b', 'c': 0}),
             )
             raises_exc(
-                TypeLoadError(str),
+                TypeLoadError(str, 0),
                 lambda: loader_({'a': 'b', 0: 'd'}),
             )
         elif debug_trail == DebugTrail.FIRST:
             raises_exc(
-                extend_trail(TypeLoadError(str), ['c']),
+                extend_trail(TypeLoadError(str, 0), ['c']),
                 lambda: loader_({'a': 'b', 'c': 0}),
             )
             raises_exc(
-                extend_trail(TypeLoadError(str), [ItemKey(0)]),
+                extend_trail(TypeLoadError(str, 0), [ItemKey(0)]),
                 lambda: loader_({'a': 'b', 0: 'd'}),
             )
         elif debug_trail == DebugTrail.ALL:
             raises_exc(
                 AggregateLoadError(
                     "while loading <class 'dict'>",
-                    [append_trail(TypeLoadError(str), 'c')]
+                    [append_trail(TypeLoadError(str, 0), 'c')]
                 ),
                 lambda: loader_({'a': 'b', 'c': 0}),
             )
             raises_exc(
                 AggregateLoadError(
                     "while loading <class 'dict'>",
-                    [append_trail(TypeLoadError(str), ItemKey(0))]
+                    [append_trail(TypeLoadError(str, 0), ItemKey(0))]
                 ),
                 lambda: loader_({'a': 'b', 0: 'd'}),
             )

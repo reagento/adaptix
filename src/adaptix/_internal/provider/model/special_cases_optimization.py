@@ -25,4 +25,4 @@ def get_default_clause(sieve: Sieve) -> Optional[Union[DefaultValue, DefaultFact
 def none_loader(data):
     if data is None:
         return None
-    raise TypeLoadError(None)
+    raise TypeLoadError(None, data)

@@ -14,23 +14,23 @@ from adaptix.load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadE
 
 def check_any_dt(loader):
     raises_exc(
-        TypeLoadError(str),
+        TypeLoadError(str, None),
         lambda: loader(None)
     )
     raises_exc(
-        TypeLoadError(str),
+        TypeLoadError(str, 10),
         lambda: loader(10)
     )
     raises_exc(
-        TypeLoadError(str),
+        TypeLoadError(str, datetime(2011, 11, 4, 0, 0)),
         lambda: loader(datetime(2011, 11, 4, 0, 0))
     )
     raises_exc(
-        TypeLoadError(str),
+        TypeLoadError(str, date(2019, 12, 4)),
         lambda: loader(date(2019, 12, 4))
     )
     raises_exc(
-        TypeLoadError(str),
+        TypeLoadError(str, time(4, 23, 1)),
         lambda: loader(time(4, 23, 1))
     )
 
@@ -52,7 +52,7 @@ def test_iso_format_provider_datetime(strict_coercion, debug_trail):
     check_any_dt(loader)
 
     raises_exc(
-        ValueLoadError("Invalid isoformat string"),
+        ValueLoadError("Invalid isoformat string", "some string"),
         lambda: loader("some string")
     )
 
@@ -71,7 +71,7 @@ def test_iso_format_provider_date(strict_coercion, debug_trail):
     check_any_dt(loader)
 
     raises_exc(
-        ValueLoadError("Invalid isoformat string"),
+        ValueLoadError("Invalid isoformat string", "some string"),
         lambda: loader("some string")
     )
 
@@ -94,7 +94,7 @@ def test_iso_format_provider_time(strict_coercion, debug_trail):
     check_any_dt(loader)
 
     raises_exc(
-        ValueLoadError("Invalid isoformat string"),
+        ValueLoadError("Invalid isoformat string", "some string"),
         lambda: loader("some string")
     )
 
@@ -117,7 +117,7 @@ def test_datetime_format_provider(strict_coercion, debug_trail):
     check_any_dt(loader)
 
     raises_exc(
-        DatetimeFormatMismatch("%Y-%m-%d"),
+        DatetimeFormatMismatch("%Y-%m-%d", "some string"),
         lambda: loader("some string")
     )
 
@@ -151,7 +151,7 @@ def test_none_provider(strict_coercion, debug_trail):
 
     assert loader(None) is None
     raises_exc(
-        TypeLoadError(None),
+        TypeLoadError(None, 10),
         lambda: loader(10)
     )
 
@@ -170,25 +170,26 @@ def test_bytes_provider(strict_coercion, debug_trail):
     assert loader('YWJjZA==') == b'abcd'
 
     raises_exc(
-        ValueLoadError('Bad base64 string'),
+        ValueLoadError('Bad base64 string', 'Hello, world'),
         lambda: loader('Hello, world'),
     )
 
     raises_exc(
         ValueLoadError(
-            'Invalid base64-encoded string: number of data characters (5)'
-            ' cannot be 1 more than a multiple of 4'
+            msg='Invalid base64-encoded string: number of data characters (5)'
+            ' cannot be 1 more than a multiple of 4',
+            input_value='aaaaa=',
         ),
         lambda: loader('aaaaa='),
     )
 
     raises_exc(
-        ValueLoadError('Incorrect padding'),
+        ValueLoadError('Incorrect padding', 'YWJjZA'),
         lambda: loader('YWJjZA'),
     )
 
     raises_exc(
-        TypeLoadError(str),
+        TypeLoadError(str, 108),
         lambda: loader(108),
     )
 
@@ -207,25 +208,26 @@ def test_bytearray_provider(strict_coercion, debug_trail):
     assert loader('YWJjZA==') == bytearray(b'abcd')
 
     raises_exc(
-        ValueLoadError('Bad base64 string'),
+        ValueLoadError('Bad base64 string', 'Hello, world'),
         lambda: loader('Hello, world'),
     )
 
     raises_exc(
         ValueLoadError(
-            'Invalid base64-encoded string: number of data characters (5)'
-            ' cannot be 1 more than a multiple of 4'
+            msg='Invalid base64-encoded string: number of data characters (5)'
+            ' cannot be 1 more than a multiple of 4',
+            input_value='aaaaa=',
         ),
         lambda: loader('aaaaa='),
     )
 
     raises_exc(
-        ValueLoadError('Incorrect padding'),
+        ValueLoadError('Incorrect padding', 'YWJjZA'),
         lambda: loader('YWJjZA'),
     )
 
     raises_exc(
-        TypeLoadError(str),
+        TypeLoadError(str, 108),
         lambda: loader(108),
     )
 
@@ -244,11 +246,11 @@ def test_regex_provider(strict_coercion, debug_trail):
     assert loader(r'\w') == re.compile(r'\w')
 
     raises_exc(
-        TypeLoadError(str),
+        TypeLoadError(str, 10),
         lambda: loader(10)
     )
     raises_exc(
-        ValueLoadError("bad escape (end of pattern) at position 0"),
+        ValueLoadError("bad escape (end of pattern) at position 0", '\\'),
         lambda: loader('\\')
     )
 
@@ -266,12 +268,12 @@ def test_int_loader_provider(strict_coercion, debug_trail):
     assert loader(100) == 100
 
     if strict_coercion:
-        raises_exc(TypeLoadError(int), lambda: loader(None))
-        raises_exc(TypeLoadError(int), lambda: loader('foo'))
-        raises_exc(TypeLoadError(int), lambda: loader('100'))
+        raises_exc(TypeLoadError(int, None), lambda: loader(None))
+        raises_exc(TypeLoadError(int, 'foo'), lambda: loader('foo'))
+        raises_exc(TypeLoadError(int, '100'), lambda: loader('100'))
     else:
-        raises_exc(TypeLoadError(Union[int, float, str]), lambda: loader(None))
-        raises_exc(ValueLoadError("Bad string format"), lambda: loader('foo'))
+        raises_exc(TypeLoadError(Union[int, float, str], None), lambda: loader(None))
+        raises_exc(ValueLoadError("Bad string format", 'foo'), lambda: loader('foo'))
         assert loader('100') == 100
 
 
@@ -286,12 +288,12 @@ def test_float_loader_provider(strict_coercion, debug_trail):
     assert isinstance(loader(100), float)
 
     if strict_coercion:
-        raises_exc(TypeLoadError(Union[int, float]), lambda: loader(None))
-        raises_exc(TypeLoadError(Union[int, float]), lambda: loader('foo'))
-        raises_exc(TypeLoadError(Union[int, float]), lambda: loader('100'))
+        raises_exc(TypeLoadError(Union[int, float], None), lambda: loader(None))
+        raises_exc(TypeLoadError(Union[int, float], 'foo'), lambda: loader('foo'))
+        raises_exc(TypeLoadError(Union[int, float], '100'), lambda: loader('100'))
     else:
-        raises_exc(TypeLoadError(Union[int, float, str]), lambda: loader(None))
-        raises_exc(ValueLoadError("Bad string format"), lambda: loader('foo'))
+        raises_exc(TypeLoadError(Union[int, float, str], None), lambda: loader(None))
+        raises_exc(ValueLoadError("Bad string format", 'foo'), lambda: loader('foo'))
         assert loader('100') == 100
 
 
@@ -305,7 +307,7 @@ def test_str_loader_provider(strict_coercion, debug_trail):
     assert loader('foo') == 'foo'
 
     if strict_coercion:
-        raises_exc(TypeLoadError(str), lambda: loader(None))
+        raises_exc(TypeLoadError(str, None), lambda: loader(None))
     else:
         assert loader(None) == 'None'
 
@@ -320,7 +322,7 @@ def test_bool_loader_provider(strict_coercion, debug_trail):
     assert loader(True) == True
 
     if strict_coercion:
-        raises_exc(TypeLoadError(bool), lambda: loader(None))
+        raises_exc(TypeLoadError(bool, None), lambda: loader(None))
     else:
         assert loader(None) == False
 
@@ -334,12 +336,12 @@ def test_decimal_loader_provider(strict_coercion, debug_trail):
 
     assert loader('100') == Decimal('100')
     assert loader(Decimal('100')) == Decimal('100')
-    raises_exc(TypeLoadError(Union[str, Decimal]), lambda: loader(None))
-    raises_exc(ValueLoadError("Bad string format"), lambda: loader('foo'))
-    raises_exc(TypeLoadError(Union[str, Decimal]), lambda: loader(None))
+    raises_exc(TypeLoadError(Union[str, Decimal], None), lambda: loader(None))
+    raises_exc(ValueLoadError("Bad string format", 'foo'), lambda: loader('foo'))
+    raises_exc(TypeLoadError(Union[str, Decimal], None), lambda: loader(None))
 
     if strict_coercion:
-        raises_exc(TypeLoadError(Union[str, Decimal]), lambda: loader([]))
+        raises_exc(TypeLoadError(Union[str, Decimal], []), lambda: loader([]))
     else:
         if IS_PYPY:
             description = (
@@ -349,7 +351,7 @@ def test_decimal_loader_provider(strict_coercion, debug_trail):
         else:
             description = 'argument must be a sequence of length 3'
 
-        raises_exc(ValueLoadError(description), lambda: loader([]))
+        raises_exc(ValueLoadError(description, []), lambda: loader([]))
 
 
 def test_fraction_loader_provider(strict_coercion, debug_trail):
@@ -361,10 +363,10 @@ def test_fraction_loader_provider(strict_coercion, debug_trail):
 
     assert loader('100') == Fraction('100')
     assert loader(Fraction('100')) == Fraction('100')
-    raises_exc(TypeLoadError(Union[str, Fraction]), lambda: loader(None))
-    raises_exc(ValueLoadError("Bad string format"), lambda: loader('foo'))
-    raises_exc(TypeLoadError(Union[str, Fraction]), lambda: loader(None))
-    raises_exc(TypeLoadError(Union[str, Fraction]), lambda: loader([]))
+    raises_exc(TypeLoadError(Union[str, Fraction], None), lambda: loader(None))
+    raises_exc(ValueLoadError("Bad string format", 'foo'), lambda: loader('foo'))
+    raises_exc(TypeLoadError(Union[str, Fraction], None), lambda: loader(None))
+    raises_exc(TypeLoadError(Union[str, Fraction], []), lambda: loader([]))
 
 
 def test_complex_loader_provider(strict_coercion, debug_trail):
@@ -376,7 +378,7 @@ def test_complex_loader_provider(strict_coercion, debug_trail):
 
     assert loader('100') == complex('100')
     assert loader(complex('100')) == complex('100')
-    raises_exc(TypeLoadError(Union[str, complex]), lambda: loader(None))
-    raises_exc(ValueLoadError("Bad string format"), lambda: loader('foo'))
-    raises_exc(TypeLoadError(Union[str, complex]), lambda: loader(None))
-    raises_exc(TypeLoadError(Union[str, complex]), lambda: loader([]))
+    raises_exc(TypeLoadError(Union[str, complex], None), lambda: loader(None))
+    raises_exc(ValueLoadError("Bad string format", 'foo'), lambda: loader('foo'))
+    raises_exc(TypeLoadError(Union[str, complex], None), lambda: loader(None))
+    raises_exc(TypeLoadError(Union[str, complex], []), lambda: loader([]))

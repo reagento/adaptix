@@ -69,49 +69,54 @@ class UnionLoadError(LoadExceptionGroup):
     pass
 
 
-@custom_exception(str_by_fields=False)
+@custom_exception
 @dataclass(eq=False)
 class MsgError(LoadError):
     msg: Optional[str]
-
-    def __str__(self):
-        return self.msg
+    input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
 class ExtraFieldsError(LoadError):
     fields: Iterable[str]
+    input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
 class ExtraItemsError(LoadError):
-    list_len: int
+    expected_len: int
+    input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
 class NoRequiredFieldsError(LoadError):
     fields: Iterable[str]
+    input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
 class NoRequiredItemsError(LoadError):
     expected_len: int
+    input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
 class TypeLoadError(LoadError):
     expected_type: TypeHint
+    input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
 class ExcludedTypeLoadError(TypeLoadError):
+    expected_type: TypeHint
     excluded_type: TypeHint
+    input_value: Any
 
 
 @custom_exception(str_by_fields=False)
@@ -130,9 +135,11 @@ class ValidationError(MsgError):
 @dataclass(eq=False)
 class BadVariantError(LoadError):
     allowed_values: Iterable[Any]
+    input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
 class DatetimeFormatMismatch(LoadError):
     format: str
+    input_value: Any

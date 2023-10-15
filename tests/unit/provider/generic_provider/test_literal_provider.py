@@ -30,7 +30,7 @@ def test_loader_base(retort, strict_coercion, debug_trail):
     assert loader(10) == 10
 
     raises_exc(
-        BadVariantError({'a', 'b', 10}),
+        BadVariantError({'a', 'b', 10}, 'c'),
         lambda: loader("c")
     )
 
@@ -61,11 +61,11 @@ def test_strict_coercion(retort, debug_trail):
     assert _is_exact_one(literal_loader(1))
 
     raises_exc(
-        BadVariantError({0, 1, rnd_val1}),
+        BadVariantError({0, 1, rnd_val1}, False),
         lambda: literal_loader(False)
     )
     raises_exc(
-        BadVariantError({0, 1, rnd_val1}),
+        BadVariantError({0, 1, rnd_val1}, True),
         lambda: literal_loader(True)
     )
 
@@ -81,10 +81,10 @@ def test_strict_coercion(retort, debug_trail):
     assert bool_loader(True) is True
 
     raises_exc(
-        BadVariantError({False, True, rnd_val2}),
+        BadVariantError({False, True, rnd_val2}, 0),
         lambda: bool_loader(0)
     )
     raises_exc(
-        BadVariantError({False, True, rnd_val2}),
+        BadVariantError({False, True, rnd_val2}, 1),
         lambda: bool_loader(1)
     )

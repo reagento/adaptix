@@ -38,17 +38,17 @@ def test_name_provider(strict_coercion, debug_trail):
     assert loader("V1") == MyEnum.V1
 
     raises_exc(
-        BadVariantError(['V1']),
+        BadVariantError(['V1'], '1'),
         lambda: loader("1")
     )
 
     raises_exc(
-        BadVariantError(['V1']),
+        BadVariantError(['V1'], 1),
         lambda: loader(1)
     )
 
     raises_exc(
-        BadVariantError(['V1']),
+        BadVariantError(['V1'], MyEnum.V1),
         lambda: loader(MyEnum.V1)
     )
 
@@ -72,17 +72,17 @@ def test_exact_value_provider(strict_coercion, debug_trail, enum_cls):
     assert loader("1") == enum_cls.V1
 
     raises_exc(
-        BadVariantError(['1']),
+        BadVariantError(['1'], 'V1'),
         lambda: loader("V1")
     )
 
     raises_exc(
-        BadVariantError(['1']),
+        BadVariantError(['1'], 1),
         lambda: loader(1)
     )
 
     raises_exc(
-        BadVariantError(['1']),
+        BadVariantError(['1'], enum_cls.V1),
         lambda: loader(enum_cls.V1)
     )
 
@@ -104,12 +104,12 @@ def test_exact_value_provider_int_enum(strict_coercion, debug_trail):
     assert int_enum_loader(1) == MyIntEnum.V1
 
     raises_exc(
-        BadVariantError([1]),
+        BadVariantError([1], MyEnum.V1),
         lambda: int_enum_loader(MyEnum.V1),
     )
 
     raises_exc(
-        BadVariantError([1]),
+        BadVariantError([1], 'V1'),
         lambda: int_enum_loader("V1")
     )
 
@@ -140,12 +140,12 @@ def test_value_provider(strict_coercion, debug_trail):
     assert enum_loader(1) == MyEnum.V1
 
     raises_exc(
-        MsgError('Bad enum value'),
+        MsgError('Bad enum value', "V1"),
         lambda: enum_loader("V1")
     )
 
     raises_exc(
-        MsgError('Bad enum value'),
+        MsgError('Bad enum value', MyEnum.V1),
         lambda: enum_loader(MyEnum.V1)
     )
 

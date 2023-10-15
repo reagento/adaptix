@@ -108,7 +108,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             def literal_loader_sc(data):
                 if (type(data), data) in allowed_values_with_types:
                     return data
-                raise BadVariantError(allowed_values_repr)
+                raise BadVariantError(allowed_values_repr, data)
 
             return literal_loader_sc
 
@@ -118,7 +118,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         def literal_loader(data):
             if data in allowed_values:
                 return data
-            raise BadVariantError(allowed_values_repr)
+            raise BadVariantError(allowed_values_repr, data)
 
         return literal_loader
 
@@ -182,7 +182,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
             try:
                 return loader(data)
             except LoadError as e:
-                raise UnionLoadError(f'while loading {tp}', [TypeLoadError(None), e])
+                raise UnionLoadError(f'while loading {tp}', [TypeLoadError(None, data), e])
 
         return optional_dt_loader
 
@@ -436,7 +436,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
             try:
                 value_iter = iter(data)
             except TypeError:
-                raise TypeLoadError(Iterable)
+                raise TypeLoadError(Iterable, data)
 
             return iter_factory(iter_mapper(value_iter))
 
@@ -445,14 +445,14 @@ class IterableProvider(LoaderProvider, DumperProvider):
     def _get_dt_sc_loader(self, iter_factory, iter_mapper):
         def iter_loader_dt_sc(data):
             if isinstance(data, CollectionsMapping):
-                raise ExcludedTypeLoadError(Iterable, Mapping)
+                raise ExcludedTypeLoadError(Iterable, Mapping, data)
             if type(data) is str:  # pylint: disable=unidiomatic-typecheck
-                raise ExcludedTypeLoadError(Iterable, str)
+                raise ExcludedTypeLoadError(Iterable, str, data)
 
             try:
                 value_iter = iter(data)
             except TypeError:
-                raise TypeLoadError(Iterable)
+                raise TypeLoadError(Iterable, data)
 
             return iter_factory(iter_mapper(value_iter))
 
@@ -461,14 +461,14 @@ class IterableProvider(LoaderProvider, DumperProvider):
     def _get_dt_disable_sc_loader(self, iter_factory, arg_loader):
         def iter_loader_sc(data):
             if isinstance(data, CollectionsMapping):
-                raise ExcludedTypeLoadError(Iterable, Mapping)
+                raise ExcludedTypeLoadError(Iterable, Mapping, data)
             if type(data) is str:  # pylint: disable=unidiomatic-typecheck
-                raise ExcludedTypeLoadError(Iterable, str)
+                raise ExcludedTypeLoadError(Iterable, str, data)
 
             try:
                 map_iter = map(arg_loader, data)
             except TypeError:
-                raise TypeLoadError(Iterable)
+                raise TypeLoadError(Iterable, data)
 
             return iter_factory(map_iter)
 
@@ -479,7 +479,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
             try:
                 map_iter = map(arg_loader, data)
             except TypeError:
-                raise TypeLoadError(Iterable)
+                raise TypeLoadError(Iterable, data)
 
             return iter_factory(map_iter)
 
@@ -611,7 +611,7 @@ class DictProvider(LoaderProvider, DumperProvider):
             try:
                 items_method = data.items
             except AttributeError:
-                raise TypeLoadError(CollectionsMapping)
+                raise TypeLoadError(CollectionsMapping, data)
 
             result = {}
             for k, v in items_method():
@@ -626,7 +626,7 @@ class DictProvider(LoaderProvider, DumperProvider):
             try:
                 items_method = data.items
             except AttributeError:
-                raise TypeLoadError(CollectionsMapping)
+                raise TypeLoadError(CollectionsMapping, data)
 
             result = {}
             for k, v in items_method():
@@ -653,7 +653,7 @@ class DictProvider(LoaderProvider, DumperProvider):
             try:
                 items_method = data.items
             except AttributeError:
-                raise TypeLoadError(CollectionsMapping)
+                raise TypeLoadError(CollectionsMapping, data)
 
             result = {}
             errors = []
