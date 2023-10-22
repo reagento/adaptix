@@ -161,7 +161,7 @@ class ModelDumperGen(CodeGenerator):
         return field.id in self._extra_targets
 
     def _v_field(self, field: OutputField) -> str:
-        return field.id
+        return f'f_{field.id}'
 
     def _v_dumper(self, field: OutputField) -> str:
         return f"dumper_{field.id}"
