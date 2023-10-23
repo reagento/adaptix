@@ -78,10 +78,12 @@ Path-like
 
 Exact list: ``PurePath``, ``Path``,
 ``PurePosixPath``, ``PosixPath``,
-``PureWindowsPath``, ``WindowsPath``.
+``PureWindowsPath``, ``WindowsPath``, ``PathLike[str]``.
 
 Loader takes any string accepted by the constructor,
-dumper serialize value via ``__str__`` method.
+dumper serialize value via ``__fspath__`` method.
+
+``PathLike[str]`` loader produces ``Path`` instance
 
 IP addresses and networks
 ''''''''''''''''''''''''''''

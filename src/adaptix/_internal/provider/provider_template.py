@@ -64,12 +64,17 @@ class DumperProvider(ProviderWithAttachableRC, ABC):
 
 
 class ABCProxy(LoaderProvider, DumperProvider):
-    def __init__(self, abstract: TypeHint, impl: TypeHint):
+    def __init__(self, abstract: TypeHint, impl: TypeHint, for_loader: bool = True, for_dumper: bool = True):
         self._abstract = normalize_type(abstract).origin
         self._impl = impl
         self._request_checker = ExactOriginRC(self._abstract)
+        self._for_loader = for_loader
+        self._for_dumper = for_dumper
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        if not self._for_loader:
+            raise CannotProvide
+
         return mediator.provide(
             LoaderRequest(
                 loc_map=LocMap(TypeHintLoc(type=self._impl))
@@ -77,6 +82,9 @@ class ABCProxy(LoaderProvider, DumperProvider):
         )
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        if not self._for_dumper:
+            raise CannotProvide
+
         return mediator.provide(
             DumperRequest(
                 loc_map=LocMap(TypeHintLoc(type=self._impl))

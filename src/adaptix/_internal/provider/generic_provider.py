@@ -1,11 +1,14 @@
 import collections.abc
 from dataclasses import dataclass, replace
 from inspect import isabstract
+from os import PathLike
+from pathlib import Path
 from typing import Any, Callable, Collection, Dict, Iterable, Literal, Mapping, Tuple, Union
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
 from ..essential import CannotProvide, Mediator
+from ..feature_requirement import HAS_PY_39
 from ..load_error import (
     AggregateLoadError,
     BadVariantError,
@@ -796,3 +799,22 @@ class DictProvider(LoaderProvider, DumperProvider):
             return result
 
         return dict_dumper_dt_all
+
+
+def path_like_dumper(data):
+    return data.__fspath__()  # pylint: disable=unnecessary-dunder-call
+
+
+@for_predicate(PathLike[str] if HAS_PY_39 else PathLike)
+class PathLikeProvider(LoaderProvider, DumperProvider):
+    _impl = Path
+
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return mediator.provide(
+            LoaderRequest(
+                loc_map=LocMap(TypeHintLoc(type=self._impl))
+            )
+        )
+
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return path_like_dumper

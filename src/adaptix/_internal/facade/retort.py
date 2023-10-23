@@ -32,6 +32,7 @@ from ..provider.generic_provider import (
     IterableProvider,
     LiteralProvider,
     NewTypeUnwrappingProvider,
+    PathLikeProvider,
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
@@ -112,14 +113,23 @@ class FilledRetort(OperatingRetort, ABC):
             )
             for tp in [
                 UUID,
-                PurePath, Path,
-                PurePosixPath, PosixPath,
-                PureWindowsPath, WindowsPath,
                 IPv4Address, IPv6Address,
                 IPv4Network, IPv6Network,
                 IPv4Interface, IPv6Interface,
             ]
         ),
+        *chain.from_iterable(
+            (
+                loader(tp, tp),
+                dumper(tp, tp.__fspath__),  # type: ignore[attr-defined]
+            )
+            for tp in [
+                PurePath, Path,
+                PurePosixPath, PosixPath,
+                PureWindowsPath, WindowsPath,
+            ]
+        ),
+        PathLikeProvider(),
 
         LiteralProvider(),
         UnionProvider(),
