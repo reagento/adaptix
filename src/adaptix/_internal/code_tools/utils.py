@@ -3,11 +3,16 @@ import math
 from enum import Enum
 from typing import Any, Dict, Optional
 
-_BUILTINS_DICT = {
-    getattr(builtins, name): (getattr(builtins, name), name)
+BUILTIN_TO_NAME = {
+    getattr(builtins, name): name
     for name in sorted(dir(builtins))
     if not name.startswith('__') and name != '_'
 }
+NAME_TO_BUILTIN = {name: obj for obj, name in BUILTIN_TO_NAME.items()}
+
+
+class _CannotBeRendered(Exception):
+    pass
 
 
 def get_literal_expr(obj: object) -> Optional[str]:
@@ -20,27 +25,32 @@ def get_literal_expr(obj: object) -> Optional[str]:
         return repr(obj)
 
     try:
-        b_obj, name = _BUILTINS_DICT[obj]
+        name = BUILTIN_TO_NAME[obj]
     except (KeyError, TypeError):
         try:
             return _get_complex_literal_expr(obj)
-        except ValueError:
+        except _CannotBeRendered:
             return None
 
-    if obj is b_obj:
-        return name
-    return None
+    return name
 
 
 def _provide_lit_expr(obj: object) -> str:
     literal_repr = get_literal_expr(obj)
     if literal_repr is None:
-        raise ValueError
+        raise _CannotBeRendered
     return literal_repr
 
 
 def _parenthesize(parentheses: str, elements) -> str:
     return parentheses[0] + ", ".join(map(_provide_lit_expr, elements)) + parentheses[1]
+
+
+def _try_sort(iterable):
+    try:
+        return sorted(iterable)
+    except TypeError:
+        return iterable
 
 
 def _get_complex_literal_expr(obj: object) -> Optional[str]:
@@ -53,12 +63,12 @@ def _get_complex_literal_expr(obj: object) -> Optional[str]:
 
     if type(obj) is set:
         if obj:
-            return _parenthesize("{}", obj)
+            return _parenthesize("{}", _try_sort(obj))
         return "set()"
 
     if type(obj) is frozenset:
         if obj:
-            return "frozenset(" + _parenthesize("{}", obj) + ")"
+            return "frozenset(" + _parenthesize("{}", _try_sort(obj)) + ")"
         return "frozenset()"
 
     if type(obj) is slice:

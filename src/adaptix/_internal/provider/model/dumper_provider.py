@@ -100,23 +100,26 @@ class ModelDumperProvider(DumperProvider):
             model_identity=model_identity,
         )
 
-    def _get_closure_name(self, request: DumperRequest) -> str:
+    def _request_to_view_string(self, request: DumperRequest) -> str:
         if request.loc_map.has(TypeHintLoc):
             tp = request.loc_map[TypeHintLoc].type
             if isinstance(tp, type):
-                name = tp.__name__
-            else:
-                name = str(tp)
-        else:
-            name = ''
+                return tp.__name__
+            return str(tp)
+        return ''
 
-        s_name = self._name_sanitizer.sanitize(name)
-        if s_name != "":
-            s_name = "_" + s_name
-        return "model_dumper" + s_name
+    def _merge_view_string(self, *fragments: str) -> str:
+        return '_'.join(filter(None, fragments))
 
     def _get_file_name(self, request: DumperRequest) -> str:
-        return self._get_closure_name(request)
+        return self._merge_view_string(
+            'model_dumper', self._request_to_view_string(request),
+        )
+
+    def _get_closure_name(self, request: DumperRequest) -> str:
+        return self._merge_view_string(
+            'model_dumper', self._name_sanitizer.sanitize(self._request_to_view_string(request)),
+        )
 
     def _get_compiler(self):
         return BasicClosureCompiler()

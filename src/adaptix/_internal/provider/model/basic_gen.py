@@ -297,8 +297,9 @@ def compile_closure_with_globals_capturing(
     )
 
     return compiler.compile(
-        builder,
         file_name,
+        lambda uid: f'<adaptix generated {uid}>',
+        builder,
         global_namespace_dict,
     )
 
