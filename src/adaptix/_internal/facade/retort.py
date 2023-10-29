@@ -303,7 +303,7 @@ class AdornedRetort(OperatingRetort):
             tp = type(data)
             if is_generic_class(tp):
                 raise ValueError(
-                    'Can not infer the actual type of generic class instance,'
+                    f'Can not infer the actual type of generic class instance ({tp!r}),'
                     ' you have to explicitly pass the type of object'
                 )
         return self.get_dumper(tp)(data)

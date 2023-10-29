@@ -2,7 +2,7 @@ import re
 from abc import ABC, abstractmethod
 from copy import copy
 from dataclasses import dataclass
-from inspect import isabstract
+from inspect import isabstract, isgenerator
 from typing import Any, ClassVar, Iterable, Optional, Pattern, Protocol, Sequence, Tuple, Type, TypeVar, Union
 
 from ..common import TypeHint, VarTuple
@@ -342,6 +342,8 @@ Pat = TypeVar('Pat', bound='RequestPattern')
 
 
 class RequestPattern:
+    ANY = AnyRequestChecker()
+
     def __init__(self, stack: VarTuple[RequestChecker]):
         self._stack = stack
 
@@ -360,7 +362,7 @@ class RequestPattern:
         return self[item]
 
     def __getitem__(self: Pat, item: Union[Pred, VarTuple[Pred]]) -> Pat:
-        if isinstance(item, tuple):
+        if isinstance(item, tuple) or isgenerator(item):
             return self._extend_stack(
                 [OrRequestChecker([self._ensure_request_checker_from_pred(el) for el in item])]
             )

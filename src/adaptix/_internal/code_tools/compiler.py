@@ -2,9 +2,7 @@
 import linecache
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from hashlib import md5
 from threading import Lock
-from traceback import format_exception
 from typing import Any, Callable, Dict
 
 from .code_builder import CodeBuilder
@@ -33,7 +31,7 @@ class ClosureCompiler(ABC):
 class ConcurrentCounter:
     __slots__ = ('_lock', '_name_to_idx')
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._lock = Lock()
         self._name_to_idx: Dict[str, int] = defaultdict(lambda: 0)
 
