@@ -1,7 +1,11 @@
+import typing
 from dataclasses import dataclass
 from typing import Optional
 
+from tests_helpers import requires
+
 from adaptix import Retort
+from adaptix._internal.feature_requirement import HAS_SELF_TYPE
 
 
 @dataclass
@@ -47,3 +51,26 @@ def test_several_recursive_types():
     loaded_data = Tree(left=Tree(left=Tree(), right=Tree()), right=Tree())
     assert retort.dump(loaded_data) == dumped_data
     assert retort.load(dumped_data, Tree) == loaded_data
+
+
+@requires(HAS_SELF_TYPE)
+def test_self_type():
+    @dataclass
+    class WithSelf:
+        a: int
+        next: Optional[typing.Self] = None
+
+    dumped_data = {'a': 1, 'next': None}
+    loaded_data = WithSelf(a=1)
+    assert retort.dump(loaded_data) == dumped_data
+    assert retort.load(dumped_data, WithSelf) == loaded_data
+
+    dumped_data = {'a': 1, 'next': {'a': 2, 'next': None}}
+    loaded_data = WithSelf(a=1, next=WithSelf(a=2))
+    assert retort.dump(loaded_data) == dumped_data
+    assert retort.load(dumped_data, WithSelf) == loaded_data
+
+    dumped_data = {'a': 1, 'next': {'a': 2, 'next': {'a': 3, 'next': None}}}
+    loaded_data = WithSelf(a=1, next=WithSelf(a=2, next=WithSelf(a=3)))
+    assert retort.dump(loaded_data) == dumped_data
+    assert retort.load(dumped_data, WithSelf) == loaded_data

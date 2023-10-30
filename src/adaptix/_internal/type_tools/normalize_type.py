@@ -38,9 +38,12 @@ from ..feature_requirement import (
     HAS_ANNOTATED,
     HAS_PARAM_SPEC,
     HAS_PY_310,
+    HAS_PY_311,
+    HAS_SELF_TYPE,
     HAS_TYPE_ALIAS,
     HAS_TYPE_GUARD,
     HAS_TYPE_UNION_OP,
+    HAS_TYPED_DICT_REQUIRED,
 )
 from .basic_utils import create_union, eval_forward_ref, is_new_type, is_subclass_soft, strip_alias
 from .implicit_params import ImplicitParamsGetter
@@ -459,6 +462,9 @@ class TypeNormalizer:
     if HAS_TYPE_GUARD:
         MUST_SUBSCRIBED_ORIGINS.append(typing.TypeGuard)
 
+    if HAS_TYPED_DICT_REQUIRED:
+        MUST_SUBSCRIBED_ORIGINS.extend([typing.Required, typing.NotRequired])
+
     @_aspect_storage.add
     def _check_bad_input(self, tp, origin, args):
         if tp in self.MUST_SUBSCRIBED_ORIGINS:
@@ -669,11 +675,16 @@ class TypeNormalizer:
     ALLOWED_ZERO_PARAMS_ORIGINS = {
         Any, NoReturn,
     }
-
     if HAS_TYPE_ALIAS:
         ALLOWED_ZERO_PARAMS_ORIGINS.add(typing.TypeAlias)
     if HAS_PY_310:
         ALLOWED_ZERO_PARAMS_ORIGINS.add(dataclasses.KW_ONLY)
+    if HAS_PY_311:
+        ALLOWED_ZERO_PARAMS_ORIGINS.add(typing.Never)
+    if HAS_SELF_TYPE:
+        ALLOWED_ZERO_PARAMS_ORIGINS.add(typing.Self)
+    if HAS_PY_311:
+        ALLOWED_ZERO_PARAMS_ORIGINS.add(typing.LiteralString)
 
     def _norm_generic_arg(self, arg):
         if arg is Ellipsis:

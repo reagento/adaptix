@@ -1,13 +1,15 @@
 import re
+import typing
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from fractions import Fraction
 from typing import Union
 
-from tests_helpers import raises_exc
+import pytest
+from tests_helpers import cond_list, raises_exc, requires
 
 from adaptix import Retort
-from adaptix._internal.feature_requirement import IS_PYPY
+from adaptix._internal.feature_requirement import HAS_PY_311, IS_PYPY
 from adaptix._internal.provider.concrete_provider import DatetimeFormatProvider
 from adaptix.load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 
@@ -297,7 +299,8 @@ def test_float_loader_provider(strict_coercion, debug_trail):
         assert loader('100') == 100
 
 
-def test_str_loader_provider(strict_coercion, debug_trail):
+@pytest.mark.parametrize('tp', [str, *cond_list(HAS_PY_311, lambda: [typing.LiteralString])])
+def test_str_loader_provider(strict_coercion, debug_trail, tp):
     retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,

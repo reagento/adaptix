@@ -21,9 +21,11 @@ from ..provider.concrete_provider import (
     BytearrayBase64Provider,
     BytesBase64Provider,
     IsoFormatProvider,
+    LiteralStringProvider,
     NoneProvider,
     RegexPatternProvider,
     SecondsTimedeltaProvider,
+    SelfTypeProvider,
 )
 from ..provider.definitions import DebugTrail
 from ..provider.enum_provider import EnumExactValueProvider
@@ -136,6 +138,8 @@ class FilledRetort(OperatingRetort, ABC):
         IterableProvider(),
         DictProvider(),
         RegexPatternProvider(),
+        SelfTypeProvider(),
+        LiteralStringProvider(),
 
         ABCProxy(Mapping, dict),
         ABCProxy(MutableMapping, dict),

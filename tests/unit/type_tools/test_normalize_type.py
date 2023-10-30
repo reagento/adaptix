@@ -42,10 +42,12 @@ from adaptix._internal.feature_requirement import (
     HAS_ANNOTATED,
     HAS_PARAM_SPEC,
     HAS_PY_310,
+    HAS_PY_311,
     HAS_STD_CLASSES_GENERICS,
     HAS_TYPE_ALIAS,
     HAS_TYPE_GUARD,
     HAS_TYPE_UNION_OP,
+    HAS_TYPED_DICT_REQUIRED,
 )
 from adaptix._internal.type_tools import normalize_type
 from adaptix._internal.type_tools.normalize_type import (
@@ -141,6 +143,16 @@ def test_atomic():
 
     assert_strict_equal(normalize_type(object), nt_zero(object))
     assert_strict_equal(normalize_type(NoReturn), nt_zero(NoReturn))
+
+
+@requires(HAS_PY_311)
+def test_never():
+    assert_strict_equal(normalize_type(typing.Never), nt_zero(typing.Never))
+
+
+@requires(HAS_PY_311)
+def test_literal_string():
+    assert_strict_equal(normalize_type(typing.LiteralString), nt_zero(typing.LiteralString))
 
 
 @pytest.mark.parametrize(
@@ -309,7 +321,12 @@ def test_type(make_union):
 
 @pytest.mark.parametrize(
     'tp',
-    [ClassVar, InitVar, *cond_list(HAS_TYPE_GUARD, lambda: [typing.TypeGuard])],
+    [
+        ClassVar,
+        InitVar,
+        *cond_list(HAS_TYPE_GUARD, lambda: [typing.TypeGuard]),
+        *cond_list(HAS_TYPED_DICT_REQUIRED, lambda: [typing.Required, typing.NotRequired]),
+    ],
 )
 def test_var_tag(tp):
     pytest.raises(NotSubscribedError, lambda: normalize_type(tp))
@@ -395,7 +412,7 @@ class MyEnum(Enum):
 
 
 def test_literal_order(make_union):
-    # check that union has stable args order
+    # check that union has a stable args order
     args = ('1', 1, 'c', MyEnum.FOO, b'c')
 
     for p_args in permutations(args):
@@ -478,11 +495,11 @@ def test_union(make_union):
         ]
     )
 
-    # because Union[int] == int   # normalization does not need
+    # because Union[int] == int normalization does not need
 
 
 def test_union_order(make_union):
-    # check that union has stable args order
+    # check that union has a stable args order
     args = (int, str, bool)
 
     for p_args in permutations(args):

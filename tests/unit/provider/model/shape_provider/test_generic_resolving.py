@@ -1,12 +1,19 @@
+import typing
 from dataclasses import dataclass
 from typing import Any, Dict, Generic, List, Mapping, TypeVar
 
 import pytest
 from pytest import param
-from tests_helpers import pretty_typehint_test_id
+from tests_helpers import pretty_typehint_test_id, requires
 
 from adaptix import CannotProvide, Retort, TypeHint
-from adaptix._internal.feature_requirement import HAS_PY_39, HAS_PY_310, HAS_STD_CLASSES_GENERICS, IS_PYPY
+from adaptix._internal.feature_requirement import (
+    HAS_PY_39,
+    HAS_PY_310,
+    HAS_SELF_TYPE,
+    HAS_STD_CLASSES_GENERICS,
+    IS_PYPY,
+)
 from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
 from adaptix._internal.provider.model.shape_provider import provide_generic_resolved_shape
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
@@ -329,4 +336,16 @@ def test_generic_parents_with_type_override_generic():
     assert_fields_types(
         Child[str],
         {'a': bool, 'b': str},
+    )
+
+
+@requires(HAS_SELF_TYPE)
+def test_self_type():
+    @dataclass
+    class WithSelf:
+        a: typing.Self
+
+    assert_fields_types(
+        WithSelf,
+        {'a': typing.Self},
     )

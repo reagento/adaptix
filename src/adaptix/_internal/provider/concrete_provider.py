@@ -1,19 +1,31 @@
 import binascii
 import re
+import typing
 from binascii import a2b_base64, b2a_base64
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
-from typing import Generic, Type, TypeVar, Union
+from typing import Generic, Sequence, Type, TypeVar, Union
 
 from ..common import Dumper, Loader
-from ..essential import CannotProvide, Mediator
+from ..essential import CannotProvide, Mediator, Request
+from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
+from ..utils import pairs
 from .model.special_cases_optimization import as_is_stub, none_loader
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC, for_predicate
-from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
-from .request_filtering import create_request_checker
+from .request_cls import (
+    DumperRequest,
+    FieldLoc,
+    LoaderRequest,
+    LocatedRequest,
+    LocMap,
+    StrictCoercionRequest,
+    TypeHintLoc,
+)
+from .request_filtering import P, create_request_checker
+from .static_provider import static_provision_action
 
 T = TypeVar('T')
 
@@ -342,3 +354,41 @@ COMPLEX_LOADER_PROVIDER = ScalarLoaderProvider(
     strict_coercion_loader=complex_strict_coercion_loader,
     lax_coercion_loader=complex_lax_coercion_loader,
 )
+
+
+@for_predicate(typing.Self if HAS_SELF_TYPE else ~P.ANY)
+class SelfTypeProvider(ProviderWithAttachableRC):
+    @static_provision_action
+    def _provide_substitute(self, mediator: Mediator, request: LocatedRequest) -> Loader:
+        self._request_checker.check_request(mediator, request)
+
+        parent_request = self._find_parent_request(mediator.request_stack)
+        parent_type_hint_loc = parent_request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
+        return mediator.provide(
+            replace(
+                request,
+                loc_map=request.loc_map.add(parent_type_hint_loc)
+            ),
+        )
+
+    def _find_parent_request(self, request_stack: Sequence[Request]) -> LocatedRequest:
+        for request, prev in pairs(reversed(request_stack)):
+            if isinstance(request, LocatedRequest) and request.loc_map.has(FieldLoc):
+                if isinstance(prev, LocatedRequest):
+                    return prev
+                raise CannotProvide
+        raise CannotProvide
+
+
+@for_predicate(typing.LiteralString if HAS_PY_311 else ~P.ANY)
+class LiteralStringProvider(ProviderWithAttachableRC):
+    @static_provision_action
+    def _provide_substitute(self, mediator: Mediator, request: LocatedRequest) -> Loader:
+        self._request_checker.check_request(mediator, request)
+
+        return mediator.provide(
+            replace(
+                request,
+                loc_map=LocMap(TypeHintLoc(typing.LiteralString))
+            ),
+        )
