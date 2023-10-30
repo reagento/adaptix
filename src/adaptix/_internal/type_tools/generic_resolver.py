@@ -1,9 +1,13 @@
+import typing
 from dataclasses import dataclass, replace
+from itertools import chain
 from typing import Callable, Collection, Dict, Generic, Hashable, Mapping, TypeVar, get_args
 
 from ..common import TypeHint
+from ..feature_requirement import HAS_TV_TUPLE
 from .basic_utils import get_type_vars, get_type_vars_of_parametrized, is_generic, is_parametrized, strip_alias
 from .implicit_params import fill_implicit_params
+from .normalize_type import normalize_type
 
 M = TypeVar('M')
 K = TypeVar('K', bound=Hashable)
@@ -30,11 +34,9 @@ class GenericResolver(Generic[K, M]):
     def _get_members_of_parametrized_generic(self, parametrized_generic) -> MembersStorage[K, M]:
         origin = strip_alias(parametrized_generic)
         members_storage = self._get_members_by_parents(origin)
-        type_var_to_actual = dict(
-            zip(
-                get_type_vars(origin),
-                get_args(parametrized_generic),
-            )
+        type_var_to_actual = self._get_type_var_to_actual(
+            get_type_vars(origin),
+            self._unpack_args(get_args(parametrized_generic)),
         )
         return replace(
             members_storage,
@@ -44,14 +46,33 @@ class GenericResolver(Generic[K, M]):
             }
         )
 
-    def _parametrize_by_dict(self, type_var_to_actual: Mapping[TypeVar, TypeHint], tp: TypeHint) -> TypeHint:
+    def _unpack_args(self, args):
+        if HAS_TV_TUPLE and any(strip_alias(arg) == typing.Unpack for arg in args):
+            return tuple(arg.source for arg in normalize_type(tuple[args]).args)
+        return args
+
+    def _get_type_var_to_actual(self, type_vars, args):
+        result = {}
+        idx = 0
+        for tv in type_vars:
+            if HAS_TV_TUPLE and isinstance(tv, typing.TypeVarTuple):
+                tuple_len = len(args) - len(type_vars) + 1
+                result[tv] = args[idx:idx + tuple_len]
+                idx += tuple_len
+            else:
+                result[tv] = (args[idx], )
+                idx += 1
+
+        return result
+
+    def _parametrize_by_dict(self, type_var_to_actual, tp: TypeHint) -> TypeHint:
         if tp in type_var_to_actual:
-            return type_var_to_actual[tp]
+            return type_var_to_actual[tp][0]
 
         params = get_type_vars_of_parametrized(tp)
         if not params:
             return tp
-        return tp[tuple(type_var_to_actual[type_var] for type_var in params)]
+        return tp[tuple(chain.from_iterable(type_var_to_actual[type_var] for type_var in params))]
 
     def _get_members_by_parents(self, tp) -> MembersStorage[K, M]:
         members_storage = self._raw_members_getter(tp)

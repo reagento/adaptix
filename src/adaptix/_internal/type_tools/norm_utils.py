@@ -16,7 +16,7 @@ if HAS_TYPED_DICT_REQUIRED:
 
 
 def strip_tags(norm: BaseNormType) -> BaseNormType:
-    """Removes type hints that does not represent type
+    """Removes type hints that do not represent a type
     and that only indicates metadata
     """
     if norm.origin in _TYPE_TAGS:

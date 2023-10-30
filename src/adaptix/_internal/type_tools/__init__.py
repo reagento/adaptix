@@ -3,6 +3,7 @@ from .basic_utils import (
     get_all_type_hints,
     is_bare_generic,
     is_generic,
+    is_generic_class,
     is_named_tuple_class,
     is_new_type,
     is_parametrized,
@@ -12,5 +13,5 @@ from .basic_utils import (
     is_user_defined_generic,
     strip_alias,
 )
-from .norm_utils import strip_tags
-from .normalize_type import BaseNormType, NormParamSpecMarker, NormTV, make_norm_type, normalize_type
+from .norm_utils import is_class_var, strip_tags
+from .normalize_type import BaseNormType, NormParamSpecMarker, NormTV, NormTVTuple, make_norm_type, normalize_type

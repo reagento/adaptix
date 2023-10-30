@@ -8,7 +8,7 @@ from collections import abc as c_abc, defaultdict
 from copy import copy
 from dataclasses import InitVar, dataclass
 from enum import Enum, EnumMeta
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import (
     Any,
     Callable,
@@ -40,6 +40,7 @@ from ..feature_requirement import (
     HAS_PY_310,
     HAS_PY_311,
     HAS_SELF_TYPE,
+    HAS_TV_TUPLE,
     HAS_TYPE_ALIAS,
     HAS_TYPE_GUARD,
     HAS_TYPE_UNION_OP,
@@ -267,6 +268,43 @@ class NormTV(BaseNormType):
         return NotImplemented
 
 
+class NormTVTuple(BaseNormType):
+    __slots__ = ('_var', '_source')
+
+    def __init__(self, var: Any, *, source: TypeHint):
+        self._var = var
+        self._source = source
+
+    @property
+    def origin(self) -> Any:
+        return self._var
+
+    @property
+    def args(self) -> Tuple[()]:
+        return ()
+
+    @property
+    def source(self) -> TypeHint:
+        return self._source
+
+    @property
+    def name(self) -> str:
+        return self._var.__name__
+
+    def __repr__(self):
+        return f'<{type(self).__name__}({self._var})>'
+
+    def __hash__(self):
+        return hash(self._var)
+
+    def __eq__(self, other):
+        if isinstance(other, NormTVTuple):
+            return self._var == other._var
+        if isinstance(other, BaseNormType):
+            return False
+        return NotImplemented
+
+
 class NormParamSpecMarker(BaseNormType, ABC):
     __slots__ = ('_param_spec', '_source')
 
@@ -380,8 +418,20 @@ NormAspect = Callable[['TypeNormalizer', Any, Any, tuple], Optional[BaseNormType
 
 
 class AspectStorage(List[str]):
+    @overload
+    def add(self, *, condition: object = True) -> Callable[[NormAspect], NormAspect]:
+        ...
+
+    @overload
     def add(self, func: NormAspect) -> NormAspect:
-        self.append(func.__name__)
+        ...
+
+    def add(self, func: Optional[NormAspect] = None, *, condition: object = True) -> Any:
+        if func is None:
+            return partial(self.add, condition=condition)
+
+        if condition:
+            self.append(func.__name__)
         return func
 
     def copy(self) -> 'AspectStorage':
@@ -448,7 +498,7 @@ class TypeNormalizer:
 
     _aspect_storage = AspectStorage()
 
-    def _norm_iter(self, tps) -> VarTuple[BaseNormType]:
+    def _norm_iter(self, tps: Iterable[Any]) -> VarTuple[BaseNormType]:
         return tuple(self.normalize(tp) for tp in tps)
 
     MUST_SUBSCRIBED_ORIGINS = [
@@ -478,14 +528,13 @@ class TypeNormalizer:
         if origin is None or origin is NoneType:
             return _NormType(None, (), source=tp)
 
-    if HAS_ANNOTATED:
-        @_aspect_storage.add
-        def _norm_annotated(self, tp, origin, args):
-            if origin == typing.Annotated:
-                return _AnnotatedNormType(
-                    (self.normalize(args[0]), *args[1:]),
-                    source=tp
-                )
+    @_aspect_storage.add(condition=HAS_ANNOTATED)
+    def _norm_annotated(self, tp, origin, args):
+        if origin == typing.Annotated:
+            return _AnnotatedNormType(
+                (self.normalize(args[0]), *args[1:]),
+                source=tp
+            )
 
     def _get_bound(self, type_var) -> Bound:
         return (
@@ -512,22 +561,26 @@ class TypeNormalizer:
             )
             return NormTV(var=origin, limit=limit, source=tp)
 
-    if HAS_PARAM_SPEC:
-        @_aspect_storage.add
-        def _norm_param_spec(self, tp, origin, args):
-            if isinstance(tp, typing.ParamSpecArgs):
-                return _NormParamSpecArgs(param_spec=self.normalize(origin), source=tp)
+    @_aspect_storage.add(condition=HAS_TV_TUPLE)
+    def _norm_type_var_tuple(self, tp, origin, args):
+        if isinstance(origin, typing.TypeVarTuple):
+            return NormTVTuple(var=origin, source=tp)
 
-            if isinstance(tp, typing.ParamSpecKwargs):
-                return _NormParamSpecKwargs(param_spec=self.normalize(origin), source=tp)
+    @_aspect_storage.add(condition=HAS_PARAM_SPEC)
+    def _norm_param_spec(self, tp, origin, args):
+        if isinstance(tp, typing.ParamSpecArgs):
+            return _NormParamSpecArgs(param_spec=self.normalize(origin), source=tp)
 
-            if isinstance(origin, typing.ParamSpec):
-                namespaced = self._with_module_namespace(origin.__module__)
-                return NormTV(
-                    var=origin,
-                    limit=namespaced._get_bound(origin),  # pylint: disable=protected-access
-                    source=tp,
-                )
+        if isinstance(tp, typing.ParamSpecKwargs):
+            return _NormParamSpecKwargs(param_spec=self.normalize(origin), source=tp)
+
+        if isinstance(origin, typing.ParamSpec):
+            namespaced = self._with_module_namespace(origin.__module__)
+            return NormTV(
+                var=origin,
+                limit=namespaced._get_bound(origin),  # pylint: disable=protected-access
+                source=tp,
+            )
 
     @_aspect_storage.add
     def _norm_init_var(self, tp, origin, args):
@@ -565,7 +618,31 @@ class TypeNormalizer:
                     source=tp,
                 )
 
-            return _NormType(tuple, self._norm_iter(args), source=tp)
+            norm_args = self._norm_iter(args)
+            if HAS_TV_TUPLE:
+                norm_args = self._unpack_tuple_elements(norm_args)
+            return _NormType(tuple, norm_args, source=tp)
+
+    def _unpack_tuple_elements(self, args: VarTuple[BaseNormType]) -> VarTuple[BaseNormType]:
+        # it is necessary to unpack the variable-length tuple as well
+        if len(args) == 1 and args[0].origin == typing.Unpack:
+            inner_tp = args[0].args[0]
+            if inner_tp.origin == tuple:
+                return inner_tp.args
+
+        return self._unpack_generic_elements(args)
+
+    def _unpack_generic_elements(self, args: VarTuple[Any]) -> VarTuple[BaseNormType]:
+        result = []
+        for arg in args:
+            if isinstance(arg, BaseNormType) and arg.origin == typing.Unpack and self._is_fixed_size_tuple(arg.args[0]):
+                result.extend(arg.args[0].args)
+            else:
+                result.append(arg)
+        return tuple(result)
+
+    def _is_fixed_size_tuple(self, tp: BaseNormType) -> bool:
+        return tp.origin == tuple and (not tp.args or tp.args[-1] is not Ellipsis)
 
     @_aspect_storage.add
     def _norm_callable(self, tp, origin, args):
@@ -578,7 +655,9 @@ class TypeNormalizer:
             if args[0] is Ellipsis:
                 call_args = ...
             elif isinstance(args[0], list):
-                call_args = tuple(map(normalize_type, args[0]))
+                call_args = self._norm_iter(args[0])
+                if HAS_TV_TUPLE:
+                    call_args = self._unpack_generic_elements(call_args)
             else:
                 call_args = normalize_type(args[0])
             return _NormType(
@@ -701,11 +780,10 @@ class TypeNormalizer:
     @_aspect_storage.add
     def _norm_other(self, tp, origin, args):
         if args:
-            return _NormType(
-                origin,
-                tuple(self._norm_generic_arg(el) for el in args),
-                source=tp
-            )
+            norm_args = tuple(self._norm_generic_arg(el) for el in args)
+            if HAS_TV_TUPLE:
+                norm_args = self._unpack_generic_elements(norm_args)
+            return _NormType(origin, norm_args, source=tp)
 
         params = self.implicit_params_getter.get_implicit_params(origin)
         if not (

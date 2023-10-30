@@ -30,7 +30,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
 )
 from uuid import uuid4
 
@@ -44,6 +43,7 @@ from adaptix._internal.feature_requirement import (
     HAS_PY_310,
     HAS_PY_311,
     HAS_STD_CLASSES_GENERICS,
+    HAS_TV_TUPLE,
     HAS_TYPE_ALIAS,
     HAS_TYPE_GUARD,
     HAS_TYPE_UNION_OP,
@@ -56,11 +56,11 @@ from adaptix._internal.type_tools.normalize_type import (
     Constraints,
     NormParamSpecMarker,
     NormTV,
+    NormTVTuple,
     NotSubscribedError,
     _create_norm_literal,
     _NormParamSpecArgs,
     _NormParamSpecKwargs,
-    _NormType,
     make_norm_type,
 )
 
@@ -70,7 +70,7 @@ MISSING = object()
 def nt_zero(origin, source=MISSING):
     if source is MISSING:
         source = origin
-    return _NormType(origin, (), source=source)
+    return make_norm_type(origin, (), source=source)
 
 
 def _norm_to_dict(obj):
@@ -293,6 +293,42 @@ def test_callable(callable_tp):
 
     hash(normalize_type(callable_tp[..., int]))
     hash(normalize_type(callable_tp[[int, str], int]))
+
+
+@requires(HAS_TV_TUPLE)
+@pytest.mark.parametrize(
+    'callable_tp',
+    [
+        Callable,
+        c_abc.Callable,
+    ]
+)
+def test_callable_unpack(callable_tp):
+    from typing import TypeVarTuple, Unpack
+
+    assert_normalize(
+        callable_tp[[Unpack[Tuple[int]]], Any],
+        c_abc.Callable, [(normalize_type(int), ), nt_zero(Any)],
+    )
+    assert_normalize(
+        callable_tp[[Unpack[Tuple[int, str]]], Any],
+        c_abc.Callable, [(normalize_type(int), normalize_type(str)), nt_zero(Any)],
+    )
+    assert_normalize(
+        callable_tp[[Unpack[Tuple[int, ...]]], Any],
+        c_abc.Callable, [(normalize_type(Unpack[Tuple[int, ...]]), ), nt_zero(Any)],
+    )
+
+    t1 = TypeVarTuple('t1')
+    assert_normalize(
+        callable_tp[[Unpack[t1]], Any],
+        c_abc.Callable, [(normalize_type(Unpack[t1]), ), nt_zero(Any)],
+    )
+
+    assert_normalize(
+        callable_tp[[Unpack[Tuple[()]]], Any],
+        c_abc.Callable, [(), nt_zero(Any)],
+    )
 
 
 def test_type(make_union):
@@ -576,7 +612,7 @@ def test_type_var(variance: dict, make_union):
 
     t4 = TypeVar("t4", list, str, List, **variance)  # type: ignore[misc]
 
-    t4_union = cast(_NormType, normalize_type(make_union[list, List]))
+    t4_union = normalize_type(make_union[list, List])
 
     assert_norm_tv(
         t4,
@@ -952,4 +988,174 @@ def test_types_generic_alias():
     assert_normalize(
         GenericAlias,
         GenericAlias, [],
+    )
+
+
+@requires(HAS_TV_TUPLE)
+def test_unpack():
+    from typing import TypeVarTuple, Unpack
+
+    assert_normalize(
+        Unpack[Tuple[int]],
+        Unpack, [normalize_type(Tuple[int])],
+    )
+    assert_normalize(
+        Unpack[Tuple[int, ...]],
+        Unpack, [normalize_type(Tuple[int, ...])],
+    )
+    assert_normalize(
+        Unpack[Tuple[int, str]],
+        Unpack, [normalize_type(Tuple[int, str])],
+    )
+
+    t1 = TypeVarTuple('t1')
+    assert_normalize(
+        Unpack[t1],
+        Unpack, [normalize_type(t1)],
+    )
+
+    assert_normalize(
+        Tuple[Unpack[Tuple[int, str]]],
+        tuple, [nt_zero(int), nt_zero(str)],
+    )
+    assert_normalize(
+        Tuple[Unpack[Tuple[int, ...]]],
+        tuple, [nt_zero(int), ...],
+    )
+    assert_normalize(
+        Tuple[str, Unpack[Tuple[int, str]], bool],
+        tuple, [nt_zero(str), nt_zero(int), nt_zero(str), nt_zero(bool)],
+    )
+    assert_normalize(
+        Tuple[Unpack[Tuple[int, str]], Unpack[Tuple[int, str]]],
+        tuple, [nt_zero(int), nt_zero(str), nt_zero(int), nt_zero(str)],
+    )
+
+    assert_normalize(
+        Tuple[str, Unpack[Tuple[int, Unpack[Tuple[bool]], str]], bool],
+        tuple, [nt_zero(str), nt_zero(int), nt_zero(bool), nt_zero(str), nt_zero(bool)],
+    )
+    assert_normalize(
+        Tuple[str, Unpack[Tuple[int, Unpack[Tuple[bool, ...]], str]], bool],
+        tuple, [nt_zero(str), nt_zero(int), normalize_type(Unpack[Tuple[bool, ...]]), nt_zero(str), nt_zero(bool)],
+    )
+
+    assert_normalize(
+        Tuple[Unpack[Tuple[()]]],
+        tuple, [],
+    )
+    assert_normalize(
+        Tuple[int, Unpack[Tuple[()]]],
+        tuple, [nt_zero(int)],
+    )
+    assert_normalize(
+        Tuple[int, Unpack[Tuple[()]], str],
+        tuple, [nt_zero(int), nt_zero(str)],
+    )
+
+
+@requires(HAS_TV_TUPLE)
+def test_type_var_tuple():
+    from typing import TypeVarTuple
+
+    t1 = TypeVarTuple('t1')
+    assert_norm_tv(t1, NormTVTuple(t1, source=t1))
+
+
+@requires(HAS_TV_TUPLE)
+@pytest.mark.parametrize('tpl', [tuple, Tuple])
+def test_type_var_tuple_generic(tpl):
+    from typing import TypeVarTuple, Unpack
+
+    ShapeT = TypeVarTuple('ShapeT')
+
+    class Array(Generic[Unpack[ShapeT]]):
+        pass
+
+    assert_normalize(
+        Array,
+        Array, [normalize_type(Unpack[Tuple[Any, ...]])]
+    )
+    assert_normalize(
+        Array[int],
+        Array, [nt_zero(int)]
+    )
+    assert_normalize(
+        Array[int, str],
+        Array, [nt_zero(int), nt_zero(str)]
+    )
+
+    assert_normalize(
+        Array[int, Unpack[tpl[str, bool]]],
+        Array, [nt_zero(int), nt_zero(str), nt_zero(bool)]
+    )
+    assert_normalize(
+        Array[int, Unpack[tpl[()]]],
+        Array, [nt_zero(int)]
+    )
+
+
+@requires(HAS_TV_TUPLE)
+@pytest.mark.parametrize('tpl', [tuple, Tuple])
+def test_type_var_tuple_generic_pre(tpl):
+    from typing import TypeVarTuple, Unpack
+
+    ShapeT = TypeVarTuple('ShapeT')
+    DType = TypeVar('DType')
+
+    class PreArray(Generic[DType, Unpack[ShapeT]]):
+        pass
+
+    assert_normalize(
+        PreArray,
+        PreArray, [nt_zero(Any), normalize_type(Unpack[Tuple[Any, ...]])]
+    )
+    assert_normalize(
+        PreArray[int],
+        PreArray, [nt_zero(int)]
+    )
+    assert_normalize(
+        PreArray[int, str],
+        PreArray, [nt_zero(int), nt_zero(str)]
+    )
+    assert_normalize(
+        PreArray[int, Unpack[tpl[str]]],
+        PreArray, [nt_zero(int), nt_zero(str)]
+    )
+    assert_normalize(
+        PreArray[int, Unpack[tpl[str, bool]]],
+        PreArray, [nt_zero(int), nt_zero(str), nt_zero(bool)]
+    )
+    assert_normalize(
+        PreArray[int, Unpack[tpl[()]]],
+        PreArray, [nt_zero(int)]
+    )
+
+
+@requires(HAS_TV_TUPLE)
+@pytest.mark.parametrize('tpl', [tuple, Tuple])
+def test_type_var_tuple_generic_post(tpl):
+    from typing import TypeVarTuple, Unpack
+
+    ShapeT = TypeVarTuple('ShapeT')
+    DType = TypeVar('DType')
+
+    class PostArray(Generic[Unpack[ShapeT], DType]):
+        pass
+
+    assert_normalize(
+        PostArray,
+        PostArray, [normalize_type(Unpack[Tuple[Any, ...]]), nt_zero(Any)]
+    )
+    assert_normalize(
+        PostArray[int],
+        PostArray, [nt_zero(int)]
+    )
+    assert_normalize(
+        PostArray[int, str],
+        PostArray, [nt_zero(int), nt_zero(str)]
+    )
+    assert_normalize(
+        PostArray[Unpack[tpl[()]], int],
+        PostArray, [nt_zero(int)]
     )

@@ -1,6 +1,5 @@
-import typing
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, List, Mapping, TypeVar
+from typing import Any, Dict, Generic, List, Mapping, Tuple, TypeVar
 
 import pytest
 from pytest import param
@@ -12,6 +11,7 @@ from adaptix._internal.feature_requirement import (
     HAS_PY_310,
     HAS_SELF_TYPE,
     HAS_STD_CLASSES_GENERICS,
+    HAS_TV_TUPLE,
     IS_PYPY,
 )
 from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
@@ -341,11 +341,191 @@ def test_generic_parents_with_type_override_generic():
 
 @requires(HAS_SELF_TYPE)
 def test_self_type():
+    from typing import Self
+
     @dataclass
     class WithSelf:
-        a: typing.Self
+        a: Self
 
     assert_fields_types(
         WithSelf,
-        {'a': typing.Self},
+        {'a': Self},
+    )
+
+
+@requires(HAS_TV_TUPLE)
+def test_type_var_tuple_begin():
+    from typing import TypeVarTuple, Unpack
+
+    ShapeT = TypeVarTuple('ShapeT')
+    T = TypeVar('T')
+
+    @dataclass
+    class Parent(Generic[Unpack[ShapeT], T]):
+        a: Tuple[Unpack[ShapeT]]
+        b: T
+
+    assert_fields_types(
+        Parent,
+        {
+            'a': Tuple[Unpack[Tuple[Any, ...]]],
+            'b': Any,
+        },
+    )
+    assert_fields_types(
+        Parent[int, str],
+        {
+            'a': Tuple[int],
+            'b': str,
+        },
+    )
+    assert_fields_types(
+        Parent[int, str, bool],
+        {
+            'a': Tuple[int, str],
+            'b': bool,
+        },
+    )
+    assert_fields_types(
+        Parent[int, Unpack[Tuple[str, bool]]],
+        {
+            'a': Tuple[int, str],
+            'b': bool,
+        },
+    )
+    assert_fields_types(
+        Parent[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
+        {
+            'a': Tuple[str, bool, str],
+            'b': bool,
+        },
+    )
+
+
+@requires(HAS_TV_TUPLE)
+def test_type_var_tuple_end():
+    from typing import TypeVarTuple, Unpack
+
+    ShapeT = TypeVarTuple('ShapeT')
+    T = TypeVar('T')
+
+    @dataclass
+    class Parent(Generic[T, Unpack[ShapeT]]):
+        a: T
+        b: Tuple[Unpack[ShapeT]]
+
+    assert_fields_types(
+        Parent,
+        {
+            'a': Any,
+            'b': Tuple[Unpack[Tuple[Any, ...]]],
+        },
+    )
+    assert_fields_types(
+        Parent[int, str],
+        {
+            'a': int,
+            'b': Tuple[str],
+        },
+    )
+    assert_fields_types(
+        Parent[int, str, bool],
+        {
+            'a': int,
+            'b': Tuple[str, bool],
+        },
+    )
+    assert_fields_types(
+        Parent[int, Unpack[Tuple[str, bool]]],
+        {
+            'a': int,
+            'b': Tuple[str, bool],
+        },
+    )
+    assert_fields_types(
+        Parent[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
+        {
+            'a': str,
+            'b': Tuple[bool, str, bool],
+        },
+    )
+
+
+@requires(HAS_TV_TUPLE)
+def test_type_var_tuple_middle():
+    from typing import TypeVarTuple, Unpack
+
+    ShapeT = TypeVarTuple('ShapeT')
+    T1 = TypeVar('T1')
+    T2 = TypeVar('T2')
+
+    @dataclass
+    class Parent(Generic[T1, Unpack[ShapeT], T2]):
+        a: T1
+        b: Tuple[Unpack[ShapeT]]
+        c: T2
+
+    assert_fields_types(
+        Parent,
+        {
+            'a': Any,
+            'b': Tuple[Unpack[Tuple[Any, ...]]],
+            'c': Any,
+        },
+    )
+    assert_fields_types(
+        Parent[int, str],
+        {
+            'a': int,
+            'b': Tuple[()],
+            'c': str,
+        },
+    )
+    assert_fields_types(
+        Parent[int, str, bool],
+        {
+            'a': int,
+            'b': Tuple[str],
+            'c': bool
+        },
+    )
+    assert_fields_types(
+        Parent[int, str, str, bool],
+        {
+            'a': int,
+            'b': Tuple[str, str],
+            'c': bool
+        },
+    )
+    assert_fields_types(
+        Parent[int, Unpack[Tuple[str, bool]]],
+        {
+            'a': int,
+            'b': Tuple[str],
+            'c': bool
+        },
+    )
+    assert_fields_types(
+        Parent[int, Unpack[Tuple[str, bool]], int],
+        {
+            'a': int,
+            'b': Tuple[str, bool],
+            'c': int
+        },
+    )
+    assert_fields_types(
+        Parent[int, Unpack[Tuple[str, ...]], int],
+        {
+            'a': int,
+            'b': Tuple[Unpack[Tuple[str, ...]]],
+            'c': int
+        },
+    )
+    assert_fields_types(
+        Parent[int, bool, Unpack[Tuple[str, ...]], int],
+        {
+            'a': int,
+            'b': Tuple[bool, Unpack[Tuple[str, ...]]],
+            'c': int
+        },
     )

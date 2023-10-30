@@ -1,9 +1,9 @@
 import sys
 import typing
-from typing import Any, ForwardRef, TypeVar
+from typing import Any, ForwardRef, Tuple, TypeVar
 
 from ..common import TypeHint, VarTuple
-from ..feature_requirement import HAS_PARAM_SPEC
+from ..feature_requirement import HAS_PARAM_SPEC, HAS_TV_TUPLE
 from .basic_utils import create_union, eval_forward_ref, is_user_defined_generic, strip_alias
 from .constants import BUILTIN_ORIGIN_TO_TYPEVARS
 
@@ -14,9 +14,11 @@ class ImplicitParamsGetter:
             return eval_forward_ref(vars(sys.modules[type_var.__module__]), tp)
         return tp
 
-    def _process_type_var(self, type_var: TypeVar) -> TypeHint:
+    def _process_type_var(self, type_var) -> TypeHint:
         if HAS_PARAM_SPEC and isinstance(type_var, typing.ParamSpec):
             return ...
+        if HAS_TV_TUPLE and isinstance(type_var, typing.TypeVarTuple):
+            return typing.Unpack[Tuple[Any, ...]]
         if type_var.__constraints__:
             return create_union(
                 tuple(

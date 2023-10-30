@@ -72,6 +72,7 @@ HAS_PY_311 = PythonVersionRequirement((3, 11))
 HAS_NATIVE_EXC_GROUP = HAS_PY_311
 HAS_TYPED_DICT_REQUIRED = HAS_PY_311
 HAS_SELF_TYPE = HAS_PY_311
+HAS_TV_TUPLE = HAS_PY_311
 
 HAS_ATTRS_PKG = PackageRequirement('attrs', 'from attrs import fields')
 
