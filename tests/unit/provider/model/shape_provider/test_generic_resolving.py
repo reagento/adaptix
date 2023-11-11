@@ -1,14 +1,16 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, List, Mapping, Tuple, TypeVar
+from typing import Any, Dict, Generic, List, Mapping, NamedTuple, Tuple, TypedDict, TypeVar
 
 import pytest
 from pytest import param
-from tests_helpers import pretty_typehint_test_id, requires
+from tests_helpers import cond_list, pretty_typehint_test_id, requires
 
 from adaptix import CannotProvide, Retort, TypeHint
 from adaptix._internal.feature_requirement import (
+    HAS_ATTRS_PKG,
     HAS_PY_39,
     HAS_PY_310,
+    HAS_PY_311,
     HAS_SELF_TYPE,
     HAS_STD_CLASSES_GENERICS,
     HAS_TV_TUPLE,
@@ -19,6 +21,61 @@ from adaptix._internal.provider.model.shape_provider import provide_generic_reso
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
 
 pytest_make_parametrize_id = pretty_typehint_test_id
+
+
+@dataclass
+class ModelSpec:
+    decorator: Any
+    bases: Any
+
+
+DEFAULT_MODEL_SPEC_PARAMS = (
+    'dataclass',
+    *cond_list(
+        HAS_PY_311,
+        [
+            'typed_dict',
+            'named_tuple',
+        ],
+    ),
+    *cond_list(
+        HAS_ATTRS_PKG,
+        [
+            'attrs',
+        ],
+    ),
+)
+
+
+def exclude_model_spec(first_spec: str, *other_specs: str):
+    specs = [first_spec, *other_specs]
+
+    def decorator(func):
+        return pytest.mark.parametrize(
+            'model_spec',
+            [
+                spec
+                for spec in DEFAULT_MODEL_SPEC_PARAMS
+                if spec not in specs
+            ],
+            indirect=True
+        )(func)
+
+    return decorator
+
+
+@pytest.fixture(params=DEFAULT_MODEL_SPEC_PARAMS)
+def model_spec(request):
+    if request.param == 'dataclass':
+        return ModelSpec(decorator=dataclass, bases=())
+    if request.param == 'typed_dict':
+        return ModelSpec(decorator=lambda x: x, bases=(TypedDict, ))
+    if request.param == 'named_tuple':
+        return ModelSpec(decorator=lambda x: x, bases=(NamedTuple, ))
+    if request.param == 'attrs':
+        from attrs import define
+        return ModelSpec(decorator=define, bases=())
+    raise ValueError
 
 
 def assert_fields_types(tp: TypeHint, expected: Mapping[str, TypeHint]) -> None:
@@ -45,18 +102,18 @@ K = TypeVar('K')
 V = TypeVar('V')
 
 
-def test_no_generic():
-    @dataclass
-    class Simple:
+def test_no_generic(model_spec):
+    @model_spec.decorator
+    class Simple(*model_spec.bases):
         a: int
         b: str
 
     assert_fields_types(Simple, {'a': int, 'b': str})
 
 
-def test_type_var_field():
-    @dataclass
-    class WithTVField(Generic[T]):
+def test_type_var_field(model_spec):
+    @model_spec.decorator
+    class WithTVField(*model_spec.bases, Generic[T]):
         a: int
         b: T
 
@@ -66,9 +123,9 @@ def test_type_var_field():
 
 
 @pytest.mark.parametrize('tp', [List, list] if HAS_STD_CLASSES_GENERICS else [List])
-def test_gen_field(tp):
-    @dataclass
-    class WithGenField(Generic[T]):
+def test_gen_field(model_spec, tp):
+    @model_spec.decorator
+    class WithGenField(*model_spec.bases, Generic[T]):
         a: int
         b: tp[T]
 
@@ -79,9 +136,9 @@ def test_gen_field(tp):
 
 @pytest.mark.parametrize('tp1', [List, list] if HAS_STD_CLASSES_GENERICS else [List])
 @pytest.mark.parametrize('tp2', [Dict, dict] if HAS_STD_CLASSES_GENERICS else [Dict])
-def test_two_params(tp1, tp2):
-    @dataclass
-    class WithStdGenField(Generic[K, V]):
+def test_two_params(model_spec, tp1, tp2):
+    @model_spec.decorator
+    class WithStdGenField(*model_spec.bases, Generic[K, V]):
         a: int
         b: tp1[K]
         c: tp2[K, V]
@@ -100,13 +157,13 @@ def test_two_params(tp1, tp2):
     )
 
 
-def test_sub_generic():
-    @dataclass
-    class SubGen(Generic[T]):
+def test_sub_generic(model_spec):
+    @model_spec.decorator
+    class SubGen(*model_spec.bases, Generic[T]):
         foo: T
 
-    @dataclass
-    class WithSubUnparametrized(Generic[T]):
+    @model_spec.decorator
+    class WithSubUnparametrized(*model_spec.bases, Generic[T]):
         a: int
         b: T
         c: SubGen  # test that we differ SubGen and SubGen[T]
@@ -125,12 +182,13 @@ def test_sub_generic():
     )
 
 
-def test_single_inheritance():
-    @dataclass
-    class Parent(Generic[T]):
+@exclude_model_spec('named_tuple')
+def test_single_inheritance(model_spec):
+    @model_spec.decorator
+    class Parent(*model_spec.bases, Generic[T]):
         a: T
 
-    @dataclass
+    @model_spec.decorator
     class Child(Parent[int]):
         b: str
 
@@ -140,12 +198,13 @@ def test_single_inheritance():
     )
 
 
-def test_single_inheritance_generic_child():
-    @dataclass
-    class Parent(Generic[T]):
+@exclude_model_spec('named_tuple')
+def test_single_inheritance_generic_child(model_spec):
+    @model_spec.decorator
+    class Parent(*model_spec.bases, Generic[T]):
         a: T
 
-    @dataclass
+    @model_spec.decorator
     class Child(Parent[int], Generic[T]):
         b: str
         c: T
@@ -164,17 +223,18 @@ def test_single_inheritance_generic_child():
     )
 
 
-def test_multiple_inheritance():
-    @dataclass
-    class Parent1(Generic[T]):
+@exclude_model_spec('named_tuple', 'typed_dict', 'attrs')
+def test_multiple_inheritance(model_spec):
+    @model_spec.decorator
+    class Parent1(*model_spec.bases, Generic[T]):
         a: T
 
-    @dataclass
-    class Parent2(Generic[T]):
+    @model_spec.decorator
+    class Parent2(*model_spec.bases, Generic[T]):
         b: T
 
-    @dataclass
-    class Child(Parent1[int], Generic[T]):
+    @model_spec.decorator
+    class Child(Parent1[int], Parent2[bool], Generic[T]):
         b: str
         c: T
 
@@ -201,22 +261,23 @@ T6 = TypeVar('T6')
 T7 = TypeVar('T7')
 
 
+@exclude_model_spec('named_tuple', 'attrs')
 @pytest.mark.parametrize('tp', [List, list] if HAS_STD_CLASSES_GENERICS else [List])
-def test_generic_multiple_inheritance(tp) -> None:
-    @dataclass
-    class GrandParent(Generic[T1, T2]):
+def test_generic_multiple_inheritance(model_spec, tp) -> None:
+    @model_spec.decorator
+    class GrandParent(*model_spec.bases, Generic[T1, T2]):
         a: T1
         b: tp[T2]
 
-    @dataclass
+    @model_spec.decorator
     class Parent1(GrandParent[int, T3], Generic[T3, T4]):
         c: T4
 
-    @dataclass
+    @model_spec.decorator
     class Parent2(GrandParent[int, T5], Generic[T5, T6]):
         d: T6
 
-    @dataclass
+    @model_spec.decorator
     class Child(Parent1[int, bool], Parent2[str, bytes], Generic[T7]):
         e: T7
 
@@ -272,16 +333,17 @@ def test_not_a_model(tp):
         )
 
 
-def test_generic_mixed_inheritance():
-    @dataclass
-    class Parent1:
+@exclude_model_spec('named_tuple', 'attrs')
+def test_generic_mixed_inheritance(model_spec):
+    @model_spec.decorator
+    class Parent1(*model_spec.bases):
         a: int
 
-    @dataclass
-    class Parent2(Generic[T]):
+    @model_spec.decorator
+    class Parent2(*model_spec.bases, Generic[T]):
         b: T
 
-    @dataclass
+    @model_spec.decorator
     class Child12(Parent1, Parent2[str]):
         c: bool
 
@@ -290,7 +352,7 @@ def test_generic_mixed_inheritance():
         {'a': int, 'b': str, 'c': bool},
     )
 
-    @dataclass
+    @model_spec.decorator
     class Child21(Parent2[str], Parent1):
         c: bool
 
@@ -300,12 +362,13 @@ def test_generic_mixed_inheritance():
     )
 
 
-def test_generic_parents_with_type_override():
-    @dataclass
-    class Parent(Generic[T]):
+@exclude_model_spec('named_tuple')
+def test_generic_parents_with_type_override(model_spec):
+    @model_spec.decorator
+    class Parent(*model_spec.bases, Generic[T]):
         a: T
 
-    @dataclass
+    @model_spec.decorator
     class Child(Parent[int]):
         a: bool
 
@@ -315,12 +378,13 @@ def test_generic_parents_with_type_override():
     )
 
 
-def test_generic_parents_with_type_override_generic():
-    @dataclass
-    class Parent(Generic[T]):
+@exclude_model_spec('named_tuple', 'typed_dict')
+def test_generic_parents_with_type_override_generic(model_spec):
+    @model_spec.decorator
+    class Parent(*model_spec.bases, Generic[T]):
         a: T
 
-    @dataclass
+    @model_spec.decorator
     class Child(Parent[int], Generic[T]):
         a: bool
         b: T
@@ -340,11 +404,11 @@ def test_generic_parents_with_type_override_generic():
 
 
 @requires(HAS_SELF_TYPE)
-def test_self_type():
+def test_self_type(model_spec):
     from typing import Self
 
-    @dataclass
-    class WithSelf:
+    @model_spec.decorator
+    class WithSelf(*model_spec.bases):
         a: Self
 
     assert_fields_types(
@@ -354,14 +418,14 @@ def test_self_type():
 
 
 @requires(HAS_TV_TUPLE)
-def test_type_var_tuple_begin():
+def test_type_var_tuple_begin(model_spec):
     from typing import TypeVarTuple, Unpack
 
     ShapeT = TypeVarTuple('ShapeT')
     T = TypeVar('T')
 
-    @dataclass
-    class Parent(Generic[Unpack[ShapeT], T]):
+    @model_spec.decorator
+    class Parent(*model_spec.bases, Generic[Unpack[ShapeT], T]):
         a: Tuple[Unpack[ShapeT]]
         b: T
 
@@ -403,14 +467,14 @@ def test_type_var_tuple_begin():
 
 
 @requires(HAS_TV_TUPLE)
-def test_type_var_tuple_end():
+def test_type_var_tuple_end(model_spec):
     from typing import TypeVarTuple, Unpack
 
     ShapeT = TypeVarTuple('ShapeT')
     T = TypeVar('T')
 
-    @dataclass
-    class Parent(Generic[T, Unpack[ShapeT]]):
+    @model_spec.decorator
+    class Parent(*model_spec.bases, Generic[T, Unpack[ShapeT]]):
         a: T
         b: Tuple[Unpack[ShapeT]]
 
@@ -452,15 +516,15 @@ def test_type_var_tuple_end():
 
 
 @requires(HAS_TV_TUPLE)
-def test_type_var_tuple_middle():
+def test_type_var_tuple_middle(model_spec):
     from typing import TypeVarTuple, Unpack
 
     ShapeT = TypeVarTuple('ShapeT')
     T1 = TypeVar('T1')
     T2 = TypeVar('T2')
 
-    @dataclass
-    class Parent(Generic[T1, Unpack[ShapeT], T2]):
+    @model_spec.decorator
+    class Parent(*model_spec.bases, Generic[T1, Unpack[ShapeT], T2]):
         a: T1
         b: Tuple[Unpack[ShapeT]]
         c: T2

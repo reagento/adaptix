@@ -5,6 +5,7 @@ from adaptix._internal.essential import CannotProvide, Request
 
 from ..common import Dumper, Loader, TypeHint
 from ..model_tools.definitions import Accessor, Default
+from ..type_tools import BaseNormType, normalize_type
 from ..utils import ClassMap
 from .definitions import DebugTrail
 
@@ -64,6 +65,13 @@ class DumperRequest(LocatedRequest[Dumper]):
 
 def get_type_from_request(request: LocatedRequest) -> TypeHint:
     return request.loc_map.get_or_raise(TypeHintLoc, CannotProvide).type
+
+
+def try_normalize_type(tp: TypeHint) -> BaseNormType:
+    try:
+        return normalize_type(tp)
+    except ValueError:
+        raise CannotProvide(f'{tp} can not be normalized')
 
 
 class StrictCoercionRequest(LocatedRequest[bool]):

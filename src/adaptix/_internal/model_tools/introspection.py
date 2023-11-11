@@ -214,7 +214,7 @@ def _get_td_hints(tp):
 
 def get_typed_dict_shape(tp) -> FullShape:
     # __annotations__ of TypedDict contain also parents' type hints unlike any other classes,
-    # so overriden_types always contains all fields
+    # so overriden_types always is empty
     if not is_typed_dict_class(tp):
         raise IntrospectionImpossible
 
@@ -243,7 +243,7 @@ def get_typed_dict_shape(tp) -> FullShape:
                 for name, tp in type_hints
             ),
             kwargs=None,
-            overriden_types=frozenset(tp.__annotations__.keys()),
+            overriden_types=frozenset({}),
         ),
         output=OutputShape(
             fields=tuple(
@@ -260,7 +260,7 @@ def get_typed_dict_shape(tp) -> FullShape:
                 )
                 for name, tp in type_hints
             ),
-            overriden_types=frozenset(tp.__annotations__.keys()),
+            overriden_types=frozenset({}),
         ),
     )
 

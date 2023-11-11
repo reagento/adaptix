@@ -18,8 +18,7 @@ from ..load_error import (
     UnionLoadError,
 )
 from ..struct_trail import ItemKey, append_trail, render_trail_as_note
-from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, normalize_type, strip_tags
-from ..type_tools.normalize_type import NotSubscribedError
+from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, strip_tags
 from ..utils import ClassDispatcher
 from .definitions import DebugTrail
 from .model.special_cases_optimization import as_is_stub
@@ -34,6 +33,7 @@ from .request_cls import (
     StrictCoercionRequest,
     TypeHintLoc,
     get_type_from_request,
+    try_normalize_type,
 )
 from .static_provider import StaticProvider, static_provision_action
 
@@ -62,11 +62,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
         loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
-
-        try:
-            norm = normalize_type(loc.type)
-        except NotSubscribedError:
-            raise CannotProvide
+        norm = try_normalize_type(loc.type)
         unwrapped = strip_tags(norm)
         if unwrapped.source == loc.type:  # type has not changed, continue search
             raise CannotProvide
@@ -94,7 +90,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return tuple(args)
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(get_type_from_request(request))
         strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
 
         # TODO: add support for enum
@@ -132,7 +128,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 @for_predicate(Union)
 class UnionProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(get_type_from_request(request))
         debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
 
         if self._is_single_optional(norm):
@@ -243,7 +239,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         request_type = get_type_from_request(request)
-        norm = normalize_type(request_type)
+        norm = try_normalize_type(request_type)
 
         # TODO: allow use Literal[..., None] with non single optional
 
@@ -332,10 +328,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         raise CannotProvide
 
     def _fetch_norm_and_arg(self, request: LocatedRequest):
-        try:
-            norm = normalize_type(get_type_from_request(request))
-        except ValueError:
-            raise CannotProvide
+        norm = try_normalize_type(get_type_from_request(request))
 
         if len(norm.args) != 1:
             raise CannotProvide
@@ -569,7 +562,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
 @for_predicate(Dict)
 class DictProvider(LoaderProvider, DumperProvider):
     def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
-        norm = normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(get_type_from_request(request))
         return norm.args  # type: ignore
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:

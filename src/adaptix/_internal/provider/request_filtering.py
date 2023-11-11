@@ -18,7 +18,7 @@ from ..type_tools import (
     normalize_type,
 )
 from ..type_tools.normalize_type import NotSubscribedError
-from .request_cls import FieldLoc, GenericParamLoc, LocatedRequest, Location, TypeHintLoc
+from .request_cls import FieldLoc, GenericParamLoc, LocatedRequest, Location, TypeHintLoc, try_normalize_type
 
 T = TypeVar('T')
 
@@ -172,7 +172,7 @@ class ExactTypeRC(LocatedRequestChecker):
     norm: BaseNormType
 
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> None:
-        if normalize_type(loc.type) == self.norm:
+        if try_normalize_type(loc.type) == self.norm:
             return
         raise CannotProvide(f'{loc.type} must be a equal to {self.norm.source}')
 
@@ -183,7 +183,7 @@ class OriginSubclassRC(LocatedRequestChecker):
     type_: type
 
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> None:
-        norm = normalize_type(loc.type)
+        norm = try_normalize_type(loc.type)
         if is_subclass_soft(norm.origin, self.type_):
             return
         raise CannotProvide(f'{loc.type} must be a subclass of {self.type_}')
@@ -195,7 +195,7 @@ class ExactOriginRC(LocatedRequestChecker):
     origin: Any
 
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> None:
-        if normalize_type(loc.type).origin == self.origin:
+        if try_normalize_type(loc.type).origin == self.origin:
             return
         raise CannotProvide(f'{loc.type} must have origin {self.origin}')
 
@@ -215,8 +215,9 @@ class ExactOriginMergedProvider(Provider):
             TypeHintLoc,
             lambda: CannotProvide(f'Request location must be instance of {TypeHintLoc}')
         )
+        norm = try_normalize_type(loc.type)
         try:
-            provider = self.origin_to_provider[normalize_type(loc.type).origin]
+            provider = self.origin_to_provider[norm.origin]
         except KeyError:
             raise CannotProvide
 

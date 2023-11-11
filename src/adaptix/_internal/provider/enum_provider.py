@@ -5,9 +5,16 @@ from typing import Any, Mapping, Optional, Type
 from ..common import Dumper, Loader, TypeHint
 from ..essential import CannotProvide, Mediator, Request
 from ..load_error import BadVariantError, MsgError
-from ..type_tools import normalize_type
 from .provider_template import DumperProvider, LoaderProvider
-from .request_cls import DumperRequest, LoaderRequest, LocatedRequest, LocMap, TypeHintLoc, get_type_from_request
+from .request_cls import (
+    DumperRequest,
+    LoaderRequest,
+    LocatedRequest,
+    LocMap,
+    TypeHintLoc,
+    get_type_from_request,
+    try_normalize_type,
+)
 from .request_filtering import DirectMediator, RequestChecker
 
 
@@ -16,7 +23,7 @@ class AnyEnumRC(RequestChecker):
         if not isinstance(request, LocatedRequest):
             raise CannotProvide
 
-        norm = normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(get_type_from_request(request))
 
         if not isinstance(norm.origin, EnumMeta):
             raise CannotProvide

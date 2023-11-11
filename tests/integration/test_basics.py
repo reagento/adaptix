@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypedDict
 
 import pytest
 from tests_helpers import raises_exc
