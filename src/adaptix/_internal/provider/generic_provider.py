@@ -563,7 +563,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
 class DictProvider(LoaderProvider, DumperProvider):
     def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
         norm = try_normalize_type(get_type_from_request(request))
-        return norm.args  # type: ignore
+        return norm.args
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         key, value = self._extract_key_value(request)

@@ -10,18 +10,18 @@
     # via -r requirements/raw/test_extra_none.txt
 alabaster==0.7.13
     # via sphinx
-annotated-types==0.5.0
+annotated-types==0.6.0
     # via pydantic
 astpath==0.9.0
     # via -r requirements/raw/lint.txt
-astroid==2.15.6
+astroid==3.0.1
     # via pylint
 attrs==23.1.0
     # via
     #   -r requirements/raw/test_extra_new.txt
     #   cattrs
     #   flake8-bugbear
-babel==2.12.1
+babel==2.13.1
     # via sphinx
 bandit==1.7.5
     # via -r requirements/raw/lint.txt
@@ -29,27 +29,27 @@ beautifulsoup4==4.12.2
     # via furo
 cattrs==23.1.2
     # via -r requirements/raw/bench.txt
-certifi==2023.5.7
+certifi==2023.7.22
     # via requests
-cfgv==3.3.1
+cfgv==3.4.0
     # via pre-commit
-charset-normalizer==3.1.0
+charset-normalizer==3.3.2
     # via requests
 cognitive-complexity==1.3.0
     # via flake8-cognitive-complexity
 colorama==0.4.6
     # via radon
-contourpy==1.1.0
+contourpy==1.2.0
     # via matplotlib
-cycler==0.11.0
+cycler==0.12.1
     # via matplotlib
 dataclass-factory==2.16
     # via -r requirements/raw/bench.txt
-dill==0.3.6
+dill==0.3.7
     # via pylint
 dirty-equals==0.6.0
     # via -r requirements/raw/test_extra_none.txt
-distlib==0.3.6
+distlib==0.3.7
     # via virtualenv
 dlint==0.14.1
     # via -r requirements/raw/lint.txt
@@ -60,7 +60,7 @@ docutils==0.19
     #   sphinx
 docutils-stubs==0.0.22
     # via -r requirements/raw/doc.txt
-filelock==3.9.0
+filelock==3.13.1
     # via virtualenv
 flake8==6.1.0
     # via
@@ -73,9 +73,9 @@ flake8==6.1.0
     #   flake8-mutable
     #   flake8-noqa
     #   flake8-polyfill
-flake8-bugbear==23.7.10
+flake8-bugbear==23.9.16
     # via -r requirements/raw/lint.txt
-flake8-builtins==2.1.0
+flake8-builtins==2.2.0
     # via -r requirements/raw/lint.txt
 flake8-cognitive-complexity==0.1.0
     # via -r requirements/raw/lint.txt
@@ -89,19 +89,21 @@ flake8-noqa==1.3.2
     # via -r requirements/raw/lint.txt
 flake8-polyfill==1.0.2
     # via -r requirements/raw/lint.txt
-fonttools==4.40.0
+fonttools==4.44.0
     # via matplotlib
 furo==2023.5.20
     # via -r requirements/raw/doc.txt
-gitdb==4.0.10
+gitdb==4.0.11
     # via gitpython
 gitpython==3.1.32
     # via
     #   -r requirements/raw/doc.txt
     #   bandit
-greenlet==2.0.2
-    # via sqlalchemy
-identify==2.5.18
+greenlet==3.0.0rc3
+    # via
+    #   -r requirements/raw/test_extra_none.txt
+    #   sqlalchemy
+identify==2.5.31
     # via pre-commit
 idna==3.4
     # via requests
@@ -115,13 +117,11 @@ jinja2==3.1.2
     # via
     #   myst-parser
     #   sphinx
-kiwisolver==1.4.4
+kiwisolver==1.4.5
     # via matplotlib
-lazy-object-proxy==1.9.0
-    # via astroid
-lxml==4.9.2
+lxml==4.9.3
     # via astpath
-mando==0.6.4
+mando==0.7.1
     # via radon
 markdown-it-py==2.2.0
     # via
@@ -148,35 +148,34 @@ mdurl==0.1.2
     # via markdown-it-py
 msgspec==0.18.4 ; implementation_name != "pypy"
     # via -r requirements/raw/bench.txt
-mypy==1.5.1
+mypy==1.7.0
     # via -r requirements/raw/lint.txt
 mypy-extensions==1.0.0
     # via mypy
 myst-parser==1.0.0
     # via -r requirements/raw/doc.txt
-nodeenv==1.7.0
+nodeenv==1.8.0
     # via pre-commit
-numpy==1.25.0
+numpy==1.26.1
     # via
     #   contourpy
     #   matplotlib
-packaging==23.1
+packaging==23.2
     # via
-    #   -r requirements/raw/test_extra_none.txt
     #   marshmallow
     #   matplotlib
     #   plotly
     #   pytest
     #   sphinx
-pbr==5.11.1
+pbr==6.0.0
     # via
     #   sphinxcontrib-apidoc
     #   stevedore
-phonenumberslite==8.13.20
+phonenumberslite==8.13.24
     # via -r requirements/raw/test_extra_none.txt
-pillow==9.5.0
+pillow==10.1.0
     # via matplotlib
-platformdirs==3.0.0
+platformdirs==3.11.0
     # via
     #   pylint
     #   virtualenv
@@ -184,15 +183,15 @@ plotly==5.15.0
     # via
     #   -r requirements/raw/_bench-orchestrate.txt
     #   -r requirements/raw/doc.txt
-pluggy==1.0.0
+pluggy==1.3.0
     # via pytest
-pre-commit==3.4.0
+pre-commit==3.5.0
     # via -r requirements/raw/lint.txt
 psutil==5.9.5
     # via
     #   -r requirements/raw/bench.txt
     #   pyperf
-pycodestyle==2.11.0
+pycodestyle==2.11.1
     # via
     #   flake8
     #   flake8-debugger
@@ -202,14 +201,14 @@ pydantic-core==2.10.1
     # via pydantic
 pyflakes==3.1.0
     # via flake8
-pygments==2.14.0
+pygments==2.16.1
     # via
     #   furo
     #   rich
     #   sphinx
-pylint==2.17.5
+pylint==3.0.2
     # via -r requirements/raw/lint.txt
-pyparsing==3.0.9
+pyparsing==3.1.1
     # via matplotlib
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
@@ -219,11 +218,9 @@ pytest==7.4.2
     #   -r requirements/raw/test_extra_none.txt
 python-dateutil==2.8.2
     # via matplotlib
-python-json-logger==2.0.7
-    # via -r requirements/raw/test_extra_none.txt
 pytz==2023.3.post1
     # via dirty-equals
-pyyaml==6.0
+pyyaml==6.0.1
     # via
     #   bandit
     #   myst-parser
@@ -232,7 +229,7 @@ radon==6.0.1
     # via -r requirements/raw/lint.txt
 requests==2.31.0
     # via sphinx
-rich==13.3.3
+rich==13.6.0
     # via bandit
 schematics==2.1.1
     # via -r requirements/raw/bench.txt
@@ -240,11 +237,11 @@ six==1.16.0
     # via
     #   mando
     #   python-dateutil
-smmap==5.0.0
+smmap==5.0.1
     # via gitdb
 snowballstemmer==2.2.0
     # via sphinx
-soupsieve==2.4.1
+soupsieve==2.5
     # via beautifulsoup4
 sphinx==6.2.1
     # via
@@ -255,8 +252,13 @@ sphinx==6.2.1
     #   sphinx-copybutton
     #   sphinx-design
     #   sphinxcontrib-apidoc
+    #   sphinxcontrib-applehelp
+    #   sphinxcontrib-devhelp
+    #   sphinxcontrib-htmlhelp
+    #   sphinxcontrib-qthelp
+    #   sphinxcontrib-serializinghtml
     #   sphinxext-opengraph
-sphinx-basic-ng==1.0.0b1
+sphinx-basic-ng==1.0.0b2
     # via furo
 sphinx-copybutton==0.5.2
     # via -r requirements/raw/doc.txt
@@ -266,49 +268,48 @@ sphinx-paramlinks==0.5.4
     # via -r requirements/raw/doc.txt
 sphinxcontrib-apidoc==0.3.0
     # via -r requirements/raw/doc.txt
-sphinxcontrib-applehelp==1.0.4
+sphinxcontrib-applehelp==1.0.7
     # via sphinx
-sphinxcontrib-devhelp==1.0.2
+sphinxcontrib-devhelp==1.0.5
     # via sphinx
-sphinxcontrib-htmlhelp==2.0.1
+sphinxcontrib-htmlhelp==2.0.4
     # via sphinx
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
-sphinxcontrib-qthelp==1.0.3
+sphinxcontrib-qthelp==1.0.6
     # via sphinx
-sphinxcontrib-serializinghtml==1.1.5
+sphinxcontrib-serializinghtml==1.1.9
     # via sphinx
 sphinxext-opengraph==0.8.2
     # via -r requirements/raw/doc.txt
-sqlalchemy==2.0.20
+sqlalchemy==2.0.23
     # via -r requirements/raw/test_extra_none.txt
-stevedore==5.0.0
+stevedore==5.1.0
     # via bandit
-tenacity==8.2.2
+tenacity==8.2.3
     # via plotly
 toml==0.10.2
     # via vulture
-tomlkit==0.11.6
+tomlkit==0.12.2
     # via pylint
 typing-extensions==4.8.0
     # via
+    #   -r requirements/raw/test_extra_none.txt
     #   flake8-noqa
     #   mashumaro
     #   mypy
     #   pydantic
     #   pydantic-core
     #   sqlalchemy
-urllib3==2.0.3
+urllib3==2.0.7
     # via requests
-virtualenv==20.19.0
+virtualenv==20.24.6
     # via pre-commit
-vulture==2.9.1
+vulture==2.10
     # via -r requirements/raw/lint.txt
-wrapt==1.14.1
-    # via astroid
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==67.3.2
+setuptools==68.2.2
     # via
     #   cognitive-complexity
     #   flake8-cognitive-complexity

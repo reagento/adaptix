@@ -17,7 +17,7 @@ default_stages:
 
 repos:
   - repo: 'https://github.com/pre-commit/pre-commit-hooks'
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: check-merge-conflict
       - id: debug-statements
@@ -27,7 +27,7 @@ repos:
         args: ['--maxkb=100']
 
   - repo: 'https://github.com/myint/eradicate'
-    rev: 2.2.0
+    rev: 2.3.0
     hooks:
       - id: eradicate
         args: ['-e']  # remove default --in-place argument and emit error
