@@ -93,8 +93,12 @@ class GenericResolver(Generic[K, M]):
             members={
                 key: (
                     bases_members[key]
-                    if key in bases_members and key not in members_storage.overriden else
-                    value
+                    if (
+                        key in bases_members
+                        and key not in members_storage.overriden
+                        and (is_generic(value) or isinstance(value, TypeVar))
+                    )
+                    else value
                 )
                 for key, value in members_storage.members.items()
             },

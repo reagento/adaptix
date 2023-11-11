@@ -19,6 +19,7 @@ from adaptix._internal.feature_requirement import (
 from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
 from adaptix._internal.provider.model.shape_provider import provide_generic_resolved_shape
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
+from adaptix._internal.type_tools import is_generic
 
 pytest_make_parametrize_id = pretty_typehint_test_id
 
@@ -223,7 +224,7 @@ def test_single_inheritance_generic_child(model_spec):
     )
 
 
-@exclude_model_spec('named_tuple', 'typed_dict', 'attrs')
+@exclude_model_spec('named_tuple', 'attrs')
 def test_multiple_inheritance(model_spec):
     @model_spec.decorator
     class Parent1(*model_spec.bases, Generic[T]):
@@ -378,7 +379,7 @@ def test_generic_parents_with_type_override(model_spec):
     )
 
 
-@exclude_model_spec('named_tuple', 'typed_dict')
+@exclude_model_spec('named_tuple')
 def test_generic_parents_with_type_override_generic(model_spec):
     @model_spec.decorator
     class Parent(*model_spec.bases, Generic[T]):

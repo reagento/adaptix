@@ -325,3 +325,8 @@ class IntrospectionImpossible(Exception):
 
 class NoTargetPackage(IntrospectionImpossible):
     pass
+
+
+class PackageIsTooOld(IntrospectionImpossible):
+    def __init__(self, required_version: str):
+        self.required_version = required_version

@@ -5,7 +5,7 @@ from inspect import Parameter, Signature
 from types import MappingProxyType
 from typing import Any, Dict
 
-from ..feature_requirement import HAS_ATTRS_PKG, HAS_PY_39, HAS_PY_310
+from ..feature_requirement import HAS_ATTRS_PKG, HAS_PY_39, HAS_PY_310, HAS_SUPPORTED_ATTRS_PKG
 from ..model_tools.definitions import (
     BaseField,
     Default,
@@ -20,6 +20,7 @@ from ..model_tools.definitions import (
     NoTargetPackage,
     OutputField,
     OutputShape,
+    PackageIsTooOld,
     Param,
     ParamKind,
     ParamKwargs,
@@ -539,9 +540,10 @@ def _get_attrs_output_shape(attrs_fields, type_hints) -> OutputShape:
 
 
 def get_attrs_shape(tp) -> FullShape:
-    # TODO: rework to extras
-    if not HAS_ATTRS_PKG:
-        raise NoTargetPackage
+    if not HAS_SUPPORTED_ATTRS_PKG:
+        if not HAS_ATTRS_PKG:
+            raise NoTargetPackage
+        raise PackageIsTooOld(HAS_SUPPORTED_ATTRS_PKG.min_version)
 
     try:
         is_attrs = attrs.has(tp)

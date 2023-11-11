@@ -1,6 +1,9 @@
+import importlib.metadata
+import itertools
+import re
 import sys
 from abc import ABC, abstractmethod
-from textwrap import dedent
+from typing import Any, Iterable
 
 from .common import VarTuple
 
@@ -22,7 +25,12 @@ class Requirement(ABC):
 
     @abstractmethod
     def _evaluate(self) -> bool:
-        pass
+        ...
+
+    @property
+    @abstractmethod
+    def fail_reason(self) -> str:
+        ...
 
 
 class PythonVersionRequirement(Requirement):
@@ -33,20 +41,98 @@ class PythonVersionRequirement(Requirement):
     def _evaluate(self) -> bool:
         return sys.version_info >= self.min_version
 
+    @property
+    def fail_reason(self) -> str:
+        return f'Python >= {".".join(map(str, self.min_version))} is required'
 
-class PackageRequirement(Requirement):
-    def __init__(self, package: str, test_statement: str):
-        self.package = package
-        self.test_statement = dedent(test_statement)
+
+class DistributionRequirement(Requirement):
+    def __init__(self, distribution_name: str):
+        self.distribution_name = distribution_name
         super().__init__()
 
     def _evaluate(self) -> bool:
         try:
-            # pylint: disable=exec-used
-            exec(self.test_statement)  # noqa
-        except ImportError:
+            importlib.metadata.distribution(self.distribution_name)
+        except importlib.metadata.PackageNotFoundError:
             return False
         return True
+
+    @property
+    def fail_reason(self) -> str:
+        return f'Installed distribution {self.distribution_name!r} is required'
+
+
+class DistributionVersionRequirement(DistributionRequirement):
+    # Pattern from PEP 440
+    _VERSION_PATTERN = r"""
+        v?
+        (?:
+            (?:(?P<epoch>[0-9]+)!)?                           # epoch
+            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+            (?P<pre>                                          # pre-release
+                [-_\.]?
+                (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
+                [-_\.]?
+                (?P<pre_n>[0-9]+)?
+            )?
+            (?P<post>                                         # post release
+                (?:-(?P<post_n1>[0-9]+))
+                |
+                (?:
+                    [-_\.]?
+                    (?P<post_l>post|rev|r)
+                    [-_\.]?
+                    (?P<post_n2>[0-9]+)?
+                )
+            )?
+            (?P<dev>                                          # dev release
+                [-_\.]?
+                (?P<dev_l>dev)
+                [-_\.]?
+                (?P<dev_n>[0-9]+)?
+            )?
+        )
+        (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
+    """
+
+    _version_regex = re.compile(
+        r"^\s*" + _VERSION_PATTERN + r"\s*$",
+        re.VERBOSE | re.IGNORECASE,
+    )
+
+    def __init__(self, distribution_name: str, min_version: str):
+        self.min_version = min_version
+        super().__init__(distribution_name)
+
+    def _evaluate(self) -> bool:
+        try:
+            distribution = importlib.metadata.distribution(self.distribution_name)
+        except importlib.metadata.PackageNotFoundError:
+            return False
+        return (
+            self._make_comparator(distribution.version)
+            >=
+            self._make_comparator(self.min_version)
+        )
+
+    def _remove_trailing_zeros(self, data: Iterable[int]) -> VarTuple[int]:
+        return tuple(reversed(tuple(itertools.dropwhile(lambda x: x == 0, reversed(tuple(data))))))
+
+    def _make_comparator(self, version: str) -> VarTuple[Any]:
+        match = self._version_regex.match(version)
+        if match is None:
+            raise ValueError
+        return (
+            match.group('epoch') or 0,
+            self._remove_trailing_zeros(int(i) for i in match.group('release').split('.')),
+            match.group('pre') is not None,
+            match.group('dev') is not None,
+        )
+
+    @property
+    def fail_reason(self) -> str:
+        return f'Installed distribution {self.distribution_name!r} of {self.min_version!r} is required'
 
 
 class PythonImplementationRequirement(Requirement):
@@ -56,6 +142,10 @@ class PythonImplementationRequirement(Requirement):
 
     def _evaluate(self) -> bool:
         return sys.implementation.name == self.implementation_name
+
+    @property
+    def fail_reason(self) -> str:
+        return f'{self.implementation_name} is required'
 
 
 HAS_PY_39 = PythonVersionRequirement((3, 9))
@@ -74,7 +164,8 @@ HAS_TYPED_DICT_REQUIRED = HAS_PY_311
 HAS_SELF_TYPE = HAS_PY_311
 HAS_TV_TUPLE = HAS_PY_311
 
-HAS_ATTRS_PKG = PackageRequirement('attrs', 'from attrs import fields')
+HAS_SUPPORTED_ATTRS_PKG = DistributionVersionRequirement('attrs', '21.3.0')
+HAS_ATTRS_PKG = DistributionRequirement('attrs')
 
 IS_CPYTHON = PythonImplementationRequirement('cpython')
 IS_PYPY = PythonImplementationRequirement('pypy')

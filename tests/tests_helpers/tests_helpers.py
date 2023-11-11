@@ -1,18 +1,14 @@
 import dataclasses
-import importlib.metadata
 import re
-from contextlib import contextmanager
-from copy import copy
 from dataclasses import dataclass, is_dataclass
 from typing import Any, Callable, Optional, Type, TypeVar, Union
 
 import pytest
-from packaging.version import Version
 from sqlalchemy import Engine, create_engine
 
 from adaptix import AdornedRetort, CannotProvide, DebugTrail, Mediator, Provider, Request
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.feature_requirement import PythonImplementationRequirement, PythonVersionRequirement, Requirement
+from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
 from adaptix._internal.provider.model.basic_gen import CodeGenAccumulator
 from adaptix._internal.type_tools import is_parametrized
 from adaptix.struct_trail import get_trail
@@ -20,45 +16,14 @@ from adaptix.struct_trail import get_trail
 T = TypeVar("T")
 
 
-class DistributionVersionRequirement(Requirement):
-    def __init__(self, distribution: str, version: str):
-        self.distribution = distribution
-        self.required_version = Version(version)
-        super().__init__()
-
-    def _evaluate(self) -> bool:
-        try:
-            distribution = importlib.metadata.distribution(self.distribution)
-        except importlib.metadata.PackageNotFoundError:
-            return False
-        current_version = Version(distribution.version)
-        return current_version >= self.required_version
-
-
 ATTRS_WITH_ALIAS = DistributionVersionRequirement('attrs', '22.2.0')
 
 
-def requires(
-    requirement: Union[
-        PythonVersionRequirement,
-        PythonImplementationRequirement,
-        DistributionVersionRequirement,
-    ]
-):
-    if isinstance(requirement, PythonVersionRequirement):
-        ver_str = '.'.join(map(str, requirement.min_version))
-        reason = f'Python >= {ver_str} is required'
-    elif isinstance(requirement, PythonImplementationRequirement):
-        reason = f'{requirement.implementation_name} is required'
-    elif isinstance(requirement, DistributionVersionRequirement):
-        reason = f'{requirement.distribution} {requirement.required_version} is required'
-    else:
-        raise TypeError
-
+def requires(requirement: Requirement):
     def wrapper(func):
         return pytest.mark.skipif(
             not requirement,
-            reason=reason,
+            reason=requirement.fail_reason,
         )(func)
 
     return wrapper
