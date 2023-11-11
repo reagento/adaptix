@@ -23,7 +23,6 @@ from adaptix._internal.model_tools.definitions import (
     ParamKwargs,
     create_attr_accessor,
 )
-from adaptix._internal.provider.model.basic_gen import NameSanitizer
 from adaptix._internal.provider.model.crown_definitions import (
     ExtraCollect,
     ExtraExtract,
@@ -1214,7 +1213,6 @@ def test_one_path_is_prefix_of_another():
             DEFAULT_NAME_MAPPING,
             loc_map=FIELD_LOC_MAP,
         )
-
 
 
 def test_chaining_priority():

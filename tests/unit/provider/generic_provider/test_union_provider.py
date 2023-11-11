@@ -145,7 +145,7 @@ def test_dumping_of_none(retort, debug_trail):
 
     assert dumper_(1) == 1
     assert dumper_('a') == 'a'
-    assert dumper_(None) == None
+    assert dumper_(None) is None
 
     raises_exc(
         KeyError(list),

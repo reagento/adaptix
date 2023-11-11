@@ -6,7 +6,7 @@ from fractions import Fraction
 from typing import Union
 
 import pytest
-from tests_helpers import cond_list, raises_exc, requires
+from tests_helpers import cond_list, raises_exc
 
 from adaptix import Retort
 from adaptix._internal.feature_requirement import HAS_PY_311, IS_PYPY
@@ -322,12 +322,12 @@ def test_bool_loader_provider(strict_coercion, debug_trail):
     )
     loader = retort.get_loader(bool)
 
-    assert loader(True) == True
+    assert loader(True) is True
 
     if strict_coercion:
         raises_exc(TypeLoadError(bool, None), lambda: loader(None))
     else:
-        assert loader(None) == False
+        assert loader(None) is False
 
 
 def test_decimal_loader_provider(strict_coercion, debug_trail):

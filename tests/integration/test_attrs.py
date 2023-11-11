@@ -4,7 +4,7 @@ from adaptix import Retort, name_mapping
 
 pytest.importorskip("attrs")
 
-from attr import Factory, define, field
+from attr import Factory, define, field  # noqa: E402
 
 
 @define

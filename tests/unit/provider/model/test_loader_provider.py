@@ -27,7 +27,7 @@ from adaptix._internal.provider.model.definitions import InputShapeRequest
 from adaptix._internal.provider.model.loader_provider import ModelLoaderProvider
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import LoaderRequest
-from adaptix._internal.struct_trail import extend_trail, get_trail
+from adaptix._internal.struct_trail import extend_trail
 from adaptix.load_error import (
     ExtraFieldsError,
     ExtraItemsError,

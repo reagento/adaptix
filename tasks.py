@@ -16,7 +16,6 @@ def cov(c: Context):
         'coverage run'
         ' --branch'
         ' --data-file=.tox/cov-storage/.coverage.$TOX_ENV_NAME'
-        ' --omit model_dumper*,model_loader*'  # skip dynamically generated modules
         ' -m pytest'
     )
     tox_commands = f"bash -c '{q(inner_bash_command)}'"
@@ -36,7 +35,7 @@ def deps_compile(c: Context):
     promises = [
         c.run(
             f'pip-compile {req} -o {Path("requirements") / req.name}'
-            ' -q --allow-unsafe --strip-extras',
+            ' -q --allow-unsafe --strip-extras --upgrade',
             asynchronous=True,
         )
         for req in Path('.').glob('requirements/raw/*.txt')

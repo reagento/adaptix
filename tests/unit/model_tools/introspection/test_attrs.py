@@ -28,8 +28,8 @@ from adaptix._internal.model_tools.introspection import get_attrs_shape
 
 pytest.importorskip("attrs")
 
-import attr
-from attrs import Factory, define, field
+import attr  # noqa: E402
+from attrs import Factory, define, field  # noqa: E402
 
 
 def int_factory_with_self(x):

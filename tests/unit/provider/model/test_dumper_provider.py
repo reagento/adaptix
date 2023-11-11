@@ -1269,7 +1269,6 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select, acc_schema):
     )
 
 
-
 @parametrize_bool('is_required_a', 'is_required_b')
 def test_extra_target_at_crown(debug_ctx, debug_trail, acc_schema, is_required_a, is_required_b):
     dumper_getter = make_dumper_getter(

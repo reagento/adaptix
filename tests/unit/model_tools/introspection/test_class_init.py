@@ -104,6 +104,7 @@ VALID_PARAMS = (
     ),
 )
 
+
 def test_extra_none():
     assert (
         get_class_init_shape(Valid1)

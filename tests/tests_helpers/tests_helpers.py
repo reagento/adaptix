@@ -1,7 +1,7 @@
 import dataclasses
 import re
 from dataclasses import dataclass, is_dataclass
-from typing import Any, Callable, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union
 
 import pytest
 from sqlalchemy import Engine, create_engine
@@ -36,11 +36,11 @@ class TestRetort(AdornedRetort):
 E = TypeVar('E', bound=Exception)
 
 
-def _tech_fields(exc: Exception):
+def _tech_fields(exc: Any) -> Any:
     return {'__type__': type(exc), '__trail__': list(get_trail(exc))}
 
 
-def _repr_value(obj: Exception):
+def _repr_value(obj: Any) -> Dict[str, Any]:
     if isinstance(obj, CompatExceptionGroup):
         return {
             **_tech_fields(obj),
@@ -52,8 +52,6 @@ def _repr_value(obj: Exception):
             **_tech_fields(obj),
             **{fld.name: _repr_value(getattr(obj, fld.name)) for fld in dataclasses.fields(obj)},
         }
-        if isinstance(obj, CompatExceptionGroup):
-            result['exceptions'] = [_repr_value(exc) for exc in obj.exceptions]
         return result
     if isinstance(obj, Exception):
         return {
@@ -149,7 +147,7 @@ class ByTrailSelector:
     def __init__(self, debug_trail: DebugTrail):
         self.debug_trail = debug_trail
 
-    def __call__(self, *, disable: T1, first: T2, all: T3) -> Union[T1, T2, T3]:
+    def __call__(self, *, disable: T1, first: T2, all: T3) -> Union[T1, T2, T3]:  # noqa: A002
         if self.debug_trail == DebugTrail.DISABLE:
             return disable
         if self.debug_trail == DebugTrail.FIRST:

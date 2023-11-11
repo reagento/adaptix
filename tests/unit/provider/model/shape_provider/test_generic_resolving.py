@@ -19,7 +19,6 @@ from adaptix._internal.feature_requirement import (
 from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
 from adaptix._internal.provider.model.shape_provider import provide_generic_resolved_shape
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
-from adaptix._internal.type_tools import is_generic
 
 pytest_make_parametrize_id = pretty_typehint_test_id
 

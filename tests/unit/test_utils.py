@@ -35,7 +35,7 @@ def test_singleton_copy():
     assert copy(SomeSingleton()) is SomeSingleton()
     assert deepcopy(SomeSingleton()) is SomeSingleton()
 
-    assert pickle.loads(pickle.dumps(SomeSingleton())) is SomeSingleton()
+    assert pickle.loads(pickle.dumps(SomeSingleton())) is SomeSingleton()  # noqa: DUO103
 
 
 def test_singleton_new():
