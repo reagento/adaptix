@@ -202,6 +202,9 @@ class Variance(Enum):
     COVARIANT = 1
     CONTRAVARIANT = 2
 
+    def __repr__(self):
+        return f'{type(self).__name__}.{self.name}'
+
 
 @dataclass
 class Bound:
@@ -397,7 +400,7 @@ def _create_norm_literal(args: Iterable):
     dedup_args = tuple(_dedup(args))
     return _LiteralNormType(
         dedup_args,
-        source=Literal.__getitem__(dedup_args)  # pylint: disable=unnecessary-dunder-call
+        source=Literal[dedup_args],
     )
 
 
@@ -505,13 +508,10 @@ class TypeNormalizer:
         ClassVar, Final, Literal,
         Union, Optional, InitVar,
     ]
-
     if HAS_ANNOTATED:
         MUST_SUBSCRIBED_ORIGINS.append(typing.Annotated)
-
     if HAS_TYPE_GUARD:
         MUST_SUBSCRIBED_ORIGINS.append(typing.TypeGuard)
-
     if HAS_TYPED_DICT_REQUIRED:
         MUST_SUBSCRIBED_ORIGINS.extend([typing.Required, typing.NotRequired])
 
@@ -539,7 +539,7 @@ class TypeNormalizer:
     def _get_bound(self, type_var) -> Bound:
         return (
             Bound(ANY_NT)
-            if type_var.__bound__ is None else
+            if (type_var.__bound__ is None or type_var.__bound__ is NoneType) else
             Bound(self.normalize(type_var.__bound__))
         )
 
@@ -720,7 +720,6 @@ class TypeNormalizer:
         return result
 
     _UNION_ORIGINS: List[Any] = [Union]
-
     if HAS_TYPE_UNION_OP:
         _UNION_ORIGINS.append(types.UnionType)
 
@@ -751,9 +750,7 @@ class TypeNormalizer:
                     source=tp
                 )
 
-    ALLOWED_ZERO_PARAMS_ORIGINS = {
-        Any, NoReturn,
-    }
+    ALLOWED_ZERO_PARAMS_ORIGINS = {Any, NoReturn}
     if HAS_TYPE_ALIAS:
         ALLOWED_ZERO_PARAMS_ORIGINS.add(typing.TypeAlias)
     if HAS_PY_310:

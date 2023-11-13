@@ -42,6 +42,7 @@ from adaptix._internal.feature_requirement import (
     HAS_PARAM_SPEC,
     HAS_PY_310,
     HAS_PY_311,
+    HAS_PY_312,
     HAS_STD_CLASSES_GENERICS,
     HAS_TV_TUPLE,
     HAS_TYPE_ALIAS,
@@ -843,6 +844,8 @@ if HAS_PARAM_SPEC:
 
 
 def test_forward_ref_at_type_var_limit():
+    constraint_source = str if HAS_PY_312 else ForwardRef
+
     assert_norm_tv(
         T_FR1,
         NormTV(
@@ -879,8 +882,8 @@ def test_forward_ref_at_type_var_limit():
             T_FR4,
             limit=Constraints(
                 (
-                    make_norm_type(MyForwardClass, (), source=ForwardRef('MyForwardClass')),
-                    make_norm_type(MyAnotherForwardClass, (), source=ForwardRef('MyAnotherForwardClass')),
+                    make_norm_type(MyForwardClass, (), source=constraint_source('MyForwardClass')),
+                    make_norm_type(MyAnotherForwardClass, (), source=constraint_source('MyAnotherForwardClass')),
                 )
             ),
             source=T_FR4,
