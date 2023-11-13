@@ -15,15 +15,7 @@ from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from ..utils import pairs
 from .model.special_cases_optimization import as_is_stub, none_loader
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC, for_predicate
-from .request_cls import (
-    DumperRequest,
-    FieldLoc,
-    LoaderRequest,
-    LocatedRequest,
-    LocMap,
-    StrictCoercionRequest,
-    TypeHintLoc,
-)
+from .request_cls import DumperRequest, FieldLoc, LoaderRequest, LocatedRequest, StrictCoercionRequest, TypeHintLoc
 from .request_filtering import P, create_request_checker
 from .static_provider import static_provision_action
 
@@ -381,14 +373,10 @@ class SelfTypeProvider(ProviderWithAttachableRC):
 
 
 @for_predicate(typing.LiteralString if HAS_PY_311 else ~P.ANY)
-class LiteralStringProvider(ProviderWithAttachableRC):
-    @static_provision_action
-    def _provide_substitute(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        self._request_checker.check_request(mediator, request)
+class LiteralStringProvider(LoaderProvider, DumperProvider):
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
+        return str_strict_coercion_loader if strict_coercion else str  # type: ignore[return-value]
 
-        return mediator.provide(
-            replace(
-                request,
-                loc_map=LocMap(TypeHintLoc(typing.LiteralString))
-            ),
-        )
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return as_is_stub

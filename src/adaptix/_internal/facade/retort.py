@@ -59,7 +59,7 @@ from ..provider.request_cls import (
     StrictCoercionRequest,
     TypeHintLoc,
 )
-from ..provider.request_filtering import AnyRequestChecker
+from ..provider.request_filtering import P
 from ..retort import OperatingRetort
 from ..struct_trail import render_trail_as_note
 from ..type_tools.basic_utils import is_generic_class
@@ -148,7 +148,7 @@ class FilledRetort(OperatingRetort, ABC):
         name_mapping(
             chain=None,
             skip=(),
-            only=AnyRequestChecker(),
+            only=P.ANY,
             map={},
             trim_trailing_underscore=True,
             name_style=None,

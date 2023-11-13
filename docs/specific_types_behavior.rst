@@ -51,8 +51,8 @@ the loader will pass only values of appropriate types listed at the ``Allowed st
      - ``str``, ``complex``
      - ``str``
 
-Any
-'''''''''
+Any and object
+''''''''''''''''''
 
 Value is passed as is, without any conversion.
 
@@ -90,7 +90,7 @@ IP addresses and networks
 
 Exact list: ``IPv4Address``, ``IPv6Address``,
 ``IPv4Network``, ``IPv6Network``,
-``IPv4Interface``, ``IPv6Interface``,
+``IPv4Interface``, ``IPv6Interface``.
 
 Loader takes any string accepted by the constructor,
 dumper serialize value via ``__str__`` method.
@@ -116,6 +116,12 @@ Enum subclasses
 '''''''''''''''''''''''
 
 Enum members are represented by their value without any conversion.
+
+
+LiteralString
+'''''''''''''''''''''''
+
+Loader and dumper have same behaviour as builtin one's of ``str`` type
 
 Compound types
 ================

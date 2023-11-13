@@ -7,6 +7,7 @@ from typing import Any, Callable, Collection, Dict, Iterable, Literal, Mapping, 
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
+from ..datastructures import ClassDispatcher
 from ..essential import CannotProvide, Mediator
 from ..feature_requirement import HAS_PY_39
 from ..load_error import (
@@ -19,7 +20,6 @@ from ..load_error import (
 )
 from ..struct_trail import ItemKey, append_trail, render_trail_as_note
 from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, strip_tags
-from ..utils import ClassDispatcher
 from .definitions import DebugTrail
 from .model.special_cases_optimization import as_is_stub
 from .provider_template import DumperProvider, LoaderProvider, for_predicate

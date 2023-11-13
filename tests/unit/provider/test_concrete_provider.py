@@ -305,7 +305,7 @@ def test_str_loader_provider(strict_coercion, debug_trail, tp):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     )
-    loader = retort.get_loader(str)
+    loader = retort.get_loader(tp)
 
     assert loader('foo') == 'foo'
 

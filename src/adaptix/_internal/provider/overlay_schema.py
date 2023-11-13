@@ -1,9 +1,10 @@
 from dataclasses import dataclass, fields
 from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, Optional, Type, TypeVar
 
+from ..datastructures import ClassMap
 from ..essential import CannotProvide, Mediator
 from ..type_tools import strip_alias
-from ..utils import ClassMap, Omitted
+from ..utils import Omitted
 from .provider_wrapper import Chain
 from .request_cls import LocatedRequest, LocMap, TypeHintLoc
 from .static_provider import StaticProvider, static_provision_action
@@ -22,7 +23,7 @@ Merger = Callable[[Any, Any, Any], Any]
 
 @dataclass
 class Overlay(Generic[Sc]):
-    _schema_cls: ClassVar[Type[Schema]]  # ClassVar can not contain TypeVar
+    _schema_cls: ClassVar[Type[Schema]]  # ClassVar cannot contain TypeVar
     _mergers: ClassVar[Optional[Mapping[str, Merger]]]
 
     def __init_subclass__(cls, *args, **kwargs):

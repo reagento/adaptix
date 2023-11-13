@@ -3,10 +3,10 @@ from itertools import islice
 from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Set, Tuple, Type, TypeVar
 
 from ..common import TypeHint
+from ..datastructures import ClassDispatcher
 from ..essential import CannotProvide, Mediator, Provider, Request
 from ..provider.provider_wrapper import RequestClassDeterminedProvider
 from ..provider.request_filtering import ExactOriginMergedProvider, ExactOriginRC, ProviderWithRC
-from ..utils import ClassDispatcher
 
 T = TypeVar('T')
 

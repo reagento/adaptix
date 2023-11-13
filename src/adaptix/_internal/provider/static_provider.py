@@ -2,9 +2,9 @@ import inspect
 from inspect import isfunction
 from typing import Callable, ClassVar, Dict, Iterable, Type, TypeVar, final, overload
 
+from ..datastructures import ClassDispatcher
 from ..essential import CannotProvide, Mediator, Provider, Request
 from ..type_tools import get_all_type_hints, is_subclass_soft, normalize_type, strip_tags
-from ..utils import ClassDispatcher
 from .provider_wrapper import RequestClassDeterminedProvider
 
 __all__ = ('StaticProvider', 'static_provision_action', 'RequestDispatcher')
