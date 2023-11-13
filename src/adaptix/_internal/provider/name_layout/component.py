@@ -60,7 +60,7 @@ from .base import (
 from .name_mapping import NameMappingFilterRequest, NameMappingRequest
 
 
-@dataclass
+@dataclass(frozen=True)
 class StructureSchema(Schema):
     skip: RequestChecker
     only: RequestChecker
@@ -71,7 +71,7 @@ class StructureSchema(Schema):
     as_list: bool
 
 
-@dataclass
+@dataclass(frozen=True)
 class StructureOverlay(Overlay[StructureSchema]):
     skip: Omittable[RequestChecker]
     only: Omittable[RequestChecker]
@@ -327,12 +327,12 @@ class BuiltinStructureMaker(StructureMaker):
         return provide_schema(StructureOverlay, mediator, request.loc_map).as_list
 
 
-@dataclass
+@dataclass(frozen=True)
 class SievesSchema(Schema):
     omit_default: RequestChecker
 
 
-@dataclass
+@dataclass(frozen=True)
 class SievesOverlay(Overlay[SievesSchema]):
     omit_default: Omittable[RequestChecker]
 
@@ -380,13 +380,13 @@ def _paths_to_branches(paths_to_leaves: PathsTo[LeafBaseCrown]) -> Iterable[Tupl
             yield sub_path, path[i]
 
 
-@dataclass
+@dataclass(frozen=True)
 class ExtraMoveAndPoliciesSchema(Schema):
     extra_in: ExtraIn
     extra_out: ExtraOut
 
 
-@dataclass
+@dataclass(frozen=True)
 class ExtraMoveAndPoliciesOverlay(Overlay[ExtraMoveAndPoliciesSchema]):
     extra_in: Omittable[ExtraIn]
     extra_out: Omittable[ExtraOut]

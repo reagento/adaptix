@@ -1,4 +1,3 @@
-from copy import copy
 from typing import (
     AbstractSet,
     Callable,
@@ -79,8 +78,8 @@ class ClassDispatcher(Generic[K_co, V]):
 
     def dispatch(self, key: Type[K_co]) -> V:
         """Returns a value associated with the key.
-        If the key does not exist it will return
-        value of the closest superclass otherwise raise KeyError
+        If the key does not exist, it will return
+        the value of the closest superclass otherwise raise KeyError
         """
         for parent in key.__mro__:
             try:
@@ -145,7 +144,7 @@ H = TypeVar('H', bound=Hashable)
 
 
 class ClassMap(Generic[H]):
-    __slots__ = ('_mapping', )
+    __slots__ = ('_mapping', '_hash')
 
     def __init__(self, *values: H):
         # need stable order for hash calculation
@@ -153,6 +152,7 @@ class ClassMap(Generic[H]):
             type(value): value
             for value in sorted(values, key=lambda v: type(v).__qualname__)
         }
+        self._hash = hash(tuple(self._mapping.values()))
 
     def __getitem__(self, item: Type[D]) -> D:
         return self._mapping[item]  # type: ignore[index,return-value]
@@ -196,26 +196,17 @@ class ClassMap(Generic[H]):
         return NotImplemented
 
     def __hash__(self):
-        return hash(tuple(self._mapping.values()))
+        return self._hash
 
     def __repr__(self):
         args_str = ', '.join(repr(v) for v in self._mapping.values())
         return f'{type(self).__qualname__}({args_str})'
 
-    def _with_new_mapping(self: CM, mapping: Mapping[Type[H], H]) -> CM:
-        self_copy = copy(self)
-        self_copy._mapping = mapping  # pylint: disable=protected-access
-        return self_copy
-
     def add(self: CM, *values: H) -> CM:
-        return self._with_new_mapping(
-            {**self._mapping, **{type(value): value for value in values}}
-        )
+        return type(self)(*self._mapping.values(), *values)
 
     def discard(self: CM, *classes: Type[H]) -> CM:
-        return self._with_new_mapping(
-            {
-                key: value for key, value in self._mapping.items()
-                if key not in classes
-            }
+        return type(self)(
+            value for key, value in self._mapping.items()
+            if key not in classes
         )

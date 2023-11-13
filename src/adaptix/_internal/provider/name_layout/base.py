@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Mapping, Sequence, TypeVar, Union
+from typing import Iterable, Mapping, TypeVar, Union
 
 from adaptix._internal.provider.model.crown_definitions import (
     DictExtraPolicy,
@@ -23,8 +23,8 @@ from ...essential import Mediator
 T = TypeVar('T')
 
 
-ExtraIn = Union[ExtraSkip, str, Sequence[str], ExtraForbid, ExtraKwargs, Saturator]
-ExtraOut = Union[ExtraSkip, str, Sequence[str], Extractor]
+ExtraIn = Union[ExtraSkip, str, Iterable[str], ExtraForbid, ExtraKwargs, Saturator]
+ExtraOut = Union[ExtraSkip, str, Iterable[str], Extractor]
 
 Key = Union[str, int]
 KeyPath = VarTuple[Key]

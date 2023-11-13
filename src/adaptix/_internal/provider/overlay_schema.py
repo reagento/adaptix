@@ -10,7 +10,7 @@ from .request_cls import LocatedRequest, LocMap, TypeHintLoc
 from .static_provider import StaticProvider, static_provision_action
 
 
-@dataclass
+@dataclass(frozen=True)
 class Schema:
     pass
 
@@ -21,7 +21,7 @@ Ov = TypeVar('Ov', bound='Overlay')
 Merger = Callable[[Any, Any, Any], Any]
 
 
-@dataclass
+@dataclass(frozen=True)
 class Overlay(Generic[Sc]):
     _schema_cls: ClassVar[Type[Schema]]  # ClassVar cannot contain TypeVar
     _mergers: ClassVar[Optional[Mapping[str, Merger]]]

@@ -143,7 +143,7 @@ class LocatedRequestChecker(RequestChecker, ABC):
         ...
 
 
-@dataclass
+@dataclass(frozen=True)
 class ExactFieldNameRC(LocatedRequestChecker):
     LOCATION = FieldLoc
     field_id: str
@@ -154,7 +154,7 @@ class ExactFieldNameRC(LocatedRequestChecker):
         raise CannotProvide(f'field_id must be a {self.field_id!r}')
 
 
-@dataclass
+@dataclass(frozen=True)
 class ReFieldNameRC(LocatedRequestChecker):
     LOCATION = FieldLoc
     pattern: Pattern[str]
@@ -166,7 +166,7 @@ class ReFieldNameRC(LocatedRequestChecker):
         raise CannotProvide(f'field_id must be matched by {self.pattern!r}')
 
 
-@dataclass
+@dataclass(frozen=True)
 class ExactTypeRC(LocatedRequestChecker):
     LOCATION = TypeHintLoc
     norm: BaseNormType
@@ -177,7 +177,7 @@ class ExactTypeRC(LocatedRequestChecker):
         raise CannotProvide(f'{loc.type} must be a equal to {self.norm.source}')
 
 
-@dataclass
+@dataclass(frozen=True)
 class OriginSubclassRC(LocatedRequestChecker):
     LOCATION = TypeHintLoc
     type_: type
@@ -189,7 +189,7 @@ class OriginSubclassRC(LocatedRequestChecker):
         raise CannotProvide(f'{loc.type} must be a subclass of {self.type_}')
 
 
-@dataclass
+@dataclass(frozen=True)
 class ExactOriginRC(LocatedRequestChecker):
     LOCATION = TypeHintLoc
     origin: Any
@@ -250,7 +250,7 @@ class ExtraStackMediator(DirectMediator):
         return [*self._mediator.request_stack, *self._extra_stack]
 
 
-@dataclass
+@dataclass(frozen=True)
 class StackEndRC(RequestChecker):
     request_checkers: Sequence[RequestChecker]
 
@@ -268,7 +268,7 @@ class StackEndRC(RequestChecker):
             )
 
 
-@dataclass
+@dataclass(frozen=True)
 class GenericParamRC(LocatedRequestChecker):
     LOCATION = GenericParamLoc
     pos: int

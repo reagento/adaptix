@@ -1,27 +1,28 @@
 from dataclasses import dataclass
-from typing import Callable, Iterable, List
+from typing import Callable, Iterable
 
 import pytest
 from tests_helpers import TestRetort, full_match_regex_str
 
 from adaptix import Chain, Mediator, Omittable, Omitted, Provider, Request, bound
+from adaptix._internal.common import VarTuple
 from adaptix._internal.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
 from adaptix.provider.static_provider import StaticProvider, static_provision_action
 
 
-@dataclass
+@dataclass(frozen=True)
 class MySchema(Schema):
     number: int
-    char_list: List[str]
+    char_list: VarTuple[str]
 
 
-@dataclass
+@dataclass(frozen=True)
 class MyOverlay(Overlay[MySchema]):
     number: Omittable[int]
-    char_list: Omittable[List[str]]
+    char_list: Omittable[VarTuple[str]]
 
-    def _merge_char_list(self, old: List[str], new: List[str]) -> List[str]:
+    def _merge_char_list(self, old: VarTuple[str], new: VarTuple[str]) -> VarTuple[str]:
         return new + old
 
 
@@ -57,7 +58,7 @@ def test_simple():
                 overlays=[
                     MyOverlay(
                         number=1,
-                        char_list=['a', 'b'],
+                        char_list=('a', 'b'),
                     )
                 ],
                 chain=None,
@@ -66,7 +67,7 @@ def test_simple():
         provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=1,
-        char_list=['a', 'b'],
+        char_list=('a', 'b'),
     )
 
 
@@ -77,7 +78,7 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=1,
-                        char_list=['a', 'b'],
+                        char_list=('a', 'b'),
                     )
                 ],
                 chain=Chain.FIRST,
@@ -86,7 +87,7 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=['c', 'd'],
+                        char_list=('c', 'd'),
                     )
                 ],
                 chain=None,
@@ -95,7 +96,7 @@ def test_chaining():
         provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=1,
-        char_list=['a', 'b', 'c', 'd'],
+        char_list=('a', 'b', 'c', 'd'),
     )
 
     assert provide_overlay_schema(
@@ -104,7 +105,7 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=1,
-                        char_list=['a', 'b'],
+                        char_list=('a', 'b'),
                     )
                 ],
                 chain=Chain.LAST,
@@ -113,7 +114,7 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=['c', 'd'],
+                        char_list=('c', 'd'),
                     )
                 ],
                 chain=None,
@@ -122,7 +123,7 @@ def test_chaining():
         provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=2,
-        char_list=['c', 'd', 'a', 'b'],
+        char_list=('c', 'd', 'a', 'b'),
     )
 
     assert provide_overlay_schema(
@@ -131,7 +132,7 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=Omitted(),
-                        char_list=['a', 'b'],
+                        char_list=('a', 'b'),
                     )
                 ],
                 chain=Chain.FIRST,
@@ -140,7 +141,7 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=['c', 'd'],
+                        char_list=('c', 'd'),
                     )
                 ],
                 chain=None,
@@ -149,7 +150,7 @@ def test_chaining():
         provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=2,
-        char_list=['a', 'b', 'c', 'd'],
+        char_list=('a', 'b', 'c', 'd'),
     )
 
     assert provide_overlay_schema(
@@ -167,7 +168,7 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=['c', 'd'],
+                        char_list=('c', 'd'),
                     )
                 ],
                 chain=None,
@@ -176,7 +177,7 @@ def test_chaining():
         provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=1,
-        char_list=['c', 'd'],
+        char_list=('c', 'd'),
     )
 
     assert provide_overlay_schema(
@@ -194,7 +195,7 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=['c', 'd'],
+                        char_list=('c', 'd'),
                     )
                 ],
                 chain=None,
@@ -203,7 +204,7 @@ def test_chaining():
         provide_action=lambda m: provide_schema(MyOverlay, m, LocMap())
     ) == MySchema(
         number=2,
-        char_list=['c', 'd'],
+        char_list=('c', 'd'),
     )
 
 
@@ -224,7 +225,7 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=1,
-                            char_list=['a', 'b'],
+                            char_list=('a', 'b'),
                         )
                     ],
                     chain=None,
@@ -236,7 +237,7 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=2,
-                            char_list=['c', 'd'],
+                            char_list=('c', 'd'),
                         )
                     ],
                     chain=None,
@@ -246,7 +247,7 @@ def test_typehint_location():
         provide_action=lambda m: provide_schema(MyOverlay, m, LocMap(TypeHintLoc(type=MyClass2)))
     ) == MySchema(
         number=1,
-        char_list=['a', 'b', 'c', 'd'],
+        char_list=('a', 'b', 'c', 'd'),
     )
 
     assert provide_overlay_schema(
@@ -257,7 +258,7 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=1,
-                            char_list=['a', 'b'],
+                            char_list=('a', 'b'),
                         )
                     ],
                     chain=None,
@@ -269,7 +270,7 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=2,
-                            char_list=['c', 'd'],
+                            char_list=('c', 'd'),
                         )
                     ],
                     chain=Chain.FIRST,
@@ -281,7 +282,7 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=3,
-                            char_list=['e', 'f'],
+                            char_list=('e', 'f'),
                         )
                     ],
                     chain=None,
@@ -291,7 +292,7 @@ def test_typehint_location():
         provide_action=lambda m: provide_schema(MyOverlay, m, LocMap(TypeHintLoc(type=MyClass2)))
     ) == MySchema(
         number=1,
-        char_list=['a', 'b', 'c', 'd', 'e', 'f'],
+        char_list=('a', 'b', 'c', 'd', 'e', 'f'),
     )
 
 
@@ -306,7 +307,7 @@ def test_omitted_fields():
                     overlays=[
                         MyOverlay(
                             number=Omitted(),
-                            char_list=['a', 'b'],
+                            char_list=('a', 'b'),
                         )
                     ],
                     chain=Chain.FIRST,
@@ -315,7 +316,7 @@ def test_omitted_fields():
                     overlays=[
                         MyOverlay(
                             number=Omitted(),
-                            char_list=['c', 'd'],
+                            char_list=('c', 'd'),
                         )
                     ],
                     chain=None,

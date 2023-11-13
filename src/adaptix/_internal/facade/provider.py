@@ -171,6 +171,14 @@ def _name_mapping_convert_omit_default(
     return _name_mapping_convert_preds(value)
 
 
+def _name_mapping_extra(value: Union[str, Iterable[str], T]) -> Union[str, Iterable[str], T]:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Iterable):
+        return tuple(value)
+    return value
+
+
 def name_mapping(
     pred: Omittable[Pred] = Omitted(),
     *,
@@ -234,8 +242,8 @@ def name_mapping(
                     omit_default=_name_mapping_convert_omit_default(omit_default),
                 ),
                 ExtraMoveAndPoliciesOverlay(
-                    extra_in=extra_in,
-                    extra_out=extra_out,
+                    extra_in=_name_mapping_extra(extra_in),
+                    extra_out=_name_mapping_extra(extra_out),
                 ),
             ],
             chain=chain,
