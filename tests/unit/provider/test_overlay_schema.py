@@ -8,7 +8,7 @@ from adaptix import Chain, Mediator, Omittable, Omitted, Provider, Request, boun
 from adaptix._internal.common import VarTuple
 from adaptix._internal.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
-from adaptix.provider.static_provider import StaticProvider, static_provision_action
+from adaptix._internal.provider.static_provider import StaticProvider, static_provision_action
 
 
 @dataclass(frozen=True)

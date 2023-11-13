@@ -3,8 +3,7 @@ from abc import ABC, abstractmethod
 import pytest
 
 from adaptix import Mediator, Request
-from adaptix._internal.provider.static_provider import RequestDispatcher
-from adaptix.provider.static_provider import StaticProvider, static_provision_action
+from adaptix._internal.provider.static_provider import RequestDispatcher, StaticProvider, static_provision_action
 
 
 class SampleRequest(Request):
