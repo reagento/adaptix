@@ -164,24 +164,6 @@ class ByTrailSelector:
         raise ValueError
 
 
-def _load_namespace(
-    file_name: str,
-    ns_id: Optional[str] = None,
-    vars: Optional[Dict[str, Any]] = None,  # noqa: A002
-    run_name: Optional[str] = None,
-    stack_offset: int = 1,
-) -> SimpleNamespace:
-    caller_file = inspect.getfile(inspect.stack()[stack_offset].frame)
-    ns_dict = runpy.run_path(
-        str(Path(caller_file).with_name(file_name)),
-        init_globals=vars,
-        run_name=run_name,
-    )
-    if ns_id is not None:
-        ns_dict['__ns_id__'] = ns_id
-    return SimpleNamespace(**ns_dict)
-
-
 def load_namespace(
     file_name: str,
     ns_id: Optional[str] = None,
