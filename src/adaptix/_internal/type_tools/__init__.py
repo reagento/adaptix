@@ -14,4 +14,13 @@ from .basic_utils import (
     strip_alias,
 )
 from .norm_utils import is_class_var, strip_tags
-from .normalize_type import BaseNormType, NormParamSpecMarker, NormTV, NormTVTuple, make_norm_type, normalize_type
+from .normalize_type import (
+    AnyNormTypeVarLike,
+    BaseNormType,
+    NormParamSpecMarker,
+    NormTV,
+    NormTVTuple,
+    NormTypeAlias,
+    make_norm_type,
+    normalize_type,
+)

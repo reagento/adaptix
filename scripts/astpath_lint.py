@@ -57,6 +57,7 @@ class RuleMatch:
     rule: Rule
 
 
+GLOBAL_EXCLUDE = '*_312.py'
 RULES = [
     ImportRule(
         module='typing',
@@ -89,6 +90,18 @@ def analyze_file(filename: str, rule_matches: List[RuleMatch]) -> None:
                 )
 
 
+def print_rule_matches(rule_matches: Iterable[RuleMatch]):
+    messages = [
+        (f"{rule_match.file_path}:{rule_match.line}", rule_match.rule.get_error_msg())
+        for rule_match in rule_matches
+    ]
+    max_path_len = max(len(msg[0]) for msg in messages)
+
+    for loc, msg in messages:
+        print(loc.ljust(max_path_len + 2), msg)
+    print()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('targets', help="files to lint", nargs='+', )
@@ -104,18 +117,12 @@ def main() -> None:
                 if filename.endswith(".py")
             )
             for filename in python_filenames:
+                if fnmatch(filename, GLOBAL_EXCLUDE):
+                    continue
                 analyze_file(filename, rule_matches)
 
     if rule_matches:
-        messages = [
-            (f"{rule_match.file_path}:{rule_match.line}", rule_match.rule.get_error_msg())
-            for rule_match in rule_matches
-        ]
-        max_path_len = max(len(msg[0]) for msg in messages)
-
-        for loc, msg in messages:
-            print(loc.ljust(max_path_len + 2), msg)
-        print()
+        print_rule_matches(rule_matches)
         sys.exit(1)
     else:
         print("no issues found")

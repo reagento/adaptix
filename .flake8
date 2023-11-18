@@ -38,3 +38,6 @@ max-cognitive-complexity=12
 max-complexity=12
 per-file-ignores=
     src/adaptix/_internal/**/__init__.py:F401
+
+    *_312.py:E999
+    *tests/unit/provider/model/shape_provider/data_gen_models.py:F821

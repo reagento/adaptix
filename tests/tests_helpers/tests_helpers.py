@@ -1,7 +1,14 @@
 import dataclasses
+import inspect
 import re
+import runpy
+import sys
+from contextlib import contextmanager
 from dataclasses import dataclass, is_dataclass
-from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union
+from pathlib import Path
+from types import ModuleType, SimpleNamespace
+from typing import Any, Callable, Dict, Generator, Optional, Type, TypeVar, Union
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import Engine, create_engine
@@ -155,3 +162,59 @@ class ByTrailSelector:
         if self.debug_trail == DebugTrail.ALL:
             return all
         raise ValueError
+
+
+def _load_namespace(
+    file_name: str,
+    ns_id: Optional[str] = None,
+    vars: Optional[Dict[str, Any]] = None,  # noqa: A002
+    run_name: Optional[str] = None,
+    stack_offset: int = 1,
+) -> SimpleNamespace:
+    caller_file = inspect.getfile(inspect.stack()[stack_offset].frame)
+    ns_dict = runpy.run_path(
+        str(Path(caller_file).with_name(file_name)),
+        init_globals=vars,
+        run_name=run_name,
+    )
+    if ns_id is not None:
+        ns_dict['__ns_id__'] = ns_id
+    return SimpleNamespace(**ns_dict)
+
+
+def load_namespace(
+    file_name: str,
+    ns_id: Optional[str] = None,
+    vars: Optional[Dict[str, Any]] = None,  # noqa: A002
+    run_name: Optional[str] = None,
+    stack_offset: int = 1,
+) -> SimpleNamespace:
+    caller_file = inspect.getfile(inspect.stack()[stack_offset].frame)
+    ns_dict = runpy.run_path(
+        str(Path(caller_file).with_name(file_name)),
+        init_globals=vars,
+        run_name=run_name,
+    )
+    if ns_id is not None:
+        ns_dict['__ns_id__'] = ns_id
+    return SimpleNamespace(**ns_dict)
+
+
+@contextmanager
+def load_namespace_keeping_module(
+    file_name: str,
+    ns_id: Optional[str] = None,
+    vars: Optional[Dict[str, Any]] = None,  # noqa: A002
+    run_name: Optional[str] = None,
+) -> Generator[SimpleNamespace, None, None]:
+    if run_name is None:
+        run_name = 'temp_module_' + uuid4().hex
+    ns = load_namespace(file_name=file_name, ns_id=ns_id, vars=vars, run_name=run_name, stack_offset=3)
+    module = ModuleType(run_name)
+    for attr, value in ns.__dict__.items():
+        setattr(module, attr, value)
+    sys.modules[run_name] = module
+    try:
+        yield ns
+    finally:
+        sys.modules.pop(run_name, None)

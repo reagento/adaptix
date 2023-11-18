@@ -19,7 +19,7 @@ from ..load_error import (
     UnionLoadError,
 )
 from ..struct_trail import ItemKey, append_trail, render_trail_as_note
-from ..type_tools import BaseNormType, is_new_type, is_subclass_soft, strip_tags
+from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
 from .definitions import DebugTrail
 from .model.special_cases_optimization import as_is_stub
 from .provider_template import DumperProvider, LoaderProvider, for_predicate
@@ -71,6 +71,27 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
             replace(
                 request,
                 loc_map=request.loc_map.add(TypeHintLoc(type=unwrapped.source))
+            ),
+        )
+
+
+class TypeAliasUnwrappingProvider(StaticProvider):
+    @static_provision_action
+    def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
+        loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
+        norm = try_normalize_type(loc.type)
+        if not isinstance(norm, NormTypeAlias):
+            raise CannotProvide
+
+        if norm.args:
+            unwrapped = norm.value[tuple(arg.source for arg in norm.args)]
+        else:
+            unwrapped = norm.value
+
+        return mediator.provide(
+            replace(
+                request,
+                loc_map=request.loc_map.add(TypeHintLoc(type=unwrapped))
             ),
         )
 

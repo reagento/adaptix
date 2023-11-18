@@ -16,7 +16,7 @@ from typing import (
 )
 
 from ..common import TypeHint, VarTuple
-from ..feature_requirement import HAS_ANNOTATED, HAS_PY_39, HAS_STD_CLASSES_GENERICS
+from ..feature_requirement import HAS_ANNOTATED, HAS_PY_39, HAS_PY_312, HAS_STD_CLASSES_GENERICS
 from .constants import BUILTIN_ORIGIN_TO_TYPEVARS
 
 TYPED_DICT_MCS = type(types.new_class("_TypedDictSample", (TypedDict,), {}))
@@ -89,8 +89,22 @@ def get_type_vars(tp: TypeHint) -> VarTuple[TypeVar]:
     return getattr(tp, '__parameters__', ())
 
 
-def is_user_defined_generic(tp: TypeHint) -> bool:
-    return bool(get_type_vars(tp)) and is_subclass_soft(strip_alias(tp), Generic)
+if HAS_PY_312:
+    def is_user_defined_generic(tp: TypeHint) -> bool:
+        # pylint: disable=no-member
+        return (
+            bool(get_type_vars(tp))
+            and (
+                is_subclass_soft(strip_alias(tp), Generic)
+                or isinstance(tp, typing.TypeAliasType)  # type: ignore[attr-defined]
+            )
+        )
+else:
+    def is_user_defined_generic(tp: TypeHint) -> bool:
+        return (
+            bool(get_type_vars(tp))
+            and is_subclass_soft(strip_alias(tp), Generic)
+        )
 
 
 def is_generic(tp: TypeHint) -> bool:

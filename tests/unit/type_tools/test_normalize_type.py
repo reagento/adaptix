@@ -1,11 +1,9 @@
 import collections
-import operator
 import re
 import typing
 from collections import abc as c_abc, defaultdict
 from dataclasses import InitVar
 from enum import Enum
-from functools import reduce
 from itertools import permutations
 from typing import (
     Any,
@@ -36,7 +34,6 @@ from uuid import uuid4
 import pytest
 from tests_helpers import cond_list, requires
 
-from adaptix import TypeHint
 from adaptix._internal.feature_requirement import (
     HAS_ANNOTATED,
     HAS_PARAM_SPEC,
@@ -52,10 +49,8 @@ from adaptix._internal.feature_requirement import (
 )
 from adaptix._internal.type_tools import normalize_type
 from adaptix._internal.type_tools.normalize_type import (
-    BaseNormType,
     Bound,
     Constraints,
-    NormParamSpecMarker,
     NormTV,
     NormTVTuple,
     NotSubscribedError,
@@ -65,69 +60,7 @@ from adaptix._internal.type_tools.normalize_type import (
     make_norm_type,
 )
 
-MISSING = object()
-
-
-def nt_zero(origin, source=MISSING):
-    if source is MISSING:
-        source = origin
-    return make_norm_type(origin, (), source=source)
-
-
-def _norm_to_dict(obj):
-    if isinstance(obj, NormTV):
-        return {
-            'variance': obj.variance,
-            'limit': (
-                _norm_to_dict(obj.limit.value)
-                if isinstance(obj.limit, Bound) else
-                [_norm_to_dict(el) for el in obj.limit.value]
-            ),
-            'source': obj.source,
-        }
-    if isinstance(obj, NormParamSpecMarker):
-        return {
-            'origin': obj.origin,
-            'param_spec': obj.param_spec,
-        }
-    if isinstance(obj, BaseNormType):
-        result = {
-            'origin': obj.origin,
-            'args': [_norm_to_dict(arg) for arg in obj.args],
-            'source': obj.source,
-        }
-        if obj.origin == Union:
-            result.pop('source')
-        return result
-    return obj
-
-
-def assert_strict_equal(left: BaseNormType, right: BaseNormType):
-    assert _norm_to_dict(left) == _norm_to_dict(right)
-    assert left == right
-    hash(left)
-    hash(right)
-
-
-def assert_normalize(tp: TypeHint, origin: TypeHint, args: List[typing.Hashable]):
-    assert_strict_equal(
-        normalize_type(tp),
-        make_norm_type(origin, tuple(args), source=tp)
-    )
-
-
-class UnionOpMaker:
-    __name__ = 'UnionOp'  # for test id generation
-
-    def __getitem__(self, item):
-        if isinstance(item, tuple):
-            return reduce(operator.or_, item)
-        return item
-
-
-@pytest.fixture(params=[Union, UnionOpMaker()] if HAS_TYPE_UNION_OP else [Union])
-def make_union(request):
-    return request.param
+from .local_helpers import assert_normalize, assert_strict_equal, nt_zero
 
 
 def test_atomic():
@@ -784,8 +717,8 @@ def test_generic_and_protocol_with_param_spec():
     for gen in [MyGen1, MyProto1]:
         assert_normalize(gen, gen, [...])
         assert_normalize(gen[...], gen, [...])
-        assert_normalize(gen[int], gen, [(nt_zero(int), )])
-        assert_normalize(gen[[int]], gen, [(nt_zero(int), )])
+        assert_normalize(gen[int], gen, [(nt_zero(int),)])
+        assert_normalize(gen[[int]], gen, [(nt_zero(int),)])
         assert_normalize(gen[int, str], gen, [(nt_zero(int), nt_zero(str))])
         assert_normalize(gen[[int, str]], gen, [(nt_zero(int), nt_zero(str))])
         assert_normalize(gen[p3], gen, [any_tv(p3)])
@@ -799,7 +732,7 @@ def test_generic_and_protocol_with_param_spec():
         assert_normalize(gen[..., Any, ...], gen, [..., nt_zero(Any), ...])
         assert_normalize(
             gen[[int], str, [int]],
-            gen, [(nt_zero(int), ), nt_zero(str), (nt_zero(int), )]
+            gen, [(nt_zero(int),), nt_zero(str), (nt_zero(int),)]
         )
         assert_normalize(
             gen[[int, str], str, [int, str]],
@@ -869,7 +802,7 @@ def test_forward_ref_at_type_var_limit():
             limit=Bound(
                 make_norm_type(
                     list,
-                    (nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass')), ),
+                    (nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass')),),
                     source=List[ForwardRef('MyForwardClass')],
                 )
             ),

@@ -18,9 +18,9 @@ from typing import (
 )
 
 import pytest
-from tests_helpers import cond_list
+from tests_helpers import cond_list, load_namespace
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_STD_CLASSES_GENERICS
+from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_PY_312, HAS_STD_CLASSES_GENERICS
 from adaptix._internal.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
 from adaptix._internal.type_tools.basic_utils import (
     get_type_vars_of_parametrized,
@@ -104,47 +104,47 @@ def test_is_protocol():
     assert is_protocol(ExtProto)
 
 
-T = TypeVar('T', covariant=True)  # make it covariant to use at protocol
+_GEN_NS_LIST = [
+    load_namespace('data_generics.py', 'inheritance'),
+    *cond_list(HAS_PY_312, lambda: [load_namespace('data_generics_312.py', 'syntax_sugar')]),
+]
 
 
-class Gen(Generic[T]):
-    pass
+@pytest.fixture(params=[pytest.param(ns, id=ns.__ns_id__) for ns in _GEN_NS_LIST])
+def gen_ns(request):
+    return request.param
 
 
-class GenChildImplicit(Gen):
-    pass
+def gen_ns_parametrize(*functions: Callable[[Any], Any]):
+    return [
+        func(ns)
+        for func in functions
+        for ns in _GEN_NS_LIST
+    ]
 
 
-class GenChildExplicit(Gen[int]):
-    pass
+_TYPE_ALIAS_NS = load_namespace('data_type_alias_312.py') if HAS_PY_312 else None
 
 
-class GenChildExplicitTypeVar(Gen[T]):
-    pass
+def type_alias_ns_parametrize(*functions: Callable[[Any], Any]):
+    return [func(_TYPE_ALIAS_NS) for func in functions] if _TYPE_ALIAS_NS is not None else []
 
 
-V = TypeVar('V')
+def test_is_user_defined_generic(gen_ns):
+    assert is_user_defined_generic(gen_ns.Gen)
+    assert is_user_defined_generic(gen_ns.Gen[V])
+    assert not is_user_defined_generic(gen_ns.Gen[int])
 
+    assert not is_user_defined_generic(gen_ns.GenChildImplicit)
+    assert not is_user_defined_generic(gen_ns.GenChildExplicit)
 
-class GenGen(Gen[int], Generic[T]):
-    pass
+    assert is_user_defined_generic(gen_ns.GenChildExplicitTypeVar)
+    assert is_user_defined_generic(gen_ns.GenChildExplicitTypeVar[V])
+    assert not is_user_defined_generic(gen_ns.GenChildExplicitTypeVar[int])
 
-
-def test_is_user_defined_generic():
-    assert is_user_defined_generic(Gen)
-    assert is_user_defined_generic(Gen[V])
-    assert not is_user_defined_generic(Gen[int])
-
-    assert not is_user_defined_generic(GenChildImplicit)
-    assert not is_user_defined_generic(GenChildExplicit)
-
-    assert is_user_defined_generic(GenChildExplicitTypeVar)
-    assert is_user_defined_generic(GenChildExplicitTypeVar[V])
-    assert not is_user_defined_generic(GenChildExplicitTypeVar[int])
-
-    assert is_user_defined_generic(GenGen)
-    assert is_user_defined_generic(GenGen[V])
-    assert not is_user_defined_generic(GenGen[int])
+    assert is_user_defined_generic(gen_ns.GenGen)
+    assert is_user_defined_generic(gen_ns.GenGen[V])
+    assert not is_user_defined_generic(gen_ns.GenGen[int])
 
     assert not is_user_defined_generic(Tuple)
     assert not is_user_defined_generic(Tuple[V])
@@ -157,6 +157,15 @@ def test_is_user_defined_generic():
     assert not is_user_defined_generic(Protocol)
     assert is_user_defined_generic(Protocol[V])
     # Protocol[V][int] raises error
+
+    if _TYPE_ALIAS_NS is not None:
+        assert not is_user_defined_generic(_TYPE_ALIAS_NS.IntAlias)
+        assert not is_user_defined_generic(_TYPE_ALIAS_NS.RecursiveAlias)
+        assert is_user_defined_generic(_TYPE_ALIAS_NS.GenAlias)
+
+
+T = TypeVar('T', covariant=True)  # make it covariant to use at protocol
+V = TypeVar('V')
 
 
 class Proto(Protocol[T]):
@@ -229,9 +238,11 @@ def test_is_parametrized():
                 (list[int], False),
             ],
         ),
-        (Gen, True),
-        (Gen[T], True),
-        (Gen[int], False),
+        *gen_ns_parametrize(
+            lambda gen_ns: (gen_ns.Gen, True),
+            lambda gen_ns: (gen_ns.Gen[T], True),
+            lambda gen_ns: (gen_ns.Gen[int], False),
+        ),
         *cond_list(
             HAS_ANNOTATED,
             lambda: [
@@ -242,8 +253,15 @@ def test_is_parametrized():
                 (typing.Annotated[list[T], 'meta'], True),
             ],
         ),
-        (type, False),  # can not be parametrized
+        (type, False),  # cannot be parametrized
         (Type, True),
+        *type_alias_ns_parametrize(
+            lambda type_alias_ns: (type_alias_ns.IntAlias, False),
+            lambda type_alias_ns: (type_alias_ns.RecursiveAlias, False),
+            lambda type_alias_ns: (type_alias_ns.GenAlias, True),
+            lambda type_alias_ns: (type_alias_ns.GenAlias[int], False),
+            lambda type_alias_ns: (type_alias_ns.GenAlias[T], True),
+        ),
     ],
 )
 def test_is_generic(tp, result):
@@ -265,9 +283,11 @@ def test_is_generic(tp, result):
                 (list[int], False),
             ],
         ),
-        (Gen, True),
-        (Gen[T], False),
-        (Gen[int], False),
+        *gen_ns_parametrize(
+            lambda gen_ns: (gen_ns.Gen, True),
+            lambda gen_ns: (gen_ns.Gen[T], False),
+            lambda gen_ns: (gen_ns.Gen[int], False),
+        ),
         *cond_list(
             HAS_ANNOTATED,
             lambda: [
@@ -277,32 +297,39 @@ def test_is_generic(tp, result):
                 (typing.Annotated[list, 'meta'], False),
                 (typing.Annotated[list[T], 'meta'], False),
             ],
-        )
+        ),
+        *type_alias_ns_parametrize(
+            lambda type_alias_ns: (type_alias_ns.IntAlias, False),
+            lambda type_alias_ns: (type_alias_ns.RecursiveAlias, False),
+            lambda type_alias_ns: (type_alias_ns.GenAlias, True),
+            lambda type_alias_ns: (type_alias_ns.GenAlias[int], False),
+            lambda type_alias_ns: (type_alias_ns.GenAlias[T], False),
+        ),
     ],
 )
 def test_is_bare_generic(tp, result):
     assert is_bare_generic(tp) == result
 
 
-def test_get_type_vars_of_parametrized():
-    assert get_type_vars_of_parametrized(Gen[T]) == (T,)
-    assert get_type_vars_of_parametrized(Gen[str]) == ()
-    assert get_type_vars_of_parametrized(Gen) == ()
+def test_get_type_vars_of_parametrized(gen_ns):
+    assert get_type_vars_of_parametrized(gen_ns.Gen[T]) == (T,)
+    assert get_type_vars_of_parametrized(gen_ns.Gen[str]) == ()
+    assert get_type_vars_of_parametrized(gen_ns.Gen) == ()
 
-    assert get_type_vars_of_parametrized(Proto[T]) == (T, )
+    assert get_type_vars_of_parametrized(Proto[T]) == (T,)
     assert get_type_vars_of_parametrized(Proto[str]) == ()
     assert get_type_vars_of_parametrized(Proto) == ()
 
     assert get_type_vars_of_parametrized(list) == ()
-    assert get_type_vars_of_parametrized(List[T]) == (T, )
+    assert get_type_vars_of_parametrized(List[T]) == (T,)
     assert get_type_vars_of_parametrized(List) == ()
     assert get_type_vars_of_parametrized(List[str]) == ()
 
     assert get_type_vars_of_parametrized(dict) == ()
     assert get_type_vars_of_parametrized(Dict[T, V]) == (T, V)
     assert get_type_vars_of_parametrized(Dict) == ()
-    assert get_type_vars_of_parametrized(Dict[str, V]) == (V, )
-    assert get_type_vars_of_parametrized(Dict[T, str]) == (T, )
+    assert get_type_vars_of_parametrized(Dict[str, V]) == (V,)
+    assert get_type_vars_of_parametrized(Dict[T, str]) == (T,)
     assert get_type_vars_of_parametrized(Dict[str, str]) == ()
     assert get_type_vars_of_parametrized(Dict[V, T]) == (V, T)
 
@@ -310,17 +337,17 @@ def test_get_type_vars_of_parametrized():
     assert get_type_vars_of_parametrized(Tuple) == ()
     assert get_type_vars_of_parametrized(Tuple[()]) == ()
     assert get_type_vars_of_parametrized(Tuple[int]) == ()
-    assert get_type_vars_of_parametrized(Tuple[int, T]) == (T, )
+    assert get_type_vars_of_parametrized(Tuple[int, T]) == (T,)
 
     assert get_type_vars_of_parametrized(Callable) == ()
     assert get_type_vars_of_parametrized(Callable[..., Any]) == ()
     assert get_type_vars_of_parametrized(Callable[[int], Any]) == ()
-    assert get_type_vars_of_parametrized(Callable[[T], Any]) == (T, )
-    assert get_type_vars_of_parametrized(Callable[[T], T]) == (T, )
+    assert get_type_vars_of_parametrized(Callable[[T], Any]) == (T,)
+    assert get_type_vars_of_parametrized(Callable[[T], T]) == (T,)
     assert get_type_vars_of_parametrized(Callable[[T, int, V], T]) == (T, V)
 
     if HAS_STD_CLASSES_GENERICS:
-        assert get_type_vars_of_parametrized(list[T]) == (T, )
+        assert get_type_vars_of_parametrized(list[T]) == (T,)
         assert get_type_vars_of_parametrized(list[str]) == ()
         assert get_type_vars_of_parametrized(dict[T, V]) == (T, V)
         assert get_type_vars_of_parametrized(dict[str, V]) == (V,)
@@ -333,7 +360,7 @@ def test_get_type_vars_of_parametrized():
         assert get_type_vars_of_parametrized(tuple[int, T]) == (T,)
 
     assert get_type_vars_of_parametrized(Generic) == ()
-    assert get_type_vars_of_parametrized(Generic[T]) == (T, )
+    assert get_type_vars_of_parametrized(Generic[T]) == (T,)
     assert get_type_vars_of_parametrized(Generic[T, V]) == (T, V)
 
     if HAS_ANNOTATED:
@@ -341,13 +368,13 @@ def test_get_type_vars_of_parametrized():
 
         assert get_type_vars_of_parametrized(typing.Annotated[list, 'meta']) == ()
         assert get_type_vars_of_parametrized(typing.Annotated[list[int], 'meta']) == ()
-        assert get_type_vars_of_parametrized(typing.Annotated[list[T], 'meta']) == (T, )
+        assert get_type_vars_of_parametrized(typing.Annotated[list[T], 'meta']) == (T,)
 
-        assert get_type_vars_of_parametrized(typing.Annotated[Gen, 'meta']) == ()
-        assert get_type_vars_of_parametrized(typing.Annotated[Gen[T], 'meta']) == (T, )
+        assert get_type_vars_of_parametrized(typing.Annotated[gen_ns.Gen, 'meta']) == ()
+        assert get_type_vars_of_parametrized(typing.Annotated[gen_ns.Gen[T], 'meta']) == (T,)
 
         assert get_type_vars_of_parametrized(typing.Annotated[Proto, 'meta']) == ()
-        assert get_type_vars_of_parametrized(typing.Annotated[Proto[T], 'meta']) == (T, )
+        assert get_type_vars_of_parametrized(typing.Annotated[Proto[T], 'meta']) == (T,)
 
 
 @pytest.mark.parametrize(
@@ -365,8 +392,10 @@ def test_get_type_vars_of_parametrized():
         (collections.deque, True),
         (collections.ChainMap, True),
         (collections.defaultdict, True),
-        (Gen, True),
-        (GenChildExplicit, False),
+        *gen_ns_parametrize(
+            lambda gen_ns: (gen_ns.Gen, True),
+            lambda gen_ns: (gen_ns.GenChildExplicit, False),
+        ),
     ],
 )
 def test_is_generic_class(cls, result):

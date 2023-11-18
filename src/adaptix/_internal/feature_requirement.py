@@ -165,6 +165,7 @@ HAS_SELF_TYPE = HAS_PY_311
 HAS_TV_TUPLE = HAS_PY_311
 
 HAS_PY_312 = PythonVersionRequirement((3, 12))
+HAS_TV_SYNTAX = HAS_PY_312
 
 HAS_SUPPORTED_ATTRS_PKG = DistributionVersionRequirement('attrs', '21.3.0')
 HAS_ATTRS_PKG = DistributionRequirement('attrs')

@@ -1,16 +1,14 @@
-from dataclasses import dataclass
-from typing import Any, Dict, Generic, List, Mapping, NamedTuple, Tuple, TypedDict, TypeVar
+from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import pytest
 from pytest import param
-from tests_helpers import cond_list, pretty_typehint_test_id, requires
+from tests_helpers import cond_list, load_namespace_keeping_module, requires
 
-from adaptix import CannotProvide, Retort, TypeHint
+from adaptix import CannotProvide, Retort
 from adaptix._internal.feature_requirement import (
-    HAS_ATTRS_PKG,
     HAS_PY_39,
     HAS_PY_310,
-    HAS_PY_311,
+    HAS_PY_312,
     HAS_SELF_TYPE,
     HAS_STD_CLASSES_GENERICS,
     HAS_TV_TUPLE,
@@ -20,86 +18,26 @@ from adaptix._internal.provider.model.definitions import InputShapeRequest, Outp
 from adaptix._internal.provider.model.shape_provider import provide_generic_resolved_shape
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
 
-pytest_make_parametrize_id = pretty_typehint_test_id
-
-
-@dataclass
-class ModelSpec:
-    decorator: Any
-    bases: Any
-
-
-DEFAULT_MODEL_SPEC_PARAMS = (
-    'dataclass',
-    *cond_list(
-        HAS_PY_311,
-        [
-            'typed_dict',
-            'named_tuple',
-        ],
-    ),
-    *cond_list(
-        HAS_ATTRS_PKG,
-        [
-            'attrs',
-        ],
-    ),
-)
-
-
-def exclude_model_spec(first_spec: str, *other_specs: str):
-    specs = [first_spec, *other_specs]
-
-    def decorator(func):
-        return pytest.mark.parametrize(
-            'model_spec',
-            [
-                spec
-                for spec in DEFAULT_MODEL_SPEC_PARAMS
-                if spec not in specs
-            ],
-            indirect=True
-        )(func)
-
-    return decorator
-
-
-@pytest.fixture(params=DEFAULT_MODEL_SPEC_PARAMS)
-def model_spec(request):
-    if request.param == 'dataclass':
-        return ModelSpec(decorator=dataclass, bases=())
-    if request.param == 'typed_dict':
-        return ModelSpec(decorator=lambda x: x, bases=(TypedDict, ))
-    if request.param == 'named_tuple':
-        return ModelSpec(decorator=lambda x: x, bases=(NamedTuple, ))
-    if request.param == 'attrs':
-        from attrs import define
-        return ModelSpec(decorator=define, bases=())
-    raise ValueError
-
-
-def assert_fields_types(tp: TypeHint, expected: Mapping[str, TypeHint]) -> None:
-    retort = Retort()
-    mediator = retort._create_mediator(request_stack=())
-
-    input_shape = provide_generic_resolved_shape(
-        mediator,
-        InputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
-    )
-    input_field_types = {field.id: field.type for field in input_shape.fields}
-    assert input_field_types == expected
-
-    output_shape = provide_generic_resolved_shape(
-        mediator,
-        OutputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
-    )
-    output_field_types = {field.id: field.type for field in output_shape.fields}
-    assert output_field_types == expected
-
+from .local_helpers import assert_fields_types, exclude_model_spec
 
 T = TypeVar('T')
 K = TypeVar('K')
 V = TypeVar('V')
+
+
+@pytest.fixture(
+    params=[
+        pytest.param('data_gen_models.py', id='inheritance'),
+        *cond_list(
+            HAS_PY_312,
+            [pytest.param('data_gen_models_312.py', id='syntax_sugar')],
+        ),
+    ]
+)
+def gen_models_ns(model_spec, request):
+    # need to pass tests at 3.9
+    with load_namespace_keeping_module(request.param, vars={'model_spec': model_spec}) as ns:
+        yield ns
 
 
 def test_no_generic(model_spec):
@@ -111,11 +49,8 @@ def test_no_generic(model_spec):
     assert_fields_types(Simple, {'a': int, 'b': str})
 
 
-def test_type_var_field(model_spec):
-    @model_spec.decorator
-    class WithTVField(*model_spec.bases, Generic[T]):
-        a: int
-        b: T
+def test_type_var_field(gen_models_ns):
+    WithTVField = gen_models_ns.WithTVField
 
     assert_fields_types(WithTVField, {'a': int, 'b': Any})
     assert_fields_types(WithTVField[str], {'a': int, 'b': str})
@@ -418,47 +353,41 @@ def test_self_type(model_spec):
 
 
 @requires(HAS_TV_TUPLE)
-def test_type_var_tuple_begin(model_spec):
-    from typing import TypeVarTuple, Unpack
+def test_type_var_tuple_begin(model_spec, gen_models_ns):
+    from typing import Unpack
 
-    ShapeT = TypeVarTuple('ShapeT')
-    T = TypeVar('T')
-
-    @model_spec.decorator
-    class Parent(*model_spec.bases, Generic[Unpack[ShapeT], T]):
-        a: Tuple[Unpack[ShapeT]]
-        b: T
+    WithTVTupleBegin = gen_models_ns.WithTVTupleBegin
 
     assert_fields_types(
-        Parent,
+        WithTVTupleBegin,
         {
             'a': Tuple[Unpack[Tuple[Any, ...]]],
             'b': Any,
         },
     )
     assert_fields_types(
-        Parent[int, str],
+        WithTVTupleBegin[int, str],
         {
             'a': Tuple[int],
             'b': str,
         },
     )
     assert_fields_types(
-        Parent[int, str, bool],
+        WithTVTupleBegin[int, str, bool],
         {
             'a': Tuple[int, str],
             'b': bool,
         },
     )
     assert_fields_types(
-        Parent[int, Unpack[Tuple[str, bool]]],
+        WithTVTupleBegin[int, Unpack[Tuple[str, bool]]],
         {
             'a': Tuple[int, str],
             'b': bool,
         },
     )
     assert_fields_types(
-        Parent[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
+        WithTVTupleBegin[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
         {
             'a': Tuple[str, bool, str],
             'b': bool,
@@ -467,47 +396,41 @@ def test_type_var_tuple_begin(model_spec):
 
 
 @requires(HAS_TV_TUPLE)
-def test_type_var_tuple_end(model_spec):
-    from typing import TypeVarTuple, Unpack
+def test_type_var_tuple_end(model_spec, gen_models_ns):
+    from typing import Unpack
 
-    ShapeT = TypeVarTuple('ShapeT')
-    T = TypeVar('T')
-
-    @model_spec.decorator
-    class Parent(*model_spec.bases, Generic[T, Unpack[ShapeT]]):
-        a: T
-        b: Tuple[Unpack[ShapeT]]
+    WithTVTupleEnd = gen_models_ns.WithTVTupleEnd
 
     assert_fields_types(
-        Parent,
+        WithTVTupleEnd,
         {
             'a': Any,
             'b': Tuple[Unpack[Tuple[Any, ...]]],
         },
     )
     assert_fields_types(
-        Parent[int, str],
+        WithTVTupleEnd[int, str],
         {
             'a': int,
             'b': Tuple[str],
         },
     )
     assert_fields_types(
-        Parent[int, str, bool],
+        WithTVTupleEnd[int, str, bool],
         {
             'a': int,
             'b': Tuple[str, bool],
         },
     )
     assert_fields_types(
-        Parent[int, Unpack[Tuple[str, bool]]],
+        WithTVTupleEnd[int, Unpack[Tuple[str, bool]]],
         {
             'a': int,
             'b': Tuple[str, bool],
         },
     )
     assert_fields_types(
-        Parent[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
+        WithTVTupleEnd[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
         {
             'a': str,
             'b': Tuple[bool, str, bool],
@@ -516,21 +439,13 @@ def test_type_var_tuple_end(model_spec):
 
 
 @requires(HAS_TV_TUPLE)
-def test_type_var_tuple_middle(model_spec):
-    from typing import TypeVarTuple, Unpack
+def test_type_var_tuple_middle(model_spec, gen_models_ns):
+    from typing import Unpack
 
-    ShapeT = TypeVarTuple('ShapeT')
-    T1 = TypeVar('T1')
-    T2 = TypeVar('T2')
-
-    @model_spec.decorator
-    class Parent(*model_spec.bases, Generic[T1, Unpack[ShapeT], T2]):
-        a: T1
-        b: Tuple[Unpack[ShapeT]]
-        c: T2
+    WithTVTupleMiddle = gen_models_ns.WithTVTupleMiddle
 
     assert_fields_types(
-        Parent,
+        WithTVTupleMiddle,
         {
             'a': Any,
             'b': Tuple[Unpack[Tuple[Any, ...]]],
@@ -538,7 +453,7 @@ def test_type_var_tuple_middle(model_spec):
         },
     )
     assert_fields_types(
-        Parent[int, str],
+        WithTVTupleMiddle[int, str],
         {
             'a': int,
             'b': Tuple[()],
@@ -546,7 +461,7 @@ def test_type_var_tuple_middle(model_spec):
         },
     )
     assert_fields_types(
-        Parent[int, str, bool],
+        WithTVTupleMiddle[int, str, bool],
         {
             'a': int,
             'b': Tuple[str],
@@ -554,7 +469,7 @@ def test_type_var_tuple_middle(model_spec):
         },
     )
     assert_fields_types(
-        Parent[int, str, str, bool],
+        WithTVTupleMiddle[int, str, str, bool],
         {
             'a': int,
             'b': Tuple[str, str],
@@ -562,7 +477,7 @@ def test_type_var_tuple_middle(model_spec):
         },
     )
     assert_fields_types(
-        Parent[int, Unpack[Tuple[str, bool]]],
+        WithTVTupleMiddle[int, Unpack[Tuple[str, bool]]],
         {
             'a': int,
             'b': Tuple[str],
@@ -570,7 +485,7 @@ def test_type_var_tuple_middle(model_spec):
         },
     )
     assert_fields_types(
-        Parent[int, Unpack[Tuple[str, bool]], int],
+        WithTVTupleMiddle[int, Unpack[Tuple[str, bool]], int],
         {
             'a': int,
             'b': Tuple[str, bool],
@@ -578,7 +493,7 @@ def test_type_var_tuple_middle(model_spec):
         },
     )
     assert_fields_types(
-        Parent[int, Unpack[Tuple[str, ...]], int],
+        WithTVTupleMiddle[int, Unpack[Tuple[str, ...]], int],
         {
             'a': int,
             'b': Tuple[Unpack[Tuple[str, ...]]],
@@ -586,7 +501,7 @@ def test_type_var_tuple_middle(model_spec):
         },
     )
     assert_fields_types(
-        Parent[int, bool, Unpack[Tuple[str, ...]], int],
+        WithTVTupleMiddle[int, bool, Unpack[Tuple[str, ...]], int],
         {
             'a': int,
             'b': Tuple[bool, Unpack[Tuple[str, ...]]],

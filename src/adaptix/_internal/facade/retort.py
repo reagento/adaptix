@@ -35,6 +35,7 @@ from ..provider.generic_provider import (
     LiteralProvider,
     NewTypeUnwrappingProvider,
     PathLikeProvider,
+    TypeAliasUnwrappingProvider,
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
@@ -175,6 +176,7 @@ class FilledRetort(OperatingRetort, ABC):
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),
+        TypeAliasUnwrappingProvider(),
     ]
 
 

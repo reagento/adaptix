@@ -40,6 +40,7 @@ from ..feature_requirement import (
     HAS_PY_310,
     HAS_PY_311,
     HAS_SELF_TYPE,
+    HAS_TV_SYNTAX,
     HAS_TV_TUPLE,
     HAS_TYPE_ALIAS,
     HAS_TYPE_GUARD,
@@ -201,6 +202,7 @@ class Variance(Enum):
     INVARIANT = 0
     COVARIANT = 1
     CONTRAVARIANT = 2
+    INFERRED = 3
 
     def __repr__(self):
         return f'{type(self).__name__}.{self.name}'
@@ -231,6 +233,8 @@ class NormTV(BaseNormType):
             self._variance = Variance.COVARIANT
         if var.__contravariant__:
             self._variance = Variance.CONTRAVARIANT
+        if getattr(var, '__infer_variance__', False):
+            self._variance = Variance.INFERRED
         self._variance = Variance.INVARIANT
 
     @property
@@ -350,6 +354,52 @@ class _NormParamSpecKwargs(NormParamSpecMarker):
         return typing.ParamSpecKwargs
 
 
+AnyNormTypeVarLike = Union[NormTV, NormTVTuple]
+
+
+class NormTypeAlias(BaseNormType):
+    __slots__ = ('_type_alias', '_args', '_norm_type_vars')
+
+    def __init__(self, type_alias, args: VarTuple[BaseNormType], type_vars: VarTuple[AnyNormTypeVarLike]):
+        self._type_alias = type_alias
+        self._args = args
+        self._type_vars = type_vars
+
+    @property
+    def origin(self) -> Any:
+        return self._type_alias
+
+    @property
+    def args(self) -> VarTuple[BaseNormType]:
+        return self._args
+
+    @property
+    def source(self) -> TypeHint:
+        return self._type_alias
+
+    @property
+    def value(self):
+        return self._type_alias.__value__
+
+    @property
+    def module(self):
+        return self._type_alias.__module__
+
+    @property
+    def type_params(self) -> VarTuple[AnyNormTypeVarLike]:
+        return self._type_vars
+
+    def __eq__(self, other):
+        if isinstance(other, NormTypeAlias):
+            return self._type_alias == other._type_alias and self._args == other._args
+        if isinstance(other, BaseNormType):
+            return False
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self._type_alias)
+
+
 _PARAM_SPEC_MARKER_TYPES = (typing.ParamSpecArgs, typing.ParamSpecKwargs) if HAS_PARAM_SPEC else ()
 
 
@@ -461,7 +511,11 @@ class TypeNormalizer:
         return self_copy
 
     def _with_module_namespace(self: TN, module_name: str) -> TN:
-        return self._with_namespace(vars(sys.modules[module_name]))
+        try:
+            module = sys.modules[module_name]
+        except KeyError:
+            return self
+        return self._with_namespace(vars(module))
 
     @overload
     def normalize(self, tp: TypeVar) -> NormTV:
@@ -498,6 +552,8 @@ class TypeNormalizer:
                     self.normalize(eval_forward_ref(self._namespace, tp)),
                     source=tp
                 )
+        elif isinstance(tp, (str, ForwardRef)):
+            raise ValueError(f'Can not normalize value {tp!r}, there are no namespace to evaluate types')
 
     _aspect_storage = AspectStorage()
 
@@ -580,6 +636,15 @@ class TypeNormalizer:
                 var=origin,
                 limit=namespaced._get_bound(origin),  # pylint: disable=protected-access
                 source=tp,
+            )
+
+    @_aspect_storage.add(condition=HAS_TV_SYNTAX)
+    def _norm_type_alias_type(self, tp, origin, args):
+        if isinstance(origin, typing.TypeAliasType):  # pylint: disable=no-member
+            return NormTypeAlias(
+                origin,
+                self._norm_iter(args),
+                self._norm_iter(tp.__type_params__),
             )
 
     @_aspect_storage.add

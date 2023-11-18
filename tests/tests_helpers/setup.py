@@ -1,14 +1,9 @@
 from setuptools import setup
 
-# can not use pyproject.toml because it requires to access to module as tests_helpers.tests_helpers
+# cannot use pyproject.toml because it requires accessing to module as tests_helpers.tests_helpers
 
 setup(
     name='tests_helpers',
     version='0.0.0',
     py_modules=['tests_helpers'],
-    entry_points={
-        'sqlalchemy.dialects': [
-            'pysqlite3_binary = tests_helpers:dialect',
-        ]
-    }
 )
