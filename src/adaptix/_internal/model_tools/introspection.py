@@ -1,11 +1,13 @@
 import inspect
+import typing
 import warnings
 from dataclasses import MISSING as DC_MISSING, Field as DCField, fields as dc_fields, is_dataclass, replace
 from inspect import Parameter, Signature
 from types import MappingProxyType
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
-from ..feature_requirement import HAS_ATTRS_PKG, HAS_PY_39, HAS_PY_310, HAS_SUPPORTED_ATTRS_PKG
+from ..common import VarTuple
+from ..feature_requirement import HAS_ATTRS_PKG, HAS_PY_39, HAS_PY_310, HAS_PY_312, HAS_SUPPORTED_ATTRS_PKG
 from ..model_tools.definitions import (
     BaseField,
     Default,
@@ -52,6 +54,28 @@ def _is_empty(value):
     return value is Signature.empty
 
 
+def _upack_typed_dict_kwargs(
+    param_kwargs: Optional[ParamKwargs]
+) -> Tuple[VarTuple[InputField], VarTuple[Param], Optional[ParamKwargs]]:
+    if not HAS_PY_312 or param_kwargs is None:
+        return (), (), param_kwargs
+
+    try:
+        norm = normalize_type(param_kwargs.type)
+    except ValueError:
+        return (), (), param_kwargs
+
+    if norm.origin != typing.Unpack:
+        return (), (), param_kwargs
+
+    try:
+        shape = get_typed_dict_shape(norm.args[0].source)
+    except IntrospectionImpossible:
+        return (), (), param_kwargs
+
+    return shape.input.fields, shape.input.params, shape.input.kwargs
+
+
 def get_callable_shape(func, params_slice=slice(0, None)) -> Shape[InputShape, None]:
     try:
         signature = inspect.signature(func)
@@ -75,6 +99,7 @@ def get_callable_shape(func, params_slice=slice(0, None)) -> Shape[InputShape, N
         ),
         None,
     )
+    extra_fields, extra_params, param_kwargs = _upack_typed_dict_kwargs(param_kwargs)
 
     type_hints = get_all_type_hints(func)
 
@@ -92,7 +117,7 @@ def get_callable_shape(func, params_slice=slice(0, None)) -> Shape[InputShape, N
                 )
                 for param in params
                 if param.kind != Parameter.VAR_KEYWORD
-            ),
+            ) + extra_fields,
             params=tuple(
                 Param(
                     field_id=param.name,
@@ -101,7 +126,7 @@ def get_callable_shape(func, params_slice=slice(0, None)) -> Shape[InputShape, N
                 )
                 for param in params
                 if param.kind != Parameter.VAR_KEYWORD
-            ),
+            ) + extra_params,
             kwargs=param_kwargs,
             overriden_types=frozenset(
                 param.name

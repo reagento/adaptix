@@ -216,6 +216,9 @@ class ParamKind(Enum):
     POS_OR_KW = 1
     KW_ONLY = 3  # 2 is for VAR_POS
 
+    def __repr__(self):
+        return f'{type(self).__name__}.{self.name}'
+
 
 @dataclass(frozen=True)
 class Param:
