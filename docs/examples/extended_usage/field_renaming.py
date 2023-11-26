@@ -26,5 +26,8 @@ data = {
     'ts': '2023-05-14T00:06:33+00:00',
 }
 event = retort.load(data, Event)
-assert event == Event(name='SystemStart', timestamp=datetime(2023, 5, 14, 0, 6, 33, tzinfo=timezone.utc))
+assert event == Event(
+    name='SystemStart',
+    timestamp=datetime(2023, 5, 14, 0, 6, 33, tzinfo=timezone.utc),
+)
 assert retort.dump(event) == data
