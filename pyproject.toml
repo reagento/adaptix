@@ -32,6 +32,10 @@ classifiers = [
     'Topic :: Internet',
 ]
 
+[project.optional-dependencies]
+attrs = ['attrs >= 21.3.0']
+attrs-strict = ['attrs >= 21.3.0, <= 23.1.0']
+
 [project.urls]
 'Homepage' = 'https://github.com/reagento/dataclass_factory'
 'Bug Tracker' = 'https://github.com/reagento/dataclass_factory/issues'
