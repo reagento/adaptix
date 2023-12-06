@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from copy import copy
 from typing import (
     Any,
+    Callable,
     Collection,
     Generator,
     Iterable,
@@ -17,7 +18,7 @@ from typing import (
     overload,
 )
 
-from adaptix._internal.feature_requirement import HAS_PY_310
+from adaptix._internal.feature_requirement import HAS_NATIVE_EXC_GROUP, HAS_PY_310
 
 C = TypeVar('C', bound='Cloneable')
 
@@ -170,3 +171,36 @@ def get_prefix_groups(
     if current_group:
         groups.append((prefix, current_group))
     return groups
+
+
+def copy_exception_dunders(source: BaseException, target: BaseException) -> None:
+    if hasattr(source, '__notes__'):
+        target.__notes__ = source.__notes__
+    elif hasattr(target, '__notes__'):
+        delattr(target, '__notes__')
+    target.__context__ = source.__context__
+    target.__cause__ = source.__cause__
+    target.__traceback__ = source.__traceback__
+    target.__suppress_context__ = source.__suppress_context__
+
+
+if HAS_NATIVE_EXC_GROUP:
+    def add_note(exc: BaseException, note: str) -> None:
+        exc.add_note(note)
+else:
+    def add_note(exc: BaseException, note: str) -> None:
+        if hasattr(exc, '__notes__'):
+            exc.__notes__.append(note)
+        else:
+            exc.__notes__ = [note]
+
+
+ClassT = TypeVar('ClassT', bound=type)
+
+
+def with_module(module: str) -> Callable[[ClassT], ClassT]:
+    def decorator(cls):
+        cls.__module__ = module
+        return cls
+
+    return decorator

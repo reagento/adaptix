@@ -22,6 +22,7 @@ from adaptix._internal.provider.request_filtering import (
     create_request_checker,
 )
 from adaptix._internal.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
+from adaptix._internal.retort.operating_retort import BuiltinErrorRepresentor
 from adaptix._internal.type_tools import normalize_type
 
 
@@ -30,6 +31,7 @@ def create_mediator(*elements: Request[Any]):
         searcher=RawRecipeSearcher([]),
         recursion_resolving=RecursionResolving(),
         request_stack=elements,
+        error_representor=BuiltinErrorRepresentor(),
     )
 
 
@@ -173,9 +175,10 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
     return LocMap(
         TypeHintLoc(tp),
         FieldLoc(
-            name=name,
+            field_id=name,
             default=NoDefault(),
             metadata={},
+            owner_type=WithUserName,
         )
     )
 

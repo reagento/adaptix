@@ -6,7 +6,7 @@ from inspect import isabstract, isgenerator
 from typing import Any, ClassVar, Iterable, Optional, Pattern, Protocol, Sequence, Tuple, Type, TypeVar, Union
 
 from ..common import TypeHint, VarTuple
-from ..essential import CannotProvide, Mediator, Provider, Request
+from ..essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from ..type_tools import (
     BaseNormType,
     NormTV,
@@ -79,7 +79,7 @@ class OrRequestChecker(RequestChecker):
             else:
                 return
 
-        raise CannotProvide(sub_errors=sub_errors)
+        raise AggregateCannotProvide.make('', exceptions=sub_errors)
 
 
 class AndRequestChecker(RequestChecker):
@@ -125,7 +125,7 @@ class XorRequestChecker(RequestChecker):
             raise CannotProvide
 
         if len(exceptions) == 2:
-            raise CannotProvide(sub_errors=exceptions)
+            raise AggregateCannotProvide.make('', exceptions=exceptions)
 
 
 class LocatedRequestChecker(RequestChecker, ABC):
@@ -149,7 +149,7 @@ class ExactFieldNameRC(LocatedRequestChecker):
     field_id: str
 
     def _check_location(self, mediator: DirectMediator, loc: FieldLoc) -> None:
-        if self.field_id == loc.name:
+        if self.field_id == loc.field_id:
             return
         raise CannotProvide(f'field_id must be a {self.field_id!r}')
 
@@ -160,7 +160,7 @@ class ReFieldNameRC(LocatedRequestChecker):
     pattern: Pattern[str]
 
     def _check_location(self, mediator: DirectMediator, loc: FieldLoc) -> None:
-        if self.pattern.fullmatch(loc.name):
+        if self.pattern.fullmatch(loc.field_id):
             return
 
         raise CannotProvide(f'field_id must be matched by {self.pattern!r}')
@@ -219,7 +219,7 @@ class ExactOriginMergedProvider(Provider):
         try:
             provider = self.origin_to_provider[norm.origin]
         except KeyError:
-            raise CannotProvide
+            raise CannotProvide from None
 
         return provider.apply_provider(mediator, request)
 
@@ -274,9 +274,9 @@ class GenericParamRC(LocatedRequestChecker):
     pos: int
 
     def _check_location(self, mediator: DirectMediator, loc: GenericParamLoc) -> None:
-        if loc.pos == self.pos:
+        if loc.generic_pos == self.pos:
             return
-        raise CannotProvide(f'Generic param position {loc.pos} must be equal to {self.pos}')
+        raise CannotProvide(f'Generic param position {loc.generic_pos} must be equal to {self.pos}')
 
 
 class AnyRequestChecker(RequestChecker):

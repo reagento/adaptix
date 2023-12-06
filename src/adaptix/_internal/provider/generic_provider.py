@@ -50,7 +50,7 @@ class NewTypeUnwrappingProvider(StaticProvider):
         if not is_new_type(loc.type):
             raise CannotProvide
 
-        return mediator.provide(
+        return mediator.delegating_provide(
             replace(
                 request,
                 loc_map=request.loc_map.add(TypeHintLoc(type=loc.type.__supertype__))
@@ -67,7 +67,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
         if unwrapped.source == loc.type:  # type has not changed, continue search
             raise CannotProvide
 
-        return mediator.provide(
+        return mediator.delegating_provide(
             replace(
                 request,
                 loc_map=request.loc_map.add(TypeHintLoc(type=unwrapped.source))
@@ -88,7 +88,7 @@ class TypeAliasUnwrappingProvider(StaticProvider):
         else:
             unwrapped = norm.value
 
-        return mediator.provide(
+        return mediator.delegating_provide(
             replace(
                 request,
                 loc_map=request.loc_map.add(TypeHintLoc(type=unwrapped))
@@ -112,7 +112,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(get_type_from_request(request))
-        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
 
         # TODO: add support for enum
         if strict_coercion and any(
@@ -150,17 +150,18 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 class UnionProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(get_type_from_request(request))
-        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
 
         if self._is_single_optional(norm):
             not_none = next(case for case in norm.args if case.origin is not None)
-            not_none_loader = mediator.provide(
+            not_none_loader = mediator.mandatory_provide(
                 LoaderRequest(
                     loc_map=LocMap(
                         TypeHintLoc(type=not_none.source),
-                        GenericParamLoc(pos=0),
+                        GenericParamLoc(generic_pos=0),
                     )
-                )
+                ),
+                lambda x: 'Cannot create loader for union. Loaders for some union cases cannot be created',
             )
             if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
                 return self._single_optional_dt_loader(norm.source, not_none_loader)
@@ -168,23 +169,24 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 return self._single_optional_dt_disable_loader(not_none_loader)
             raise ValueError
 
-        loaders = tuple(
-            mediator.provide(
+        loaders = mediator.mandatory_provide_by_iterable(
+            [
                 LoaderRequest(
                     loc_map=LocMap(
                         TypeHintLoc(type=tp.source),
-                        GenericParamLoc(pos=i),
+                        GenericParamLoc(generic_pos=i),
                     )
                 )
-            )
-            for i, tp in enumerate(norm.args)
+                for i, tp in enumerate(norm.args)
+            ],
+            lambda: 'Cannot create loader for union. Loaders for some union cases cannot be created',
         )
         if debug_trail == DebugTrail.DISABLE:
-            return self._get_loader_dt_disable(loaders)
+            return self._get_loader_dt_disable(tuple(loaders))
         if debug_trail == DebugTrail.FIRST:
-            return self._get_loader_dt_first(norm.source, loaders)
+            return self._get_loader_dt_first(norm.source, tuple(loaders))
         if debug_trail == DebugTrail.ALL:
-            return self._get_loader_dt_all(norm.source, loaders)
+            return self._get_loader_dt_all(norm.source, tuple(loaders))
         raise ValueError
 
     def _single_optional_dt_disable_loader(self, loader: Loader) -> Loader:
@@ -266,13 +268,14 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
         if self._is_single_optional(norm):
             not_none = next(case for case in norm.args if case.origin is not None)
-            not_none_dumper = mediator.provide(
+            not_none_dumper = mediator.mandatory_provide(
                 DumperRequest(
                     loc_map=LocMap(
                         TypeHintLoc(type=not_none.source),
-                        GenericParamLoc(pos=0),
+                        GenericParamLoc(generic_pos=0),
                     )
-                )
+                ),
+                lambda x: 'Cannot create dumper for union. Dumpers for some union cases cannot be created',
             )
             if not_none_dumper == as_is_stub:
                 return as_is_stub
@@ -285,16 +288,17 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 f" All cases of union must be class, but found {non_class_origins}"
             )
 
-        dumpers = tuple(
-            mediator.provide(
+        dumpers = mediator.mandatory_provide_by_iterable(
+            [
                 DumperRequest(
                     loc_map=LocMap(
                         TypeHintLoc(type=tp.source),
-                        GenericParamLoc(pos=i),
+                        GenericParamLoc(generic_pos=i),
                     )
                 )
-            )
-            for i, tp in enumerate(norm.args)
+                for i, tp in enumerate(norm.args)
+            ],
+            lambda: 'Cannot create dumper for union. Dumpers for some union cases cannot be created',
         )
         if all(dumper == as_is_stub for dumper in dumpers):
             return as_is_stub
@@ -368,16 +372,17 @@ class IterableProvider(LoaderProvider, DumperProvider):
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
-        arg_loader = mediator.provide(
+        arg_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_map=LocMap(
                     TypeHintLoc(type=arg),
-                    GenericParamLoc(pos=0),
+                    GenericParamLoc(generic_pos=0),
                 )
-            )
+            ),
+            lambda x: 'Cannot create loader for iterable. Loader for element cannot be created',
         )
-        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
-        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
         return self._make_loader(
             origin=norm.origin,
             iter_factory=iter_factory,
@@ -506,15 +511,16 @@ class IterableProvider(LoaderProvider, DumperProvider):
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
-        arg_dumper = mediator.provide(
+        arg_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_map=LocMap(
                     TypeHintLoc(type=arg),
-                    GenericParamLoc(pos=0),
+                    GenericParamLoc(generic_pos=0),
                 )
-            )
+            ),
+            lambda x: 'Cannot create dumper for iterable. Dumper for element cannot be created',
         )
-        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
         return self._make_dumper(
             origin=norm.origin,
             iter_factory=iter_factory,
@@ -589,23 +595,25 @@ class DictProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         key, value = self._extract_key_value(request)
 
-        key_loader = mediator.provide(
+        key_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_map=LocMap(
                     TypeHintLoc(type=key.source),
-                    GenericParamLoc(pos=0),
+                    GenericParamLoc(generic_pos=0),
                 )
-            )
+            ),
+            lambda x: 'Cannot create loader for dict. Loader for key cannot be created',
         )
-        value_loader = mediator.provide(
+        value_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_map=LocMap(
                     TypeHintLoc(type=value.source),
-                    GenericParamLoc(pos=1),
+                    GenericParamLoc(generic_pos=1),
                 )
-            )
+            ),
+            lambda x: 'Cannot create loader for dict. Loader for value cannot be created',
         )
-        debug_trail = mediator.provide(
+        debug_trail = mediator.mandatory_provide(
             DebugTrailRequest(loc_map=request.loc_map)
         )
         return self._make_loader(
@@ -712,23 +720,25 @@ class DictProvider(LoaderProvider, DumperProvider):
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
 
-        key_dumper = mediator.provide(
+        key_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_map=LocMap(
                     TypeHintLoc(type=key.source),
-                    GenericParamLoc(pos=0),
+                    GenericParamLoc(generic_pos=0),
                 )
-            )
+            ),
+            lambda x: 'Cannot create dumper for dict. Dumper for key cannot be created',
         )
-        value_dumper = mediator.provide(
+        value_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_map=LocMap(
                     TypeHintLoc(type=value.source),
-                    GenericParamLoc(pos=1),
+                    GenericParamLoc(generic_pos=1),
                 )
-            )
+            ),
+            lambda x: 'Cannot create dumper for dict. Dumper for value cannot be created',
         )
-        debug_trail = mediator.provide(
+        debug_trail = mediator.mandatory_provide(
             DebugTrailRequest(loc_map=request.loc_map)
         )
         return self._make_dumper(
@@ -824,10 +834,11 @@ class PathLikeProvider(LoaderProvider, DumperProvider):
     _impl = Path
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        return mediator.provide(
+        return mediator.mandatory_provide(
             LoaderRequest(
                 loc_map=LocMap(TypeHintLoc(type=self._impl))
-            )
+            ),
+            lambda x: f'Cannot create loader for {PathLike}. Loader for {Path} cannot be created',
         )
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:

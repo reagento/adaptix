@@ -83,7 +83,7 @@ class OverlayRequest(LocatedRequest[Ov], Generic[Ov]):
 
 
 def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_map: LocMap) -> Sc:
-    stacked_overlay = mediator.provide(
+    stacked_overlay = mediator.mandatory_provide(
         OverlayRequest(
             loc_map=loc_map,
             overlay_cls=overlay,
@@ -93,7 +93,7 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_map: LocM
     if loc_map.has(TypeHintLoc) and isinstance(loc_map[TypeHintLoc].type, type):
         for parent in loc_map[TypeHintLoc].type.mro()[1:]:
             try:
-                new_overlay = mediator.provide(
+                new_overlay = mediator.delegating_provide(
                     OverlayRequest(
                         loc_map=loc_map.add(TypeHintLoc(type=parent)),
                         overlay_cls=overlay,

@@ -43,7 +43,7 @@ class ModelLoaderProvider(LoaderProvider):
         loader_code_builder = loader_gen.produce_code(ctx_namespace)
 
         try:
-            code_gen_hook = mediator.provide(CodeGenHookRequest())
+            code_gen_hook = mediator.delegating_provide(CodeGenHookRequest())
         except CannotProvide:
             code_gen_hook = stub_code_gen_hook
 
@@ -63,14 +63,9 @@ class ModelLoaderProvider(LoaderProvider):
         shape = self._process_shape(shape, name_layout)
         self._validate_params(shape, name_layout)
 
-        field_loaders = {
-            field.id: mediator.provide(
-                LoaderRequest(loc_map=input_field_to_loc_map(field))
-            )
-            for field in shape.fields
-        }
-        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
-        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
+        field_loaders = self._fetch_field_loaders(mediator, request, shape)
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
         return self._create_model_loader_gen(
             debug_trail=debug_trail,
             strict_coercion=strict_coercion,
@@ -140,12 +135,29 @@ class ModelLoaderProvider(LoaderProvider):
         return provide_generic_resolved_shape(mediator, InputShapeRequest(loc_map=request.loc_map))
 
     def _fetch_name_layout(self, mediator: Mediator, request: LoaderRequest, shape: InputShape) -> InputNameLayout:
-        return mediator.provide(
+        return mediator.mandatory_provide(
             InputNameLayoutRequest(
                 loc_map=request.loc_map,
                 shape=shape,
-            )
+            ),
+            lambda x: 'Cannot create loader for model. Cannot fetch InputNameLayout',
         )
+
+    def _fetch_field_loaders(
+        self,
+        mediator: Mediator,
+        request: LoaderRequest,
+        shape: InputShape,
+    ) -> Mapping[str, Loader]:
+        owner_type = request.loc_map[TypeHintLoc].type
+        loaders = mediator.mandatory_provide_by_iterable(
+            [
+                LoaderRequest(loc_map=input_field_to_loc_map(owner_type, field))
+                for field in shape.fields
+            ],
+            lambda: "Cannot create loader for model. Loaders for some fields cannot be created",
+        )
+        return {field.id: loader for field, loader in zip(shape.fields, loaders)}
 
     def _process_shape(self, shape: InputShape, name_layout: InputNameLayout) -> InputShape:
         wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)

@@ -35,7 +35,7 @@ class ModelDumperProvider(DumperProvider):
         dumper_code_builder = dumper_gen.produce_code(ctx_namespace)
 
         try:
-            code_gen_hook = mediator.provide(CodeGenHookRequest())
+            code_gen_hook = mediator.delegating_provide(CodeGenHookRequest())
         except CannotProvide:
             code_gen_hook = stub_code_gen_hook
 
@@ -54,15 +54,8 @@ class ModelDumperProvider(DumperProvider):
         name_layout = self._fetch_name_layout(mediator, request, shape)
         shape = self._process_shape(shape, name_layout)
 
-        fields_dumpers = {
-            field.id: mediator.provide(
-                DumperRequest(
-                    loc_map=output_field_to_loc_map(field),
-                )
-            )
-            for field in shape.fields
-        }
-        debug_trail = mediator.provide(DebugTrailRequest(loc_map=request.loc_map))
+        fields_dumpers = self._fetch_field_dumpers(mediator, request, shape)
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
         return self._create_model_dumper_gen(
             debug_trail=debug_trail,
             shape=shape,
@@ -128,12 +121,28 @@ class ModelDumperProvider(DumperProvider):
         return provide_generic_resolved_shape(mediator, OutputShapeRequest(loc_map=request.loc_map))
 
     def _fetch_name_layout(self, mediator: Mediator, request: DumperRequest, shape: OutputShape) -> OutputNameLayout:
-        return mediator.provide(
+        return mediator.delegating_provide(
             OutputNameLayoutRequest(
                 loc_map=request.loc_map,
                 shape=shape,
             )
         )
+
+    def _fetch_field_dumpers(
+        self,
+        mediator: Mediator,
+        request: DumperRequest,
+        shape: OutputShape,
+    ) -> Mapping[str, Dumper]:
+        owner_type = request.loc_map[TypeHintLoc].type
+        dumpers = mediator.mandatory_provide_by_iterable(
+            [
+                DumperRequest(loc_map=output_field_to_loc_map(owner_type, field))
+                for field in shape.fields
+            ],
+            lambda: "Cannot create dumper for model. Dumpers for some fields cannot be created",
+        )
+        return {field.id: dumper for field, dumper in zip(shape.fields, dumpers)}
 
     def _process_shape(self, shape: OutputShape, name_layout: OutputNameLayout) -> OutputShape:
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(

@@ -4,7 +4,7 @@ from typing import ClassVar, Iterable, Sequence, TypeVar
 from ..common import VarTuple
 from ..essential import Mediator, Provider, Request
 from ..utils import Cloneable, ForbiddingDescriptor
-from .mediator import BuiltinMediator, IntrospectingRecipeSearcher, RecipeSearcher, RecursionResolving
+from .mediator import BuiltinMediator, ErrorRepresentor, IntrospectingRecipeSearcher, RecipeSearcher, RecursionResolving
 
 
 class RetortMeta(ABCMeta):  # inherits from ABCMeta to be compatible with ABC
@@ -70,9 +70,19 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
     def _get_recursion_resolving(self) -> RecursionResolving:
         ...
 
+    @abstractmethod
+    def _get_error_representor(self) -> ErrorRepresentor:
+        ...
+
     def _create_mediator(self, request_stack: Sequence[Request]) -> Mediator:
         recursion_resolving = self._get_recursion_resolving()
-        return BuiltinMediator(self._searcher, recursion_resolving, request_stack)
+        error_representor = self._get_error_representor()
+        return BuiltinMediator(
+            self._searcher,
+            recursion_resolving,
+            error_representor,
+            request_stack,
+        )
 
     def _provide_from_recipe(self, request: Request[T], request_stack: Sequence[Request]) -> T:
         """Process request iterating over the result of _get_full_recipe()

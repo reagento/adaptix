@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional, Type, TypeVar
 
-from ..essential import CannotProvide, Mediator, Provider, Request
+from ..essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from .request_filtering import ProviderWithRC, RequestChecker
 
 T = TypeVar('T')
@@ -40,15 +40,15 @@ class ConcatProvider(RequestClassDeterminedProvider):
         self._providers = providers
 
     def apply_provider(self, mediator: Mediator[T], request: Request[T]) -> T:
-        errors = []
+        exceptions = []
 
         for provider in self._providers:
             try:
                 return provider.apply_provider(mediator, request)
             except CannotProvide as e:
-                errors.append(e)
+                exceptions.append(e)
 
-        raise CannotProvide(sub_errors=errors)
+        raise AggregateCannotProvide.make('', exceptions)
 
     def __repr__(self):
         return f"{type(self).__name__}({self._providers})"

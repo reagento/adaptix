@@ -4,9 +4,10 @@ from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Set, 
 
 from ..common import TypeHint
 from ..datastructures import ClassDispatcher
-from ..essential import CannotProvide, Mediator, Provider, Request
+from ..essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from ..provider.provider_wrapper import RequestClassDeterminedProvider
 from ..provider.request_filtering import ExactOriginMergedProvider, ExactOriginRC, ProviderWithRC
+from ..utils import add_note
 
 T = TypeVar('T')
 
@@ -45,6 +46,17 @@ class RecipeSearcher(ABC):
 
 
 RecursionResolving = ClassDispatcher[Request, StubsRecursionResolver]
+E = TypeVar('E', bound=Exception)
+
+
+class ErrorRepresentor(ABC):
+    @abstractmethod
+    def get_no_provider_description(self, request: Request) -> str:
+        ...
+
+    @abstractmethod
+    def get_request_context_notes(self, request: Request, request_stack: Sequence[Request]) -> Iterable[str]:
+        ...
 
 
 class BuiltinMediator(Mediator):
@@ -52,10 +64,12 @@ class BuiltinMediator(Mediator):
         self,
         searcher: RecipeSearcher,
         recursion_resolving: RecursionResolving,
+        error_representor: ErrorRepresentor,
         request_stack: Sequence[Request[Any]],
     ):
         self.searcher = searcher
         self.recursion_resolving = recursion_resolving
+        self.error_representor = error_representor
 
         self._request_stack = list(request_stack)
         self._sent_request: Set[Request] = set()
@@ -63,7 +77,7 @@ class BuiltinMediator(Mediator):
         self.recursion_stubs: Dict[Request, Any] = {}
 
     def provide(self, request: Request[T], *, extra_stack: Sequence[Request[Any]] = ()) -> T:
-        if request in self._sent_request:  # maybe we need to lookup in set for large request_stack
+        if request in self._sent_request:
             if request in self.recursion_stubs:
                 return self.recursion_stubs[request]
             try:
@@ -103,6 +117,7 @@ class BuiltinMediator(Mediator):
 
     def _provide_non_recursive(self, request: Request[T], search_offset: int) -> T:
         init_next_offset = self.next_offset
+        exceptions = []
         for provide_callable, next_offset in self.searcher.search_candidates(
             search_offset, request
         ):
@@ -112,13 +127,27 @@ class BuiltinMediator(Mediator):
             except CannotProvide as e:
                 if e.is_terminal:
                     self.next_offset = init_next_offset
-                    raise e
+                    raise self._attach_request_context_note(e, request)
+                exceptions.append(e)
                 continue
 
             self.next_offset = init_next_offset
             return result
 
-        raise CannotProvide
+        raise self._attach_request_context_note(
+            AggregateCannotProvide.make(
+                self.error_representor.get_no_provider_description(request),
+                exceptions,
+                is_demonstrative=True,
+            ),
+            request,
+        )
+
+    def _attach_request_context_note(self, exc: E, request: Request) -> E:
+        notes = self.error_representor.get_request_context_notes(request, self.request_stack)
+        for note in notes:
+            add_note(exc, note)
+        return exc
 
 
 class RawRecipeSearcher(RecipeSearcher):

@@ -37,7 +37,8 @@ def requires(requirement: Requirement):
 
 
 class TestRetort(AdornedRetort):
-    provide = AdornedRetort._facade_provide
+    def provide(self, request: Request[T]) -> T:
+        return self._facade_provide(request, error_message=f'cannot provide {request}')
 
 
 E = TypeVar('E', bound=Exception)

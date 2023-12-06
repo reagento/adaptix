@@ -68,7 +68,7 @@ class EnumValueProvider(BaseEnumProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
-        value_loader = mediator.provide(
+        value_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_map=LocMap(
                     TypeHintLoc(type=self._value_type),
@@ -86,12 +86,12 @@ class EnumValueProvider(BaseEnumProvider):
         return enum_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        value_dumper = mediator.provide(
+        value_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_map=LocMap(
                     TypeHintLoc(type=self._value_type)
                 )
-            )
+            ),
         )
 
         def enum_dumper(data):

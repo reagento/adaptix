@@ -12,7 +12,6 @@ from ..common import Dumper, Loader
 from ..essential import CannotProvide, Mediator, Request
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
-from ..utils import pairs
 from .model.special_cases_optimization import as_is_stub, none_loader
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC, for_predicate
 from .request_cls import DumperRequest, FieldLoc, LoaderRequest, LocatedRequest, StrictCoercionRequest, TypeHintLoc
@@ -186,7 +185,7 @@ class ScalarLoaderProvider(LoaderProvider, Generic[T]):
         self._lax_coercion_loader = lax_coercion_loader
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
         return self._strict_coercion_loader if strict_coercion else self._lax_coercion_loader
 
 
@@ -348,34 +347,41 @@ COMPLEX_LOADER_PROVIDER = ScalarLoaderProvider(
 )
 
 
+def find_field_request(request_stack: Sequence[Request]) -> LocatedRequest:
+    for parent_request in request_stack:
+        if isinstance(parent_request, LocatedRequest) and parent_request.loc_map.has(FieldLoc):
+            return parent_request
+    raise ValueError('Owner type is not found')
+
+
 @for_predicate(typing.Self if HAS_SELF_TYPE else ~P.ANY)
 class SelfTypeProvider(ProviderWithAttachableRC):
     @static_provision_action
     def _provide_substitute(self, mediator: Mediator, request: LocatedRequest) -> Loader:
         self._request_checker.check_request(mediator, request)
 
-        parent_request = self._find_parent_request(mediator.request_stack)
-        parent_type_hint_loc = parent_request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
-        return mediator.provide(
+        try:
+            field_request = find_field_request(mediator.request_stack)
+        except ValueError:
+            raise CannotProvide(
+                'Owner type is not found',
+                is_terminal=True,
+                is_demonstrative=True
+            ) from None
+
+        owner_type = field_request.loc_map[FieldLoc].owner_type
+        return mediator.delegating_provide(
             replace(
                 request,
-                loc_map=request.loc_map.add(parent_type_hint_loc)
+                loc_map=request.loc_map.add(TypeHintLoc(owner_type))
             ),
         )
-
-    def _find_parent_request(self, request_stack: Sequence[Request]) -> LocatedRequest:
-        for request, prev in pairs(reversed(request_stack)):
-            if isinstance(request, LocatedRequest) and request.loc_map.has(FieldLoc):
-                if isinstance(prev, LocatedRequest):
-                    return prev
-                raise CannotProvide
-        raise CannotProvide
 
 
 @for_predicate(typing.LiteralString if HAS_PY_311 else ~P.ANY)
 class LiteralStringProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        strict_coercion = mediator.provide(StrictCoercionRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
         return str_strict_coercion_loader if strict_coercion else str  # type: ignore[return-value]
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:

@@ -1,4 +1,4 @@
-from adaptix._internal.essential import CannotProvide, Mediator, Provider, Request
+from adaptix._internal.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from adaptix._internal.provider.model.crown_definitions import (
     ExtraCollect,
     Extractor,
@@ -15,6 +15,7 @@ from adaptix._internal.provider.request_filtering import P, RequestPattern, crea
 
 __all__ = (
     'CannotProvide',
+    'AggregateCannotProvide',
     'Mediator',
     'Provider',
     'Request',

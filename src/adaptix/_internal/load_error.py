@@ -1,13 +1,14 @@
 import dataclasses
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence
+from typing import Any, Iterable, Optional
 
 from .common import TypeHint, VarTuple
 from .compat import CompatExceptionGroup
+from .utils import with_module
 
 
-def _str_by_field(cls):
+def _str_by_fields(cls):
     template = ', '.join("%s={self.%s!r}" % (fld.name, fld.name) for fld in dataclasses.fields(cls))
     body = f'def __str__(self):\n    return f"{template}"'
     ns = {}
@@ -16,19 +17,14 @@ def _str_by_field(cls):
     return cls
 
 
-def _public_module(cls):
-    cls.__module__ = 'adaptix.load_error'
-    return cls
-
-
 def custom_exception(cls=None, /, *, str_by_fields: bool = True, public_module: bool = True):
     if cls is None:
         return partial(custom_exception, str_by_fields=str_by_fields, public_module=public_module)
 
     if str_by_fields:
-        cls = _str_by_field(cls)
+        cls = _str_by_fields(cls)
     if public_module:
-        cls = _public_module(cls)
+        cls = with_module('adaptix.load_error')(cls)
     return cls
 
 
@@ -46,15 +42,11 @@ class LoadError(Exception):
 
 @custom_exception(str_by_fields=False)
 @dataclass(eq=False, init=False)
-class LoadExceptionGroup(CompatExceptionGroup, LoadError):
+class LoadExceptionGroup(CompatExceptionGroup[LoadError], LoadError):
     """The base class integrating ``ExceptionGroup`` into the ``LoadError`` hierarchy"""
 
     message: str
     exceptions: VarTuple[LoadError]
-
-    if TYPE_CHECKING:
-        def __init__(self, message: str, exceptions: Sequence[LoadError]):
-            pass
 
 
 @custom_exception(str_by_fields=False)

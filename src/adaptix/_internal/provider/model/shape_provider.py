@@ -140,7 +140,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
 
     def _get_members(self, tp) -> MembersStorage[str, Optional[ShapeT]]:
         try:
-            shape = self._mediator.provide(
+            shape = self._mediator.delegating_provide(
                 replace(
                     self._initial_request,
                     loc_map=self._initial_request.loc_map.add(TypeHintLoc(type=tp)),
@@ -161,7 +161,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
 
 def provide_generic_resolved_shape(mediator: Mediator, request: LocatedRequest[ShapeT]) -> ShapeT:
     if not request.loc_map.has(TypeHintLoc):
-        return mediator.provide(request)
+        return mediator.delegating_provide(request)
     return ShapeGenericResolver(mediator, request).provide()
 
 
@@ -182,7 +182,7 @@ class SimilarShapeProvider(ProviderWithAttachableRC):
             raise CannotProvide
 
         self._request_checker.check_request(mediator, request)
-        shape = mediator.provide(
+        shape = mediator.delegating_provide(
             replace(
                 request,
                 loc_map=request.loc_map.add(TypeHintLoc(self._prototype))
@@ -196,7 +196,7 @@ class SimilarShapeProvider(ProviderWithAttachableRC):
             raise CannotProvide
 
         self._request_checker.check_request(mediator, request)
-        shape = mediator.provide(
+        shape = mediator.delegating_provide(
             replace(
                 request,
                 loc_map=request.loc_map.add(TypeHintLoc(self._prototype))

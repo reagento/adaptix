@@ -75,9 +75,32 @@ def stub(*args, **kwargs):
     pass
 
 
+class StubClass:
+    pass
+
+
+class StubClass2:
+    pass
+
+
+TYPE_HINT_LOC_MAP = LocMap(
+    TypeHintLoc(
+        type=StubClass,
+    ),
+)
+FIELD_LOC_MAP = TYPE_HINT_LOC_MAP.add(
+    FieldLoc(
+        owner_type=StubClass2,
+        field_id='foo',
+        default=NoDefault(),
+        metadata={},
+    ),
+)
+
+
 def make_layouts(
     *fields_or_providers: Union[TestField, Provider],
-    loc_map: LocMap = LocMap(),
+    loc_map: LocMap = TYPE_HINT_LOC_MAP,
 ) -> Layouts:
     fields = [element for element in fields_or_providers if isinstance(element, TestField)]
     providers = [element for element in fields_or_providers if isinstance(element, Provider)]
@@ -818,24 +841,6 @@ def test_output_extra_dict(extra_out, extra_move):
     )
 
 
-class Foo:
-    pass
-
-
-TYPE_HINT_LOC_MAP = LocMap(
-    TypeHintLoc(
-        type=Foo,
-    ),
-)
-FIELD_LOC_MAP = TYPE_HINT_LOC_MAP.add(
-    FieldLoc(
-        name='foo',
-        default=NoDefault(),
-        metadata={},
-    ),
-)
-
-
 def test_extra_at_list():
     layouts = make_layouts(
         TestField('a'),
@@ -903,26 +908,7 @@ def test_extra_at_list():
         ValueError,
         match=full_match_regex_str(
             "Can not use collecting extra_in with list mapping"
-        )
-    ):
-        make_layouts(
-            TestField('a'),
-            TestField('b'),
-            name_mapping(
-                map={
-                    'a': 0,
-                },
-                extra_in='b',
-                extra_out='b',
-            ),
-            DEFAULT_NAME_MAPPING,
-        )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Can not use collecting extra_in with list mapping"
-            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'>"
         )
     ):
         make_layouts(
@@ -943,7 +929,7 @@ def test_extra_at_list():
         ValueError,
         match=full_match_regex_str(
             "Can not use collecting extra_in with list mapping"
-            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'> that situated at field 'foo'"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'> that situated at field 'foo'"
         )
     ):
         make_layouts(
@@ -966,21 +952,7 @@ def test_required_field_skip():
         ValueError,
         match=full_match_regex_str(
             "Required fields ['a'] are skipped"
-        )
-    ):
-        make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=True),
-            name_mapping(
-                skip=['a'],
-            ),
-            DEFAULT_NAME_MAPPING,
-        )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Required fields ['a'] are skipped at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'>"
         ),
     ):
         make_layouts(
@@ -996,7 +968,8 @@ def test_required_field_skip():
     with pytest.raises(
         ValueError,
         match=full_match_regex_str(
-            "Required fields ['a'] are skipped at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
+            "Required fields ['a'] are skipped"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'>"
             " that situated at field 'foo'"
         ),
     ):
@@ -1016,24 +989,7 @@ def test_inconsistent_path_elements():
         ValueError,
         match=full_match_regex_str(
             "Inconsistent path elements at ('x',)"
-        ),
-    ):
-        make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=True),
-            name_mapping(
-                map={
-                    'a': ('x', 'y'),
-                    'b': ('x', 0),
-                },
-            ),
-            DEFAULT_NAME_MAPPING,
-        )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Inconsistent path elements at ('x',) at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'>"
         ),
     ):
         make_layouts(
@@ -1052,7 +1008,8 @@ def test_inconsistent_path_elements():
     with pytest.raises(
         ValueError,
         match=full_match_regex_str(
-            "Inconsistent path elements at ('x',) at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
+            "Inconsistent path elements at ('x',)"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'>"
             " that situated at field 'foo'"
         ),
     ):
@@ -1075,25 +1032,7 @@ def test_duplicated_path():
         ValueError,
         match=full_match_regex_str(
             "Paths {('x',): ['a', 'b']} pointed to several fields"
-        ),
-    ):
-        make_layouts(
-            TestField('a'),
-            TestField('b'),
-            name_mapping(
-                map={
-                    'a': 'x',
-                    'b': 'x',
-                },
-            ),
-            DEFAULT_NAME_MAPPING,
-        )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Paths {('x',): ['a', 'b']} pointed to several fields"
-            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'>"
         ),
     ):
         make_layouts(
@@ -1113,7 +1052,7 @@ def test_duplicated_path():
         ValueError,
         match=full_match_regex_str(
             "Paths {('x',): ['a', 'b']} pointed to several fields"
-            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'> that situated at field 'foo'"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'> that situated at field 'foo'"
         ),
     ):
         make_layouts(
@@ -1135,25 +1074,7 @@ def test_optional_field_at_list():
         ValueError,
         match=full_match_regex_str(
             "Optional fields ['b'] can not be mapped to list elements"
-        ),
-    ):
-        make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=False),
-            name_mapping(
-                map={
-                    'a': 0,
-                    'b': 1,
-                },
-            ),
-            DEFAULT_NAME_MAPPING,
-        )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Optional fields ['b'] can not be mapped to list elements"
-            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'>"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'>"
         ),
     ):
         make_layouts(
@@ -1173,7 +1094,7 @@ def test_optional_field_at_list():
         ValueError,
         match=full_match_regex_str(
             "Optional fields ['b'] can not be mapped to list elements"
-            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'> that situated at field 'foo'"
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'> that situated at field 'foo'"
         ),
     ):
         make_layouts(
@@ -1195,7 +1116,7 @@ def test_one_path_is_prefix_of_another():
         ValueError,
         match=full_match_regex_str(
             "Path to the field must not be a prefix of another path"
-            " at type <class 'tests.unit.provider.name_layout.test_provider.Foo'> that situated at field 'foo'."
+            " at type <class 'tests.unit.provider.name_layout.test_provider.StubClass'> that situated at field 'foo'."
             " Path [0] (field 'a') is prefix of [0, 'b'] (field 'b'), [0, 'c'] (field 'c')"
         ),
     ):

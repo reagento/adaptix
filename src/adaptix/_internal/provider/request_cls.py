@@ -24,7 +24,8 @@ class TypeHintLoc(Location):
 
 @dataclass(frozen=True)
 class FieldLoc(Location):
-    name: str
+    owner_type: TypeHint
+    field_id: str
     default: Default
     metadata: Mapping[Any, Any] = field(hash=False)
 
@@ -41,7 +42,7 @@ class OutputFieldLoc(Location):
 
 @dataclass(frozen=True)
 class GenericParamLoc(Location):
-    pos: int
+    generic_pos: int
 
 
 LocMap = ClassMap[Location]

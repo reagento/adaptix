@@ -75,20 +75,22 @@ class ABCProxy(LoaderProvider, DumperProvider):
         if not self._for_loader:
             raise CannotProvide
 
-        return mediator.provide(
+        return mediator.mandatory_provide(
             LoaderRequest(
                 loc_map=LocMap(TypeHintLoc(type=self._impl))
-            )
+            ),
+            lambda x: f'Cannot create loader for union. Loader for {self._impl} cannot be created',
         )
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         if not self._for_dumper:
             raise CannotProvide
 
-        return mediator.provide(
+        return mediator.mandatory_provide(
             DumperRequest(
                 loc_map=LocMap(TypeHintLoc(type=self._impl))
-            )
+            ),
+            lambda x: f'Cannot create dumper for union. Dumper for {self._impl} cannot be created',
         )
 
 

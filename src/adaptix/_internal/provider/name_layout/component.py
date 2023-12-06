@@ -95,20 +95,26 @@ FieldAndPath = Tuple[F, Optional[KeyPath]]
 def location_to_string(request: LocatedRequest) -> str:
     loc_map = request.loc_map
     if loc_map.has(TypeHintLoc, FieldLoc):
-        return f' at type {loc_map[TypeHintLoc].type} that situated at field {request.loc_map[FieldLoc].name!r}'
+        return f' at type {loc_map[TypeHintLoc].type} that situated at field {request.loc_map[FieldLoc].field_id!r}'
     if loc_map.has(TypeHintLoc):
         return f' at type {loc_map[TypeHintLoc].type}'
     if loc_map.has(FieldLoc):
-        return f' situated at field {request.loc_map[FieldLoc].name!r}'
+        return f' situated at field {request.loc_map[FieldLoc].field_id!r}'
     return ''
 
 
-def apply_rc(mediator: Mediator, request_checker: RequestChecker, field: BaseField) -> bool:
-    request = NameMappingFilterRequest(loc_map=field_to_loc_map(field))
+def apply_rc(
+    mediator: Mediator,
+    request: BaseNameLayoutRequest,
+    request_checker: RequestChecker,
+    field: BaseField,
+) -> bool:
+    owner_type = request.loc_map[TypeHintLoc].type
+    filter_request = NameMappingFilterRequest(loc_map=field_to_loc_map(owner_type, field))
     try:
         request_checker.check_request(
-            ExtraStackMediator(mediator, [request]),
-            request,
+            ExtraStackMediator(mediator, [filter_request]),
+            filter_request,
         )
     except CannotProvide:
         return False
@@ -151,7 +157,7 @@ class BuiltinStructureMaker(StructureMaker):
                         shape=request.shape,
                         field=field,
                         generated_key=generated_key,
-                        loc_map=field_to_loc_map(field),
+                        loc_map=field_to_loc_map(request.loc_map[TypeHintLoc].type, field),
                     )
                 )
             except CannotProvide:
@@ -160,8 +166,8 @@ class BuiltinStructureMaker(StructureMaker):
             if path is None:
                 yield field, None
             elif (
-                not apply_rc(mediator, schema.skip, field)
-                and apply_rc(mediator, schema.only, field)
+                not apply_rc(mediator, request, schema.skip, field)
+                and apply_rc(mediator, request, schema.only, field)
             ):
                 yield field, path
             else:
@@ -364,7 +370,7 @@ class BuiltinSievesMaker(SievesMaker):
         for path, leaf in paths_to_leaves.items():
             if isinstance(leaf, OutFieldCrown):
                 field = request.shape.fields_dict[leaf.id]
-                if field.default != NoDefault() and apply_rc(mediator, schema.omit_default, field):
+                if field.default != NoDefault() and apply_rc(mediator, request, schema.omit_default, field):
                     result[path] = self._create_sieve(field)
         return result
 

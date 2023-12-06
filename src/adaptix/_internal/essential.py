@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Generic, Optional, Sequence, TypeVar
+from typing import Any, Callable, Generic, Iterable, Optional, Sequence, TypeVar, final
+
+from adaptix._internal.compat import CompatExceptionGroup
+from adaptix._internal.feature_requirement import HAS_NATIVE_EXC_GROUP
+from adaptix._internal.utils import with_module
 
 T = TypeVar('T')
 
@@ -12,33 +16,92 @@ class Request(Generic[T]):
     Generic argument indicates which object should be
     returned after request processing.
 
-    Request must be always a hashable object
+    Request must always be a hashable object
     """
 
 
+@with_module('adaptix')
 class CannotProvide(Exception):
-    is_terminal: bool
-
     def __init__(
         self,
-        msg: Optional[str] = None,
-        sub_errors: Sequence['CannotProvide'] = (),
-        is_terminal: bool = False
+        message: str = '',
+        is_terminal: bool = False,
+        is_demonstrative: bool = False,
     ):
-        """
-        :param msg: Human-oriented description of error
-        :param sub_errors: Errors caused this error
-        """
-        self.msg = msg
-        self.sub_errors = sub_errors
-        self.is_terminal = is_terminal or any(sub_error.is_terminal for sub_error in sub_errors)
-        self._self_is_terminal = is_terminal
-        super().__init__(self.msg, self.sub_errors, self.is_terminal)
+        self.message = message
+        self.is_terminal = is_terminal
+        self.is_demonstrative = is_demonstrative
 
     def __repr__(self):
         return (
             f"{type(self).__name__}"
-            f"(msg={self.msg!r}, sub_errors={self.sub_errors!r}, is_terminal={self.is_terminal})"
+            f"(message={self.message!r}, is_terminal={self.is_terminal}, is_demonstrative={self.is_demonstrative})"
+        )
+
+
+@with_module('adaptix')
+class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide):  # type: ignore[misc]
+    def __init__(
+        self,
+        message: str,
+        exceptions: Sequence[CannotProvide],
+        *,
+        is_terminal: bool = False,
+        is_demonstrative: bool = False,
+    ):
+        # pylint: disable=super-init-not-called
+        # Parameter `message` is saved by `__new__` of CompatExceptionGroup
+        self.is_terminal = is_terminal
+        self.is_demonstrative = is_demonstrative
+
+    if not HAS_NATIVE_EXC_GROUP:
+        def __new__(
+            cls,
+            message: str,
+            exceptions: Sequence[CannotProvide],
+            *,
+            is_terminal: bool = False,
+            is_demonstrative: bool = False,
+        ):
+            return super().__new__(cls, message, exceptions)
+
+    def derive(self, __excs: Sequence[CannotProvide]) -> 'AggregateCannotProvide':  # type: ignore[override]
+        return AggregateCannotProvide(
+            self.message,
+            __excs,
+            is_terminal=self.is_terminal,
+            is_demonstrative=self.is_demonstrative,
+        )
+
+    def derive_upcasting(self, __excs: Sequence[CannotProvide]) -> CannotProvide:
+        """Same as method ``derive`` but allow passing an empty sequence"""
+        return self.make(
+            self.message,
+            __excs,
+            is_terminal=self.is_terminal,
+            is_demonstrative=self.is_demonstrative,
+        )
+
+    @classmethod
+    def make(
+        cls,
+        message: str,
+        exceptions: Sequence[CannotProvide],
+        *,
+        is_terminal: bool = False,
+        is_demonstrative: bool = False,
+    ) -> CannotProvide:
+        if exceptions:
+            return AggregateCannotProvide(
+                message,
+                exceptions,
+                is_terminal=is_terminal,
+                is_demonstrative=is_demonstrative,
+            )
+        return CannotProvide(
+            message,
+            is_terminal=is_terminal,
+            is_demonstrative=is_demonstrative,
         )
 
 
@@ -47,7 +110,7 @@ V = TypeVar('V')
 
 class Mediator(ABC, Generic[V]):
     """Mediator is an object that gives provider access to other providers
-    and that stores state of the current search.
+    and that stores the state of the current search.
 
     Mediator is a proxy to providers of retort.
     """
@@ -59,8 +122,64 @@ class Mediator(ABC, Generic[V]):
         :param request: A request instance
         :param extra_stack: Additional stack that will be added to :attr:`.request_stack` before passed request
         :return: Result of the request processing
-        :raise CannotProvide: A provider able to process the request does not found
+        :raise CannotProvide: A provider able to process the request does not be found
         """
+
+    @final
+    def delegating_provide(
+        self,
+        request: Request[T],
+        error_describer: Optional[Callable[[CannotProvide], str]] = None,
+    ) -> T:
+        try:
+            return self.provide(request)
+        except CannotProvide as e:
+            raise AggregateCannotProvide(
+                '' if error_describer is None else error_describer(e),
+                [e],
+                is_terminal=False,
+                is_demonstrative=error_describer is not None,
+            ) from None
+
+    @final
+    def mandatory_provide(
+        self,
+        request: Request[T],
+        error_describer: Optional[Callable[[CannotProvide], str]] = None,
+    ) -> T:
+        try:
+            return self.provide(request)
+        except CannotProvide as e:
+            raise AggregateCannotProvide(
+                '' if error_describer is None else error_describer(e),
+                [e],
+                is_terminal=True,
+                is_demonstrative=True,
+            ) from None
+
+    @final
+    def mandatory_provide_by_iterable(
+        self,
+        requests: Iterable[Request[T]],
+        error_describer: Optional[Callable[[], str]] = None,
+    ) -> Iterable[T]:
+        results = []
+        exceptions = []
+        for request in requests:
+            try:
+                result = self.provide(request)
+            except CannotProvide as e:
+                exceptions.append(e)
+            else:
+                results.append(result)
+        if exceptions:
+            raise AggregateCannotProvide.make(
+                '' if error_describer is None else error_describer(),
+                exceptions,
+                is_demonstrative=True,
+                is_terminal=True,
+            )
+        return results
 
     @abstractmethod
     def provide_from_next(self) -> V:

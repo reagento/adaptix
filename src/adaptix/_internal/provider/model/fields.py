@@ -1,14 +1,16 @@
+from ...common import TypeHint
 from ...model_tools.definitions import BaseField, InputField, OutputField
 from ..request_cls import FieldLoc, InputFieldLoc, LocMap, OutputFieldLoc, TypeHintLoc
 
 
-def input_field_to_loc_map(field: InputField) -> LocMap:
+def input_field_to_loc_map(owner_type: TypeHint, field: InputField) -> LocMap:
     return LocMap(
         TypeHintLoc(
             type=field.type,
         ),
         FieldLoc(
-            name=field.id,
+            owner_type=owner_type,
+            field_id=field.id,
             default=field.default,
             metadata=field.metadata,
         ),
@@ -18,13 +20,14 @@ def input_field_to_loc_map(field: InputField) -> LocMap:
     )
 
 
-def output_field_to_loc_map(field: OutputField) -> LocMap:
+def output_field_to_loc_map(owner_type: TypeHint, field: OutputField) -> LocMap:
     return LocMap(
         TypeHintLoc(
             type=field.type,
         ),
         FieldLoc(
-            name=field.id,
+            owner_type=owner_type,
+            field_id=field.id,
             default=field.default,
             metadata=field.metadata,
         ),
@@ -34,9 +37,9 @@ def output_field_to_loc_map(field: OutputField) -> LocMap:
     )
 
 
-def field_to_loc_map(field: BaseField) -> LocMap:
+def field_to_loc_map(owner_type: TypeHint, field: BaseField) -> LocMap:
     if isinstance(field, InputField):
-        return input_field_to_loc_map(field)
+        return input_field_to_loc_map(owner_type, field)
     if isinstance(field, OutputField):
-        return output_field_to_loc_map(field)
+        return output_field_to_loc_map(owner_type, field)
     raise TypeError

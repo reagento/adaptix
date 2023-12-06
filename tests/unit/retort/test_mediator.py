@@ -6,6 +6,7 @@ import pytest
 
 from adaptix import CannotProvide, Mediator, Provider, Request
 from adaptix._internal.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
+from adaptix._internal.retort.operating_retort import BuiltinErrorRepresentor
 
 
 @dataclass(frozen=True)
@@ -36,7 +37,7 @@ class StackAsserter(Provider):
         assert list(self.expected_stack) == list(mediator.request_stack)
 
         if self.send_next is not None:
-            mediator.provide(self.send_next)
+            mediator.delegating_provide(self.send_next)
 
 
 ASSERTER_LIST = [
@@ -60,8 +61,9 @@ def test_request_stack(order):
         searcher=searcher,
         recursion_resolving=RecursionResolving(),
         request_stack=[],
+        error_representor=BuiltinErrorRepresentor(),
     )
 
-    mediator.provide(
+    mediator.delegating_provide(
         SampleRequest1(),
     )

@@ -20,6 +20,7 @@ from ._internal.model_tools.introspection import TypedDictAt38Warning
 from ._internal.provider.definitions import DebugTrail
 from ._internal.utils import Omittable, Omitted
 from .provider import (
+    AggregateCannotProvide,
     CannotProvide,
     Chain,
     ExtraCollect,
@@ -65,6 +66,7 @@ __all__ = (
     'Omitted',
     'provider',
     'CannotProvide',
+    'AggregateCannotProvide',
     'Chain',
     'ExtraCollect',
     'Extractor',
