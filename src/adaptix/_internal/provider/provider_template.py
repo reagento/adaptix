@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Generic, Optional, Type, TypeVar, final
 
 from ..common import Dumper, Loader, TypeHint
-from ..essential import CannotProvide, Mediator, Request
 from ..type_tools import normalize_type
+from .essential import CannotProvide, Mediator, Request
 from .provider_wrapper import RequestClassDeterminedProvider
 from .request_cls import DumperRequest, LoaderRequest, LocMap, TypeHintLoc
 from .request_filtering import (

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional, Type, TypeVar
 
-from ..essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
+from .essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from .request_filtering import ProviderWithRC, RequestChecker
 
 T = TypeVar('T')

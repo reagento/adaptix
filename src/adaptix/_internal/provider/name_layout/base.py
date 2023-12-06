@@ -18,7 +18,7 @@ from adaptix._internal.provider.model.crown_definitions import (
 )
 
 from ...common import VarTuple
-from ...essential import Mediator
+from ..essential import Mediator
 
 T = TypeVar('T')
 

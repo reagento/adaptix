@@ -9,7 +9,6 @@ from typing import Any, ByteString, Iterable, Mapping, MutableMapping, Optional,
 from uuid import UUID
 
 from ..common import Dumper, Loader, TypeHint, VarTuple
-from ..essential import Provider, Request
 from ..provider.concrete_provider import (
     BOOL_LOADER_PROVIDER,
     COMPLEX_LOADER_PROVIDER,
@@ -28,10 +27,10 @@ from ..provider.concrete_provider import (
     SelfTypeProvider,
 )
 from ..provider.definitions import DebugTrail
+from ..provider.dict_provider import DictProvider
 from ..provider.enum_provider import EnumExactValueProvider
+from ..provider.essential import Provider, Request
 from ..provider.generic_provider import (
-    DictProvider,
-    IterableProvider,
     LiteralProvider,
     NewTypeUnwrappingProvider,
     PathLikeProvider,
@@ -39,6 +38,7 @@ from ..provider.generic_provider import (
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
+from ..provider.iterable_provider import IterableProvider
 from ..provider.model.crown_definitions import ExtraSkip
 from ..provider.model.dumper_provider import ModelDumperProvider
 from ..provider.model.loader_provider import ModelLoaderProvider

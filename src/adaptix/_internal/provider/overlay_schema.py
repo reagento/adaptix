@@ -2,9 +2,9 @@ from dataclasses import dataclass, fields
 from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, Optional, Type, TypeVar
 
 from ..datastructures import ClassMap
-from ..essential import CannotProvide, Mediator
 from ..type_tools import strip_alias
 from ..utils import Omitted
+from .essential import CannotProvide, Mediator
 from .provider_wrapper import Chain
 from .request_cls import LocatedRequest, LocMap, TypeHintLoc
 from .static_provider import StaticProvider, static_provision_action

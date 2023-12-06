@@ -2,7 +2,7 @@ from abc import ABC, ABCMeta, abstractmethod
 from typing import ClassVar, Iterable, Sequence, TypeVar
 
 from ..common import VarTuple
-from ..essential import Mediator, Provider, Request
+from ..provider.essential import Mediator, Provider, Request
 from ..utils import Cloneable, ForbiddingDescriptor
 from .mediator import BuiltinMediator, ErrorRepresentor, IntrospectingRecipeSearcher, RecipeSearcher, RecursionResolving
 

@@ -63,7 +63,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
             is_terminal: bool = False,
             is_demonstrative: bool = False,
         ):
-            return super().__new__(cls, message, exceptions)
+            return super().__new__(cls, message, exceptions)  # type: ignore[arg-type]
 
     def derive(self, __excs: Sequence[CannotProvide]) -> 'AggregateCannotProvide':  # type: ignore[override]
         return AggregateCannotProvide(

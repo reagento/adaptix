@@ -6,7 +6,6 @@ from inspect import isabstract, isgenerator
 from typing import Any, ClassVar, Iterable, Optional, Pattern, Protocol, Sequence, Tuple, Type, TypeVar, Union
 
 from ..common import TypeHint, VarTuple
-from ..essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from ..type_tools import (
     BaseNormType,
     NormTV,
@@ -18,6 +17,7 @@ from ..type_tools import (
     normalize_type,
 )
 from ..type_tools.normalize_type import NotSubscribedError
+from .essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from .request_cls import FieldLoc, GenericParamLoc, LocatedRequest, Location, TypeHintLoc, try_normalize_type
 
 T = TypeVar('T')

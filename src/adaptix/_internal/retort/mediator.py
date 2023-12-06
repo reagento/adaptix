@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Set, 
 
 from ..common import TypeHint
 from ..datastructures import ClassDispatcher
-from ..essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
+from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from ..provider.provider_wrapper import RequestClassDeterminedProvider
 from ..provider.request_filtering import ExactOriginMergedProvider, ExactOriginRC, ProviderWithRC
 from ..utils import add_note

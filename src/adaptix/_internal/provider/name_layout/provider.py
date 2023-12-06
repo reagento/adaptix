@@ -1,8 +1,7 @@
 from typing import TypeVar
 
-from adaptix._internal.essential import Mediator
-
 from ...model_tools.definitions import InputShape, OutputShape
+from ..essential import Mediator
 from ..model.crown_definitions import (
     BranchInpCrown,
     BranchOutCrown,

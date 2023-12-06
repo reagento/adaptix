@@ -1,7 +1,7 @@
 import pytest
 
 from adaptix import NameStyle
-from adaptix._internal.provider.name_style import convert_snake_style, is_snake_case
+from adaptix._internal.name_style import convert_snake_style, is_snake_case
 
 
 def test_is_snake_case():

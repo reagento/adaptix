@@ -17,6 +17,7 @@ from ._internal.facade import (
     validator,
 )
 from ._internal.model_tools.introspection import TypedDictAt38Warning
+from ._internal.name_style import NameStyle
 from ._internal.provider.definitions import DebugTrail
 from ._internal.utils import Omittable, Omitted
 from .provider import (
@@ -31,7 +32,6 @@ from .provider import (
     ExtraOut,
     ExtraSkip,
     Mediator,
-    NameStyle,
     P,
     Provider,
     Request,

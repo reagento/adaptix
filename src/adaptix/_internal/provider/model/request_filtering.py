@@ -1,4 +1,4 @@
-from ...essential import CannotProvide, Request
+from ..essential import CannotProvide, Request
 from ..request_cls import LocatedRequest
 from ..request_filtering import DirectMediator, RequestChecker
 from .definitions import InputShapeRequest, OutputShapeRequest

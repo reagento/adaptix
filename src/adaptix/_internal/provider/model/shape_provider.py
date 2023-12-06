@@ -3,7 +3,6 @@ from dataclasses import replace
 from typing import Any, Container, Generic, Iterable, Optional, TypeVar, Union, cast
 
 from ...common import TypeHint
-from ...essential import CannotProvide, Mediator
 from ...model_tools.definitions import (
     DescriptorAccessor,
     InputShape,
@@ -20,6 +19,7 @@ from ...model_tools.introspection import (
     get_typed_dict_shape,
 )
 from ...type_tools.generic_resolver import GenericResolver, MembersStorage
+from ..essential import CannotProvide, Mediator
 from ..provider_template import ProviderWithAttachableRC
 from ..request_cls import LocatedRequest, TypeHintLoc
 from ..request_filtering import create_request_checker

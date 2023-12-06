@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
 
 from ...common import VarTuple
-from ...essential import CannotProvide, Mediator, Provider
 from ...model_tools.definitions import (
     BaseField,
     BaseShape,
@@ -14,8 +13,10 @@ from ...model_tools.definitions import (
     NoDefault,
     OutputField,
 )
+from ...name_style import NameStyle, convert_snake_style
 from ...retort.operating_retort import OperatingRetort
 from ...utils import Omittable, get_prefix_groups
+from ..essential import CannotProvide, Mediator, Provider
 from ..model.crown_definitions import (
     BaseFieldCrown,
     BaseNameLayoutRequest,
@@ -42,7 +43,6 @@ from ..model.crown_definitions import (
 )
 from ..model.fields import field_to_loc_map
 from ..model.special_cases_optimization import with_default_clause
-from ..name_style import NameStyle, convert_snake_style
 from ..overlay_schema import Overlay, Schema, provide_schema
 from ..request_cls import FieldLoc, LocatedRequest, TypeHintLoc
 from ..request_filtering import ExtraStackMediator, RequestChecker

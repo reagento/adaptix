@@ -3,8 +3,8 @@ from enum import Enum, EnumMeta, Flag
 from typing import Any, Mapping, Optional, Type
 
 from ..common import Dumper, Loader, TypeHint
-from ..essential import CannotProvide, Mediator, Request
 from ..load_error import BadVariantError, MsgError
+from .essential import CannotProvide, Mediator, Request
 from .provider_template import DumperProvider, LoaderProvider
 from .request_cls import (
     DumperRequest,

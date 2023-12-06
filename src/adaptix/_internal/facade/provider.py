@@ -5,11 +5,12 @@ from types import MappingProxyType
 from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, TypeVar, Union
 
 from ..common import Catchable, Dumper, Loader, TypeHint, VarTuple
-from ..essential import Provider
 from ..load_error import LoadError, ValidationError
 from ..model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
 from ..model_tools.introspection import get_callable_shape
+from ..name_style import NameStyle
 from ..provider.enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
+from ..provider.essential import Provider
 from ..provider.model.loader_provider import InlinedShapeModelLoaderProvider
 from ..provider.model.shape_provider import PropertyAdder
 from ..provider.model.special_cases_optimization import as_is_stub
@@ -21,7 +22,6 @@ from ..provider.name_layout.name_mapping import (
     FuncNameMappingProvider,
     NameMap,
 )
-from ..provider.name_style import NameStyle
 from ..provider.overlay_schema import OverlayProvider
 from ..provider.provider_template import ValueProvider
 from ..provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider

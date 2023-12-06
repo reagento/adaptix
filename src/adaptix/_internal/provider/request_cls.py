@@ -1,13 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Any, Mapping, TypeVar
 
-from adaptix._internal.essential import CannotProvide, Request
-
 from ..common import Dumper, Loader, TypeHint
 from ..datastructures import ClassMap
 from ..model_tools.definitions import Accessor, Default
 from ..type_tools import BaseNormType, normalize_type
 from .definitions import DebugTrail
+from .essential import CannotProvide, Request
 
 T = TypeVar('T')
 

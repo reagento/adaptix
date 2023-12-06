@@ -3,9 +3,9 @@ from typing import Mapping
 from ...code_tools.compiler import BasicClosureCompiler
 from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Loader
-from ...essential import CannotProvide, Mediator
 from ...model_tools.definitions import InputShape
 from ..definitions import DebugTrail
+from ..essential import CannotProvide, Mediator
 from ..model.definitions import CodeGenerator, InputShapeRequest
 from ..model.loader_gen import ModelLoaderGen, ModelLoaderProps
 from ..provider_template import LoaderProvider

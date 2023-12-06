@@ -1,8 +1,8 @@
 from abc import ABC
 from typing import Iterable, List, Mapping, Optional, Sequence, Type, TypeVar
 
-from ..essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from ..provider.concrete_provider import find_field_request
+from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from ..provider.request_cls import DumperRequest, FieldLoc, LoaderRequest, LocatedRequest
 from ..utils import copy_exception_dunders, with_module
 from .base_retort import BaseRetort
