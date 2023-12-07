@@ -204,7 +204,10 @@ class ExactOriginCombiner(Combiner):
 
     def combine_elements(self) -> Sequence[Provider]:
         if len(self._combo) == 1:
-            return [self._combo[0][1]]
+            element = self._combo[0][1]
+            self._combo.clear()
+            self._origins.clear()
+            return [element]
 
         merged_provider = ExactOriginMergedProvider(self._combo)
         self._combo.clear()
