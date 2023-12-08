@@ -7,7 +7,7 @@ from tests_helpers import TestRetort, raises_exc
 from adaptix import DebugTrail, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.load_error import BadVariantError, LoadError, TypeLoadError, UnionLoadError
-from adaptix._internal.provider.generic_provider import LiteralProvider, UnionProvider
+from adaptix._internal.morphing.generic_provider import LiteralProvider, UnionProvider
 
 
 @dataclass

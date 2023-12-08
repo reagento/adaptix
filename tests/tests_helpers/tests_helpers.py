@@ -16,7 +16,7 @@ from sqlalchemy import Engine, create_engine
 from adaptix import AdornedRetort, CannotProvide, DebugTrail, Mediator, Provider, Request
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
-from adaptix._internal.provider.model.basic_gen import CodeGenAccumulator
+from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
 from adaptix._internal.type_tools import is_parametrized
 from adaptix.struct_trail import get_trail
 

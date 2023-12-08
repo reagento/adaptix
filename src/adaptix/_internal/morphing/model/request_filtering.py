@@ -1,6 +1,6 @@
-from ..essential import CannotProvide, Request
-from ..request_cls import LocatedRequest
-from ..request_filtering import DirectMediator, RequestChecker
+from ...provider.essential import CannotProvide, Request
+from ...provider.request_cls import LocatedRequest
+from ...provider.request_filtering import DirectMediator, RequestChecker
 from .definitions import InputShapeRequest, OutputShapeRequest
 
 

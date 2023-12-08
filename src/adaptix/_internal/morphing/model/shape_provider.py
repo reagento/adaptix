@@ -18,12 +18,12 @@ from ...model_tools.introspection import (
     get_named_tuple_shape,
     get_typed_dict_shape,
 )
+from ...provider.essential import CannotProvide, Mediator
+from ...provider.provider_template import ProviderWithAttachableRC
+from ...provider.request_cls import LocatedRequest, TypeHintLoc
+from ...provider.request_filtering import create_request_checker
+from ...provider.static_provider import StaticProvider, static_provision_action
 from ...type_tools.generic_resolver import GenericResolver, MembersStorage
-from ..essential import CannotProvide, Mediator
-from ..provider_template import ProviderWithAttachableRC
-from ..request_cls import LocatedRequest, TypeHintLoc
-from ..request_filtering import create_request_checker
-from ..static_provider import StaticProvider, static_provision_action
 from .definitions import InputShapeRequest, OutputShapeRequest
 
 

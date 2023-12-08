@@ -14,8 +14,8 @@ from adaptix._internal.feature_requirement import (
     HAS_TV_TUPLE,
     IS_PYPY,
 )
-from adaptix._internal.provider.model.definitions import InputShapeRequest, OutputShapeRequest
-from adaptix._internal.provider.model.shape_provider import provide_generic_resolved_shape
+from adaptix._internal.morphing.model.definitions import InputShapeRequest, OutputShapeRequest
+from adaptix._internal.morphing.model.shape_provider import provide_generic_resolved_shape
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
 
 from .local_helpers import assert_fields_types, exclude_model_spec

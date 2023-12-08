@@ -7,6 +7,7 @@ from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
 from ...common import Dumper
 from ...compat import CompatExceptionGroup
+from ...definitions import DebugTrail
 from ...model_tools.definitions import (
     DefaultFactory,
     DefaultFactoryWithSelf,
@@ -17,7 +18,6 @@ from ...model_tools.definitions import (
     OutputShape,
 )
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
-from ..definitions import DebugTrail
 from .crown_definitions import (
     CrownPath,
     CrownPathElem,

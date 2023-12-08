@@ -5,10 +5,10 @@ from typing import Callable, Iterable, Mapping, Optional, Tuple, Union
 
 from ...common import EllipsisType
 from ...model_tools.definitions import BaseField, BaseShape, is_valid_field_id
-from ..essential import CannotProvide, Mediator, Provider
-from ..request_cls import LocatedRequest
-from ..request_filtering import Pred, ProviderWithRC, RequestChecker
-from ..static_provider import StaticProvider, static_provision_action
+from ...provider.essential import CannotProvide, Mediator, Provider
+from ...provider.request_cls import LocatedRequest
+from ...provider.request_filtering import Pred, ProviderWithRC, RequestChecker
+from ...provider.static_provider import StaticProvider, static_provision_action
 from .base import Key, KeyPath
 
 RawKey = Union[Key, EllipsisType]

@@ -10,7 +10,7 @@ from tests_helpers import cond_list, raises_exc
 
 from adaptix import Retort
 from adaptix._internal.feature_requirement import HAS_PY_311, IS_PYPY
-from adaptix._internal.provider.concrete_provider import DatetimeFormatProvider
+from adaptix._internal.morphing.concrete_provider import DatetimeFormatProvider
 from adaptix.load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 
 

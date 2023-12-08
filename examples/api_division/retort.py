@@ -4,9 +4,8 @@ from typing import List
 import phonenumbers
 from phonenumbers import PhoneNumber
 
-from adaptix import P, Retort, dumper, enum_by_name, loader, name_mapping, validator
+from adaptix import Chain, ExtraForbid, ExtraSkip, P, Retort, dumper, enum_by_name, loader, name_mapping, validator
 from adaptix.load_error import ExtraFieldsError, ValueLoadError
-from adaptix.provider import Chain, ExtraForbid, ExtraSkip
 
 from .models import Receipt, ReceiptType, RecItem
 from .money import Money, TooPreciseAmount

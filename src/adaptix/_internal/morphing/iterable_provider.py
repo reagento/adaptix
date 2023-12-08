@@ -2,10 +2,14 @@ import collections.abc
 from inspect import isabstract
 from typing import Callable, Iterable, Mapping
 
-from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
-from adaptix._internal.provider.provider_template import DumperProvider, LoaderProvider, for_predicate
-from adaptix._internal.provider.request_cls import (
+from ..common import Dumper, Loader
+from ..compat import CompatExceptionGroup
+from ..definitions import DebugTrail
+from ..load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
+from ..morphing.provider_template import DumperProvider, LoaderProvider
+from ..provider.essential import CannotProvide, Mediator
+from ..provider.provider_template import for_predicate
+from ..provider.request_cls import (
     DebugTrailRequest,
     DumperRequest,
     GenericParamLoc,
@@ -17,11 +21,7 @@ from adaptix._internal.provider.request_cls import (
     get_type_from_request,
     try_normalize_type,
 )
-from adaptix._internal.struct_trail import append_trail, render_trail_as_note
-
-from ..common import Dumper, Loader
-from .definitions import DebugTrail
-from .essential import CannotProvide, Mediator
+from ..struct_trail import append_trail, render_trail_as_note
 
 CollectionsMapping = collections.abc.Mapping
 

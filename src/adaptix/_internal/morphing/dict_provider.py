@@ -3,13 +3,12 @@ from typing import Dict, Mapping, Tuple
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
+from ..definitions import DebugTrail
 from ..load_error import AggregateLoadError, LoadError, TypeLoadError
-from ..struct_trail import ItemKey, append_trail, render_trail_as_note
-from ..type_tools import BaseNormType
-from .definitions import DebugTrail
-from .essential import Mediator
-from .provider_template import DumperProvider, LoaderProvider, for_predicate
-from .request_cls import (
+from ..morphing.provider_template import DumperProvider, LoaderProvider
+from ..provider.essential import Mediator
+from ..provider.provider_template import for_predicate
+from ..provider.request_cls import (
     DebugTrailRequest,
     DumperRequest,
     GenericParamLoc,
@@ -20,6 +19,8 @@ from .request_cls import (
     get_type_from_request,
     try_normalize_type,
 )
+from ..struct_trail import ItemKey, append_trail, render_trail_as_note
+from ..type_tools import BaseNormType
 
 CollectionsMapping = collections.abc.Mapping
 

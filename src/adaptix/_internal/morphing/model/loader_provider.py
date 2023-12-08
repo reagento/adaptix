@@ -3,13 +3,13 @@ from typing import Mapping
 from ...code_tools.compiler import BasicClosureCompiler
 from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Loader
+from ...definitions import DebugTrail
 from ...model_tools.definitions import InputShape
-from ..definitions import DebugTrail
-from ..essential import CannotProvide, Mediator
+from ...provider.essential import CannotProvide, Mediator
+from ...provider.request_cls import DebugTrailRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
 from ..model.definitions import CodeGenerator, InputShapeRequest
 from ..model.loader_gen import ModelLoaderGen, ModelLoaderProps
 from ..provider_template import LoaderProvider
-from ..request_cls import DebugTrailRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,

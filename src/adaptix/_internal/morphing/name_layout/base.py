@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Iterable, Mapping, TypeVar, Union
 
-from adaptix._internal.provider.model.crown_definitions import (
+from ...common import VarTuple
+from ...provider.essential import Mediator
+from ..model.crown_definitions import (
     DictExtraPolicy,
     Extractor,
     ExtraForbid,
@@ -16,9 +18,6 @@ from adaptix._internal.provider.model.crown_definitions import (
     Saturator,
     Sieve,
 )
-
-from ...common import VarTuple
-from ..essential import Mediator
 
 T = TypeVar('T')
 

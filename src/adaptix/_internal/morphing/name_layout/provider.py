@@ -1,7 +1,8 @@
 from typing import TypeVar
 
 from ...model_tools.definitions import InputShape, OutputShape
-from ..essential import Mediator
+from ...provider.essential import Mediator
+from ...provider.static_provider import StaticProvider, static_provision_action
 from ..model.crown_definitions import (
     BranchInpCrown,
     BranchOutCrown,
@@ -14,7 +15,6 @@ from ..model.crown_definitions import (
     OutputNameLayoutRequest,
     Sieve,
 )
-from ..static_provider import StaticProvider, static_provision_action
 from .base import ExtraMoveMaker, ExtraPoliciesMaker, PathsTo, SievesMaker, StructureMaker
 from .crown_builder import InpCrownBuilder, OutCrownBuilder
 

@@ -7,14 +7,12 @@ from typing import Any, Collection, Iterable, Literal, Union
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
 from ..datastructures import ClassDispatcher
+from ..definitions import DebugTrail
 from ..feature_requirement import HAS_PY_39
 from ..load_error import BadVariantError, LoadError, TypeLoadError, UnionLoadError
-from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
-from .definitions import DebugTrail
-from .essential import CannotProvide, Mediator
-from .model.special_cases_optimization import as_is_stub
-from .provider_template import DumperProvider, LoaderProvider, for_predicate
-from .request_cls import (
+from ..provider.essential import CannotProvide, Mediator
+from ..provider.provider_template import for_predicate
+from ..provider.request_cls import (
     DebugTrailRequest,
     DumperRequest,
     GenericParamLoc,
@@ -26,7 +24,10 @@ from .request_cls import (
     get_type_from_request,
     try_normalize_type,
 )
-from .static_provider import StaticProvider, static_provision_action
+from ..provider.static_provider import StaticProvider, static_provision_action
+from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
+from .model.special_cases_optimization import as_is_stub
+from .provider_template import DumperProvider, LoaderProvider
 
 
 class NewTypeUnwrappingProvider(StaticProvider):

@@ -4,9 +4,9 @@ from typing import Any, Mapping, Optional, Type
 
 from ..common import Dumper, Loader, TypeHint
 from ..load_error import BadVariantError, MsgError
-from .essential import CannotProvide, Mediator, Request
-from .provider_template import DumperProvider, LoaderProvider
-from .request_cls import (
+from ..morphing.provider_template import DumperProvider, LoaderProvider
+from ..provider.essential import CannotProvide, Mediator, Request
+from ..provider.request_cls import (
     DumperRequest,
     LoaderRequest,
     LocatedRequest,
@@ -15,7 +15,7 @@ from .request_cls import (
     get_type_from_request,
     try_normalize_type,
 )
-from .request_filtering import DirectMediator, RequestChecker
+from ..provider.request_filtering import DirectMediator, RequestChecker
 
 
 class AnyEnumRC(RequestChecker):

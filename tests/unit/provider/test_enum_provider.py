@@ -4,7 +4,7 @@ import pytest
 from tests_helpers import TestRetort, raises_exc
 
 from adaptix import dumper, enum_by_value, loader
-from adaptix._internal.provider.enum_provider import EnumExactValueProvider, EnumNameProvider
+from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider
 from adaptix.load_error import BadVariantError, MsgError
 
 

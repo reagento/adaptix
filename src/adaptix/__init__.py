@@ -1,3 +1,5 @@
+from adaptix._internal.definitions import DebugTrail
+
 from ._internal.common import Dumper, Loader, TypeHint
 from ._internal.facade import (
     AdornedRetort,
@@ -17,26 +19,26 @@ from ._internal.facade import (
     validator,
 )
 from ._internal.model_tools.introspection import TypedDictAt38Warning
+from ._internal.morphing.model.crown_definitions import (
+    ExtraCollect,
+    Extractor,
+    ExtraForbid,
+    ExtraKwargs,
+    ExtraSkip,
+    Saturator,
+)
+from ._internal.morphing.name_layout.base import ExtraIn, ExtraOut
 from ._internal.name_style import NameStyle
-from ._internal.provider.definitions import DebugTrail
 from ._internal.utils import Omittable, Omitted
 from .provider import (
     AggregateCannotProvide,
     CannotProvide,
     Chain,
-    ExtraCollect,
-    Extractor,
-    ExtraForbid,
-    ExtraIn,
-    ExtraKwargs,
-    ExtraOut,
-    ExtraSkip,
     Mediator,
     P,
     Provider,
     Request,
     RequestPattern,
-    Saturator,
     create_request_checker,
 )
 from .retort import NoSuitableProvider

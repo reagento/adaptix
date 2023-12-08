@@ -6,17 +6,26 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
-from typing import Generic, Sequence, Type, TypeVar, Union
+from typing import Generic, Type, TypeVar, Union
 
 from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
-from .essential import CannotProvide, Mediator, Request
+from ..provider.essential import CannotProvide, Mediator
+from ..provider.provider_template import for_predicate
+from ..provider.request_cls import (
+    DumperRequest,
+    FieldLoc,
+    LoaderRequest,
+    LocatedRequest,
+    StrictCoercionRequest,
+    TypeHintLoc,
+)
+from ..provider.request_filtering import P, create_request_checker
+from ..provider.static_provider import static_provision_action
+from ..provider.utils import find_field_request
 from .model.special_cases_optimization import as_is_stub, none_loader
-from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC, for_predicate
-from .request_cls import DumperRequest, FieldLoc, LoaderRequest, LocatedRequest, StrictCoercionRequest, TypeHintLoc
-from .request_filtering import P, create_request_checker
-from .static_provider import static_provision_action
+from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC
 
 T = TypeVar('T')
 
@@ -345,13 +354,6 @@ COMPLEX_LOADER_PROVIDER = ScalarLoaderProvider(
     strict_coercion_loader=complex_strict_coercion_loader,
     lax_coercion_loader=complex_lax_coercion_loader,
 )
-
-
-def find_field_request(request_stack: Sequence[Request]) -> LocatedRequest:
-    for parent_request in request_stack:
-        if isinstance(parent_request, LocatedRequest) and parent_request.loc_map.has(FieldLoc):
-            return parent_request
-    raise ValueError('Owner type is not found')
 
 
 @for_predicate(typing.Self if HAS_SELF_TYPE else ~P.ANY)

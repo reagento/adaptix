@@ -3,10 +3,10 @@ from typing import Mapping
 from ...code_tools.compiler import BasicClosureCompiler
 from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Dumper
-from ..definitions import DebugTrail
-from ..essential import CannotProvide, Mediator
+from ...definitions import DebugTrail
+from ...provider.essential import CannotProvide, Mediator
+from ...provider.request_cls import DebugTrailRequest, DumperRequest, TypeHintLoc
 from ..provider_template import DumperProvider
-from ..request_cls import DebugTrailRequest, DumperRequest, TypeHintLoc
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,

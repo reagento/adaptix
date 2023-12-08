@@ -8,6 +8,7 @@ from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory
 from ...common import Loader
 from ...compat import CompatExceptionGroup
+from ...definitions import DebugTrail
 from ...load_error import (
     AggregateLoadError,
     ExcludedTypeLoadError,
@@ -20,7 +21,6 @@ from ...load_error import (
 )
 from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
-from ..definitions import DebugTrail
 from .crown_definitions import (
     BranchInpCrown,
     CrownPath,

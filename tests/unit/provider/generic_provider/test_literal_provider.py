@@ -5,7 +5,7 @@ import pytest
 from tests_helpers import TestRetort, raises_exc
 
 from adaptix._internal.load_error import BadVariantError
-from adaptix._internal.provider.generic_provider import LiteralProvider
+from adaptix._internal.morphing.generic_provider import LiteralProvider
 
 
 @pytest.fixture

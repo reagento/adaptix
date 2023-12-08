@@ -9,7 +9,8 @@ from typing import Any, ByteString, Iterable, Mapping, MutableMapping, Optional,
 from uuid import UUID
 
 from ..common import Dumper, Loader, TypeHint, VarTuple
-from ..provider.concrete_provider import (
+from ..definitions import DebugTrail
+from ..morphing.concrete_provider import (
     BOOL_LOADER_PROVIDER,
     COMPLEX_LOADER_PROVIDER,
     DECIMAL_LOADER_PROVIDER,
@@ -26,11 +27,9 @@ from ..provider.concrete_provider import (
     SecondsTimedeltaProvider,
     SelfTypeProvider,
 )
-from ..provider.definitions import DebugTrail
-from ..provider.dict_provider import DictProvider
-from ..provider.enum_provider import EnumExactValueProvider
-from ..provider.essential import Provider, Request
-from ..provider.generic_provider import (
+from ..morphing.dict_provider import DictProvider
+from ..morphing.enum_provider import EnumExactValueProvider
+from ..morphing.generic_provider import (
     LiteralProvider,
     NewTypeUnwrappingProvider,
     PathLikeProvider,
@@ -38,20 +37,22 @@ from ..provider.generic_provider import (
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
-from ..provider.iterable_provider import IterableProvider
-from ..provider.model.crown_definitions import ExtraSkip
-from ..provider.model.dumper_provider import ModelDumperProvider
-from ..provider.model.loader_provider import ModelLoaderProvider
-from ..provider.model.shape_provider import (
+from ..morphing.iterable_provider import IterableProvider
+from ..morphing.model.crown_definitions import ExtraSkip
+from ..morphing.model.dumper_provider import ModelDumperProvider
+from ..morphing.model.loader_provider import ModelLoaderProvider
+from ..morphing.model.shape_provider import (
     ATTRS_SHAPE_PROVIDER,
     CLASS_INIT_SHAPE_PROVIDER,
     DATACLASS_SHAPE_PROVIDER,
     NAMED_TUPLE_SHAPE_PROVIDER,
     TYPED_DICT_SHAPE_PROVIDER,
 )
-from ..provider.name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
-from ..provider.name_layout.provider import BuiltinNameLayoutProvider
-from ..provider.provider_template import ABCProxy, ValueProvider
+from ..morphing.name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
+from ..morphing.name_layout.provider import BuiltinNameLayoutProvider
+from ..morphing.provider_template import ABCProxy
+from ..provider.essential import Provider, Request
+from ..provider.provider_template import ValueProvider
 from ..provider.request_cls import (
     DebugTrailRequest,
     DumperRequest,

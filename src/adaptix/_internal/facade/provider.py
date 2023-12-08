@@ -8,20 +8,20 @@ from ..common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ..load_error import LoadError, ValidationError
 from ..model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
 from ..model_tools.introspection import get_callable_shape
-from ..name_style import NameStyle
-from ..provider.enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
-from ..provider.essential import Provider
-from ..provider.model.loader_provider import InlinedShapeModelLoaderProvider
-from ..provider.model.shape_provider import PropertyAdder
-from ..provider.model.special_cases_optimization import as_is_stub
-from ..provider.name_layout.base import ExtraIn, ExtraOut
-from ..provider.name_layout.component import ExtraMoveAndPoliciesOverlay, SievesOverlay, StructureOverlay
-from ..provider.name_layout.name_mapping import (
+from ..morphing.enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
+from ..morphing.model.loader_provider import InlinedShapeModelLoaderProvider
+from ..morphing.model.shape_provider import PropertyAdder
+from ..morphing.model.special_cases_optimization import as_is_stub
+from ..morphing.name_layout.base import ExtraIn, ExtraOut
+from ..morphing.name_layout.component import ExtraMoveAndPoliciesOverlay, SievesOverlay, StructureOverlay
+from ..morphing.name_layout.name_mapping import (
     ConstNameMappingProvider,
     DictNameMappingProvider,
     FuncNameMappingProvider,
     NameMap,
 )
+from ..name_style import NameStyle
+from ..provider.essential import Provider
 from ..provider.overlay_schema import OverlayProvider
 from ..provider.provider_template import ValueProvider
 from ..provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider

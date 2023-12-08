@@ -1,6 +1,6 @@
 from ...common import TypeHint
 from ...model_tools.definitions import BaseField, InputField, OutputField
-from ..request_cls import FieldLoc, InputFieldLoc, LocMap, OutputFieldLoc, TypeHintLoc
+from ...provider.request_cls import FieldLoc, InputFieldLoc, LocMap, OutputFieldLoc, TypeHintLoc
 
 
 def input_field_to_loc_map(owner_type: TypeHint, field: InputField) -> LocMap:

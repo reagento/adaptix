@@ -5,7 +5,7 @@ from typing import TypeVar
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
 from ...model_tools.definitions import InputShape, OutputShape
-from ..request_cls import LocatedRequest
+from ...provider.request_cls import LocatedRequest
 
 T = TypeVar('T')
 

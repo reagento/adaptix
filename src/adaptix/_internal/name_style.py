@@ -8,7 +8,7 @@ from typing import Callable
 class NameStyle(Enum):
     """An enumeration of different naming conventions"""
 
-    LOWER_SNAKE = "snake_case"
+    LOWER_SNAKE = "lower_snake"
     CAMEL_SNAKE = "camel_Snake"
     PASCAL_SNAKE = "Pascal_Snake"
     UPPER_SNAKE = "UPPER_SNAKE"

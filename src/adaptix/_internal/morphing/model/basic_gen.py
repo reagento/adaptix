@@ -22,9 +22,9 @@ from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
 from ...model_tools.definitions import InputField, InputShape, OutputField, OutputShape
-from ..essential import Mediator, Request
-from ..request_cls import LocatedRequest, TypeHintLoc
-from ..static_provider import StaticProvider, static_provision_action
+from ...provider.essential import Mediator, Request
+from ...provider.request_cls import LocatedRequest, TypeHintLoc
+from ...provider.static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
     BaseCrown,
     BaseDictCrown,

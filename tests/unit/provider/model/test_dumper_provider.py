@@ -19,7 +19,7 @@ from adaptix._internal.model_tools.definitions import (
     create_attr_accessor,
     create_key_accessor,
 )
-from adaptix._internal.provider.model.crown_definitions import (
+from adaptix._internal.morphing.model.crown_definitions import (
     ExtraExtract,
     ExtraTargets,
     OutDictCrown,
@@ -29,8 +29,8 @@ from adaptix._internal.provider.model.crown_definitions import (
     OutputNameLayout,
     OutputNameLayoutRequest,
 )
-from adaptix._internal.provider.model.definitions import OutputShapeRequest
-from adaptix._internal.provider.model.dumper_provider import ModelDumperProvider
+from adaptix._internal.morphing.model.definitions import OutputShapeRequest
+from adaptix._internal.morphing.model.dumper_provider import ModelDumperProvider
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import DumperRequest
 from adaptix._internal.struct_trail import Attr, TrailElement, TrailElementMarker, append_trail

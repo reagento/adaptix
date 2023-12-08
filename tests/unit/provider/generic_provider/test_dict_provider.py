@@ -7,8 +7,8 @@ from tests_helpers import TestRetort, raises_exc
 from adaptix import DebugTrail, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.load_error import AggregateLoadError
-from adaptix._internal.provider.concrete_provider import STR_LOADER_PROVIDER
-from adaptix._internal.provider.dict_provider import DictProvider
+from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
+from adaptix._internal.morphing.dict_provider import DictProvider
 from adaptix._internal.struct_trail import ItemKey, append_trail, extend_trail
 from adaptix.load_error import TypeLoadError
 

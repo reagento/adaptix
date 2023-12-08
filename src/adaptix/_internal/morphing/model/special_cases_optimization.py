@@ -2,7 +2,7 @@ from typing import Optional, TypeVar, Union
 
 from ...load_error import TypeLoadError
 from ...model_tools.definitions import DefaultFactory, DefaultFactoryWithSelf, DefaultValue
-from ...provider.model.crown_definitions import Sieve
+from .crown_definitions import Sieve
 
 as_is_stub = lambda x: x  # noqa: E731  # pylint: disable=unnecessary-lambda-assignment
 
