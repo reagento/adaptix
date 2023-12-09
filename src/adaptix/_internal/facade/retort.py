@@ -37,6 +37,7 @@ from ..morphing.generic_provider import (
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
+from ..morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
 from ..morphing.iterable_provider import IterableProvider
 from ..morphing.model.crown_definitions import ExtraSkip
 from ..morphing.model.dumper_provider import ModelDumperProvider
@@ -137,6 +138,7 @@ class FilledRetort(OperatingRetort, ABC):
 
         LiteralProvider(),
         UnionProvider(),
+        ConstantLengthTupleProvider(),
         IterableProvider(),
         DictProvider(),
         RegexPatternProvider(),
