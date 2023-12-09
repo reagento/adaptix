@@ -15,12 +15,13 @@ from typing import (
     Reversible,
     Sequence,
     Set,
+    Tuple,
 )
 
 import pytest
 from tests_helpers import TestRetort, raises_exc
 
-from adaptix import DebugTrail, NoSuitableProvider, Retort, dumper, loader
+from adaptix import DebugTrail, NoSuitableProvider, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.load_error import AggregateLoadError
 from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
@@ -180,15 +181,29 @@ def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
 @pytest.mark.parametrize(
     ['tp', 'factory'],
     [
-        (Deque, deque),
-        (Set, set),
-        (FrozenSet, frozenset),
-        (FrozenSet, frozenset),
+        (Deque[str], deque),
+        (Set[str], set),
+        (FrozenSet[str], frozenset),
+        (Tuple[str, ...], tuple),
     ],
 )
-def test_specific_type_loading(tp, factory):
-    loaded = Retort().load(['a', 'b', 'c'], tp[str])
+def test_specific_type_loading(retort, tp, factory):
+    loaded = retort.load(['a', 'b', 'c'], tp)
     assert loaded == factory(['a', 'b', 'c'])
+
+
+@pytest.mark.parametrize(
+    ['tp', 'factory'],
+    [
+        (Deque[str], deque),
+        (Set[str], set),
+        (FrozenSet[str], frozenset),
+        (Tuple[str, ...], tuple),
+    ],
+)
+def test_specific_type_dumping(retort, tp, factory):
+    dumped = retort.dump(factory(['a', 'b', 'c']), tp)
+    assert dumped == factory(['a', 'b', 'c'])
 
 
 def test_abc_impl(retort, strict_coercion, debug_trail):

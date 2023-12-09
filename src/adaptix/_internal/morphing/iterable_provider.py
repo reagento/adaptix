@@ -55,7 +55,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
     def _fetch_norm_and_arg(self, request: LocatedRequest):
         norm = try_normalize_type(get_type_from_request(request))
 
-        if len(norm.args) != 1:
+        if len(norm.args) != 1 and not (norm.origin == tuple and norm.args[-1] == Ellipsis):
             raise CannotProvide
 
         try:
