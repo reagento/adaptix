@@ -26,8 +26,8 @@ def pytest_generate_tests(metafunc):
         [
             param(
                 '.'.join((path_to_test.parent / path_to_test.stem).relative_to(REPO_ROOT).parts),
-                str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT)),
-                id=str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT)),
+                str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT).as_posix()),
+                id=str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT).as_posix()),
             )
             for path_to_test in paths_to_test
         ]
