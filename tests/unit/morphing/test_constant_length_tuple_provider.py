@@ -1,18 +1,17 @@
 import collections
 import collections.abc
-
 from typing import Mapping
 
 import pytest
-from tests_helpers import TestRetort, raises_exc
+from tests_helpers import TestRetort, full_match_regex_str, raises_exc
 
 from adaptix import DebugTrail, NoSuitableProvider, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.load_error import AggregateLoadError
-from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
+from adaptix._internal.morphing.concrete_provider import INT_LOADER_PROVIDER, STR_LOADER_PROVIDER
 from adaptix._internal.morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
 from adaptix._internal.struct_trail import append_trail, extend_trail
-from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
+from adaptix.load_error import ExcludedTypeLoadError, ExtraItemsError, NoRequiredItemsError, TypeLoadError
 
 
 def string_dumper(data):
@@ -162,7 +161,6 @@ def test_dumping(retort, debug_trail):
         debug_trail=debug_trail
     ).extend(
         recipe=[
-            dumper(str, string_dumper),
             dumper(int, int_dumper)
         ]
     )
@@ -192,6 +190,10 @@ def test_dumping(retort, debug_trail):
             extend_trail(TypeError(), [0]),
             lambda: second_dumper([10, '20']),
         )
+        raises_exc(
+            extend_trail(TypeError(), [0]),
+            lambda: third_dumper(['10', 20]),
+        )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
@@ -213,3 +215,31 @@ def test_dumping(retort, debug_trail):
             ),
             lambda: third_dumper(['10', 20]),
         )
+
+
+def test_loading_not_enough_fields(retort):
+    retort = retort.extend(
+        recipe=[
+            INT_LOADER_PROVIDER,
+        ]
+    )
+
+    loader_ = retort.get_loader(tuple[int, int])
+    with pytest.raises(ExtraItemsError, match=full_match_regex_str("expected_len=2, input_value=(1, 2, 3)")):
+        loader_([1, 2, 3])
+    with pytest.raises(NoRequiredItemsError, match=full_match_regex_str("expected_len=2, input_value=(1,)")):
+        loader_([1])
+
+
+def test_dumping_not_enough_fields(retort):
+    retort = retort.extend(
+        recipe=[
+            dumper(int, int_dumper)
+        ]
+    )
+
+    dumper_ = retort.get_dumper(tuple[int, int])
+    with pytest.raises(ExtraItemsError, match=full_match_regex_str("expected_len=2, input_value=[1, 2, 3]")):
+        dumper_([1, 2, 3])
+    with pytest.raises(NoRequiredItemsError, match=full_match_regex_str("expected_len=2, input_value=[1]")):
+        dumper_([1])

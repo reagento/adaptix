@@ -19,6 +19,7 @@ from ..provider.provider_template import for_predicate
 from ..provider.request_cls import (
     DebugTrailRequest,
     DumperRequest,
+    GenericParamLoc,
     LoaderRequest,
     LocMap,
     StrictCoercionRequest,
@@ -49,10 +50,11 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             [
                 LoaderRequest(
                     loc_map=LocMap(
-                        TypeHintLoc(type=tp.source)
+                        TypeHintLoc(type=tp.source),
+                        GenericParamLoc(generic_pos=i),
                     )
                 )
-                for tp in norm.args
+                for i, tp in enumerate(norm.args)
             ]
         )
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
@@ -90,6 +92,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                 raise ExcludedTypeLoadError(tuple, Mapping, data)
             if type(data) is str:  # pylint: disable=unidiomatic-typecheck
                 raise ExcludedTypeLoadError(tuple, str, data)
+
             try:
                 value_tuple = tuple(data)
             except TypeError:
@@ -99,20 +102,20 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         return dt_sc_loader
 
     def _create_dt_all_loader(self, loaders: Collection[Loader]):
-        def dt_all_loader(data):
+        loaders_len = len(loaders)
 
+        def dt_all_loader(data):
             try:
                 data_len = len(data)
             except TypeError:
                 raise TypeLoadError(tuple, data)
-
-            loaders_len = len(loaders)
 
             if data_len != loaders_len:
                 if data_len > loaders_len:
                     raise ExtraItemsError(loaders_len, data)
                 if loaders_len > data_len:
                     raise NoRequiredItemsError(loaders_len, data)
+
             idx = 0
             errors = []
             has_unexpected_error = False
@@ -141,20 +144,20 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         return dt_all_loader
 
     def _create_dt_first_loader(self, loaders: Collection[Loader]):
-        def dt_first_loader(data):
+        loaders_len = len(loaders)
 
+        def dt_first_loader(data):
             try:
                 data_len = len(data)
             except TypeError:
                 raise TypeLoadError(tuple, data)
-
-            loaders_len = len(loaders)
 
             if data_len != loaders_len:
                 if data_len > loaders_len:
                     raise ExtraItemsError(loaders_len, data)
                 if loaders_len > data_len:
                     raise NoRequiredItemsError(loaders_len, data)
+
             idx = 0
             for loader, field in zip(loaders, data):
                 try:
@@ -167,20 +170,20 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         return dt_first_loader
 
     def _get_dt_disable_non_sc_loader(self, loaders: Collection[Loader]):
-        def dt_disable_non_sc_loader(data):
+        loaders_len = len(loaders)
 
+        def dt_disable_non_sc_loader(data):
             try:
                 data_len = len(data)
             except TypeError:
                 raise TypeLoadError(tuple, data)
-
-            loaders_len = len(loaders)
 
             if data_len != loaders_len:
                 if data_len > loaders_len:
                     raise ExtraItemsError(loaders_len, data)
                 if loaders_len > data_len:
                     raise NoRequiredItemsError(loaders_len, data)
+
             return tuple(
                 loader(field)
                 for loader, field
@@ -190,6 +193,8 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         return dt_disable_non_sc_loader
 
     def _get_dt_disable_sc_loader(self, loaders: Collection[Loader]):
+        loaders_len = len(loaders)
+
         def dt_disable_sc_loader(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(tuple, Mapping, data)
@@ -200,8 +205,6 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                 data_len = len(data)
             except TypeError:
                 raise TypeLoadError(tuple, data)
-
-            loaders_len = len(loaders)
 
             if data_len != loaders_len:
                 if data_len > loaders_len:
@@ -231,10 +234,11 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             [
                 DumperRequest(
                     loc_map=LocMap(
-                        TypeHintLoc(type=tp.source)
+                        TypeHintLoc(type=tp.source),
+                        GenericParamLoc(generic_pos=i),
                     )
                 )
-                for tp in norm.args
+                for i, tp in enumerate(norm.args)
             ]
         )
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
@@ -250,10 +254,22 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         raise ValueError
 
     def _create_dt_all_dumper(self, dumpers: Collection[Dumper]):
+        dumpers_len = len(dumpers)
+
         def dt_all_dumper(data):
+            try:
+                data_len = len(data)
+            except TypeError:
+                raise TypeLoadError(tuple, data)
+
+            if data_len != dumpers_len:
+                if data_len > dumpers_len:
+                    raise ExtraItemsError(dumpers_len, data)
+                if dumpers_len > data_len:
+                    raise NoRequiredItemsError(dumpers_len, data)
+
             idx = 0
             errors = []
-
             for dumper, field in zip(dumpers, data):
                 try:
                     yield dumper(field)
@@ -271,20 +287,20 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         return dt_all_dumper
 
     def _create_dt_first_dumper(self, dumpers: Collection[Dumper]):
-        def dt_first_dumper(data):
+        dumpers_len = len(dumpers)
 
+        def dt_first_dumper(data):
             try:
                 data_len = len(data)
             except TypeError:
                 raise TypeLoadError(tuple, data)
-
-            dumpers_len = len(dumpers)
 
             if data_len != dumpers_len:
                 if data_len > dumpers_len:
                     raise ExtraItemsError(dumpers_len, data)
                 if dumpers_len > data_len:
                     raise NoRequiredItemsError(dumpers_len, data)
+
             idx = 0
             for dumper, field in zip(dumpers, data):
                 try:
@@ -303,20 +319,20 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         return dt_dumper
 
     def _get_dt_disable_dumper(self, dumpers: Collection[Dumper]):
-        def tuple_dumper(data):
+        dumpers_len = len(dumpers)
 
+        def tuple_dumper(data):
             try:
                 data_len = len(data)
             except TypeError:
                 raise TypeLoadError(tuple, data)
-
-            dumpers_len = len(dumpers)
 
             if data_len != dumpers_len:
                 if data_len > dumpers_len:
                     raise ExtraItemsError(dumpers_len, data)
                 if dumpers_len > data_len:
                     raise NoRequiredItemsError(dumpers_len, data)
+
             return tuple(
                 dumper(field)
                 for dumper, field
