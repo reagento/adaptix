@@ -27,6 +27,7 @@ from ..morphing.concrete_provider import (
     SecondsTimedeltaProvider,
     SelfTypeProvider,
 )
+from ..morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
 from ..morphing.dict_provider import DictProvider
 from ..morphing.enum_provider import EnumExactValueProvider
 from ..morphing.generic_provider import (
@@ -37,7 +38,6 @@ from ..morphing.generic_provider import (
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
-from ..morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
 from ..morphing.iterable_provider import IterableProvider
 from ..morphing.model.crown_definitions import ExtraSkip
 from ..morphing.model.dumper_provider import ModelDumperProvider
