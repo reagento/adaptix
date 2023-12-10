@@ -46,6 +46,7 @@ from ..feature_requirement import (
     HAS_TYPE_GUARD,
     HAS_TYPE_UNION_OP,
     HAS_TYPED_DICT_REQUIRED,
+    HAS_UNPACK,
 )
 from .basic_utils import create_union, eval_forward_ref, is_new_type, is_subclass_soft, strip_alias
 from .implicit_params import ImplicitParamsGetter
@@ -684,7 +685,7 @@ class TypeNormalizer:
                 )
 
             norm_args = self._norm_iter(args)
-            if HAS_TV_TUPLE:
+            if HAS_UNPACK:
                 norm_args = self._unpack_tuple_elements(norm_args)
             return _NormType(tuple, norm_args, source=tp)
 
