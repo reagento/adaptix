@@ -1,9 +1,8 @@
-tox==4.11.3
 coverage==7.3.2
 pip-tools==7.3.0
 setuptools==68.2.2
-invoke==2.2.0
 
+-r runner.txt
 -r lint.txt
 -r _bench-orchestrate.txt
 -r pre.txt
