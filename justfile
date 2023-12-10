@@ -1,3 +1,5 @@
+set windows-powershell := true
+
 [private]
 @default:
     just --list
