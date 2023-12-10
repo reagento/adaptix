@@ -1,7 +1,7 @@
 import collections
 import collections.abc
 import typing
-from typing import Mapping
+from typing import Mapping, Tuple
 
 import pytest
 from tests_helpers import TestRetort, raises_exc, requires
@@ -45,14 +45,14 @@ def test_dynamic_tuple_providing(retort, strict_coercion, debug_trail):
         debug_trail=debug_trail
     )
     with pytest.raises(NoSuitableProvider):
-        retort.get_loader(tuple[str, ...])
+        retort.get_loader(Tuple[str, ...])
 
 
 def test_loading(retort, strict_coercion, debug_trail):
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail
-    ).get_loader(tuple[str, str, str])
+    ).get_loader(Tuple[str, str, str])
 
     assert loader_(["a", "b", "c"]) == ("a", "b", "c")
     assert loader_(("a", "b", "c")) == ("a", "b", "c")
@@ -133,7 +133,7 @@ def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
         recipe=[
             loader(int, bad_int_loader)
         ]
-    ).get_loader(tuple[int, int, int])
+    ).get_loader(Tuple[int, int, int])
 
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
@@ -167,7 +167,7 @@ def test_dumping(retort, debug_trail):
         ]
     )
 
-    first_dumper = retort.get_dumper(tuple[str, str])
+    first_dumper = retort.get_dumper(Tuple[str, str])
     assert first_dumper(["a", "b"]) == ("a", "b")
     assert first_dumper({'a': 1, 'b': 2}) == ('a', 'b')
     assert first_dumper(["a", "b"]) == ("a", "b")
@@ -175,8 +175,8 @@ def test_dumping(retort, debug_trail):
     assert first_dumper(['1', '2']) == ("1", "2")
     assert first_dumper({"a": 0, "b": 0}) == ("a", "b")
 
-    second_dumper = retort.get_dumper(tuple[str, int])
-    third_dumper = retort.get_dumper(tuple[int, str])
+    second_dumper = retort.get_dumper(Tuple[str, int])
+    third_dumper = retort.get_dumper(Tuple[int, str])
 
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
@@ -226,7 +226,7 @@ def test_loading_not_enough_fields(retort):
         ]
     )
 
-    loader_ = retort.get_loader(tuple[int, int])
+    loader_ = retort.get_loader(Tuple[int, int])
     raises_exc(
         ExtraItemsError(2, (1, 2, 3)),
         lambda: loader_([1, 2, 3])
@@ -244,7 +244,7 @@ def test_dumping_not_enough_fields(retort):
         ]
     )
 
-    dumper_ = retort.get_dumper(tuple[int, int])
+    dumper_ = retort.get_dumper(Tuple[int, int])
     raises_exc(
         ExtraItemsError(2, [1, 2, 3]),
         lambda: dumper_([1, 2, 3])
@@ -263,9 +263,9 @@ def test_unpack_loading(retort):
         ]
     )
     with pytest.raises(NoSuitableProvider):
-        retort.get_loader(tuple[int, typing.Unpack[tuple[str, ...]], int])
+        retort.get_loader(Tuple[int, typing.Unpack[Tuple[str, ...]], int])
 
-    loader_ = retort.get_loader(tuple[int, typing.Unpack[tuple[str]], int])
+    loader_ = retort.get_loader(Tuple[int, typing.Unpack[Tuple[str]], int])
     assert loader_([1, "2", 3]) == (1, "2", 3)
 
 
@@ -278,7 +278,7 @@ def test_unpack_dumping(retort):
     )
 
     with pytest.raises(NoSuitableProvider):
-        retort.get_loader(tuple[int, typing.Unpack[tuple[str, ...]], int])
+        retort.get_loader(Tuple[int, typing.Unpack[Tuple[str, ...]], int])
 
-    dumper_ = retort.get_dumper(tuple[int, typing.Unpack[tuple[str]], int])
+    dumper_ = retort.get_dumper(Tuple[int, typing.Unpack[Tuple[str]], int])
     assert dumper_([1, "2", 3]) == (1, "2", 3)
