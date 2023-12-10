@@ -4,7 +4,7 @@ from itertools import chain
 from typing import Callable, Collection, Dict, Generic, Hashable, Mapping, TypeVar, get_args
 
 from ..common import TypeHint
-from ..feature_requirement import HAS_TV_TUPLE
+from ..feature_requirement import HAS_TV_TUPLE, HAS_UNPACK
 from .basic_utils import get_type_vars, get_type_vars_of_parametrized, is_generic, is_parametrized, strip_alias
 from .implicit_params import fill_implicit_params
 from .normalize_type import normalize_type
@@ -47,7 +47,7 @@ class GenericResolver(Generic[K, M]):
         )
 
     def _unpack_args(self, args):
-        if HAS_TV_TUPLE and any(strip_alias(arg) == typing.Unpack for arg in args):
+        if HAS_UNPACK and any(strip_alias(arg) == typing.Unpack for arg in args):
             return tuple(arg.source for arg in normalize_type(tuple[args]).args)
         return args
 

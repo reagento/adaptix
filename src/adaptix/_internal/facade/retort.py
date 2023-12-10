@@ -27,6 +27,7 @@ from ..morphing.concrete_provider import (
     SecondsTimedeltaProvider,
     SelfTypeProvider,
 )
+from ..morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
 from ..morphing.dict_provider import DictProvider
 from ..morphing.enum_provider import EnumExactValueProvider
 from ..morphing.generic_provider import (
@@ -137,6 +138,7 @@ class FilledRetort(OperatingRetort, ABC):
 
         LiteralProvider(),
         UnionProvider(),
+        ConstantLengthTupleProvider(),
         IterableProvider(),
         DictProvider(),
         RegexPatternProvider(),
