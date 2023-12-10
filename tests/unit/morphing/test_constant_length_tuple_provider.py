@@ -225,10 +225,14 @@ def test_loading_not_enough_fields(retort):
     )
 
     loader_ = retort.get_loader(tuple[int, int])
-    with pytest.raises(ExtraItemsError, match=full_match_regex_str("expected_len=2, input_value=(1, 2, 3)")):
-        loader_([1, 2, 3])
-    with pytest.raises(NoRequiredItemsError, match=full_match_regex_str("expected_len=2, input_value=(1,)")):
-        loader_([1])
+    raises_exc(
+        ExtraItemsError(2, (1, 2, 3)),
+        lambda: loader_([1, 2, 3])
+    )
+    raises_exc(
+        NoRequiredItemsError(2, (1,)),
+        lambda: loader_([1])
+    )
 
 
 def test_dumping_not_enough_fields(retort):
@@ -239,7 +243,11 @@ def test_dumping_not_enough_fields(retort):
     )
 
     dumper_ = retort.get_dumper(tuple[int, int])
-    with pytest.raises(ExtraItemsError, match=full_match_regex_str("expected_len=2, input_value=[1, 2, 3]")):
-        dumper_([1, 2, 3])
-    with pytest.raises(NoRequiredItemsError, match=full_match_regex_str("expected_len=2, input_value=[1]")):
-        dumper_([1])
+    raises_exc(
+        ExtraItemsError(2, [1, 2, 3]),
+        lambda: dumper_([1, 2, 3])
+    )
+    raises_exc(
+        NoRequiredItemsError(2, [1]),
+        lambda: dumper_([1])
+    )
