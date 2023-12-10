@@ -1,12 +1,14 @@
 import collections
 import collections.abc
+import typing
 from typing import Mapping
 
 import pytest
-from tests_helpers import TestRetort, full_match_regex_str, raises_exc
+from tests_helpers import TestRetort, raises_exc, requires
 
 from adaptix import DebugTrail, NoSuitableProvider, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
+from adaptix._internal.feature_requirement import HAS_UNPACK
 from adaptix._internal.load_error import AggregateLoadError
 from adaptix._internal.morphing.concrete_provider import INT_LOADER_PROVIDER, STR_LOADER_PROVIDER
 from adaptix._internal.morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
@@ -251,3 +253,32 @@ def test_dumping_not_enough_fields(retort):
         NoRequiredItemsError(2, [1]),
         lambda: dumper_([1])
     )
+
+
+@requires(HAS_UNPACK)
+def test_unpack_loading(retort):
+    retort = retort.extend(
+        recipe=[
+            INT_LOADER_PROVIDER,
+        ]
+    )
+    with pytest.raises(NoSuitableProvider):
+        retort.get_loader(tuple[int, typing.Unpack[tuple[str, ...]], int])
+
+    loader_ = retort.get_loader(tuple[int, typing.Unpack[tuple[str]], int])
+    assert loader_([1, "2", 3]) == (1, "2", 3)
+
+
+@requires(HAS_UNPACK)
+def test_unpack_dumping(retort):
+    retort = retort.extend(
+        recipe=[
+            dumper(int, int_dumper)
+        ]
+    )
+
+    with pytest.raises(NoSuitableProvider):
+        retort.get_loader(tuple[int, typing.Unpack[tuple[str, ...]], int])
+
+    dumper_ = retort.get_dumper(tuple[int, typing.Unpack[tuple[str]], int])
+    assert dumper_([1, "2", 3]) == (1, "2", 3)
