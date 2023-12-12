@@ -25,7 +25,7 @@ How to setup the repository
    * PyPy 3.9
    * PyPy 3.10
 
-3. Clone `repository <https://github.com/reagento/dataclass-factory>`_ with submodules
+3. Clone repository with submodules
 
    .. code-block:: bash
 
@@ -36,6 +36,10 @@ How to setup the repository
    .. code-block:: bash
 
       git switch 3.x/develop
+
+   If you already cloned the project and forgot ``--recurse-submodules``,
+   directory ``benchmarks/release_data`` will be empty.
+   You can fix it executing ``git submodule update --init --recursive``.
 
 5. Create `venv <https://docs.python.org/3/library/venv.html>`_ and run
 
