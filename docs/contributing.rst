@@ -25,11 +25,11 @@ How to setup the repository
    * PyPy 3.9
    * PyPy 3.10
 
-3. Clone `repository <https://github.com/reagento/dataclass-factory>`_
+3. Clone `repository <https://github.com/reagento/dataclass-factory>`_ with submodules
 
    .. code-block:: bash
 
-      git clone https://github.com/reagento/dataclass-factory
+      git clone --recurse-submodules https://github.com/reagento/dataclass-factory
 
 4. Checkout to ``3.x/develop``
 
