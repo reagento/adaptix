@@ -12,6 +12,7 @@ Adaptix
    specific_types_behavior
    benchmarks
    API Reference <api_reference/modules>
+   contributing
 
 
 .. toctree::
