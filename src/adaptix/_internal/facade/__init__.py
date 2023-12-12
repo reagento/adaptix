@@ -1,5 +1,4 @@
 from .provider import (
-    add_property,
     as_is_dumper,
     as_is_loader,
     bound,
@@ -11,5 +10,6 @@ from .provider import (
     loader,
     name_mapping,
     validator,
+    with_property,
 )
 from .retort import AdornedRetort, FilledRetort, Retort

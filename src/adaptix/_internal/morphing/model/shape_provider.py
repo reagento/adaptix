@@ -65,7 +65,7 @@ CLASS_INIT_SHAPE_PROVIDER = ShapeProvider(get_class_init_shape)
 ATTRS_SHAPE_PROVIDER = ShapeProvider(get_attrs_shape)
 
 
-class PropertyAdder(StaticProvider):
+class PropertyExtender(StaticProvider):
     def __init__(
         self,
         output_fields: Iterable[OutputField],

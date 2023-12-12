@@ -134,7 +134,7 @@ there are a lot of other high-level helpers. Here are some of them.
 #. :func:`.name_mapping` renames and skips model fields for the outside world.
    You can change the naming convention to ``camelCase`` via the ``name_style`` parameter
    or rename individual fields via ``map``.
-#. :func:`.add_property` allows dumping properties of the model like other fields.
+#. :func:`.with_property` allows dumping properties of the model like other fields.
 #. :func:`.enum_by_exact_value` is the default behavior for all enums.
    It uses enum values without any conversions to represent enum cases.
 #. :func:`.enum_by_name` allows representing enums by their names.

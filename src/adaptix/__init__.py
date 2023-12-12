@@ -5,7 +5,6 @@ from ._internal.facade import (
     AdornedRetort,
     FilledRetort,
     Retort,
-    add_property,
     as_is_dumper,
     as_is_loader,
     bound,
@@ -17,6 +16,7 @@ from ._internal.facade import (
     loader,
     name_mapping,
     validator,
+    with_property,
 )
 from ._internal.model_tools.introspection import TypedDictAt38Warning
 from ._internal.morphing.model.crown_definitions import (
@@ -53,7 +53,7 @@ __all__ = (
     'as_is_dumper',
     'as_is_loader',
     'constructor',
-    'add_property',
+    'with_property',
     'validator',
     'bound',
     'enum_by_exact_value',

@@ -10,7 +10,7 @@ from ..model_tools.definitions import Default, DescriptorAccessor, NoDefault, Ou
 from ..model_tools.introspection import get_callable_shape
 from ..morphing.enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
 from ..morphing.model.loader_provider import InlinedShapeModelLoaderProvider
-from ..morphing.model.shape_provider import PropertyAdder
+from ..morphing.model.shape_provider import PropertyExtender
 from ..morphing.model.special_cases_optimization import as_is_stub
 from ..morphing.name_layout.base import ExtraIn, ExtraOut
 from ..morphing.name_layout.component import ExtraMoveAndPoliciesOverlay, SievesOverlay, StructureOverlay
@@ -254,7 +254,7 @@ def name_mapping(
 NameOrProp = Union[str, property]
 
 
-def add_property(
+def with_property(
     pred: Pred,
     prop: NameOrProp,
     tp: Omittable[TypeHint] = Omitted(),
@@ -276,7 +276,7 @@ def add_property(
 
     return bound(
         pred,
-        PropertyAdder(
+        PropertyExtender(
             output_fields=[field],
             infer_types_for=[field.id] if tp == Omitted() else [],
         )
