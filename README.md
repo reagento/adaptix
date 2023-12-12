@@ -7,13 +7,16 @@
 
 An extremely flexible and configurable data model conversion library.
 
-📑 [Documentation](https://adaptix.readthedocs.io/)
+Adaptix is ready for production! \
+The beta version only means there may be some backward incompatible changes, so you need to pin a specific version.
+
+📚 [Documentation](https://adaptix.readthedocs.io/)
 
 ## TL;DR
 
 Install
 ```bash
-pip install adaptix
+pip install adaptix==3.0.0a8
 ```
 
 Use

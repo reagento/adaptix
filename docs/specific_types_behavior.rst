@@ -208,7 +208,7 @@ So if a field with ``Iterable[int]`` type will contain ``List[int]``,
 the list will be converted to a tuple while dumping.
 
 Tuple of dynamic length like ``*tuple[int, ...]`` isn't supported yet.
-Note: This doesn't applies for tuples like ``*tuple[int]``, because it's equivalent to ``tuple[int]``
+This doesn't applies for tuples like ``*tuple[int, str]`` (constant lenght tuples).
 
 Dict and Mapping
 '''''''''''''''''''''

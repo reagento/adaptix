@@ -4,13 +4,19 @@ Overview
 
 Adaptix is an extremely flexible and configurable data model conversion library.
 
+.. important::
+
+  It is ready for production!
+
+  The beta version only means there may be some backward incompatible changes, so you need to pin a specific version.
+
 
 Installation
 ==================
 
-.. code:: bash
+.. code-block:: text
 
-  pip install adaptix
+    pip install adaptix==3.0.0a8
 
 
 Example
