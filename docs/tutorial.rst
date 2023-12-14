@@ -51,6 +51,7 @@ In the provided example ``book.author == "Unknown author"`` because normal datac
 It is better to create a retort only once because all loaders are cached inside it after the first usage.
 Otherwise, the structure of your classes will be analyzed again and again for every new instance of Retort.
 
+If you don't need any customization, you can use the predefined :func:`.load` and :func:`.dump` functions.
 
 Nested objects
 --------------------
