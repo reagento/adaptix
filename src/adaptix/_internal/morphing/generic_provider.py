@@ -25,8 +25,8 @@ from ..provider.request_cls import (
     try_normalize_type,
 )
 from ..provider.static_provider import StaticProvider, static_provision_action
+from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
-from .model.special_cases_optimization import as_is_stub
 from .provider_template import DumperProvider, LoaderProvider
 
 

@@ -2,6 +2,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
 
+from adaptix._internal.special_cases_optimization import with_default_clause
+
 from ...common import VarTuple
 from ...model_tools.definitions import (
     BaseField,
@@ -45,7 +47,6 @@ from ..model.crown_definitions import (
     Sieve,
 )
 from ..model.fields import field_to_loc_map
-from ..model.special_cases_optimization import with_default_clause
 from .base import (
     ExtraIn,
     ExtraMoveMaker,

@@ -75,9 +75,6 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
                 yield f'Exception was raised while processing field {field_loc.field_id!r} of {field_loc.owner_type}'
 
 
-CannotProvideT = TypeVar('CannotProvideT', bound=CannotProvide)
-
-
 class OperatingRetort(BaseRetort, Provider, ABC):
     """A retort that can operate as Retort but have no predefined providers and no high-level user interface"""
 

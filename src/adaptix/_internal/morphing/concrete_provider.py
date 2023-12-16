@@ -24,7 +24,7 @@ from ..provider.request_cls import (
 from ..provider.request_filtering import P, create_request_checker
 from ..provider.static_provider import static_provision_action
 from ..provider.utils import find_field_request
-from .model.special_cases_optimization import as_is_stub, none_loader
+from ..special_cases_optimization import as_is_stub, none_loader
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC
 
 T = TypeVar('T')

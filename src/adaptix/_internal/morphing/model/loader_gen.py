@@ -20,6 +20,7 @@ from ...load_error import (
     TypeLoadError,
 )
 from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
+from ...special_cases_optimization import as_is_stub
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
 from .crown_definitions import (
     BranchInpCrown,
@@ -38,7 +39,6 @@ from .crown_definitions import (
     InputNameLayout,
 )
 from .definitions import CodeGenerator
-from .special_cases_optimization import as_is_stub
 
 
 class Namer:

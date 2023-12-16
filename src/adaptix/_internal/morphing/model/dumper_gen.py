@@ -17,6 +17,7 @@ from ...model_tools.definitions import (
     OutputField,
     OutputShape,
 )
+from ...special_cases_optimization import as_is_stub, get_default_clause
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
 from .crown_definitions import (
     CrownPath,
@@ -32,7 +33,6 @@ from .crown_definitions import (
     Sieve,
 )
 from .definitions import CodeGenerator
-from .special_cases_optimization import as_is_stub, get_default_clause
 
 
 class GenState:
