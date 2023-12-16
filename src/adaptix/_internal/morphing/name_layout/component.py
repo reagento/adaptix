@@ -18,7 +18,7 @@ from ...model_tools.definitions import (
 from ...name_style import NameStyle, convert_snake_style
 from ...provider.essential import CannotProvide, Mediator, Provider
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
-from ...provider.request_cls import FieldLoc, LocatedRequest, TypeHintLoc
+from ...provider.request_cls import LocatedRequest, TypeHintLoc
 from ...provider.request_filtering import ExtraStackMediator, RequestChecker
 from ...retort.operating_retort import OperatingRetort
 from ...utils import Omittable, get_prefix_groups
@@ -91,17 +91,6 @@ LeafCr = TypeVar('LeafCr', bound=LeafBaseCrown)
 FieldCr = TypeVar('FieldCr', bound=BaseFieldCrown)
 F = TypeVar('F', bound=BaseField)
 FieldAndPath = Tuple[F, Optional[KeyPath]]
-
-
-def location_to_string(request: LocatedRequest) -> str:
-    loc_map = request.loc_map
-    if loc_map.has(TypeHintLoc, FieldLoc):
-        return f' at type {loc_map[TypeHintLoc].type} that situated at field {request.loc_map[FieldLoc].field_id!r}'
-    if loc_map.has(TypeHintLoc):
-        return f' at type {loc_map[TypeHintLoc].type}'
-    if loc_map.has(FieldLoc):
-        return f' situated at field {request.loc_map[FieldLoc].field_id!r}'
-    return ''
 
 
 def apply_rc(
@@ -190,8 +179,10 @@ class BuiltinStructureMaker(StructureMaker):
             if len(fields) > 1
         }
         if duplicates:
-            raise ValueError(
-                f"Paths {duplicates} pointed to several fields" + location_to_string(request)
+            raise CannotProvide(
+                f"Paths {duplicates} pointed to several fields",
+                is_terminal=True,
+                is_demonstrative=True,
             )
 
         prefix_groups = get_prefix_groups([path for field, path in fields_to_paths if path is not None])
@@ -212,11 +203,10 @@ class BuiltinStructureMaker(StructureMaker):
                 )
                 for prefix, paths in prefix_groups
             )
-            raise ValueError(
-                'Path to the field must not be a prefix of another path'
-                + location_to_string(request)
-                + '. '
-                + details
+            raise CannotProvide(
+                'Path to the field must not be a prefix of another path. ' + details,
+                is_terminal=True,
+                is_demonstrative=True,
             )
 
         optional_fields_at_list = [
@@ -225,9 +215,10 @@ class BuiltinStructureMaker(StructureMaker):
             if path is not None and field.is_optional and isinstance(path[-1], int)
         ]
         if optional_fields_at_list:
-            raise ValueError(
-                f"Optional fields {optional_fields_at_list} can not be mapped to list elements"
-                + location_to_string(request)
+            raise CannotProvide(
+                f"Optional fields {optional_fields_at_list} can not be mapped to list elements",
+                is_terminal=True,
+                is_demonstrative=True,
             )
 
     def _iterate_sub_paths(self, paths: Iterable[KeyPath]) -> Iterable[Tuple[KeyPath, Key]]:
@@ -247,15 +238,19 @@ class BuiltinStructureMaker(StructureMaker):
         for sub_path, key in self._iterate_sub_paths(paths):
             if isinstance(key, int):
                 if sub_path in paths_to_dicts:
-                    raise ValueError(
-                        f"Inconsistent path elements at {sub_path}" + location_to_string(request)
+                    raise CannotProvide(
+                        f"Inconsistent path elements at {sub_path}",
+                        is_terminal=True,
+                        is_demonstrative=True,
                     )
 
                 paths_to_lists[sub_path].add(key)
             else:
                 if sub_path in paths_to_lists:
-                    raise ValueError(
-                        f"Inconsistent path elements at {sub_path}" + location_to_string(request)
+                    raise CannotProvide(
+                        f"Inconsistent path elements at {sub_path}",
+                        is_terminal=True,
+                        is_demonstrative=True,
                     )
 
                 paths_to_dicts.add(sub_path)
@@ -306,8 +301,10 @@ class BuiltinStructureMaker(StructureMaker):
             if path is None and field.is_required
         ]
         if skipped_required_fields:
-            raise ValueError(
-                f"Required fields {skipped_required_fields} are skipped" + location_to_string(request)
+            raise CannotProvide(
+                f"Required fields {skipped_required_fields} are skipped",
+                is_terminal=True,
+                is_demonstrative=True,
             )
         paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, InpFieldCrown, self._fill_input_gap)
         self._validate_structure(request, fields_to_paths)
@@ -451,6 +448,10 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         }
         for path, key in _paths_to_branches(paths_to_leaves):
             if policy == ExtraCollect() and isinstance(key, int):
-                raise ValueError("Can not use collecting extra_in with list mapping" + location_to_string(request))
+                raise CannotProvide(
+                    "Can not use collecting extra_in with list mapping",
+                    is_terminal=True,
+                    is_demonstrative=True,
+                )
             path_to_extra_policy[path] = policy
         return path_to_extra_policy

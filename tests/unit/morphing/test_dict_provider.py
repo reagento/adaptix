@@ -2,14 +2,14 @@ import collections.abc
 from typing import Dict
 
 import pytest
-from tests_helpers import TestRetort, raises_exc
+from tests_helpers import TestRetort, raises_exc, with_trail
 
 from adaptix import DebugTrail, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.load_error import AggregateLoadError
 from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.morphing.dict_provider import DictProvider
-from adaptix._internal.struct_trail import ItemKey, append_trail, extend_trail
+from adaptix._internal.struct_trail import ItemKey
 from adaptix.load_error import TypeLoadError
 
 
@@ -71,25 +71,25 @@ def test_loading(retort, strict_coercion, debug_trail):
             )
         elif debug_trail == DebugTrail.FIRST:
             raises_exc(
-                extend_trail(TypeLoadError(str, 0), ['c']),
+                with_trail(TypeLoadError(str, 0), ['c']),
                 lambda: loader_({'a': 'b', 'c': 0}),
             )
             raises_exc(
-                extend_trail(TypeLoadError(str, 0), [ItemKey(0)]),
+                with_trail(TypeLoadError(str, 0), [ItemKey(0)]),
                 lambda: loader_({'a': 'b', 0: 'd'}),
             )
         elif debug_trail == DebugTrail.ALL:
             raises_exc(
                 AggregateLoadError(
                     "while loading <class 'dict'>",
-                    [append_trail(TypeLoadError(str, 0), 'c')]
+                    [with_trail(TypeLoadError(str, 0), ['c'])]
                 ),
                 lambda: loader_({'a': 'b', 'c': 0}),
             )
             raises_exc(
                 AggregateLoadError(
                     "while loading <class 'dict'>",
-                    [append_trail(TypeLoadError(str, 0), ItemKey(0))]
+                    [with_trail(TypeLoadError(str, 0), [ItemKey(0)])]
                 ),
                 lambda: loader_({'a': 'b', 0: 'd'}),
             )
@@ -124,25 +124,25 @@ def test_loader_unexpected_error(retort, strict_coercion, debug_trail):
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            extend_trail(TypeError(), ['c']),
+            with_trail(TypeError(), ['c']),
             lambda: loader_({'a': 'b', 'c': 0}),
         )
         raises_exc(
-            extend_trail(TypeError(), [ItemKey(0)]),
+            with_trail(TypeError(), [ItemKey(0)]),
             lambda: loader_({'a': 'b', 0: 'd'}),
         )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
                 "while loading <class 'dict'>",
-                [append_trail(TypeError(), 'c')]
+                [with_trail(TypeError(), ['c'])]
             ),
             lambda: loader_({'a': 'b', 'c': 0}),
         )
         raises_exc(
             CompatExceptionGroup(
                 "while loading <class 'dict'>",
-                [append_trail(TypeError(), ItemKey(0))]
+                [with_trail(TypeError(), [ItemKey(0)])]
             ),
             lambda: loader_({'a': 'b', 0: 'd'}),
         )
@@ -168,25 +168,25 @@ def test_dumping(retort, debug_trail):
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            extend_trail(TypeError(), ['c']),
+            with_trail(TypeError(), ['c']),
             lambda: dumper_({'a': 'b', 'c': 0}),
         )
         raises_exc(
-            extend_trail(TypeError(), [ItemKey(0)]),
+            with_trail(TypeError(), [ItemKey(0)]),
             lambda: dumper_({'a': 'b', 0: 'd'}),
         )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
                 "while dumping <class 'dict'>",
-                [append_trail(TypeError(), 'c')],
+                [with_trail(TypeError(), ['c'])],
             ),
             lambda: dumper_({'a': 'b', 'c': 0}),
         )
         raises_exc(
             CompatExceptionGroup(
                 "while dumping <class 'dict'>",
-                [append_trail(TypeError(), ItemKey(0))],
+                [with_trail(TypeError(), [ItemKey(0)])],
             ),
             lambda: dumper_({'a': 'b', 0: 'd'}),
         )

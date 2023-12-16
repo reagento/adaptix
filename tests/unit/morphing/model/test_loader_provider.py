@@ -4,7 +4,7 @@ from types import MappingProxyType
 from typing import Any, Callable, Dict, Optional
 
 import pytest
-from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc
+from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc, with_trail
 
 from adaptix import DebugTrail, ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
@@ -27,7 +27,6 @@ from adaptix._internal.morphing.model.definitions import InputShapeRequest
 from adaptix._internal.morphing.model.loader_provider import ModelLoaderProvider
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import LoaderRequest
-from adaptix._internal.struct_trail import extend_trail
 from adaptix.load_error import (
     ExtraFieldsError,
     ExtraItemsError,
@@ -179,10 +178,10 @@ def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
     raises_exc(
         trail_select(
             disable=LoadError(),
-            first=extend_trail(LoadError(), ['b']),
+            first=with_trail(LoadError(), ['b']),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [extend_trail(LoadError(), ['b'])],
+                [with_trail(LoadError(), ['b'])],
             ),
         ),
         lambda: loader({'a': 1, 'b': LoadError()}),
@@ -792,10 +791,10 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select):
     raises_exc(
         trail_select(
             disable=TypeLoadError(CollectionsMapping, 'this is not a dict'),
-            first=extend_trail(TypeLoadError(CollectionsMapping, 'this is not a dict'), ['z']),
+            first=with_trail(TypeLoadError(CollectionsMapping, 'this is not a dict'), ['z']),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [extend_trail(TypeLoadError(CollectionsMapping, 'this is not a dict'), ['z'])],
+                [with_trail(TypeLoadError(CollectionsMapping, 'this is not a dict'), ['z'])],
             ),
         ),
         lambda: loader(
@@ -814,10 +813,10 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select):
     raises_exc(
         trail_select(
             disable=TypeLoadError(CollectionsSequence, None),
-            first=extend_trail(TypeLoadError(CollectionsSequence, None), ['v']),
+            first=with_trail(TypeLoadError(CollectionsSequence, None), ['v']),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [extend_trail(TypeLoadError(CollectionsSequence, None), ['v'])],
+                [with_trail(TypeLoadError(CollectionsSequence, None), ['v'])],
             ),
         ),
         lambda: loader(
@@ -835,10 +834,10 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select):
     raises_exc(
         trail_select(
             disable=ExcludedTypeLoadError(CollectionsSequence, str, 'this is not a list'),
-            first=extend_trail(ExcludedTypeLoadError(CollectionsSequence, str, 'this is not a list'), ['v']),
+            first=with_trail(ExcludedTypeLoadError(CollectionsSequence, str, 'this is not a list'), ['v']),
             all=AggregateLoadError(
                 f'while loading model {Gauge}',
-                [extend_trail(ExcludedTypeLoadError(CollectionsSequence, str, 'this is not a list'), ['v'])],
+                [with_trail(ExcludedTypeLoadError(CollectionsSequence, str, 'this is not a list'), ['v'])],
             ),
         ),
         lambda: loader(
@@ -905,8 +904,8 @@ def test_error_path_at_complex_structure(debug_ctx, debug_trail, error_path, tra
     raises_exc(
         trail_select(
             disable=LoadError(),
-            first=extend_trail(LoadError(), error_path),
-            all=AggregateLoadError(f'while loading model {Gauge}', [extend_trail(LoadError(), error_path)]),
+            first=with_trail(LoadError(), error_path),
+            all=AggregateLoadError(f'while loading model {Gauge}', [with_trail(LoadError(), error_path)]),
         ),
         lambda: loader(data),
     )
@@ -1028,8 +1027,8 @@ def test_exception_collection(debug_ctx):
         AggregateLoadError(
             f'while loading model {Gauge}',
             [
-                extend_trail(ValueLoadError('error at a', ...), ['a']),
-                extend_trail(ValueLoadError('error at b', ...), ['b']),
+                with_trail(ValueLoadError('error at a', ...), ['a']),
+                with_trail(ValueLoadError('error at b', ...), ['b']),
             ]
         ),
         lambda: loader({'a': ValueLoadError('error at a', ...), 'b': ValueLoadError('error at b', ...)}),
@@ -1040,7 +1039,7 @@ def test_exception_collection(debug_ctx):
         AggregateLoadError(
             f'while loading model {Gauge}',
             [
-                extend_trail(ValueLoadError('error at a', ...), ['a']),
+                with_trail(ValueLoadError('error at a', ...), ['a']),
                 NoRequiredFieldsError({'b'}, data),
             ]
         ),
@@ -1052,7 +1051,7 @@ def test_exception_collection(debug_ctx):
         AggregateLoadError(
             f'while loading model {Gauge}',
             [
-                extend_trail(ValueLoadError('error at a', ...), ['a']),
+                with_trail(ValueLoadError('error at a', ...), ['a']),
                 NoRequiredFieldsError({'b'}, data),
                 ExtraFieldsError({'c'}, data),
             ]

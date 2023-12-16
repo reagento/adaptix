@@ -4,9 +4,18 @@ from typing import Any, Dict, Optional, Union
 
 import pytest
 from dirty_equals import IsInstance
-from tests_helpers import TestRetort, full_match_regex_str
+from tests_helpers import TestRetort, raises_exc, with_cause, with_notes
 
-from adaptix import DebugTrail, NameStyle, Provider, bound, name_mapping
+from adaptix import (
+    AggregateCannotProvide,
+    CannotProvide,
+    DebugTrail,
+    NameStyle,
+    NoSuitableProvider,
+    Provider,
+    bound,
+    name_mapping,
+)
 from adaptix._internal.model_tools.definitions import (
     BaseField,
     BaseShape,
@@ -54,7 +63,7 @@ from adaptix._internal.morphing.name_layout.component import (
 )
 from adaptix._internal.morphing.name_layout.provider import BuiltinNameLayoutProvider
 from adaptix._internal.provider.provider_template import ValueProvider
-from adaptix._internal.provider.request_cls import DumperRequest, FieldLoc, LoaderRequest, LocMap, TypeHintLoc
+from adaptix._internal.provider.request_cls import DumperRequest, LoaderRequest, LocMap, TypeHintLoc
 from adaptix._internal.provider.request_filtering import AnyRequestChecker
 
 
@@ -88,14 +97,11 @@ TYPE_HINT_LOC_MAP = LocMap(
         type=StubClass,
     ),
 )
-FIELD_LOC_MAP = TYPE_HINT_LOC_MAP.add(
-    FieldLoc(
-        owner_type=StubClass2,
-        field_id='foo',
-        default=NoDefault(),
-        metadata={},
-    ),
-)
+
+
+@dataclass
+class Stub:
+    pass
 
 
 def make_layouts(
@@ -165,6 +171,8 @@ def make_layouts(
         strict_coercion=True,
         debug_trail=DebugTrail.ALL,
     )
+    retort.get_loader(Stub)
+    retort.get_dumper(Stub)
     inp_request = InputNameLayoutRequest(
         loc_map=loc_map,
         shape=input_shape,
@@ -904,14 +912,29 @@ def test_extra_at_list():
         ),
     )
 
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Can not use collecting extra_in with list mapping"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'>"
-        )
-    ):
-        make_layouts(
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            with_notes(
+                AggregateCannotProvide(
+                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    [
+                        with_notes(
+                            CannotProvide(
+                                'Can not use collecting extra_in with list mapping',
+                                is_terminal=True,
+                                is_demonstrative=True,
+                            ),
+                            "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+                        ),
+                    ],
+                    is_terminal=True,
+                    is_demonstrative=True,
+                ),
+                "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+            )
+        ),
+        lambda: make_layouts(
             TestField('a'),
             TestField('b'),
             name_mapping(
@@ -924,38 +947,33 @@ def test_extra_at_list():
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
         )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Can not use collecting extra_in with list mapping"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'> that situated at field 'foo'"
-        )
-    ):
-        make_layouts(
-            TestField('a'),
-            TestField('b'),
-            name_mapping(
-                map={
-                    'a': 0,
-                },
-                extra_in='b',
-                extra_out='b',
-            ),
-            DEFAULT_NAME_MAPPING,
-            loc_map=FIELD_LOC_MAP,
-        )
+    )
 
 
 def test_required_field_skip():
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Required fields ['a'] are skipped"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'>"
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            with_notes(
+                AggregateCannotProvide(
+                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    [
+                        with_notes(
+                            CannotProvide(
+                                "Required fields ['a'] are skipped",
+                                is_terminal=True,
+                                is_demonstrative=True,
+                            ),
+                            "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+                        ),
+                    ],
+                    is_terminal=True,
+                    is_demonstrative=True,
+                ),
+                "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+            )
         ),
-    ):
-        make_layouts(
+        lambda: make_layouts(
             TestField('a', is_required=True),
             TestField('b', is_required=True),
             name_mapping(
@@ -964,35 +982,33 @@ def test_required_field_skip():
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
         )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Required fields ['a'] are skipped"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'>"
-            " that situated at field 'foo'"
-        ),
-    ):
-        make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=True),
-            name_mapping(
-                skip=['a'],
-            ),
-            DEFAULT_NAME_MAPPING,
-            loc_map=FIELD_LOC_MAP,
-        )
+    )
 
 
 def test_inconsistent_path_elements():
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Inconsistent path elements at ('x',)"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'>"
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            with_notes(
+                AggregateCannotProvide(
+                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    [
+                        with_notes(
+                            CannotProvide(
+                                "Inconsistent path elements at ('x',)",
+                                is_terminal=True,
+                                is_demonstrative=True,
+                            ),
+                            "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+                        ),
+                    ],
+                    is_terminal=True,
+                    is_demonstrative=True,
+                ),
+                "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+            )
         ),
-    ):
-        make_layouts(
+        lambda: make_layouts(
             TestField('a', is_required=True),
             TestField('b', is_required=True),
             name_mapping(
@@ -1004,38 +1020,33 @@ def test_inconsistent_path_elements():
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
         )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Inconsistent path elements at ('x',)"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'>"
-            " that situated at field 'foo'"
-        ),
-    ):
-        make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=True),
-            name_mapping(
-                map={
-                    'a': ('x', 'y'),
-                    'b': ('x', 0),
-                },
-            ),
-            DEFAULT_NAME_MAPPING,
-            loc_map=FIELD_LOC_MAP,
-        )
+    )
 
 
 def test_duplicated_path():
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Paths {('x',): ['a', 'b']} pointed to several fields"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'>"
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            with_notes(
+                AggregateCannotProvide(
+                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    [
+                        with_notes(
+                            CannotProvide(
+                                "Paths {('x',): ['a', 'b']} pointed to several fields",
+                                is_terminal=True,
+                                is_demonstrative=True,
+                            ),
+                            "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+                        ),
+                    ],
+                    is_terminal=True,
+                    is_demonstrative=True,
+                ),
+                "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+            )
         ),
-    ):
-        make_layouts(
+        lambda: make_layouts(
             TestField('a'),
             TestField('b'),
             name_mapping(
@@ -1047,37 +1058,33 @@ def test_duplicated_path():
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
         )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Paths {('x',): ['a', 'b']} pointed to several fields"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'> that situated at field 'foo'"
-        ),
-    ):
-        make_layouts(
-            TestField('a'),
-            TestField('b'),
-            name_mapping(
-                map={
-                    'a': 'x',
-                    'b': 'x',
-                },
-            ),
-            DEFAULT_NAME_MAPPING,
-            loc_map=FIELD_LOC_MAP,
-        )
+    )
 
 
 def test_optional_field_at_list():
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Optional fields ['b'] can not be mapped to list elements"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'>"
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            with_notes(
+                AggregateCannotProvide(
+                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    [
+                        with_notes(
+                            CannotProvide(
+                                "Optional fields ['b'] can not be mapped to list elements",
+                                is_terminal=True,
+                                is_demonstrative=True,
+                            ),
+                            "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+                        ),
+                    ],
+                    is_terminal=True,
+                    is_demonstrative=True,
+                ),
+                "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+            )
         ),
-    ):
-        make_layouts(
+        lambda: make_layouts(
             TestField('a', is_required=True),
             TestField('b', is_required=False),
             name_mapping(
@@ -1089,38 +1096,34 @@ def test_optional_field_at_list():
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
         )
-
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Optional fields ['b'] can not be mapped to list elements"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'> that situated at field 'foo'"
-        ),
-    ):
-        make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=False),
-            name_mapping(
-                map={
-                    'a': 0,
-                    'b': 1,
-                },
-            ),
-            DEFAULT_NAME_MAPPING,
-            loc_map=FIELD_LOC_MAP,
-        )
+    )
 
 
 def test_one_path_is_prefix_of_another():
-    with pytest.raises(
-        ValueError,
-        match=full_match_regex_str(
-            "Path to the field must not be a prefix of another path"
-            " at type <class 'tests.unit.morphing.name_layout.test_provider.StubClass'> that situated at field 'foo'."
-            " Path [0] (field 'a') is prefix of [0, 'b'] (field 'b'), [0, 'c'] (field 'c')"
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            with_notes(
+                AggregateCannotProvide(
+                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    [
+                        with_notes(
+                            CannotProvide(
+                                "Path to the field must not be a prefix of another path."
+                                " Path [0] (field 'a') is prefix of [0, 'b'] (field 'b'), [0, 'c'] (field 'c')",
+                                is_terminal=True,
+                                is_demonstrative=True,
+                            ),
+                            "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+                        ),
+                    ],
+                    is_terminal=True,
+                    is_demonstrative=True,
+                ),
+                "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
+            )
         ),
-    ):
-        make_layouts(
+        lambda: make_layouts(
             TestField('a', is_required=True),
             TestField('b', is_required=True),
             TestField('c', is_required=True),
@@ -1132,8 +1135,9 @@ def test_one_path_is_prefix_of_another():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc_map=FIELD_LOC_MAP,
+            loc_map=TYPE_HINT_LOC_MAP,
         )
+    )
 
 
 def test_chaining_priority():

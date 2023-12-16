@@ -4,7 +4,7 @@ import typing
 from typing import Mapping, Tuple
 
 import pytest
-from tests_helpers import TestRetort, raises_exc, requires
+from tests_helpers import TestRetort, raises_exc, requires, with_trail
 
 from adaptix import DebugTrail, NoSuitableProvider, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
@@ -12,7 +12,6 @@ from adaptix._internal.feature_requirement import HAS_UNPACK
 from adaptix._internal.load_error import AggregateLoadError
 from adaptix._internal.morphing.concrete_provider import INT_LOADER_PROVIDER, STR_LOADER_PROVIDER
 from adaptix._internal.morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
-from adaptix._internal.struct_trail import append_trail, extend_trail
 from adaptix.load_error import ExcludedTypeLoadError, ExtraItemsError, NoRequiredItemsError, TypeLoadError
 
 
@@ -85,9 +84,9 @@ def test_loading(retort, strict_coercion, debug_trail):
                 AggregateLoadError(
                     "while loading tuple",
                     [
-                        append_trail(TypeLoadError(str, 1), 0),
-                        append_trail(TypeLoadError(str, 2), 1),
-                        append_trail(TypeLoadError(str, 3), 2),
+                        with_trail(TypeLoadError(str, 1), [0]),
+                        with_trail(TypeLoadError(str, 2), [1]),
+                        with_trail(TypeLoadError(str, 3), [2]),
                     ]
                 ),
                 lambda: loader_([1, 2, 3]),
@@ -96,22 +95,22 @@ def test_loading(retort, strict_coercion, debug_trail):
                 AggregateLoadError(
                     "while loading tuple",
                     [
-                        append_trail(TypeLoadError(str, 2), 1),
-                        append_trail(TypeLoadError(str, 3), 2),
+                        with_trail(TypeLoadError(str, 2), [1]),
+                        with_trail(TypeLoadError(str, 3), [2]),
                     ]
                 ),
                 lambda: loader_(["1", 2, 3]),
             )
         else:
             raises_exc(
-                extend_trail(
+                with_trail(
                     TypeLoadError(str, 1),
                     [] if debug_trail == DebugTrail.DISABLE else [0],
                 ),
                 lambda: loader_([1, 2, 3]),
             )
             raises_exc(
-                extend_trail(
+                with_trail(
                     TypeLoadError(str, 2),
                     [] if debug_trail == DebugTrail.DISABLE else [1]
                 ),
@@ -142,7 +141,7 @@ def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            extend_trail(TypeError(), [0]),
+            with_trail(TypeError(), [0]),
             lambda: loader_(["1", "2", 3]),
         )
     elif debug_trail == DebugTrail.ALL:
@@ -150,8 +149,8 @@ def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
             CompatExceptionGroup(
                 "while loading tuple",
                 [
-                    append_trail(TypeError(), 0),
-                    append_trail(TypeError(), 1),
+                    with_trail(TypeError(), [0]),
+                    with_trail(TypeError(), [1]),
                 ]
             ),
             lambda: loader_(["1", "2", 3]),
@@ -189,11 +188,11 @@ def test_dumping(retort, debug_trail):
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            extend_trail(TypeError(), [0]),
+            with_trail(TypeError(), [0]),
             lambda: second_dumper([10, '20']),
         )
         raises_exc(
-            extend_trail(TypeError(), [0]),
+            with_trail(TypeError(), [0]),
             lambda: third_dumper(['10', 20]),
         )
     elif debug_trail == DebugTrail.ALL:
@@ -201,8 +200,8 @@ def test_dumping(retort, debug_trail):
             CompatExceptionGroup(
                 "while dumping tuple",
                 [
-                    append_trail(TypeError(), 0),
-                    append_trail(TypeError(), 1),
+                    with_trail(TypeError(), [0]),
+                    with_trail(TypeError(), [1]),
                 ]
             ),
             lambda: second_dumper([10, '20']),
@@ -211,8 +210,8 @@ def test_dumping(retort, debug_trail):
             CompatExceptionGroup(
                 "while dumping tuple",
                 [
-                    append_trail(TypeError(), 0),
-                    append_trail(TypeError(), 1),
+                    with_trail(TypeError(), [0]),
+                    with_trail(TypeError(), [1]),
                 ]
             ),
             lambda: third_dumper(['10', 20]),

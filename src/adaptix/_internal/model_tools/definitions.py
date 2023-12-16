@@ -87,7 +87,7 @@ class DescriptorAccessor(Accessor, ABC):
         return hash((self._attr_name, self._access_error))
 
     def __repr__(self):
-        return f"{type(self)}(attr_name={self.attr_name!r}, access_error={self.access_error})"
+        return f"{type(self).__qualname__}(attr_name={self.attr_name!r}, access_error={self.access_error})"
 
 
 class ItemAccessor(Accessor):
@@ -124,7 +124,10 @@ class ItemAccessor(Accessor):
             return hash(self._access_error)
 
     def __repr__(self):
-        return f"{type(self)}(key={self.key!r}, access_error={self.access_error}, path_element={self.trail_element!r})"
+        return (
+            "{type(self).__qualname__}"
+            f"(key={self.key!r}, access_error={self.access_error}, path_element={self.trail_element!r})"
+        )
 
 
 def create_attr_accessor(attr_name: str, is_required: bool) -> DescriptorAccessor:

@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from tests_helpers import raises_exc
+from tests_helpers import raises_exc, with_trail
 
 from adaptix import DebugTrail, Retort
 from adaptix.load_error import AggregateLoadError, TypeLoadError
-from adaptix.struct_trail import extend_trail, get_trail
+from adaptix.struct_trail import get_trail
 
 
 @dataclass
@@ -58,10 +58,10 @@ def test_int(accum):
         AggregateLoadError(
             f'while loading model {ExampleInt}',
             [
-                extend_trail(
+                with_trail(
                     TypeLoadError(int, '1'),
                     ['field2'],
-                )
+                ),
             ]
         ),
         lambda: loader({'field1': 1, 'field2': '1'})

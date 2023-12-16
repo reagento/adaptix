@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Optional, Type
 from unittest.mock import ANY
 
 import pytest
-from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc
+from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc, with_trail
 
 from adaptix import DebugTrail, Dumper, bound
 from adaptix._internal.common import Catchable
@@ -33,7 +33,7 @@ from adaptix._internal.morphing.model.definitions import OutputShapeRequest
 from adaptix._internal.morphing.model.dumper_provider import ModelDumperProvider
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.request_cls import DumperRequest
-from adaptix._internal.struct_trail import Attr, TrailElement, TrailElementMarker, append_trail
+from adaptix._internal.struct_trail import Attr, TrailElement, TrailElementMarker
 from adaptix._internal.utils import SingletonMeta
 
 
@@ -236,16 +236,16 @@ def test_flat(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('a'),
+                    [acc_schema.trail_element_maker('a')],
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('a'),
+                            [acc_schema.trail_element_maker('a')],
                         )
                     ]
                 ),
@@ -257,16 +257,16 @@ def test_flat(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('b'),
+                    [acc_schema.trail_element_maker('b')],
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('b'),
+                            [acc_schema.trail_element_maker('b')],
                         )
                     ]
                 ),
@@ -278,20 +278,20 @@ def test_flat(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('a'),
+                    [acc_schema.trail_element_maker('a')],
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('a'),
+                            [acc_schema.trail_element_maker('a')],
                         ),
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('b'),
+                            [acc_schema.trail_element_maker('b')],
                         )
                     ]
                 ),
@@ -313,16 +313,16 @@ def test_flat(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b
     raises_exc(
         trail_select(
             disable=SomeError(),
-            first=append_trail(
+            first=with_trail(
                 SomeError(),
-                acc_schema.trail_element_maker('a'),
+                [acc_schema.trail_element_maker('a')],
             ),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(
+                    with_trail(
                         SomeError(),
-                        acc_schema.trail_element_maker('a'),
+                        [acc_schema.trail_element_maker('a')],
                     )
                 ]
             ),
@@ -333,16 +333,16 @@ def test_flat(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b
     raises_exc(
         trail_select(
             disable=SomeError(),
-            first=append_trail(
+            first=with_trail(
                 SomeError(),
-                acc_schema.trail_element_maker('b'),
+                [acc_schema.trail_element_maker('b')],
             ),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(
+                    with_trail(
                         SomeError(),
-                        acc_schema.trail_element_maker('b'),
+                        [acc_schema.trail_element_maker('b')],
                     )
                 ]
             ),
@@ -353,20 +353,20 @@ def test_flat(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b
     raises_exc(
         trail_select(
             disable=SomeError(0),
-            first=append_trail(
+            first=with_trail(
                 SomeError(0),
-                acc_schema.trail_element_maker('a'),
+                [acc_schema.trail_element_maker('a')],
             ),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(
+                    with_trail(
                         SomeError(0),
-                        acc_schema.trail_element_maker('a'),
+                        [acc_schema.trail_element_maker('a')],
                     ),
-                    append_trail(
+                    with_trail(
                         SomeError(1),
-                        acc_schema.trail_element_maker('b'),
+                        [acc_schema.trail_element_maker('b')],
                     ),
                 ]
             ),
@@ -426,16 +426,16 @@ def test_one_extra_target(debug_ctx, debug_trail, trail_select, is_required_a, i
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('a'),
+                    [acc_schema.trail_element_maker('a')],
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('a'),
+                            [acc_schema.trail_element_maker('a')],
                         ),
                     ]
                 )
@@ -447,16 +447,16 @@ def test_one_extra_target(debug_ctx, debug_trail, trail_select, is_required_a, i
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('b'),
+                    [acc_schema.trail_element_maker('b')],
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('b'),
+                            [acc_schema.trail_element_maker('b')],
                         ),
                     ]
                 ),
@@ -468,20 +468,20 @@ def test_one_extra_target(debug_ctx, debug_trail, trail_select, is_required_a, i
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('a'),
+                    [acc_schema.trail_element_maker('a')],
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('a'),
+                            [acc_schema.trail_element_maker('a')],
                         ),
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('b'),
+                            [acc_schema.trail_element_maker('b')],
                         ),
                     ]
                 ),
@@ -501,16 +501,16 @@ def test_one_extra_target(debug_ctx, debug_trail, trail_select, is_required_a, i
     raises_exc(
         trail_select(
             disable=SomeError(),
-            first=append_trail(
+            first=with_trail(
                 SomeError(),
-                acc_schema.trail_element_maker('a'),
+                [acc_schema.trail_element_maker('a')],
             ),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(
+                    with_trail(
                         SomeError(),
-                        acc_schema.trail_element_maker('a'),
+                        [acc_schema.trail_element_maker('a')],
                     ),
                 ]
             ),
@@ -521,16 +521,16 @@ def test_one_extra_target(debug_ctx, debug_trail, trail_select, is_required_a, i
     raises_exc(
         trail_select(
             disable=SomeError(),
-            first=append_trail(
+            first=with_trail(
                 SomeError(),
-                acc_schema.trail_element_maker('b'),
+                [acc_schema.trail_element_maker('b')],
             ),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(
+                    with_trail(
                         SomeError(),
-                        acc_schema.trail_element_maker('b'),
+                        [acc_schema.trail_element_maker('b')],
                     ),
                 ]
             ),
@@ -541,20 +541,20 @@ def test_one_extra_target(debug_ctx, debug_trail, trail_select, is_required_a, i
     raises_exc(
         trail_select(
             disable=SomeError(0),
-            first=append_trail(
+            first=with_trail(
                 SomeError(0),
-                acc_schema.trail_element_maker('a'),
+                [acc_schema.trail_element_maker('a')],
             ),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(
+                    with_trail(
                         SomeError(0),
-                        acc_schema.trail_element_maker('a'),
+                        [acc_schema.trail_element_maker('a')],
                     ),
-                    append_trail(
+                    with_trail(
                         SomeError(1),
-                        acc_schema.trail_element_maker('b'),
+                        [acc_schema.trail_element_maker('b')],
                     ),
                 ]
             ),
@@ -610,16 +610,16 @@ def test_several_extra_target(
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('b'),
+                    [acc_schema.trail_element_maker('b')],
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('b'),
+                            [acc_schema.trail_element_maker('b')],
                         ),
                     ]
                 ),
@@ -631,16 +631,16 @@ def test_several_extra_target(
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('c'),
+                    [acc_schema.trail_element_maker('c')],
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('c'),
+                            [acc_schema.trail_element_maker('c')],
                         ),
                     ]
                 ),
@@ -652,24 +652,24 @@ def test_several_extra_target(
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('b'),
+                    [acc_schema.trail_element_maker('b')],
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('b'),
+                            [acc_schema.trail_element_maker('b')],
                         ),
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('c'),
+                            [acc_schema.trail_element_maker('c')],
                         ),
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('d'),
+                            [acc_schema.trail_element_maker('d')],
                         ),
                     ]
                 ),
@@ -734,16 +734,16 @@ def test_extra_extract(debug_ctx, debug_trail, trail_select, is_required_a, acc_
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('a')
+                    [acc_schema.trail_element_maker('a')]
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('a'),
+                            [acc_schema.trail_element_maker('a')],
                         ),
                     ]
                 ),
@@ -753,16 +753,16 @@ def test_extra_extract(debug_ctx, debug_trail, trail_select, is_required_a, acc_
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(
+                first=with_trail(
                     acc_schema.access_error(ANY),
-                    acc_schema.trail_element_maker('a')
+                    [acc_schema.trail_element_maker('a')]
                 ),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(
+                        with_trail(
                             acc_schema.access_error(ANY),
-                            acc_schema.trail_element_maker('a'),
+                            [acc_schema.trail_element_maker('a')],
                         ),
                     ]
                 ),
@@ -785,16 +785,16 @@ def test_extra_extract(debug_ctx, debug_trail, trail_select, is_required_a, acc_
     raises_exc(
         trail_select(
             disable=SomeError(0),
-            first=append_trail(
+            first=with_trail(
                 SomeError(0),
-                acc_schema.trail_element_maker('a')
+                [acc_schema.trail_element_maker('a')]
             ),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(
+                    with_trail(
                         SomeError(0),
-                        acc_schema.trail_element_maker('a'),
+                        [acc_schema.trail_element_maker('a')],
                     ),
                     SomeError(1),
                 ]
@@ -880,11 +880,11 @@ def test_flat_mapping(debug_ctx, debug_trail, trail_select, is_required_a, is_re
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(acc_schema.access_error(ANY), acc_schema.trail_element_maker(mp.a.field)),
+                first=with_trail(acc_schema.access_error(ANY), [acc_schema.trail_element_maker(mp.a.field)]),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(acc_schema.access_error(ANY), acc_schema.trail_element_maker(mp.a.field))
+                        with_trail(acc_schema.access_error(ANY), [acc_schema.trail_element_maker(mp.a.field)])
                     ]
                 ),
             ),
@@ -895,11 +895,11 @@ def test_flat_mapping(debug_ctx, debug_trail, trail_select, is_required_a, is_re
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(acc_schema.access_error(ANY), acc_schema.trail_element_maker(mp.b.field)),
+                first=with_trail(acc_schema.access_error(ANY), [acc_schema.trail_element_maker(mp.b.field)]),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(acc_schema.access_error(ANY), acc_schema.trail_element_maker(mp.b.field))
+                        with_trail(acc_schema.access_error(ANY), [acc_schema.trail_element_maker(mp.b.field)])
                     ]
                 ),
             ),
@@ -910,12 +910,12 @@ def test_flat_mapping(debug_ctx, debug_trail, trail_select, is_required_a, is_re
         raises_exc(
             trail_select(
                 disable=acc_schema.access_error(ANY),
-                first=append_trail(acc_schema.access_error(ANY), acc_schema.trail_element_maker(mp.a.field)),
+                first=with_trail(acc_schema.access_error(ANY), [acc_schema.trail_element_maker(mp.a.field)]),
                 all=CompatExceptionGroup(
                     f'while dumping model {Dummy}',
                     [
-                        append_trail(acc_schema.access_error(ANY), acc_schema.trail_element_maker(mp.a.field)),
-                        append_trail(acc_schema.access_error(ANY), acc_schema.trail_element_maker(mp.b.field)),
+                        with_trail(acc_schema.access_error(ANY), [acc_schema.trail_element_maker(mp.a.field)]),
+                        with_trail(acc_schema.access_error(ANY), [acc_schema.trail_element_maker(mp.b.field)]),
                     ]
                 ),
             ),
@@ -936,11 +936,11 @@ def test_flat_mapping(debug_ctx, debug_trail, trail_select, is_required_a, is_re
     raises_exc(
         trail_select(
             disable=SomeError(),
-            first=append_trail(SomeError(), acc_schema.trail_element_maker(mp.a.field)),
+            first=with_trail(SomeError(), [acc_schema.trail_element_maker(mp.a.field)]),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(SomeError(), acc_schema.trail_element_maker(mp.a.field))
+                    with_trail(SomeError(), [acc_schema.trail_element_maker(mp.a.field)])
                 ]
             ),
         ),
@@ -950,11 +950,11 @@ def test_flat_mapping(debug_ctx, debug_trail, trail_select, is_required_a, is_re
     raises_exc(
         trail_select(
             disable=SomeError(),
-            first=append_trail(SomeError(), acc_schema.trail_element_maker(mp.b.field)),
+            first=with_trail(SomeError(), [acc_schema.trail_element_maker(mp.b.field)]),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(SomeError(), acc_schema.trail_element_maker(mp.b.field))
+                    with_trail(SomeError(), [acc_schema.trail_element_maker(mp.b.field)])
                 ]
             ),
         ),
@@ -964,12 +964,12 @@ def test_flat_mapping(debug_ctx, debug_trail, trail_select, is_required_a, is_re
     raises_exc(
         trail_select(
             disable=SomeError(0),
-            first=append_trail(SomeError(0), acc_schema.trail_element_maker(mp.a.field)),
+            first=with_trail(SomeError(0), [acc_schema.trail_element_maker(mp.a.field)]),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(SomeError(0), acc_schema.trail_element_maker(mp.a.field)),
-                    append_trail(SomeError(1), acc_schema.trail_element_maker(mp.b.field)),
+                    with_trail(SomeError(0), [acc_schema.trail_element_maker(mp.a.field)]),
+                    with_trail(SomeError(1), [acc_schema.trail_element_maker(mp.b.field)]),
                 ]
             ),
         ),
@@ -1002,11 +1002,11 @@ def test_direct_list(debug_ctx, debug_trail, trail_select, acc_schema):
     raises_exc(
         trail_select(
             disable=SomeError(1),
-            first=append_trail(SomeError(1), acc_schema.trail_element_maker('a')),
+            first=with_trail(SomeError(1), [acc_schema.trail_element_maker('a')]),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(SomeError(1), acc_schema.trail_element_maker('a')),
+                    with_trail(SomeError(1), [acc_schema.trail_element_maker('a')]),
                 ]
             ),
         ),
@@ -1016,12 +1016,12 @@ def test_direct_list(debug_ctx, debug_trail, trail_select, acc_schema):
     raises_exc(
         trail_select(
             disable=SomeError(1),
-            first=append_trail(SomeError(1), acc_schema.trail_element_maker('a')),
+            first=with_trail(SomeError(1), [acc_schema.trail_element_maker('a')]),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(SomeError(1), acc_schema.trail_element_maker('a')),
-                    append_trail(SomeError(2), acc_schema.trail_element_maker('b')),
+                    with_trail(SomeError(1), [acc_schema.trail_element_maker('a')]),
+                    with_trail(SomeError(2), [acc_schema.trail_element_maker('b')]),
                 ]
             ),
         ),
@@ -1031,11 +1031,11 @@ def test_direct_list(debug_ctx, debug_trail, trail_select, acc_schema):
     raises_exc(
         trail_select(
             disable=SomeError(2),
-            first=append_trail(SomeError(2), acc_schema.trail_element_maker('b')),
+            first=with_trail(SomeError(2), [acc_schema.trail_element_maker('b')]),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(SomeError(2), acc_schema.trail_element_maker('b')),
+                    with_trail(SomeError(2), [acc_schema.trail_element_maker('b')]),
                 ]
             ),
         ),
@@ -1223,11 +1223,11 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select, acc_schema):
     raises_exc(
         trail_select(
             disable=SomeError(5),
-            first=append_trail(SomeError(5), acc_schema.trail_element_maker('e')),
+            first=with_trail(SomeError(5), [acc_schema.trail_element_maker('e')]),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(SomeError(5), acc_schema.trail_element_maker('e')),
+                    with_trail(SomeError(5), [acc_schema.trail_element_maker('e')]),
                 ]
             ),
         ),
@@ -1237,19 +1237,19 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select, acc_schema):
     raises_exc(
         trail_select(
             disable=SomeError(1),
-            first=append_trail(SomeError(1), acc_schema.trail_element_maker('a')),
+            first=with_trail(SomeError(1), [acc_schema.trail_element_maker('a')]),
             all=CompatExceptionGroup(
                 f'while dumping model {Dummy}',
                 [
-                    append_trail(SomeError(1), acc_schema.trail_element_maker('a')),
-                    append_trail(SomeError(2), acc_schema.trail_element_maker('b')),
-                    append_trail(SomeError(3), acc_schema.trail_element_maker('c')),
-                    append_trail(SomeError(4), acc_schema.trail_element_maker('d')),
-                    append_trail(SomeError(5), acc_schema.trail_element_maker('e')),
-                    append_trail(SomeError(6), acc_schema.trail_element_maker('f')),
-                    append_trail(SomeError(7), acc_schema.trail_element_maker('g')),
-                    append_trail(SomeError(8), acc_schema.trail_element_maker('h')),
-                    append_trail(SomeError(9), acc_schema.trail_element_maker('extra')),
+                    with_trail(SomeError(1), [acc_schema.trail_element_maker('a')]),
+                    with_trail(SomeError(2), [acc_schema.trail_element_maker('b')]),
+                    with_trail(SomeError(3), [acc_schema.trail_element_maker('c')]),
+                    with_trail(SomeError(4), [acc_schema.trail_element_maker('d')]),
+                    with_trail(SomeError(5), [acc_schema.trail_element_maker('e')]),
+                    with_trail(SomeError(6), [acc_schema.trail_element_maker('f')]),
+                    with_trail(SomeError(7), [acc_schema.trail_element_maker('g')]),
+                    with_trail(SomeError(8), [acc_schema.trail_element_maker('h')]),
+                    with_trail(SomeError(9), [acc_schema.trail_element_maker('extra')]),
                 ]
             ),
         ),

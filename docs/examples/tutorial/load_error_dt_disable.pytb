@@ -1,14 +1,3 @@
 Traceback (most recent call last):
-  File "/.../docs/examples/tutorial/load_error1.py", line 20, in <module>
-    retort.load(data, Book)
-  File "/.../src/adaptix/_internal/facade/retort.py", line 278, in load
-    return self.get_loader(tp)(data)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/.../adaptix/_internal/facade/retort.py", line 235, in trail_rendering_wrapper
-    return loader_(data)
-           ^^^^^^^^^^^^^
-  File "model_loader_Book", line 61, in model_loader_Book
-  File "model_loader_Book", line 59, in model_loader_Book
-  File "/.../adaptix/_internal/provider/concrete_provider.py", line 192, in int_strict_coercion_loader
-    raise TypeLoadError(int)
+  ...
 adaptix.load_error.TypeLoadError: expected_type=<class 'int'>, input_value='Fahrenheit 451'

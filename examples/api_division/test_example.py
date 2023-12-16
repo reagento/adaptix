@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Any, List, Optional, Union
 
 import phonenumbers
-from tests_helpers import raises_exc
+from tests_helpers import raises_exc, with_trail
 
 from adaptix.load_error import (
     AggregateLoadError,
@@ -14,7 +14,6 @@ from adaptix.load_error import (
     ValidationError,
     ValueLoadError,
 )
-from adaptix.struct_trail import extend_trail
 
 from .models import NotifyEmail, NotifyPhone, NotifyTarget, Receipt, ReceiptType, RecItem, Taxation
 from .money import rubles
@@ -72,7 +71,7 @@ def test_outer_loading_no_rec_items():
         AggregateLoadError(
             f'while loading model {Receipt}',
             [
-                extend_trail(
+                with_trail(
                     ValidationError('At least one item must be presented', []),
                     ['items'],
                 )
@@ -104,7 +103,7 @@ def test_outer_loading_bad_phone():
         AggregateLoadError(
             f'while loading model {Receipt}',
             [
-                extend_trail(
+                with_trail(
                     UnionLoadError(
                         f'while loading {Optional[List[NotifyTarget]]}',
                         [
@@ -112,14 +111,14 @@ def test_outer_loading_bad_phone():
                             AggregateLoadError(
                                 f'while loading iterable {list}',
                                 [
-                                    extend_trail(
+                                    with_trail(
                                         UnionLoadError(
                                             f'while loading {NotifyTarget}',
                                             [
                                                 AggregateLoadError(
                                                     f'while loading model {NotifyEmail}',
                                                     [
-                                                        extend_trail(
+                                                        with_trail(
                                                             BadVariantError({'email'}, 'phone'),
                                                             ['type']
                                                         )
@@ -128,7 +127,7 @@ def test_outer_loading_bad_phone():
                                                 AggregateLoadError(
                                                     f'while loading model {NotifyPhone}',
                                                     [
-                                                        extend_trail(
+                                                        with_trail(
                                                             ValueLoadError('Bad phone number', "+1-541-754-3010"),
                                                             ['value']
                                                         )
@@ -156,7 +155,7 @@ def test_outer_loading_bad_receipt_type():
     raises_exc(
         AggregateLoadError(
             f'while loading model {Receipt}',
-            [extend_trail(BadVariantError(['INCOME', 'INCOME_REFUND'], 'BAD_TYPE'), ['type'])]
+            [with_trail(BadVariantError(['INCOME', 'INCOME_REFUND'], 'BAD_TYPE'), ['type'])]
         ),
         lambda: outer_receipt_loader(bad_receipt_type_data),
     )
@@ -178,15 +177,15 @@ def test_outer_loading_bad_item_quantity():
         AggregateLoadError(
             f'while loading model {Receipt}',
             [
-                extend_trail(
+                with_trail(
                     AggregateLoadError(
                         f'while loading iterable {list}',
                         [
-                            extend_trail(
+                            with_trail(
                                 AggregateLoadError(
                                     f'while loading model {RecItem!r}',
                                     [
-                                        extend_trail(
+                                        with_trail(
                                             ValidationError('Value must be > 0', 0),
                                             ['quantity'],
                                         ),
@@ -211,15 +210,15 @@ def test_outer_loading_bad_item_price():
         AggregateLoadError(
             f'while loading model {Receipt}',
             [
-                extend_trail(
+                with_trail(
                     AggregateLoadError(
                         f'while loading iterable {list}',
                         [
-                            extend_trail(
+                            with_trail(
                                 AggregateLoadError(
                                     f'while loading model {RecItem}',
                                     [
-                                        extend_trail(
+                                        with_trail(
                                             ValidationError('Value must be >= 0', rubles(-10)),
                                             ['price'],
                                         )
@@ -244,15 +243,15 @@ def test_outer_loading_bad_item_name():
         AggregateLoadError(
             f'while loading model {Receipt}',
             [
-                extend_trail(
+                with_trail(
                     AggregateLoadError(
                         f'while loading iterable {list}',
                         [
-                            extend_trail(
+                            with_trail(
                                 AggregateLoadError(
                                     f'while loading model {RecItem}',
                                     [
-                                        extend_trail(
+                                        with_trail(
                                             ValueLoadError("Char '🔥' can not be represented at CP866", 'Matchbox 🔥'),
                                             ['name'],
                                         )

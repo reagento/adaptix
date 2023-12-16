@@ -118,11 +118,18 @@ Two parameters that can be used for these: :paramref:`.name_mapping.skip` and :p
 
 .. literalinclude:: examples/extended_usage/fields_filtering_skip.py
 
+.. dropdown:: Traceback of raised error
+
+   .. literalinclude:: examples/extended_usage/fields_filtering_skip.pytb
+
 Excluding the required field makes it impossible to create a loader, but the dumper will work properly.
 
 .. dropdown:: Same example but with using ``only``
 
    .. literalinclude:: examples/extended_usage/fields_filtering_only.py
+
+   .. literalinclude:: examples/extended_usage/fields_filtering_only.pytb
+
 
 .. dropdown:: Skipping optional field
 

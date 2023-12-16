@@ -1,7 +1,6 @@
-# pylint: disable=import-outside-toplevel
 import typing
 from dataclasses import InitVar
-from typing import ClassVar, Final
+from typing import ClassVar, Final, TypeVar
 
 from ..feature_requirement import HAS_ANNOTATED, HAS_TYPED_DICT_REQUIRED
 from .normalize_type import BaseNormType
@@ -22,6 +21,15 @@ def strip_tags(norm: BaseNormType) -> BaseNormType:
     if norm.origin in _TYPE_TAGS:
         return strip_tags(norm.args[0])
     return norm
+
+
+T = TypeVar('T')
+
+
+def strip_annotated(value: T) -> T:
+    if HAS_ANNOTATED and isinstance(value, BaseNormType) and value.origin == typing.Annotated:
+        return strip_annotated(value)  # type: ignore[return-value]
+    return value
 
 
 def is_class_var(norm: BaseNormType) -> bool:

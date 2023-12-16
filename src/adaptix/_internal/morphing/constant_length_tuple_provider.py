@@ -41,7 +41,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             raise CannotProvide
         if HAS_UNPACK and any(arg.origin == typing.Unpack for arg in norm.args if arg != Ellipsis):
             raise CannotProvide(
-                "tuples of dynamic length isn't supported yet",
+                "Unpacking tuples of dynamic length isn't supported yet",
                 is_terminal=True,
                 is_demonstrative=True
             )

@@ -1,5 +1,6 @@
 import collections.abc
 from dataclasses import dataclass, replace
+from enum import Enum
 from os import PathLike
 from pathlib import Path
 from typing import Any, Collection, Iterable, Literal, Union
@@ -27,6 +28,7 @@ from ..provider.request_cls import (
 from ..provider.static_provider import StaticProvider, static_provision_action
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
+from ..type_tools.norm_utils import strip_annotated
 from .provider_template import DumperProvider, LoaderProvider
 
 
@@ -102,15 +104,24 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         norm = try_normalize_type(get_type_from_request(request))
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
 
-        # TODO: add support for enum
+        cleaned_args = [strip_annotated(arg) for arg in norm.args]
+
+        enum_cases = [arg for arg in cleaned_args if isinstance(arg, Enum)]
+        if enum_cases:
+            raise CannotProvide(
+                f"Enum inside Literal isn't supported yet, found {enum_cases}",
+                is_terminal=True,
+                is_demonstrative=True
+            )
+
         if strict_coercion and any(
             isinstance(arg, bool) or _is_exact_zero_or_one(arg)
-            for arg in norm.args
+            for arg in cleaned_args
         ):
             allowed_values_with_types = self._get_allowed_values_collection(
-                [(type(el), el) for el in norm.args]
+                [(type(el), el) for el in cleaned_args]
             )
-            allowed_values_repr = set(norm.args)
+            allowed_values_repr = set(cleaned_args)
 
             # since True == 1 and False == 0
             def literal_loader_sc(data):
@@ -120,8 +131,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
             return literal_loader_sc
 
-        allowed_values = self._get_allowed_values_collection(norm.args)
-        allowed_values_repr = set(norm.args)
+        allowed_values = self._get_allowed_values_collection(cleaned_args)
+        allowed_values_repr = set(cleaned_args)
 
         def literal_loader(data):
             if data in allowed_values:
@@ -131,6 +142,16 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return literal_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        norm = try_normalize_type(get_type_from_request(request))
+        cleaned_args = [strip_annotated(arg) for arg in norm.args]
+        enum_cases = [arg for arg in cleaned_args if isinstance(arg, Enum)]
+        if enum_cases:
+            raise CannotProvide(
+                f"Enum inside Literal isn't supported yet, found {enum_cases}",
+                is_terminal=True,
+                is_demonstrative=True
+            )
+
         return as_is_stub
 
 
@@ -271,9 +292,10 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
         non_class_origins = [case.source for case in norm.args if not self._is_class_origin(case.origin)]
         if non_class_origins:
-            raise ValueError(
-                f"Can not create dumper for {request_type}."
-                f" All cases of union must be class, but found {non_class_origins}"
+            raise CannotProvide(
+                f"All cases of union must be class, but found {non_class_origins}",
+                is_terminal=True,
+                is_demonstrative=True,
             )
 
         dumpers = mediator.mandatory_provide_by_iterable(

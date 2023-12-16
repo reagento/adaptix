@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from adaptix import Retort, name_mapping
+from adaptix import NoSuitableProvider, Retort, name_mapping
 
 
 @dataclass
@@ -33,8 +33,5 @@ assert retort.dump(user) == data
 
 try:
     retort.get_loader(User)
-except ValueError as e:
-    assert str(e) == (
-        "Required fields ['password_hash'] are skipped"
-        " at type <class 'docs.examples.extended_usage.fields_filtering_skip.User'>"
-    )
+except NoSuitableProvider:
+    pass

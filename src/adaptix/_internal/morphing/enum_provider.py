@@ -44,7 +44,11 @@ class EnumNameProvider(BaseEnumProvider):
         enum = get_type_from_request(request)
 
         if issubclass(enum, Flag):
-            raise ValueError(f"Can not use {type(self).__name__} with Flag subclass {enum}")
+            raise CannotProvide(
+                "Flag subclasses is not supported yet",
+                is_terminal=True,
+                is_demonstrative=True
+            )
 
         variants = [case.name for case in enum]
 

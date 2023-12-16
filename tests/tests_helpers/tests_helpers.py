@@ -7,17 +7,19 @@ from contextlib import contextmanager
 from dataclasses import dataclass, is_dataclass
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any, Callable, Dict, Generator, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Reversible, Type, TypeVar, Union
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import Engine, create_engine
 
-from adaptix import AdornedRetort, CannotProvide, DebugTrail, Mediator, Provider, Request
+from adaptix import AdornedRetort, CannotProvide, DebugTrail, Mediator, NoSuitableProvider, Provider, Request
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
+from adaptix._internal.struct_trail import TrailElement, extend_trail, render_trail_as_note
 from adaptix._internal.type_tools import is_parametrized
+from adaptix._internal.utils import add_note
 from adaptix.struct_trail import get_trail
 
 T = TypeVar("T")
@@ -44,29 +46,36 @@ class TestRetort(AdornedRetort):
 E = TypeVar('E', bound=Exception)
 
 
-def _tech_fields(exc: Any) -> Any:
-    return {'__type__': type(exc), '__trail__': list(get_trail(exc))}
-
-
 def _repr_value(obj: Any) -> Dict[str, Any]:
+    if not isinstance(obj, Exception):
+        return obj
+
+    result = {}
+    if is_dataclass(obj):
+        result.update(
+            **{
+                fld.name: _repr_value(getattr(obj, fld.name))
+                for fld in dataclasses.fields(obj)
+            }
+        )
     if isinstance(obj, CompatExceptionGroup):
-        return {
-            **_tech_fields(obj),
-            'message': obj.message,
-            'exceptions': [_repr_value(exc) for exc in obj.exceptions],
-        }
-    if isinstance(obj, Exception) and is_dataclass(obj):
-        result = {
-            **_tech_fields(obj),
-            **{fld.name: _repr_value(getattr(obj, fld.name)) for fld in dataclasses.fields(obj)},
-        }
-        return result
-    if isinstance(obj, Exception):
-        return {
-            **_tech_fields(obj),
-            'args': [_repr_value(arg) for arg in obj.args]
-        }
-    return obj
+        result['message'] = obj.message
+        result['exceptions'] = [_repr_value(exc) for exc in obj.exceptions]
+    if isinstance(obj, CannotProvide):
+        result['message'] = obj.message
+        result['is_terminal'] = obj.is_terminal
+        result['is_demonstrative'] = obj.is_demonstrative
+    if isinstance(obj, NoSuitableProvider):
+        result['message'] = obj.message
+    if not result:
+        result['args'] = [_repr_value(arg) for arg in obj.args]
+    return {
+        '__type__': type(obj),
+        '__trail__': list(get_trail(obj)),
+        **result,
+        '__cause__': _repr_value(obj.__cause__),
+        '__notes__': getattr(obj, '__notes__', []),
+    }
 
 
 def raises_exc(
@@ -83,6 +92,11 @@ def raises_exc(
     assert _repr_value(exc_info.value) == _repr_value(exc)
 
     return exc_info.value
+
+
+def with_cause(exc: E, cause: BaseException) -> E:
+    exc.__cause__ = cause
+    return exc
 
 
 def parametrize_bool(param: str, *params: str):
@@ -201,3 +215,17 @@ def load_namespace_keeping_module(
         yield ns
     finally:
         sys.modules.pop(run_name, None)
+
+
+def with_notes(exc: E, *notes: Union[str, List[str]]) -> E:
+    for note_or_list in notes:
+        if isinstance(note_or_list, list):
+            for note in note_or_list:
+                add_note(exc, note)
+        else:
+            add_note(exc, note_or_list)
+    return exc
+
+
+def with_trail(exc: E, sub_trail: Reversible[TrailElement]) -> E:
+    return render_trail_as_note(extend_trail(exc, sub_trail))

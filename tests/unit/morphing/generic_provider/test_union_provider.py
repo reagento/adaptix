@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from typing import Callable, List, Literal, Optional, Union
 
 import pytest
-from tests_helpers import TestRetort, raises_exc
+from tests_helpers import TestRetort, raises_exc, with_cause, with_notes
 
-from adaptix import DebugTrail, Retort, dumper, loader
+from adaptix import CannotProvide, DebugTrail, NoSuitableProvider, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.load_error import BadVariantError, LoadError, TypeLoadError, UnionLoadError
 from adaptix._internal.morphing.generic_provider import LiteralProvider, UnionProvider
@@ -196,14 +196,25 @@ def test_optional_dumping(retort, debug_trail):
 
 def test_bad_optional_dumping(retort, debug_trail):
     raises_exc(
-        exc=ValueError(
-            "Can not create dumper for typing.Union[int, typing.Callable[[int], str]]."
-            " All cases of union must be class, but found [typing.Callable[[int], str]]"
+        with_cause(
+            NoSuitableProvider(
+                f'Cannot produce dumper for type {Union[int, Callable[[int], str]]}',
+            ),
+            with_notes(
+                CannotProvide(
+                    message=f'All cases of union must be class, but found {[Callable[[int], str]]}',
+                    is_demonstrative=True,
+                    is_terminal=True,
+                ),
+                f'Location: type={Union[int, Callable[[int], str]]}'
+            ),
         ),
-        func=lambda: retort.replace(
-            debug_trail=debug_trail,
-        ).get_dumper(
-            Union[int, Callable[[int], str]],
+        func=lambda: (
+            retort.replace(
+                debug_trail=debug_trail,
+            ).get_dumper(
+                Union[int, Callable[[int], str]],
+            )
         ),
     )
 
