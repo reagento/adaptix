@@ -109,7 +109,7 @@ def bar_left_aligned_label(  # noqa: CCR001, C901
 
         if lbl is None:
             if isinstance(fmt, str):
-                lbl = cbook._auto_format_str(fmt, value)
+                lbl = cbook._auto_format_str(fmt, value)  # type: ignore[attr-defined]
             elif callable(fmt):
                 lbl = fmt(value)
             else:
