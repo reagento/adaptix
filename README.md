@@ -16,7 +16,7 @@ The beta version only means there may be some backward incompatible changes, so 
 
 Install
 ```bash
-pip install adaptix==3.0.0a8
+pip install adaptix==3.0.0b1
 ```
 
 Use

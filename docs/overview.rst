@@ -16,7 +16,7 @@ Installation
 
 .. code-block:: text
 
-    pip install adaptix==3.0.0a8
+    pip install adaptix==3.0.0b1
 
 
 Example
