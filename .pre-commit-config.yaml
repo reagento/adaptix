@@ -34,6 +34,6 @@ repos:
         args: ['-e']  # remove default --in-place argument and emit error
 
   - repo: 'https://github.com/pycqa/isort'
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort

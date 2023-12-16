@@ -42,7 +42,7 @@ pytest==7.4.2
     # via -r requirements/raw/bench.txt
 schematics==2.1.1
     # via -r requirements/raw/bench.txt
-typing-extensions==4.8.0
+typing-extensions==4.9.0
     # via
     #   mashumaro
     #   pydantic

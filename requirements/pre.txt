@@ -4,7 +4,7 @@
 #
 #    pip-compile --allow-unsafe --output-file=requirements/pre.txt --strip-extras requirements/raw/pre.txt
 #
-wheel==0.41.3
+wheel==0.42.0
     # via -r requirements/raw/pre.txt
 
 # The following packages are considered to be unsafe in a requirements file:

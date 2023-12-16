@@ -1,16 +1,16 @@
 -r bench.txt
 
-sphinx==6.2.1
+sphinx==7.2.6
 sphinx-copybutton==0.5.2
-sphinx-design==0.4.1
-sphinx-paramlinks==0.5.4
-myst-parser==1.0.0
-sphinxext-opengraph==0.8.2
+sphinx-design==0.5.0
+sphinx-paramlinks==0.6.0
+myst-parser==2.0.0
+sphinxext-opengraph==0.9.1
 
-sphinxcontrib-apidoc==0.3.0
-furo==2023.5.20
+sphinxcontrib-apidoc==0.4.0
+furo==2023.9.10
 
 docutils-stubs==0.0.22
 
-gitpython==3.1.32
-plotly==5.15.0
+gitpython==3.1.40
+plotly==5.18.0
