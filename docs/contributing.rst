@@ -29,7 +29,7 @@ How to setup the repository
 
    .. code-block:: bash
 
-      git clone --recurse-submodules https://github.com/reagento/dataclass-factory
+      git clone --recurse-submodules https://github.com/reagento/adaptix
 
 4. Checkout to ``3.x/develop``
 

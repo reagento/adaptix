@@ -19,7 +19,7 @@ Adaptix
    :maxdepth: 2
    :caption: Project Links:
 
-   GitHub <https://github.com/reagento/dataclass-factory/tree/3.x/develop>
+   GitHub <https://github.com/reagento/adaptix/tree/3.x/develop>
    PyPI <https://pypi.org/project/adaptix>
 
 

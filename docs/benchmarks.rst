@@ -10,7 +10,7 @@ These benchmarks aim to make a complete, fair, and reliable comparison
 between different libraries among different versions of Python.
 
 If you find a mistake in benchmarking methods or you want to add another library to the comparison
-create a new `issue <https://github.com/reagento/dataclass-factory/issues>`__.
+create a new `issue <https://github.com/reagento/adaptix/issues>`__.
 
 All benchmarks are made via `pyperf <https://github.com/psf/pyperf>`__ --
 an advanced library used to measure the performance of Python interpreters.

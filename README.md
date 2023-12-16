@@ -2,8 +2,8 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/adaptix.svg?color=blue)](https://pypi.org/project/adaptix/)
 [![downloads](https://img.shields.io/pypi/dm/adaptix.svg)](https://pypistats.org/packages/adaptix)
-[![versions](https://img.shields.io/pypi/pyversions/adaptix.svg)](https://github.com/reagento/dataclass_factory)
-[![license](https://img.shields.io/github/license/reagento/dataclass_factory.svg)](https://github.com/reagento/dataclass_factory/blob/master/LICENSE)
+[![versions](https://img.shields.io/pypi/pyversions/adaptix.svg)](https://github.com/reagento/adaptix)
+[![license](https://img.shields.io/github/license/reagento/dataclass_factory.svg)](https://github.com/reagento/adaptix/blob/master/LICENSE)
 
 An extremely flexible and configurable data model conversion library.
 
