@@ -44,7 +44,9 @@ chardet==5.2.0
 charset-normalizer==3.3.2
     # via requests
 click==8.1.7
-    # via pip-tools
+    # via
+    #   pip-tools
+    #   towncrier
 cognitive-complexity==1.3.0
     # via flake8-cognitive-complexity
 colorama==0.4.6
@@ -72,6 +74,7 @@ docutils==0.20.1
     #   docutils-stubs
     #   myst-parser
     #   sphinx
+    #   sphinx-better-subsection
     #   sphinx-paramlinks
 docutils-stubs==0.0.22
     # via -r requirements/raw/doc.txt
@@ -106,7 +109,7 @@ flake8-noqa==1.3.2
     # via -r requirements/raw/lint.txt
 flake8-polyfill==1.0.2
     # via -r requirements/raw/lint.txt
-fonttools==4.46.0
+fonttools==4.47.0
     # via matplotlib
 furo==2023.9.10
     # via -r requirements/raw/doc.txt
@@ -126,6 +129,8 @@ idna==3.6
     # via requests
 imagesize==1.4.1
     # via sphinx
+incremental==22.10.0
+    # via towncrier
 iniconfig==2.0.0
     # via pytest
 invoke==2.2.0
@@ -136,9 +141,10 @@ jinja2==3.1.2
     # via
     #   myst-parser
     #   sphinx
+    #   towncrier
 kiwisolver==1.4.5
     # via matplotlib
-lxml==4.9.3
+lxml==4.9.4
     # via astpath
 mando==0.7.1
     # via radon
@@ -290,6 +296,8 @@ sphinx==7.2.6
     #   sphinxext-opengraph
 sphinx-basic-ng==1.0.0b2
     # via furo
+sphinx-better-subsection==0.2
+    # via -r requirements/raw/doc.txt
 sphinx-copybutton==0.5.2
     # via -r requirements/raw/doc.txt
 sphinx-design==0.5.0
@@ -322,6 +330,8 @@ toml==0.10.2
     # via vulture
 tomlkit==0.12.3
     # via pylint
+towncrier==23.11.0
+    # via -r requirements/raw/dev.txt
 tox==4.11.4
     # via -r requirements/raw/runner.txt
 typing-extensions==4.9.0

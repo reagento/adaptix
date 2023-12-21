@@ -12,6 +12,7 @@ Adaptix
    specific_types_behavior
    benchmarks
    API Reference <api_reference/modules>
+   changelog
    contributing
 
 
@@ -19,7 +20,7 @@ Adaptix
    :maxdepth: 2
    :caption: Project Links:
 
-   GitHub <https://github.com/reagento/adaptix/tree/3.x/develop>
+   GitHub <https://github.com/reagento/adaptix>
    PyPI <https://pypi.org/project/adaptix>
 
 

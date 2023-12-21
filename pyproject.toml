@@ -76,3 +76,19 @@ skips = ['*/test_*.py', '*/*_test.py', 'docs/examples/*', '*/bench_*.py']
 [tool.vulture]
 min_confidence = 60
 ignore_decorators = ['@_aspect_storage.add', '@overload', '@abstractmethod']
+
+
+[tool.towncrier]
+package = 'adaptix'
+filename = 'docs/changelog/changelog_body.rst'
+template = 'docs/changelog/template.rst.jinja2'
+issue_format = '`#{issue} <https://github.com/reagento/adaptix/issues/{issue}>`_'
+directory = 'docs/changelog/fragments'
+
+type = [
+  { name = "Breaking Changes", directory = "breaking",    showcontent = true },
+  { name = "Deprecations",     directory = "deprecation", showcontent = true },
+  { name = "Features",         directory = "feature",     showcontent = true },
+  { name = "Bug Fixes",        directory = "bugfix",      showcontent = true },
+  { name = "Other",            directory = "other",       showcontent = true },
+]

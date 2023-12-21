@@ -49,6 +49,7 @@ extensions = [
     'sphinx_paramlinks',
     'myst_parser',
     'sphinxext.opengraph',
+    'sphinx_better_subsection',
 
     # local extensions
     'custom_ext.bench_tools',
@@ -60,7 +61,9 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = [
+    'changelog/fragments/*'
+]
 
 
 # -- Options for HTML output -------------------------------------------------

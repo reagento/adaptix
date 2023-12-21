@@ -1,0 +1,44 @@
+{% if render_title %}
+----------------------------------------------------
+
+
+.. _v{{ versiondata.version }}:
+
+`{{ versiondata.version }} <https://github.com/reagento/adaptix/tree/v{{ versiondata.version }}>`_ -- {{ versiondata.date }}
+{{ top_underline * ((versiondata.version * 2 + versiondata.date)|length + 52) }}
+{% endif %}
+{% for section, _ in sections.items() %}
+{% set underline = underlines[0] %}{% if section %}{{section}}
+{{ underline * section|length }}{% set underline = underlines[1] %}
+
+{% endif %}
+
+{% if sections[section] %}
+{% for category, val in definitions.items() if category in sections[section] %}
+.. _v{{ versiondata.version }}-{{ definitions[category]['name'] }}:
+
+{{ definitions[category]['name'] }}
+{{ underline * definitions[category]['name']|length }}
+
+{% if definitions[category]['showcontent'] %}
+{% for text, values in sections[section][category].items() %}
+- {{ text }}{% if values %} ({{ values|join(', ') }}){% endif %}
+
+{% endfor %}
+{% else %}
+- {{ sections[section][category]['']|join(', ') }}
+
+{% endif %}
+{% if sections[section][category]|length == 0 %}
+No significant changes.
+
+{% else %}
+{% endif %}
+
+{% endfor %}
+{% else %}
+No significant changes.
+
+
+{% endif %}
+{% endfor %}
