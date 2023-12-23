@@ -65,19 +65,19 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         ):
             return super().__new__(cls, message, exceptions)  # type: ignore[arg-type]
 
-    def derive(self, __excs: Sequence[CannotProvide]) -> 'AggregateCannotProvide':  # type: ignore[override]
+    def derive(self, excs: Sequence[CannotProvide]) -> 'AggregateCannotProvide':  # type: ignore[override]
         return AggregateCannotProvide(
             self.message,
-            __excs,
+            excs,
             is_terminal=self.is_terminal,
             is_demonstrative=self.is_demonstrative,
         )
 
-    def derive_upcasting(self, __excs: Sequence[CannotProvide]) -> CannotProvide:
+    def derive_upcasting(self, excs: Sequence[CannotProvide]) -> CannotProvide:
         """Same as method ``derive`` but allow passing an empty sequence"""
         return self.make(
             self.message,
-            __excs,
+            excs,
             is_terminal=self.is_terminal,
             is_demonstrative=self.is_demonstrative,
         )

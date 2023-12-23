@@ -92,6 +92,8 @@ apidoc_separate_modules = True
 # apidoc_toc_file = False
 apidoc_extra_args = ['--maxdepth', '1']
 
+python_maximum_signature_line_length = 90
+
 paramlinks_hyperlink_param = 'name'
 
 add_function_parentheses = False
