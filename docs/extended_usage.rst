@@ -109,6 +109,7 @@ If this behavior is unwanted, you can disable this feature by setting ``trim_tra
 
 :paramref:`.name_mapping.map` is prioritized over :paramref:`.name_mapping.trim_trailing_underscore`.
 
+.. _fields-filtering:
 
 Fields filtering
 -----------------------------------
@@ -161,27 +162,111 @@ Also, you can pass any predicate or iterable of predicate to apply the rule only
 Unknown fields processing
 -----------------------------------
 
+Unknown fields are the keys of mapping that do not map to any known field.
+
 By default, all extra data that is absent in the target structure are ignored.
 You can change this behavior via :paramref:`.name_mapping.extra_in` and :paramref:`.name_mapping.extra_out` parameters.
 
-Possible values for :paramref:`.name_mapping.extra_in`:
+On loading
+^^^^^^^^^^^^^
 
-#. :obj:`.ExtraSkip` -- all extra data is ignored
-#. :obj:`.ExtraForbid` -- :class:`.load_error.ExtraFieldsError` is raised in case of any unknown field is found
-#. :obj:`.ExtraKwargs` -- extra data are passed as additional keyword arguments.
-#. Field id (``str``) -- loader of the specified field will receive all unknown data.
-#. Several field ids (``Iterable[str]``) -- same as the previous one, but each field loader will receive
-#. ``Saturator`` (``Callable[[T, Mapping[str, Any]], None]``) --
-   a callable taking created model and mapping of unknown data.
-   This callable can mutate the model to inject unknown data as you want.
+Parameter :paramref:`.name_mapping.extra_in` controls policy how extra data is saved.
 
-Possible values for :paramref:`.name_mapping.extra_out`:
+:obj:`.ExtraSkip`
+"""""""""""""""""""""""
 
-#. :obj:`.ExtraSkip` -- extra data is not extracting
-#. Field id (``str``) -- model will be passed to the dumper, it has to produce mapping with extra data that will be merged with dict of other fields.
-#. Several field ids (``Iterable[str]``) --
-#. ``Extractor`` (``Callable[[T], Mapping[str, Any]]``) --
+Default behaviour. All extra data is ignored.
 
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_loading_extra_skip.py
+
+:obj:`.ExtraForbid`
+"""""""""""""""""""""""
+
+This policy raises :class:`.load_error.ExtraFieldsError` in case of any unknown field is found.
+
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_loading_extra_forbid.py
+
+Order of fields inside :class:`.load_error.ExtraFieldsError` is not guaranteed and can be unstable between runs.
+
+:obj:`.ExtraKwargs`
+"""""""""""""""""""""""
+
+Extra data are passed as additional keyword arguments.
+
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_loading_extra_kwargs.py
+
+This policy has significant flaws by design and, generally, should not be used.
+
+All extra fields are passed as additional keywords arguments without any conversion,
+specified type of ``**kwargs`` is ignored.
+
+If an unknown field collides with the original field name,
+``TypeError`` will be raised, treated as an unexpected error.
+
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_loading_extra_kwargs_renaming.py
+
+The following strategy one has no such problems.
+
+Field id
+""""""""""""""
+
+You can pass the string with field name. Loader of corresponding field will receive mapping with unknown data.
+
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_loading_field_id.py
+
+Also you can pass ``Iterable[str]``. Each field loader will receive same mapping of unknown data.
+
+Saturator function
+""""""""""""""""""""""
+
+There is a way to use a custom mechanism of unknown field saving.
+
+You can pass a callable taking created model and mapping of unknown data named 'saturator'.
+Precise type hint is ``Callable[[T, Mapping[str, Any]], None]``).
+This callable can mutate the model to inject unknown data as you want.
+
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_loading_saturator.py
+
+On dumping
+^^^^^^^^^^^^^
+
+Parameter :paramref:`.name_mapping.extra_in` controls policy how extra data is extracted.
+
+:obj:`.ExtraSkip`
+"""""""""""""""""""""""
+
+Default behaviour. All extra data is ignored.
+
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_dumping_extra_skip.py
+
+You can skip ``extra`` from dumping. See :ref:`fields-filtering` for detail.
+
+Field id
+""""""""""""""
+
+You can pass the string with field name.
+Dumper of this field must return a mapping that will be merged with dict of dumped representation.
+
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_dumping_field_id.py
+
+Output mapping keys have not collide with keys of dumped model. Otherwise the result is not guaranteed.
+
+You can pass several field ids (``Iterable[str]``). The output mapping will be merged.
+
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_dumping_several_field_id.py
+
+Priority of output mapping is not guaranteed.
+
+Extractor function
+""""""""""""""""""""""
+
+There is way to take out extra data from via custom function called 'extractor'.
+A callable must taking model and produce mapping of extra fields.
+Precise type hint is ``Callable[[T], Mapping[str, Any]]``).
+
+.. literalinclude:: examples/extended_usage/unknown_fields_processing/on_dumping_extractor.py
+
+Output mapping keys have not collide with keys of dumped model. Otherwise the result is not guaranteed.
 
 Mapping to list
 -----------------------------------

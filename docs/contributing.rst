@@ -10,11 +10,11 @@ How to setup the repository
     You have to use WSL to develop the project on Windows.
 
 
-1. Install `Just <https://github.com/casey/just?tab=readme-ov-file#packages>`_
+#. Install `Just <https://github.com/casey/just?tab=readme-ov-file#packages>`_
 
    Just is a command runner that is used here instead of ``make``.
 
-2. Install all needed python interpreters
+#. Install all needed python interpreters
 
    * CPython 3.8
    * CPython 3.9
@@ -25,29 +25,23 @@ How to setup the repository
    * PyPy 3.9
    * PyPy 3.10
 
-3. Clone repository with submodules
+#. Clone repository with submodules
 
    .. code-block:: bash
 
       git clone --recurse-submodules https://github.com/reagento/adaptix
 
-4. Checkout to ``3.x/develop``
-
-   .. code-block:: bash
-
-      git switch 3.x/develop
-
    If you already cloned the project and forgot ``--recurse-submodules``,
    directory ``benchmarks/release_data`` will be empty.
    You can fix it executing ``git submodule update --init --recursive``.
 
-5. Create `venv <https://docs.python.org/3/library/venv.html>`_ and run
+#. Create `venv <https://docs.python.org/3/library/venv.html>`_ and run
 
    .. code-block:: bash
 
       just bootstrap
 
-6. Run main commands to check that everything is ok
+#. Run main commands to check that everything is ok
 
    .. code-block:: bash
 
