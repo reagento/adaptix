@@ -1,8 +1,9 @@
 from adaptix._internal.definitions import DebugTrail
 
 from ._internal.common import Dumper, Loader, TypeHint
-from ._internal.facade.func import dump, load
-from ._internal.facade.provider import (
+from ._internal.model_tools.introspection import TypedDictAt38Warning
+from ._internal.morphing.facade.func import dump, load
+from ._internal.morphing.facade.provider import (
     as_is_dumper,
     as_is_loader,
     bound,
@@ -16,8 +17,7 @@ from ._internal.facade.provider import (
     validator,
     with_property,
 )
-from ._internal.facade.retort import AdornedRetort, FilledRetort, Retort
-from ._internal.model_tools.introspection import TypedDictAt38Warning
+from ._internal.morphing.facade.retort import AdornedRetort, FilledRetort, Retort
 from ._internal.morphing.model.crown_definitions import (
     ExtraCollect,
     Extractor,

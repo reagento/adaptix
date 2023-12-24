@@ -4,28 +4,32 @@ from enum import Enum, EnumMeta
 from types import MappingProxyType
 from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, TypeVar, Union
 
-from ..common import Catchable, Dumper, Loader, TypeHint, VarTuple
-from ..load_error import LoadError, ValidationError
-from ..model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
-from ..model_tools.introspection import get_callable_shape
-from ..morphing.enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
-from ..morphing.model.loader_provider import InlinedShapeModelLoaderProvider
-from ..morphing.model.shape_provider import PropertyExtender
-from ..morphing.name_layout.base import ExtraIn, ExtraOut
-from ..morphing.name_layout.component import ExtraMoveAndPoliciesOverlay, SievesOverlay, StructureOverlay
-from ..morphing.name_layout.name_mapping import (
+from adaptix._internal.common import Catchable, Dumper, Loader, TypeHint, VarTuple
+from adaptix._internal.load_error import LoadError, ValidationError
+from adaptix._internal.model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
+from adaptix._internal.model_tools.introspection import get_callable_shape
+from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
+from adaptix._internal.morphing.model.loader_provider import InlinedShapeModelLoaderProvider
+from adaptix._internal.morphing.model.shape_provider import PropertyExtender
+from adaptix._internal.morphing.name_layout.base import ExtraIn, ExtraOut
+from adaptix._internal.morphing.name_layout.component import (
+    ExtraMoveAndPoliciesOverlay,
+    SievesOverlay,
+    StructureOverlay,
+)
+from adaptix._internal.morphing.name_layout.name_mapping import (
     ConstNameMappingProvider,
     DictNameMappingProvider,
     FuncNameMappingProvider,
     NameMap,
 )
-from ..name_style import NameStyle
-from ..provider.essential import Provider
-from ..provider.overlay_schema import OverlayProvider
-from ..provider.provider_template import ValueProvider
-from ..provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider
-from ..provider.request_cls import DumperRequest, LoaderRequest
-from ..provider.request_filtering import (
+from adaptix._internal.name_style import NameStyle
+from adaptix._internal.provider.essential import Provider
+from adaptix._internal.provider.overlay_schema import OverlayProvider
+from adaptix._internal.provider.provider_template import ValueProvider
+from adaptix._internal.provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider
+from adaptix._internal.provider.request_cls import DumperRequest, LoaderRequest
+from adaptix._internal.provider.request_filtering import (
     AnyRequestChecker,
     OrRequestChecker,
     Pred,
@@ -33,8 +37,8 @@ from ..provider.request_filtering import (
     RequestPattern,
     create_request_checker,
 )
-from ..special_cases_optimization import as_is_stub
-from ..utils import Omittable, Omitted
+from adaptix._internal.special_cases_optimization import as_is_stub
+from adaptix._internal.utils import Omittable, Omitted
 
 T = TypeVar('T')
 

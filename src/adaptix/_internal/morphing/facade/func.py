@@ -1,6 +1,7 @@
 from typing import Any, Optional, Type, TypeVar, overload
 
-from ..common import TypeHint
+from adaptix._internal.common import TypeHint
+
 from .retort import Retort
 
 _global_retort = Retort()
