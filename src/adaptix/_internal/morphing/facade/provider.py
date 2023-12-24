@@ -23,12 +23,12 @@ from adaptix._internal.morphing.name_layout.name_mapping import (
     FuncNameMappingProvider,
     NameMap,
 )
+from adaptix._internal.morphing.request_cls import DumperRequest, LoaderRequest
 from adaptix._internal.name_style import NameStyle
 from adaptix._internal.provider.essential import Provider
 from adaptix._internal.provider.overlay_schema import OverlayProvider
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider
-from adaptix._internal.provider.request_cls import DumperRequest, LoaderRequest
 from adaptix._internal.provider.request_filtering import (
     AnyRequestChecker,
     OrRequestChecker,

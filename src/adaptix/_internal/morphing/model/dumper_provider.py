@@ -5,8 +5,9 @@ from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Dumper
 from ...definitions import DebugTrail
 from ...provider.essential import CannotProvide, Mediator
-from ...provider.request_cls import DebugTrailRequest, DumperRequest, TypeHintLoc
+from ...provider.request_cls import DebugTrailRequest, TypeHintLoc
 from ..provider_template import DumperProvider
+from ..request_cls import DumperRequest
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,

@@ -15,9 +15,7 @@ from ..provider.essential import CannotProvide, Mediator
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import (
     DebugTrailRequest,
-    DumperRequest,
     GenericParamLoc,
-    LoaderRequest,
     LocatedRequest,
     LocMap,
     StrictCoercionRequest,
@@ -30,6 +28,7 @@ from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
 from ..type_tools.norm_utils import strip_annotated
 from .provider_template import DumperProvider, LoaderProvider
+from .request_cls import DumperRequest, LoaderRequest
 
 
 class NewTypeUnwrappingProvider(StaticProvider):

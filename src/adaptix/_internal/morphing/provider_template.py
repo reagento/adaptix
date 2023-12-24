@@ -4,10 +4,11 @@ from typing import final
 from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.provider_template import ProviderWithAttachableRC
-from ..provider.request_cls import DumperRequest, LoaderRequest, LocMap, TypeHintLoc
+from ..provider.request_cls import LocMap, TypeHintLoc
 from ..provider.request_filtering import ExactOriginRC
 from ..provider.static_provider import static_provision_action
 from ..type_tools import normalize_type
+from .request_cls import DumperRequest, LoaderRequest
 
 
 class LoaderProvider(ProviderWithAttachableRC, ABC):

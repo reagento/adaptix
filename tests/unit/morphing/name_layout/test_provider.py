@@ -62,8 +62,9 @@ from adaptix._internal.morphing.name_layout.component import (
     BuiltinStructureMaker,
 )
 from adaptix._internal.morphing.name_layout.provider import BuiltinNameLayoutProvider
+from adaptix._internal.morphing.request_cls import DumperRequest, LoaderRequest
 from adaptix._internal.provider.provider_template import ValueProvider
-from adaptix._internal.provider.request_cls import DumperRequest, LoaderRequest, LocMap, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
 from adaptix._internal.provider.request_filtering import AnyRequestChecker
 
 

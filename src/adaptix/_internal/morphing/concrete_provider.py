@@ -13,19 +13,13 @@ from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.provider_template import for_predicate
-from ..provider.request_cls import (
-    DumperRequest,
-    FieldLoc,
-    LoaderRequest,
-    LocatedRequest,
-    StrictCoercionRequest,
-    TypeHintLoc,
-)
+from ..provider.request_cls import FieldLoc, LocatedRequest, StrictCoercionRequest, TypeHintLoc
 from ..provider.request_filtering import P, create_request_checker
 from ..provider.static_provider import static_provision_action
 from ..provider.utils import find_field_request
 from ..special_cases_optimization import as_is_stub, none_loader
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC
+from .request_cls import DumperRequest, LoaderRequest
 
 T = TypeVar('T')
 

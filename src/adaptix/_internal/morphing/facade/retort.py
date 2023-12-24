@@ -58,19 +58,13 @@ from adaptix._internal.morphing.name_layout.provider import BuiltinNameLayoutPro
 from adaptix._internal.morphing.provider_template import ABCProxy
 from adaptix._internal.provider.essential import Provider, Request
 from adaptix._internal.provider.provider_template import ValueProvider
-from adaptix._internal.provider.request_cls import (
-    DebugTrailRequest,
-    DumperRequest,
-    LoaderRequest,
-    LocMap,
-    StrictCoercionRequest,
-    TypeHintLoc,
-)
+from adaptix._internal.provider.request_cls import DebugTrailRequest, LocMap, StrictCoercionRequest, TypeHintLoc
 from adaptix._internal.provider.request_filtering import P
 from adaptix._internal.retort import OperatingRetort
 from adaptix._internal.struct_trail import render_trail_as_note
 from adaptix._internal.type_tools.basic_utils import is_generic_class
 
+from ..request_cls import DumperRequest, LoaderRequest
 from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
 
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Mapping, TypeVar
 
-from ..common import Dumper, Loader, TypeHint
+from ..common import TypeHint
 from ..datastructures import ClassMap
 from ..definitions import DebugTrail
 from ..model_tools.definitions import Accessor, Default
@@ -51,16 +51,6 @@ LR = TypeVar('LR', bound='LocatedRequest')
 @dataclass(frozen=True)
 class LocatedRequest(Request[T]):
     loc_map: LocMap
-
-
-@dataclass(frozen=True)
-class LoaderRequest(LocatedRequest[Loader]):
-    pass
-
-
-@dataclass(frozen=True)
-class DumperRequest(LocatedRequest[Dumper]):
-    pass
 
 
 def get_type_from_request(request: LocatedRequest) -> TypeHint:

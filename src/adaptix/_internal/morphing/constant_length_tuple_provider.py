@@ -18,9 +18,7 @@ from ..provider.essential import CannotProvide, Mediator
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import (
     DebugTrailRequest,
-    DumperRequest,
     GenericParamLoc,
-    LoaderRequest,
     LocMap,
     StrictCoercionRequest,
     TypeHintLoc,
@@ -29,6 +27,7 @@ from ..provider.request_cls import (
 )
 from ..struct_trail import append_trail, render_trail_as_note
 from .provider_template import DumperProvider, LoaderProvider
+from .request_cls import DumperRequest, LoaderRequest
 
 CollectionsMapping = collections.abc.Mapping
 

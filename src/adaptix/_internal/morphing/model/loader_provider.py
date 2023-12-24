@@ -6,10 +6,11 @@ from ...common import Loader
 from ...definitions import DebugTrail
 from ...model_tools.definitions import InputShape
 from ...provider.essential import CannotProvide, Mediator
-from ...provider.request_cls import DebugTrailRequest, LoaderRequest, StrictCoercionRequest, TypeHintLoc
+from ...provider.request_cls import DebugTrailRequest, StrictCoercionRequest, TypeHintLoc
 from ..model.definitions import CodeGenerator, InputShapeRequest
 from ..model.loader_gen import ModelLoaderGen, ModelLoaderProps
 from ..provider_template import LoaderProvider
+from ..request_cls import LoaderRequest
 from .basic_gen import (
     CodeGenHookRequest,
     NameSanitizer,
