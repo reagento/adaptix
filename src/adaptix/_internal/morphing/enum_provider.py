@@ -3,11 +3,11 @@ from enum import Enum, EnumMeta, Flag
 from typing import Any, Mapping, Optional, Type
 
 from ..common import Dumper, Loader, TypeHint
-from ..load_error import BadVariantError, MsgError
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import CannotProvide, Mediator, Request
 from ..provider.request_cls import LocatedRequest, LocMap, TypeHintLoc, get_type_from_request, try_normalize_type
 from ..provider.request_filtering import DirectMediator, RequestChecker
+from .load_error import BadVariantError, MsgError
 from .request_cls import DumperRequest, LoaderRequest
 
 

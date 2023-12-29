@@ -1,11 +1,14 @@
 from typing import Mapping
 
+from ...code_generator import CodeGenerator
 from ...code_tools.compiler import BasicClosureCompiler
 from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Dumper
 from ...definitions import DebugTrail
+from ...model_tools.definitions import OutputShape
 from ...provider.essential import CannotProvide, Mediator
 from ...provider.request_cls import DebugTrailRequest, TypeHintLoc
+from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
 from ..provider_template import DumperProvider
 from ..request_cls import DumperRequest
 from .basic_gen import (
@@ -20,10 +23,8 @@ from .basic_gen import (
     stub_code_gen_hook,
 )
 from .crown_definitions import OutputNameLayout, OutputNameLayoutRequest
-from .definitions import CodeGenerator, OutputShape, OutputShapeRequest
 from .dumper_gen import ModelDumperGen
 from .fields import output_field_to_loc_map
-from .shape_provider import provide_generic_resolved_shape
 
 
 class ModelDumperProvider(DumperProvider):

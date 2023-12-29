@@ -2,7 +2,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Any, Reversible, Sequence, TypeVar, Union
 
-from adaptix._internal.feature_requirement import HAS_NATIVE_EXC_GROUP
+from .feature_requirement import HAS_NATIVE_EXC_GROUP
 
 
 class TrailElementMarker:

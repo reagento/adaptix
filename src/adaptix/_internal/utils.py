@@ -18,7 +18,7 @@ from typing import (
     overload,
 )
 
-from adaptix._internal.feature_requirement import HAS_NATIVE_EXC_GROUP, HAS_PY_310
+from .feature_requirement import HAS_NATIVE_EXC_GROUP, HAS_PY_310
 
 C = TypeVar('C', bound='Cloneable')
 

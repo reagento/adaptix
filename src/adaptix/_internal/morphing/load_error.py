@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Iterable, Optional
 
-from .common import TypeHint, VarTuple
-from .compat import CompatExceptionGroup
-from .utils import with_module
+from ..common import TypeHint, VarTuple
+from ..compat import CompatExceptionGroup
+from ..utils import with_module
 
 
 def _str_by_fields(cls):

@@ -3,13 +3,17 @@ import contextlib
 from dataclasses import dataclass
 from typing import Dict, List, Mapping, Optional, Set
 
+from ...code_generator import CodeGenerator
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory
 from ...common import Loader
 from ...compat import CompatExceptionGroup
 from ...definitions import DebugTrail
-from ...load_error import (
+from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
+from ...special_cases_optimization import as_is_stub
+from ...struct_trail import append_trail, extend_trail, render_trail_as_note
+from ..load_error import (
     AggregateLoadError,
     ExcludedTypeLoadError,
     ExtraFieldsError,
@@ -19,9 +23,6 @@ from ...load_error import (
     NoRequiredItemsError,
     TypeLoadError,
 )
-from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
-from ...special_cases_optimization import as_is_stub
-from ...struct_trail import append_trail, extend_trail, render_trail_as_note
 from .crown_definitions import (
     BranchInpCrown,
     CrownPath,
@@ -38,7 +39,6 @@ from .crown_definitions import (
     InpNoneCrown,
     InputNameLayout,
 )
-from .definitions import CodeGenerator
 
 
 class Namer:

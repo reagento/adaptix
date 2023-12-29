@@ -8,8 +8,8 @@ from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametriz
 
 from adaptix import DebugTrail, ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
-from adaptix._internal.load_error import AggregateLoadError, ExcludedTypeLoadError, ValueLoadError
 from adaptix._internal.model_tools.definitions import InputField, InputShape, NoDefault, Param, ParamKind, ParamKwargs
+from adaptix._internal.morphing.load_error import AggregateLoadError, ExcludedTypeLoadError, ValueLoadError
 from adaptix._internal.morphing.model.crown_definitions import (
     ExtraCollect,
     ExtraForbid,
@@ -23,10 +23,10 @@ from adaptix._internal.morphing.model.crown_definitions import (
     InputNameLayout,
     InputNameLayoutRequest,
 )
-from adaptix._internal.morphing.model.definitions import InputShapeRequest
 from adaptix._internal.morphing.model.loader_provider import ModelLoaderProvider
 from adaptix._internal.morphing.request_cls import LoaderRequest
 from adaptix._internal.provider.provider_template import ValueProvider
+from adaptix._internal.provider.shape_provider import InputShapeRequest
 from adaptix.load_error import (
     ExtraFieldsError,
     ExtraItemsError,

@@ -8,9 +8,23 @@ from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, W
 from typing import Any, ByteString, Iterable, Mapping, MutableMapping, Optional, Type, TypeVar, overload
 from uuid import UUID
 
-from adaptix._internal.common import Dumper, Loader, TypeHint, VarTuple
-from adaptix._internal.definitions import DebugTrail
-from adaptix._internal.morphing.concrete_provider import (
+from ...common import Dumper, Loader, TypeHint, VarTuple
+from ...definitions import DebugTrail
+from ...provider.essential import Provider, Request
+from ...provider.provider_template import ValueProvider
+from ...provider.request_cls import DebugTrailRequest, LocMap, StrictCoercionRequest, TypeHintLoc
+from ...provider.request_filtering import P
+from ...provider.shape_provider import (
+    ATTRS_SHAPE_PROVIDER,
+    CLASS_INIT_SHAPE_PROVIDER,
+    DATACLASS_SHAPE_PROVIDER,
+    NAMED_TUPLE_SHAPE_PROVIDER,
+    TYPED_DICT_SHAPE_PROVIDER,
+)
+from ...retort.operating_retort import OperatingRetort
+from ...struct_trail import render_trail_as_note
+from ...type_tools.basic_utils import is_generic_class
+from ..concrete_provider import (
     BOOL_LOADER_PROVIDER,
     COMPLEX_LOADER_PROVIDER,
     DECIMAL_LOADER_PROVIDER,
@@ -27,10 +41,10 @@ from adaptix._internal.morphing.concrete_provider import (
     SecondsTimedeltaProvider,
     SelfTypeProvider,
 )
-from adaptix._internal.morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
-from adaptix._internal.morphing.dict_provider import DictProvider
-from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
-from adaptix._internal.morphing.generic_provider import (
+from ..constant_length_tuple_provider import ConstantLengthTupleProvider
+from ..dict_provider import DictProvider
+from ..enum_provider import EnumExactValueProvider
+from ..generic_provider import (
     LiteralProvider,
     NewTypeUnwrappingProvider,
     PathLikeProvider,
@@ -38,32 +52,13 @@ from adaptix._internal.morphing.generic_provider import (
     TypeHintTagsUnwrappingProvider,
     UnionProvider,
 )
-from adaptix._internal.morphing.iterable_provider import IterableProvider
-from adaptix._internal.morphing.model.crown_definitions import ExtraSkip
-from adaptix._internal.morphing.model.dumper_provider import ModelDumperProvider
-from adaptix._internal.morphing.model.loader_provider import ModelLoaderProvider
-from adaptix._internal.morphing.model.shape_provider import (
-    ATTRS_SHAPE_PROVIDER,
-    CLASS_INIT_SHAPE_PROVIDER,
-    DATACLASS_SHAPE_PROVIDER,
-    NAMED_TUPLE_SHAPE_PROVIDER,
-    TYPED_DICT_SHAPE_PROVIDER,
-)
-from adaptix._internal.morphing.name_layout.component import (
-    BuiltinExtraMoveAndPoliciesMaker,
-    BuiltinSievesMaker,
-    BuiltinStructureMaker,
-)
-from adaptix._internal.morphing.name_layout.provider import BuiltinNameLayoutProvider
-from adaptix._internal.morphing.provider_template import ABCProxy
-from adaptix._internal.provider.essential import Provider, Request
-from adaptix._internal.provider.provider_template import ValueProvider
-from adaptix._internal.provider.request_cls import DebugTrailRequest, LocMap, StrictCoercionRequest, TypeHintLoc
-from adaptix._internal.provider.request_filtering import P
-from adaptix._internal.retort import OperatingRetort
-from adaptix._internal.struct_trail import render_trail_as_note
-from adaptix._internal.type_tools.basic_utils import is_generic_class
-
+from ..iterable_provider import IterableProvider
+from ..model.crown_definitions import ExtraSkip
+from ..model.dumper_provider import ModelDumperProvider
+from ..model.loader_provider import ModelLoaderProvider
+from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
+from ..name_layout.provider import BuiltinNameLayoutProvider
+from ..provider_template import ABCProxy
 from ..request_cls import DumperRequest, LoaderRequest
 from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
 

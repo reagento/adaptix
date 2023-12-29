@@ -6,9 +6,9 @@ from tests_helpers import TestRetort, raises_exc, with_trail
 
 from adaptix import DebugTrail, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.load_error import AggregateLoadError
 from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.morphing.dict_provider import DictProvider
+from adaptix._internal.morphing.load_error import AggregateLoadError
 from adaptix._internal.struct_trail import ItemKey
 from adaptix.load_error import TypeLoadError
 

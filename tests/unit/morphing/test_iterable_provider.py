@@ -23,9 +23,9 @@ from tests_helpers import TestRetort, raises_exc, with_trail
 
 from adaptix import DebugTrail, NoSuitableProvider, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.load_error import AggregateLoadError
 from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.morphing.iterable_provider import IterableProvider
+from adaptix._internal.morphing.load_error import AggregateLoadError
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
 
 

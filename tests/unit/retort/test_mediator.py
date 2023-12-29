@@ -5,7 +5,7 @@ from typing import Optional, Sequence, Type
 import pytest
 
 from adaptix import CannotProvide, Mediator, Provider, Request
-from adaptix._internal.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
+from adaptix._internal.retort.mediator import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 from adaptix._internal.retort.operating_retort import BuiltinErrorRepresentor
 
 

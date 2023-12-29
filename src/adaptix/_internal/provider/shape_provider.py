@@ -1,9 +1,9 @@
 import inspect
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import Any, Container, Generic, Iterable, Optional, TypeVar, Union, cast
 
-from ...common import TypeHint
-from ...model_tools.definitions import (
+from ..common import TypeHint
+from ..model_tools.definitions import (
     DescriptorAccessor,
     InputShape,
     IntrospectionImpossible,
@@ -11,20 +11,29 @@ from ...model_tools.definitions import (
     OutputShape,
     ShapeIntrospector,
 )
-from ...model_tools.introspection import (
+from ..model_tools.introspection import (
     get_attrs_shape,
     get_class_init_shape,
     get_dataclass_shape,
     get_named_tuple_shape,
     get_typed_dict_shape,
 )
-from ...provider.essential import CannotProvide, Mediator
-from ...provider.provider_template import ProviderWithAttachableRC
-from ...provider.request_cls import LocatedRequest, TypeHintLoc
-from ...provider.request_filtering import create_request_checker
-from ...provider.static_provider import StaticProvider, static_provision_action
-from ...type_tools.generic_resolver import GenericResolver, MembersStorage
-from .definitions import InputShapeRequest, OutputShapeRequest
+from ..provider.essential import CannotProvide, Mediator
+from ..type_tools.generic_resolver import GenericResolver, MembersStorage
+from .provider_template import ProviderWithAttachableRC
+from .request_cls import LocatedRequest, TypeHintLoc
+from .request_filtering import create_request_checker
+from .static_provider import StaticProvider, static_provision_action
+
+
+@dataclass(frozen=True)
+class InputShapeRequest(LocatedRequest[InputShape]):
+    pass
+
+
+@dataclass(frozen=True)
+class OutputShapeRequest(LocatedRequest[OutputShape]):
+    pass
 
 
 class ShapeProvider(StaticProvider):

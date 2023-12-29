@@ -10,7 +10,6 @@ from ..compat import CompatExceptionGroup
 from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
 from ..feature_requirement import HAS_PY_39
-from ..load_error import BadVariantError, LoadError, TypeLoadError, UnionLoadError
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import (
@@ -27,6 +26,7 @@ from ..provider.static_provider import StaticProvider, static_provision_action
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
 from ..type_tools.norm_utils import strip_annotated
+from .load_error import BadVariantError, LoadError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider
 from .request_cls import DumperRequest, LoaderRequest
 

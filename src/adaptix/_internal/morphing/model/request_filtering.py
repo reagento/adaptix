@@ -1,7 +1,7 @@
 from ...provider.essential import CannotProvide, Request
 from ...provider.request_cls import LocatedRequest
 from ...provider.request_filtering import DirectMediator, RequestChecker
-from .definitions import InputShapeRequest, OutputShapeRequest
+from ...provider.shape_provider import InputShapeRequest, OutputShapeRequest
 
 
 class AnyModelRC(RequestChecker):

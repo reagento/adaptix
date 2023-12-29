@@ -6,9 +6,12 @@ from tests_helpers import cond_list
 
 from adaptix import Retort, TypeHint
 from adaptix._internal.feature_requirement import HAS_ATTRS_PKG, HAS_PY_311
-from adaptix._internal.morphing.model.definitions import InputShapeRequest, OutputShapeRequest
-from adaptix._internal.morphing.model.shape_provider import provide_generic_resolved_shape
 from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
+from adaptix._internal.provider.shape_provider import (
+    InputShapeRequest,
+    OutputShapeRequest,
+    provide_generic_resolved_shape,
+)
 
 
 def assert_fields_types(tp: TypeHint, expected: Mapping[str, TypeHint]) -> None:

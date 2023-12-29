@@ -2,8 +2,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
 
-from adaptix._internal.special_cases_optimization import with_default_clause
-
 from ...common import VarTuple
 from ...model_tools.definitions import (
     BaseField,
@@ -21,6 +19,7 @@ from ...provider.overlay_schema import Overlay, Schema, provide_schema
 from ...provider.request_cls import LocatedRequest, TypeHintLoc
 from ...provider.request_filtering import ExtraStackMediator, RequestChecker
 from ...retort.operating_retort import OperatingRetort
+from ...special_cases_optimization import with_default_clause
 from ...utils import Omittable, get_prefix_groups
 from ..model.crown_definitions import (
     BaseFieldCrown,

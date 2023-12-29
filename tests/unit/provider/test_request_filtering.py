@@ -21,7 +21,7 @@ from adaptix._internal.provider.request_filtering import (
     StackEndRC,
     create_request_checker,
 )
-from adaptix._internal.retort import BuiltinMediator, RawRecipeSearcher, RecursionResolving
+from adaptix._internal.retort.mediator import BuiltinMediator, RawRecipeSearcher, RecursionResolving
 from adaptix._internal.retort.operating_retort import BuiltinErrorRepresentor
 from adaptix._internal.type_tools import normalize_type
 

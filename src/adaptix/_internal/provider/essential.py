@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Generic, Iterable, Optional, Sequence, TypeVar, final
 
-from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.feature_requirement import HAS_NATIVE_EXC_GROUP
-from adaptix._internal.utils import with_module
+from ..compat import CompatExceptionGroup
+from ..feature_requirement import HAS_NATIVE_EXC_GROUP
+from ..utils import with_module
 
 T = TypeVar('T')
 

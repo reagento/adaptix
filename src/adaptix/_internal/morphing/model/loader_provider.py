@@ -1,5 +1,6 @@
 from typing import Mapping
 
+from ...code_generator import CodeGenerator
 from ...code_tools.compiler import BasicClosureCompiler
 from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Loader
@@ -7,7 +8,7 @@ from ...definitions import DebugTrail
 from ...model_tools.definitions import InputShape
 from ...provider.essential import CannotProvide, Mediator
 from ...provider.request_cls import DebugTrailRequest, StrictCoercionRequest, TypeHintLoc
-from ..model.definitions import CodeGenerator, InputShapeRequest
+from ...provider.shape_provider import InputShapeRequest, provide_generic_resolved_shape
 from ..model.loader_gen import ModelLoaderGen, ModelLoaderProps
 from ..provider_template import LoaderProvider
 from ..request_cls import LoaderRequest
@@ -25,7 +26,6 @@ from .basic_gen import (
 )
 from .crown_definitions import InputNameLayout, InputNameLayoutRequest
 from .fields import input_field_to_loc_map
-from .shape_provider import provide_generic_resolved_shape
 
 
 class ModelLoaderProvider(LoaderProvider):

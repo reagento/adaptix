@@ -9,9 +9,9 @@ from tests_helpers import TestRetort, raises_exc, requires, with_trail
 from adaptix import DebugTrail, NoSuitableProvider, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import HAS_UNPACK
-from adaptix._internal.load_error import AggregateLoadError
 from adaptix._internal.morphing.concrete_provider import INT_LOADER_PROVIDER, STR_LOADER_PROVIDER
 from adaptix._internal.morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
+from adaptix._internal.morphing.load_error import AggregateLoadError
 from adaptix.load_error import ExcludedTypeLoadError, ExtraItemsError, NoRequiredItemsError, TypeLoadError
 
 

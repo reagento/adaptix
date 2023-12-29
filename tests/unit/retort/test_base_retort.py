@@ -2,7 +2,7 @@ import pytest
 from tests_helpers import PlaceholderProvider, full_match_regex_str
 
 from adaptix import Retort
-from adaptix._internal.retort import BaseRetort
+from adaptix._internal.retort.base_retort import BaseRetort
 
 
 def test_incremental_recipe_empty():

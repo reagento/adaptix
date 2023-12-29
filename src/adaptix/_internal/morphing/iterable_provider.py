@@ -5,7 +5,6 @@ from typing import Callable, Iterable, Mapping
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
-from ..load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.provider_template import for_predicate
@@ -20,6 +19,7 @@ from ..provider.request_cls import (
     try_normalize_type,
 )
 from ..struct_trail import append_trail, render_trail_as_note
+from .load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
 from .request_cls import DumperRequest, LoaderRequest
 
 CollectionsMapping = collections.abc.Mapping

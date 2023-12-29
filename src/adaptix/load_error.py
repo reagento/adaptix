@@ -1,4 +1,4 @@
-from adaptix._internal.load_error import (
+from adaptix._internal.morphing.load_error import (
     AggregateLoadError,
     BadVariantError,
     DatetimeFormatMismatch,

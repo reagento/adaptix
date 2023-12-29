@@ -2,6 +2,7 @@ import contextlib
 from string import Template
 from typing import Dict, Mapping, NamedTuple
 
+from ...code_generator import CodeGenerator
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
@@ -32,7 +33,6 @@ from .crown_definitions import (
     OutputNameLayout,
     Sieve,
 )
-from .definitions import CodeGenerator
 
 
 class GenState:

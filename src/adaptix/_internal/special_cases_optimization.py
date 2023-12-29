@@ -1,6 +1,5 @@
 from typing import Optional, TypeVar, Union
 
-from .load_error import TypeLoadError
 from .model_tools.definitions import DefaultFactory, DefaultFactoryWithSelf, DefaultValue
 from .morphing.model.crown_definitions import Sieve
 
@@ -20,9 +19,3 @@ def with_default_clause(default: Union[DefaultValue, DefaultFactory, DefaultFact
 
 def get_default_clause(sieve: Sieve) -> Optional[Union[DefaultValue, DefaultFactory, DefaultFactoryWithSelf]]:
     return getattr(sieve, _DEFAULT_CLAUSE_ATTR_NAME, None)
-
-
-def none_loader(data):
-    if data is None:
-        return None
-    raise TypeLoadError(None, data)

@@ -4,8 +4,8 @@ from uuid import uuid4
 import pytest
 from tests_helpers import TestRetort, raises_exc
 
-from adaptix._internal.load_error import BadVariantError
 from adaptix._internal.morphing.generic_provider import LiteralProvider
+from adaptix._internal.morphing.load_error import BadVariantError
 
 
 @pytest.fixture
