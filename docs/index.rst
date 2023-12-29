@@ -7,14 +7,19 @@ Adaptix
 
    overview
    tutorial
-   examples
+
    extended_usage
    specific_types_behavior
    benchmarks
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Reference:
+
+   examples
    API Reference <api_reference/modules>
    changelog
    contributing
-
 
 .. toctree::
    :maxdepth: 2
@@ -22,11 +27,3 @@ Adaptix
 
    GitHub <https://github.com/reagento/adaptix>
    PyPI <https://pypi.org/project/adaptix>
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
