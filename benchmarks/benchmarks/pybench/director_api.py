@@ -456,6 +456,9 @@ class BenchmarkDirector:
     def add(self, *schemas: BenchSchema) -> None:
         self.schemas.extend(schemas)
 
+    def add_iter(self, schemas: Iterable[BenchSchema]) -> None:
+        self.schemas.extend(schemas)
+
     def cli(self, args: Optional[Sequence[str]] = None):
         accessor = self.make_accessor()
         self._validate_schemas(accessor)
