@@ -35,7 +35,7 @@ def pytest_generate_tests(metafunc):
 
 
 def test_example(import_path: str, case_id: str):
-    if case_id == 'tutorial/unexpected_error' and not HAS_PY_311:
+    if case_id == 'loading-and-dumping/tutorial/unexpected_error' and not HAS_PY_311:
         pytest.skip('Need Python >= 3.11')
 
     register_assert_rewrite(import_path)

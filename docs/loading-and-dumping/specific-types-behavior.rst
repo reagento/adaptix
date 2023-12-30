@@ -167,12 +167,12 @@ and returns a value of the first loader that does not raise :class:`~.load_error
 Therefore, for the correct operation of a union loader,
 there must be no value that would be accepted by several union case loaders.
 
-.. literalinclude:: examples/specific_types_behavior/union_case_overlapping.py
+.. literalinclude:: /examples/loading-and-dumping/specific_types_behavior/union_case_overlapping.py
 
 The return value in this example is undefined, it can be either a Cat instance or a Dog instance.
 This problem could be solved if the model will contain a designator (tag) that can uniquely determine the type.
 
-.. literalinclude:: examples/specific_types_behavior/union_with_designator.py
+.. literalinclude:: /examples/loading-and-dumping/specific_types_behavior/union_with_designator.py
 
 This example shows how to add a type designator to the model.
 Be careful, this example does not work if :paramref:`.name_mapping.omit_default` is applied to tag field.
@@ -180,7 +180,7 @@ Be careful, this example does not work if :paramref:`.name_mapping.omit_default`
 Be careful if one model is a superset of another model.
 By default, all unknown fields are skipped, this does not allow distinct such models.
 
-.. literalinclude:: examples/specific_types_behavior/union_model_supersets.py
+.. literalinclude:: /examples/loading-and-dumping/specific_types_behavior/union_model_supersets.py
 
 This can be avoided by inserting a type designator like in the example above.
 Processing of unknown fields could be customized via :paramref:`.name_mapping.extra_in`.

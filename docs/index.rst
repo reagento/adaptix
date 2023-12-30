@@ -6,20 +6,24 @@ Adaptix
    :caption: Contents:
 
    overview
-   tutorial
-
-   extended_usage
-   specific_types_behavior
    benchmarks
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Loading & Dumping:
+
+   loading-and-dumping/tutorial
+   loading-and-dumping/extended-usage
+   loading-and-dumping/specific-types-behavior
 
 .. toctree::
    :maxdepth: 2
    :caption: Reference:
 
-   examples
-   API Reference <api_reference/modules>
-   changelog
-   contributing
+   reference/examples
+   API <reference/api/modules>
+   reference/changelog
+   reference/contributing
 
 .. toctree::
    :maxdepth: 2

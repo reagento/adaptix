@@ -22,7 +22,7 @@ Installation
 Example
 ==================
 
-.. literalinclude:: examples/tutorial/tldr.py
+.. literalinclude:: /examples/loading-and-dumping/tutorial/tldr.py
    :lines: 2-
 
 Requirements
@@ -45,7 +45,7 @@ Use cases
 Advantages
 ==================
 
-.. include:: readme_advantages.md
+.. include:: /readme_advantages.md
    :parser: myst_parser.sphinx_
 
 

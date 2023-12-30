@@ -62,7 +62,7 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
-    'changelog/fragments/*'
+    'changelog/*'
 ]
 
 
@@ -87,7 +87,7 @@ autodoc_type_aliases = {
 autodoc_member_order = 'bysource'
 
 apidoc_module_dir = '../src/adaptix'
-apidoc_output_dir = 'api_reference'
+apidoc_output_dir = 'reference/api'
 apidoc_separate_modules = True
 # apidoc_toc_file = False
 apidoc_extra_args = ['--maxdepth', '1']

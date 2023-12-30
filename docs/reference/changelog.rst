@@ -15,4 +15,4 @@ Some aspects is behavior are not guaranteed and could be changed at any release 
 Such details are highlighted in the documentation.
 
 
-.. include:: changelog/changelog_body.rst
+.. include:: ../changelog/changelog_body.rst
