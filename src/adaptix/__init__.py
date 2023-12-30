@@ -1,7 +1,7 @@
 from adaptix._internal.definitions import DebugTrail
 
 from ._internal.common import Dumper, Loader, TypeHint
-from ._internal.model_tools.introspection import TypedDictAt38Warning
+from ._internal.model_tools.introspection.typed_dict import TypedDictAt38Warning
 from ._internal.morphing.facade.func import dump, load
 from ._internal.morphing.facade.provider import (
     as_is_dumper,

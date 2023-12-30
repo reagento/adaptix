@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
+from keyword import iskeyword
 from typing import Any, Callable, FrozenSet, Generic, Hashable, Mapping, Optional, TypeVar, Union
 
 from ..common import Catchable, TypeHint, VarTuple
@@ -146,7 +147,7 @@ def create_key_accessor(key: Union[str, int], access_error: Optional[Catchable])
 
 
 def is_valid_field_id(value: str) -> bool:
-    return value.isidentifier()
+    return value.isidentifier() or iskeyword(value)
 
 
 @dataclass(frozen=True)
@@ -315,7 +316,7 @@ Inp = TypeVar('Inp', bound=Optional[InputShape])
 Out = TypeVar('Out', bound=Optional[OutputShape])
 
 
-@dataclass
+@dataclass(frozen=True)
 class Shape(Generic[Inp, Out]):
     input: Inp
     output: Out

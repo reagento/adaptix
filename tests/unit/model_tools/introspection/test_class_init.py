@@ -18,7 +18,7 @@ from adaptix._internal.model_tools.definitions import (
     ParamKwargs,
     Shape,
 )
-from adaptix._internal.model_tools.introspection import get_class_init_shape
+from adaptix._internal.model_tools.introspection.class_init import get_class_init_shape
 
 
 class Valid1:

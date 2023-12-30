@@ -6,7 +6,7 @@ from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, T
 
 from ...common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
-from ...model_tools.introspection import get_callable_shape
+from ...model_tools.introspection.callable import get_callable_shape
 from ...name_style import NameStyle
 from ...provider.essential import Provider
 from ...provider.overlay_schema import OverlayProvider

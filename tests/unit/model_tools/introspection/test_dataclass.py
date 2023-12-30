@@ -21,7 +21,7 @@ from adaptix._internal.model_tools.definitions import (
     Shape,
     create_attr_accessor,
 )
-from adaptix._internal.model_tools.introspection import get_dataclass_shape
+from adaptix._internal.model_tools.introspection.dataclass import get_dataclass_shape
 
 InitVarInt = InitVar[int]  # InitVar comparing by id()
 

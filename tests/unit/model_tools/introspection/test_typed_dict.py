@@ -16,7 +16,7 @@ from adaptix._internal.model_tools.definitions import (
     Shape,
     create_key_accessor,
 )
-from adaptix._internal.model_tools.introspection import get_typed_dict_shape
+from adaptix._internal.model_tools.introspection.typed_dict import get_typed_dict_shape
 
 
 class Foo(TypedDict, total=True):

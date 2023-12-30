@@ -19,7 +19,7 @@ from adaptix._internal.model_tools.definitions import (
     Shape,
     create_key_accessor,
 )
-from adaptix._internal.model_tools.introspection import get_named_tuple_shape
+from adaptix._internal.model_tools.introspection.named_tuple import get_named_tuple_shape
 
 
 def test_order_ab():

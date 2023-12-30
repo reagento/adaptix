@@ -11,13 +11,11 @@ from ..model_tools.definitions import (
     OutputShape,
     ShapeIntrospector,
 )
-from ..model_tools.introspection import (
-    get_attrs_shape,
-    get_class_init_shape,
-    get_dataclass_shape,
-    get_named_tuple_shape,
-    get_typed_dict_shape,
-)
+from ..model_tools.introspection.attrs import get_attrs_shape
+from ..model_tools.introspection.class_init import get_class_init_shape
+from ..model_tools.introspection.dataclass import get_dataclass_shape
+from ..model_tools.introspection.named_tuple import get_named_tuple_shape
+from ..model_tools.introspection.typed_dict import get_typed_dict_shape
 from ..provider.essential import CannotProvide, Mediator
 from ..type_tools.generic_resolver import GenericResolver, MembersStorage
 from .provider_template import ProviderWithAttachableRC

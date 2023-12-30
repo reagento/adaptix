@@ -24,7 +24,7 @@ from adaptix._internal.model_tools.definitions import (
     Shape,
     create_attr_accessor,
 )
-from adaptix._internal.model_tools.introspection import get_attrs_shape
+from adaptix._internal.model_tools.introspection.attrs import get_attrs_shape
 
 pytest.importorskip("attrs")
 

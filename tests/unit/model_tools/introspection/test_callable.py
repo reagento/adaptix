@@ -18,7 +18,7 @@ from adaptix._internal.model_tools.definitions import (
     ParamKwargs,
     Shape,
 )
-from adaptix._internal.model_tools.introspection import get_callable_shape
+from adaptix._internal.model_tools.introspection.callable import get_callable_shape
 
 
 def test_introspection_impossible():
