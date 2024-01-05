@@ -106,7 +106,7 @@ benchmark_data_submodule = next(submodule for submodule in repo.submodules if su
 
 extlinks = {
     'adaptix-view-repo': (
-        'https://github.com/reagento/adaptix/tree/3.x/develop/%s',
+        'https://github.com/reagento/adaptix/tree/main/%s',
         '%s',
     ),
     'adaptix-view-repo-commit': (
