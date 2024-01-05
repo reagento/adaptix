@@ -427,6 +427,11 @@ class RequestPattern:
         )
 
     def build_request_checker(self) -> RequestChecker:
+        if len(self._stack) == 0:
+            raise ValueError(
+                'Can not produce RequestChecker from RequestPattern without stack.'
+                ' You need to parametrize P object with predicates.'
+            )
         if len(self._stack) == 1:
             return self._stack[0]
         return StackEndRC(self._stack)
