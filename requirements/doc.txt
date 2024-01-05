@@ -10,7 +10,7 @@ alabaster==0.7.13
     # via sphinx
 annotated-types==0.6.0
     # via pydantic
-attrs==23.1.0
+attrs==23.2.0
     # via cattrs
 babel==2.14.0
     # via sphinx
@@ -116,6 +116,7 @@ sphinx==7.2.6
     #   sphinx-copybutton
     #   sphinx-design
     #   sphinx-paramlinks
+    #   sphinx-reredirects
     #   sphinxcontrib-apidoc
     #   sphinxcontrib-applehelp
     #   sphinxcontrib-devhelp
@@ -132,6 +133,8 @@ sphinx-copybutton==0.5.2
 sphinx-design==0.5.0
     # via -r requirements/raw/doc.txt
 sphinx-paramlinks==0.6.0
+    # via -r requirements/raw/doc.txt
+sphinx-reredirects==0.1.3
     # via -r requirements/raw/doc.txt
 sphinxcontrib-apidoc==0.4.0
     # via -r requirements/raw/doc.txt

@@ -200,7 +200,7 @@ This allows following the DRY principle.
 You can include one retort to another,
 it allows to separate creation of loaders and dumpers for specific types into isolated layers.
 
-.. literalinclude:: examples/tutorial/retort_combination.py
+.. literalinclude:: /examples/loading-and-dumping/tutorial/retort_combination.py
 
 In this example, loader and dumper for ``LiteraryWork`` will be created by ``literature_retort``
 (note that ``debug_trail`` and ``strict_coercion`` options of upper-level retort do not affects inner retorts).
@@ -267,8 +267,12 @@ during import to backport ``ExceptionGroup`` rendering to early versions.
 More details at `documentation <https://pypi.org/project/exceptiongroup/>`_.
 
 By default, all collection-like and model-like loaders wrap all errors into :class:`~.load_error.AggregateLoadError`.
-Order of errors inside :class:`~.load_error.AggregateLoadError` is not guaranteed
-and it could be changed at any release. Each sub-exception contains a trail relative to the parent exception.
+Each sub-exception contains a trail relative to the parent exception.
+
+.. custom-non-guaranteed-behavior::
+
+  Order of errors inside :class:`~.load_error.AggregateLoadError` is not guaranteed.
+
 
 You can set ``debug_trail=DebugTrail.FIRST`` at Retort to raise only the first met error.
 

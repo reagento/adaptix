@@ -78,7 +78,7 @@ and values contain a new field name.
 
 Fields absent in ``map`` are not translated and used with their original names.
 
-There are more complex and more powerful use cases of ``map``, which will be described further.
+There are more complex and more powerful use cases of ``map``, which will be described at :ref:`advanced-mapping`.
 
 Name style
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -167,6 +167,8 @@ Unknown fields are the keys of mapping that do not map to any known field.
 By default, all extra data that is absent in the target structure are ignored.
 You can change this behavior via :paramref:`.name_mapping.extra_in` and :paramref:`.name_mapping.extra_out` parameters.
 
+Field renaming does not affect on unknown fields, collected unknown fields will have original names.
+
 On loading
 ^^^^^^^^^^^^^
 
@@ -190,7 +192,9 @@ This policy raises :class:`.load_error.ExtraFieldsError` in case of any unknown 
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/unknown_fields_processing/on_loading_extra_forbid.py
 
-Order of fields inside :class:`.load_error.ExtraFieldsError` is not guaranteed and can be unstable between runs.
+.. custom-non-guaranteed-behavior::
+
+  Order of fields inside :class:`.load_error.ExtraFieldsError` is not guaranteed and can be unstable between runs.
 
 .. _on-loading-extra-kwargs:
 
@@ -232,7 +236,7 @@ Saturator function
 There is a way to use a custom mechanism of unknown field saving.
 
 You can pass a callable taking created model and mapping of unknown data named 'saturator'.
-Precise type hint is ``Callable[[T, Mapping[str, Any]], None]``).
+Precise type hint is ``Callable[[T, Mapping[str, Any]], None]``.
 This callable can mutate the model to inject unknown data as you want.
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/unknown_fields_processing/on_loading_saturator.py
@@ -263,13 +267,17 @@ Dumper of this field must return a mapping that will be merged with dict of dump
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/unknown_fields_processing/on_dumping_field_id.py
 
-Output mapping keys have not collide with keys of dumped model. Otherwise the result is not guaranteed.
+.. custom-non-guaranteed-behavior::
+
+  Output mapping keys have not collide with keys of dumped model. Otherwise the result is not guaranteed.
 
 You can pass several field ids (``Iterable[str]``). The output mapping will be merged.
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/unknown_fields_processing/on_dumping_several_field_id.py
 
-Priority of output mapping is not guaranteed.
+.. custom-non-guaranteed-behavior::
+
+  Priority of output mapping is not guaranteed.
 
 .. _on-dumping-extractor-function:
 
@@ -278,7 +286,7 @@ Extractor function
 
 There is way to take out extra data from via custom function called 'extractor'.
 A callable must taking model and produce mapping of extra fields.
-Precise type hint is ``Callable[[T], Mapping[str, Any]]``).
+Precise type hint is ``Callable[[T], Mapping[str, Any]]``.
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/unknown_fields_processing/on_dumping_extractor.py
 
@@ -307,15 +315,92 @@ if you assign every field to their position on the list.
 
    .. literalinclude:: /examples/loading-and-dumping/extended_usage/mapping_to_list_only_map.py
 
+Only :obj:`.ExtraSkip` and :obj:`.ExtraForbid` is could be used with mapping to list.
+
+.. _structure-flattening:
 
 Structure flattening
 ------------------------------------
 
-Custom mapping function
-------------------------------------
+Too complex hierarchy of structures in API could be fixed via ``map`` parameter.
+Earlier, you used it to rename fields,
+but also you can use it to map a name to a nested value by specifying a path to it.
+Integers in the path are treated as list indices, strings - as dict keys.
 
-Inheritance
------------------------------------
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/structure_flattening.py
+
+This snippet could be reduced.
+
+1) Ellipsis (``...``) inside path is replaced by original field name after automatic conversions.
+2) Dict could be replaced with a list of pairs.
+   The first item of the pair is predicate (see :ref:`predicate-system` for detail),
+   the second is the mapping result (path in this case).
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/structure_flattening_compressed.py
+
 
 Chaining (partial overriding)
 -----------------------------------
+
+Result ``name_mapping`` is computed by merging all parameters of matched ``name_mapping``.
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/chaining.py
+
+The first provider override parameters of next providers.
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/chaining_overriding.py
+
+
+.. _advanced-mapping:
+
+Advanced mapping
+---------------------------------------
+
+Let's figure it out with all features of :paramref:`.name_mapping.map`.
+
+:paramref:`.name_mapping.map` can take data in two forms:
+
+1) :external+python:py:class:`collections.abc.Mapping` with keys of field ids and values with mapping result
+2) Iterable of pairs (tuple of two elements) or providers or mapping described above.
+   Provider interface for mapping currently is unstable and would not be described at this article.
+   If you pass a tuple of two elements,
+   the first item must be predicate (see :ref:`predicate-system` for detail),
+   and the second item must be mapping result or function returning mapping result.
+
+If you use mapping all keys must be ``field_id`` (e.g. valid python identifiers),
+so regexes like ``a|b`` is not allowed.
+
+The mapping result is union of 5 types:
+
+1) String of external field name
+2) Integer indicating index inside output sequence
+3) Ellipsis (``...``) that will be replaced with the key
+   after builtin conversions by :paramref:`.name_mapping.trim_trailing_underscore`, :paramref:`.name_mapping.name_style`
+   and :paramref:`.name_mapping.as_list`.
+4) Iterable of string, integer or ellipsis, aka :ref:`structure-flattening`
+5) ``None`` that means skipped field.
+   :paramref:`.name_mapping.map` is applied after :paramref:`.name_mapping.only`.
+   So the field will be skipped despite the match by :paramref:`.name_mapping.only`.
+
+Name mapping reuses concepts of recipe inside retort and also implements
+`chain-of-responsibility <https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern>`_ design pattern.
+
+Only the first element matched by its predicate is used to determine the mapping result.
+
+The callable producing mapping result must take two parameters: the shape of the model and the field.
+Types of these parameters currently are internal.
+You can find an exact definition in the source code but it could change in the future.
+
+Example of using advanced techniques:
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/advanced_mapping.py
+
+Some XML APIs or APIs derived from XML do not use plural forms for repeated fields.
+So you need to strip the plural form at external representation.
+
+The first item of :paramref:`.name_mapping.map` is dict that renames individual field.
+The second item is a tuple created by a function.
+The function constructs appropriate regex to match fields and trim plural suffixes.
+
+The merging of ``map`` is different from other parameters. A new ``map`` does not replace others.
+The new iterable is concatenated to the previous.

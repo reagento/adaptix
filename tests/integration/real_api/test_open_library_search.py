@@ -5,7 +5,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, NewType, Optional
+from typing import Any, Dict, Iterable, List, NewType, Optional, Sequence
 from zipfile import ZipFile
 
 from dirty_equals import IsList, IsStr
@@ -108,7 +108,7 @@ class OLSearchResponse:
     offset: Optional[int]
 
 
-def create_plural_stripper(*, exclude: Iterable[str] = (), suffixes: Iterable[str] = ('s', '_list')):
+def create_plural_stripper(*, exclude: Sequence[str] = (), suffixes: Iterable[str] = ('s', '_list')):
     pattern = '^(.*)(' + '|'.join(suffixes) + ')$'
 
     def plural_stripper(shape, fld):

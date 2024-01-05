@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+from datetime import date
 
 import git
 
@@ -23,8 +24,8 @@ import git
 # -- Project information -----------------------------------------------------
 
 project = 'adaptix'
-copyright = '2020, Tishka17'
-author = 'Tishka17'
+copyright = f'{date.today().year}, Pavel'
+author = 'Pavel'
 master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
@@ -53,6 +54,7 @@ extensions = [
 
     # local extensions
     'custom_ext.bench_tools',
+    'custom_ext.macros',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
