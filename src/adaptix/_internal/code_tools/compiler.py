@@ -14,13 +14,13 @@ class ClosureCompiler(ABC):
     @abstractmethod
     def compile(
         self,
-        base_filename: str,
+        base_id: str,
         filename_maker: Callable[[str], str],
         builder: CodeBuilder,
         namespace: Dict[str, Any],
     ) -> Callable:
         """Execute content of builder and return value that body returned (it is must be a closure).
-        :param base_filename: filename that used to generate unique id
+        :param base_id: string that used to generate unique id
         :param filename_maker: function taking unique id and returning full filename
         :param builder: Builder containing the body of function that creates closure
         :param namespace: Global variables
@@ -68,19 +68,19 @@ class BasicClosureCompiler(ClosureCompiler):
         )
         return local_namespace["_closure_maker"]()
 
-    def _get_unique_id(self, base_filename: str) -> str:
-        idx = _counter.generate_idx(base_filename)
+    def _get_unique_id(self, base_id: str) -> str:
+        idx = _counter.generate_idx(base_id)
         if idx == 0:
-            return base_filename
-        return f'{base_filename} {idx}'
+            return base_id
+        return f'{base_id} {idx}'
 
     def compile(
         self,
-        base_filename: str,
+        base_id: str,
         filename_maker: Callable[[str], str],
         builder: CodeBuilder,
         namespace: Dict[str, Any],
     ) -> Callable:
         source = self._make_source_builder(builder).string()
-        unique_id = self._get_unique_id(base_filename)
+        unique_id = self._get_unique_id(base_id)
         return self._compile(source, filename_maker(unique_id), namespace)
