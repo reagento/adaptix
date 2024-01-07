@@ -51,6 +51,7 @@ extensions = [
     'myst_parser',
     'sphinxext.opengraph',
     'sphinx_better_subsection',
+    'sphinx_reredirects',
 
     # local extensions
     'custom_ext.bench_tools',
@@ -67,14 +68,12 @@ exclude_patterns = [
     'changelog/*'
 ]
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
 html_theme = 'furo'
-
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -125,3 +124,24 @@ intersphinx_mapping = {
 
 pygments_style = "tango"
 pygments_dark_style = "native"
+
+redirects = {
+    "tutorial": "loading-and-dumping/tutorial.html",
+    "extended_usage": "loading-and-dumping/extended-usage.html",
+    "specific_types_behavior": "loading-and-dumping/specific-types-behavior.html",
+
+    "contributing": "reference/contributing.html",
+    "examples": "reference/examples.html",
+
+    **{
+        f"api_reference/{page}": f"../reference/api/{page}.html"
+        for page in [
+            'modules',
+            'adaptix',
+            'adaptix.provider',
+            'adaptix.retort',
+            'adaptix.load_error',
+            'adaptix.struct_trail',
+        ]
+    },
+}
