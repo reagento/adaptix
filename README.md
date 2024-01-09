@@ -1,9 +1,15 @@
-# Adaptix
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo/adaptix-with-title-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/logo/adaptix-with-title-light.png">
+    <img alt="adaptix logo" src="docs/logo/adaptix-with-title-light.png">
+  </picture>
 
-[![PyPI version](https://img.shields.io/pypi/v/adaptix.svg?color=blue)](https://pypi.org/project/adaptix/)
-[![downloads](https://img.shields.io/pypi/dm/adaptix.svg)](https://pypistats.org/packages/adaptix)
-[![versions](https://img.shields.io/pypi/pyversions/adaptix.svg)](https://github.com/reagento/adaptix)
-[![license](https://img.shields.io/github/license/reagento/dataclass_factory.svg)](https://github.com/reagento/adaptix/blob/master/LICENSE)
+  [![PyPI version](https://img.shields.io/pypi/v/adaptix.svg?color=blue)](https://pypi.org/project/adaptix/)
+  [![downloads](https://img.shields.io/pypi/dm/adaptix.svg)](https://pypistats.org/packages/adaptix)
+  [![versions](https://img.shields.io/pypi/pyversions/adaptix.svg)](https://github.com/reagento/adaptix)
+  [![license](https://img.shields.io/github/license/reagento/dataclass_factory.svg)](https://github.com/reagento/adaptix/blob/master/LICENSE)
+</div>
 
 An extremely flexible and configurable data model conversion library.
 
@@ -52,7 +58,7 @@ assert retort.dump(book) == data
 * Config loading/dumping via codec that produces/takes dict.
 * Storing JSON in a database and representing it as a model inside the application code.
 * Creating API clients that convert a model to JSON sending to the server.
-* Persisting entities at cache storage.
+* Persisting entities in cache storage.
 * Implementing fast and primitive ORM.
 
 ## Advantages
