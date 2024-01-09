@@ -5,6 +5,8 @@
     <img alt="adaptix logo" src="docs/logo/adaptix-with-title-light.png">
   </picture>
 
+  <hr>
+
   [![PyPI version](https://img.shields.io/pypi/v/adaptix.svg?color=blue)](https://pypi.org/project/adaptix/)
   [![downloads](https://img.shields.io/pypi/dm/adaptix.svg)](https://pypistats.org/packages/adaptix)
   [![versions](https://img.shields.io/pypi/pyversions/adaptix.svg)](https://github.com/reagento/adaptix)
