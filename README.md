@@ -15,8 +15,9 @@
 
 An extremely flexible and configurable data model conversion library.
 
-Adaptix is ready for production!
-The beta version only means there may be some backward incompatible changes, so you need to pin a specific version.
+> [!IMPORTANT]
+> Adaptix is ready for production!
+> The beta version only means there may be some backward incompatible changes, so you need to pin a specific version.
 
 📚 [Documentation](https://adaptix.readthedocs.io/)
 
