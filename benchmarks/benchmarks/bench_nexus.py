@@ -734,7 +734,7 @@ class Renderer(HubProcessor):
             ],
         )
 
-    DEFAULT_ENV_KEY = 'py311'
+    DEFAULT_ENV_KEY = 'py312'
 
     def create_hub_plot(
         self,
