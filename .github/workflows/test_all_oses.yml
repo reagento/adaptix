@@ -1,12 +1,6 @@
-name: Run linters and tests
+name: Run tests on all operating systems
 
 on:
-  push:
-    branches-ignore:
-      - "2.x/*"
-  pull_request:
-    branches-ignore:
-      - "2.x/*"
   workflow_dispatch:
 
 permissions:
@@ -17,39 +11,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linting:
-    name: Run linters
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Just
-        uses: extractions/setup-just@v1
-        with:
-          just-version: 1.14.0
-
-      - name: Setup environment to run tox
-        run:
-          just setup-runner
-
-      - name: Run linters
-        run:
-          just lint
-
   testing:
     name: Run tests
     runs-on: ${{ matrix.os }}
-    needs: linting
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         python_version:
           - { setup: '3.8',      tox: 'py38'    }
@@ -61,7 +28,7 @@ jobs:
           - { setup: 'pypy3.9',  tox: 'pypy39'  }
           - { setup: 'pypy3.10', tox: 'pypy310' }
 
-        os: ['ubuntu-latest']
+        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
 
     steps:
       - uses: actions/checkout@v4
