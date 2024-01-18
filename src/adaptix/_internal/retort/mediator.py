@@ -13,7 +13,7 @@ T = TypeVar('T')
 
 class RecursionResolver(ABC, Generic[T]):
     @abstractmethod
-    def process_recursion(self, request: Request[T]) -> Optional[Any]:
+    def track_recursion(self, request: Request[T]) -> Optional[Any]:
         ...
 
     @abstractmethod
@@ -73,7 +73,7 @@ class BuiltinMediator(Mediator):
         self.recursion_stubs: Dict[Request, Any] = {}
 
     def provide(self, request: Request[T]) -> T:
-        stub = self.recursion_resolver.process_recursion(request)
+        stub = self.recursion_resolver.track_recursion(request)
         if stub is not None:
             return stub
 

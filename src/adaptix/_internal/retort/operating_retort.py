@@ -26,7 +26,7 @@ class MorphingRecursionResolver(RecursionResolver):
     def __init__(self) -> None:
         self._loc_map_to_stub: Dict[LocMap, FuncWrapper] = {}
 
-    def process_recursion(self, request: Request[T]) -> Optional[Any]:
+    def track_recursion(self, request: Request[T]) -> Optional[Any]:
         if not isinstance(request, self.REQUEST_CLASSES):
             return None
 
@@ -39,7 +39,7 @@ class MorphingRecursionResolver(RecursionResolver):
 
     def process_request_result(self, request: Request[T], result: T) -> None:
         if isinstance(request, self.REQUEST_CLASSES) and request.last_map in self._loc_map_to_stub:
-            self._loc_map_to_stub[request.last_map].set_func(result)
+            self._loc_map_to_stub.pop(request.last_map).set_func(result)
 
 
 @with_module('adaptix')
