@@ -1,13 +1,13 @@
 from abc import ABC
-from typing import Iterable, List, Mapping, Optional, Sequence, Type, TypeVar
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Type
 
+from ..common import VarTuple
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from ..provider.request_cls import FieldLoc, LocatedRequest
-from ..provider.utils import find_field_request
+from ..provider.request_cls import FieldLoc, LocatedRequest, LocMap, TypeHintLoc, find_owner_with_field
 from ..utils import copy_exception_dunders, with_module
 from .base_retort import BaseRetort
-from .mediator import ErrorRepresentor, RecursionResolving, StubsRecursionResolver
+from .mediator import ErrorRepresentor, RecursionResolver, T
 
 
 class FuncWrapper:
@@ -20,21 +20,32 @@ class FuncWrapper:
         self.__call__ = func.__call__
 
 
-class FuncRecursionResolver(StubsRecursionResolver):
-    def create_stub(self, request):
-        return FuncWrapper()
+class MorphingRecursionResolver(RecursionResolver):
+    REQUEST_CLASSES: VarTuple[Type[LocatedRequest]] = (LoaderRequest, DumperRequest)
 
-    def saturate_stub(self, actual, stub) -> None:
-        stub.set_func(actual)
+    def __init__(self) -> None:
+        self._loc_map_to_stub: Dict[LocMap, FuncWrapper] = {}
+
+    def process_recursion(self, request: Request[T]) -> Optional[Any]:
+        if not isinstance(request, self.REQUEST_CLASSES):
+            return None
+
+        if request.loc_stack.count(request.last_map) == 1:
+            return None
+
+        stub = FuncWrapper()
+        self._loc_map_to_stub[request.last_map] = stub
+        return stub
+
+    def process_request_result(self, request: Request[T], result: T) -> None:
+        if isinstance(request, self.REQUEST_CLASSES) and request.last_map in self._loc_map_to_stub:
+            self._loc_map_to_stub[request.last_map].set_func(result)
 
 
 @with_module('adaptix')
 class NoSuitableProvider(Exception):
     def __init__(self, message: str):
         self.message = message
-
-
-T = TypeVar('T')
 
 
 class BuiltinErrorRepresentor(ErrorRepresentor):
@@ -51,40 +62,43 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
 
     _LOC_KEYS_ORDER = {fld: idx for idx, fld in enumerate(['type', 'field_id'])}
 
-    def get_request_context_notes(self, request: Request, request_stack: Sequence[Request]) -> Iterable[str]:
-        if isinstance(request, LocatedRequest):
-            location_desc = ', '.join(
-                f'{key}={value!r}'
-                for key, value in sorted(
-                    (
-                        (key, value)
-                        for loc in request.loc_map.values()
-                        for key, value in vars(loc).items()
-                    ),
-                    key=lambda item: self._LOC_KEYS_ORDER.get(item[0], 1000),
-                )
-            )
-            if location_desc:
-                yield f'Location: {location_desc}'
+    def get_request_context_notes(self, request: Request) -> Iterable[str]:
+        if not isinstance(request, LocatedRequest):
+            return
 
-            try:
-                field_request = find_field_request(request_stack)
-            except ValueError:
-                pass
-            else:
-                field_loc = field_request.loc_map[FieldLoc]
-                yield f'Exception was raised while processing field {field_loc.field_id!r} of {field_loc.owner_type}'
+        location_desc = ', '.join(
+            f'{key}={value!r}'
+            for key, value in sorted(
+                (
+                    (key, value)
+                    for loc in request.last_map.values()
+                    for key, value in vars(loc).items()
+                ),
+                key=lambda item: self._LOC_KEYS_ORDER.get(item[0], 1000),
+            )
+        )
+        if location_desc:
+            yield f'Location: {location_desc}'
+
+        try:
+            owner_loc_map, field_loc_map = find_owner_with_field(request.loc_stack)
+        except ValueError:
+            pass
+        else:
+            owner_type = owner_loc_map[TypeHintLoc].type
+            field_id = field_loc_map[FieldLoc].field_id
+            yield f'Exception was raised while processing field {field_id!r} of {owner_type}'
 
 
 class OperatingRetort(BaseRetort, Provider, ABC):
     """A retort that can operate as Retort but have no predefined providers and no high-level user interface"""
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        return self._provide_from_recipe(request, mediator.request_stack[:-1])
+        return self._provide_from_recipe(request)
 
     def _facade_provide(self, request: Request[T], *, error_message: str) -> T:
         try:
-            return self._provide_from_recipe(request, [])
+            return self._provide_from_recipe(request)
         except CannotProvide as e:
             cause = self._get_exception_cause(e)
             raise NoSuitableProvider(error_message) from cause
@@ -110,13 +124,8 @@ class OperatingRetort(BaseRetort, Provider, ABC):
         copy_exception_dunders(source=exc, target=new_exc)
         return new_exc
 
-    def _get_recursion_resolving(self) -> RecursionResolving:
-        return RecursionResolving(
-            {
-                LoaderRequest: FuncRecursionResolver(),
-                DumperRequest: FuncRecursionResolver(),
-            }
-        )
+    def _create_recursion_resolver(self) -> RecursionResolver:
+        return MorphingRecursionResolver()
 
     def _get_error_representor(self) -> ErrorRepresentor:
         return BuiltinErrorRepresentor()

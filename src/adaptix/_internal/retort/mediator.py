@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 from itertools import islice
-from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Set, Tuple, Type, TypeVar
+from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Sequence, Set, Tuple, Type, TypeVar
 
 from ..common import TypeHint
-from ..datastructures import ClassDispatcher
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from ..provider.provider_wrapper import RequestClassDeterminedProvider
 from ..provider.request_filtering import ExactOriginMergedProvider, ExactOriginRC, ProviderWithRC
@@ -12,13 +11,13 @@ from ..utils import add_note
 T = TypeVar('T')
 
 
-class StubsRecursionResolver(ABC, Generic[T]):
+class RecursionResolver(ABC, Generic[T]):
     @abstractmethod
-    def create_stub(self, request: Request[T]) -> T:
+    def process_recursion(self, request: Request[T]) -> Optional[Any]:
         ...
 
     @abstractmethod
-    def saturate_stub(self, actual: T, stub: T) -> None:
+    def process_request_result(self, request: Request[T], result: T) -> None:
         ...
 
 
@@ -45,7 +44,6 @@ class RecipeSearcher(ABC):
         ...
 
 
-RecursionResolving = ClassDispatcher[Request, StubsRecursionResolver]
 E = TypeVar('E', bound=Exception)
 
 
@@ -55,7 +53,7 @@ class ErrorRepresentor(ABC):
         ...
 
     @abstractmethod
-    def get_request_context_notes(self, request: Request, request_stack: Sequence[Request]) -> Iterable[str]:
+    def get_request_context_notes(self, request: Request) -> Iterable[str]:
         ...
 
 
@@ -63,57 +61,35 @@ class BuiltinMediator(Mediator):
     def __init__(
         self,
         searcher: RecipeSearcher,
-        recursion_resolving: RecursionResolving,
+        recursion_resolver: RecursionResolver,
         error_representor: ErrorRepresentor,
-        request_stack: Sequence[Request[Any]],
     ):
         self.searcher = searcher
-        self.recursion_resolving = recursion_resolving
+        self.recursion_resolver = recursion_resolver
         self.error_representor = error_representor
 
-        self._request_stack = list(request_stack)
-        self._sent_request: Set[Request] = set()
+        self._current_request: Optional[Request] = None
         self.next_offset = 0
         self.recursion_stubs: Dict[Request, Any] = {}
 
-    def provide(self, request: Request[T], *, extra_stack: Sequence[Request[Any]] = ()) -> T:
-        if request in self._sent_request:
-            if request in self.recursion_stubs:
-                return self.recursion_stubs[request]
-            try:
-                resolver = self._get_resolver(request)
-            except KeyError:
-                raise RecursionError("Infinite recursion has been detected that can not be resolved") from None
-
-            stub = resolver.create_stub(request)
-            self.recursion_stubs[request] = stub
+    def provide(self, request: Request[T]) -> T:
+        stub = self.recursion_resolver.process_recursion(request)
+        if stub is not None:
             return stub
 
-        self._request_stack.extend(extra_stack)
-        self._request_stack.append(request)
-        self._sent_request.add(request)
+        self._current_request = request
         try:
             result = self._provide_non_recursive(request, 0)
         finally:
-            del self._request_stack[-1 - len(extra_stack):]
-            self._sent_request.discard(request)
+            self._current_request = None
 
-        if request in self.recursion_stubs:
-            resolver = self._get_resolver(request)
-            stub = self.recursion_stubs.pop(request)
-            resolver.saturate_stub(result, stub)
-
+        self.recursion_resolver.process_request_result(request, result)
         return result
 
     def provide_from_next(self) -> Any:
-        return self._provide_non_recursive(self._request_stack[-1], self.next_offset)
-
-    @property
-    def request_stack(self) -> Sequence[Request[Any]]:
-        return self._request_stack.copy()
-
-    def _get_resolver(self, request: Request) -> StubsRecursionResolver:
-        return self.recursion_resolving.dispatch(type(request))
+        if self._current_request is None:
+            raise ValueError
+        return self._provide_non_recursive(self._current_request, self.next_offset)
 
     def _provide_non_recursive(self, request: Request[T], search_offset: int) -> T:
         init_next_offset = self.next_offset
@@ -144,7 +120,7 @@ class BuiltinMediator(Mediator):
         )
 
     def _attach_request_context_note(self, exc: E, request: Request) -> E:
-        notes = self.error_representor.get_request_context_notes(request, self.request_stack)
+        notes = self.error_representor.get_request_context_notes(request)
         for note in notes:
             add_note(exc, note)
         return exc

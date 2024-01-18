@@ -4,7 +4,7 @@ from typing import final
 from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.provider_template import ProviderWithAttachableRC
-from ..provider.request_cls import LocMap, TypeHintLoc
+from ..provider.request_cls import TypeHintLoc
 from ..provider.request_filtering import ExactOriginRC
 from ..provider.static_provider import static_provision_action
 from ..type_tools import normalize_type
@@ -49,7 +49,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
 
         return mediator.mandatory_provide(
             LoaderRequest(
-                loc_map=LocMap(TypeHintLoc(type=self._impl))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl))
             ),
             lambda x: f'Cannot create loader for union. Loader for {self._impl} cannot be created',
         )
@@ -60,7 +60,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
 
         return mediator.mandatory_provide(
             DumperRequest(
-                loc_map=LocMap(TypeHintLoc(type=self._impl))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl))
             ),
             lambda x: f'Cannot create dumper for union. Dumper for {self._impl} cannot be created',
         )

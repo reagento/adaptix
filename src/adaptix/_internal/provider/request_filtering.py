@@ -1,9 +1,9 @@
 import re
 from abc import ABC, abstractmethod
 from copy import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from inspect import isabstract, isgenerator
-from typing import Any, ClassVar, Iterable, Optional, Pattern, Protocol, Sequence, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, ClassVar, Iterable, Optional, Pattern, Protocol, Sequence, Tuple, Type, TypeVar, Union
 
 from ..common import TypeHint, VarTuple
 from ..type_tools import (
@@ -29,8 +29,25 @@ class DirectMediator(Protocol):
     def provide(self, request: Request[T]) -> T:
         ...
 
-    @property
-    def request_stack(self) -> Sequence[Request[Any]]:
+    def delegating_provide(
+        self,
+        request: Request[T],
+        error_describer: Optional[Callable[[CannotProvide], str]] = None,
+    ) -> T:
+        ...
+
+    def mandatory_provide(
+        self,
+        request: Request[T],
+        error_describer: Optional[Callable[[CannotProvide], str]] = None,
+    ) -> T:
+        ...
+
+    def mandatory_provide_by_iterable(
+        self,
+        requests: Iterable[Request[T]],
+        error_describer: Optional[Callable[[], str]] = None,
+    ) -> Iterable[T]:
         ...
 
 
@@ -134,9 +151,9 @@ class LocatedRequestChecker(RequestChecker, ABC):
     def check_request(self, mediator: DirectMediator, request: Request) -> None:
         if not isinstance(request, LocatedRequest):
             raise CannotProvide(f'Request must be instance of {LocatedRequest}')
-        if self.LOCATION not in request.loc_map:
+        if self.LOCATION not in request.last_map:
             raise CannotProvide(f'Request location must be instance of {self.LOCATION}')
-        self._check_location(mediator, request.loc_map[self.LOCATION])
+        self._check_location(mediator, request.last_map[self.LOCATION])
 
     @abstractmethod
     def _check_location(self, mediator: DirectMediator, loc: Any) -> None:
@@ -211,7 +228,7 @@ class ExactOriginMergedProvider(Provider):
         if not isinstance(request, LocatedRequest):
             raise CannotProvide(f'Request must be instance of {LocatedRequest}')
 
-        loc = request.loc_map.get_or_raise(
+        loc = request.last_map.get_or_raise(
             TypeHintLoc,
             lambda: CannotProvide(f'Request location must be instance of {TypeHintLoc}')
         )
@@ -224,47 +241,21 @@ class ExactOriginMergedProvider(Provider):
         return provider.apply_provider(mediator, request)
 
 
-class RequestStackCutterMediator(DirectMediator):
-    def __init__(self, mediator: DirectMediator, end_offset: int):
-        self._mediator = mediator
-        self._end_offset = end_offset
-
-    def provide(self, request: Request[T]) -> T:
-        return self._mediator.provide(request)
-
-    @property
-    def request_stack(self) -> Sequence[Request[Any]]:
-        return self._mediator.request_stack[:-self._end_offset or None]
-
-
-class ExtraStackMediator(DirectMediator):
-    def __init__(self, mediator: Mediator, extra_stack: Sequence[Request[Any]]):
-        self._mediator = mediator
-        self._extra_stack = extra_stack
-
-    def provide(self, request: Request[T]) -> T:
-        return self._mediator.provide(request, extra_stack=self._extra_stack)
-
-    @property
-    def request_stack(self) -> Sequence[Request[Any]]:
-        return [*self._mediator.request_stack, *self._extra_stack]
-
-
 @dataclass(frozen=True)
-class StackEndRC(RequestChecker):
+class LocStackEndRC(RequestChecker):
     request_checkers: Sequence[RequestChecker]
 
     def check_request(self, mediator: DirectMediator, request: Request[T]) -> None:
-        stack = mediator.request_stack
-        offset = len(stack) - len(self.request_checkers)
+        if not isinstance(request, LocatedRequest):
+            raise CannotProvide(f'Request must be instance of {LocatedRequest}')
 
-        if offset < 0:
-            raise CannotProvide("Request stack is too small")
+        if len(request.loc_stack) < len(self.request_checkers):
+            raise CannotProvide("LocStack is too small")
 
-        for i, (checker, stack_request) in enumerate(zip(self.request_checkers, stack[offset:]), start=0):
+        for i, checker in enumerate(reversed(self.request_checkers), start=0):
             checker.check_request(
-                RequestStackCutterMediator(mediator, i),
-                stack_request,
+                mediator,
+                replace(request, loc_stack=request.loc_stack[:len(request.loc_stack) - i]),
             )
 
 
@@ -434,7 +425,7 @@ class RequestPattern:
             )
         if len(self._stack) == 1:
             return self._stack[0]
-        return StackEndRC(self._stack)
+        return LocStackEndRC(self._stack)
 
 
 P = RequestPattern(stack=())

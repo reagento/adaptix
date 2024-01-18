@@ -12,10 +12,9 @@ from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.provider_template import for_predicate
-from ..provider.request_cls import FieldLoc, LocatedRequest, StrictCoercionRequest, TypeHintLoc
+from ..provider.request_cls import LocatedRequest, StrictCoercionRequest, TypeHintLoc, find_owner_with_field
 from ..provider.request_filtering import P, create_request_checker
 from ..provider.static_provider import static_provision_action
-from ..provider.utils import find_field_request
 from ..special_cases_optimization import as_is_stub
 from .load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableRC
@@ -147,9 +146,10 @@ class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
     _BYTES_PROVIDER = BytesBase64Provider()
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        request.loc_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
+        request.last_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
         bytes_loader = self._BYTES_PROVIDER.apply_provider(
-            mediator, replace(request, loc_map=request.loc_map.add(TypeHintLoc(bytes)))
+            mediator,
+            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(bytes)))
         )
 
         def bytearray_base64_loader(data):
@@ -194,7 +194,7 @@ class ScalarLoaderProvider(LoaderProvider, Generic[T]):
         self._lax_coercion_loader = lax_coercion_loader
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         return self._strict_coercion_loader if strict_coercion else self._lax_coercion_loader
 
 
@@ -363,7 +363,7 @@ class SelfTypeProvider(ProviderWithAttachableRC):
         self._request_checker.check_request(mediator, request)
 
         try:
-            field_request = find_field_request(mediator.request_stack)
+            owner_loc_map, _field_loc_map = find_owner_with_field(request.loc_stack)
         except ValueError:
             raise CannotProvide(
                 'Owner type is not found',
@@ -371,11 +371,10 @@ class SelfTypeProvider(ProviderWithAttachableRC):
                 is_demonstrative=True
             ) from None
 
-        owner_type = field_request.loc_map[FieldLoc].owner_type
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_map=request.loc_map.add(TypeHintLoc(owner_type))
+                loc_stack=request.loc_stack.add_to_last_map(owner_loc_map[TypeHintLoc])
             ),
         )
 
@@ -383,7 +382,7 @@ class SelfTypeProvider(ProviderWithAttachableRC):
 @for_predicate(typing.LiteralString if HAS_PY_311 else ~P.ANY)
 class LiteralStringProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         return str_strict_coercion_loader if strict_coercion else str  # type: ignore[return-value]
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:

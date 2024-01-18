@@ -63,7 +63,7 @@ from adaptix._internal.morphing.name_layout.component import (
 from adaptix._internal.morphing.name_layout.provider import BuiltinNameLayoutProvider
 from adaptix._internal.morphing.request_cls import DumperRequest, LoaderRequest
 from adaptix._internal.provider.provider_template import ValueProvider
-from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocMap, LocStack, TypeHintLoc
 from adaptix._internal.provider.request_filtering import AnyRequestChecker
 from adaptix._internal.provider.shape_provider import InputShapeRequest, OutputShapeRequest
 
@@ -175,23 +175,23 @@ def make_layouts(
     retort.get_loader(Stub)
     retort.get_dumper(Stub)
     inp_request = InputNameLayoutRequest(
-        loc_map=loc_map,
+        loc_stack=LocStack(loc_map),
         shape=input_shape,
     )
     out_request = OutputNameLayoutRequest(
-        loc_map=loc_map,
+        loc_stack=LocStack(loc_map),
         shape=output_shape,
     )
     inp_name_layout = retort.provide(inp_request)
     out_name_layout = retort.provide(out_request)
     retort.provide(
         LoaderRequest(
-            loc_map=loc_map,
+            loc_stack=LocStack(loc_map),
         )
     )
     retort.provide(
         DumperRequest(
-            loc_map=loc_map,
+            loc_stack=LocStack(loc_map),
         )
     )
     return Layouts(inp_name_layout, out_name_layout)

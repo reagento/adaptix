@@ -17,8 +17,8 @@ from ...name_style import NameStyle, convert_snake_style
 from ...provider.essential import CannotProvide, Mediator, Provider
 from ...provider.fields import field_to_loc_map
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
-from ...provider.request_cls import LocatedRequest, TypeHintLoc
-from ...provider.request_filtering import ExtraStackMediator, RequestChecker
+from ...provider.request_cls import LocatedRequest
+from ...provider.request_filtering import RequestChecker
 from ...retort.operating_retort import OperatingRetort
 from ...special_cases_optimization import with_default_clause
 from ...utils import Omittable, get_prefix_groups
@@ -98,13 +98,11 @@ def apply_rc(
     request_checker: RequestChecker,
     field: BaseField,
 ) -> bool:
-    owner_type = request.loc_map[TypeHintLoc].type
-    filter_request = NameMappingFilterRequest(loc_map=field_to_loc_map(owner_type, field))
+    filter_request = NameMappingFilterRequest(
+        loc_stack=request.loc_stack.append_with(field_to_loc_map(field))
+    )
     try:
-        request_checker.check_request(
-            ExtraStackMediator(mediator, [filter_request]),
-            filter_request,
-        )
+        request_checker.check_request(mediator, filter_request)
     except CannotProvide:
         return False
     return True
@@ -146,7 +144,7 @@ class BuiltinStructureMaker(StructureMaker):
                         shape=request.shape,
                         field=field,
                         generated_key=generated_key,
-                        loc_map=field_to_loc_map(request.loc_map[TypeHintLoc].type, field),
+                        loc_stack=request.loc_stack.append_with(field_to_loc_map(field)),
                     )
                 )
             except CannotProvide:
@@ -290,7 +288,7 @@ class BuiltinStructureMaker(StructureMaker):
         request: InputNameLayoutRequest,
         extra_move: InpExtraMove,
     ) -> PathsTo[LeafInpCrown]:
-        schema = provide_schema(StructureOverlay, mediator, request.loc_map)
+        schema = provide_schema(StructureOverlay, mediator, request.loc_stack)
         fields_to_paths: List[FieldAndPath[InputField]] = list(
             self._map_fields(mediator, request, schema, extra_move)
         )
@@ -315,7 +313,7 @@ class BuiltinStructureMaker(StructureMaker):
         request: OutputNameLayoutRequest,
         extra_move: OutExtraMove,
     ) -> PathsTo[LeafOutCrown]:
-        schema = provide_schema(StructureOverlay, mediator, request.loc_map)
+        schema = provide_schema(StructureOverlay, mediator, request.loc_stack)
         fields_to_paths: List[FieldAndPath[OutputField]] = list(
             self._map_fields(mediator, request, schema, extra_move)
         )
@@ -324,10 +322,10 @@ class BuiltinStructureMaker(StructureMaker):
         return paths_to_leaves
 
     def empty_as_list_inp(self, mediator: Mediator, request: InputNameLayoutRequest) -> bool:
-        return provide_schema(StructureOverlay, mediator, request.loc_map).as_list
+        return provide_schema(StructureOverlay, mediator, request.loc_stack).as_list
 
     def empty_as_list_out(self, mediator: Mediator, request: OutputNameLayoutRequest) -> bool:
-        return provide_schema(StructureOverlay, mediator, request.loc_map).as_list
+        return provide_schema(StructureOverlay, mediator, request.loc_stack).as_list
 
 
 @dataclass(frozen=True)
@@ -362,7 +360,7 @@ class BuiltinSievesMaker(SievesMaker):
         request: OutputNameLayoutRequest,
         paths_to_leaves: PathsTo[LeafOutCrown],
     ) -> PathsTo[Sieve]:
-        schema = provide_schema(SievesOverlay, mediator, request.loc_map)
+        schema = provide_schema(SievesOverlay, mediator, request.loc_stack)
         result = {}
         for path, leaf in paths_to_leaves.items():
             if isinstance(leaf, OutFieldCrown):
@@ -406,7 +404,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         mediator: Mediator,
         request: InputNameLayoutRequest,
     ) -> InpExtraMove:
-        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_map)
+        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_stack)
         if schema.extra_in in (ExtraForbid(), ExtraSkip()):
             return None
         if schema.extra_in == ExtraKwargs():
@@ -420,7 +418,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         mediator: Mediator,
         request: OutputNameLayoutRequest,
     ) -> OutExtraMove:
-        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_map)
+        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_stack)
         if schema.extra_out == ExtraSkip():
             return None
         if callable(schema.extra_out):
@@ -440,7 +438,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         request: InputNameLayoutRequest,
         paths_to_leaves: PathsTo[LeafInpCrown],
     ) -> PathsTo[DictExtraPolicy]:
-        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_map)
+        schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_stack)
         policy = self._get_extra_policy(schema)
         path_to_extra_policy: Dict[KeyPath, DictExtraPolicy] = {
             (): policy,

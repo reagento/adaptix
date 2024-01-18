@@ -12,7 +12,7 @@ from ...common import Dumper, Loader, TypeHint, VarTuple
 from ...definitions import DebugTrail
 from ...provider.essential import Provider, Request
 from ...provider.provider_template import ValueProvider
-from ...provider.request_cls import DebugTrailRequest, LocMap, StrictCoercionRequest, TypeHintLoc
+from ...provider.request_cls import DebugTrailRequest, LocMap, LocStack, StrictCoercionRequest, TypeHintLoc
 from ...provider.request_filtering import P
 from ...provider.shape_provider import (
     ATTRS_SHAPE_PROVIDER,
@@ -243,7 +243,7 @@ class AdornedRetort(OperatingRetort):
 
     def _make_loader(self, tp: Type[T]) -> Loader[T]:
         loader_ = self._facade_provide(
-            LoaderRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+            LoaderRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
             error_message=f'Cannot produce loader for type {tp!r}',
         )
         if self._debug_trail == DebugTrail.FIRST:
@@ -269,7 +269,7 @@ class AdornedRetort(OperatingRetort):
 
     def _make_dumper(self, tp: Type[T]) -> Dumper[T]:
         dumper_ = self._facade_provide(
-            DumperRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+            DumperRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
             error_message=f'Cannot produce dumper for type {tp!r}',
         )
         if self._debug_trail == DebugTrail.FIRST:

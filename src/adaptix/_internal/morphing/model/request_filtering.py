@@ -10,6 +10,6 @@ class AnyModelRC(RequestChecker):
             raise CannotProvide
 
         try:
-            mediator.provide(InputShapeRequest(loc_map=request.loc_map))
+            mediator.provide(InputShapeRequest(loc_stack=request.loc_stack))
         except CannotProvide:
-            mediator.provide(OutputShapeRequest(loc_map=request.loc_map))
+            mediator.provide(OutputShapeRequest(loc_stack=request.loc_stack))

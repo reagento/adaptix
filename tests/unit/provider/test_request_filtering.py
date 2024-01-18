@@ -2,108 +2,206 @@ import collections.abc
 import typing
 from contextlib import nullcontext
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, Iterable, List, Type, TypeVar, Union, overload
+from typing import Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar, Union, overload
 
 import pytest
 from tests_helpers import cond_list, full_match_regex_str
 
-from adaptix import CannotProvide, Chain, P, Request, Retort, loader
+from adaptix import CannotProvide, Chain, P, Retort, loader
 from adaptix._internal.common import TypeHint
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import NoDefault
-from adaptix._internal.provider.request_cls import FieldLoc, GenericParamLoc, LocatedRequest, LocMap, TypeHintLoc
+from adaptix._internal.provider.request_cls import (
+    FieldLoc,
+    GenericParamLoc,
+    LocatedRequest,
+    LocMap,
+    LocStack,
+    TypeHintLoc,
+)
 from adaptix._internal.provider.request_filtering import (
     AnyRequestChecker,
     ExactOriginRC,
     ExactTypeRC,
+    LocStackEndRC,
     OriginSubclassRC,
-    RequestPattern,
-    StackEndRC,
     create_request_checker,
 )
-from adaptix._internal.retort.mediator import BuiltinMediator, RawRecipeSearcher, RecursionResolving
-from adaptix._internal.retort.operating_retort import BuiltinErrorRepresentor
 from adaptix._internal.type_tools import normalize_type
 
 
-def create_mediator(*elements: Request[Any]):
-    return BuiltinMediator(
-        searcher=RawRecipeSearcher([]),
-        recursion_resolving=RecursionResolving(),
-        request_stack=elements,
-        error_representor=BuiltinErrorRepresentor(),
-    )
+@overload
+def param_result(*values: Any, id: Optional[str] = None, result: Any):
+    ...
 
 
-def test_stack_end_rc():
-    checker = StackEndRC(
+@overload
+def param_result(*values: Any, id: Optional[str] = None, raises: Type[Exception]):
+    ...
+
+
+@overload
+def param_result(*values: Any, id: Optional[str] = None, raises: Type[Exception], exact_match: str):
+    ...
+
+
+@overload
+def param_result(*values: Any, id: Optional[str] = None, raises: Type[Exception], match: str):
+    ...
+
+
+def param_result(*values, result=None, raises=None, exact_match=None, match=None, id=None):
+    if raises is not None:
+        context = pytest.raises(
+            raises, match=full_match_regex_str(exact_match) if exact_match is not None else match
+        )
+    else:
+        context = None
+    if id is None:
+        if len(values) == 1:
+            id = str(values[0])
+        else:
+            id = str(values)
+    return pytest.param(*values, result, context, id=id)
+
+
+def create_mediator():
+    return Retort()._create_mediator()
+
+
+@pytest.mark.parametrize(
+    ['request_obj', 'result', 'context'],
+    [
+        param_result(
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(int)),
+                )
+            ),
+            raises=CannotProvide,
+            exact_match="LocStack is too small",
+            id='1-item',
+        ),
+        param_result(
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(int)),
+                    LocMap(TypeHintLoc(str)),
+                )
+            ),
+            raises=CannotProvide,
+            exact_match="LocStack is too small",
+            id='2-items',
+        ),
+        param_result(
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(int)),
+                    LocMap(TypeHintLoc(str)),
+                    LocMap(TypeHintLoc(bool)),
+                )
+            ),
+            result=None,
+            id='ok',
+        ),
+        param_result(
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(int)),
+                    LocMap(TypeHintLoc(str)),
+                    LocMap(TypeHintLoc(str)),
+                )
+            ),
+            raises=CannotProvide,
+            id='last-is-bad',
+        ),
+        param_result(
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(int)),
+                    LocMap(TypeHintLoc(int)),
+                    LocMap(TypeHintLoc(str)),
+                    LocMap(TypeHintLoc(bool)),
+                )
+            ),
+            result=None,
+            id='extra-stack-matched-with-prev',
+        ),
+        param_result(
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(str)),
+                    LocMap(TypeHintLoc(int)),
+                    LocMap(TypeHintLoc(str)),
+                    LocMap(TypeHintLoc(bool)),
+                )
+            ),
+            result=None,
+            id='extra-stack',
+        ),
+    ],
+)
+def test_stack_end_rc(request_obj, result, context):
+    checker = LocStackEndRC(
         [
             create_request_checker(int),
             create_request_checker(str),
             create_request_checker(bool),
         ]
     )
+    with context or nullcontext():
+        assert checker.check_request(
+            create_mediator(),
+            request_obj,
+        ) == result
 
-    with pytest.raises(CannotProvide, match="Request stack is too small"):
-        checker.check_request(
-            create_mediator(
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
+
+@pytest.mark.parametrize(
+    ['request_obj', 'result', 'context'],
+    [
+        param_result(
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(bool)),
+                    LocMap(TypeHintLoc(int)),
+                    LocMap(TypeHintLoc(str)),
+                    LocMap(TypeHintLoc(bool)),
+                )
             ),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-        )
-
-    with pytest.raises(CannotProvide, match="Request stack is too small"):
-        checker.check_request(
-            create_mediator(
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+            result=None,
+            id='ok',
+        ),
+        param_result(
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(int)),
+                    LocMap(TypeHintLoc(str)),
+                    LocMap(TypeHintLoc(bool)),
+                )
             ),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-        )
-
-    with pytest.raises(CannotProvide):
-        checker.check_request(
-            create_mediator(
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
+            raises=CannotProvide,
+            exact_match="LocStack is too small",
+            id='too-small',
+        ),
+        param_result(
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(str)),
+                    LocMap(TypeHintLoc(int)),
+                    LocMap(TypeHintLoc(str)),
+                    LocMap(TypeHintLoc(bool)),
+                )
             ),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-        )
-
-    checker.check_request(
-        create_mediator(
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
+            raises=CannotProvide,
+            id='bad',
         ),
-        LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-    )
-    checker.check_request(
-        create_mediator(
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-        ),
-        LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-    )
-    checker.check_request(
-        create_mediator(
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-        ),
-        LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-    )
-
-
-def test_nested_start_rc():
-    checker = StackEndRC(
+    ],
+)
+def test_nested_start_rc(request_obj, result, context):
+    checker = LocStackEndRC(
         [
             AnyRequestChecker(),
-            StackEndRC(
+            LocStackEndRC(
                 [
                     create_request_checker(bool),
                     create_request_checker(int),
@@ -113,57 +211,11 @@ def test_nested_start_rc():
             create_request_checker(bool),
         ]
     )
-
-    checker.check_request(
-        create_mediator(
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-        ),
-        LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-    )
-
-    with pytest.raises(CannotProvide, match="Request stack is too small"):
-        checker.check_request(
-            create_mediator(
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-            ),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-        )
-
-    with pytest.raises(CannotProvide):
-        checker.check_request(
-            create_mediator(
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-                LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-            ),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(bool))),
-        )
-
-
-def check_request_pattern(
-    request_pattern: RequestPattern,
-    request_or_stack: Union[Request, List[Request]],
-    *,
-    fail: bool,
-) -> None:
-    if isinstance(request_or_stack, list):
-        request = request_or_stack[-1]
-        stack = request_or_stack
-    else:
-        request = request_or_stack
-        stack = []
-
-    with pytest.raises(CannotProvide) if fail else nullcontext():
-        request_pattern.build_request_checker().check_request(
-            create_mediator(*stack),
-            request,
-        )
+    with context or nullcontext():
+        assert checker.check_request(
+            create_mediator(),
+            request_obj,
+        ) == result
 
 
 @dataclass
@@ -178,48 +230,102 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
             field_id=name,
             default=NoDefault(),
             metadata={},
-            owner_type=WithUserName,
         )
     )
 
 
-def test_request_pattern():
-    check_request_pattern(
-        P[int],
-        LocatedRequest(loc_map=LocMap(TypeHintLoc(int))),
-        fail=False,
-    )
-    check_request_pattern(
-        P[int],
-        LocatedRequest(loc_map=LocMap(TypeHintLoc(str))),
-        fail=True,
-    )
+@pytest.mark.parametrize(
+    ['pattern', 'request_obj', 'result', 'context'],
+    [
+        param_result(
+            P[int],
+            LocatedRequest(loc_stack=LocStack(LocMap(TypeHintLoc(int)))),
+            result=None,
+            id='int-ok',
+        ),
+        param_result(
+            P[int],
+            LocatedRequest(loc_stack=LocStack(LocMap(TypeHintLoc(str)))),
+            raises=CannotProvide,
+            id='int-fail',
+        ),
+        param_result(
+            P[WithUserName].user_name,
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(WithUserName)),
+                    field_loc_map('user_name', str),
+                )
+            ),
+            result=None,
+            id='model-attr-ok-1',
+        ),
+        param_result(
+            P[WithUserName].user_name,
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(WithUserName)),
+                    field_loc_map('user_name', int),
+                )
+            ),
+            result=None,
+            id='model-attr-ok-2',
+        ),
+        param_result(
+            P[WithUserName].user_id,
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(WithUserName)),
+                    field_loc_map('user_name', int),
+                )
+            ),
+            raises=CannotProvide,
+            id='model-attr-fail',
+        ),
+        param_result(
+            P[WithUserName] + P.user_name,
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(WithUserName)),
+                    field_loc_map('user_name', int),
+                )
+            ),
+            result=None,
+            id='model-attr-ok-concat',
+        ),
+        param_result(
+            P[Dict].generic_arg(0, str),
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(Dict)),
+                    LocMap(TypeHintLoc(str), GenericParamLoc(0)),
+                )
+            ),
+            result=None,
+            id='generic-arg-ok',
+        ),
+        param_result(
+            P[Dict].generic_arg(0, str),
+            LocatedRequest(
+                loc_stack=LocStack(
+                    LocMap(TypeHintLoc(Dict)),
+                    LocMap(TypeHintLoc(str), GenericParamLoc(1)),
+                )
+            ),
+            raises=CannotProvide,
+            id='generic-arg-fail',
+        ),
+    ],
+)
+def test_request_pattern(pattern, request_obj, result, context):
+    with context or nullcontext():
+        assert pattern.build_request_checker().check_request(
+            create_mediator(),
+            request_obj,
+        ) == result
 
-    check_request_pattern(
-        P[WithUserName].user_name,
-        [
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(WithUserName))),
-            LocatedRequest(loc_map=field_loc_map('user_name', str)),
-        ],
-        fail=False,
-    )
-    check_request_pattern(
-        P[WithUserName].user_name,
-        [
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(WithUserName))),
-            LocatedRequest(loc_map=field_loc_map('user_name', int)),
-        ],
-        fail=False,
-    )
-    check_request_pattern(
-        P[WithUserName].user_id,
-        [
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(WithUserName))),
-            LocatedRequest(loc_map=field_loc_map('user_name', int)),
-        ],
-        fail=True,
-    )
 
+def test_generic_pattern_create_fail():
     with pytest.raises(
         TypeError,
         match=full_match_regex_str(
@@ -228,34 +334,6 @@ def test_request_pattern():
         )
     ):
         P[WithUserName][P.user_name]
-
-    check_request_pattern(
-        P[WithUserName] + P.user_name,
-        [
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(WithUserName))),
-            LocatedRequest(loc_map=field_loc_map('user_name', int)),
-        ],
-        fail=False,
-    )
-
-
-def test_request_pattern_generic_arg():
-    check_request_pattern(
-        P[Dict].generic_arg(0, str),
-        [
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(Dict))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(str), GenericParamLoc(0))),
-        ],
-        fail=False,
-    )
-    check_request_pattern(
-        P[Dict].generic_arg(0, str),
-        [
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(Dict))),
-            LocatedRequest(loc_map=LocMap(TypeHintLoc(str), GenericParamLoc(1))),
-        ],
-        fail=True,
-    )
 
 
 def plus_one(data):
@@ -279,36 +357,6 @@ def test_request_pattern_generic_arg_dict_override():
 
 
 T = TypeVar('T')
-
-
-@overload
-def param_result(value: Any, *, result: Any):
-    ...
-
-
-@overload
-def param_result(value: Any, *, raises: Type[Exception]):
-    ...
-
-
-@overload
-def param_result(value: Any, *, raises: Type[Exception], exact_match: str):
-    ...
-
-
-@overload
-def param_result(value: Any, *, raises: Type[Exception], match: str):
-    ...
-
-
-def param_result(value, *, result=None, raises=None, exact_match=None, match=None):
-    if raises is not None:
-        context = pytest.raises(
-            raises, match=full_match_regex_str(exact_match) if exact_match is not None else match
-        )
-    else:
-        context = None
-    return pytest.param(value, result, context, id=str(value))
 
 
 class MyGeneric(Generic[T]):
@@ -351,51 +399,49 @@ class MyGeneric(Generic[T]):
             Union,
             result=ExactOriginRC(Union)
         ),
-    ] + cond_list(
-        HAS_ANNOTATED,
-        lambda: [
-            param_result(
-                typing.Annotated,
-                result=ExactOriginRC(typing.Annotated)
-            ),
-            param_result(
-                typing.Annotated[int, 'meta'],
-                result=ExactTypeRC(normalize_type(typing.Annotated[int, 'meta']))
-            ),
-            param_result(
-                typing.Annotated[List[int], 'meta'],
-                result=ExactTypeRC(normalize_type(typing.Annotated[list[int], 'meta']))
-            ),
-            param_result(
-                typing.Annotated[list, 'meta'],
-                raises=ValueError,
-                exact_match=(
-                    "Can not create RequestChecker from"
-                    " typing.Annotated[list, 'meta'] generic alias (parametrized generic)"
+        *cond_list(
+            HAS_ANNOTATED,
+            lambda: [
+                param_result(
+                    typing.Annotated,
+                    result=ExactOriginRC(typing.Annotated)
                 ),
-            ),
-            param_result(
-                typing.Annotated[List[T], 'meta'],
-                raises=ValueError,
-                exact_match=(
-                    "Can not create RequestChecker from"
-                    " typing.Annotated[typing.List[~T], 'meta'] generic alias (parametrized generic)"
+                param_result(
+                    typing.Annotated[int, 'meta'],
+                    result=ExactTypeRC(normalize_type(typing.Annotated[int, 'meta']))
                 ),
-            ),
-            param_result(
-                typing.Annotated[Dict[int, T], 'meta'],
-                raises=ValueError,
-                exact_match=(
-                    "Can not create RequestChecker from"
-                    " typing.Annotated[typing.Dict[int, ~T], 'meta'] generic alias (parametrized generic)"
+                param_result(
+                    typing.Annotated[List[int], 'meta'],
+                    result=ExactTypeRC(normalize_type(typing.Annotated[list[int], 'meta']))
                 ),
-            ),
-        ]
-    ),
+                param_result(
+                    typing.Annotated[list, 'meta'],
+                    raises=ValueError,
+                    exact_match=(
+                        "Can not create RequestChecker from"
+                        " typing.Annotated[list, 'meta'] generic alias (parametrized generic)"
+                    ),
+                ),
+                param_result(
+                    typing.Annotated[List[T], 'meta'],
+                    raises=ValueError,
+                    exact_match=(
+                        "Can not create RequestChecker from"
+                        " typing.Annotated[typing.List[~T], 'meta'] generic alias (parametrized generic)"
+                    ),
+                ),
+                param_result(
+                    typing.Annotated[Dict[int, T], 'meta'],
+                    raises=ValueError,
+                    exact_match=(
+                        "Can not create RequestChecker from"
+                        " typing.Annotated[typing.Dict[int, ~T], 'meta'] generic alias (parametrized generic)"
+                    ),
+                ),
+            ]
+        ),
+    ],
 )
 def test_create_request_checker(value, result, context):
-    if context is None:
+    with context or nullcontext():
         assert create_request_checker(value) == result
-    else:
-        with context:
-            create_request_checker(value)

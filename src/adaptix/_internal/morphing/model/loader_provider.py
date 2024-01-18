@@ -44,7 +44,7 @@ class ModelLoaderProvider(LoaderProvider):
         loader_code_builder = loader_gen.produce_code(ctx_namespace)
 
         try:
-            code_gen_hook = mediator.delegating_provide(CodeGenHookRequest())
+            code_gen_hook = mediator.delegating_provide(CodeGenHookRequest(loc_stack=request.loc_stack))
         except CannotProvide:
             code_gen_hook = stub_code_gen_hook
 
@@ -65,8 +65,8 @@ class ModelLoaderProvider(LoaderProvider):
         self._validate_params(shape, name_layout)
 
         field_loaders = self._fetch_field_loaders(mediator, request, shape)
-        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._create_model_loader_gen(
             debug_trail=debug_trail,
             strict_coercion=strict_coercion,
@@ -84,8 +84,8 @@ class ModelLoaderProvider(LoaderProvider):
         name_layout: InputNameLayout,
     ) -> str:
         return (
-            repr(request.loc_map[TypeHintLoc].type)
-            if request.loc_map.has(TypeHintLoc) else
+            repr(request.last_map[TypeHintLoc].type)
+            if request.last_map.has(TypeHintLoc) else
             repr(shape.constructor)
         )
 
@@ -109,8 +109,8 @@ class ModelLoaderProvider(LoaderProvider):
         )
 
     def _request_to_view_string(self, request: LoaderRequest) -> str:
-        if request.loc_map.has(TypeHintLoc):
-            tp = request.loc_map[TypeHintLoc].type
+        if request.last_map.has(TypeHintLoc):
+            tp = request.last_map[TypeHintLoc].type
             if isinstance(tp, type):
                 return tp.__name__
             return str(tp)
@@ -133,12 +133,12 @@ class ModelLoaderProvider(LoaderProvider):
         return BasicClosureCompiler()
 
     def _fetch_shape(self, mediator: Mediator, request: LoaderRequest) -> InputShape:
-        return provide_generic_resolved_shape(mediator, InputShapeRequest(loc_map=request.loc_map))
+        return provide_generic_resolved_shape(mediator, InputShapeRequest(loc_stack=request.loc_stack))
 
     def _fetch_name_layout(self, mediator: Mediator, request: LoaderRequest, shape: InputShape) -> InputNameLayout:
         return mediator.mandatory_provide(
             InputNameLayoutRequest(
-                loc_map=request.loc_map,
+                loc_stack=request.loc_stack,
                 shape=shape,
             ),
             lambda x: 'Cannot create loader for model. Cannot fetch InputNameLayout',
@@ -150,10 +150,9 @@ class ModelLoaderProvider(LoaderProvider):
         request: LoaderRequest,
         shape: InputShape,
     ) -> Mapping[str, Loader]:
-        owner_type = request.loc_map[TypeHintLoc].type
         loaders = mediator.mandatory_provide_by_iterable(
             [
-                LoaderRequest(loc_map=input_field_to_loc_map(owner_type, field))
+                LoaderRequest(loc_stack=request.loc_stack.append_with(input_field_to_loc_map(field)))
                 for field in shape.fields
             ],
             lambda: "Cannot create loader for model. Loaders for some fields cannot be created",

@@ -6,7 +6,7 @@ from ..type_tools import strip_alias
 from ..utils import Omitted
 from .essential import CannotProvide, Mediator
 from .provider_wrapper import Chain
-from .request_cls import LocatedRequest, LocMap, TypeHintLoc
+from .request_cls import LocatedRequest, LocStack, TypeHintLoc
 from .static_provider import StaticProvider, static_provision_action
 
 
@@ -82,20 +82,20 @@ class OverlayRequest(LocatedRequest[Ov], Generic[Ov]):
     overlay_cls: Type[Ov]
 
 
-def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_map: LocMap) -> Sc:
+def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: LocStack) -> Sc:
     stacked_overlay = mediator.mandatory_provide(
         OverlayRequest(
-            loc_map=loc_map,
+            loc_stack=loc_stack,
             overlay_cls=overlay,
         )
     )
-
+    loc_map = loc_stack[-1]
     if loc_map.has(TypeHintLoc) and isinstance(loc_map[TypeHintLoc].type, type):
         for parent in loc_map[TypeHintLoc].type.mro()[1:]:
             try:
                 new_overlay = mediator.delegating_provide(
                     OverlayRequest(
-                        loc_map=loc_map.add(TypeHintLoc(type=parent)),
+                        loc_stack=loc_stack.add_to_last_map(TypeHintLoc(type=parent)),
                         overlay_cls=overlay,
                     )
                 )

@@ -35,24 +35,28 @@ class DictProvider(LoaderProvider, DumperProvider):
 
         key_loader = mediator.mandatory_provide(
             LoaderRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=key.source),
-                    GenericParamLoc(generic_pos=0),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=key.source),
+                        GenericParamLoc(generic_pos=0),
+                    )
                 )
             ),
             lambda x: 'Cannot create loader for dict. Loader for key cannot be created',
         )
         value_loader = mediator.mandatory_provide(
             LoaderRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=value.source),
-                    GenericParamLoc(generic_pos=1),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=value.source),
+                        GenericParamLoc(generic_pos=1),
+                    )
                 )
             ),
             lambda x: 'Cannot create loader for dict. Loader for value cannot be created',
         )
         debug_trail = mediator.mandatory_provide(
-            DebugTrailRequest(loc_map=request.loc_map)
+            DebugTrailRequest(loc_stack=request.loc_stack)
         )
         return self._make_loader(
             key_loader=key_loader,
@@ -160,24 +164,28 @@ class DictProvider(LoaderProvider, DumperProvider):
 
         key_dumper = mediator.mandatory_provide(
             DumperRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=key.source),
-                    GenericParamLoc(generic_pos=0),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=key.source),
+                        GenericParamLoc(generic_pos=0),
+                    )
                 )
             ),
             lambda x: 'Cannot create dumper for dict. Dumper for key cannot be created',
         )
         value_dumper = mediator.mandatory_provide(
             DumperRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=value.source),
-                    GenericParamLoc(generic_pos=1),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=value.source),
+                        GenericParamLoc(generic_pos=1),
+                    )
                 )
             ),
             lambda x: 'Cannot create dumper for dict. Dumper for value cannot be created',
         )
         debug_trail = mediator.mandatory_provide(
-            DebugTrailRequest(loc_map=request.loc_map)
+            DebugTrailRequest(loc_stack=request.loc_stack)
         )
         return self._make_dumper(
             key_dumper=key_dumper,
