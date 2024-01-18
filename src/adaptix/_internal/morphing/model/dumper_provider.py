@@ -7,6 +7,7 @@ from ...common import Dumper
 from ...definitions import DebugTrail
 from ...model_tools.definitions import OutputShape
 from ...provider.essential import CannotProvide, Mediator
+from ...provider.fields import output_field_to_loc_map
 from ...provider.request_cls import DebugTrailRequest, TypeHintLoc
 from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
 from ..provider_template import DumperProvider
@@ -24,7 +25,6 @@ from .basic_gen import (
 )
 from .crown_definitions import OutputNameLayout, OutputNameLayoutRequest
 from .dumper_gen import ModelDumperGen
-from .fields import output_field_to_loc_map
 
 
 class ModelDumperProvider(DumperProvider):

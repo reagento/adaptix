@@ -15,6 +15,7 @@ from ...model_tools.definitions import (
 )
 from ...name_style import NameStyle, convert_snake_style
 from ...provider.essential import CannotProvide, Mediator, Provider
+from ...provider.fields import field_to_loc_map
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
 from ...provider.request_cls import LocatedRequest, TypeHintLoc
 from ...provider.request_filtering import ExtraStackMediator, RequestChecker
@@ -45,7 +46,6 @@ from ..model.crown_definitions import (
     OutputNameLayoutRequest,
     Sieve,
 )
-from ..model.fields import field_to_loc_map
 from .base import (
     ExtraIn,
     ExtraMoveMaker,

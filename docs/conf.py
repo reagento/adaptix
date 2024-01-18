@@ -106,7 +106,6 @@ paramlinks_hyperlink_param = 'name'
 add_function_parentheses = False
 
 repo = git.Repo(search_parent_directories=True)
-sha = repo.head.object.hexsha
 benchmark_data_submodule = next(submodule for submodule in repo.submodules if submodule.name == 'benchmark-data')
 
 extlinks = {

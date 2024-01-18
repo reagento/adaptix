@@ -7,6 +7,7 @@ from ...common import Loader
 from ...definitions import DebugTrail
 from ...model_tools.definitions import InputShape
 from ...provider.essential import CannotProvide, Mediator
+from ...provider.fields import input_field_to_loc_map
 from ...provider.request_cls import DebugTrailRequest, StrictCoercionRequest, TypeHintLoc
 from ...provider.shape_provider import InputShapeRequest, provide_generic_resolved_shape
 from ..model.loader_gen import ModelLoaderGen, ModelLoaderProps
@@ -25,7 +26,6 @@ from .basic_gen import (
     stub_code_gen_hook,
 )
 from .crown_definitions import InputNameLayout, InputNameLayoutRequest
-from .fields import input_field_to_loc_map
 
 
 class ModelLoaderProvider(LoaderProvider):
