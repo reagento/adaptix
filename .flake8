@@ -42,4 +42,4 @@ per-file-ignores=
     *_312.py:E999
     *tests/unit/morphing/model/shape_provider/data_gen_models.py:F821
 
-    tests/unit/provider/test_request_filtering.py:A001,A002
+    tests/unit/provider/test_loc_stack_filtering.py:A001,A002

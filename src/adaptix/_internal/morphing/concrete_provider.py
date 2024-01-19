@@ -11,9 +11,10 @@ from typing import Generic, Type, TypeVar, Union
 from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.loc_stack_filtering import P
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import LocatedRequest, StrictCoercionRequest, TypeHintLoc, find_owner_with_field
-from ..provider.request_filtering import P, create_request_checker
+from ..provider.request_filtering import create_request_checker
 from ..provider.static_provider import static_provision_action
 from ..special_cases_optimization import as_is_stub
 from .load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError

@@ -3,9 +3,10 @@ from typing import final
 
 from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.loc_stack_filtering import ExactOriginLSC
 from ..provider.provider_template import ProviderWithAttachableRC
 from ..provider.request_cls import TypeHintLoc
-from ..provider.request_filtering import ExactOriginRC
+from ..provider.request_filtering import LSCRequestChecker
 from ..provider.static_provider import static_provision_action
 from ..type_tools import normalize_type
 from .request_cls import DumperRequest, LoaderRequest
@@ -39,7 +40,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
     def __init__(self, abstract: TypeHint, impl: TypeHint, for_loader: bool = True, for_dumper: bool = True):
         self._abstract = normalize_type(abstract).origin
         self._impl = impl
-        self._request_checker = ExactOriginRC(self._abstract)
+        self._request_checker = LSCRequestChecker(ExactOriginLSC(self._abstract))
         self._for_loader = for_loader
         self._for_dumper = for_dumper
 

@@ -9,17 +9,17 @@ from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, O
 from ...model_tools.introspection.callable import get_callable_shape
 from ...name_style import NameStyle
 from ...provider.essential import Provider
+from ...provider.loc_stack_filtering import (
+    AnyLocStackChecker,
+    LocStackChecker,
+    LocStackPattern,
+    OrLocStackChecker,
+    create_loc_stack_checker,
+)
 from ...provider.overlay_schema import OverlayProvider
 from ...provider.provider_template import ValueProvider
 from ...provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider
-from ...provider.request_filtering import (
-    AnyRequestChecker,
-    OrRequestChecker,
-    Pred,
-    RequestChecker,
-    RequestPattern,
-    create_request_checker,
-)
+from ...provider.request_filtering import LSCRequestChecker, Pred, create_request_checker
 from ...provider.shape_provider import PropertyExtender
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
@@ -42,7 +42,8 @@ T = TypeVar('T')
 def bound(pred: Pred, provider: Provider) -> Provider:
     if pred == Omitted():
         return provider
-    return BoundingProvider(create_request_checker(pred), provider)
+    lsc = create_loc_stack_checker(pred)
+    return BoundingProvider(LSCRequestChecker(lsc), provider)
 
 
 def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
@@ -155,19 +156,19 @@ def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider
     return tuple(result)
 
 
-def _name_mapping_convert_preds(value: Omittable[Union[Iterable[Pred], Pred]]) -> Omittable[RequestChecker]:
+def _name_mapping_convert_preds(value: Omittable[Union[Iterable[Pred], Pred]]) -> Omittable[LocStackChecker]:
     if isinstance(value, Omitted):
         return value
     if isinstance(value, Iterable) and not isinstance(value, str):
-        return OrRequestChecker([create_request_checker(el) for el in value])
-    return create_request_checker(value)
+        return OrLocStackChecker([create_loc_stack_checker(el) for el in value])
+    return create_loc_stack_checker(value)
 
 
 def _name_mapping_convert_omit_default(
     value: Omittable[Union[Iterable[Pred], Pred, bool]]
-) -> Omittable[RequestChecker]:
+) -> Omittable[LocStackChecker]:
     if isinstance(value, bool):
-        return AnyRequestChecker() if value else ~AnyRequestChecker()
+        return AnyLocStackChecker() if value else ~AnyLocStackChecker()
     return _name_mapping_convert_preds(value)
 
 
@@ -294,7 +295,7 @@ def _ensure_attr_name(prop: NameOrProp) -> str:
     return fget.__name__
 
 
-EnumPred = Union[TypeHint, str, EnumMeta, RequestPattern]
+EnumPred = Union[TypeHint, str, EnumMeta, LocStackPattern]
 
 
 def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provider:
@@ -304,8 +305,8 @@ def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provid
     if Enum in preds:
         raise ValueError(f"Can not apply enum provider to {Enum}")
 
-    return BoundingProvider(
-        OrRequestChecker([create_request_checker(pred) for pred in preds]),
+    return bound(
+        OrLocStackChecker([create_loc_stack_checker(pred) for pred in preds]),
         provider,
     )
 

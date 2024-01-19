@@ -93,8 +93,3 @@ class FuncNameMappingProvider(StaticProvider, ProviderWithRC):
         self._request_checker.check_request(mediator, request)
         result = self._func(request.shape, request.field)
         return resolve_map_result(request.generated_key, result)
-
-
-@dataclass(frozen=True)
-class NameMappingFilterRequest(LocatedRequest[None]):
-    pass
