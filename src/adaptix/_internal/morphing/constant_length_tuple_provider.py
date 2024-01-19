@@ -187,8 +187,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             return tuple(
                 loader(field)
-                for loader, field
-                in zip(loaders, data)
+                for loader, field in zip(loaders, data)
             )
 
         return dt_disable_non_sc_loader
@@ -215,8 +214,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             return tuple(
                 loader(field)
-                for loader, field
-                in zip(loaders, data)
+                for loader, field in zip(loaders, data)
             )
 
         return dt_disable_sc_loader
@@ -338,8 +336,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             return tuple(
                 dumper(field)
-                for dumper, field
-                in zip(dumpers, data)
+                for dumper, field in zip(dumpers, data)
             )
 
         return tuple_dumper
