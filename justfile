@@ -31,11 +31,11 @@ set windows-powershell := true
     tox -e $(tox list --no-desc | grep '^py' | grep 'new$' | tr '\n' ',')
 
 # run all tests on all python versions
-@test-all:
+@test-all-seq:
     tox -e $(tox list --no-desc | grep '^py' | sort -r | tr '\n' ',')
 
 # run all tests on all python versions parallelly
-@test-all-p:
+@test-all:
     tox -e $(tox list --no-desc | grep '^py' | sort -r | tr '\n' ',') -p auto
 
 # run all tests on specific python version

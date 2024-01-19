@@ -55,69 +55,99 @@ Tools overview
 Venv managing
 ----------------
 
+Bootstrap
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Initial preparation of venv and repo for developing.
+
 .. code-block:: bash
 
     just bootstrap
 
-Initial preparation venv and repo for developing.
+Deps sync
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sync all dependencies. Need to run if committed dependencies are changed.
 
 .. code-block:: bash
 
     just venv-sync
 
-Sync all dependencies. Need to run if committed dependencies are changed.
 
 Linting
 ----------------
+
+Run linters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run all linters. Should be executed before tests.
 
 .. code-block:: bash
 
     just lint
 
-Run all linters. Should be executed before tests.
 
 Testing
 ----------------
+
+Run basic tests
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sequentially run basic tests on all python versions. It is useful to rapidly check that the code is working.
 
 .. code-block:: bash
 
     just test
 
-Run basic tests on all python versions. It is useful to rapidly check that the code is working
+Run all tests
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. code-block:: bash
-
-    just test-all-p
-
-Run all tests on all python versions parallelly.
+Parallelly run all tests on all python versions.
 
 .. code-block:: bash
 
     just test-all
 
-Run all tests on all python versions. Failed parallel runs can have unclear output.
+Run all tests (sequentially)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sequentially run all tests on all python versions. Failed parallel runs can have unclear output.
+
+.. code-block:: bash
+
+    just test-all-seq
+
+Produce coverage report
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Create coverage report. All coverage reports will be merged into ``coverage.xml`` file at working directory.
+You can import it to IDE. Instruction for
+`PyCharm <https://www.jetbrains.com/help/pycharm/switching-between-code-coverage-suites.html#add-remove-coverage-suite>`_.
 
 .. code-block:: bash
 
     just cov
 
-Produce coverage report. All coverage reports will be merged into ``coverage.xml`` file at working directory.
-You can import it to IDE. Instruction for
-`PyCharm <https://www.jetbrains.com/help/pycharm/switching-between-code-coverage-suites.html#add-remove-coverage-suite>`_.
 
 Documentation
 ----------------
+
+Build documentation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Generate html files with documentation. Output files will be placed in ``docs-build/html``.
 
 .. code-block:: bash
 
     just doc
 
-Build documentation.
-
-.. code-block:: bash
-
-    just doc-clean
+Clean generated documentation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Clean generated documentation and build cache.
 Sometimes sphinx can not detect changes in non-rst files.
 This command fixes it.
+
+.. code-block:: bash
+
+    just doc-clean
