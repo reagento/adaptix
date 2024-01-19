@@ -5,9 +5,8 @@ from typing import Callable, Dict, Iterable, List, Sequence, Set, Tuple, Type, T
 from ..common import TypeHint
 from ..provider.essential import CannotProvide, Mediator, Provider, Request
 from ..provider.loc_stack_filtering import ExactOriginLSC
-from ..provider.provider_wrapper import RequestClassDeterminedProvider
+from ..provider.provider_wrapper import ProviderWithLSC, RequestClassDeterminedProvider
 from ..provider.request_cls import LocatedRequest, TypeHintLoc, try_normalize_type
-from ..provider.request_filtering import LSCRequestChecker, ProviderWithRC
 
 T = TypeVar('T')
 ProvideCallable = Callable[[Mediator, Request[T]], T]
@@ -71,14 +70,9 @@ class ExactOriginCombiner(Combiner):
         self._origins: Set[TypeHint] = set()
 
     def add_element(self, provider: Provider) -> bool:
-        if not isinstance(provider, ProviderWithRC):
+        if not isinstance(provider, ProviderWithLSC):
             return False
-        request_checker = provider.get_request_checker()
-        if request_checker is None:
-            return False
-        if not isinstance(request_checker, LSCRequestChecker):
-            return False
-        loc_stack_checker = request_checker.loc_stack_checker
+        loc_stack_checker = provider.get_loc_stack_checker()
         if not isinstance(loc_stack_checker, ExactOriginLSC):
             return False
         if loc_stack_checker.origin in self._origins:

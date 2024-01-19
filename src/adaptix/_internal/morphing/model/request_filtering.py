@@ -1,15 +1,20 @@
-from ...provider.essential import CannotProvide, Request
-from ...provider.request_cls import LocatedRequest
-from ...provider.request_filtering import DirectMediator, RequestChecker
+from ...provider.essential import CannotProvide
+from ...provider.loc_stack_filtering import DirectMediator, LocStackChecker
+from ...provider.request_cls import LocStack
 from ...provider.shape_provider import InputShapeRequest, OutputShapeRequest
 
 
-class AnyModelRC(RequestChecker):
-    def check_request(self, mediator: DirectMediator, request: Request) -> None:
-        if not isinstance(request, LocatedRequest):
-            raise CannotProvide
+class AnyModelLSC(LocStackChecker):
+    def check_loc_stack(self, mediator: DirectMediator, loc_stack: LocStack) -> bool:
+        try:
+            mediator.provide(InputShapeRequest(loc_stack=loc_stack))
+        except CannotProvide:
+            pass
+        else:
+            return True
 
         try:
-            mediator.provide(InputShapeRequest(loc_stack=request.loc_stack))
+            mediator.provide(OutputShapeRequest(loc_stack=loc_stack))
         except CannotProvide:
-            mediator.provide(OutputShapeRequest(loc_stack=request.loc_stack))
+            return False
+        return True

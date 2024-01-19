@@ -3,7 +3,8 @@ from enum import Enum
 from typing import Optional, Type, TypeVar
 
 from .essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from .request_filtering import ProviderWithRC, RequestChecker
+from .loc_stack_filtering import LocStackChecker
+from .request_cls import LocatedRequest
 
 T = TypeVar('T')
 
@@ -14,25 +15,42 @@ class RequestClassDeterminedProvider(Provider, ABC):
         ...
 
 
-class BoundingProvider(RequestClassDeterminedProvider, ProviderWithRC):
-    def __init__(self, request_checker: RequestChecker, provider: Provider):
-        self._request_checker = request_checker
+class ProviderWithLSC(Provider, ABC):
+    @abstractmethod
+    def get_loc_stack_checker(self) -> Optional[LocStackChecker]:
+        ...
+
+    def _apply_loc_stack_checker(self, mediator: Mediator, request: Request) -> None:
+        if not isinstance(request, LocatedRequest):
+            raise CannotProvide
+
+        loc_stack_checker = self.get_loc_stack_checker()
+        if loc_stack_checker is None:
+            return
+
+        if not loc_stack_checker.check_loc_stack(mediator, request.loc_stack):
+            raise CannotProvide
+
+
+class BoundingProvider(RequestClassDeterminedProvider, ProviderWithLSC):
+    def __init__(self, loc_stack_checker: LocStackChecker, provider: Provider):
+        self._loc_stack_checker = loc_stack_checker
         self._provider = provider
 
     def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        self._request_checker.check_request(mediator, request)
+        self._apply_loc_stack_checker(mediator, request)
         return self._provider.apply_provider(mediator, request)
 
     def __repr__(self):
-        return f"{type(self).__name__}({self._request_checker}, {self._provider})"
+        return f"{type(self).__name__}({self._loc_stack_checker}, {self._provider})"
 
     def maybe_can_process_request_cls(self, request_cls: Type[Request]) -> bool:
         if isinstance(self._provider, RequestClassDeterminedProvider):
             return self._provider.maybe_can_process_request_cls(request_cls)
         return True
 
-    def get_request_checker(self) -> Optional[RequestChecker]:
-        return self._request_checker
+    def get_loc_stack_checker(self) -> Optional[LocStackChecker]:
+        return self._loc_stack_checker
 
 
 class ConcatProvider(RequestClassDeterminedProvider):

@@ -297,9 +297,9 @@ class LocStackPattern:
     def __getitem__(self: Pat, item: Union[Pred, VarTuple[Pred]]) -> Pat:
         if isinstance(item, tuple) or isgenerator(item):
             return self._extend_stack(
-                [OrLocStackChecker([self._ensure_request_checker_from_pred(el) for el in item])]
+                [OrLocStackChecker([self._ensure_loc_stack_checker_from_pred(el) for el in item])]
             )
-        return self._extend_stack([self._ensure_request_checker_from_pred(item)])
+        return self._extend_stack([self._ensure_loc_stack_checker_from_pred(item)])
 
     def _ensure_loc_stack_checker(self: Pat, other: Union[Pat, LocStackChecker]) -> LocStackChecker:
         if isinstance(other, LocStackChecker):
@@ -344,7 +344,7 @@ class LocStackPattern:
     def __add__(self: Pat, other: Pat) -> Pat:
         return self._extend_stack(other._stack)
 
-    def _ensure_request_checker_from_pred(self, pred: Any) -> LocStackChecker:
+    def _ensure_loc_stack_checker_from_pred(self, pred: Any) -> LocStackChecker:
         if isinstance(pred, LocStackPattern):
             raise TypeError(
                 "Can not use LocStackPattern as predicate inside LocStackPattern."
@@ -355,7 +355,7 @@ class LocStackPattern:
 
     def generic_arg(self: Pat, pos: int, pred: Pred) -> Pat:
         return self._extend_stack(
-            [GenericParamLSC(pos) & self._ensure_request_checker_from_pred(pred)]
+            [GenericParamLSC(pos) & self._ensure_loc_stack_checker_from_pred(pred)]
         )
 
     def build_loc_stack_checker(self) -> LocStackChecker:

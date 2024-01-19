@@ -14,12 +14,12 @@ from ...provider.loc_stack_filtering import (
     LocStackChecker,
     LocStackPattern,
     OrLocStackChecker,
+    Pred,
     create_loc_stack_checker,
 )
 from ...provider.overlay_schema import OverlayProvider
 from ...provider.provider_template import ValueProvider
 from ...provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider
-from ...provider.request_filtering import LSCRequestChecker, Pred, create_request_checker
 from ...provider.shape_provider import PropertyExtender
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
@@ -42,8 +42,7 @@ T = TypeVar('T')
 def bound(pred: Pred, provider: Provider) -> Provider:
     if pred == Omitted():
         return provider
-    lsc = create_loc_stack_checker(pred)
-    return BoundingProvider(LSCRequestChecker(lsc), provider)
+    return BoundingProvider(create_loc_stack_checker(pred), provider)
 
 
 def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
@@ -149,9 +148,9 @@ def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider
         else:
             pred, value = element
             result.append(
-                FuncNameMappingProvider(create_request_checker(pred), value)
+                FuncNameMappingProvider(create_loc_stack_checker(pred), value)
                 if callable(value) else
-                ConstNameMappingProvider(create_request_checker(pred), value)
+                ConstNameMappingProvider(create_loc_stack_checker(pred), value)
             )
     return tuple(result)
 

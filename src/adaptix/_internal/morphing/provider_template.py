@@ -4,19 +4,18 @@ from typing import final
 from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import ExactOriginLSC
-from ..provider.provider_template import ProviderWithAttachableRC
+from ..provider.provider_template import ProviderWithAttachableLSC
 from ..provider.request_cls import TypeHintLoc
-from ..provider.request_filtering import LSCRequestChecker
 from ..provider.static_provider import static_provision_action
 from ..type_tools import normalize_type
 from .request_cls import DumperRequest, LoaderRequest
 
 
-class LoaderProvider(ProviderWithAttachableRC, ABC):
+class LoaderProvider(ProviderWithAttachableLSC, ABC):
     @final
     @static_provision_action
     def _outer_provide_loader(self, mediator: Mediator, request: LoaderRequest):
-        self._request_checker.check_request(mediator, request)
+        self._apply_loc_stack_checker(mediator, request)
         return self._provide_loader(mediator, request)
 
     @abstractmethod
@@ -24,11 +23,11 @@ class LoaderProvider(ProviderWithAttachableRC, ABC):
         ...
 
 
-class DumperProvider(ProviderWithAttachableRC, ABC):
+class DumperProvider(ProviderWithAttachableLSC, ABC):
     @final
     @static_provision_action
     def _outer_provide_dumper(self, mediator: Mediator, request: DumperRequest):
-        self._request_checker.check_request(mediator, request)
+        self._apply_loc_stack_checker(mediator, request)
         return self._provide_dumper(mediator, request)
 
     @abstractmethod
@@ -40,7 +39,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
     def __init__(self, abstract: TypeHint, impl: TypeHint, for_loader: bool = True, for_dumper: bool = True):
         self._abstract = normalize_type(abstract).origin
         self._impl = impl
-        self._request_checker = LSCRequestChecker(ExactOriginLSC(self._abstract))
+        self._loc_stack_checker = ExactOriginLSC(self._abstract)
         self._for_loader = for_loader
         self._for_dumper = for_dumper
 

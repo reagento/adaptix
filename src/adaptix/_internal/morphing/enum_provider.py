@@ -4,26 +4,27 @@ from typing import Any, Mapping, Optional, Type
 
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
-from ..provider.essential import CannotProvide, Mediator, Request
-from ..provider.request_cls import LocatedRequest, LocMap, TypeHintLoc, get_type_from_request, try_normalize_type
-from ..provider.request_filtering import DirectMediator, RequestChecker
+from ..provider.essential import CannotProvide, Mediator
+from ..provider.loc_stack_filtering import DirectMediator, LastLocMapChecker
+from ..provider.provider_template import for_predicate
+from ..provider.request_cls import LocMap, TypeHintLoc, get_type_from_request
+from ..type_tools import normalize_type
 from .load_error import BadVariantError, MsgError
 from .request_cls import DumperRequest, LoaderRequest
 
 
-class AnyEnumRC(RequestChecker):
-    def check_request(self, mediator: DirectMediator, request: Request) -> None:
-        if not isinstance(request, LocatedRequest):
-            raise CannotProvide
-
-        norm = try_normalize_type(get_type_from_request(request))
-
-        if not isinstance(norm.origin, EnumMeta):
-            raise CannotProvide
+class AnyEnumLSC(LastLocMapChecker):
+    def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
+        try:
+            norm = normalize_type(loc.type)
+        except ValueError:
+            return False
+        return isinstance(norm.origin, EnumMeta)
 
 
+@for_predicate(AnyEnumLSC())
 class BaseEnumProvider(LoaderProvider, DumperProvider, ABC):
-    _request_checker = AnyEnumRC()
+    pass
 
 
 def _enum_name_dumper(data):
