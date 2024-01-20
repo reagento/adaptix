@@ -46,7 +46,7 @@ How to setup the repository
    .. code-block:: bash
 
       just lint
-      just test-all-p
+      just test-all
 
 
 Tools overview
