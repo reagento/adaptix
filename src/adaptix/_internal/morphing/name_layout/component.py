@@ -16,9 +16,9 @@ from ...model_tools.definitions import (
 from ...name_style import NameStyle, convert_snake_style
 from ...provider.essential import CannotProvide, Mediator, Provider
 from ...provider.fields import field_to_loc_map
+from ...provider.loc_stack_filtering import LocStackChecker
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
 from ...provider.request_cls import LocatedRequest
-from ...provider.request_filtering import RequestChecker
 from ...retort.operating_retort import OperatingRetort
 from ...special_cases_optimization import with_default_clause
 from ...utils import Omittable, get_prefix_groups
@@ -57,13 +57,13 @@ from .base import (
     SievesMaker,
     StructureMaker,
 )
-from .name_mapping import NameMappingFilterRequest, NameMappingRequest
+from .name_mapping import NameMappingRequest
 
 
 @dataclass(frozen=True)
 class StructureSchema(Schema):
-    skip: RequestChecker
-    only: RequestChecker
+    skip: LocStackChecker
+    only: LocStackChecker
 
     map: VarTuple[Provider]
     trim_trailing_underscore: bool
@@ -73,8 +73,8 @@ class StructureSchema(Schema):
 
 @dataclass(frozen=True)
 class StructureOverlay(Overlay[StructureSchema]):
-    skip: Omittable[RequestChecker]
-    only: Omittable[RequestChecker]
+    skip: Omittable[LocStackChecker]
+    only: Omittable[LocStackChecker]
 
     map: Omittable[VarTuple[Provider]]
     trim_trailing_underscore: Omittable[bool]
@@ -92,20 +92,14 @@ F = TypeVar('F', bound=BaseField)
 FieldAndPath = Tuple[F, Optional[KeyPath]]
 
 
-def apply_rc(
+def apply_lsc(
     mediator: Mediator,
     request: BaseNameLayoutRequest,
-    request_checker: RequestChecker,
+    loc_stack_checker: LocStackChecker,
     field: BaseField,
 ) -> bool:
-    filter_request = NameMappingFilterRequest(
-        loc_stack=request.loc_stack.append_with(field_to_loc_map(field))
-    )
-    try:
-        request_checker.check_request(mediator, filter_request)
-    except CannotProvide:
-        return False
-    return True
+    loc_stack = request.loc_stack.append_with(field_to_loc_map(field))
+    return loc_stack_checker.check_loc_stack(mediator, loc_stack)
 
 
 class BuiltinStructureMaker(StructureMaker):
@@ -153,8 +147,8 @@ class BuiltinStructureMaker(StructureMaker):
             if path is None:
                 yield field, None
             elif (
-                not apply_rc(mediator, request, schema.skip, field)
-                and apply_rc(mediator, request, schema.only, field)
+                not apply_lsc(mediator, request, schema.skip, field)
+                and apply_lsc(mediator, request, schema.only, field)
             ):
                 yield field, path
             else:
@@ -330,12 +324,12 @@ class BuiltinStructureMaker(StructureMaker):
 
 @dataclass(frozen=True)
 class SievesSchema(Schema):
-    omit_default: RequestChecker
+    omit_default: LocStackChecker
 
 
 @dataclass(frozen=True)
 class SievesOverlay(Overlay[SievesSchema]):
-    omit_default: Omittable[RequestChecker]
+    omit_default: Omittable[LocStackChecker]
 
 
 class BuiltinSievesMaker(SievesMaker):
@@ -365,7 +359,7 @@ class BuiltinSievesMaker(SievesMaker):
         for path, leaf in paths_to_leaves.items():
             if isinstance(leaf, OutFieldCrown):
                 field = request.shape.fields_dict[leaf.id]
-                if field.default != NoDefault() and apply_rc(mediator, request, schema.omit_default, field):
+                if field.default != NoDefault() and apply_lsc(mediator, request, schema.omit_default, field):
                     result[path] = self._create_sieve(field)
         return result
 

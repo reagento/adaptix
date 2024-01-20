@@ -33,12 +33,12 @@ from .provider import (
     AggregateCannotProvide,
     CannotProvide,
     Chain,
+    LocStackPattern,
     Mediator,
     P,
     Provider,
     Request,
-    RequestPattern,
-    create_request_checker,
+    create_loc_stack_checker,
 )
 from .retort import NoSuitableProvider
 
@@ -78,10 +78,10 @@ __all__ = (
     'ExtraSkip',
     'Mediator',
     'NameStyle',
-    'RequestPattern',
+    'LocStackPattern',
     'P',
     'Saturator',
-    'create_request_checker',
+    'create_loc_stack_checker',
     'retort',
     'Provider',
     'NoSuitableProvider',

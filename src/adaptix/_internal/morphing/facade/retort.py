@@ -11,9 +11,9 @@ from uuid import UUID
 from ...common import Dumper, Loader, TypeHint, VarTuple
 from ...definitions import DebugTrail
 from ...provider.essential import Provider, Request
+from ...provider.loc_stack_filtering import P
 from ...provider.provider_template import ValueProvider
 from ...provider.request_cls import DebugTrailRequest, LocMap, LocStack, StrictCoercionRequest, TypeHintLoc
-from ...provider.request_filtering import P
 from ...provider.shape_provider import (
     ATTRS_SHAPE_PROVIDER,
     CLASS_INIT_SHAPE_PROVIDER,

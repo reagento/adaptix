@@ -4,7 +4,8 @@ from typing import ClassVar, Iterable, Sequence, TypeVar
 from ..common import VarTuple
 from ..provider.essential import Mediator, Provider, Request
 from ..utils import Cloneable, ForbiddingDescriptor
-from .mediator import BuiltinMediator, ErrorRepresentor, IntrospectingRecipeSearcher, RecipeSearcher, RecursionResolver
+from .mediator import BuiltinMediator, ErrorRepresentor, RecursionResolver
+from .routing import IntrospectingRecipeSearcher, RecipeSearcher
 
 
 class RetortMeta(ABCMeta):  # inherits from ABCMeta to be compatible with ABC

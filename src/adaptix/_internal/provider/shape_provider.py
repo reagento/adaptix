@@ -17,10 +17,10 @@ from ..model_tools.introspection.dataclass import get_dataclass_shape
 from ..model_tools.introspection.named_tuple import get_named_tuple_shape
 from ..model_tools.introspection.typed_dict import get_typed_dict_shape
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.loc_stack_filtering import create_loc_stack_checker
 from ..type_tools.generic_resolver import GenericResolver, MembersStorage
-from .provider_template import ProviderWithAttachableRC
+from .provider_template import ProviderWithAttachableLSC
 from .request_cls import LocatedRequest, TypeHintLoc
-from .request_filtering import create_request_checker
 from .static_provider import StaticProvider, static_provision_action
 
 
@@ -175,11 +175,11 @@ def provide_generic_resolved_shape(mediator: Mediator, request: LocatedRequest[S
 T = TypeVar('T')
 
 
-class SimilarShapeProvider(ProviderWithAttachableRC):
+class SimilarShapeProvider(ProviderWithAttachableLSC):
     def __init__(self, target: TypeHint, prototype: TypeHint, for_input: bool = True, for_output: bool = True):
         self._target = target
         self._prototype = prototype
-        self._request_checker = create_request_checker(self._target)
+        self._loc_stack_checker = create_loc_stack_checker(self._target)
         self._for_input = for_input
         self._for_output = for_output
 
@@ -188,7 +188,7 @@ class SimilarShapeProvider(ProviderWithAttachableRC):
         if not self._for_input:
             raise CannotProvide
 
-        self._request_checker.check_request(mediator, request)
+        self._apply_loc_stack_checker(mediator, request)
         shape = mediator.delegating_provide(
             replace(
                 request,
@@ -202,7 +202,7 @@ class SimilarShapeProvider(ProviderWithAttachableRC):
         if not self._for_output:
             raise CannotProvide
 
-        self._request_checker.check_request(mediator, request)
+        self._apply_loc_stack_checker(mediator, request)
         shape = mediator.delegating_provide(
             replace(
                 request,
