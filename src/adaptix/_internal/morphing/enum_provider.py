@@ -6,7 +6,7 @@ from typing import Any, Iterable, Mapping, Optional, Type, Union
 
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
-from ..provider.essential import CannotProvide, Mediator
+from ..provider.essential import Mediator
 from ..provider.loc_stack_filtering import DirectMediator, LastLocMapChecker
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import LocMap, TypeHintLoc, get_type_from_request
