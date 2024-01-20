@@ -132,6 +132,14 @@ class BadVariantError(LoadError):
 
 @custom_exception
 @dataclass(eq=False)
+class MultipleBadVariantError(LoadError):
+    allowed_values: Iterable[Any]
+    input_values: Iterable[Any]
+    invalid_values: Iterable[Any]
+
+
+@custom_exception
+@dataclass(eq=False)
 class DatetimeFormatMismatch(LoadError):
     format: str
     input_value: Any
