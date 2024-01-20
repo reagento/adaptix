@@ -14,8 +14,7 @@ from .request_cls import DumperRequest, LoaderRequest
 
 
 class AnyEnumRC(RequestChecker):
-    def check_request(self, mediator: DirectMediator,
-                      request: Request) -> None:
+    def check_request(self, mediator: DirectMediator, request: Request) -> None:
         if not isinstance(request, LocatedRequest):
             raise CannotProvide
 
@@ -40,8 +39,7 @@ def _enum_name_loader(enum, name):
 class EnumNameProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world by their name"""
 
-    def _provide_loader(self, mediator: Mediator,
-                        request: LoaderRequest) -> Loader:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
         variants = [case.name for case in enum]
 
@@ -55,8 +53,7 @@ class EnumNameProvider(BaseEnumProvider):
 
         return enum_loader
 
-    def _provide_dumper(self, mediator: Mediator,
-                        request: DumperRequest) -> Dumper:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return _enum_name_dumper
 
 
@@ -64,8 +61,7 @@ class EnumValueProvider(BaseEnumProvider):
     def __init__(self, value_type: TypeHint):
         self._value_type = value_type
 
-    def _provide_loader(self, mediator: Mediator,
-                        request: LoaderRequest) -> Loader:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
         value_loader = mediator.mandatory_provide(
             LoaderRequest(
@@ -86,8 +82,7 @@ class EnumValueProvider(BaseEnumProvider):
 
         return enum_loader
 
-    def _provide_dumper(self, mediator: Mediator,
-                        request: DumperRequest) -> Dumper:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         value_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
@@ -117,8 +112,7 @@ class EnumExactValueProvider(BaseEnumProvider):
     by their value without any processing
     """
 
-    def _provide_loader(self, mediator: Mediator,
-                        request: LoaderRequest) -> Loader:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return self._make_loader(get_type_from_request(request))
 
     def _make_loader(self, enum):
@@ -155,14 +149,12 @@ class EnumExactValueProvider(BaseEnumProvider):
             return None
 
         # pylint: disable=comparison-with-callable,protected-access
-        if getattr(enum._missing_, '__func__',
-                   None) != Enum._missing_.__func__:  # type: ignore[attr-defined]
+        if getattr(enum._missing_, '__func__', None) != Enum._missing_.__func__:  # type: ignore[attr-defined]
             return None
 
         return value_to_member
 
-    def _provide_dumper(self, mediator: Mediator,
-                        request: DumperRequest) -> Dumper:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return _enum_exact_value_dumper
 
 
@@ -236,8 +228,7 @@ class FlagProvider(BaseEnumProvider):
         enum = get_type_from_request(request)
         return partial(self._flag_loader, enum=enum)
 
-    def _provide_dumper(self, mediator: Mediator,
-                        request: DumperRequest) -> Dumper:
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         enum = get_type_from_request(request)
 
         def flag_dumper(value: Flag) -> Iterable[str]:

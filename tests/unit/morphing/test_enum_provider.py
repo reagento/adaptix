@@ -125,10 +125,8 @@ def test_exact_value_provider_int_enum(strict_coercion, debug_trail):
 
 
 def test_exact_value_optimization(strict_coercion, debug_trail):
-    assert EnumExactValueProvider()._make_loader(
-        MyEnum).__name__ == 'enum_exact_loader_v2m'
-    assert EnumExactValueProvider()._make_loader(
-        MyEnumWithMissingHook).__name__ == 'enum_exact_loader'
+    assert EnumExactValueProvider()._make_loader(MyEnum).__name__ == 'enum_exact_loader_v2m'
+    assert EnumExactValueProvider()._make_loader(MyEnumWithMissingHook).__name__ == 'enum_exact_loader'
 
 
 def custom_string_dumper(value: str):
