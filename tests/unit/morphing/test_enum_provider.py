@@ -1,10 +1,10 @@
-from enum import Enum, IntEnum
+from enum import Enum, Flag, IntEnum, auto
 
 import pytest
 from tests_helpers import TestRetort, raises_exc
 
 from adaptix import dumper, enum_by_value, loader
-from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider
+from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider, FlagProvider
 from adaptix.load_error import BadVariantError, MsgError
 
 
@@ -22,6 +22,14 @@ class MyEnumWithMissingHook(Enum):
     @classmethod
     def _missing_(cls, value: object) -> 'MyEnumWithMissingHook':
         raise ValueError
+
+
+class FlagEnum(Flag):
+    V1 = auto()
+    V2 = auto()
+    V3 = auto()
+    V6 = V1 | V2 | V3
+    V5 = V2 | V3
 
 
 def test_name_provider(strict_coercion, debug_trail):
@@ -152,3 +160,45 @@ def test_value_provider(strict_coercion, debug_trail):
     enum_dumper = retort.get_dumper(MyEnum)
 
     assert enum_dumper(MyEnum.V1) == "PREFIX 1"
+
+
+def test_flag_enum_loader(strict_coercion, debug_trail):
+    retort = TestRetort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            FlagProvider(),
+        ]
+    )
+
+    loader = retort.get_loader(FlagEnum)
+    assert loader(["V1"]) == FlagEnum.V1
+    assert loader(["V1", "V2", "V3"]) == FlagEnum.V6
+    assert loader(["V6"]) == FlagEnum.V6
+    assert loader(["V2", "V3"]) == FlagEnum.V5
+    assert loader(["V1", "V2"]) == FlagEnum.V1 | FlagEnum.V2
+    raises_exc(
+        BadVariantError(
+            ["V1", "V2", "V3", "V6", "V5"],
+            ["V7", "V8"]
+        ),
+        lambda: loader(["V7", "V8"])
+    )
+
+
+def test_flag_enum_dumper(strict_coercion, debug_trail):
+    retort = TestRetort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            FlagProvider(),
+        ]
+    )
+
+    dumper = retort.get_dumper(FlagEnum)
+    assert dumper(FlagEnum.V1) == ["V1"]
+    assert dumper(FlagEnum.V1 | FlagEnum.V2 | FlagEnum.V3) == ["V6"]
+    assert dumper(FlagEnum.V1 | FlagEnum.V2) == ["V1", "V2"]
+    assert dumper(FlagEnum.V1 & FlagEnum.V2) == []
+    assert dumper(FlagEnum.V2 & FlagEnum.V5) == ["V2"]
+    assert dumper(~FlagEnum.V2) == ["V1", "V3"]

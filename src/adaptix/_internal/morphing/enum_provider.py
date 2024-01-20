@@ -1,6 +1,8 @@
 from abc import ABC
 from enum import Enum, EnumMeta, Flag
-from typing import Any, Mapping, Optional, Type
+from functools import reduce
+from operator import or_
+from typing import Any, Iterable, Mapping, Optional, Type
 
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
@@ -35,14 +37,6 @@ class EnumNameProvider(BaseEnumProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
-
-        if issubclass(enum, Flag):
-            raise CannotProvide(
-                "Flag subclasses is not supported yet",
-                is_terminal=True,
-                is_demonstrative=True
-            )
-
         variants = [case.name for case in enum]
 
         def enum_loader(data):
@@ -154,3 +148,32 @@ class EnumExactValueProvider(BaseEnumProvider):
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return _enum_exact_value_dumper
+
+
+class FlagProvider(BaseEnumProvider):
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        enum = get_type_from_request(request)
+        def flag_loader(data: Iterable[str]) -> Flag:
+            try:
+                return reduce(or_, [enum[name] for name in data])
+            except KeyError:
+                raise BadVariantError(
+                    [case.name for case in enum.__members__.values()],
+                    data
+                )
+
+        return flag_loader
+
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        enum = get_type_from_request(request)
+        def flag_dumper(value: Flag) -> Iterable[str]:
+            if value in enum.__members__.values():
+                return [value.name]
+
+            return [
+                case.name
+                for case in enum
+                if case in value and case.name
+            ]
+
+        return flag_dumper
