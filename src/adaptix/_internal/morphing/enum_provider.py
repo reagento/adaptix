@@ -189,7 +189,11 @@ class FlagProvider(BaseEnumProvider):
             return enum.__members__.values()
         return _extract_common_cases_from_flag(enum)
 
-    def _flag_loader(self, data: Union[int, Iterable[Union[int, str]]], enum: Type[Flag]) -> Flag:
+    def _flag_loader(
+        self,
+        data: Union[int, Iterable[int], Iterable[str]],
+        enum: Type[Flag]
+    ) -> Flag:
         if isinstance(data, (str, int)):
             if not self._allow_single_value:
                 raise TypeLoadError(
