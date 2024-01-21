@@ -1,7 +1,6 @@
 import math
 from abc import ABC
 from enum import Enum, EnumMeta, Flag
-from functools import partial
 from typing import Any, Iterable, Mapping, Optional, Type, Union
 
 from ..common import Dumper, Loader, TypeHint
@@ -184,17 +183,10 @@ class FlagProvider(BaseEnumProvider):
             return enum.__members__.values()
         return _extract_non_compound_cases_from_flag(enum)
 
-    def _flag_loader(
-        self,
-        data: Union[int, Iterable[int], Iterable[str]],
-        enum: Type[Flag]
-    ) -> Flag:
+    def _get_loader_process_data(self, data: Union[int, Iterable[int], Iterable[str]], enum: Type[Flag]):
         if isinstance(data, (str, int)):
             if not self._allow_single_value:
-                raise TypeLoadError(
-                    expected_type=Iterable[str],
-                    input_value=data,
-                )
+                raise TypeLoadError(expected_type=Iterable[str], input_value=data)
             process_data = [data]
         else:
             process_data = list(data)
@@ -206,27 +198,33 @@ class FlagProvider(BaseEnumProvider):
                     input_value=process_data
                 )
 
-        variants = [self._dumper(case) for case in self._get_cases(enum)]
-        bad_variants = []
-        result = enum(0)
-        for item in process_data:
-            if item not in variants:
-                bad_variants.append(item)
-                continue
-            result = result | self._loader(enum, item)
-
-        if bad_variants:
-            raise MultipleBadVariant(
-                allowed_values=variants,
-                input_value=process_data,
-                invalid_values=bad_variants
-            )
-
-        return result
+        return process_data
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
-        return partial(self._flag_loader, enum=enum)
+
+        def _flag_loader(data: Union[int, Iterable[int], Iterable[str]]) -> Flag:
+            process_data = self._get_loader_process_data(data, enum)
+
+            variants = [self._dumper(case) for case in self._get_cases(enum)]
+            bad_variants = []
+            result = enum(0)
+            for item in process_data:
+                if item not in variants:
+                    bad_variants.append(item)
+                    continue
+                result = result | self._loader(enum, item)
+
+            if bad_variants:
+                raise MultipleBadVariant(
+                    allowed_values=variants,
+                    input_value=process_data,
+                    invalid_values=bad_variants
+                )
+
+            return result
+
+        return _flag_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         enum = get_type_from_request(request)
