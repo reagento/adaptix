@@ -11,7 +11,7 @@ from ..provider.loc_stack_filtering import DirectMediator, LastLocMapChecker
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import LocMap, TypeHintLoc, get_type_from_request
 from ..type_tools import normalize_type
-from .load_error import BadVariantError, MsgError, MultipleBadVariantError, TypeLoadError, ValueLoadError
+from .load_error import BadVariantError, MsgError, MultipleBadVariant, TypeLoadError, ValueLoadError
 from .request_cls import DumperRequest, LoaderRequest
 
 
@@ -221,9 +221,9 @@ class FlagProvider(BaseEnumProvider):
             result = result | self._loader(enum, item)
 
         if bad_variants:
-            raise MultipleBadVariantError(
+            raise MultipleBadVariant(
                 allowed_values=variants,
-                input_values=process_data,
+                input_value=process_data,
                 invalid_values=bad_variants
             )
 

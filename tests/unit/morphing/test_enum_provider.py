@@ -6,7 +6,7 @@ from tests_helpers import TestRetort, raises_exc
 
 from adaptix import dumper, enum_by_value, loader
 from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider, FlagProvider
-from adaptix._internal.morphing.load_error import MultipleBadVariantError, TypeLoadError, ValueLoadError
+from adaptix._internal.morphing.load_error import MultipleBadVariant, TypeLoadError, ValueLoadError
 from adaptix.load_error import BadVariantError, MsgError
 
 
@@ -183,9 +183,9 @@ def test_flag_enum_loader(strict_coercion, debug_trail):
 
     variants = ["V1", "V2", "V3", "V5", "V6"]
     raises_exc(
-        MultipleBadVariantError(
+        MultipleBadVariant(
             allowed_values=variants,
-            input_values=["V7", "V8", "V6"],
+            input_value=["V7", "V8", "V6"],
             invalid_values=["V7", "V8"]
         ),
         lambda: loader(["V7", "V8", "V6"])
@@ -234,9 +234,9 @@ def test_flag_enum_loader_by_exact_value(strict_coercion, debug_trail):
     assert loader([1, 2]) == FlagEnum.V1 | FlagEnum.V2
     variants = [1, 2, 4, 6, 7]
     raises_exc(
-        MultipleBadVariantError(
+        MultipleBadVariant(
             allowed_values=variants,
-            input_values=[3, 5, 7],
+            input_value=[3, 5, 7],
             invalid_values=[3, 5]
         ),
         lambda: loader([3, 5, 7])
@@ -284,9 +284,9 @@ def test_flag_enum_loader_with_disallowed_compounds(strict_coercion, debug_trail
 
     variants = ["V1", "V2", "V3"]
     raises_exc(
-        MultipleBadVariantError(
+        MultipleBadVariant(
             allowed_values=variants,
-            input_values=["V1", "V6"],
+            input_value=["V1", "V6"],
             invalid_values=["V6"]
         ),
         lambda: loader(["V1", "V6"])

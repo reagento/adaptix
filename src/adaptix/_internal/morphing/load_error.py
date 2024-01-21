@@ -132,9 +132,9 @@ class BadVariantError(LoadError):
 
 @custom_exception
 @dataclass(eq=False)
-class MultipleBadVariantError(LoadError):
+class MultipleBadVariant(LoadError):
     allowed_values: Iterable[Any]
-    input_values: Iterable[Any]
+    input_value: Iterable[Any]
     invalid_values: Iterable[Any]
 
 
