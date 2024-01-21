@@ -31,11 +31,14 @@ def cov(c: Context):
 
 
 @task
-def deps_compile(c: Context):
+def deps_compile(c: Context, upgrade=False):
+    extra = ''
+    if upgrade:
+        extra += ' --upgrade'
     promises = [
         c.run(
             f'pip-compile {req} -o {Path("requirements") / req.name}'
-            ' -q --allow-unsafe --strip-extras --upgrade',
+            ' -q --allow-unsafe --strip-extras' + extra,
             asynchronous=True,
         )
         for req in Path('.').glob('requirements/raw/*.txt')

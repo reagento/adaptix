@@ -45,8 +45,13 @@ set windows-powershell := true
 @cov:
     inv cov
 
+inv := "inv -r scripts -c invoke_tasks"
+
 @deps-compile:
-    inv deps-compile
+    {{ inv }} deps-compile
+
+@deps-compile-upgrade:
+    {{ inv }} deps-compile --upgrade
 
 doc_source := "docs"
 doc_target := "docs-build"
