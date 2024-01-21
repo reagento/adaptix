@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, TypeVar, Union
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Type, TypeVar, Union
 
 from ...common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
@@ -23,6 +23,7 @@ from ...provider.request_filtering import (
 from ...provider.shape_provider import PropertyExtender
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
+from ..dict_provider import DefaultDictProvider
 from ..enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
 from ..load_error import LoadError, ValidationError
 from ..model.loader_provider import InlinedShapeModelLoaderProvider
@@ -368,3 +369,7 @@ def validator(
         raise exception_factory(data)
 
     return loader(pred, validating_loader, chain)
+
+
+def default_dict(default_factory: Optional[Type] = None) -> Provider:
+    return DefaultDictProvider(default_factory)
