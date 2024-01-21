@@ -159,13 +159,8 @@ class EnumExactValueProvider(BaseEnumProvider):
         return _enum_exact_value_dumper
 
 
-def _extract_common_cases_from_flag(enum: Type[Flag]) -> Iterable[Flag]:
-    cases = enum.__members__.values()
-    result = []
-    for case in cases:
-        if not math.log2(case.value) % 1:
-            result.append(case)
-    return result
+def _extract_non_compound_cases_from_flag(enum: Type[Flag]) -> Iterable[Flag]:
+    return [case for case in enum.__members__.values() if not math.log2(case.value) % 1]
 
 
 class FlagProvider(BaseEnumProvider):
@@ -187,7 +182,7 @@ class FlagProvider(BaseEnumProvider):
     def _get_cases(self, enum: Type[Flag]):
         if self._allow_compound:
             return enum.__members__.values()
-        return _extract_common_cases_from_flag(enum)
+        return _extract_non_compound_cases_from_flag(enum)
 
     def _flag_loader(
         self,
