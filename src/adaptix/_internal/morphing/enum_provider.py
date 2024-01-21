@@ -1,12 +1,13 @@
 import math
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import Enum, EnumMeta, Flag
-from typing import Any, Iterable, Mapping, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Hashable, Iterable, Mapping, Optional, Sequence, Type, TypeVar, Union, final
 
 from typing_extensions import overload
 
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
+from ..name_style import NameStyle, convert_snake_style
 from ..provider.essential import Mediator
 from ..provider.loc_stack_filtering import DirectMediator, LastLocMapChecker
 from ..provider.provider_template import for_predicate
@@ -15,7 +16,56 @@ from ..type_tools import normalize_type
 from .load_error import BadVariantError, MsgError, MultipleBadVariant, TypeLoadError, ValueLoadError
 from .request_cls import DumperRequest, LoaderRequest
 
+EnumT = TypeVar("EnumT", bound=Enum)
 FlagT = TypeVar("FlagT", bound=Flag)
+
+
+class BaseMappingGenerator(ABC):
+    @abstractmethod
+    def _generate_mapping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, Hashable]:
+        ...
+
+    @final
+    def generate_for_dumping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, Hashable]:
+        return self._generate_mapping(cases)
+
+    @final
+    def generate_for_loading(self, cases: Iterable[EnumT]) -> Mapping[Hashable, EnumT]:
+        return {
+            mapping_result: case
+            for case, mapping_result in self._generate_mapping(cases).items()
+        }
+
+
+class NameMappingGenerator(BaseMappingGenerator):
+    def __init__(
+        self, name_style: Optional[NameStyle] = None,
+        map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
+    ):
+        self._name_style = name_style
+        self._map = map if map is not None else {}
+
+    def _generate_mapping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, str]:
+        result = {}
+
+        for case in cases:
+            if not (case in self._map or case.name in self._map):
+                if self._name_style:
+                    result[case] = convert_snake_style(case.name, self._name_style)
+                else:
+                    result[case] = case.name
+                continue
+            try:
+                result[case] = self._map[case]
+            except KeyError:
+                result[case] = self._map[case.name]
+
+        return result
+
+
+class ExactValueMappingGenerator(BaseMappingGenerator):
+    def _generate_mapping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, Hashable]:
+        return {case: case.value for case in cases}
 
 
 class AnyEnumLSC(LastLocMapChecker):
@@ -169,18 +219,15 @@ def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Iterable[FlagT]:
 class FlagProvider(BaseEnumProvider):
     def __init__(
         self,
+        mapping_generator: BaseMappingGenerator,
         allow_single_value: bool = False,
         allow_duplicates: bool = True,
         allow_compound: bool = True,
-        by_exact_value: bool = False
     ):
+        self._mapping_generator = mapping_generator
         self._allow_single_value = allow_single_value
         self._allow_duplicates = allow_duplicates
         self._allow_compound = allow_compound
-        self._by_exact_value = by_exact_value
-
-        self._loader = _enum_exact_value_loader if by_exact_value else _enum_name_loader
-        self._dumper = _enum_exact_value_dumper if by_exact_value else _enum_name_dumper
 
     def _get_cases(self, enum: Type[FlagT]) -> Iterable[FlagT]:
         if self._allow_compound:
@@ -217,15 +264,16 @@ class FlagProvider(BaseEnumProvider):
 
         def _flag_loader(data: Union[int, Iterable[int], Iterable[str]]) -> Flag:
             process_data = self._get_loader_process_data(data, enum)
-
-            variants = [self._dumper(case) for case in self._get_cases(enum)]
+            cases = self._get_cases(enum)
+            mapping = self._mapping_generator.generate_for_loading(cases)
+            variants = list(mapping.keys())
             bad_variants = []
             result = enum(0)
             for item in process_data:
                 if item not in variants:
                     bad_variants.append(item)
                     continue
-                result = result | self._loader(enum, item)
+                result = result | mapping[item]
 
             if bad_variants:
                 raise MultipleBadVariant(
@@ -241,10 +289,12 @@ class FlagProvider(BaseEnumProvider):
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         enum = get_type_from_request(request)
 
-        def flag_dumper(value: Flag) -> Union[Iterable[int], Iterable[str]]:
+        def flag_dumper(value: Flag) -> Iterable[Hashable]:
             cases = self._get_cases(enum)
+            mapping = self._mapping_generator.generate_for_dumping(cases)
+
             if value in cases:
-                return [self._dumper(value)]
-            return [self._dumper(case) for case in cases if case in value]
+                return [mapping[value]]
+            return [mapping[case] for case in cases if case in value]
 
         return flag_dumper

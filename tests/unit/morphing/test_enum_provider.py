@@ -4,8 +4,14 @@ from typing import Iterable
 import pytest
 from tests_helpers import TestRetort, raises_exc
 
-from adaptix import dumper, enum_by_value, loader
-from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider, FlagProvider
+from adaptix import NameStyle, dumper, enum_by_value, loader
+from adaptix._internal.morphing.enum_provider import (
+    EnumExactValueProvider,
+    EnumNameProvider,
+    ExactValueMappingGenerator,
+    FlagProvider,
+    NameMappingGenerator,
+)
 from adaptix._internal.morphing.load_error import MultipleBadVariant, TypeLoadError, ValueLoadError
 from adaptix.load_error import BadVariantError, MsgError
 
@@ -32,6 +38,14 @@ class FlagEnum(Flag):
     V3 = auto()
     V5 = V2 | V3
     V6 = V1 | V2 | V3
+
+
+class FlagEnumWithNameMapping(Flag):
+    number_one = auto()
+    number_two = auto()
+    number_three = auto()
+    number_five = number_two | number_three
+    value_to_replace = auto()
 
 
 def test_name_provider(strict_coercion, debug_trail):
@@ -169,7 +183,7 @@ def test_flag_enum_loader(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(),
+            FlagProvider(NameMappingGenerator()),
         ]
     )
 
@@ -204,7 +218,7 @@ def test_flag_enum_dumper(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(),
+            FlagProvider(NameMappingGenerator()),
         ]
     )
 
@@ -222,7 +236,7 @@ def test_flag_enum_loader_by_exact_value(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(by_exact_value=True),
+            FlagProvider(ExactValueMappingGenerator()),
         ]
     )
 
@@ -255,7 +269,7 @@ def test_flag_enum_dumper_by_exact_value(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(by_exact_value=True),
+            FlagProvider(ExactValueMappingGenerator()),
         ]
     )
 
@@ -273,7 +287,7 @@ def test_flag_enum_loader_with_disallowed_compounds(strict_coercion, debug_trail
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(allow_compound=False),
+            FlagProvider(NameMappingGenerator(), allow_compound=False),
         ]
     )
 
@@ -298,7 +312,7 @@ def test_flag_enum_dumper_with_disallowed_compounds(strict_coercion, debug_trail
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(allow_compound=False),
+            FlagProvider(NameMappingGenerator(), allow_compound=False),
         ]
     )
 
@@ -316,7 +330,7 @@ def test_flag_enum_loader_with_allowed_single_value(strict_coercion, debug_trail
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(allow_single_value=True),
+            FlagProvider(NameMappingGenerator(), allow_single_value=True),
         ]
     )
 
@@ -330,7 +344,7 @@ def test_flag_enum_loader_with_disallowed_duplicates(strict_coercion, debug_trai
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(allow_duplicates=False),
+            FlagProvider(NameMappingGenerator(), allow_duplicates=False),
         ]
     )
 
@@ -339,3 +353,67 @@ def test_flag_enum_loader_with_disallowed_duplicates(strict_coercion, debug_trai
         ValueLoadError(f"Duplicates in {FlagEnum} loader are not allowed", ["V1", "V1"]),
         lambda: loader(["V1", "V1"])
     )
+
+
+def test_flag_enum_loader_with_name_mapping(strict_coercion, debug_trail):
+    retort = TestRetort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            FlagProvider(
+                NameMappingGenerator(
+                    name_style=NameStyle.CAMEL,
+                    map={"value_to_replace": "new_value"}
+                ),
+            ),
+        ]
+    )
+
+    loader = retort.get_loader(FlagEnumWithNameMapping)
+    assert loader(["numberOne"]) == FlagEnumWithNameMapping.number_one
+    assert loader(
+        ["numberOne", "numberTwo"]
+    ) == FlagEnumWithNameMapping.number_one | FlagEnumWithNameMapping.number_two
+    assert loader(["numberTwo", "numberThree"]) == FlagEnumWithNameMapping.number_five
+    assert loader(["new_value"]) == FlagEnumWithNameMapping.value_to_replace
+
+    variants = ["numberOne", "numberTwo", "numberThree", "numberFive", "new_value"]
+    raises_exc(
+        MultipleBadVariant(
+            allowed_values=variants,
+            input_value=["numberOne", "value_to_replace"],
+            invalid_values=["value_to_replace"]
+        ),
+        lambda: loader(["numberOne", "value_to_replace"])
+    )
+    raises_exc(
+        TypeLoadError(
+            expected_type=Iterable[str],
+            input_value="numberOne"
+        ),
+        lambda: loader("numberOne")
+    )
+
+
+def test_flag_enum_dumper_with_name_mapping(strict_coercion, debug_trail):
+    retort = TestRetort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            FlagProvider(
+                NameMappingGenerator(
+                    name_style=NameStyle.CAMEL,
+                    map={"value_to_replace": "new_value"}
+                ),
+            ),
+        ]
+    )
+
+    dumper = retort.get_dumper(FlagEnumWithNameMapping)
+    assert dumper(FlagEnumWithNameMapping.number_one) == ["numberOne"]
+    assert dumper(
+        FlagEnumWithNameMapping.number_one | FlagEnumWithNameMapping.number_two
+    ) == ["numberOne", "numberTwo"]
+    assert dumper(
+        FlagEnumWithNameMapping.number_two | FlagEnumWithNameMapping.number_three
+    ) == ["numberFive"]
