@@ -3,6 +3,8 @@ from abc import ABC
 from enum import Enum, EnumMeta, Flag
 from typing import Any, Iterable, Mapping, Optional, Sequence, Type, TypeVar, Union
 
+from typing_extensions import overload
+
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import Mediator
@@ -185,15 +187,21 @@ class FlagProvider(BaseEnumProvider):
             return enum.__members__.values()
         return _extract_non_compound_cases_from_flag(enum)
 
-    def _get_loader_process_data(
-        self, data: Union[int, Iterable[int], Iterable[str]], enum: Type[Flag]
-    ) -> Union[Sequence[int], Sequence[str]]:
+    @overload
+    def _get_loader_process_data(self, data: Union[int, Iterable[int]], enum: Type[Flag]) -> Sequence[int]:
+        ...
+
+    @overload
+    def _get_loader_process_data(self, data: Iterable[str], enum: Type[Flag]) -> Sequence[str]:
+        ...
+
+    def _get_loader_process_data(self, data, enum):
         if isinstance(data, (str, int)):
             if not self._allow_single_value:
                 raise TypeLoadError(expected_type=Iterable[str], input_value=data)
-            process_data: Union[Sequence[int], Sequence[str]] = [data]  # type: ignore[assignment]
+            process_data = [data]
         else:
-            process_data = list(data)  # type: ignore[assignment]
+            process_data = list(data)
 
         if not self._allow_duplicates:
             if len(process_data) != len(set(process_data)):
