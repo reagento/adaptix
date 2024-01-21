@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, TypeVar, Union
 
 from ...common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
@@ -371,5 +371,5 @@ def validator(
     return loader(pred, validating_loader, chain)
 
 
-def default_dict(default_factory: Optional[Type] = None) -> Provider:
-    return DefaultDictProvider(default_factory)
+def default_dict(pred: Pred, default_factory: Callable) -> Provider:
+    return bound(pred, DefaultDictProvider(default_factory))

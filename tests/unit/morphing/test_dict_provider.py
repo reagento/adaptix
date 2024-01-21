@@ -1,6 +1,6 @@
 import collections.abc
 from collections import defaultdict
-from typing import DefaultDict, Dict
+from typing import DefaultDict, Dict, List
 
 import pytest
 from tests_helpers import TestRetort, raises_exc, with_trail
@@ -208,12 +208,18 @@ def test_defaultdict_loading(retort, strict_coercion, debug_trail):
 
 
 def test_defaultdict_loader(retort, strict_coercion, debug_trail):
+    df = list
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
-    ).extend(recipe=[default_dict(default_factory=list)]).get_loader(DefaultDict[str, list[str]])
+    ).extend(
+        recipe=[
+            default_dict(defaultdict, default_factory=df),
+        ]
+    ).get_loader(DefaultDict[str, List[str]])
 
     assert loader_({'a': ['b', 'c']}) == defaultdict(list, {'a': ['b', 'c']})
+    assert loader_({'a': ['b', 'c']}).default_factory == df
 
 
 def test_defaultdict_dumping(retort, debug_trail):

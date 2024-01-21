@@ -1,7 +1,7 @@
 import collections.abc
 from collections import defaultdict
 from dataclasses import replace
-from typing import DefaultDict, Dict, Mapping, Optional, Tuple, Type
+from typing import Callable, DefaultDict, Dict, Mapping, Optional, Tuple
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -277,7 +277,7 @@ class DictProvider(LoaderProvider, DumperProvider):
 class DefaultDictProvider(LoaderProvider, DumperProvider):
     _DICT_PROVIDER = DictProvider()
 
-    def __init__(self, default_factory: Optional[Type] = None):
+    def __init__(self, default_factory: Optional[Callable] = None):
         self.default_factory = default_factory
 
     def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
@@ -291,9 +291,10 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
             mediator,
             replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint)))
         )
+        default_factory = self.default_factory
 
         def defaultdict_loader(data):
-            return defaultdict(self.default_factory, dict_loader(data))
+            return defaultdict(default_factory, dict_loader(data))
 
         return defaultdict_loader
 
