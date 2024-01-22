@@ -8,7 +8,7 @@ from typing_extensions import overload
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..name_style import NameStyle, convert_snake_style
-from ..provider.essential import Mediator
+from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import DirectMediator, LastLocMapChecker
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import LocMap, TypeHintLoc, get_type_from_request
@@ -262,6 +262,9 @@ class FlagProvider(BaseEnumProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
 
+        if not issubclass(enum, Flag):
+            raise CannotProvide
+
         def _flag_loader(data: Union[int, Iterable[int], Iterable[str]]) -> Flag:
             process_data = self._get_loader_process_data(data, enum)
             cases = self._get_cases(enum)
@@ -288,6 +291,9 @@ class FlagProvider(BaseEnumProvider):
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         enum = get_type_from_request(request)
+
+        if not issubclass(enum, Flag):
+            raise CannotProvide
 
         def flag_dumper(value: Flag) -> Iterable[Hashable]:
             cases = self._get_cases(enum)
