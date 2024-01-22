@@ -8,9 +8,9 @@ from adaptix import NameStyle, dumper, enum_by_value, loader
 from adaptix._internal.morphing.enum_provider import (
     EnumExactValueProvider,
     EnumNameProvider,
-    ExactValueMappingGenerator,
+    ExactValueEnumMappingGenerator,
     FlagProvider,
-    NameMappingGenerator,
+    NameEnumMappingGenerator,
 )
 from adaptix._internal.morphing.load_error import MultipleBadVariant, TypeLoadError, ValueLoadError
 from adaptix.load_error import BadVariantError, MsgError
@@ -175,7 +175,7 @@ def test_flag_enum_loader(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(NameMappingGenerator()),
+            FlagProvider(NameEnumMappingGenerator()),
         ]
     )
 
@@ -209,7 +209,7 @@ def test_flag_enum_dumper(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(NameMappingGenerator()),
+            FlagProvider(NameEnumMappingGenerator()),
         ]
     )
 
@@ -226,7 +226,7 @@ def test_flag_enum_loader_by_exact_value(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(ExactValueMappingGenerator()),
+            FlagProvider(ExactValueEnumMappingGenerator()),
         ]
     )
 
@@ -258,7 +258,7 @@ def test_flag_enum_dumper_by_exact_value(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(ExactValueMappingGenerator()),
+            FlagProvider(ExactValueEnumMappingGenerator()),
         ]
     )
 
@@ -275,7 +275,7 @@ def test_flag_enum_loader_with_disallowed_compounds(strict_coercion, debug_trail
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(NameMappingGenerator(), allow_compound=False),
+            FlagProvider(NameEnumMappingGenerator(), allow_compound=False),
         ]
     )
 
@@ -299,7 +299,7 @@ def test_flag_enum_dumper_with_disallowed_compounds(strict_coercion, debug_trail
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(NameMappingGenerator(), allow_compound=False),
+            FlagProvider(NameEnumMappingGenerator(), allow_compound=False),
         ]
     )
 
@@ -314,7 +314,7 @@ def test_flag_enum_loader_with_allowed_single_value(strict_coercion, debug_trail
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(NameMappingGenerator(), allow_single_value=True),
+            FlagProvider(NameEnumMappingGenerator(), allow_single_value=True),
         ]
     )
 
@@ -328,7 +328,7 @@ def test_flag_enum_loader_with_disallowed_duplicates(strict_coercion, debug_trai
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            FlagProvider(NameMappingGenerator(), allow_duplicates=False),
+            FlagProvider(NameEnumMappingGenerator(), allow_duplicates=False),
         ]
     )
 
@@ -348,7 +348,7 @@ def test_flag_enum_loader_with_name_mapping(strict_coercion, debug_trail):
         debug_trail=debug_trail,
         recipe=[
             FlagProvider(
-                NameMappingGenerator(
+                NameEnumMappingGenerator(
                     name_style=NameStyle.CAMEL,
                     map={
                         "case_one": "case_1",
@@ -385,7 +385,7 @@ def test_flag_enum_dumper_with_name_mapping(strict_coercion, debug_trail):
         debug_trail=debug_trail,
         recipe=[
             FlagProvider(
-                NameMappingGenerator(
+                NameEnumMappingGenerator(
                     name_style=NameStyle.CAMEL,
                     map={
                         "case_one": "case_1",

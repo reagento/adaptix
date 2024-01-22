@@ -20,7 +20,7 @@ EnumT = TypeVar("EnumT", bound=Enum)
 FlagT = TypeVar("FlagT", bound=Flag)
 
 
-class BaseMappingGenerator(ABC):
+class BaseEnumMappingGenerator(ABC):
     @abstractmethod
     def _generate_mapping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, Hashable]:
         ...
@@ -37,7 +37,7 @@ class BaseMappingGenerator(ABC):
         }
 
 
-class NameMappingGenerator(BaseMappingGenerator):
+class NameEnumMappingGenerator(BaseEnumMappingGenerator):
     def __init__(
         self, name_style: Optional[NameStyle] = None,
         map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
@@ -63,7 +63,7 @@ class NameMappingGenerator(BaseMappingGenerator):
         return result
 
 
-class ExactValueMappingGenerator(BaseMappingGenerator):
+class ExactValueEnumMappingGenerator(BaseEnumMappingGenerator):
     def _generate_mapping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, Hashable]:
         return {case: case.value for case in cases}
 
@@ -219,7 +219,7 @@ def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Iterable[FlagT]:
 class FlagProvider(BaseEnumProvider):
     def __init__(
         self,
-        mapping_generator: BaseMappingGenerator,
+        mapping_generator: BaseEnumMappingGenerator,
         allow_single_value: bool = False,
         allow_duplicates: bool = True,
         allow_compound: bool = True,

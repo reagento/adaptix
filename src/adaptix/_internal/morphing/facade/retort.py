@@ -43,7 +43,7 @@ from ..concrete_provider import (
 )
 from ..constant_length_tuple_provider import ConstantLengthTupleProvider
 from ..dict_provider import DictProvider
-from ..enum_provider import EnumExactValueProvider, FlagProvider, NameMappingGenerator
+from ..enum_provider import EnumExactValueProvider, FlagProvider, NameEnumMappingGenerator
 from ..generic_provider import (
     LiteralProvider,
     NewTypeUnwrappingProvider,
@@ -80,7 +80,7 @@ class FilledRetort(OperatingRetort, ABC):
         SecondsTimedeltaProvider(),
 
         EnumExactValueProvider(),  # it has higher priority than scalar types for Enum with mixins
-        FlagProvider(NameMappingGenerator()),
+        FlagProvider(NameEnumMappingGenerator()),
 
         INT_LOADER_PROVIDER,
         as_is_dumper(int),
