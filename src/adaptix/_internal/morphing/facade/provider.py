@@ -384,9 +384,9 @@ def flag_by_list_using_name(
         preds,
         FlagProvider(
             ByNameEnumMappingGenerator(name_style=name_style, map=map),
-            allow_single_value,
-            allow_duplicates,
-            allow_compound
+            allow_single_value=allow_single_value,
+            allow_duplicates=allow_duplicates,
+            allow_compound=allow_compound,
         ),
     )
 
@@ -416,9 +416,9 @@ def flag_by_list_using_exact_value(
         preds,
         FlagProvider(
             ByExactValueEnumMappingGenerator(),
-            allow_single_value,
-            allow_duplicates,
-            allow_compound
+            allow_single_value=allow_single_value,
+            allow_duplicates=allow_duplicates,
+            allow_compound=allow_compound,
         ),
     )
 
