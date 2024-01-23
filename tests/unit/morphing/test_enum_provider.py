@@ -190,8 +190,8 @@ def test_flag_enum_loader(strict_coercion, debug_trail):
     raises_exc(
         MultipleBadVariant(
             allowed_values=variants,
+            invalid_values=["not_existing_case_1", "not_existing_case_2"],
             input_value=["case_one", "not_existing_case_1", "not_existing_case_2"],
-            invalid_values=["not_existing_case_1", "not_existing_case_2"]
         ),
         lambda: loader(["case_one", "not_existing_case_1", "not_existing_case_2"])
     )

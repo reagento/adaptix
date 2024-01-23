@@ -281,8 +281,8 @@ class FlagProvider(BaseEnumProvider):
             if bad_variants:
                 raise MultipleBadVariant(
                     allowed_values=variants,
+                    invalid_values=bad_variants,
                     input_value=process_data,
-                    invalid_values=bad_variants
                 )
 
             return result
