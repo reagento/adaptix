@@ -24,12 +24,12 @@ from ...provider.shape_provider import PropertyExtender
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
 from ..enum_provider import (
+    ByExactValueEnumMappingGenerator,
+    ByNameEnumMappingGenerator,
     EnumExactValueProvider,
     EnumNameProvider,
     EnumValueProvider,
-    ExactValueEnumMappingGenerator,
     FlagProvider,
-    NameEnumMappingGenerator,
 )
 from ..load_error import LoadError, ValidationError
 from ..model.loader_provider import InlinedShapeModelLoaderProvider
@@ -383,7 +383,7 @@ def flag_by_list_using_name(
     return _wrap_enum_provider(
         preds,
         FlagProvider(
-            NameEnumMappingGenerator(name_style=name_style, map=map),
+            ByNameEnumMappingGenerator(name_style=name_style, map=map),
             allow_single_value,
             allow_duplicates,
             allow_compound
@@ -415,7 +415,7 @@ def flag_by_list_using_exact_value(
     return _wrap_enum_provider(
         preds,
         FlagProvider(
-            ExactValueEnumMappingGenerator(),
+            ByExactValueEnumMappingGenerator(),
             allow_single_value,
             allow_duplicates,
             allow_compound

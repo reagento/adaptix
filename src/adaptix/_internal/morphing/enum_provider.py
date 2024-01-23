@@ -37,9 +37,10 @@ class BaseEnumMappingGenerator(ABC):
         }
 
 
-class NameEnumMappingGenerator(BaseEnumMappingGenerator):
+class ByNameEnumMappingGenerator(BaseEnumMappingGenerator):
     def __init__(
-        self, name_style: Optional[NameStyle] = None,
+        self,
+        name_style: Optional[NameStyle] = None,
         map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
     ):
         self._name_style = name_style
@@ -49,21 +50,20 @@ class NameEnumMappingGenerator(BaseEnumMappingGenerator):
         result = {}
 
         for case in cases:
-            if not (case in self._map or case.name in self._map):
-                if self._name_style:
-                    result[case] = convert_snake_style(case.name, self._name_style)
-                else:
-                    result[case] = case.name
-                continue
-            try:
-                result[case] = self._map[case]
-            except KeyError:
-                result[case] = self._map[case.name]
+            if case in self._map:
+                mapped = self._map[case]
+            elif case.name in self._map:
+                mapped = self._map[case.name]
+            elif self._name_style:
+                mapped = convert_snake_style(case.name, self._name_style)
+            else:
+                mapped = case.name
+            result[case] = mapped
 
         return result
 
 
-class ExactValueEnumMappingGenerator(BaseEnumMappingGenerator):
+class ByExactValueEnumMappingGenerator(BaseEnumMappingGenerator):
     def _generate_mapping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, Hashable]:
         return {case: case.value for case in cases}
 
