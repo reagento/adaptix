@@ -216,6 +216,11 @@ Dict and Mapping
 Loader accepts any other ``Mapping`` and makes ``dict`` instances.
 Dumper also constructs dict with converted keys and values.
 
+DefaultDict
+'''''''''''''''''''''
+Loader makes instances of ``defaultdict`` with the ``default_factory`` parameter set to ``None``.
+To customize this behavior, there are factory :func:`.default_dict` that have :paramref:`.default_dict.default_factory` parameter that can be overridden.
+
 Models
 ''''''''''
 
@@ -249,3 +254,4 @@ Known limitations:
 - ``__init__`` introspection or using :func:`.constructor`
 
   - Fields of unpacked typed dict (``**kwargs: Unpack[YourTypedDict]``) cannot collide with parameters of function
+

@@ -23,6 +23,7 @@ from ...provider.provider_wrapper import BoundingProvider, Chain, ChainingProvid
 from ...provider.shape_provider import PropertyExtender
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
+from ..dict_provider import DefaultDictProvider
 from ..enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
 from ..load_error import LoadError, ValidationError
 from ..model.loader_provider import InlinedShapeModelLoaderProvider
@@ -368,3 +369,13 @@ def validator(
         raise exception_factory(data)
 
     return loader(pred, validating_loader, chain)
+
+
+def default_dict(pred: Pred, default_factory: Callable) -> Provider:
+    """DefaultDict provider with overriden default_factory parameter
+
+    :param pred: Predicate specifying where the provider should be used.
+        See :ref:`predicate-system` for details.
+    :param default_factory: default_factory parameter of the defaultdict instance to be created by the loader
+    """
+    return bound(pred, DefaultDictProvider(default_factory))

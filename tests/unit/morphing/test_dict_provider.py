@@ -1,13 +1,15 @@
 import collections.abc
-from typing import Dict
+from collections import defaultdict
+from typing import DefaultDict, Dict, List
 
 import pytest
 from tests_helpers import TestRetort, raises_exc, with_trail
 
-from adaptix import DebugTrail, dumper, loader
+from adaptix import DebugTrail, default_dict, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
-from adaptix._internal.morphing.dict_provider import DictProvider
+from adaptix._internal.morphing.dict_provider import DefaultDictProvider, DictProvider
+from adaptix._internal.morphing.iterable_provider import IterableProvider
 from adaptix._internal.morphing.load_error import AggregateLoadError
 from adaptix._internal.struct_trail import ItemKey
 from adaptix.load_error import TypeLoadError
@@ -24,8 +26,10 @@ def retort():
     return TestRetort(
         recipe=[
             DictProvider(),
+            DefaultDictProvider(),
             STR_LOADER_PROVIDER,
             dumper(str, string_dumper),
+            IterableProvider()
         ]
     )
 
@@ -190,3 +194,39 @@ def test_dumping(retort, debug_trail):
             ),
             lambda: dumper_({'a': 'b', 0: 'd'}),
         )
+
+
+def test_defaultdict_loading(retort, strict_coercion, debug_trail):
+    loader_ = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_loader(
+        DefaultDict[str, str],
+    )
+
+    assert loader_({'a': 'b', 'c': 'd'}) == defaultdict(None, {'a': 'b', 'c': 'd'})
+
+
+def test_defaultdict_loader(retort, strict_coercion, debug_trail):
+    df = list
+    loader_ = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).extend(
+        recipe=[
+            default_dict(defaultdict, default_factory=df),
+        ]
+    ).get_loader(DefaultDict[str, List[str]])
+
+    assert loader_({'a': ['b', 'c']}) == defaultdict(list, {'a': ['b', 'c']})
+    assert loader_({'a': ['b', 'c']}).default_factory == df
+
+
+def test_defaultdict_dumping(retort, debug_trail):
+    dumper_ = retort.replace(
+        debug_trail=debug_trail,
+    ).get_dumper(
+        DefaultDict[str, str],
+    )
+
+    assert dumper_(defaultdict(None, {'a': 'b', 'c': 'd'})) == {'a': 'b', 'c': 'd'}

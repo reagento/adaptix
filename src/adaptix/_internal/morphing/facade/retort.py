@@ -42,7 +42,7 @@ from ..concrete_provider import (
     SelfTypeProvider,
 )
 from ..constant_length_tuple_provider import ConstantLengthTupleProvider
-from ..dict_provider import DictProvider
+from ..dict_provider import DefaultDictProvider, DictProvider
 from ..enum_provider import EnumExactValueProvider
 from ..generic_provider import (
     LiteralProvider,
@@ -135,6 +135,7 @@ class FilledRetort(OperatingRetort, ABC):
         ConstantLengthTupleProvider(),
         IterableProvider(),
         DictProvider(),
+        DefaultDictProvider(),
         RegexPatternProvider(),
         SelfTypeProvider(),
         LiteralStringProvider(),
