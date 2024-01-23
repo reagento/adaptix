@@ -372,4 +372,10 @@ def validator(
 
 
 def default_dict(pred: Pred, default_factory: Callable) -> Provider:
+    """DefaultDictProvider factory with overriden default_factory parameter
+
+    :param pred: Predicate specifying where the provider should be used.
+        See :ref:`predicate-system` for details.
+    :param default_factory: param that will be passed to DefaultDictProvider
+    """
     return bound(pred, DefaultDictProvider(default_factory))
