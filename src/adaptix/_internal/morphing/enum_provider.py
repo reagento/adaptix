@@ -3,17 +3,15 @@ from abc import ABC, abstractmethod
 from enum import Enum, EnumMeta, Flag
 from typing import Any, Hashable, Iterable, Mapping, Optional, Sequence, Type, TypeVar, Union, final
 
-from typing_extensions import overload
-
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..name_style import NameStyle, convert_snake_style
-from ..provider.essential import CannotProvide, Mediator
+from ..provider.essential import Mediator
 from ..provider.loc_stack_filtering import DirectMediator, LastLocMapChecker
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import LocMap, TypeHintLoc, get_type_from_request
 from ..type_tools import normalize_type
-from .load_error import BadVariantError, MsgError, MultipleBadVariant, TypeLoadError, ValueLoadError
+from .load_error import BadVariantError, DuplicatedValues, MsgError, MultipleBadVariant, TypeLoadError
 from .request_cls import DumperRequest, LoaderRequest
 
 EnumT = TypeVar("EnumT", bound=Enum)
@@ -75,6 +73,15 @@ class AnyEnumLSC(LastLocMapChecker):
         except ValueError:
             return False
         return isinstance(norm.origin, EnumMeta)
+
+
+class FlagEnumLSC(LastLocMapChecker):
+    def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
+        try:
+            norm = normalize_type(loc.type)
+        except ValueError:
+            return False
+        return issubclass(norm.origin, Flag)
 
 
 @for_predicate(AnyEnumLSC())
@@ -212,10 +219,11 @@ class EnumExactValueProvider(BaseEnumProvider):
         return _enum_exact_value_dumper
 
 
-def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Iterable[FlagT]:
+def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Sequence[FlagT]:
     return [case for case in enum.__members__.values() if not math.log2(case.value) % 1]
 
 
+@for_predicate(FlagEnumLSC())
 class FlagProvider(BaseEnumProvider):
     def __init__(
         self,
@@ -229,78 +237,75 @@ class FlagProvider(BaseEnumProvider):
         self._allow_duplicates = allow_duplicates
         self._allow_compound = allow_compound
 
-    def _get_cases(self, enum: Type[FlagT]) -> Iterable[FlagT]:
+    def _get_cases(self, enum: Type[FlagT]) -> Sequence[FlagT]:
         if self._allow_compound:
-            return enum.__members__.values()
+            return list(enum.__members__.values())
         return _extract_non_compound_cases_from_flag(enum)
 
-    @overload
-    def _get_loader_process_data(self, data: Union[int, Iterable[int]], enum: Type[Flag]) -> Sequence[int]:
-        ...
-
-    @overload
-    def _get_loader_process_data(self, data: Iterable[str], enum: Type[Flag]) -> Sequence[str]:
-        ...
-
-    def _get_loader_process_data(self, data, enum):
-        if isinstance(data, (str, int)):
-            if not self._allow_single_value:
-                raise TypeLoadError(expected_type=Iterable[str], input_value=data)
-            process_data = [data]
-        else:
-            process_data = list(data)
-
-        if not self._allow_duplicates:
-            if len(process_data) != len(set(process_data)):
-                raise ValueLoadError(
-                    msg=f"Duplicates in {enum} loader are not allowed",
-                    input_value=process_data
-                )
-
-        return process_data
-
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:  # noqa: CCR001
         enum = get_type_from_request(request)
 
-        if not issubclass(enum, Flag):
-            raise CannotProvide
+        allow_single_value = self._allow_single_value
+        allow_duplicates = self._allow_duplicates
 
-        def _flag_loader(data: Union[int, Iterable[int], Iterable[str]]) -> Flag:
-            process_data = self._get_loader_process_data(data, enum)
-            cases = self._get_cases(enum)
-            mapping = self._mapping_generator.generate_for_loading(cases)
-            variants = list(mapping.keys())
+        cases = self._get_cases(enum)
+        mapping = self._mapping_generator.generate_for_loading(cases)
+        variants = list(mapping.keys())
+        zero_case = enum(0)
+
+        # pylint: disable=locally-disabled, unidiomatic-typecheck
+        def flag_loader(data) -> Flag:
+            if isinstance(data, Iterable) and type(data) != str:  # noqa: E721
+                process_data = tuple(data)
+            else:
+                if not allow_single_value:
+                    raise TypeLoadError(
+                        expected_type=Union[Iterable[str], Iterable[int]],
+                        input_value=data
+                    )
+                process_data = (data,)
+
+            if not allow_duplicates:
+                if len(process_data) != len(set(process_data)):
+                    raise DuplicatedValues(data)
+
             bad_variants = []
-            result = enum(0)
+            result = zero_case
             for item in process_data:
                 if item not in variants:
                     bad_variants.append(item)
                     continue
-                result = result | mapping[item]
+                result |= mapping[item]
 
             if bad_variants:
                 raise MultipleBadVariant(
                     allowed_values=variants,
                     invalid_values=bad_variants,
-                    input_value=process_data,
+                    input_value=data,
                 )
 
             return result
 
-        return _flag_loader
+        return flag_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         enum = get_type_from_request(request)
 
-        if not issubclass(enum, Flag):
-            raise CannotProvide
+        cases = self._get_cases(enum)
+        need_to_reverse = self._allow_compound and cases != _extract_non_compound_cases_from_flag(enum)
+        if need_to_reverse:
+            cases = tuple(reversed(cases))
 
-        def flag_dumper(value: Flag) -> Iterable[Hashable]:
-            cases = self._get_cases(enum)
-            mapping = self._mapping_generator.generate_for_dumping(cases)
+        mapping = self._mapping_generator.generate_for_dumping(cases)
+        zero_case = enum(0)
 
-            if value in cases:
-                return [mapping[value]]
-            return [mapping[case] for case in cases if case in value]
+        def flag_dumper(value: Flag) -> Sequence[Hashable]:
+            result = []
+            cases_sum = zero_case
+            for case in cases:
+                if case in value and case not in cases_sum:
+                    cases_sum |= case
+                    result.append(mapping[case])
+            return list(reversed(result)) if need_to_reverse else result
 
         return flag_dumper
