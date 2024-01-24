@@ -43,7 +43,7 @@ from ..concrete_provider import (
 )
 from ..constant_length_tuple_provider import ConstantLengthTupleProvider
 from ..dict_provider import DictProvider
-from ..enum_provider import EnumExactValueProvider
+from ..enum_provider import EnumExactValueProvider, FlagByExactValueProvider
 from ..generic_provider import (
     LiteralProvider,
     NewTypeUnwrappingProvider,
@@ -79,6 +79,7 @@ class FilledRetort(OperatingRetort, ABC):
         IsoFormatProvider(time),
         SecondsTimedeltaProvider(),
 
+        FlagByExactValueProvider(),
         EnumExactValueProvider(),  # it has higher priority than scalar types for Enum with mixins
 
         INT_LOADER_PROVIDER,

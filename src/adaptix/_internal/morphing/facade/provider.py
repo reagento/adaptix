@@ -24,12 +24,12 @@ from ...provider.shape_provider import PropertyExtender
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
 from ..enum_provider import (
-    ByExactValueEnumMappingGenerator,
     ByNameEnumMappingGenerator,
     EnumExactValueProvider,
     EnumNameProvider,
     EnumValueProvider,
-    FlagProvider,
+    FlagByExactValueProvider,
+    FlagByListProvider,
 )
 from ..load_error import LoadError, ValidationError
 from ..model.loader_provider import InlinedShapeModelLoaderProvider
@@ -356,6 +356,18 @@ def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Pr
     return _wrap_enum_provider([first_pred, *preds], EnumValueProvider(tp))
 
 
+def flag_by_exact_value(*preds: EnumPred) -> Provider:
+    """Provider that represents flag members to the outside world by their value without any processing.
+
+    :param preds: Predicates specifying where the provider should be used.
+        The provider will be applied if any predicates meet the conditions,
+        if no predicates are passed, the provider will be used for all Enums.
+        See :ref:`predicate-system` for details.
+    :return: desired provider
+    """
+    return _wrap_enum_provider(preds, FlagByExactValueProvider())
+
+
 def flag_by_list_using_name(
     *preds: EnumPred,
     allow_single_value: bool = False,
@@ -382,40 +394,8 @@ def flag_by_list_using_name(
     """
     return _wrap_enum_provider(
         preds,
-        FlagProvider(
+        FlagByListProvider(
             ByNameEnumMappingGenerator(name_style=name_style, map=map),
-            allow_single_value=allow_single_value,
-            allow_duplicates=allow_duplicates,
-            allow_compound=allow_compound,
-        ),
-    )
-
-
-def flag_by_list_using_exact_value(
-    *preds: EnumPred,
-    allow_single_value: bool = False,
-    allow_duplicates: bool = True,
-    allow_compound: bool = True,
-) -> Provider:
-    """Provider that represents flag members to the outside world by their exact values.
-
-    :param preds: Predicates specifying where the provider should be used.
-        The provider will be applied if any predicates meet the conditions,
-        if no predicates are passed, the provider will be used for all Flags.
-        See :ref:`predicate-system` for details.
-    :param allow_single_value: Specifies if it is allowed to call loader by single value.
-        If it is allowed and loader called by single value, it will be interpreted as a list with single element,
-        otherwise TypeLoadError will be raised
-    :param allow_duplicates: Specifies if it is allowed to call loader by list with non-unique elements.
-        If it is not allowed and loader by list with non-unique elements, ValueError will be raised.
-    :param allow_compound: Specifies if it is allowed for loader to accept compound values and
-        allowed for dumper to return compound values.
-    :return: desired provider
-    """
-    return _wrap_enum_provider(
-        preds,
-        FlagProvider(
-            ByExactValueEnumMappingGenerator(),
             allow_single_value=allow_single_value,
             allow_duplicates=allow_duplicates,
             allow_compound=allow_compound,

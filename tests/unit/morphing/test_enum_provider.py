@@ -1,18 +1,21 @@
 from enum import Enum, Flag, IntEnum, auto
-from typing import Iterable
+from typing import Iterable, Union
 
 import pytest
-from tests_helpers import TestRetort, raises_exc
+from tests_helpers import TestRetort, parametrize_bool, raises_exc, with_cause, with_notes
 
-from adaptix import NameStyle, dumper, enum_by_value, loader
-from adaptix._internal.morphing.enum_provider import (
-    ByExactValueEnumMappingGenerator,
-    ByNameEnumMappingGenerator,
-    EnumExactValueProvider,
-    EnumNameProvider,
-    FlagProvider,
+from adaptix import (
+    CannotProvide,
+    NameStyle,
+    NoSuitableProvider,
+    Retort,
+    dumper,
+    enum_by_value,
+    flag_by_list_using_name,
+    loader,
 )
-from adaptix._internal.morphing.load_error import MultipleBadVariant, TypeLoadError, ValueLoadError
+from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider, FlagByExactValueProvider
+from adaptix._internal.morphing.load_error import DuplicatedValues, MultipleBadVariant, OutOfRange, TypeLoadError
 from adaptix.load_error import BadVariantError, MsgError
 
 
@@ -33,11 +36,20 @@ class MyEnumWithMissingHook(Enum):
 
 
 class FlagEnum(Flag):
-    case_one = auto()
-    case_two = auto()
-    case_three = case_one | case_two
-    case_four = auto()
-    case_eight = auto()
+    CASE_ONE = CASE_ONE_ALIAS = auto()
+    CASE_TWO = auto()
+    CASE_THREE = CASE_ONE | CASE_TWO
+    CASE_FOUR = auto()
+    CASE_EIGHT = auto()
+
+
+class FlagEnumWithSkippedBit(Flag):
+    CASE_ONE = 1
+    CASE_FOUR = 4
+
+
+class FlagEnumWithNegativeValue(Flag):
+    CASE_ONE = -1
 
 
 def test_name_provider(strict_coercion, debug_trail):
@@ -50,7 +62,6 @@ def test_name_provider(strict_coercion, debug_trail):
     )
 
     loader = retort.get_loader(MyEnum)
-
     assert loader("V1") == MyEnum.V1
 
     raises_exc(
@@ -170,237 +181,196 @@ def test_value_provider(strict_coercion, debug_trail):
     assert enum_dumper(MyEnum.V1) == "PREFIX 1"
 
 
-def test_flag_enum_loader(strict_coercion, debug_trail):
-    retort = TestRetort(
+def test_flag_by_exact_value(strict_coercion, debug_trail):
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(ByNameEnumMappingGenerator()),
-        ]
     )
 
     loader = retort.get_loader(FlagEnum)
-    assert loader(["case_one"]) == FlagEnum.case_one
-    assert loader(["case_one", "case_two"]) == FlagEnum.case_three
-    assert loader(["case_three"]) == FlagEnum.case_three
-    assert loader(["case_one", "case_four"]) == FlagEnum.case_one | FlagEnum.case_four
-    assert loader(["case_one", "case_one"]) == FlagEnum.case_one
-
-    variants = ["case_one", "case_two", "case_three", "case_four", "case_eight"]
-    raises_exc(
-        MultipleBadVariant(
-            allowed_values=variants,
-            invalid_values=["not_existing_case_1", "not_existing_case_2"],
-            input_value=["case_one", "not_existing_case_1", "not_existing_case_2"],
-        ),
-        lambda: loader(["case_one", "not_existing_case_1", "not_existing_case_2"])
-    )
-    raises_exc(
-        TypeLoadError(
-            expected_type=Iterable[str],
-            input_value="case_one"
-        ),
-        lambda: loader("case_one")
-    )
-
-
-def test_flag_enum_dumper(strict_coercion, debug_trail):
-    retort = TestRetort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(ByNameEnumMappingGenerator()),
-        ]
-    )
+    assert loader(1) == FlagEnum.CASE_ONE
+    assert loader(3) == FlagEnum.CASE_THREE
+    assert loader(5) == FlagEnum.CASE_ONE | FlagEnum.CASE_FOUR
 
     dumper = retort.get_dumper(FlagEnum)
-    assert dumper(FlagEnum.case_one) == ["case_one"]
-    assert dumper(FlagEnum.case_one | FlagEnum.case_two) == ["case_three"]
-    assert dumper(FlagEnum.case_one & FlagEnum.case_two) == []
-    assert dumper(FlagEnum.case_two & FlagEnum.case_three) == ["case_two"]
-    assert dumper(~FlagEnum.case_two) == ["case_one", "case_four", 'case_eight']
+    assert dumper(FlagEnum.CASE_ONE) == 1
+    assert dumper(FlagEnum.CASE_ONE | FlagEnum.CASE_FOUR) == 5
 
-
-def test_flag_enum_loader_by_exact_value(strict_coercion, debug_trail):
-    retort = TestRetort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(ByExactValueEnumMappingGenerator()),
-        ]
-    )
-
-    loader = retort.get_loader(FlagEnum)
-    assert loader([1]) == FlagEnum.case_one
-    assert loader([1, 2]) == FlagEnum.case_three
-    assert loader([3]) == FlagEnum.case_three
-    assert loader([1, 4]) == FlagEnum.case_one | FlagEnum.case_four
-    variants = [1, 2, 3, 4, 8]
     raises_exc(
-        MultipleBadVariant(
-            allowed_values=variants,
-            input_value=[1, 2, 5, 6],
-            invalid_values=[5, 6]
-        ),
-        lambda: loader([1, 2, 5, 6])
+        OutOfRange(0, 15, 16), lambda: loader(16)
     )
     raises_exc(
-        TypeLoadError(
-            expected_type=Iterable[str],
-            input_value=1
-        ),
-        lambda: loader(1)
+        OutOfRange(0, 15, -1), lambda: loader(-1)
     )
 
 
-def test_flag_enum_dumper_by_exact_value(strict_coercion, debug_trail):
-    retort = TestRetort(
+def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(ByExactValueEnumMappingGenerator()),
-        ]
     )
 
-    dumper = retort.get_dumper(FlagEnum)
-    assert dumper(FlagEnum.case_one) == [1]
-    assert dumper(FlagEnum.case_one | FlagEnum.case_two) == [3]
-    assert dumper(FlagEnum.case_one & FlagEnum.case_two) == []
-    assert dumper(FlagEnum.case_two & FlagEnum.case_three) == [2]
-    assert dumper(~FlagEnum.case_two) == [1, 4, 8]
-
-
-def test_flag_enum_loader_with_disallowed_compounds(strict_coercion, debug_trail):
-    retort = TestRetort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(ByNameEnumMappingGenerator(), allow_compound=False),
-        ]
-    )
-
-    loader = retort.get_loader(FlagEnum)
-    assert loader(["case_one"]) == FlagEnum.case_one
-    assert loader(["case_one", "case_two"]) == FlagEnum.case_three
-
-    variants = ["case_one", "case_two", "case_four", "case_eight"]
     raises_exc(
-        MultipleBadVariant(
-            allowed_values=variants,
-            input_value=["case_one", "case_three"],
-            invalid_values=["case_three"]
-        ),
-        lambda: loader(["case_one", "case_three"])
-    )
-
-
-def test_flag_enum_dumper_with_disallowed_compounds(strict_coercion, debug_trail):
-    retort = TestRetort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(ByNameEnumMappingGenerator(), allow_compound=False),
-        ]
-    )
-
-    dumper = retort.get_dumper(FlagEnum)
-    assert dumper(FlagEnum.case_one) == ["case_one"]
-    assert dumper(FlagEnum.case_one | FlagEnum.case_two) == ["case_one", "case_two"]
-    assert dumper(FlagEnum.case_three) == ["case_one", "case_two"]
-
-
-def test_flag_enum_loader_with_allowed_single_value(strict_coercion, debug_trail):
-    retort = TestRetort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(ByNameEnumMappingGenerator(), allow_single_value=True),
-        ]
-    )
-
-    loader = retort.get_loader(FlagEnum)
-    assert loader("case_one") == FlagEnum.case_one
-    assert loader("case_three") == FlagEnum.case_three
-
-
-def test_flag_enum_loader_with_disallowed_duplicates(strict_coercion, debug_trail):
-    retort = TestRetort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(ByNameEnumMappingGenerator(), allow_duplicates=False),
-        ]
-    )
-
-    loader = retort.get_loader(FlagEnum)
-    raises_exc(
-        ValueLoadError(
-            f"Duplicates in {FlagEnum} loader are not allowed",
-            ["case_one", "case_one"]
-        ),
-        lambda: loader(["case_one", "case_one"])
-    )
-
-
-def test_flag_enum_loader_with_name_mapping(strict_coercion, debug_trail):
-    retort = TestRetort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(
-                ByNameEnumMappingGenerator(
-                    name_style=NameStyle.CAMEL,
-                    map={
-                        "case_one": "case_1",
-                        #  maps given by cases have higher priority that
-                        #  ones given by names
-                        FlagEnum.case_one: "caseFirst",
-                        "case_two": "caseSecond",
-                        "ignore": "ignore"
-                    }
+        with_cause(
+            NoSuitableProvider(f'Cannot produce loader for type {FlagEnumWithSkippedBit}'),
+            with_notes(
+                with_notes(
+                    CannotProvide(
+                        'Cannot create a loader for flag with skipped bits',
+                        is_terminal=True,
+                        is_demonstrative=True,
+                    ),
+                    f"Location: type={FlagEnumWithSkippedBit}",
                 ),
+            )
+        ),
+        lambda: retort.get_loader(FlagEnumWithSkippedBit)
+    )
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(f'Cannot produce loader for type {FlagEnumWithNegativeValue}'),
+            with_notes(
+                with_notes(
+                    CannotProvide(
+                        'Cannot create a loader for flag with negative values',
+                        is_terminal=True,
+                        is_demonstrative=True,
+                    ),
+                    f"Location: type={FlagEnumWithNegativeValue}",
+                ),
+            )
+        ),
+        lambda: retort.get_loader(FlagEnumWithNegativeValue)
+    )
+
+
+@parametrize_bool("allow_single_value", "allow_duplicates", "allow_compound")
+def test_flag_by_list_using_name(
+    strict_coercion, debug_trail, allow_single_value, allow_duplicates, allow_compound
+):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            flag_by_list_using_name(
+                allow_single_value=allow_single_value,
+                allow_duplicates=allow_duplicates,
+                allow_compound=allow_compound
+            )
+        ]
+    )
+
+    loader = retort.get_loader(FlagEnum)
+    assert loader(["CASE_ONE"]) == FlagEnum.CASE_ONE
+    assert loader(["CASE_ONE_ALIAS"]) == FlagEnum.CASE_ONE
+    assert loader(["CASE_ONE", "CASE_TWO"]) == FlagEnum.CASE_THREE
+    assert loader(["CASE_ONE", "CASE_FOUR"]) == FlagEnum.CASE_ONE | FlagEnum.CASE_FOUR
+
+    if allow_compound:
+        variants = ["CASE_ONE", "CASE_ONE_ALIAS", "CASE_TWO", "CASE_THREE", "CASE_FOUR", "CASE_EIGHT"]
+    else:
+        variants = ["CASE_ONE", "CASE_ONE_ALIAS", "CASE_TWO", "CASE_FOUR", "CASE_EIGHT"]
+
+    raises_exc(
+        MultipleBadVariant(
+            allowed_values=variants,
+            invalid_values=["NOT_EXISTING_CASE_1", "NOT_EXISTING_CASE_2"],
+            input_value=["CASE_ONE", "NOT_EXISTING_CASE_1", "NOT_EXISTING_CASE_2"],
+        ),
+        lambda: loader(["CASE_ONE", "NOT_EXISTING_CASE_1", "NOT_EXISTING_CASE_2"])
+    )
+
+    data_with_compound = ["CASE_THREE"]
+    if allow_compound:
+        assert loader(data_with_compound) == FlagEnum.CASE_THREE
+    else:
+        raises_exc(
+            MultipleBadVariant(
+                allowed_values=variants,
+                invalid_values=["CASE_THREE"],
+                input_value=data_with_compound,
+            ),
+            lambda: loader(data_with_compound)
+        )
+
+    data_with_duplicates = ["CASE_ONE", "CASE_ONE"]
+    if allow_duplicates:
+        assert loader(data_with_duplicates) == FlagEnum.CASE_ONE
+    else:
+        raises_exc(
+            DuplicatedValues(data_with_duplicates),
+            lambda: loader(data_with_duplicates)
+        )
+
+    single_value = "CASE_ONE"
+    if allow_single_value:
+        assert loader(single_value) == FlagEnum.CASE_ONE
+    else:
+        raises_exc(
+            TypeLoadError(
+                expected_type=Union[Iterable[str], Iterable[int]],
+                input_value=single_value
+            ),
+            lambda: loader(single_value)
+        )
+
+    dumper = retort.get_dumper(FlagEnum)
+    assert dumper(FlagEnum.CASE_ONE) == ["CASE_ONE"]
+    assert dumper(FlagEnum.CASE_ONE & FlagEnum.CASE_TWO) == []
+    assert dumper(~FlagEnum.CASE_TWO) == ["CASE_ONE", "CASE_FOUR", "CASE_EIGHT"]
+
+    compound = FlagEnum.CASE_THREE
+    compound_with_non_compound = FlagEnum.CASE_FOUR | FlagEnum.CASE_THREE
+    if allow_compound:
+        assert dumper(compound) == ["CASE_THREE"]
+        assert dumper(compound_with_non_compound) == ["CASE_THREE", "CASE_FOUR"]
+    else:
+        assert dumper(compound) == ["CASE_ONE", "CASE_TWO"]
+        assert dumper(compound_with_non_compound) == ["CASE_ONE", "CASE_TWO", "CASE_FOUR"]
+
+
+def test_flag_by_list_using_name_with_mapping(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            flag_by_list_using_name(
+                name_style=NameStyle.CAMEL,
+                map={
+                    "CASE_ONE": "CASE_1",
+                    #  maps given by cases have higher priority that
+                    #  ones given by names.
+                    "CASE_ONE_ALIAS": "caseOneAlias",
+                    #  aliases and maps given by them work only on loading.
+                    #  on dumping they have no effect
+
+                    #  maps given by aliases work as usual even there is
+                    #  already a map given by name or case.
+                    FlagEnum.CASE_ONE: "caseFirst",
+                    "CASE_TWO": "caseSecond",
+                    "ignore": "ignore"
+                }
             ),
         ]
     )
 
     loader = retort.get_loader(FlagEnum)
-    assert loader(["caseFirst"]) == FlagEnum.case_one
-    assert loader(["caseFirst", "caseSecond"]) == FlagEnum.case_three
-    assert loader(["caseThree"]) == FlagEnum.case_three
+    assert loader(["caseFirst"]) == FlagEnum.CASE_ONE
+    assert loader(["caseOneAlias"]) == FlagEnum.CASE_ONE
+    assert loader(["caseFirst", "caseSecond"]) == FlagEnum.CASE_THREE
+    assert loader(["caseThree"]) == FlagEnum.CASE_THREE
 
-    variants = ["caseFirst", "caseSecond", "caseThree", "caseFour", "caseEight"]
+    variants = ["caseFirst", "caseOneAlias", "caseSecond", "caseThree", "caseFour", "caseEight"]
     raises_exc(
         MultipleBadVariant(
             allowed_values=variants,
-            input_value=["caseThree", "case_two", "case_1"],
-            invalid_values=["case_two", "case_1"]
+            input_value=["caseThree", "CASE_TWO", "case_1"],
+            invalid_values=["CASE_TWO", "case_1"]
         ),
-        lambda: loader(["caseThree", "case_two", "case_1"])
-    )
-
-
-def test_flag_enum_dumper_with_name_mapping(strict_coercion, debug_trail):
-    retort = TestRetort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-        recipe=[
-            FlagProvider(
-                ByNameEnumMappingGenerator(
-                    name_style=NameStyle.CAMEL,
-                    map={
-                        "case_one": "case_1",
-                        #  maps given by cases themselves have higher priority that
-                        #  ones given by their names
-                        FlagEnum.case_one: "caseFirst",
-                        "case_two": "caseSecond",
-                        "ignore": "ignore"
-                    }
-                ),
-            ),
-        ]
+        lambda: loader(["caseThree", "CASE_TWO", "case_1"])
     )
 
     dumper = retort.get_dumper(FlagEnum)
-    assert dumper(FlagEnum.case_one) == ["caseFirst"]
-    assert dumper(FlagEnum.case_two) == ["caseSecond"]
-    assert dumper(FlagEnum.case_one | FlagEnum.case_two) == ["caseThree"]
+    assert dumper(FlagEnum.CASE_ONE) == ["caseFirst"]
+    assert dumper(FlagEnum.CASE_TWO) == ["caseSecond"]
+    assert dumper(FlagEnum.CASE_ONE | FlagEnum.CASE_TWO) == ["caseThree"]
