@@ -42,6 +42,7 @@ def test_is_snake_style():
 def check_conversion(style, maps):
     for src, trg in maps.items():
         assert convert_snake_style(src, style) == trg
+        assert convert_snake_style(src.upper(), style) == trg
 
 
 def test_snake_case_conversion():
@@ -54,7 +55,6 @@ def test_snake_case_conversion():
             '_abc_xyz': '_abcxyz',
             '_abc_xyz_': '_abcxyz_',
             '_abc__xyz_': '_abcxyz_',
-            'ABC_XYZ': 'abcxyz',
         }
     )
     check_conversion(
@@ -66,7 +66,6 @@ def test_snake_case_conversion():
             '_abc_xyz': '_abcXyz',
             '_abc_xyz_': '_abcXyz_',
             '_abc__xyz_': '_abcXyz_',
-            'ABC_XYZ': 'abcXyz',
         }
     )
     check_conversion(
@@ -78,7 +77,6 @@ def test_snake_case_conversion():
             '_abc_xyz': '_AbcXyz',
             '_abc_xyz_': '_AbcXyz_',
             '_abc__xyz_': '_AbcXyz_',
-            'ABC_XYZ': 'AbcXyz',
         }
     )
     check_conversion(
@@ -90,7 +88,6 @@ def test_snake_case_conversion():
             '_abc_xyz': '_ABCXYZ',
             '_abc_xyz_': '_ABCXYZ_',
             '_abc__xyz_': '_ABCXYZ_',
-            'ABC_XYZ': 'ABCXYZ',
         }
     )
 
@@ -103,7 +100,6 @@ def test_snake_case_conversion():
             '_abc_xyz': '_abc.xyz',
             '_abc_xyz_': '_abc.xyz_',
             '_abc__xyz_': '_abc..xyz_',
-            'ABC_XYZ': 'abc.xyz',
         }
     )
     check_conversion(
@@ -115,7 +111,6 @@ def test_snake_case_conversion():
             '_abc_xyz': '_abc.Xyz',
             '_abc_xyz_': '_abc.Xyz_',
             '_abc__xyz_': '_abc..Xyz_',
-            'ABC_XYZ': 'abc.Xyz',
         }
     )
     check_conversion(
@@ -127,7 +122,6 @@ def test_snake_case_conversion():
             '_abc_xyz': '_Abc.Xyz',
             '_abc_xyz_': '_Abc.Xyz_',
             '_abc__xyz_': '_Abc..Xyz_',
-            'ABC_XYZ': 'Abc.Xyz',
         }
     )
     check_conversion(
@@ -139,7 +133,6 @@ def test_snake_case_conversion():
             '_abc_xyz': '_ABC.XYZ',
             '_abc_xyz_': '_ABC.XYZ_',
             '_abc__xyz_': '_ABC..XYZ_',
-            'ABC_XYZ': 'ABC.XYZ',
         }
     )
 
