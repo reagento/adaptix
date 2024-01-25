@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from enum import Enum, EnumMeta, Flag
 from functools import reduce
 from operator import or_
-from typing import Any, Hashable, Iterable, List, Mapping, MutableMapping, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Hashable, Iterable, List, Mapping, Optional, Sequence, Type, TypeVar, Union, final
 
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
@@ -22,12 +22,19 @@ FlagT = TypeVar("FlagT", bound=Flag)
 
 class BaseEnumMappingGenerator(ABC):
     @abstractmethod
-    def generate_for_dumping(self, cases: Mapping[str, EnumT]) -> Mapping[EnumT, Hashable]:
+    def _generate_mapping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, Hashable]:
         ...
 
-    @abstractmethod
-    def generate_for_loading(self, cases: Mapping[str, EnumT]) -> Mapping[str, Hashable]:
-        ...
+    @final
+    def generate_for_dumping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, Hashable]:
+        return self._generate_mapping(cases)
+
+    @final
+    def generate_for_loading(self, cases: Iterable[EnumT]) -> Mapping[Hashable, EnumT]:
+        return {
+            mapping_result: case
+            for case, mapping_result in self._generate_mapping(cases).items()
+        }
 
 
 class ByNameEnumMappingGenerator(BaseEnumMappingGenerator):
@@ -39,10 +46,10 @@ class ByNameEnumMappingGenerator(BaseEnumMappingGenerator):
         self._name_style = name_style
         self._map = map if map is not None else {}
 
-    def generate_for_dumping(self, cases: Mapping[str, EnumT]) -> Mapping[EnumT, str]:
+    def _generate_mapping(self, cases: Iterable[EnumT]) -> Mapping[EnumT, str]:
         result = {}
 
-        for case in cases.values():
+        for case in cases:
             if case in self._map:
                 mapped = self._map[case]
             elif case.name in self._map:
@@ -52,22 +59,6 @@ class ByNameEnumMappingGenerator(BaseEnumMappingGenerator):
             else:
                 mapped = case.name
             result[case] = mapped
-
-        return result
-
-    def generate_for_loading(self, cases: Mapping[str, EnumT]) -> Mapping[str, EnumT]:
-        result: MutableMapping[str, EnumT] = {}
-
-        for name, case in cases.items():
-            if case in self._map and case not in result.values():
-                mapped = self._map[case]
-            elif name in self._map:
-                mapped = self._map[name]
-            elif self._name_style:
-                mapped = convert_snake_style(name, self._name_style)
-            else:
-                mapped = name
-            result[mapped] = case
 
         return result
 
@@ -253,8 +244,8 @@ class FlagByExactValueProvider(BaseEnumProvider):
         return _enum_exact_value_dumper
 
 
-def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Mapping[str, FlagT]:
-    return {name: case for name, case in enum.__members__.items() if not math.log2(case.value) % 1}
+def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Sequence[FlagT]:
+    return [case for case in enum.__members__.values() if not math.log2(case.value) % 1]
 
 
 @for_predicate(FlagEnumLSC())
@@ -271,9 +262,9 @@ class FlagByListProvider(BaseEnumProvider):
         self._allow_duplicates = allow_duplicates
         self._allow_compound = allow_compound
 
-    def _get_cases(self, enum: Type[FlagT]) -> Mapping[str, FlagT]:
+    def _get_cases(self, enum: Type[FlagT]) -> Sequence[FlagT]:
         if self._allow_compound:
-            return enum.__members__
+            return list(enum.__members__.values())
         return _extract_non_compound_cases_from_flag(enum)
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:  # noqa: CCR001
@@ -326,20 +317,17 @@ class FlagByListProvider(BaseEnumProvider):
 
         cases = self._get_cases(enum)
         need_to_reverse = self._allow_compound and cases != _extract_non_compound_cases_from_flag(enum)
+        if need_to_reverse:
+            cases = tuple(reversed(cases))
 
         mapping = self._mapping_generator.generate_for_dumping(cases)
-
-        if need_to_reverse:
-            cases_sequence = tuple(reversed(cases.values()))
-        else:
-            cases_sequence = tuple(cases.values())
 
         zero_case = enum(0)
 
         def flag_dumper(value: Flag) -> Sequence[Hashable]:
             result: List[Hashable] = []
             cases_sum = zero_case
-            for case in cases_sequence:
+            for case in cases:
                 if case in value and case not in cases_sum:
                     cases_sum |= case
                     result.append(mapping[case])

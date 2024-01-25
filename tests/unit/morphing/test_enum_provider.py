@@ -36,7 +36,7 @@ class MyEnumWithMissingHook(Enum):
 
 
 class FlagEnum(Flag):
-    CASE_ONE = CASE_ONE_ALIAS = auto()
+    CASE_ONE = auto()
     CASE_TWO = auto()
     CASE_THREE = CASE_ONE | CASE_TWO
     CASE_FOUR = auto()
@@ -262,14 +262,13 @@ def test_flag_by_list_using_name(
 
     loader = retort.get_loader(FlagEnum)
     assert loader(["CASE_ONE"]) == FlagEnum.CASE_ONE
-    assert loader(["CASE_ONE_ALIAS"]) == FlagEnum.CASE_ONE
     assert loader(["CASE_ONE", "CASE_TWO"]) == FlagEnum.CASE_THREE
     assert loader(["CASE_ONE", "CASE_FOUR"]) == FlagEnum.CASE_ONE | FlagEnum.CASE_FOUR
 
     if allow_compound:
-        variants = ["CASE_ONE", "CASE_ONE_ALIAS", "CASE_TWO", "CASE_THREE", "CASE_FOUR", "CASE_EIGHT"]
+        variants = ["CASE_ONE", "CASE_TWO", "CASE_THREE", "CASE_FOUR", "CASE_EIGHT"]
     else:
-        variants = ["CASE_ONE", "CASE_ONE_ALIAS", "CASE_TWO", "CASE_FOUR", "CASE_EIGHT"]
+        variants = ["CASE_ONE", "CASE_TWO", "CASE_FOUR", "CASE_EIGHT"]
 
     raises_exc(
         MultipleBadVariant(
@@ -340,12 +339,6 @@ def test_flag_by_list_using_name_with_mapping(strict_coercion, debug_trail):
                     "CASE_ONE": "CASE_1",
                     #  maps given by cases have higher priority that
                     #  ones given by names.
-                    "CASE_ONE_ALIAS": "caseOneAlias",
-                    #  aliases and maps given by them work only on loading.
-                    #  on dumping they have no effect
-
-                    #  maps given by aliases work as usual even there is
-                    #  already a map given by name or case.
                     FlagEnum.CASE_ONE: "caseFirst",
                     "CASE_TWO": "caseSecond",
                     "ignore": "ignore"
@@ -356,18 +349,17 @@ def test_flag_by_list_using_name_with_mapping(strict_coercion, debug_trail):
 
     loader = retort.get_loader(FlagEnum)
     assert loader(["caseFirst"]) == FlagEnum.CASE_ONE
-    assert loader(["caseOneAlias"]) == FlagEnum.CASE_ONE
     assert loader(["caseFirst", "caseSecond"]) == FlagEnum.CASE_THREE
     assert loader(["caseThree"]) == FlagEnum.CASE_THREE
 
-    variants = ["caseFirst", "caseOneAlias", "caseSecond", "caseThree", "caseFour", "caseEight"]
+    variants = ["caseFirst", "caseSecond", "caseThree", "caseFour", "caseEight"]
     raises_exc(
         MultipleBadVariant(
             allowed_values=variants,
-            input_value=["caseThree", "CASE_TWO", "case_1"],
-            invalid_values=["CASE_TWO", "case_1"]
+            input_value=["caseThree", "CASE_TWO", "CASE_1"],
+            invalid_values=["CASE_TWO", "CASE_1"]
         ),
-        lambda: loader(["caseThree", "CASE_TWO", "case_1"])
+        lambda: loader(["caseThree", "CASE_TWO", "CASE_1"])
     )
 
     dumper = retort.get_dumper(FlagEnum)
