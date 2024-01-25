@@ -46,7 +46,7 @@ How to setup the repository
    .. code-block:: bash
 
       just lint
-      just test-all-p
+      just test-all
 
 
 Tools overview
@@ -72,6 +72,22 @@ Sync all dependencies. Need to run if committed dependencies are changed.
 .. code-block:: bash
 
     just venv-sync
+
+Compile dependencies
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Compile raw dependencies (``requirements/raw/*``)
+into file with locked versions via `pip-tools <https://github.com/jazzband/pip-tools>`_.
+
+.. code-block:: bash
+
+    just deps-compile
+
+By default, ``pip-tools`` try keep previous locked version. To upgrade locked dependencies use:
+
+.. code-block:: bash
+
+    just deps-compile-upgrade
 
 
 Linting

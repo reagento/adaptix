@@ -290,7 +290,9 @@ Precise type hint is ``Callable[[T], Mapping[str, Any]]``.
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/unknown_fields_processing/on_dumping_extractor.py
 
-Output mapping keys have not collide with keys of dumped model. Otherwise the result is not guaranteed.
+.. custom-non-guaranteed-behavior::
+
+  Output mapping keys have not collide with keys of dumped model. Otherwise the result is not guaranteed.
 
 Mapping to list
 -----------------------------------
