@@ -1,5 +1,5 @@
 from enum import Enum, Flag, IntEnum, auto
-from typing import Iterable, Union
+from typing import Iterable
 
 import pytest
 from tests_helpers import TestRetort, parametrize_bool, raises_exc, with_cause, with_notes
@@ -14,7 +14,7 @@ from adaptix import (
     flag_by_list_using_name,
     loader,
 )
-from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider, FlagByExactValueProvider
+from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider
 from adaptix._internal.morphing.load_error import DuplicatedValues, MultipleBadVariant, OutOfRange, TypeLoadError
 from adaptix.load_error import BadVariantError, MsgError
 
@@ -308,7 +308,7 @@ def test_flag_by_list_using_name(
     else:
         raises_exc(
             TypeLoadError(
-                expected_type=Union[Iterable[str], Iterable[int]],
+                expected_type=Iterable[str],
                 input_value=single_value
             ),
             lambda: loader(single_value)

@@ -293,7 +293,7 @@ class FlagByListProvider(BaseEnumProvider):
             else:
                 if not allow_single_value:
                     raise TypeLoadError(
-                        expected_type=Union[Iterable[str], Iterable[int]],
+                        expected_type=Iterable[str],
                         input_value=data
                     )
                 process_data = (data,)
