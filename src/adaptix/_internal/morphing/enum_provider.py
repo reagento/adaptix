@@ -102,20 +102,19 @@ class BaseFlagProvider(LoaderProvider, DumperProvider, ABC):
     pass
 
 
-def _enum_name_dumper(data):
-    return data.name
-
-
 class EnumNameProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world by their name"""
+    def __init__(self, mapping_generator: BaseEnumMappingGenerator):
+        self._mapping_generator = mapping_generator
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
-        variants = [case.name for case in enum]
+        mapping = self._mapping_generator.generate_for_loading(enum.__members__.values())
+        variants = list(mapping.keys())
 
         def enum_loader(data):
             try:
-                return enum[data]
+                return mapping[data]
             except KeyError:
                 raise BadVariantError(variants, data) from None
             except TypeError:
@@ -124,7 +123,13 @@ class EnumNameProvider(BaseEnumProvider):
         return enum_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return _enum_name_dumper
+        enum = get_type_from_request(request)
+        mapping = self._mapping_generator.generate_for_dumping(enum.__members__.values())
+
+        def enum_dumper(data: Enum) -> str:
+            return mapping[data]
+
+        return enum_dumper
 
 
 class EnumValueProvider(BaseEnumProvider):

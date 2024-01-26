@@ -318,16 +318,30 @@ def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provid
     )
 
 
-def enum_by_name(*preds: EnumPred) -> Provider:
+def enum_by_name(
+    *preds: EnumPred,
+    name_style: Optional[NameStyle] = None,
+    map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
+) -> Provider:
     """Provider that represents enum members to the outside world by their name.
 
     :param preds: Predicates specifying where the provider should be used.
         The provider will be applied if any predicates meet the conditions,
         if no predicates are passed, the provider will be used for all Enums.
         See :ref:`predicate-system` for details.
+    :param name_style: Name style for representing members to the outside world.
+        If it is set, the provider will automatically convert the names of enum members to the specified convention.
+    :param map: Mapping for representing members to the outside world.
+        If it is set, the provider will use it to rename members individually;
+        its keys can either be member names as strings or member instances.
     :return: desired provider
     """
-    return _wrap_enum_provider(preds, EnumNameProvider())
+    return _wrap_enum_provider(
+        preds,
+        EnumNameProvider(
+            ByNameEnumMappingGenerator(name_style=name_style, map=map)
+        )
+    )
 
 
 def enum_by_exact_value(*preds: EnumPred) -> Provider:
