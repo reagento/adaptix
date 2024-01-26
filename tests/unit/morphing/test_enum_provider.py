@@ -1,5 +1,5 @@
 from enum import Enum, Flag, IntEnum, auto
-from typing import Iterable, Union
+from typing import Iterable, Mapping, Union
 
 import pytest
 from tests_helpers import TestRetort, parametrize_bool, raises_exc, with_cause, with_notes
@@ -15,7 +15,13 @@ from adaptix import (
     loader,
 )
 from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider
-from adaptix._internal.morphing.load_error import DuplicatedValues, MultipleBadVariant, OutOfRange, TypeLoadError
+from adaptix._internal.morphing.load_error import (
+    DuplicatedValues,
+    ExcludedTypeLoadError,
+    MultipleBadVariant,
+    OutOfRange,
+    TypeLoadError,
+)
 from adaptix.load_error import BadVariantError, MsgError
 
 
@@ -255,7 +261,7 @@ def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
 
 
 @parametrize_bool("allow_single_value", "allow_duplicates", "allow_compound")
-def test_flag_by_list_using_name(
+def test_flag_by_member_names(
     strict_coercion, debug_trail, allow_single_value, allow_duplicates, allow_compound
 ):
     retort = Retort(
@@ -323,9 +329,8 @@ def test_flag_by_list_using_name(
 
 
 @parametrize_bool("allow_single_value", "allow_duplicates", "allow_compound")
-@pytest.mark.parametrize("data", ["CASE_ONE", {"CASE_ONE": 1}, 1, None])
-def test_flag_by_list_using_name_with_bad_types(
-    strict_coercion, debug_trail, data, allow_single_value, allow_duplicates, allow_compound
+def test_flag_by_member_names_with_bad_types(
+    strict_coercion, debug_trail, allow_single_value, allow_duplicates, allow_compound
 ):
     retort = Retort(
         strict_coercion=strict_coercion,
@@ -342,29 +347,35 @@ def test_flag_by_list_using_name_with_bad_types(
     loader = retort.get_loader(FlagEnum)
     expected_type = Union[str, Iterable[str]] if allow_single_value else Iterable[str]
 
-    def raises_type_exc(data):
-        return raises_exc(
-            TypeLoadError(expected_type, data),
-            lambda: loader(data)
+    dict_data = {"CASE_ONE": 1}
+    if strict_coercion:
+        raises_exc(
+            ExcludedTypeLoadError(expected_type, Mapping, dict_data),
+            lambda: loader(dict_data)
+        )
+    else:
+        assert loader(dict_data) == FlagEnum.CASE_ONE
+
+    str_data = "CASE_ONE"
+    if allow_single_value:
+        assert loader(str_data) == loader([str_data])
+    else:
+        raises_exc(
+            TypeLoadError(expected_type, str_data),
+            lambda: loader(str_data)
         )
 
-    if isinstance(data, dict):
-        if strict_coercion:
-            raises_type_exc(data)
-        else:
-            assert loader(data) == loader(data.keys())
-
-    elif isinstance(data, str):
-        if allow_single_value:
-            assert loader(data) == loader([data])
-        else:
-            raises_type_exc(data)
-
-    else:
-        raises_type_exc(data)
+    raises_exc(
+        TypeLoadError(expected_type, 1),
+        lambda: loader(1)
+    )
+    raises_exc(
+        TypeLoadError(expected_type, None),
+        lambda: loader(None)
+    )
 
 
-def test_flag_by_list_using_name_with_mapping(strict_coercion, debug_trail):
+def test_flag_by_member_names_with_mapping(strict_coercion, debug_trail):
     retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,

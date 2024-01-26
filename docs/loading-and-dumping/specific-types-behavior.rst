@@ -118,7 +118,7 @@ Flag subclasses
 
 Flag members by default are represented by their value. Note that flags with skipped
 bits and negative values are not supported, so it is highly recommended to define flag
-values via enum.auto() instead of manually specifying them.
+values via ``enum.auto()`` instead of manually specifying them.
 Besides, adaptix provides another way to process flags: by list using their names.
 See: :func:`.flag_by_member_names` for details.
 

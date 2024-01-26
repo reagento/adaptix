@@ -1,3 +1,4 @@
+import collections
 import math
 from abc import ABC, abstractmethod
 from enum import Enum, EnumMeta, Flag
@@ -13,11 +14,20 @@ from ..provider.loc_stack_filtering import DirectMediator, LastLocMapChecker
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import LocMap, StrictCoercionRequest, TypeHintLoc, get_type_from_request
 from ..type_tools import is_subclass_soft, normalize_type
-from .load_error import BadVariantError, DuplicatedValues, MsgError, MultipleBadVariant, OutOfRange, TypeLoadError
+from .load_error import (
+    BadVariantError,
+    DuplicatedValues,
+    ExcludedTypeLoadError,
+    MsgError,
+    MultipleBadVariant,
+    OutOfRange,
+    TypeLoadError,
+)
 from .request_cls import DumperRequest, LoaderRequest
 
 EnumT = TypeVar("EnumT", bound=Enum)
 FlagT = TypeVar("FlagT", bound=Flag)
+CollectionsMapping = collections.abc.Mapping
 
 
 class BaseEnumMappingGenerator(ABC):
@@ -293,8 +303,8 @@ class FlagByListProvider(BaseFlagProvider):
             data_type = type(data)
 
             if isinstance(data, Iterable) and data_type is not str:
-                if strict_coercion and data_type is dict:
-                    raise TypeLoadError(expected_type, data)
+                if strict_coercion and isinstance(data, CollectionsMapping):
+                    raise ExcludedTypeLoadError(expected_type, Mapping, data)
                 process_data = tuple(data)
             else:
                 if not allow_single_value or data_type is not str:
