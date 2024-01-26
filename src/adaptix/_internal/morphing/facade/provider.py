@@ -362,7 +362,7 @@ def flag_by_exact_value(*preds: EnumPred) -> Provider:
 
     :param preds: Predicates specifying where the provider should be used.
         The provider will be applied if any predicates meet the conditions,
-        if no predicates are passed, the provider will be used for all Enums.
+        if no predicates are passed, the provider will be used for all Flags.
         See :ref:`predicate-system` for details.
     :return: desired provider
     """

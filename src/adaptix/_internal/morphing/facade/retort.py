@@ -43,7 +43,6 @@ from ..concrete_provider import (
 )
 from ..constant_length_tuple_provider import ConstantLengthTupleProvider
 from ..dict_provider import DefaultDictProvider, DictProvider
-from ..enum_provider import EnumExactValueProvider, FlagByExactValueProvider
 from ..generic_provider import (
     LiteralProvider,
     NewTypeUnwrappingProvider,
@@ -60,7 +59,7 @@ from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSie
 from ..name_layout.provider import BuiltinNameLayoutProvider
 from ..provider_template import ABCProxy
 from ..request_cls import DumperRequest, LoaderRequest
-from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
+from .provider import as_is_dumper, as_is_loader, dumper, enum_by_exact_value, flag_by_exact_value, loader, name_mapping
 
 
 class FilledRetort(OperatingRetort, ABC):
@@ -79,8 +78,8 @@ class FilledRetort(OperatingRetort, ABC):
         IsoFormatProvider(time),
         SecondsTimedeltaProvider(),
 
-        FlagByExactValueProvider(),
-        EnumExactValueProvider(),  # it has higher priority than scalar types for Enum with mixins
+        flag_by_exact_value(),
+        enum_by_exact_value(),  # it has higher priority than scalar types for Enum with mixins
 
         INT_LOADER_PROVIDER,
         as_is_dumper(int),

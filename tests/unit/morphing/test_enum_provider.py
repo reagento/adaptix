@@ -1,5 +1,5 @@
 from enum import Enum, Flag, IntEnum, auto
-from typing import Iterable
+from typing import Iterable, Union
 
 import pytest
 from tests_helpers import TestRetort, parametrize_bool, raises_exc, with_cause, with_notes
@@ -204,6 +204,16 @@ def test_flag_by_exact_value(strict_coercion, debug_trail):
     )
 
 
+@pytest.mark.parametrize('data', [{"data": 1}, "1", [1], None])
+def test_flag_by_exact_value_loader_with_bad_types(strict_coercion, debug_trail, data):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    )
+    loader = retort.get_loader(FlagEnum)
+    raises_exc(TypeLoadError(int, data), lambda: loader(data))
+
+
 def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
     retort = Retort(
         strict_coercion=strict_coercion,
@@ -284,11 +294,7 @@ def test_flag_by_list_using_name(
         assert loader(data_with_compound) == FlagEnum.CASE_THREE
     else:
         raises_exc(
-            MultipleBadVariant(
-                allowed_values=variants,
-                invalid_values=["CASE_THREE"],
-                input_value=data_with_compound,
-            ),
+            MultipleBadVariant(variants, ["CASE_THREE"], data_with_compound),
             lambda: loader(data_with_compound)
         )
 
@@ -299,18 +305,6 @@ def test_flag_by_list_using_name(
         raises_exc(
             DuplicatedValues(data_with_duplicates),
             lambda: loader(data_with_duplicates)
-        )
-
-    single_value = "CASE_ONE"
-    if allow_single_value:
-        assert loader(single_value) == FlagEnum.CASE_ONE
-    else:
-        raises_exc(
-            TypeLoadError(
-                expected_type=Iterable[str],
-                input_value=single_value
-            ),
-            lambda: loader(single_value)
         )
 
     dumper = retort.get_dumper(FlagEnum)
@@ -326,6 +320,48 @@ def test_flag_by_list_using_name(
     else:
         assert dumper(compound) == ["CASE_ONE", "CASE_TWO"]
         assert dumper(compound_with_non_compound) == ["CASE_ONE", "CASE_TWO", "CASE_FOUR"]
+
+
+@parametrize_bool("allow_single_value", "allow_duplicates", "allow_compound")
+@pytest.mark.parametrize("data", ["CASE_ONE", {"CASE_ONE": 1}, 1, None])
+def test_flag_by_list_using_name_with_bad_types(
+    strict_coercion, debug_trail, data, allow_single_value, allow_duplicates, allow_compound
+):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            flag_by_list_using_name(
+                allow_single_value=allow_single_value,
+                allow_duplicates=allow_duplicates,
+                allow_compound=allow_compound
+            )
+        ]
+    )
+
+    loader = retort.get_loader(FlagEnum)
+    expected_type = Union[str, Iterable[str]] if allow_single_value else Iterable[str]
+
+    def raises_type_exc(data):
+        return raises_exc(
+            TypeLoadError(expected_type, data),
+            lambda: loader(data)
+        )
+
+    if isinstance(data, dict):
+        if strict_coercion:
+            raises_type_exc(data)
+        else:
+            assert loader(data) == loader(data.keys())
+
+    elif isinstance(data, str):
+        if allow_single_value:
+            assert loader(data) == loader([data])
+        else:
+            raises_type_exc(data)
+
+    else:
+        raises_type_exc(data)
 
 
 def test_flag_by_list_using_name_with_mapping(strict_coercion, debug_trail):
