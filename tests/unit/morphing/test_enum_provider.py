@@ -11,7 +11,7 @@ from adaptix import (
     Retort,
     dumper,
     enum_by_value,
-    flag_by_list_using_name,
+    flag_by_member_names,
     loader,
 )
 from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider
@@ -262,7 +262,7 @@ def test_flag_by_list_using_name(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            flag_by_list_using_name(
+            flag_by_member_names(
                 allow_single_value=allow_single_value,
                 allow_duplicates=allow_duplicates,
                 allow_compound=allow_compound
@@ -331,7 +331,7 @@ def test_flag_by_list_using_name_with_bad_types(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            flag_by_list_using_name(
+            flag_by_member_names(
                 allow_single_value=allow_single_value,
                 allow_duplicates=allow_duplicates,
                 allow_compound=allow_compound
@@ -369,7 +369,7 @@ def test_flag_by_list_using_name_with_mapping(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            flag_by_list_using_name(
+            flag_by_member_names(
                 name_style=NameStyle.CAMEL,
                 map={
                     "CASE_ONE": "CASE_1",

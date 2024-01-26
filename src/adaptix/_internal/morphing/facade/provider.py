@@ -359,6 +359,8 @@ def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Pr
 
 def flag_by_exact_value(*preds: EnumPred) -> Provider:
     """Provider that represents flag members to the outside world by their value without any processing.
+    It does not support flags with skipped bits and negative values (it is recommended to use enum.auto() to define flag
+    values instead of manually specifying them).
 
     :param preds: Predicates specifying where the provider should be used.
         The provider will be applied if any predicates meet the conditions,
@@ -369,7 +371,7 @@ def flag_by_exact_value(*preds: EnumPred) -> Provider:
     return _wrap_enum_provider(preds, FlagByExactValueProvider())
 
 
-def flag_by_list_using_name(
+def flag_by_member_names(
     *preds: EnumPred,
     allow_single_value: bool = False,
     allow_duplicates: bool = True,
@@ -377,20 +379,29 @@ def flag_by_list_using_name(
     name_style: Optional[NameStyle] = None,
     map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
 ) -> Provider:
-    """Provider that represents flag members to the outside world by their name.
+    """Provider that represents flag members to the outside world by list of their names.
+
+    Loader takes a flag members name list and returns united flag member
+    (given members combined by operator ``|``, namely `bitwise or`).
+
+    Dumper takes a flag member and returns a list of names of flag members, included in the given flag member.
 
     :param preds: Predicates specifying where the provider should be used.
         The provider will be applied if any predicates meet the conditions,
         if no predicates are passed, the provider will be used for all Flags.
         See :ref:`predicate-system` for details.
-    :param allow_single_value: Specifies if it is allowed to call loader by single value.
-        If it is allowed and loader called by single value, it will be interpreted as a list with single element.
-    :param allow_duplicates: Specifies if it is allowed to call loader by list with non-unique elements.
-        If it is not allowed and loader by list with non-unique elements, ValueError will be raised.
-    :param allow_compound: Specifies if it is allowed for loader to accept compound values and
-        if it is allowed for dumper to return compound values.
-    :param name_style: Name style that represents values to the outside world
-    :param map: Mapping for values to represent them to the outside world
+    :param allow_single_value: Allows calling the loader with a single value.
+        If this is allowed, singlular values are treated as one element list.
+    :param allow_duplicates: Allows calling the loader with a list containing non-unique elements.
+        Unless this is allowed, loader will raise :exc:`.DuplicatedValues` in that case.
+    :param allow_compound: Allows the loader to accept names of compound members
+        (e.g. ``WHITE = RED | GREEN | BLUE``) and the dumper to return names of compound members.
+        If this is allowed, dumper will use compound members names to serialize value.
+    :param name_style: Name style for representing members to the outside world.
+        If it is set, the provider will automatically convert the names of all flag members to the specified convention.
+    :param map: Mapping for representing members to the outside world.
+        If it is set, the provider will use it to rename members individually;
+        its keys can either be member names as strings or member instances.
     :return: desired provider
     """
     return _wrap_enum_provider(
