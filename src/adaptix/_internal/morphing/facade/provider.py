@@ -359,8 +359,8 @@ def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Pr
 
 def flag_by_exact_value(*preds: EnumPred) -> Provider:
     """Provider that represents flag members to the outside world by their value without any processing.
-    It does not support flags with skipped bits and negative values (it is recommended to use enum.auto() to define flag
-    values instead of manually specifying them).
+    It does not support flags with skipped bits and negative values (it is recommended to use ``enum.auto()``
+    to define flag values instead of manually specifying them).
 
     :param preds: Predicates specifying where the provider should be used.
         The provider will be applied if any predicates meet the conditions,
