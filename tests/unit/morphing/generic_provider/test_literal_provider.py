@@ -1,9 +1,11 @@
+from enum import Enum
 from typing import Literal
 from uuid import uuid4
 
 import pytest
 from tests_helpers import TestRetort, raises_exc
 
+from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
 from adaptix._internal.morphing.generic_provider import LiteralProvider
 from adaptix._internal.morphing.load_error import BadVariantError
 
@@ -13,6 +15,7 @@ def retort():
     return TestRetort(
         recipe=[
             LiteralProvider(),
+            EnumExactValueProvider()
         ]
     )
 
@@ -88,3 +91,24 @@ def test_strict_coercion(retort, debug_trail):
         BadVariantError({False, True, rnd_val2}, 1),
         lambda: bool_loader(1)
     )
+
+
+def test_loader_with_enums(retort, strict_coercion, debug_trail):
+    class Enum1(Enum):
+        CASE1 = 1
+        CASE2 = 2
+
+    class Enum2(Enum):
+        CASE1 = 1
+        CASE2 = 2
+
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_loader(
+        Literal[Enum1.CASE1, Enum2.CASE2, 10]
+    )
+
+    assert loader(1) == Enum1.CASE1
+    assert loader(2) == Enum2.CASE2
+    assert loader(10) == 10

@@ -3,7 +3,7 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, Collection, Iterable, Literal, Union
+from typing import Any, Callable, Collection, Iterable, Literal, Optional, Type, Union
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -99,6 +99,52 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             return set(args)
         return tuple(args)
 
+    def _get_enum_loader(
+        self, mediator: Mediator, request: LoaderRequest, enum_class: Type[Enum]
+    ) -> Callable[[Any], Enum]:
+        return mediator.mandatory_provide(
+            LoaderRequest(
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=enum_class),
+                    )
+                )
+            ),
+            lambda x: f'Cannot create loader for {enum_class}. Loader for literal cannot be created',
+        )
+
+    def _get_enum_dumper(
+        self, mediator: Mediator, request: DumperRequest, enum_class: Type[Enum]
+    ) -> Callable[[Any], Enum]:
+        return mediator.mandatory_provide(
+            DumperRequest(
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=enum_class),
+                    )
+                )
+            ),
+            lambda x: f'Cannot create dumper for {enum_class}. Dumper for literal cannot be created',
+        )
+
+    def _combined_enums_loader(self, data, loaders: Collection, allowed_values: Collection) -> Optional[Enum]:
+        for loader in loaders:
+            try:
+                result = loader(data)
+                if result in allowed_values:
+                    return result
+            except BadVariantError:
+                pass
+        return None
+
+    def _with_enum_loader(self, func: Callable, loaders: Collection, allowed_values: Collection):
+        def wrapped(data):
+            enum_data = self._combined_enums_loader(data, loaders, allowed_values)
+            if enum_data:
+                return enum_data
+            return func(data)
+        return wrapped
+
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(get_type_from_request(request))
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
@@ -106,12 +152,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         cleaned_args = [strip_annotated(arg) for arg in norm.args]
 
         enum_cases = [arg for arg in cleaned_args if isinstance(arg, Enum)]
-        if enum_cases:
-            raise CannotProvide(
-                f"Enum inside Literal isn't supported yet, found {enum_cases}",
-                is_terminal=True,
-                is_demonstrative=True
-            )
+        enum_loaders = [self._get_enum_loader(mediator, request, type(case)) for case in enum_cases]
+        with_enum_loader = self._with_enum_loader
 
         if strict_coercion and any(
             isinstance(arg, bool) or _is_exact_zero_or_one(arg)
@@ -128,7 +170,9 @@ class LiteralProvider(LoaderProvider, DumperProvider):
                     return data
                 raise BadVariantError(allowed_values_repr, data)
 
-            return literal_loader_sc
+            return with_enum_loader(
+                literal_loader_sc, enum_loaders, allowed_values_with_types
+            ) if enum_cases else literal_loader_sc
 
         allowed_values = self._get_allowed_values_collection(cleaned_args)
         allowed_values_repr = set(cleaned_args)
@@ -136,22 +180,24 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         def literal_loader(data):
             if data in allowed_values:
                 return data
+
             raise BadVariantError(allowed_values_repr, data)
 
-        return literal_loader
+        return with_enum_loader(literal_loader, enum_loaders, allowed_values) if enum_cases else literal_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm = try_normalize_type(get_type_from_request(request))
         cleaned_args = [strip_annotated(arg) for arg in norm.args]
         enum_cases = [arg for arg in cleaned_args if isinstance(arg, Enum)]
-        if enum_cases:
-            raise CannotProvide(
-                f"Enum inside Literal isn't supported yet, found {enum_cases}",
-                is_terminal=True,
-                is_demonstrative=True
-            )
+        enum_dumper_factory = self._get_enum_dumper
 
-        return as_is_stub
+        def literal_dumper(data):
+            if isinstance(data, Enum):
+                enum_dumper = enum_dumper_factory(mediator, request, type(data))
+                return enum_dumper(data)
+            return data
+
+        return literal_dumper if enum_cases else as_is_stub
 
 
 @for_predicate(Union)
