@@ -1,6 +1,7 @@
 import itertools
 import re
 import string
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Collection, Container, Dict, Iterable, List, Mapping, Set, Tuple, TypeVar, Union
 
@@ -244,11 +245,10 @@ class NameSanitizer:
 def compile_closure_with_globals_capturing(
     compiler: ClosureCompiler,
     code_gen_hook: CodeGenHook,
-    namespace: Dict[str, object],
-    body_builders: Iterable[CodeBuilder],
+    namespace: Mapping[str, object],
     *,
     closure_name: str,
-    closure_params: str,
+    closure_code: str,
     file_name: str,
 ):
     builder = CodeBuilder()
@@ -264,11 +264,7 @@ def compile_closure_with_globals_capturing(
             builder += f"{name} = {value_literal}"
 
     builder.empty_line()
-
-    with builder(f"def {closure_name}({closure_params}):"):
-        for body_builder in body_builders:
-            builder.extend(body_builder)
-
+    builder += closure_code
     builder += f"return {closure_name}"
 
     code_gen_hook(
@@ -300,3 +296,15 @@ def has_collect_policy(crown: InpCrown) -> bool:
     if isinstance(crown, (InpFieldCrown, InpNoneCrown)):
         return False
     raise TypeError
+
+
+class ModelLoaderGen(ABC):
+    @abstractmethod
+    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+        ...
+
+
+class ModelDumperGen(ABC):
+    @abstractmethod
+    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+        ...

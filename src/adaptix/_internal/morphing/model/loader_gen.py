@@ -1,11 +1,10 @@
 import collections.abc
 import contextlib
 from dataclasses import dataclass
-from typing import Dict, List, Mapping, Optional, Set
+from typing import Dict, List, Mapping, Optional, Set, Tuple
 
-from ...code_generator import CodeGenerator
 from ...code_tools.code_builder import CodeBuilder
-from ...code_tools.context_namespace import ContextNamespace
+from ...code_tools.context_namespace import BuiltinContextNamespace, ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory
 from ...common import Loader
 from ...compat import CompatExceptionGroup
@@ -23,6 +22,7 @@ from ..load_error import (
     NoRequiredItemsError,
     TypeLoadError,
 )
+from .basic_gen import ModelLoaderGen
 from .crown_definitions import (
     BranchInpCrown,
     CrownPath,
@@ -168,8 +168,8 @@ class ModelLoaderProps:
     use_default_for_omitted: bool = True
 
 
-class ModelLoaderGen(CodeGenerator):
-    """ModelLoaderGen generates code that extracts raw values from input data,
+class BuiltinModelLoaderGen(ModelLoaderGen):
+    """BuiltinModelLoaderGen generates code that extracts raw values from input data,
     calls loaders and stores results to variables.
     """
 
@@ -226,7 +226,8 @@ class ModelLoaderGen(CodeGenerator):
             return False
         return field.is_optional and not self._is_extra_target(field)
 
-    def produce_code(self, ctx_namespace: ContextNamespace) -> CodeBuilder:
+    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+        ctx_namespace = BuiltinContextNamespace()
         state = self._create_state(ctx_namespace)
 
         for field_id, loader in self._field_loaders.items():
@@ -278,7 +279,11 @@ class ModelLoaderGen(CodeGenerator):
 
         self._gen_constructor_call(state)
         self._gen_header(state)
-        return state.builder
+
+        builder = CodeBuilder()
+        with builder(f'def {closure_name}(data):'):
+            builder.extend(state.builder)
+        return builder.string(), ctx_namespace.dict
 
     def _gen_header(self, state: GenState):
         header_builder = CodeBuilder()

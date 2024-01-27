@@ -1,10 +1,9 @@
 import contextlib
 from string import Template
-from typing import Dict, Mapping, NamedTuple
+from typing import Dict, Mapping, NamedTuple, Tuple
 
-from ...code_generator import CodeGenerator
 from ...code_tools.code_builder import CodeBuilder
-from ...code_tools.context_namespace import ContextNamespace
+from ...code_tools.context_namespace import BuiltinContextNamespace, ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
 from ...common import Dumper
 from ...compat import CompatExceptionGroup
@@ -20,6 +19,7 @@ from ...model_tools.definitions import (
 )
 from ...special_cases_optimization import as_is_stub, get_default_clause
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
+from .basic_gen import ModelDumperGen
 from .crown_definitions import (
     CrownPath,
     CrownPathElem,
@@ -93,7 +93,7 @@ class ElementExpr(NamedTuple):
     can_inline: bool
 
 
-class ModelDumperGen(CodeGenerator):
+class BuiltinModelDumperGen(ModelDumperGen):
     def __init__(
         self,
         shape: OutputShape,
@@ -114,9 +114,10 @@ class ModelDumperGen(CodeGenerator):
         self._id_to_field: Dict[str, OutputField] = {field.id: field for field in self._shape.fields}
         self._model_identity = model_identity
 
-    def produce_code(self, ctx_namespace: ContextNamespace) -> CodeBuilder:
-        builder = CodeBuilder()
+    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+        body_builder = CodeBuilder()
 
+        ctx_namespace = BuiltinContextNamespace()
         ctx_namespace.add('CompatExceptionGroup', CompatExceptionGroup)
         ctx_namespace.add("append_trail", append_trail)
         ctx_namespace.add("extend_trail", extend_trail)
@@ -124,25 +125,25 @@ class ModelDumperGen(CodeGenerator):
             ctx_namespace.add(self._v_dumper(self._id_to_field[field_id]), dumper)
 
         if self._debug_trail == DebugTrail.ALL:
-            builder('errors = []')
-            builder.empty_line()
+            body_builder('errors = []')
+            body_builder.empty_line()
 
         if any(field.is_optional for field in self._shape.fields):
-            builder("opt_fields = {}")
-            builder.empty_line()
+            body_builder("opt_fields = {}")
+            body_builder.empty_line()
 
         for field in self._shape.fields:
             if not self._is_extra_target(field):
                 self._gen_field_extraction(
-                    builder, ctx_namespace, field,
+                    body_builder, ctx_namespace, field,
                     on_access_error="pass",
                     on_access_ok_req=f"{self._v_field(field)} = $expr",
                     on_access_ok_opt=f"opt_fields[{field.id!r}] = $expr",
                 )
 
-        self._gen_extra_extraction(builder, ctx_namespace)
+        self._gen_extra_extraction(body_builder, ctx_namespace)
 
-        state = self._create_state(builder, ctx_namespace)
+        state = self._create_state(body_builder, ctx_namespace)
 
         if not self._gen_root_crown_dispatch(state, self._name_layout.crown):
             raise TypeError
@@ -155,7 +156,11 @@ class ModelDumperGen(CodeGenerator):
             )
 
         self._gen_header(state)
-        return builder
+
+        builder = CodeBuilder()
+        with builder(f'def {closure_name}(data):'):
+            builder.extend(body_builder)
+        return builder.string(), ctx_namespace.dict
 
     def _is_extra_target(self, field: OutputField) -> bool:
         return field.id in self._extra_targets

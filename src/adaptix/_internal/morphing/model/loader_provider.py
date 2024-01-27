@@ -1,20 +1,20 @@
 from typing import Mapping
 
-from ...code_generator import CodeGenerator
+from adaptix._internal.provider.fields import input_field_to_loc_map
+
 from ...code_tools.compiler import BasicClosureCompiler
-from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Loader
 from ...definitions import DebugTrail
 from ...model_tools.definitions import InputShape
 from ...provider.essential import CannotProvide, Mediator
-from ...provider.fields import input_field_to_loc_map
 from ...provider.request_cls import DebugTrailRequest, StrictCoercionRequest, TypeHintLoc
 from ...provider.shape_provider import InputShapeRequest, provide_generic_resolved_shape
-from ..model.loader_gen import ModelLoaderGen, ModelLoaderProps
+from ..model.loader_gen import BuiltinModelLoaderGen, ModelLoaderProps
 from ..provider_template import LoaderProvider
 from ..request_cls import LoaderRequest
 from .basic_gen import (
     CodeGenHookRequest,
+    ModelLoaderGen,
     NameSanitizer,
     compile_closure_with_globals_capturing,
     get_extra_targets_at_crown,
@@ -40,8 +40,8 @@ class ModelLoaderProvider(LoaderProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         loader_gen = self._fetch_model_loader_gen(mediator, request)
-        ctx_namespace = BuiltinContextNamespace()
-        loader_code_builder = loader_gen.produce_code(ctx_namespace)
+        closure_name = self._get_closure_name(request)
+        loader_code, loader_namespace = loader_gen.produce_code(closure_name=closure_name)
 
         try:
             code_gen_hook = mediator.delegating_provide(CodeGenHookRequest(loc_stack=request.loc_stack))
@@ -51,14 +51,13 @@ class ModelLoaderProvider(LoaderProvider):
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
             code_gen_hook=code_gen_hook,
-            namespace=ctx_namespace.dict,
-            body_builders=[loader_code_builder],
-            closure_name=self._get_closure_name(request),
-            closure_params='data',
+            namespace=loader_namespace,
+            closure_code=loader_code,
+            closure_name=closure_name,
             file_name=self._get_file_name(request),
         )
 
-    def _fetch_model_loader_gen(self, mediator: Mediator, request: LoaderRequest) -> CodeGenerator:
+    def _fetch_model_loader_gen(self, mediator: Mediator, request: LoaderRequest) -> ModelLoaderGen:
         shape = self._fetch_shape(mediator, request)
         name_layout = self._fetch_name_layout(mediator, request, shape)
         shape = self._process_shape(shape, name_layout)
@@ -97,8 +96,8 @@ class ModelLoaderProvider(LoaderProvider):
         name_layout: InputNameLayout,
         field_loaders: Mapping[str, Loader],
         model_identity: str,
-    ) -> CodeGenerator:
-        return ModelLoaderGen(
+    ) -> ModelLoaderGen:
+        return BuiltinModelLoaderGen(
             shape=shape,
             name_layout=name_layout,
             debug_trail=debug_trail,

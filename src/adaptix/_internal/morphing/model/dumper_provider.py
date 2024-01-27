@@ -1,19 +1,19 @@
 from typing import Mapping
 
-from ...code_generator import CodeGenerator
+from adaptix._internal.provider.fields import output_field_to_loc_map
+
 from ...code_tools.compiler import BasicClosureCompiler
-from ...code_tools.context_namespace import BuiltinContextNamespace
 from ...common import Dumper
 from ...definitions import DebugTrail
 from ...model_tools.definitions import OutputShape
 from ...provider.essential import CannotProvide, Mediator
-from ...provider.fields import output_field_to_loc_map
 from ...provider.request_cls import DebugTrailRequest, TypeHintLoc
 from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
 from ..provider_template import DumperProvider
 from ..request_cls import DumperRequest
 from .basic_gen import (
     CodeGenHookRequest,
+    ModelDumperGen,
     NameSanitizer,
     compile_closure_with_globals_capturing,
     get_extra_targets_at_crown,
@@ -24,7 +24,7 @@ from .basic_gen import (
     stub_code_gen_hook,
 )
 from .crown_definitions import OutputNameLayout, OutputNameLayoutRequest
-from .dumper_gen import ModelDumperGen
+from .dumper_gen import BuiltinModelDumperGen
 
 
 class ModelDumperProvider(DumperProvider):
@@ -33,8 +33,8 @@ class ModelDumperProvider(DumperProvider):
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         dumper_gen = self._fetch_model_dumper_gen(mediator, request)
-        ctx_namespace = BuiltinContextNamespace()
-        dumper_code_builder = dumper_gen.produce_code(ctx_namespace)
+        closure_name = self._get_closure_name(request)
+        dumper_code, dumper_namespace = dumper_gen.produce_code(closure_name=closure_name)
 
         try:
             code_gen_hook = mediator.delegating_provide(CodeGenHookRequest(loc_stack=request.loc_stack))
@@ -44,14 +44,13 @@ class ModelDumperProvider(DumperProvider):
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
             code_gen_hook=code_gen_hook,
-            namespace=ctx_namespace.dict,
-            body_builders=[dumper_code_builder],
-            closure_name=self._get_closure_name(request),
-            closure_params='data',
+            namespace=dumper_namespace,
+            closure_code=dumper_code,
+            closure_name=closure_name,
             file_name=self._get_file_name(request),
         )
 
-    def _fetch_model_dumper_gen(self, mediator: Mediator, request: DumperRequest) -> CodeGenerator:
+    def _fetch_model_dumper_gen(self, mediator: Mediator, request: DumperRequest) -> ModelDumperGen:
         shape = self._fetch_shape(mediator, request)
         name_layout = self._fetch_name_layout(mediator, request, shape)
         shape = self._process_shape(shape, name_layout)
@@ -86,8 +85,8 @@ class ModelDumperProvider(DumperProvider):
         name_layout: OutputNameLayout,
         fields_dumpers: Mapping[str, Dumper],
         model_identity: str,
-    ) -> CodeGenerator:
-        return ModelDumperGen(
+    ) -> ModelDumperGen:
+        return BuiltinModelDumperGen(
             shape=shape,
             name_layout=name_layout,
             debug_trail=debug_trail,
