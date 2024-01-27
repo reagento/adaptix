@@ -1,0 +1,1 @@
+Added support of mapping for :func:`.enum_by_name` provider

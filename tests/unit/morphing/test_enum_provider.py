@@ -10,11 +10,12 @@ from adaptix import (
     NoSuitableProvider,
     Retort,
     dumper,
+    enum_by_name,
     enum_by_value,
     flag_by_member_names,
     loader,
 )
-from adaptix._internal.morphing.enum_provider import EnumExactValueProvider, EnumNameProvider
+from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
 from adaptix._internal.morphing.load_error import (
     DuplicatedValues,
     ExcludedTypeLoadError,
@@ -59,11 +60,11 @@ class FlagEnumWithNegativeValue(Flag):
 
 
 def test_name_provider(strict_coercion, debug_trail):
-    retort = TestRetort(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            EnumNameProvider(),
+            enum_by_name()
         ],
     )
 
@@ -88,6 +89,28 @@ def test_name_provider(strict_coercion, debug_trail):
     dumper = retort.get_dumper(MyEnum)
 
     assert dumper(MyEnum.V1) == "V1"
+
+
+@pytest.mark.parametrize("mapping_options", [{"name_style": NameStyle.CAMEL}, {"map": {"V1": "v1"}}])
+def test_name_provider_with_mapping(strict_coercion, debug_trail, mapping_options):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            enum_by_name(**mapping_options)
+        ]
+    )
+
+    loader = retort.get_loader(MyEnum)
+    assert loader("v1") == MyEnum.V1
+
+    raises_exc(
+        BadVariantError(["v1"], "V1"),
+        lambda: loader("V1")
+    )
+
+    dumper = retort.get_dumper(MyEnum)
+    assert dumper(MyEnum.V1) == "v1"
 
 
 @pytest.mark.parametrize('enum_cls', [MyEnum, MyEnumWithMissingHook])
