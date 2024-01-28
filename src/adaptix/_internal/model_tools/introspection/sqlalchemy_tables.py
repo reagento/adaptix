@@ -51,8 +51,6 @@ def _get_sqlalchemy_type_for_relationship(relationship, type_hints):
 
 
 def _get_sqlalchemy_default(column_default):
-    if not column_default:
-        return NoDefault()
     if isinstance(column_default, CallableColumnDefault) and not _is_context_sensitive(column_default):
         return DefaultFactory(factory=column_default.arg.__wrapped__)
     if isinstance(column_default, ScalarElementColumnDefault):
@@ -61,11 +59,10 @@ def _get_sqlalchemy_default(column_default):
 
 
 def _get_sqlalchemy_required(column):
-    if column.default or column.nullable or column.server_default:
-        return False
-    if column.primary_key and column.autoincrement and column.type.python_type is int:
-        return False
-    return True
+    return not (
+        column.default or column.nullable or column.server_default
+        or (column.primary_key and column.autoincrement and column.type.python_type is int)
+    )
 
 
 def _get_sqlalchemy_input_shape(tp, columns, relationships, type_hints) -> InputShape:
