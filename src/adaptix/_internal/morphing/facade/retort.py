@@ -14,13 +14,7 @@ from ...provider.essential import Provider, Request
 from ...provider.loc_stack_filtering import P
 from ...provider.provider_template import ValueProvider
 from ...provider.request_cls import DebugTrailRequest, LocMap, LocStack, StrictCoercionRequest, TypeHintLoc
-from ...provider.shape_provider import (
-    ATTRS_SHAPE_PROVIDER,
-    CLASS_INIT_SHAPE_PROVIDER,
-    DATACLASS_SHAPE_PROVIDER,
-    NAMED_TUPLE_SHAPE_PROVIDER,
-    TYPED_DICT_SHAPE_PROVIDER,
-)
+from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...retort.operating_retort import OperatingRetort
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
@@ -165,12 +159,7 @@ class FilledRetort(OperatingRetort, ABC):
         ModelLoaderProvider(),
         ModelDumperProvider(),
 
-        NAMED_TUPLE_SHAPE_PROVIDER,
-        TYPED_DICT_SHAPE_PROVIDER,
-        DATACLASS_SHAPE_PROVIDER,
-        ATTRS_SHAPE_PROVIDER,
-
-        CLASS_INIT_SHAPE_PROVIDER,
+        BUILTIN_SHAPE_PROVIDER,
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),

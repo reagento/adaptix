@@ -20,6 +20,7 @@ from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import create_loc_stack_checker
 from ..type_tools.generic_resolver import GenericResolver, MembersStorage
 from .provider_template import ProviderWithAttachableLSC
+from .provider_wrapper import ConcatProvider
 from .request_cls import LocatedRequest, TypeHintLoc
 from .static_provider import StaticProvider, static_provision_action
 
@@ -37,6 +38,9 @@ class OutputShapeRequest(LocatedRequest[OutputShape]):
 class ShapeProvider(StaticProvider):
     def __init__(self, introspector: ShapeIntrospector):
         self._introspector = introspector
+
+    def __repr__(self):
+        return f"{type(self)}({self._introspector})"
 
     @static_provision_action
     def _provide_input_shape(self, mediator: Mediator, request: InputShapeRequest) -> InputShape:
@@ -65,11 +69,14 @@ class ShapeProvider(StaticProvider):
         return shape.output
 
 
-NAMED_TUPLE_SHAPE_PROVIDER = ShapeProvider(get_named_tuple_shape)
-TYPED_DICT_SHAPE_PROVIDER = ShapeProvider(get_typed_dict_shape)
-DATACLASS_SHAPE_PROVIDER = ShapeProvider(get_dataclass_shape)
-CLASS_INIT_SHAPE_PROVIDER = ShapeProvider(get_class_init_shape)
-ATTRS_SHAPE_PROVIDER = ShapeProvider(get_attrs_shape)
+BUILTIN_SHAPE_PROVIDER = ConcatProvider(
+    ShapeProvider(get_named_tuple_shape),
+    ShapeProvider(get_typed_dict_shape),
+    ShapeProvider(get_dataclass_shape),
+    ShapeProvider(get_attrs_shape),
+    # class init introspection must be the last
+    ShapeProvider(get_class_init_shape),
+)
 
 
 class PropertyExtender(StaticProvider):
