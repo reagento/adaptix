@@ -30,7 +30,7 @@ def all_dc_fields(cls) -> Dict[str, DCField]:
     return cls.__dataclass_fields__
 
 
-def _get_dc_default(field: DCField) -> Default:
+def _get_default(field: DCField) -> Default:
     if field.default is not DC_MISSING:
         return DefaultValue(field.default)
     if field.default_factory is not DC_MISSING:
@@ -39,7 +39,7 @@ def _get_dc_default(field: DCField) -> Default:
 
 
 def _create_inp_field_from_dc_fields(dc_field: DCField, type_hints):
-    default = _get_dc_default(dc_field)
+    default = _get_default(dc_field)
     return InputField(
         type=type_hints[dc_field.name],
         id=dc_field.name,
@@ -51,10 +51,10 @@ def _create_inp_field_from_dc_fields(dc_field: DCField, type_hints):
 
 
 if HAS_PY_310:
-    def _get_dc_param_kind(dc_field: DCField) -> ParamKind:
+    def _get_param_kind(dc_field: DCField) -> ParamKind:
         return ParamKind.KW_ONLY if dc_field.kw_only else ParamKind.POS_OR_KW
 else:
-    def _get_dc_param_kind(dc_field: DCField) -> ParamKind:
+    def _get_param_kind(dc_field: DCField) -> ParamKind:
         return ParamKind.POS_OR_KW
 
 
@@ -91,7 +91,7 @@ def get_dataclass_shape(tp) -> FullShape:
                 Param(
                     field_id=field_id,
                     name=field_id,
-                    kind=_get_dc_param_kind(name_to_dc_field[field_id]),
+                    kind=_get_param_kind(name_to_dc_field[field_id]),
                 )
                 for field_id in init_params
             ),
@@ -106,7 +106,7 @@ def get_dataclass_shape(tp) -> FullShape:
                 OutputField(
                     type=type_hints[dc_field.name],
                     id=dc_field.name,
-                    default=_get_dc_default(name_to_dc_field[dc_field.name]),
+                    default=_get_default(name_to_dc_field[dc_field.name]),
                     accessor=create_attr_accessor(attr_name=dc_field.name, is_required=True),
                     metadata=dc_field.metadata,
                     original=dc_field,

@@ -37,11 +37,11 @@ def _get_td_hints(tp):
 
 
 if HAS_PY_39:
-    def _td_make_requirement_determinant(tp):
+    def _make_requirement_determinant(tp):
         required_fields = tp.__required_keys__
         return lambda name: name in required_fields
 else:
-    def _td_make_requirement_determinant(tp):
+    def _make_requirement_determinant(tp):
         warnings.warn(TypedDictAt38Warning(), stacklevel=3)
         is_total = tp.__total__
         return lambda name: is_total
@@ -53,7 +53,7 @@ def get_typed_dict_shape(tp) -> FullShape:
     if not is_typed_dict_class(tp):
         raise IntrospectionImpossible
 
-    requirement_determinant = _td_make_requirement_determinant(tp)
+    requirement_determinant = _make_requirement_determinant(tp)
     type_hints = _get_td_hints(tp)
     return Shape(
         input=InputShape(
