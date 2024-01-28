@@ -1,5 +1,5 @@
 from inspect import getfullargspec
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import inspect
 from sqlalchemy.sql.schema import CallableColumnDefault, ScalarElementColumnDefault
@@ -40,6 +40,8 @@ def _get_sqlalchemy_type_for_column(column, type_hints):
     try:
         return type_hints[column.name].__args__[0]
     except KeyError:
+        if column.nullable:
+            return Optional[column.type.python_type]
         return column.type.python_type
 
 

@@ -1,7 +1,7 @@
-from typing import Union
+from typing import Optional
 from unittest.mock import ANY
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column
 
 from adaptix._internal.model_tools.definitions import (
@@ -31,11 +31,12 @@ class MyTable(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str]
-    nullable_field: Mapped[Union[int, None]]
+    nullable_field: Mapped[Optional[int]]
     field_with_default: Mapped[int] = mapped_column(default=2)
     field_with_default_factory: Mapped[int] = mapped_column(default=default_factory)
     field_with_default_context_factory: Mapped[int] = mapped_column(default=lambda ctx: 2)
-    field_with_old_syntax = Column(String())
+    field_with_old_syntax = Column(String(), nullable=False)
+    nullable_field_with_old_syntax = Column(Integer(), nullable=True)
 
 
 def test_shape_getter():
@@ -64,7 +65,7 @@ def test_shape_getter():
                         original=ANY
                     ),
                     InputField(
-                        type=Union[int, None],
+                        type=Optional[int],
                         id="nullable_field",
                         default=NoDefault(),
                         is_required=False,
@@ -98,6 +99,14 @@ def test_shape_getter():
                     InputField(
                         type=str,
                         id="field_with_old_syntax",
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata={},
+                        original=ANY
+                    ),
+                    InputField(
+                        type=Optional[int],
+                        id="nullable_field_with_old_syntax",
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
@@ -141,6 +150,11 @@ def test_shape_getter():
                         name='field_with_old_syntax',
                         kind=ParamKind.KW_ONLY,
                     ),
+                    Param(
+                        field_id='nullable_field_with_old_syntax',
+                        name='nullable_field_with_old_syntax',
+                        kind=ParamKind.KW_ONLY,
+                    ),
                 )
             ),
             output=OutputShape(
@@ -162,7 +176,7 @@ def test_shape_getter():
                         accessor=create_attr_accessor('text', is_required=True),
                     ),
                     OutputField(
-                        type=Union[int, None],
+                        type=Optional[int],
                         id="nullable_field",
                         default=NoDefault(),
                         metadata={},
@@ -200,6 +214,14 @@ def test_shape_getter():
                         metadata={},
                         original=ANY,
                         accessor=create_attr_accessor('field_with_old_syntax', is_required=True),
+                    ),
+                    OutputField(
+                        type=Optional[int],
+                        id="nullable_field_with_old_syntax",
+                        default=NoDefault(),
+                        metadata={},
+                        original=ANY,
+                        accessor=create_attr_accessor('nullable_field_with_old_syntax', is_required=True),
                     ),
                 ),
                 overriden_types=frozenset()
