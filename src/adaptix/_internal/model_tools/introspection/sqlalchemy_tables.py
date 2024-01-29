@@ -21,9 +21,9 @@ from adaptix._internal.model_tools.definitions import (
 from adaptix._internal.type_tools import get_all_type_hints
 
 
-class ColumnPropertyWrapper:
-    def __init__(self, column_property):
-        self.column_property = column_property
+class ColumnWrapper:
+    def __init__(self, column):
+        self.column = column
 
 
 def _is_context_sensitive(default):
@@ -83,7 +83,7 @@ def _get_input_shape(tp, columns, relationships, type_hints) -> InputShape:
                 default=_get_default(column.default),
                 is_required=_get_input_required(column),
                 metadata=column.info,
-                original=ColumnPropertyWrapper(column_property=column)
+                original=ColumnWrapper(column=column)
             )
         )
         params.append(
@@ -129,7 +129,7 @@ def _get_output_shape(columns, relationships, type_hints) -> OutputShape:
             type=_get_type_for_column(column, type_hints),
             default=_get_default(column.default),
             metadata=column.info,
-            original=ColumnPropertyWrapper(column_property=column),
+            original=ColumnWrapper(column=column),
             accessor=create_attr_accessor(column.name, is_required=_get_output_required(column))
         )
         for column in columns
