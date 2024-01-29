@@ -26,6 +26,10 @@ class ColumnPropertyWrapper:
         self.column_property = column_property
 
 
+def _get_relationship_name(relationship):
+    return str(relationship).split(".")[1]
+
+
 def _is_context_sensitive(default):
     try:
         wrapped_callable = default.arg.__wrapped__
@@ -68,44 +72,53 @@ def _get_sqlalchemy_required(column):
 
 
 def _get_sqlalchemy_input_shape(tp, columns, relationships, type_hints) -> InputShape:
-    param_name_to_field = {
-        column.name: InputField(
-            id=column.name,
-            type=_get_sqlalchemy_type_for_column(column, type_hints),
-            default=_get_sqlalchemy_default(column.default),
-            is_required=_get_sqlalchemy_required(column),
-            metadata=column.info,
-            original=ColumnPropertyWrapper(column_property=column)
+    fields = []
+    params = []
+    for column in columns:
+        fields.append(
+            InputField(
+                id=column.name,
+                type=_get_sqlalchemy_type_for_column(column, type_hints),
+                default=_get_sqlalchemy_default(column.default),
+                is_required=_get_sqlalchemy_required(column),
+                metadata=column.info,
+                original=ColumnPropertyWrapper(column_property=column)
+            )
         )
-        for column in columns
-    }
-
-    for relationship in relationships:
-        name = str(relationship).split(".")[1]
-        param_name_to_field[name] = InputField(
-            id=name,
-            type=_get_sqlalchemy_type_for_relationship(relationship, type_hints),
-            default=NoDefault(),
-            is_required=False,
-            metadata={},
-            original=relationship
-        )
-
-    fields = tuple(param_name_to_field.values())
-
-    return InputShape(
-        constructor=tp,
-        fields=fields,
-        overriden_types=frozenset(),
-        kwargs=None,
-        params=tuple(
+        params.append(
             Param(
                 field_id=column.name,
                 name=column.name,
                 kind=ParamKind.KW_ONLY
             )
-            for column in columns
         )
+
+    for relationship in relationships:
+        name = _get_relationship_name(relationship)
+        fields.append(
+            InputField(
+                id=name,
+                type=_get_sqlalchemy_type_for_relationship(relationship, type_hints),
+                default=NoDefault(),
+                is_required=False,
+                metadata={},
+                original=relationship
+            )
+        )
+        params.append(
+            Param(
+                field_id=name,
+                name=name,
+                kind=ParamKind.KW_ONLY
+            )
+        )
+
+    return InputShape(
+        constructor=tp,
+        fields=tuple(fields),
+        overriden_types=frozenset(),
+        kwargs=None,
+        params=tuple(params)
     )
 
 
@@ -117,7 +130,7 @@ def _get_sqlalchemy_output_shape(columns, relationships, type_hints) -> OutputSh
             default=_get_sqlalchemy_default(column.default),
             metadata=column.info,
             original=ColumnPropertyWrapper(column_property=column),
-            accessor=create_attr_accessor(column.name, is_required=True)
+            accessor=create_attr_accessor(column.name, is_required=not column.nullable)
         )
         for column in columns
     ]

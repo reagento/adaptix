@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import List, Optional
 from unittest.mock import ANY
 
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import Mapped, declarative_base, mapped_column
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 
 from adaptix._internal.model_tools.definitions import (
     DefaultFactory,
@@ -37,6 +37,20 @@ class MyTable(Base):
     field_with_default_context_factory: Mapped[int] = mapped_column(default=lambda ctx: 2)
     field_with_old_syntax = Column(String(), nullable=False)
     nullable_field_with_old_syntax = Column(Integer(), nullable=True)
+
+    fk_id: Mapped[Optional[int]] = mapped_column(ForeignKey("MyTableFK.id"))
+    fk: Mapped[Optional["MyTableFK"]] = relationship(
+        "MyTableFK", back_populates="my_table_objs"
+    )
+
+
+class MyTableFK(Base):
+    __tablename__ = "MyTableFK"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    my_table_objs: Mapped[List[MyTable]] = relationship(
+        MyTable, back_populates="fk"
+    )
 
 
 def test_shape_getter():
@@ -112,6 +126,22 @@ def test_shape_getter():
                         metadata={},
                         original=ANY
                     ),
+                    InputField(
+                        type=Optional[int],
+                        id="fk_id",
+                        default=NoDefault(),
+                        is_required=False,
+                        metadata={},
+                        original=ANY
+                    ),
+                    InputField(
+                        type=Optional[MyTableFK],
+                        id="fk",
+                        default=NoDefault(),
+                        is_required=False,
+                        metadata={},
+                        original=MyTable.fk.property
+                    ),
                 ),
                 overriden_types=frozenset(),
                 params=(
@@ -155,6 +185,16 @@ def test_shape_getter():
                         name='nullable_field_with_old_syntax',
                         kind=ParamKind.KW_ONLY,
                     ),
+                    Param(
+                        field_id='fk_id',
+                        name='fk_id',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id='fk',
+                        name='fk',
+                        kind=ParamKind.KW_ONLY,
+                    ),
                 )
             ),
             output=OutputShape(
@@ -181,7 +221,7 @@ def test_shape_getter():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('nullable_field', is_required=True),
+                        accessor=create_attr_accessor('nullable_field', is_required=False),
                     ),
                     OutputField(
                         type=int,
@@ -221,7 +261,23 @@ def test_shape_getter():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('nullable_field_with_old_syntax', is_required=True),
+                        accessor=create_attr_accessor('nullable_field_with_old_syntax', is_required=False),
+                    ),
+                    OutputField(
+                        type=Optional[int],
+                        id="fk_id",
+                        default=NoDefault(),
+                        metadata={},
+                        original=ANY,
+                        accessor=create_attr_accessor('fk_id', is_required=False),
+                    ),
+                    OutputField(
+                        type=Optional[MyTableFK],
+                        id="fk",
+                        default=NoDefault(),
+                        metadata={},
+                        original=MyTable.fk.property,
+                        accessor=create_attr_accessor('fk', is_required=False),
                     ),
                 ),
                 overriden_types=frozenset()
