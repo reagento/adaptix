@@ -26,10 +26,6 @@ class ColumnPropertyWrapper:
         self.column_property = column_property
 
 
-def _get_relationship_name(relationship):
-    return str(relationship).split(".")[1]
-
-
 def _is_context_sensitive(default):
     try:
         wrapped_callable = default.arg.__wrapped__
@@ -40,7 +36,7 @@ def _is_context_sensitive(default):
     return len(spec.args) > 0
 
 
-def _get_sqlalchemy_type_for_column(column, type_hints):
+def _get_type_for_column(column, type_hints):
     try:
         return type_hints[column.name].__args__[0]
     except KeyError:
@@ -49,14 +45,14 @@ def _get_sqlalchemy_type_for_column(column, type_hints):
         return column.type.python_type
 
 
-def _get_sqlalchemy_type_for_relationship(relationship, type_hints):
+def _get_type_for_relationship(relationship, type_hints):
     try:
         return type_hints[str(relationship).split(".")[1]].__args__[0]
     except KeyError:
         return Any
 
 
-def _get_sqlalchemy_default(column_default):
+def _get_default(column_default):
     if isinstance(column_default, CallableColumnDefault) and not _is_context_sensitive(column_default):
         return DefaultFactory(factory=column_default.arg.__wrapped__)
     if isinstance(column_default, ScalarElementColumnDefault):
@@ -64,23 +60,28 @@ def _get_sqlalchemy_default(column_default):
     return NoDefault()
 
 
-def _get_sqlalchemy_required(column):
+def _get_input_required(column):
     return not (
-        column.default or column.nullable or column.server_default
+        #  columns constrainted by FK are not required since they can be specified by instances
+        column.default or column.nullable or column.server_default or column.foreign_keys
         or (column.primary_key and column.autoincrement and column.type.python_type is int)
     )
 
 
-def _get_sqlalchemy_input_shape(tp, columns, relationships, type_hints) -> InputShape:
+def _get_output_required(column):
+    return not column.nullable
+
+
+def _get_input_shape(tp, columns, relationships, type_hints) -> InputShape:
     fields = []
     params = []
     for column in columns:
         fields.append(
             InputField(
                 id=column.name,
-                type=_get_sqlalchemy_type_for_column(column, type_hints),
-                default=_get_sqlalchemy_default(column.default),
-                is_required=_get_sqlalchemy_required(column),
+                type=_get_type_for_column(column, type_hints),
+                default=_get_default(column.default),
+                is_required=_get_input_required(column),
                 metadata=column.info,
                 original=ColumnPropertyWrapper(column_property=column)
             )
@@ -94,11 +95,10 @@ def _get_sqlalchemy_input_shape(tp, columns, relationships, type_hints) -> Input
         )
 
     for relationship in relationships:
-        name = _get_relationship_name(relationship)
         fields.append(
             InputField(
-                id=name,
-                type=_get_sqlalchemy_type_for_relationship(relationship, type_hints),
+                id=relationship.key,
+                type=_get_type_for_relationship(relationship, type_hints),
                 default=NoDefault(),
                 is_required=False,
                 metadata={},
@@ -107,8 +107,8 @@ def _get_sqlalchemy_input_shape(tp, columns, relationships, type_hints) -> Input
         )
         params.append(
             Param(
-                field_id=name,
-                name=name,
+                field_id=relationship.key,
+                name=relationship.key,
                 kind=ParamKind.KW_ONLY
             )
         )
@@ -122,15 +122,15 @@ def _get_sqlalchemy_input_shape(tp, columns, relationships, type_hints) -> Input
     )
 
 
-def _get_sqlalchemy_output_shape(columns, relationships, type_hints) -> OutputShape:
+def _get_output_shape(columns, relationships, type_hints) -> OutputShape:
     output_fields = [
         OutputField(
             id=column.name,
-            type=_get_sqlalchemy_type_for_column(column, type_hints),
-            default=_get_sqlalchemy_default(column.default),
+            type=_get_type_for_column(column, type_hints),
+            default=_get_default(column.default),
             metadata=column.info,
             original=ColumnPropertyWrapper(column_property=column),
-            accessor=create_attr_accessor(column.name, is_required=not column.nullable)
+            accessor=create_attr_accessor(column.name, is_required=_get_output_required(column))
         )
         for column in columns
     ]
@@ -140,7 +140,7 @@ def _get_sqlalchemy_output_shape(columns, relationships, type_hints) -> OutputSh
         output_fields.append(
             OutputField(
                 id=name,
-                type=_get_sqlalchemy_type_for_relationship(relationship, type_hints),
+                type=_get_type_for_relationship(relationship, type_hints),
                 default=NoDefault(),
                 metadata={},
                 original=relationship,
@@ -159,6 +159,6 @@ def get_sqlalchemy_shape(tp) -> FullShape:
     relationships = inspect(tp).relationships
     type_hints = get_all_type_hints(tp)
     return Shape(
-        input=_get_sqlalchemy_input_shape(tp, columns, relationships, type_hints),
-        output=_get_sqlalchemy_output_shape(columns, relationships, type_hints)
+        input=_get_input_shape(tp, columns, relationships, type_hints),
+        output=_get_output_shape(columns, relationships, type_hints)
     )
