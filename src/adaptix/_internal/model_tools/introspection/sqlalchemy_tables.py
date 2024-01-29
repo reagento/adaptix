@@ -1,24 +1,33 @@
 from inspect import getfullargspec
 from typing import Any, Optional
 
-from sqlalchemy import inspect
-from sqlalchemy.sql.schema import CallableColumnDefault, ScalarElementColumnDefault
+try:
+    from sqlalchemy import inspect
+    from sqlalchemy.exc import NoInspectionAvailable
+    from sqlalchemy.orm import Mapper
+    from sqlalchemy.sql.schema import CallableColumnDefault, ScalarElementColumnDefault
+except ImportError:
+    pass
 
-from adaptix._internal.model_tools.definitions import (
+from ...feature_requirement import HAS_SQLALCHEMY_PKG, HAS_SUPPORTED_SQLALCHEMY_PKG
+from ...type_tools import get_all_type_hints
+from ..definitions import (
     DefaultFactory,
     DefaultValue,
     FullShape,
     InputField,
     InputShape,
+    IntrospectionImpossible,
     NoDefault,
+    NoTargetPackage,
     OutputField,
     OutputShape,
+    PackageIsTooOld,
     Param,
     ParamKind,
     Shape,
     create_attr_accessor,
 )
-from adaptix._internal.type_tools import get_all_type_hints
 
 
 class ColumnWrapper:
@@ -155,8 +164,21 @@ def _get_output_shape(columns, relationships, type_hints) -> OutputShape:
 
 
 def get_sqlalchemy_shape(tp) -> FullShape:
-    columns = inspect(tp).columns
-    relationships = inspect(tp).relationships
+    if not HAS_SUPPORTED_SQLALCHEMY_PKG:
+        if not HAS_SQLALCHEMY_PKG:
+            raise NoTargetPackage
+        raise PackageIsTooOld(HAS_SUPPORTED_SQLALCHEMY_PKG.min_version)
+
+    try:
+        mapper = inspect(tp)
+    except NoInspectionAvailable:
+        raise IntrospectionImpossible
+
+    if not isinstance(mapper, Mapper):
+        raise IntrospectionImpossible
+
+    columns = mapper.columns
+    relationships = mapper.relationships
     type_hints = get_all_type_hints(tp)
     return Shape(
         input=_get_input_shape(tp, columns, relationships, type_hints),

@@ -171,5 +171,8 @@ HAS_TV_SYNTAX = HAS_PY_312
 HAS_SUPPORTED_ATTRS_PKG = DistributionVersionRequirement('attrs', '21.3.0')
 HAS_ATTRS_PKG = DistributionRequirement('attrs')
 
+HAS_SUPPORTED_SQLALCHEMY_PKG = DistributionVersionRequirement('sqlalchemy', '2.0.0')
+HAS_SQLALCHEMY_PKG = DistributionRequirement('sqlalchemy')
+
 IS_CPYTHON = PythonImplementationRequirement('cpython')
 IS_PYPY = PythonImplementationRequirement('pypy')
