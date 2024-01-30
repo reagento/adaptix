@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Tuple, TypeVar
 
 from ..common import TypeHint
-from ..datastructures import ClassMap, CustomTuple
+from ..datastructures import ClassMap, ImmutableStack
 from ..definitions import DebugTrail
 from ..model_tools.definitions import Accessor, Default
 from ..type_tools import BaseNormType, normalize_type
@@ -49,7 +49,7 @@ LR = TypeVar('LR', bound='LocatedRequest')
 LocStackT = TypeVar('LocStackT', bound='LocStack')
 
 
-class LocStack(CustomTuple[LocMap]):
+class LocStack(ImmutableStack[LocMap]):
     def replace_last(self: LocStackT, loc: LocMap) -> LocStackT:
         return self[:-1].append_with(loc)
 
