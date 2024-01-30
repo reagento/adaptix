@@ -3,7 +3,7 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, Collection, Dict, Iterable, Literal, Sequence, Type, Union
+from typing import Any, Collection, Dict, Iterable, Literal, Sequence, Set, Type, Union
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -100,13 +100,18 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             return set(args)
         return tuple(args)
 
-    def _get_allowed_values_repr(self, args: Collection, mediator: Mediator, lock_stack: LocStack) -> Collection:
+    def _get_allowed_values_repr(self, args: Collection, mediator: Mediator, loc_stack: LocStack) -> Collection:
         enum_cases = [arg for arg in args if isinstance(arg, Enum)]
         if not enum_cases:
             return set(args)
 
-        literal_dumper = self._provide_dumper(mediator, DumperRequest(lock_stack))
+        literal_dumper = self._provide_dumper(mediator, DumperRequest(loc_stack))
         return {literal_dumper(arg) if isinstance(arg, Enum) else arg for arg in args}
+
+    def _get_enum_types(self, cases: Collection) -> Collection:
+        seen: Set[Type[Enum]] = set()
+        seen_add = seen.add
+        return [type(case) for case in cases if not (type(case) in seen or seen_add(case))]
 
     def _fetch_enum_loaders(
         self, mediator: Mediator, request: LoaderRequest, enum_classes: Iterable[Type[Enum]]
@@ -143,35 +148,37 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         )
         return dict(zip(enum_classes, dumpers))
 
-    def _literal_loader_with_enum(
+    def _get_literal_loader_with_enum(  # noqa: CCR001
         self, basic_loader: Loader, enum_loaders: Sequence[Loader[Enum]], allowed_values: Collection
     ) -> Loader:
         if not enum_loaders:
             return basic_loader
 
-        def validate_enum(enum_value):
-            return enum_value is not None and enum_value in allowed_values
+        if len(enum_loaders) == 1:
+            def wrapped_loader_with_single_enum(data):
+                enum_value = None
+                try:
+                    enum_value = enum_loaders[0](data)
+                except LoadError:
+                    pass
+                if enum_value is not None and enum_value in allowed_values:
+                    return enum_value
+                return basic_loader(data)
 
-        def process_enum(data, loader):
-            try:
-                return loader(data)
-            except LoadError:
-                return None
+            return wrapped_loader_with_single_enum
 
-        def wrapped_loader(data):
+        def wrapped_loader_with_enums(data):
             for loader in enum_loaders:
-                enum_value = process_enum(data, loader)
-                if validate_enum(enum_value):
+                enum_value = None
+                try:
+                    enum_value = loader(data)
+                except LoadError:
+                    pass
+                if enum_value is not None and enum_value in allowed_values:
                     return enum_value
             return basic_loader(data)
 
-        def wrapped_loader_with_single_enum(data):
-            enum_value = process_enum(data, enum_loaders[0])
-            if validate_enum(enum_value):
-                return enum_value
-            return basic_loader(data)
-
-        return wrapped_loader_with_single_enum if len(enum_loaders) == 1 else wrapped_loader
+        return wrapped_loader_with_enums
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(get_type_from_request(request))
@@ -180,9 +187,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         cleaned_args = [strip_annotated(arg) for arg in norm.args]
 
         enum_cases = [arg for arg in cleaned_args if isinstance(arg, Enum)]
-        enum_loaders = list(
-            self._fetch_enum_loaders(mediator, request, [type(case) for case in enum_cases])
-        ) if enum_cases else []
+        enum_loaders = list(self._fetch_enum_loaders(mediator, request, self._get_enum_types(enum_cases)))
         allowed_values_repr = self._get_allowed_values_repr(cleaned_args, mediator, request.loc_stack)
 
         if strict_coercion and any(
@@ -199,7 +204,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
                     return data
                 raise BadVariantError(allowed_values_repr, data)
 
-            return self._literal_loader_with_enum(
+            return self._get_literal_loader_with_enum(
                 literal_loader_sc, enum_loaders, allowed_values_with_types
             )
 
@@ -210,7 +215,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
                 return data
             raise BadVariantError(allowed_values_repr, data)
 
-        return self._literal_loader_with_enum(literal_loader, enum_loaders, allowed_values)
+        return self._get_literal_loader_with_enum(literal_loader, enum_loaders, allowed_values)
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm = try_normalize_type(get_type_from_request(request))
@@ -220,23 +225,24 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         if not enum_cases:
             return as_is_stub
 
-        enum_dumpers = self._fetch_enum_dumpers(
-            mediator, request, [type(case) for case in enum_cases]
-        )
+        enum_dumpers = self._fetch_enum_dumpers(mediator, request, self._get_enum_types(enum_cases))
 
-        def literal_dumper(data):
+        if len(enum_dumpers) == 1:
+            enum_dumper = list(enum_dumpers.values())[0]
+
+            def literal_dumper_with_single_enum(data):
+                if isinstance(data, Enum):
+                    return enum_dumper(data)
+                return data
+
+            return literal_dumper_with_single_enum
+
+        def literal_dumper_with_enums(data):
             if isinstance(data, Enum):
                 return enum_dumpers[type(data)](data)
             return data
 
-        enum_dumper = list(enum_dumpers.values())[0]
-
-        def literal_dumper_with_single_enum(data):
-            if isinstance(data, Enum):
-                return enum_dumper(data)
-            return data
-
-        return literal_dumper_with_single_enum if len(enum_cases) == 1 else literal_dumper
+        return literal_dumper_with_enums
 
 
 @for_predicate(Union)

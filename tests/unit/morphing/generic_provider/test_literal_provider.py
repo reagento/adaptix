@@ -125,6 +125,11 @@ def test_loader_with_enums(retort, strict_coercion, debug_trail):
     assert loader(2) == Enum2.CASE2
     assert loader(10) == 10
 
+    raises_exc(
+        BadVariantError({Enum1.CASE1.value, Enum2.CASE2.value, 10}, 15),
+        lambda: loader(15)
+    )
+
 
 def test_dumper_with_enums(retort, strict_coercion, debug_trail):
     class Enum1(Enum):
