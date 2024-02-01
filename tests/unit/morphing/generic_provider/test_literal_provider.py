@@ -1,10 +1,12 @@
+from enum import Enum
 from typing import Literal
 from uuid import uuid4
 
 import pytest
 from tests_helpers import TestRetort, raises_exc
 
-from adaptix._internal.morphing.generic_provider import LiteralProvider
+from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
+from adaptix._internal.morphing.generic_provider import LiteralProvider, UnionProvider
 from adaptix._internal.morphing.load_error import BadVariantError
 
 
@@ -13,6 +15,8 @@ def retort():
     return TestRetort(
         recipe=[
             LiteralProvider(),
+            EnumExactValueProvider(),
+            UnionProvider()
         ]
     )
 
@@ -88,3 +92,72 @@ def test_strict_coercion(retort, debug_trail):
         BadVariantError({False, True, rnd_val2}, 1),
         lambda: bool_loader(1)
     )
+
+
+def test_loader_with_enums(retort, strict_coercion, debug_trail):
+    class Enum1(Enum):
+        CASE1 = 1
+        CASE2 = 2
+
+    class Enum2(Enum):
+        CASE1 = 1
+        CASE2 = 2
+
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_loader(
+        Literal["a", Enum1.CASE1, 5]
+    )
+
+    assert loader("a") == "a"
+    assert loader(1) == Enum1.CASE1
+    assert loader(5) == 5
+
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_loader(
+        Literal[Enum1.CASE1, Enum2.CASE2, 10]
+    )
+
+    assert loader(1) == Enum1.CASE1
+    assert loader(2) == Enum2.CASE2
+    assert loader(10) == 10
+
+    raises_exc(
+        BadVariantError({Enum1.CASE1.value, Enum2.CASE2.value, 10}, 15),
+        lambda: loader(15)
+    )
+
+
+def test_dumper_with_enums(retort, strict_coercion, debug_trail):
+    class Enum1(Enum):
+        CASE1 = 1
+        CASE2 = 2
+
+    class Enum2(Enum):
+        CASE1 = 1
+        CASE2 = 2
+
+    dumper = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_dumper(
+        Literal["a", Enum1.CASE1, 5]
+    )
+
+    assert dumper("a") == "a"
+    assert dumper(Enum1.CASE1) == 1
+    assert dumper(5) == 5
+
+    dumper = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_dumper(
+        Literal[Enum1.CASE1, Enum2.CASE2, 10]
+    )
+
+    assert dumper(Enum1.CASE1) == 1
+    assert dumper(Enum1.CASE2) == 2
+    assert dumper(10) == 10
