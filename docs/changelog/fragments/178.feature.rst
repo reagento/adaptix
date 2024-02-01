@@ -1,1 +1,1 @@
-    Added enum support to LiteralProvider
+Added enum support inside Literal
