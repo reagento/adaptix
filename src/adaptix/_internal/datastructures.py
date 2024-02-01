@@ -259,5 +259,16 @@ class ImmutableStack(Sequence[T], Generic[T]):
     def __len__(self):
         return len(self._tuple)
 
+    def __hash__(self):
+        return hash(self._tuple)
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self._tuple == other._tuple
+        return NotImplemented
+
+    def __iter__(self) -> Iterator[T]:
+        return iter(self._tuple)
+
     def append_with(self: StackT, item: T) -> StackT:
         return self.from_tuple(self._tuple + (item, ))
