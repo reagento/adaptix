@@ -160,9 +160,11 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             return basic_loader
 
         if len(enum_loaders) == 1:
+            enum_loader = enum_loaders[0]
+
             def wrapped_loader_with_single_enum(data):
                 try:
-                    enum_value = enum_loaders[0](data)
+                    enum_value = enum_loader(data)
                 except LoadError:
                     pass
                 else:
