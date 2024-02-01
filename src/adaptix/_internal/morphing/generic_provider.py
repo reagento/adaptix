@@ -110,8 +110,13 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
     def _get_enum_types(self, cases: Collection) -> Collection:
         seen: Set[Type[Enum]] = set()
-        seen_add = seen.add
-        return [type(case) for case in cases if not (type(case) in seen or seen_add(case))]
+        enum_types = []
+        for case in cases:
+            case_type = type(case)
+            if case_type not in seen:
+                enum_types.append(case_type)
+                seen.add(case_type)
+        return enum_types
 
     def _fetch_enum_loaders(
         self, mediator: Mediator, request: LoaderRequest, enum_classes: Iterable[Type[Enum]]
@@ -156,26 +161,26 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
         if len(enum_loaders) == 1:
             def wrapped_loader_with_single_enum(data):
-                enum_value = None
                 try:
                     enum_value = enum_loaders[0](data)
                 except LoadError:
                     pass
-                if enum_value is not None and enum_value in allowed_values:
-                    return enum_value
+                else:
+                    if enum_value in allowed_values:
+                        return enum_value
                 return basic_loader(data)
 
             return wrapped_loader_with_single_enum
 
         def wrapped_loader_with_enums(data):
             for loader in enum_loaders:
-                enum_value = None
                 try:
                     enum_value = loader(data)
                 except LoadError:
                     pass
-                if enum_value is not None and enum_value in allowed_values:
-                    return enum_value
+                else:
+                    if enum_value in allowed_values:
+                        return enum_value
             return basic_loader(data)
 
         return wrapped_loader_with_enums
