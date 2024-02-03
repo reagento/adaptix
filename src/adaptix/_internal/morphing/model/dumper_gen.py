@@ -2,8 +2,8 @@ import contextlib
 from string import Template
 from typing import Dict, Mapping, NamedTuple, Tuple
 
+from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
-from ...code_tools.context_namespace import BuiltinContextNamespace, ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
 from ...common import Dumper
 from ...compat import CompatExceptionGroup
@@ -36,9 +36,9 @@ from .crown_definitions import (
 
 
 class GenState:
-    def __init__(self, builder: CodeBuilder, ctx_namespace: ContextNamespace):
+    def __init__(self, builder: CodeBuilder, namespace: CascadeNamespace):
         self.builder = builder
-        self.ctx_namespace = ctx_namespace
+        self.namespace = namespace
 
         self.field_id_to_path: Dict[str, CrownPath] = {}
         self.path_to_suffix: Dict[CrownPath, str] = {}
@@ -117,12 +117,12 @@ class BuiltinModelDumperGen(ModelDumperGen):
     def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
         body_builder = CodeBuilder()
 
-        ctx_namespace = BuiltinContextNamespace()
-        ctx_namespace.add('CompatExceptionGroup', CompatExceptionGroup)
-        ctx_namespace.add("append_trail", append_trail)
-        ctx_namespace.add("extend_trail", extend_trail)
+        namespace = BuiltinCascadeNamespace()
+        namespace.add_constant('CompatExceptionGroup', CompatExceptionGroup)
+        namespace.add_constant("append_trail", append_trail)
+        namespace.add_constant("extend_trail", extend_trail)
         for field_id, dumper in self._fields_dumpers.items():
-            ctx_namespace.add(self._v_dumper(self._id_to_field[field_id]), dumper)
+            namespace.add_constant(self._v_dumper(self._id_to_field[field_id]), dumper)
 
         if self._debug_trail == DebugTrail.ALL:
             body_builder('errors = []')
@@ -135,15 +135,15 @@ class BuiltinModelDumperGen(ModelDumperGen):
         for field in self._shape.fields:
             if not self._is_extra_target(field):
                 self._gen_field_extraction(
-                    body_builder, ctx_namespace, field,
+                    body_builder, namespace, field,
                     on_access_error="pass",
                     on_access_ok_req=f"{self._v_field(field)} = $expr",
                     on_access_ok_opt=f"opt_fields[{field.id!r}] = $expr",
                 )
 
-        self._gen_extra_extraction(body_builder, ctx_namespace)
+        self._gen_extra_extraction(body_builder, namespace)
 
-        state = self._create_state(body_builder, ctx_namespace)
+        state = self._create_state(body_builder, namespace)
 
         if not self._gen_root_crown_dispatch(state, self._name_layout.crown):
             raise TypeError
@@ -160,7 +160,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         builder = CodeBuilder()
         with builder(f'def {closure_name}(data):'):
             builder.extend(body_builder)
-        return builder.string(), ctx_namespace.dict
+        return builder.string(), namespace.constants
 
     def _is_extra_target(self, field: OutputField) -> bool:
         return field.id in self._extra_targets
@@ -183,7 +183,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
     def _v_access_error(self, field: OutputField) -> str:
         return f"access_error_{field.id}"
 
-    def _gen_access_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
+    def _gen_access_expr(self, namespace: CascadeNamespace, field: OutputField) -> str:
         accessor = field.accessor
         if isinstance(accessor, DescriptorAccessor):
             if accessor.attr_name.isidentifier():
@@ -195,29 +195,29 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 return f"data[{literal_expr}]"
 
         accessor_getter = self._v_accessor_getter(field)
-        ctx_namespace.add(accessor_getter, field.accessor.getter)
+        namespace.add_constant(accessor_getter, field.accessor.getter)
         return f"{accessor_getter}(data)"
 
-    def _get_trail_element_expr(self, ctx_namespace: ContextNamespace, field: OutputField) -> str:
+    def _get_trail_element_expr(self, namespace: CascadeNamespace, field: OutputField) -> str:
         trail_element = field.accessor.trail_element
         literal_expr = get_literal_expr(trail_element)
         if literal_expr is not None:
             return literal_expr
 
         v_trail_element = self._v_trail_element(field)
-        ctx_namespace.add(v_trail_element, trail_element)
+        namespace.add_constant(v_trail_element, trail_element)
         return v_trail_element
 
     def _gen_required_field_extraction(
         self,
         builder: CodeBuilder,
-        ctx_namespace: ContextNamespace,
+        namespace: CascadeNamespace,
         field: OutputField,
         *,
         on_access_ok: str,
     ):
-        raw_access_expr = self._gen_access_expr(ctx_namespace, field)
-        v_element_expr = self._get_trail_element_expr(ctx_namespace, field)
+        raw_access_expr = self._gen_access_expr(namespace, field)
+        v_element_expr = self._get_trail_element_expr(namespace, field)
 
         if self._fields_dumpers[field.id] == as_is_stub:
             on_access_ok_stmt = Template(on_access_ok).substitute(expr=raw_access_expr)
@@ -248,14 +248,14 @@ class BuiltinModelDumperGen(ModelDumperGen):
     def _gen_optional_field_extraction(
         self,
         builder: CodeBuilder,
-        ctx_namespace: ContextNamespace,
+        namespace: CascadeNamespace,
         field: OutputField,
         *,
         on_access_error: str,
         on_access_ok: str,
     ):
-        raw_access_expr = self._gen_access_expr(ctx_namespace, field)
-        path_element_expr = self._get_trail_element_expr(ctx_namespace, field)
+        raw_access_expr = self._gen_access_expr(namespace, field)
+        path_element_expr = self._get_trail_element_expr(namespace, field)
 
         v_raw_field = self._v_raw_field(field)
         if self._fields_dumpers[field.id] == as_is_stub:
@@ -272,7 +272,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         access_error_expr = get_literal_expr(access_error)
         if access_error_expr is None:
             access_error_expr = self._v_access_error(field)
-            ctx_namespace.add(access_error_expr, access_error)
+            namespace.add_constant(access_error_expr, access_error)
 
         if self._debug_trail == DebugTrail.ALL:
             builder += f"""
@@ -314,7 +314,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
     def _gen_field_extraction(
         self,
         builder: CodeBuilder,
-        ctx_namespace: ContextNamespace,
+        namespace: CascadeNamespace,
         field: OutputField,
         *,
         on_access_ok_req: str,
@@ -323,22 +323,22 @@ class BuiltinModelDumperGen(ModelDumperGen):
     ):
         if field.is_required:
             self._gen_required_field_extraction(
-                builder, ctx_namespace, field,
+                builder, namespace, field,
                 on_access_ok=on_access_ok_req,
             )
         else:
             self._gen_optional_field_extraction(
-                builder, ctx_namespace, field,
+                builder, namespace, field,
                 on_access_ok=on_access_ok_opt,
                 on_access_error=on_access_error,
             )
 
-    def _gen_raising_extraction_errors(self, builder: CodeBuilder, ctx_namespace):
+    def _gen_raising_extraction_errors(self, builder: CodeBuilder, namespace):
         if self._debug_trail != DebugTrail.ALL:
             return
 
-        ctx_namespace.add('model_identity', self._model_identity)
-        ctx_namespace.add('render_trail_as_note', render_trail_as_note)
+        namespace.add_constant('model_identity', self._model_identity)
+        namespace.add_constant('render_trail_as_note', render_trail_as_note)
         builder(
             """
             if errors:
@@ -352,43 +352,43 @@ class BuiltinModelDumperGen(ModelDumperGen):
     def _gen_extra_extraction(
         self,
         builder: CodeBuilder,
-        ctx_namespace: ContextNamespace,
+        namespace: CascadeNamespace,
     ):
         if isinstance(self._name_layout.extra_move, ExtraTargets):
-            self._gen_extra_target_extraction(builder, ctx_namespace)
+            self._gen_extra_target_extraction(builder, namespace)
         elif isinstance(self._name_layout.extra_move, ExtraExtract):
-            self._gen_extra_extract_extraction(builder, ctx_namespace, self._name_layout.extra_move)
+            self._gen_extra_extract_extraction(builder, namespace, self._name_layout.extra_move)
         elif self._name_layout.extra_move is None:
-            self._gen_raising_extraction_errors(builder, ctx_namespace)
+            self._gen_raising_extraction_errors(builder, namespace)
         else:
             raise ValueError
 
     def _gen_extra_target_extraction(
         self,
         builder: CodeBuilder,
-        ctx_namespace: ContextNamespace,
+        namespace: CascadeNamespace,
     ):
         if len(self._extra_targets) == 1:
             field = self._id_to_field[self._extra_targets[0]]
 
             self._gen_field_extraction(
-                builder, ctx_namespace, field,
+                builder, namespace, field,
                 on_access_error="extra = {}",
                 on_access_ok_req="extra = $expr",
                 on_access_ok_opt="extra = $expr",
             )
-            self._gen_raising_extraction_errors(builder, ctx_namespace)
+            self._gen_raising_extraction_errors(builder, namespace)
 
         elif all(field.is_required for field in self._id_to_field.values()):
             for field_id in self._extra_targets:
                 field = self._id_to_field[field_id]
 
                 self._gen_required_field_extraction(
-                    builder, ctx_namespace, field,
+                    builder, namespace, field,
                     on_access_ok=f"{self._v_field(field)} = $expr",
                 )
 
-            self._gen_raising_extraction_errors(builder, ctx_namespace)
+            self._gen_raising_extraction_errors(builder, namespace)
             builder += 'extra = {'
             builder <<= ", ".join(
                 "**" + self._v_field(self._id_to_field[field_id])
@@ -401,13 +401,13 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 field = self._id_to_field[field_id]
 
                 self._gen_field_extraction(
-                    builder, ctx_namespace, field,
+                    builder, namespace, field,
                     on_access_ok_req="extra_stack.append($expr)",
                     on_access_ok_opt="extra_stack.append($expr)",
                     on_access_error="pass",
                 )
 
-            self._gen_raising_extraction_errors(builder, ctx_namespace)
+            self._gen_raising_extraction_errors(builder, namespace)
             builder += """
                 extra = {
                     key: value for extra_element in extra_stack for key, value in extra_element.items()
@@ -417,10 +417,10 @@ class BuiltinModelDumperGen(ModelDumperGen):
     def _gen_extra_extract_extraction(
         self,
         builder: CodeBuilder,
-        ctx_namespace: ContextNamespace,
+        namespace: CascadeNamespace,
         extra_move: ExtraExtract,
     ):
-        ctx_namespace.add('extractor', extra_move.func)
+        namespace.add_constant('extractor', extra_move.func)
 
         if self._debug_trail == DebugTrail.ALL:
             builder += """
@@ -432,7 +432,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         else:
             builder += "extra = extractor(data)"
 
-        self._gen_raising_extraction_errors(builder, ctx_namespace)
+        self._gen_raising_extraction_errors(builder, namespace)
         builder.empty_line()
 
     def _gen_header(self, state: GenState):
@@ -453,8 +453,8 @@ class BuiltinModelDumperGen(ModelDumperGen):
 
         state.builder.extend_above(builder)
 
-    def _create_state(self, builder: CodeBuilder, ctx_namespace: ContextNamespace) -> GenState:
-        return GenState(builder, ctx_namespace)
+    def _create_state(self, builder: CodeBuilder, namespace: CascadeNamespace) -> GenState:
+        return GenState(builder, namespace)
 
     def _gen_root_crown_dispatch(self, state: GenState, crown: OutCrown):
         if isinstance(crown, OutDictCrown):
@@ -484,7 +484,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
             if literal_expr is not None:
                 return ElementExpr(literal_expr, can_inline=True)
 
-            state.ctx_namespace.add(state.v_placeholder, crown.placeholder.factory)
+            state.namespace.add_constant(state.v_placeholder, crown.placeholder.factory)
             return ElementExpr(state.v_placeholder + '()', can_inline=False)
 
         if isinstance(crown.placeholder, DefaultValue):
@@ -492,7 +492,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
             if literal_expr is not None:
                 return ElementExpr(literal_expr, can_inline=True)
 
-            state.ctx_namespace.add(state.v_placeholder, crown.placeholder.value)
+            state.namespace.add_constant(state.v_placeholder, crown.placeholder.value)
             return ElementExpr(state.v_placeholder, can_inline=True)
 
         raise TypeError
@@ -602,7 +602,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         default_clause = get_default_clause(sieve)
         if default_clause is None:
             v_sieve = state.v_sieve(key)
-            state.ctx_namespace.add(v_sieve, sieve)
+            state.namespace.add_constant(v_sieve, sieve)
             return f'{v_sieve}({input_expr})'
 
         if isinstance(default_clause, DefaultValue):
@@ -614,7 +614,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                     f"{input_expr} != {literal_expr}"
                 )
             v_default = state.v_default(key)
-            state.ctx_namespace.add(v_default, default_clause.value)
+            state.namespace.add_constant(v_default, default_clause.value)
             return f"{input_expr} != {v_default}"
 
         if isinstance(default_clause, DefaultFactory):
@@ -622,12 +622,12 @@ class BuiltinModelDumperGen(ModelDumperGen):
             if literal_expr is not None:
                 return f"{input_expr} != {literal_expr}"
             v_default = state.v_default(key)
-            state.ctx_namespace.add(v_default, default_clause.factory)
+            state.namespace.add_constant(v_default, default_clause.factory)
             return f"{input_expr} != {v_default}()"
 
         if isinstance(default_clause, DefaultFactoryWithSelf):
             v_default = state.v_default(key)
-            state.ctx_namespace.add(v_default, default_clause.factory)
+            state.namespace.add_constant(v_default, default_clause.factory)
             return f"{input_expr} != {v_default}(data)"
 
         raise TypeError

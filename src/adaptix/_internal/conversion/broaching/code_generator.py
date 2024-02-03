@@ -7,8 +7,8 @@ from inspect import Signature
 from typing import DefaultDict, Mapping, Tuple, Union
 
 from ...code_tools.ast_templater import ast_substitute
+from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
-from ...code_tools.context_namespace import BuiltinContextNamespace, ContextNamespace
 from ...code_tools.utils import get_literal_expr
 from ...compat import compat_ast_unparse
 from ...model_tools.definitions import DescriptorAccessor, ItemAccessor
@@ -33,7 +33,7 @@ BroachingPlan = Union[
 
 
 class GenState:
-    def __init__(self, ctx_namespace: ContextNamespace):
+    def __init__(self, ctx_namespace: CascadeNamespace):
         self._ctx_namespace = ctx_namespace
         self._prefix_counter: DefaultDict[str, int] = defaultdict(lambda: 0)
 
@@ -44,12 +44,12 @@ class GenState:
         return self.register_mangled(name, obj)
 
     def register_mangled(self, base: str, obj: object) -> str:
-        if self._ctx_namespace.try_add(base, obj):
+        if self._ctx_namespace.try_add_constant(base, obj):
             return base
 
         for i in itertools.count(1):
             name = f'{base}_{i}'
-            if self._ctx_namespace.try_add(name, obj):
+            if self._ctx_namespace.try_add_constant(name, obj):
                 return name
         raise RuntimeError
 
@@ -64,17 +64,17 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
     def __init__(self, plan: BroachingPlan):
         self._plan = plan
 
-    def _create_state(self, ctx_namespace: ContextNamespace) -> GenState:
+    def _create_state(self, ctx_namespace: CascadeNamespace) -> GenState:
         return GenState(
             ctx_namespace=ctx_namespace,
         )
 
     def produce_code(self, closure_name: str, signature: Signature) -> Tuple[str, Mapping[str, object]]:
         builder = CodeBuilder()
-        ctx_namespace = BuiltinContextNamespace(occupied=signature.parameters.keys())
+        ctx_namespace = BuiltinCascadeNamespace(occupied=signature.parameters.keys())
         state = self._create_state(ctx_namespace=ctx_namespace)
 
-        ctx_namespace.add('_closure_signature', signature)
+        ctx_namespace.add_constant('_closure_signature', signature)
         no_types_signature = signature.replace(
             parameters=[param.replace(annotation=Signature.empty) for param in signature.parameters.values()],
             return_annotation=Signature.empty,
@@ -84,7 +84,7 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
             builder += 'return ' + compat_ast_unparse(body)
 
         builder += f'{closure_name}.__signature__ = _closure_signature'
-        return builder.string(), ctx_namespace.dict
+        return builder.string(), ctx_namespace.constants
 
     def _gen_plan_element_dispatch(self, state: GenState, element: BroachingPlan) -> AST:
         if isinstance(element, ParameterElement):
