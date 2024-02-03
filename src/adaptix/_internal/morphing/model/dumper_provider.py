@@ -2,26 +2,25 @@ from typing import Mapping
 
 from adaptix._internal.provider.fields import output_field_to_loc_map
 
-from ...code_tools.compiler import BasicClosureCompiler
+from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ...common import Dumper
 from ...definitions import DebugTrail
 from ...model_tools.definitions import OutputShape
-from ...provider.essential import CannotProvide, Mediator
+from ...provider.essential import Mediator
 from ...provider.request_cls import DebugTrailRequest, TypeHintLoc
 from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
 from ..provider_template import DumperProvider
 from ..request_cls import DumperRequest
 from .basic_gen import (
-    CodeGenHookRequest,
     ModelDumperGen,
     NameSanitizer,
     compile_closure_with_globals_capturing,
+    fetch_code_gen_hook,
     get_extra_targets_at_crown,
     get_optional_fields_at_list_crown,
     get_skipped_fields,
     get_wild_extra_targets,
     strip_output_shape_fields,
-    stub_code_gen_hook,
 )
 from .crown_definitions import OutputNameLayout, OutputNameLayoutRequest
 from .dumper_gen import BuiltinModelDumperGen
@@ -35,15 +34,9 @@ class ModelDumperProvider(DumperProvider):
         dumper_gen = self._fetch_model_dumper_gen(mediator, request)
         closure_name = self._get_closure_name(request)
         dumper_code, dumper_namespace = dumper_gen.produce_code(closure_name=closure_name)
-
-        try:
-            code_gen_hook = mediator.delegating_provide(CodeGenHookRequest(loc_stack=request.loc_stack))
-        except CannotProvide:
-            code_gen_hook = stub_code_gen_hook
-
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
-            code_gen_hook=code_gen_hook,
+            code_gen_hook=fetch_code_gen_hook(mediator, request.loc_stack),
             namespace=dumper_namespace,
             closure_code=dumper_code,
             closure_name=closure_name,
@@ -115,7 +108,7 @@ class ModelDumperProvider(DumperProvider):
             'model_dumper', self._name_sanitizer.sanitize(self._request_to_view_string(request)),
         )
 
-    def _get_compiler(self):
+    def _get_compiler(self) -> ClosureCompiler:
         return BasicClosureCompiler()
 
     def _fetch_shape(self, mediator: Mediator, request: DumperRequest) -> OutputShape:
