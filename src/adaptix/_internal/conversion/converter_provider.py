@@ -68,7 +68,7 @@ class BuiltinConverterProvider(ConverterProvider):
             mediator=mediator,
             dst_shape=dst_shape,
             src_shape=src_shape,
-            owner_binding_src=BindingSource(),
+            owner_binding_src=BindingSource(source_model_field),
             owner_binding_dst=BindingDest(),
             extra_params=tuple(map(BindingSource, extra_params)),
         )
@@ -182,11 +182,11 @@ class BuiltinConverterProvider(ConverterProvider):
         try:
             dst_shape = provide_generic_resolved_shape(
                 mediator,
-                InputShapeRequest(loc_stack=binding_src.to_loc_stack())
+                InputShapeRequest(loc_stack=binding_dst.to_loc_stack())
             )
             src_shape = provide_generic_resolved_shape(
                 mediator,
-                OutputShapeRequest(loc_stack=binding_dst.to_loc_stack())
+                OutputShapeRequest(loc_stack=binding_src.to_loc_stack())
             )
         except CannotProvide:
             return None
@@ -202,14 +202,14 @@ class BuiltinConverterProvider(ConverterProvider):
 
     def _binding_source_to_plan(self, binding_src: BindingSource) -> BroachingPlan:
         return reduce(
-            function=lambda plan, item: (
+            lambda plan, item: (
                 AccessorElement(
                     target=plan,
                     accessor=item.accessor,
                 )
             ),
-            sequence=binding_src.tail,
-            initial=cast(BroachingPlan, ParameterElement(binding_src.head.id)),
+            binding_src.tail,
+            cast(BroachingPlan, ParameterElement(binding_src.head.id)),
         )
 
     def _get_coercer_sub_plan(

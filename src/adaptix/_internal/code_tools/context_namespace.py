@@ -8,7 +8,7 @@ class ContextNamespace(ABC):
         ...
 
     @abstractmethod
-    def __contains__(self, item: str) -> bool:
+    def try_add(self, name: str, value: object) -> bool:
         ...
 
 
@@ -29,13 +29,13 @@ class BuiltinContextNamespace(ContextNamespace):
         self._occupied = occupied
 
     def add(self, name: str, value: object) -> None:
-        if name in self._occupied:
+        if not self.try_add(name, value):
             raise KeyError(f"Key {name} is duplicated")
-        if name in self.dict:
-            if value is self.dict[name]:
-                return
-            raise KeyError(f"Key {name} is duplicated")
-        self.dict[name] = value
 
-    def __contains__(self, item: str) -> bool:
-        return item in self.dict or item in self._occupied
+    def try_add(self, name: str, value: object) -> bool:
+        if name in self._occupied:
+            return False
+        if name in self.dict:
+            return value is self.dict[name]
+        self.dict[name] = value
+        return True

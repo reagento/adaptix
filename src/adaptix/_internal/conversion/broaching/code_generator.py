@@ -44,14 +44,12 @@ class GenState:
         return self.register_mangled(name, obj)
 
     def register_mangled(self, base: str, obj: object) -> str:
-        if base not in self._ctx_namespace:
-            self._ctx_namespace.add(base, obj)
+        if self._ctx_namespace.try_add(base, obj):
             return base
 
         for i in itertools.count(1):
             name = f'{base}_{i}'
-            if name not in self._ctx_namespace:
-                self._ctx_namespace.add(base, obj)
+            if self._ctx_namespace.try_add(name, obj):
                 return name
         raise RuntimeError
 
