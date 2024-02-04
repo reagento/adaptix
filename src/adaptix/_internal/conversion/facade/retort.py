@@ -33,11 +33,17 @@ class AdornedConverterRetort(OperatingRetort):
 
         return clone
 
-    def produce_converter(self, signature: Signature, function_name: Optional[str]) -> Callable[..., Any]:
+    def produce_converter(
+        self,
+        signature: Signature,
+        stub_function: Optional[Callable],
+        function_name: Optional[str],
+    ) -> Callable[..., Any]:
         return self._facade_provide(
             ConverterRequest(
                 signature=signature,
                 function_name=function_name,
+                stub_function=stub_function,
             ),
             error_message=f'Cannot produce loader for signature {signature!r}',
         )

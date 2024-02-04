@@ -190,9 +190,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 return f"data.{accessor.attr_name}"
             return f"getattr(data, {accessor.attr_name!r})"
         if isinstance(accessor, ItemAccessor):
-            literal_expr = get_literal_expr(accessor.key)
-            if literal_expr is not None:
-                return f"data[{literal_expr}]"
+            return f"data[{accessor.key!r}]"
 
         accessor_getter = self._v_accessor_getter(field)
         namespace.add_constant(accessor_getter, field.accessor.getter)

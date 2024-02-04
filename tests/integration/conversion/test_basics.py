@@ -1,50 +1,61 @@
-from dataclasses import dataclass
 from typing import Any
 
-from adaptix.conversion import impl_converter
+import pytest
+
+from adaptix.conversion import get_converter, impl_converter
+
+from .local_helpers import FactoryWay
 
 
-def test_copy(accum):
-    @dataclass
-    class ExampleAny:
+@pytest.mark.parametrize('way', FactoryWay.params())
+def test_copy(model_spec, way):
+    @model_spec.decorator
+    class ExampleAny(*model_spec.bases):
         field1: Any
         field2: Any
 
-    @impl_converter
-    def copy(a: ExampleAny) -> ExampleAny:
-        ...
+    if way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter
+        def copy(a: ExampleAny) -> ExampleAny:
+            ...
+    else:
+        copy = get_converter(ExampleAny, ExampleAny)
 
     obj1 = ExampleAny(field1=1, field2=2)
     assert copy(obj1) == obj1
     assert copy(obj1) is not obj1
 
 
-def test_same_shape(accum):
-    @dataclass
-    class SourceModel:
+@pytest.mark.parametrize('way', FactoryWay.params())
+def test_same_shape(src_model_spec, dst_model_spec, way):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
         field1: Any
         field2: Any
 
-    @dataclass
-    class DestModel:
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
         field1: Any
         field2: Any
 
-    @impl_converter
-    def convert(a: SourceModel) -> DestModel:
-        ...
+    if way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel)
 
     assert convert(SourceModel(field1=1, field2=2)) == DestModel(field1=1, field2=2)
 
 
-def test_replace(accum):
-    @dataclass
-    class SourceModel:
+def test_replace(src_model_spec, dst_model_spec):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
         field1: Any
         field2: Any
 
-    @dataclass
-    class DestModel:
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
         field1: Any
         field2: Any
 
@@ -55,33 +66,37 @@ def test_replace(accum):
     assert convert(SourceModel(field1=1, field2=2), field2=3) == DestModel(field1=1, field2=3)
 
 
-def test_downcast(accum):
-    @dataclass
-    class SourceModel:
+@pytest.mark.parametrize('way', FactoryWay.params())
+def test_downcast(src_model_spec, dst_model_spec, way):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
         field1: Any
         field2: Any
         field3: Any
 
-    @dataclass
-    class DestModel:
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
         field1: Any
         field2: Any
 
-    @impl_converter
-    def convert(a: SourceModel) -> DestModel:
-        ...
+    if way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel)
 
     assert convert(SourceModel(field1=1, field2=2, field3=3)) == DestModel(field1=1, field2=2)
 
 
-def test_upcast(accum):
-    @dataclass
-    class SourceModel:
+def test_upcast(src_model_spec, dst_model_spec):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
         field1: Any
         field2: Any
 
-    @dataclass
-    class DestModel:
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
         field1: Any
         field2: Any
         field3: Any
@@ -93,30 +108,34 @@ def test_upcast(accum):
     assert convert(SourceModel(field1=1, field2=2), field3=3) == DestModel(field1=1, field2=2, field3=3)
 
 
-def test_nested(accum):
-    @dataclass
-    class SourceModelNested:
+@pytest.mark.parametrize('way', FactoryWay.params())
+def test_nested(src_model_spec, dst_model_spec, way):
+    @src_model_spec.decorator
+    class SourceModelNested(*src_model_spec.bases):
         field1: Any
 
-    @dataclass
-    class SourceModel:
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
         field1: Any
         field2: Any
         nested: SourceModelNested
 
-    @dataclass
-    class DestModelNested:
+    @dst_model_spec.decorator
+    class DestModelNested(*dst_model_spec.bases):
         field1: Any
 
-    @dataclass
-    class DestModel:
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
         field1: Any
         field2: Any
         nested: DestModelNested
 
-    @impl_converter
-    def convert(a: SourceModel) -> DestModel:
-        ...
+    if way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel)
 
     assert convert(
         SourceModel(
@@ -131,32 +150,36 @@ def test_nested(accum):
     )
 
 
-def test_same_nested(accum):
-    @dataclass
-    class SourceModelNested:
+@pytest.mark.parametrize('way', FactoryWay.params())
+def test_same_nested(src_model_spec, dst_model_spec, way):
+    @src_model_spec.decorator
+    class SourceModelNested(*src_model_spec.bases):
         field1: Any
 
-    @dataclass
-    class SourceModel:
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
         field1: Any
         field2: Any
         nested1: SourceModelNested
         nested2: SourceModelNested
 
-    @dataclass
-    class DestModelNested:
+    @dst_model_spec.decorator
+    class DestModelNested(*dst_model_spec.bases):
         field1: Any
 
-    @dataclass
-    class DestModel:
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
         field1: Any
         field2: Any
         nested1: DestModelNested
         nested2: DestModelNested
 
-    @impl_converter
-    def convert(a: SourceModel) -> DestModel:
-        ...
+    if way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel)
 
     assert convert(
         SourceModel(

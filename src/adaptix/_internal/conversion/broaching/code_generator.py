@@ -3,8 +3,9 @@ import itertools
 from abc import ABC, abstractmethod
 from ast import AST
 from collections import defaultdict
+from functools import update_wrapper
 from inspect import Signature
-from typing import DefaultDict, Mapping, Tuple, Union
+from typing import Callable, DefaultDict, Mapping, Optional, Tuple, Union
 
 from ...code_tools.ast_templater import ast_substitute
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
@@ -56,7 +57,12 @@ class GenState:
 
 class BroachingCodeGenerator(ABC):
     @abstractmethod
-    def produce_code(self, closure_name: str, signature: Signature) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(
+        self,
+        signature: Signature,
+        closure_name: str,
+        stub_function: Optional[Callable],
+    ) -> Tuple[str, Mapping[str, object]]:
         ...
 
 
@@ -69,12 +75,19 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
             ctx_namespace=ctx_namespace,
         )
 
-    def produce_code(self, closure_name: str, signature: Signature) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(
+        self,
+        signature: Signature,
+        closure_name: str,
+        stub_function: Optional[Callable],
+    ) -> Tuple[str, Mapping[str, object]]:
         builder = CodeBuilder()
         ctx_namespace = BuiltinCascadeNamespace(occupied=signature.parameters.keys())
         state = self._create_state(ctx_namespace=ctx_namespace)
 
         ctx_namespace.add_constant('_closure_signature', signature)
+        ctx_namespace.add_constant('_stub_function', stub_function)
+        ctx_namespace.add_constant('_update_wrapper', update_wrapper)
         no_types_signature = signature.replace(
             parameters=[param.replace(annotation=Signature.empty) for param in signature.parameters.values()],
             return_annotation=Signature.empty,
@@ -83,7 +96,11 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
             body = self._gen_plan_element_dispatch(state, self._plan)
             builder += 'return ' + compat_ast_unparse(body)
 
+        if stub_function is not None:
+            builder += f'_update_wrapper({closure_name}, _stub_function)'
+
         builder += f'{closure_name}.__signature__ = _closure_signature'
+        builder += f'{closure_name}.__name__ = {closure_name!r}'
         return builder.string(), ctx_namespace.constants
 
     def _gen_plan_element_dispatch(self, state: GenState, element: BroachingPlan) -> AST:
@@ -159,12 +176,10 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
             )
 
         if isinstance(element.accessor, ItemAccessor):
-            literal_expr = get_literal_expr(element.accessor.key)
-            if literal_expr is not None:
-                return ast_substitute(
-                    f"__target_expr__[{literal_expr!r}]",
-                    target_expr=target_expr,
-                )
+            return ast_substitute(
+                f"__target_expr__[{element.accessor.key!r}]",
+                target_expr=target_expr,
+            )
 
         name = state.register_next_id('accessor', element.accessor.getter)
         return ast_substitute(

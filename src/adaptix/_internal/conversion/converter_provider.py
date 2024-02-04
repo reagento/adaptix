@@ -84,8 +84,9 @@ class BuiltinConverterProvider(ConverterProvider):
         code_gen = self._create_broaching_code_gen(broaching_plan)
         closure_name = self._get_closure_name(request)
         dumper_code, dumper_namespace = code_gen.produce_code(
-            closure_name=closure_name,
             signature=request.signature,
+            closure_name=closure_name,
+            stub_function=request.stub_function,
         )
         code_gen_loc_stack = LocStack(LocMap(TypeHintLoc(self._get_type_from_annotation(signature.return_annotation))))
         return compile_closure_with_globals_capturing(
@@ -100,6 +101,9 @@ class BuiltinConverterProvider(ConverterProvider):
     def _get_closure_name(self, request: ConverterRequest) -> str:
         if request.function_name is not None:
             return request.function_name
+        stub_function_name = getattr(request.stub_function, '__name__', None)
+        if stub_function_name is not None:
+            return stub_function_name
         src = next(iter(request.signature.parameters.values()))
         dst = self._get_type_from_annotation(request.signature.return_annotation)
         return self._name_sanitizer.sanitize(f'convert_{src}_to_{dst}')
@@ -107,6 +111,9 @@ class BuiltinConverterProvider(ConverterProvider):
     def _get_file_name(self, request: ConverterRequest) -> str:
         if request.function_name is not None:
             return request.function_name
+        stub_function_name = getattr(request.stub_function, '__name__', None)
+        if stub_function_name is not None:
+            return stub_function_name
         src = next(iter(request.signature.parameters.values()))
         dst = self._get_type_from_annotation(request.signature.return_annotation)
         return f'convert_{src}_to_{dst}'

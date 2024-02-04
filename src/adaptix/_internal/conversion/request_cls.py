@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from inspect import Signature
 from itertools import chain, islice
-from typing import Iterator, Optional, Union
+from typing import Callable, Iterator, Optional, Union
 
 from ..common import Coercer, VarTuple
 from ..datastructures import ImmutableStack
@@ -61,3 +61,4 @@ class CoercerRequest(Request[Coercer]):
 class ConverterRequest(Request):
     signature: Signature
     function_name: Optional[str]
+    stub_function: Optional[Callable]
