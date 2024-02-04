@@ -25,7 +25,7 @@ from ..model_tools.definitions import BaseField, DefaultValue, InputField, Input
 from ..morphing.model.basic_gen import NameSanitizer, compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import base_field_to_loc_map, input_field_to_loc_map
-from ..provider.request_cls import LocStack
+from ..provider.request_cls import LocMap, LocStack, TypeHintLoc
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..provider.static_provider import StaticProvider, static_provision_action
 
@@ -72,18 +72,25 @@ class BuiltinConverterProvider(ConverterProvider):
             owner_binding_dst=BindingDest(),
             extra_params=tuple(map(BindingSource, extra_params)),
         )
-        return self._make_converter(mediator, request, broaching_plan)
+        return self._make_converter(mediator, request, broaching_plan, signature)
 
-    def _make_converter(self, mediator: Mediator, request: ConverterRequest, broaching_plan: BroachingPlan):
+    def _make_converter(
+        self,
+        mediator: Mediator,
+        request: ConverterRequest,
+        broaching_plan: BroachingPlan,
+        signature: Signature,
+    ):
         code_gen = self._create_broaching_code_gen(broaching_plan)
         closure_name = self._get_closure_name(request)
         dumper_code, dumper_namespace = code_gen.produce_code(
             closure_name=closure_name,
             signature=request.signature,
         )
+        code_gen_loc_stack = LocStack(LocMap(TypeHintLoc(self._get_type_from_annotation(signature.return_annotation))))
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
-            code_gen_hook=fetch_code_gen_hook(mediator, LocStack()),
+            code_gen_hook=fetch_code_gen_hook(mediator, code_gen_loc_stack),
             namespace=dumper_namespace,
             closure_code=dumper_code,
             closure_name=closure_name,

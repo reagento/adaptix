@@ -66,20 +66,19 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         if not isinstance(request, LocatedRequest):
             return
 
-        if request.loc_stack:
-            location_desc = ', '.join(
-                f'{key}={value!r}'
-                for key, value in sorted(
-                    (
-                        (key, value)
-                        for loc in request.last_map.values()
-                        for key, value in vars(loc).items()
-                    ),
-                    key=lambda item: self._LOC_KEYS_ORDER.get(item[0], 1000),
-                )
+        location_desc = ', '.join(
+            f'{key}={value!r}'
+            for key, value in sorted(
+                (
+                    (key, value)
+                    for loc in request.last_map.values()
+                    for key, value in vars(loc).items()
+                ),
+                key=lambda item: self._LOC_KEYS_ORDER.get(item[0], 1000),
             )
-            if location_desc:
-                yield f'Location: {location_desc}'
+        )
+        if location_desc:
+            yield f'Location: {location_desc}'
 
         try:
             owner_loc_map, field_loc_map = find_owner_with_field(request.loc_stack)
