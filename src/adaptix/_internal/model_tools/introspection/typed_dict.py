@@ -1,8 +1,9 @@
 import warnings
 from types import MappingProxyType
+from typing import Sequence, Tuple
 
-from ...feature_requirement import HAS_PY_39
-from ...type_tools import get_all_type_hints, is_typed_dict_class
+from ...feature_requirement import HAS_PY_39, HAS_PY_311
+from ...type_tools import BaseNormType, get_all_type_hints, is_typed_dict_class, normalize_type
 from ..definitions import (
     FullShape,
     InputField,
@@ -47,14 +48,49 @@ else:
         return lambda name: is_total
 
 
+if HAS_PY_311:
+    from typing import NotRequired, Required
+
+    def _correct_required_and_optional_keys(
+        fields: Sequence[Tuple[str, BaseNormType]],
+        frozen_required_keys: frozenset[str],
+        frozen_optional_keys: frozenset[str],
+    ) -> Tuple[frozenset, frozenset]:
+        required_keys = set(frozen_required_keys)
+        optional_keys = set(frozen_optional_keys)
+
+        for field_name, field_tp in fields:
+            if field_tp.origin is Required and field_name in optional_keys:
+                optional_keys.remove(field_name)
+                required_keys.add(field_name)
+            elif field_tp.origin is NotRequired and field_name in required_keys:
+                required_keys.remove(field_name)
+                optional_keys.add(field_name)
+
+        return frozenset(required_keys), frozenset(optional_keys)
+
+
 def get_typed_dict_shape(tp) -> FullShape:
     # __annotations__ of TypedDict contain also parents' type hints unlike any other classes,
     # so overriden_types always is empty
     if not is_typed_dict_class(tp):
         raise IntrospectionImpossible
 
-    requirement_determinant = _make_requirement_determinant(tp)
     type_hints = _get_td_hints(tp)
+
+    if HAS_PY_311:
+        norm_types = [normalize_type(tp) for _, tp in type_hints]
+
+        fields_keys = _correct_required_and_optional_keys(
+            [(field_name, field_tp) for (field_name, _), field_tp in zip(type_hints, norm_types)],
+            tp.__required_keys__,
+            tp.__optional_keys__,
+        )
+        tp.__required_keys__ = fields_keys[0]
+        tp.__optional_keys__ = fields_keys[1]
+
+    requirement_determinant = _make_requirement_determinant(tp)
+
     return Shape(
         input=InputShape(
             constructor=tp,
