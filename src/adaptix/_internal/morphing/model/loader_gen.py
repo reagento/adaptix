@@ -311,10 +311,10 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             for param in self._shape.params:
                 field = self._shape.fields_dict[param.field_id]
 
-                if not self._is_packed_field(field):
-                    value = state.v_field(field)
-                else:
+                if self._is_packed_field(field):
                     continue
+
+                value = state.v_field(field)
 
                 if param.kind == ParamKind.KW_ONLY:
                     constructor_builder(f"{param.name}={value},")

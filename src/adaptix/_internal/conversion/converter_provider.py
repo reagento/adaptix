@@ -257,20 +257,22 @@ class BuiltinConverterProvider(ConverterProvider):
     ) -> Iterable[BroachingPlan]:
         def generate_sub_plan(input_field: InputField, binding: BindingResult):
             binding_dst = owner_binding_dst.append_with(input_field)
-            result = self._get_nested_models_sub_plan(
-                mediator=mediator,
-                binding_src=binding.source,
-                binding_dst=binding_dst,
-                extra_params=extra_params,
-            )
-            if result is not None:
-                return result
-
-            return self._get_coercer_sub_plan(
-                mediator=mediator,
-                binding_src=binding.source,
-                binding_dst=binding_dst,
-            )
+            try:
+                return self._get_coercer_sub_plan(
+                    mediator=mediator,
+                    binding_src=binding.source,
+                    binding_dst=binding_dst,
+                )
+            except CannotProvide as e:
+                result = self._get_nested_models_sub_plan(
+                    mediator=mediator,
+                    binding_src=binding.source,
+                    binding_dst=binding_dst,
+                    extra_params=extra_params,
+                )
+                if result is not None:
+                    return result
+                raise e
 
         return mandatory_apply_by_iterable(
             generate_sub_plan,

@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import AbstractSet, Mapping, Optional, Set
 
+from .utils import NAME_TO_BUILTIN
+
 
 class CascadeNamespace(ABC):
     @abstractmethod
@@ -21,19 +23,25 @@ class CascadeNamespace(ABC):
 
 
 class BuiltinCascadeNamespace(CascadeNamespace):
-    __slots__ = ('_constants', '_occupied', '_variables')
+    __slots__ = ('_constants', '_occupied', '_variables', '_allow_builtins')
 
     def __init__(
         self,
         constants: Optional[Mapping[str, object]] = None,
         occupied: Optional[AbstractSet[str]] = None,
+        allow_builtins: bool = False,
     ):
         self._constants = {} if constants is None else dict(constants)
         self._occupied = set() if occupied is None else occupied
         self._variables: Set[str] = set()
+        self._allow_builtins = allow_builtins
 
     def try_add_constant(self, name: str, value: object) -> bool:
-        if name in self._occupied or name in self._variables:
+        if (
+            name in self._occupied
+            or name in self._variables
+            or (name in NAME_TO_BUILTIN and not self._allow_builtins)
+        ):
             return False
         if name in self._constants:
             return value is self._constants[name]
@@ -41,7 +49,12 @@ class BuiltinCascadeNamespace(CascadeNamespace):
         return True
 
     def try_register_var(self, name: str) -> bool:
-        if name in self._occupied or name in self._constants or name in self._variables:
+        if (
+            name in self._occupied
+            or name in self._constants
+            or name in self._variables
+            or (name in NAME_TO_BUILTIN and not self._allow_builtins)
+        ):
             return False
         self._variables.add(name)
         return True

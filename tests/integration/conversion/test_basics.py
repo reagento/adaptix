@@ -1,20 +1,20 @@
-from typing import Any
+from typing import Any, Generic, TypeVar
 
-import pytest
+from tests_helpers import only_generic_models, requires
 
+from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix.conversion import get_converter, impl_converter
 
 from .local_helpers import FactoryWay
 
 
-@pytest.mark.parametrize('way', FactoryWay.params())
-def test_copy(model_spec, way):
+def test_copy(model_spec, factory_way):
     @model_spec.decorator
     class ExampleAny(*model_spec.bases):
         field1: Any
         field2: Any
 
-    if way == FactoryWay.IMPL_CONVERTER:
+    if factory_way == FactoryWay.IMPL_CONVERTER:
         @impl_converter
         def copy(a: ExampleAny) -> ExampleAny:
             ...
@@ -26,8 +26,7 @@ def test_copy(model_spec, way):
     assert copy(obj1) is not obj1
 
 
-@pytest.mark.parametrize('way', FactoryWay.params())
-def test_same_shape(src_model_spec, dst_model_spec, way):
+def test_same_shape(src_model_spec, dst_model_spec, factory_way):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: Any
@@ -38,7 +37,7 @@ def test_same_shape(src_model_spec, dst_model_spec, way):
         field1: Any
         field2: Any
 
-    if way == FactoryWay.IMPL_CONVERTER:
+    if factory_way == FactoryWay.IMPL_CONVERTER:
         @impl_converter
         def convert(a: SourceModel) -> DestModel:
             ...
@@ -66,8 +65,7 @@ def test_replace(src_model_spec, dst_model_spec):
     assert convert(SourceModel(field1=1, field2=2), field2=3) == DestModel(field1=1, field2=3)
 
 
-@pytest.mark.parametrize('way', FactoryWay.params())
-def test_downcast(src_model_spec, dst_model_spec, way):
+def test_downcast(src_model_spec, dst_model_spec, factory_way):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: Any
@@ -79,7 +77,7 @@ def test_downcast(src_model_spec, dst_model_spec, way):
         field1: Any
         field2: Any
 
-    if way == FactoryWay.IMPL_CONVERTER:
+    if factory_way == FactoryWay.IMPL_CONVERTER:
         @impl_converter
         def convert(a: SourceModel) -> DestModel:
             ...
@@ -108,8 +106,7 @@ def test_upcast(src_model_spec, dst_model_spec):
     assert convert(SourceModel(field1=1, field2=2), field3=3) == DestModel(field1=1, field2=2, field3=3)
 
 
-@pytest.mark.parametrize('way', FactoryWay.params())
-def test_nested(src_model_spec, dst_model_spec, way):
+def test_nested(src_model_spec, dst_model_spec, factory_way):
     @src_model_spec.decorator
     class SourceModelNested(*src_model_spec.bases):
         field1: Any
@@ -130,7 +127,7 @@ def test_nested(src_model_spec, dst_model_spec, way):
         field2: Any
         nested: DestModelNested
 
-    if way == FactoryWay.IMPL_CONVERTER:
+    if factory_way == FactoryWay.IMPL_CONVERTER:
         @impl_converter
         def convert(a: SourceModel) -> DestModel:
             ...
@@ -150,8 +147,7 @@ def test_nested(src_model_spec, dst_model_spec, way):
     )
 
 
-@pytest.mark.parametrize('way', FactoryWay.params())
-def test_same_nested(src_model_spec, dst_model_spec, way):
+def test_same_nested(src_model_spec, dst_model_spec, factory_way):
     @src_model_spec.decorator
     class SourceModelNested(*src_model_spec.bases):
         field1: Any
@@ -174,7 +170,7 @@ def test_same_nested(src_model_spec, dst_model_spec, way):
         nested1: DestModelNested
         nested2: DestModelNested
 
-    if way == FactoryWay.IMPL_CONVERTER:
+    if factory_way == FactoryWay.IMPL_CONVERTER:
         @impl_converter
         def convert(a: SourceModel) -> DestModel:
             ...
@@ -194,3 +190,74 @@ def test_same_nested(src_model_spec, dst_model_spec, way):
         nested1=DestModelNested(field1=3),
         nested2=DestModelNested(field1=4),
     )
+
+
+@requires(HAS_ANNOTATED)
+def test_annotated_ignoring(src_model_spec, dst_model_spec, factory_way):
+    from typing import Annotated
+
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: Any
+        field2: Annotated[Any, 'meta']
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: Any
+        field2: Any
+
+    if factory_way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel)
+
+    assert convert(SourceModel(field1=1, field2=2)) == DestModel(field1=1, field2=2)
+
+
+T = TypeVar('T')
+
+
+@only_generic_models
+def test_same_parametrized_generics(src_model_spec, dst_model_spec, factory_way):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases, Generic[T]):
+        field1: Any
+        field2: T
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases, Generic[T]):
+        field1: Any
+        field2: T
+
+    if factory_way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter
+        def convert(a: SourceModel[int]) -> DestModel[int]:
+            ...
+    else:
+        convert = get_converter(SourceModel[int], DestModel[int])
+
+    assert convert(SourceModel(field1=1, field2=2)) == DestModel(field1=1, field2=2)
+
+
+@only_generic_models
+def test_non_parametrized_generics(src_model_spec, dst_model_spec, factory_way):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases, Generic[T]):
+        field1: Any
+        field2: T
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases, Generic[T]):
+        field1: Any
+        field2: T
+
+    if factory_way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel)
+
+    assert convert(SourceModel(field1=1, field2=2)) == DestModel(field1=1, field2=2)

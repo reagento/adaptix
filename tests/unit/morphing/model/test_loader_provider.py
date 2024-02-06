@@ -8,7 +8,15 @@ from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametriz
 
 from adaptix import DebugTrail, ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
-from adaptix._internal.model_tools.definitions import InputField, InputShape, NoDefault, Param, ParamKind, ParamKwargs
+from adaptix._internal.model_tools.definitions import (
+    Default,
+    InputField,
+    InputShape,
+    NoDefault,
+    Param,
+    ParamKind,
+    ParamKwargs,
+)
 from adaptix._internal.morphing.load_error import AggregateLoadError, ExcludedTypeLoadError, ValueLoadError
 from adaptix._internal.morphing.model.crown_definitions import (
     ExtraCollect,
@@ -60,6 +68,7 @@ class TestField:
     id: str
     param_kind: ParamKind
     is_required: bool
+    default: Default = NoDefault()
 
 
 def shape(*fields: TestField, kwargs: Optional[ParamKwargs] = None):
@@ -68,7 +77,7 @@ def shape(*fields: TestField, kwargs: Optional[ParamKwargs] = None):
             InputField(
                 type=int,
                 id=fld.id,
-                default=NoDefault(),
+                default=fld.default,
                 is_required=fld.is_required,
                 metadata=MappingProxyType({}),
                 original=None,

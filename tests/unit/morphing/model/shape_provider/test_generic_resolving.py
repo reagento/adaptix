@@ -2,13 +2,19 @@ from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import pytest
 from pytest import param
-from tests_helpers import ModelSpec, cond_list, exclude_model_spec, load_namespace_keeping_module, requires
+from tests_helpers import (
+    GENERIC_MODELS_REQUIREMENTS,
+    ModelSpec,
+    cond_list,
+    exclude_model_spec,
+    load_namespace_keeping_module,
+    requires,
+)
 
 from adaptix import CannotProvide, Retort
 from adaptix._internal.feature_requirement import (
     HAS_PY_39,
     HAS_PY_310,
-    HAS_PY_311,
     HAS_PY_312,
     HAS_SELF_TYPE,
     HAS_STD_CLASSES_GENERICS,
@@ -28,11 +34,8 @@ T = TypeVar('T')
 K = TypeVar('K')
 V = TypeVar('V')
 
-# this models can be generics only after Python 3.11
-adaptix_model_spec_requirements = {
-    ModelSpec.TYPED_DICT: HAS_PY_311,
-    ModelSpec.NAMED_TUPLE: HAS_PY_311,
-}
+
+adaptix_model_spec_requirements = GENERIC_MODELS_REQUIREMENTS
 
 
 @pytest.fixture(
