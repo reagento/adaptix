@@ -62,14 +62,15 @@ class BuiltinConverterProvider(ConverterProvider):
             )
 
         source_model_field, *extra_params = map(self._param_to_base_field, signature.parameters.values())
-        dst_shape = self._fetch_dst_shape(mediator, signature.return_annotation)
+        dst_model_field = self._get_dst_field(signature.return_annotation)
+        dst_shape = self._fetch_dst_shape(mediator, dst_model_field)
         src_shape = self._fetch_src_shape(mediator, source_model_field)
         broaching_plan = self._make_broaching_plan(
             mediator=mediator,
             dst_shape=dst_shape,
             src_shape=src_shape,
             owner_binding_src=BindingSource(source_model_field),
-            owner_binding_dst=BindingDest(),
+            owner_binding_dst=BindingDest(dst_model_field),
             extra_params=tuple(map(BindingSource, extra_params)),
         )
         return self._make_converter(mediator, request, broaching_plan, signature)
@@ -130,20 +131,20 @@ class BuiltinConverterProvider(ConverterProvider):
             original=None,
         )
 
-    def _fetch_dst_shape(self, mediator: Mediator, return_annotation: Any) -> InputShape:
-        dst_loc_map = input_field_to_loc_map(
-            InputField(
-                id='__return__',
-                type=self._get_type_from_annotation(return_annotation),
-                metadata={},
-                default=NoDefault(),
-                original=None,
-                is_required=True,
-            )
+    def _get_dst_field(self, return_annotation: Any) -> InputField:
+        return InputField(
+            id='__return__',
+            type=self._get_type_from_annotation(return_annotation),
+            metadata={},
+            default=NoDefault(),
+            original=None,
+            is_required=True,
         )
+
+    def _fetch_dst_shape(self, mediator: Mediator, model_dst_field: InputField) -> InputShape:
         return provide_generic_resolved_shape(
             mediator,
-            InputShapeRequest(loc_stack=LocStack(dst_loc_map)),
+            InputShapeRequest(loc_stack=LocStack(input_field_to_loc_map(model_dst_field))),
         )
 
     def _fetch_src_shape(self, mediator: Mediator, source_model_field: BaseField) -> OutputShape:
