@@ -103,3 +103,11 @@ the second parameter is the pointing to the field of the destination model,
 the third parameter is the function that casts source data to the destination type.
 
 Usually, only field types are used as predicates here.
+
+
+Putting together
+===================
+
+Let's explore complex example collecting all features together.
+
+.. literalinclude:: /examples/conversion/tutorial/putting_together.py
