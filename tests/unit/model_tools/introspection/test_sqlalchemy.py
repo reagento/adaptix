@@ -1,8 +1,8 @@
 from typing import List, Optional
 from unittest.mock import ANY
 
-from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
+from sqlalchemy import Column, ForeignKey, Integer, String, Table
+from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
 
 from adaptix._internal.model_tools.definitions import (
     DefaultFactory,
@@ -19,15 +19,16 @@ from adaptix._internal.model_tools.definitions import (
 )
 from adaptix._internal.model_tools.introspection.sqlalchemy_tables import get_sqlalchemy_shape
 
-Base = declarative_base()
+mapper_registry = registry()
 
 
 def default_factory():
     return 2
 
 
-class MyTable(Base):
-    __tablename__ = "MyTable"
+@mapper_registry.mapped
+class Declarative:
+    __tablename__ = "DeclarativeModel"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str]
@@ -38,32 +39,43 @@ class MyTable(Base):
     field_with_old_syntax = Column(String(), nullable=False)
     nullable_field_with_old_syntax = Column(Integer(), nullable=True)
 
-    fk_id: Mapped[Optional[int]] = mapped_column(ForeignKey("MyTableFK.id"))
-    fk: Mapped[Optional["MyTableFK"]] = relationship(
-        "MyTableFK", back_populates="my_table_objs"
+    parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("Imperative.id"))
+    parent: Mapped[Optional["Imperative"]] = relationship(
+        "Imperative", back_populates="children"
     )
 
 
-class MyTableFK(Base):
-    __tablename__ = "MyTableFK"
+imperative_table = Table(
+    "Imperative",
+    mapper_registry.metadata,
+    Column("id", Integer, primary_key=True)
+)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    my_table_objs: Mapped[List[MyTable]] = relationship(
-        MyTable, back_populates="fk"
-    )
+
+class Imperative:
+    pass
+
+
+mapper_registry.map_imperatively(
+    Imperative,
+    imperative_table,
+    properties={
+        "children": relationship(Declarative, back_populates="parent")
+    }
+)
 
 
 def test_shape_getter():
     assert (
-        get_sqlalchemy_shape(MyTable)
+        get_sqlalchemy_shape(Declarative)
         ==
         Shape(
             input=InputShape(
-                constructor=MyTable,
+                constructor=Declarative,
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=int,
+                        type=Mapped[int],
                         id="id",
                         default=NoDefault(),
                         is_required=False,
@@ -71,7 +83,7 @@ def test_shape_getter():
                         original=ANY
                     ),
                     InputField(
-                        type=str,
+                        type=Mapped[str],
                         id="text",
                         default=NoDefault(),
                         is_required=True,
@@ -79,7 +91,7 @@ def test_shape_getter():
                         original=ANY
                     ),
                     InputField(
-                        type=Optional[int],
+                        type=Mapped[Optional[int]],
                         id="nullable_field",
                         default=NoDefault(),
                         is_required=False,
@@ -87,7 +99,7 @@ def test_shape_getter():
                         original=ANY
                     ),
                     InputField(
-                        type=int,
+                        type=Mapped[int],
                         id="field_with_default",
                         default=DefaultValue(2),
                         is_required=False,
@@ -95,7 +107,7 @@ def test_shape_getter():
                         original=ANY
                     ),
                     InputField(
-                        type=int,
+                        type=Mapped[int],
                         id="field_with_default_factory",
                         default=DefaultFactory(default_factory),
                         is_required=False,
@@ -103,7 +115,7 @@ def test_shape_getter():
                         original=ANY
                     ),
                     InputField(
-                        type=int,
+                        type=Mapped[int],
                         id="field_with_default_context_factory",
                         default=NoDefault(),
                         is_required=False,
@@ -127,20 +139,20 @@ def test_shape_getter():
                         original=ANY
                     ),
                     InputField(
-                        type=Optional[int],
-                        id="fk_id",
+                        type=Mapped[Optional[int]],
+                        id="parent_id",
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
                         original=ANY
                     ),
                     InputField(
-                        type=Optional[MyTableFK],
-                        id="fk",
+                        type=Mapped[Optional[Imperative]],
+                        id="parent",
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=MyTable.fk.property
+                        original=Declarative.parent.property
                     ),
                 ),
                 overriden_types=frozenset(),
@@ -186,13 +198,13 @@ def test_shape_getter():
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='fk_id',
-                        name='fk_id',
+                        field_id='parent_id',
+                        name='parent_id',
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='fk',
-                        name='fk',
+                        field_id='parent',
+                        name='parent',
                         kind=ParamKind.KW_ONLY,
                     ),
                 )
@@ -200,7 +212,7 @@ def test_shape_getter():
             output=OutputShape(
                 fields=(
                     OutputField(
-                        type=int,
+                        type=Mapped[int],
                         id="id",
                         default=NoDefault(),
                         metadata={},
@@ -208,7 +220,7 @@ def test_shape_getter():
                         accessor=create_attr_accessor('id', is_required=True),
                     ),
                     OutputField(
-                        type=str,
+                        type=Mapped[str],
                         id="text",
                         default=NoDefault(),
                         metadata={},
@@ -216,7 +228,7 @@ def test_shape_getter():
                         accessor=create_attr_accessor('text', is_required=True),
                     ),
                     OutputField(
-                        type=Optional[int],
+                        type=Mapped[Optional[int]],
                         id="nullable_field",
                         default=NoDefault(),
                         metadata={},
@@ -224,7 +236,7 @@ def test_shape_getter():
                         accessor=create_attr_accessor('nullable_field', is_required=False),
                     ),
                     OutputField(
-                        type=int,
+                        type=Mapped[int],
                         id="field_with_default",
                         default=DefaultValue(2),
                         metadata={},
@@ -232,7 +244,7 @@ def test_shape_getter():
                         accessor=create_attr_accessor('field_with_default', is_required=True),
                     ),
                     OutputField(
-                        type=int,
+                        type=Mapped[int],
                         id="field_with_default_factory",
                         default=DefaultFactory(default_factory),
                         metadata={},
@@ -240,7 +252,7 @@ def test_shape_getter():
                         accessor=create_attr_accessor('field_with_default_factory', is_required=True),
                     ),
                     OutputField(
-                        type=int,
+                        type=Mapped[int],
                         id="field_with_default_context_factory",
                         default=NoDefault(),
                         metadata={},
@@ -264,20 +276,83 @@ def test_shape_getter():
                         accessor=create_attr_accessor('nullable_field_with_old_syntax', is_required=False),
                     ),
                     OutputField(
-                        type=Optional[int],
-                        id="fk_id",
+                        type=Mapped[Optional[int]],
+                        id="parent_id",
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('fk_id', is_required=False),
+                        accessor=create_attr_accessor('parent_id', is_required=False),
                     ),
                     OutputField(
-                        type=Optional[MyTableFK],
-                        id="fk",
+                        type=Mapped[Optional[Imperative]],
+                        id="parent",
                         default=NoDefault(),
                         metadata={},
-                        original=MyTable.fk.property,
-                        accessor=create_attr_accessor('fk', is_required=False),
+                        original=Declarative.parent.property,
+                        accessor=create_attr_accessor('parent', is_required=False),
+                    ),
+                ),
+                overriden_types=frozenset()
+            )
+        )
+    )
+
+    assert (
+        get_sqlalchemy_shape(Imperative)
+        ==
+        Shape(
+            input=InputShape(
+                constructor=Imperative,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        id="id",
+                        default=NoDefault(),
+                        is_required=False,
+                        metadata={},
+                        original=ANY
+                    ),
+                    InputField(
+                        type=List[Declarative],
+                        id="children",
+                        default=NoDefault(),
+                        is_required=False,
+                        metadata={},
+                        original=ANY
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='id',
+                        name='id',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id='children',
+                        name='children',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                ),
+                overriden_types=frozenset()
+            ),
+            output=OutputShape(
+                fields=(
+                    OutputField(
+                        type=int,
+                        id="id",
+                        default=NoDefault(),
+                        metadata={},
+                        original=ANY,
+                        accessor=create_attr_accessor('id', is_required=True),
+                    ),
+                    OutputField(
+                        type=List[Declarative],
+                        id="children",
+                        default=NoDefault(),
+                        metadata={},
+                        original=ANY,
+                        accessor=create_attr_accessor('children', is_required=True),
                     ),
                 ),
                 overriden_types=frozenset()

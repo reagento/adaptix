@@ -1,5 +1,5 @@
 from inspect import getfullargspec
-from typing import Any, Optional
+from typing import List, Optional
 
 try:
     from sqlalchemy import inspect
@@ -47,7 +47,7 @@ def _is_context_sensitive(default):
 
 def _get_type_for_column(column, type_hints):
     try:
-        return type_hints[column.name].__args__[0]
+        return type_hints[column.name]
     except KeyError:
         if column.nullable:
             return Optional[column.type.python_type]
@@ -56,9 +56,11 @@ def _get_type_for_column(column, type_hints):
 
 def _get_type_for_relationship(relationship, type_hints):
     try:
-        return type_hints[str(relationship).split(".")[1]].__args__[0]
+        return type_hints[relationship.key]
     except KeyError:
-        return Any
+        if relationship.uselist:
+            return List[relationship.entity.class_]
+        return Optional[relationship.entity.class_]
 
 
 def _get_default(column_default):
@@ -69,7 +71,7 @@ def _get_default(column_default):
     return NoDefault()
 
 
-def _get_input_required(column):
+def _is_input_required_for_column(column):
     return not (
         #  columns constrainted by FK are not required since they can be specified by instances
         column.default or column.nullable or column.server_default or column.foreign_keys
@@ -77,8 +79,17 @@ def _get_input_required(column):
     )
 
 
-def _get_output_required(column):
+def _is_output_required_for_column(column):
     return not column.nullable
+
+
+def _is_output_required_for_relationship(relationship):
+    if relationship.uselist:
+        return True
+    for column in relationship.local_columns:
+        if column.nullable:
+            return False
+    return True
 
 
 def _get_input_shape(tp, columns, relationships, type_hints) -> InputShape:
@@ -90,7 +101,7 @@ def _get_input_shape(tp, columns, relationships, type_hints) -> InputShape:
                 id=column.name,
                 type=_get_type_for_column(column, type_hints),
                 default=_get_default(column.default),
-                is_required=_get_input_required(column),
+                is_required=_is_input_required_for_column(column),
                 metadata=column.info,
                 original=ColumnWrapper(column=column)
             )
@@ -139,7 +150,7 @@ def _get_output_shape(columns, relationships, type_hints) -> OutputShape:
             default=_get_default(column.default),
             metadata=column.info,
             original=ColumnWrapper(column=column),
-            accessor=create_attr_accessor(column.name, is_required=_get_output_required(column))
+            accessor=create_attr_accessor(column.name, is_required=_is_output_required_for_column(column))
         )
         for column in columns
     ]
@@ -153,7 +164,7 @@ def _get_output_shape(columns, relationships, type_hints) -> OutputShape:
                 default=NoDefault(),
                 metadata={},
                 original=relationship,
-                accessor=create_attr_accessor(name, is_required=False)
+                accessor=create_attr_accessor(name, is_required=relationship.uselist)
             )
         )
 
