@@ -1,3 +1,5 @@
+.. _loading-and-dumping-tutorial:
+
 ***********
 Tutorial
 ***********
