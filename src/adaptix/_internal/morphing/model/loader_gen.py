@@ -1,7 +1,7 @@
 import collections.abc
 import contextlib
 from dataclasses import dataclass
-from typing import Dict, List, Mapping, Optional, Set, Tuple
+from typing import AbstractSet, Dict, List, Mapping, Optional, Set, Tuple
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -180,6 +180,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         debug_trail: DebugTrail,
         strict_coercion: bool,
         field_loaders: Mapping[str, Loader],
+        skipped_fields: AbstractSet[str],
         model_identity: str,
         props: ModelLoaderProps,
     ):
@@ -194,6 +195,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             param.field_id: param for param in self._shape.params
         }
         self._field_loaders = field_loaders
+        self._skipped_fields = skipped_fields
         self._model_identity = model_identity
         self._props = props
 
@@ -303,21 +305,29 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
 
         state.builder.extend_above(header_builder)
 
-    def _gen_constructor_call(self, state: GenState) -> None:
+    def _gen_constructor_call(self, state: GenState) -> None:  # noqa: CCR001
         state.namespace.add_constant('constructor', self._shape.constructor)
 
         constructor_builder = CodeBuilder()
+        has_skipped_params = False
         with constructor_builder("constructor("):
             for param in self._shape.params:
                 field = self._shape.fields_dict[param.field_id]
 
+                if field.id in self._skipped_fields:
+                    has_skipped_params = True
+                    continue
                 if self._is_packed_field(field):
                     continue
 
                 value = state.v_field(field)
-
-                if param.kind == ParamKind.KW_ONLY:
+                if param.kind == ParamKind.KW_ONLY or has_skipped_params:
                     constructor_builder(f"{param.name}={value},")
+                elif param.kind == ParamKind.POS_ONLY and has_skipped_params:
+                    raise ValueError(
+                        'Can not generate consistent constructor call,'
+                        ' positional-only parameter is skipped'
+                    )
                 else:
                     constructor_builder(f"{value},")
 

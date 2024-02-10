@@ -1,4 +1,4 @@
-from typing import Mapping
+from typing import AbstractSet, Mapping
 
 from adaptix._internal.provider.fields import input_field_to_loc_map
 
@@ -22,7 +22,6 @@ from .basic_gen import (
     get_skipped_fields,
     get_wild_extra_targets,
     has_collect_policy,
-    strip_input_shape_fields,
 )
 from .crown_definitions import InputNameLayout, InputNameLayoutRequest
 
@@ -53,8 +52,8 @@ class ModelLoaderProvider(LoaderProvider):
     def _fetch_model_loader_gen(self, mediator: Mediator, request: LoaderRequest) -> ModelLoaderGen:
         shape = self._fetch_shape(mediator, request)
         name_layout = self._fetch_name_layout(mediator, request, shape)
-        shape = self._process_shape(shape, name_layout)
-        self._validate_params(shape, name_layout)
+        skipped_fields = get_skipped_fields(shape, name_layout)
+        self._validate_params(shape, name_layout, skipped_fields)
 
         field_loaders = self._fetch_field_loaders(mediator, request, shape)
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
@@ -65,6 +64,7 @@ class ModelLoaderProvider(LoaderProvider):
             shape=shape,
             name_layout=name_layout,
             field_loaders=field_loaders,
+            skipped_fields=skipped_fields,
             model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
         )
 
@@ -88,6 +88,7 @@ class ModelLoaderProvider(LoaderProvider):
         shape: InputShape,
         name_layout: InputNameLayout,
         field_loaders: Mapping[str, Loader],
+        skipped_fields: AbstractSet[str],
         model_identity: str,
     ) -> ModelLoaderGen:
         return BuiltinModelLoaderGen(
@@ -96,6 +97,7 @@ class ModelLoaderProvider(LoaderProvider):
             debug_trail=debug_trail,
             strict_coercion=strict_coercion,
             field_loaders=field_loaders,
+            skipped_fields=skipped_fields,
             model_identity=model_identity,
             props=self._props,
         )
@@ -151,15 +153,22 @@ class ModelLoaderProvider(LoaderProvider):
         )
         return {field.id: loader for field, loader in zip(shape.fields, loaders)}
 
-    def _process_shape(self, shape: InputShape, name_layout: InputNameLayout) -> InputShape:
-        wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)
-        if wild_extra_targets:
+    def _validate_params(
+        self,
+        shape: InputShape,
+        name_layout: InputNameLayout,
+        skipped_fields: AbstractSet[str],
+    ) -> None:
+        skipped_required_fields = [
+            field.id
+            for field in shape.fields
+            if field.is_required and field.id in skipped_fields
+        ]
+        if skipped_required_fields:
             raise ValueError(
-                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
+                f"Required fields {skipped_required_fields} are skipped"
             )
-        return strip_input_shape_fields(shape, get_skipped_fields(shape, name_layout))
 
-    def _validate_params(self, processed_shape: InputShape, name_layout: InputNameLayout) -> None:
         if name_layout.extra_move is None and has_collect_policy(name_layout.crown):
             raise ValueError(
                 "Cannot create loader that collect extra data"
@@ -173,12 +182,18 @@ class ModelLoaderProvider(LoaderProvider):
             )
 
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
-            {field.id: field for field in processed_shape.fields},
+            {field.id: field for field in shape.fields},
             name_layout.crown,
         )
         if optional_fields_at_list_crown:
             raise ValueError(
                 f"Optional fields {optional_fields_at_list_crown} are found at list crown"
+            )
+
+        wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)
+        if wild_extra_targets:
+            raise ValueError(
+                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
             )
 
 

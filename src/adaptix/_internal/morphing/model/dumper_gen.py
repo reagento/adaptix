@@ -19,7 +19,7 @@ from ...model_tools.definitions import (
 )
 from ...special_cases_optimization import as_is_stub, get_default_clause
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
-from .basic_gen import ModelDumperGen
+from .basic_gen import ModelDumperGen, get_skipped_fields
 from .crown_definitions import (
     CrownPath,
     CrownPathElem,
@@ -132,7 +132,10 @@ class BuiltinModelDumperGen(ModelDumperGen):
             body_builder("opt_fields = {}")
             body_builder.empty_line()
 
+        skipped_fields = get_skipped_fields(self._shape, self._name_layout)
         for field in self._shape.fields:
+            if field.id in skipped_fields:
+                continue
             if not self._is_extra_target(field):
                 self._gen_field_extraction(
                     body_builder, namespace, field,
