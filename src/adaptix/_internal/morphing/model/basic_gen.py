@@ -9,8 +9,8 @@ from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
 from ...model_tools.definitions import InputField, InputShape, OutputField, OutputShape
-from ...provider.essential import Mediator
-from ...provider.request_cls import LocatedRequest, TypeHintLoc
+from ...provider.essential import CannotProvide, Mediator
+from ...provider.request_cls import LocatedRequest, LocStack, TypeHintLoc
 from ...provider.static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
     BaseCrown,
@@ -48,6 +48,13 @@ def stub_code_gen_hook(data: CodeGenHookData):
 @dataclass(frozen=True)
 class CodeGenHookRequest(LocatedRequest[CodeGenHook]):
     pass
+
+
+def fetch_code_gen_hook(mediator: Mediator, loc_stack: LocStack) -> CodeGenHook:
+    try:
+        return mediator.delegating_provide(CodeGenHookRequest(loc_stack=loc_stack))
+    except CannotProvide:
+        return stub_code_gen_hook
 
 
 class CodeGenAccumulator(StaticProvider):

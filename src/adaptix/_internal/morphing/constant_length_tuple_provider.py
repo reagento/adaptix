@@ -56,7 +56,8 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                     )
                 )
                 for i, tp in enumerate(norm.args)
-            ]
+            ],
+            lambda: 'Cannot create loader for tuple. Loaders for some elements cannot be created',
         )
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
@@ -240,7 +241,8 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                     )
                 )
                 for i, tp in enumerate(norm.args)
-            ]
+            ],
+            lambda: 'Cannot create dumper for tuple. Dumpers for some elements cannot be created',
         )
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._make_dumper(tuple(dumpers), debug_trail)

@@ -1,10 +1,11 @@
 from abc import ABC
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Type
 
-from ..common import VarTuple
+from ..common import TypeHint, VarTuple
+from ..conversion.request_cls import BindingRequest, CoercerRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from ..provider.request_cls import FieldLoc, LocatedRequest, LocMap, TypeHintLoc, find_owner_with_field
+from ..provider.request_cls import FieldLoc, LocatedRequest, LocMap, LocStack, TypeHintLoc, find_owner_with_field
 from ..utils import copy_exception_dunders, with_module
 from .base_retort import BaseRetort
 from .mediator import ErrorRepresentor, RecursionResolver, T
@@ -49,45 +50,89 @@ class NoSuitableProvider(Exception):
 
 
 class BuiltinErrorRepresentor(ErrorRepresentor):
-    _NO_PROVIDER_DESCRIPTION_MAP: Mapping[Type[Request], str] = {
+    _NO_PROVIDER_DESCRIPTION_METHOD: Mapping[Type[Request], str] = {
+        BindingRequest: '_get_binding_request_description',
+        CoercerRequest: '_get_coercer_request_description',
+    }
+    _NO_PROVIDER_DESCRIPTION_CONST: Mapping[Type[Request], str] = {
         LoaderRequest: "There is no provider that can create specified loader",
         DumperRequest: "There is no provider that can create specified dumper",
     }
 
-    def get_no_provider_description(self, request: Request) -> str:
+    def _get_binding_request_description(self, request: BindingRequest) -> str:
         try:
-            return self._NO_PROVIDER_DESCRIPTION_MAP[type(request)]
-        except KeyError:
-            return f"There is no provider that can process {request}"
+            dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.destination.to_loc_stack())
+        except ValueError:
+            return 'Cannot find coercer'
+
+        dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
+        dst_field = dst_field_loc_map[FieldLoc].field_id
+        return f"Cannot find paired field of `{dst_owner}.{dst_field}` for binding"
+
+    def _get_coercer_request_description(self, request: CoercerRequest) -> str:
+        try:
+            src_owner_loc_map, src_field_loc_map = find_owner_with_field(request.src.to_loc_stack())
+        except ValueError:
+            return 'Cannot find coercer'
+
+        try:
+            dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.dst.to_loc_stack())
+        except ValueError:
+            return 'Cannot find coercer'
+
+        src_owner = self._get_type_desc(src_owner_loc_map[TypeHintLoc].type)
+        src_field = src_field_loc_map[FieldLoc].field_id
+        dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
+        dst_field = dst_field_loc_map[FieldLoc].field_id
+        return f"Cannot find coercer for binding `{src_owner}.{src_field} -> {dst_owner}.{dst_field}`"
+
+    def _get_type_desc(self, tp: TypeHint) -> str:
+        try:
+            return tp.__qualname__
+        except AttributeError:
+            return str(tp)
+
+    def get_no_provider_description(self, request: Request) -> str:
+        request_cls = type(request)
+        if request_cls in self._NO_PROVIDER_DESCRIPTION_METHOD:
+            return getattr(self, self._NO_PROVIDER_DESCRIPTION_METHOD[request_cls])(request)
+        if request_cls in self._NO_PROVIDER_DESCRIPTION_CONST:
+            return self._NO_PROVIDER_DESCRIPTION_CONST[request_cls]
+        return f"There is no provider that can process {request}"
 
     _LOC_KEYS_ORDER = {fld: idx for idx, fld in enumerate(['type', 'field_id'])}
 
-    def get_request_context_notes(self, request: Request) -> Iterable[str]:
-        if not isinstance(request, LocatedRequest):
-            return
+    def _get_loc_stack_context_notes(self, loc_desc: str, field_desc: str, loc_stack: LocStack) -> Iterable[str]:
+        try:
+            owner_loc_map, field_loc_map = find_owner_with_field(loc_stack)
+        except ValueError:
+            pass
+        else:
+            owner_type = owner_loc_map[TypeHintLoc].type
+            field_id = field_loc_map[FieldLoc].field_id
+            yield f'Exception was raised while processing {field_desc} {field_id!r} of {owner_type}'
 
         location_desc = ', '.join(
             f'{key}={value!r}'
             for key, value in sorted(
                 (
                     (key, value)
-                    for loc in request.last_map.values()
+                    for loc in loc_stack.last.values()
                     for key, value in vars(loc).items()
                 ),
                 key=lambda item: self._LOC_KEYS_ORDER.get(item[0], 1000),
             )
         )
         if location_desc:
-            yield f'Location: {location_desc}'
+            yield f'{loc_desc}: {location_desc}'
 
-        try:
-            owner_loc_map, field_loc_map = find_owner_with_field(request.loc_stack)
-        except ValueError:
-            pass
-        else:
-            owner_type = owner_loc_map[TypeHintLoc].type
-            field_id = field_loc_map[FieldLoc].field_id
-            yield f'Exception was raised while processing field {field_id!r} of {owner_type}'
+    def get_request_context_notes(self, request: Request) -> Iterable[str]:
+        if isinstance(request, LocatedRequest):
+            yield from self._get_loc_stack_context_notes(
+                loc_desc='Location',
+                field_desc='field',
+                loc_stack=request.loc_stack,
+            )
 
 
 class OperatingRetort(BaseRetort, Provider, ABC):

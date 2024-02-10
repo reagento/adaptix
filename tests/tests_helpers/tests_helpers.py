@@ -5,17 +5,34 @@ import runpy
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, is_dataclass
+from enum import Enum
+from operator import getitem
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any, Callable, Dict, Generator, List, Optional, Reversible, Type, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Reversible,
+    Type,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 from uuid import uuid4
 
 import pytest
+from _pytest.python import Metafunc
 from sqlalchemy import Engine, create_engine
 
 from adaptix import AdornedRetort, CannotProvide, DebugTrail, Mediator, NoSuitableProvider, Provider, Request
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
+from adaptix._internal.feature_requirement import HAS_ATTRS_PKG, HAS_PY_311, DistributionVersionRequirement, Requirement
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
 from adaptix._internal.struct_trail import TrailElement, extend_trail, render_trail_as_note
 from adaptix._internal.type_tools import is_parametrized
@@ -229,3 +246,76 @@ def with_notes(exc: E, *notes: Union[str, List[str]]) -> E:
 
 def with_trail(exc: E, sub_trail: Reversible[TrailElement]) -> E:
     return render_trail_as_note(extend_trail(exc, sub_trail))
+
+
+class ModelSpec(Enum):
+    DATACLASS = 'dataclass'
+    TYPED_DICT = 'typed_dict'
+    NAMED_TUPLE = 'named_tuple'
+    ATTRS = 'attrs'
+
+    @classmethod
+    def default_requirements(cls):
+        return {
+            cls.ATTRS: HAS_ATTRS_PKG,
+        }
+
+
+@dataclass
+class ModelSpecSchema:
+    decorator: Any
+    bases: Any
+    get_field: Callable[[Any, str], Any]
+
+
+def model_spec_to_schema(spec: ModelSpec):
+    if spec == ModelSpec.DATACLASS:
+        return ModelSpecSchema(decorator=dataclass, bases=(), get_field=getattr)
+    if spec == ModelSpec.TYPED_DICT:
+        return ModelSpecSchema(decorator=lambda x: x, bases=(TypedDict,), get_field=getitem)
+    if spec == ModelSpec.NAMED_TUPLE:
+        return ModelSpecSchema(decorator=lambda x: x, bases=(NamedTuple,), get_field=getattr)
+    if spec == ModelSpec.ATTRS:
+        from attrs import define
+        return ModelSpecSchema(decorator=define, bases=(), get_field=getattr)
+    raise ValueError
+
+
+def exclude_model_spec(first_spec: ModelSpec, *other_specs: ModelSpec):
+    specs = [first_spec, *other_specs]
+
+    def decorator(func):
+        func.adaptix_exclude_model_spec = specs
+        return func
+
+    return decorator
+
+
+GENERIC_MODELS_REQUIREMENTS: Mapping[ModelSpec, Requirement] = {
+    ModelSpec.TYPED_DICT: HAS_PY_311,
+    ModelSpec.NAMED_TUPLE: HAS_PY_311,
+}
+
+
+def only_generic_models(test_func):
+    test_func.adaptix_model_spec_requirements = GENERIC_MODELS_REQUIREMENTS
+
+
+def parametrize_model_spec(fixture_name: str, metafunc: Metafunc) -> None:
+    if fixture_name not in metafunc.fixturenames:
+        return
+
+    excluded = getattr(metafunc.function, 'adaptix_exclude_model_spec', [])
+    requirements = {
+        **ModelSpec.default_requirements(),
+        **getattr(metafunc.module, 'adaptix_model_spec_requirements', {}),
+        **getattr(metafunc.function, 'adaptix_model_spec_requirements', {}),
+    }
+    metafunc.parametrize(
+        fixture_name,
+        [
+            pytest.param(model_spec_to_schema(spec), id=spec.value)
+            for spec in ModelSpec
+            if spec not in excluded and (spec not in requirements or bool(requirements[spec]))
+        ]
+    )
