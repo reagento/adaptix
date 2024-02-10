@@ -4,7 +4,12 @@ from textwrap import dedent
 
 
 def ensure_function_is_stub(func):
-    source = dedent(inspect.getsource(func))
+    try:
+        raw_source = inspect.getsource(func)
+    except OSError:
+        return
+
+    source = dedent(raw_source)
     ast_module = ast.parse(source)
     func_body = ast_module.body[0].body
     if len(func_body) == 1:

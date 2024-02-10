@@ -29,8 +29,8 @@ def get_converter(
 
 @overload
 def get_converter(
-    src: Type[TypeHint],
-    dst: Type[TypeHint],
+    src: TypeHint,
+    dst: TypeHint,
     *,
     retort: AdornedConverterRetort = _global_retort,
     recipe: Iterable[Provider] = (),
@@ -41,12 +41,21 @@ def get_converter(
 
 def get_converter(
     src: TypeHint,
-    dst,
+    dst: TypeHint,
     *,
     retort: AdornedConverterRetort = _global_retort,
     recipe: Iterable[Provider] = (),
     name: Optional[str] = None,
 ):
+    """Factory producing basic converter.
+
+    :param src: A type of converter input data.
+    :param dst: A type of converter output data.
+    :param retort: A retort used to produce converter.
+    :param recipe: An extra recipe adding to retort.
+    :param name: Name of generated function, if value is None, name will be derived.
+    :return: Desired converter function
+    """
     if recipe:
         retort = retort.extend(recipe=recipe)
     return retort.produce_converter(
@@ -79,6 +88,13 @@ def impl_converter(
     retort: AdornedConverterRetort = _global_retort,
     recipe: Iterable[Provider] = (),
 ):
+    """Decorator producing converter with signature of stub function.
+
+    :param stub_function: A function that signature is used to generate converter.
+    :param retort: A retort used to produce converter.
+    :param recipe: An extra recipe adding to retort.
+    :return: Desired converter function
+    """
     if stub_function is None:
         return partial(impl_converter, retort=retort, recipe=recipe)
 
