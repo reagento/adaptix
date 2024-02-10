@@ -50,7 +50,7 @@ class AdornedConverterRetort(OperatingRetort):
                 function_name=function_name,
                 stub_function=stub_function,
             ),
-            error_message=f'Cannot produce loader for signature {signature!r}',
+            error_message=f'Cannot produce converter for {signature!r}',
         )
 
 

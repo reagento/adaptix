@@ -183,7 +183,8 @@ class BuiltinConverterProvider(ConverterProvider):
                     destination=owner_binding_dst.append_with(dst_field),
                 )
                 for dst_field in dst_shape.fields
-            ]
+            ],
+            lambda: 'Bindings for some fields are not found',
         )
         return bindings
 
@@ -278,6 +279,7 @@ class BuiltinConverterProvider(ConverterProvider):
         return mandatory_apply_by_iterable(
             generate_sub_plan,
             zip(dst_shape.fields, bindings),
+            lambda: 'Coercers for some bindings are not found',
         )
 
     def _make_broaching_plan(
