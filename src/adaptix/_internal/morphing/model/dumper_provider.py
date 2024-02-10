@@ -18,9 +18,7 @@ from .basic_gen import (
     fetch_code_gen_hook,
     get_extra_targets_at_crown,
     get_optional_fields_at_list_crown,
-    get_skipped_fields,
     get_wild_extra_targets,
-    strip_output_shape_fields,
 )
 from .crown_definitions import OutputNameLayout, OutputNameLayoutRequest
 from .dumper_gen import BuiltinModelDumperGen
@@ -46,7 +44,7 @@ class ModelDumperProvider(DumperProvider):
     def _fetch_model_dumper_gen(self, mediator: Mediator, request: DumperRequest) -> ModelDumperGen:
         shape = self._fetch_shape(mediator, request)
         name_layout = self._fetch_name_layout(mediator, request, shape)
-        shape = self._process_shape(shape, name_layout)
+        self._validate_params(shape, name_layout)
 
         fields_dumpers = self._fetch_field_dumpers(mediator, request, shape)
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
@@ -137,7 +135,7 @@ class ModelDumperProvider(DumperProvider):
         )
         return {field.id: dumper for field, dumper in zip(shape.fields, dumpers)}
 
-    def _process_shape(self, shape: OutputShape, name_layout: OutputNameLayout) -> OutputShape:
+    def _validate_params(self, shape: OutputShape, name_layout: OutputNameLayout) -> None:
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
             {field.id: field for field in shape.fields},
             name_layout.crown,
@@ -158,5 +156,3 @@ class ModelDumperProvider(DumperProvider):
             raise ValueError(
                 f"Extra targets {extra_targets_at_crown} are found at crown"
             )
-
-        return strip_output_shape_fields(shape, get_skipped_fields(shape, name_layout))

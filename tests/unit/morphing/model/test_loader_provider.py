@@ -10,6 +10,7 @@ from adaptix import DebugTrail, ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
 from adaptix._internal.model_tools.definitions import (
     Default,
+    DefaultValue,
     InputField,
     InputShape,
     NoDefault,
@@ -1174,3 +1175,28 @@ def test_empty_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_c
                 ),
                 lambda: loader('abc'),
             )
+
+
+def test_skipped_pos_optional_pos_field(debug_ctx, extra_policy):
+    loader_getter = make_loader_getter(
+        shape=shape(
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=False, default=DefaultValue(10)),
+            TestField('c', ParamKind.POS_OR_KW, is_required=False, default=DefaultValue(20)),
+        ),
+        name_layout=InputNameLayout(
+            crown=InpDictCrown(
+                {
+                    'a': InpFieldCrown('a'),
+                    'c': InpFieldCrown('c'),
+                },
+                extra_policy=ExtraForbid(),
+            ),
+            extra_move=None,
+        ),
+        debug_trail=DebugTrail.ALL,
+        debug_ctx=debug_ctx,
+    )
+    loader = loader_getter()
+
+    assert loader({'a': 1, 'c': 3}) == gauge(1, c=3)
