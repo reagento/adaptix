@@ -256,8 +256,8 @@ class FlagByExactValueProvider(BaseFlagProvider):
             if data < 0 or data > flag_mask:
                 raise OutOfRange(0, flag_mask, data)
 
-            #  data already has been validated for all edge cases
-            #  so enum lookup cannot raise an error
+            # data already has been validated for all edge cases
+            # so enum lookup cannot raise an error
 
             return enum(data)
 
@@ -301,7 +301,7 @@ class FlagByListProvider(BaseFlagProvider):
         variants = list(mapping.keys())
         zero_case = enum(0)
 
-        #  treat str and Iterable[str] as different types
+        # treat str and Iterable[str] as different types
         expected_type = Union[str, Iterable[str]] if allow_single_value else Iterable[str]
 
         def flag_loader(data) -> Flag:  # noqa: CCR001
