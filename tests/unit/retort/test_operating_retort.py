@@ -102,7 +102,7 @@ def test_cannot_produce_dumper():
     )
 
 
-def test_cannot_produce_converter_no_binding():
+def test_cannot_produce_converter_no_binding_required():
     @dataclass
     class Book:
         title: str
@@ -124,10 +124,54 @@ def test_cannot_produce_converter_no_binding():
             AggregateCannotProvide(
                 'Bindings for some fields are not found',
                 [
-                    CannotProvide(
-                        f'Cannot find paired field of `{BookDTO.__qualname__}.author` for binding',
-                        is_terminal=False,
-                        is_demonstrative=True,
+                    with_notes(
+                        CannotProvide(
+                            f'Cannot find paired field of `{BookDTO.__qualname__}.author` for binding',
+                            is_terminal=False,
+                            is_demonstrative=True,
+                        ),
+                        'Note: This is a required filed, so it must take value',
+                    ),
+                ],
+                is_terminal=True,
+                is_demonstrative=True,
+            ),
+        ),
+        lambda: get_converter(Book, BookDTO),
+    )
+
+
+def test_cannot_produce_converter_no_binding_optional():
+    @dataclass
+    class Book:
+        title: str
+        price: int
+
+    @dataclass
+    class BookDTO:
+        title: str
+        price: int
+        author: str = ''
+
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(
+                f'Cannot produce converter for'
+                f' <Signature (src: {Book.__module__}.{Book.__qualname__}, /)'
+                f' -> {BookDTO.__module__}.{BookDTO.__qualname__}>'
+            ),
+            AggregateCannotProvide(
+                'Bindings for some fields are not found',
+                [
+                    with_notes(
+                        CannotProvide(
+                            f'Cannot find paired field of `{BookDTO.__qualname__}.author` for binding',
+                            is_terminal=False,
+                            is_demonstrative=True,
+                        ),
+                        'Note: Current policy limits unbound optional fields,'
+                        ' so you need to link it to another field'
+                        ' or explicitly confirm the desire to skipping using `allow_unbound_optional`',
                     ),
                 ],
                 is_terminal=True,

@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
 from functools import reduce
 from inspect import Parameter, Signature
-from typing import Any, Iterable, Optional, Sequence, cast, final
+from typing import Any, Iterable, List, Mapping, Optional, Sequence, Tuple, cast, final
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..common import Converter, TypeHint
 from ..conversion.broaching.code_generator import BroachingCodeGenerator, BroachingPlan, BuiltinBroachingCodeGenerator
 from ..conversion.broaching.definitions import (
     AccessorElement,
+    FuncCallArg,
     FunctionElement,
     KeywordArg,
     ParameterElement,
@@ -20,6 +21,7 @@ from ..conversion.request_cls import (
     BindingSource,
     CoercerRequest,
     ConverterRequest,
+    UnboundOptionalPolicyRequest,
 )
 from ..model_tools.definitions import BaseField, DefaultValue, InputField, InputShape, NoDefault, OutputShape, ParamKind
 from ..morphing.model.basic_gen import NameSanitizer, compile_closure_with_globals_capturing, fetch_code_gen_hook
@@ -28,6 +30,7 @@ from ..provider.fields import base_field_to_loc_map, input_field_to_loc_map
 from ..provider.request_cls import LocMap, LocStack, TypeHintLoc
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..provider.static_provider import StaticProvider, static_provision_action
+from ..utils import add_note
 
 
 class ConverterProvider(StaticProvider, ABC):
@@ -168,25 +171,46 @@ class BuiltinConverterProvider(ConverterProvider):
         owner_binding_src: BindingSource,
         owner_binding_dst: BindingDest,
         extra_params: Sequence[BindingSource],
-    ) -> Iterable[BindingResult]:
+    ) -> Iterable[Tuple[InputField, Optional[BindingResult]]]:
         model_binding_sources = tuple(
             owner_binding_src.append_with(src_field)
             for src_field in src_shape.fields
         )
-        bindings = mediator.mandatory_provide_by_iterable(
-            [
-                BindingRequest(
-                    sources=(
-                        model_binding_sources,
-                        *extra_params,
-                    ),
-                    destination=owner_binding_dst.append_with(dst_field),
+        sources = (model_binding_sources, *extra_params)
+
+        def fetch_field_binding(dst_field: InputField) -> Tuple[InputField, Optional[BindingResult]]:
+            destination = owner_binding_dst.append_with(dst_field)
+            try:
+                binding = mediator.provide(
+                    BindingRequest(
+                        sources=sources,  # type: ignore[arg-type]
+                        destination=destination,
+                    )
                 )
-                for dst_field in dst_shape.fields
-            ],
+            except CannotProvide as e:
+                if dst_field.is_required:
+                    add_note(e, 'Note: This is a required filed, so it must take value')
+                    raise
+
+                policy = mediator.mandatory_provide(
+                    UnboundOptionalPolicyRequest(loc_stack=destination.to_loc_stack())
+                )
+                if policy.is_allowed:
+                    return dst_field, None
+                add_note(
+                    e,
+                    'Note: Current policy limits unbound optional fields,'
+                    ' so you need to link it to another field'
+                    ' or explicitly confirm the desire to skipping using `allow_unbound_optional`'
+                )
+                raise
+            return dst_field, binding
+
+        return mandatory_apply_by_iterable(
+            fetch_field_binding,
+            zip(dst_shape.fields),
             lambda: 'Bindings for some fields are not found',
         )
-        return bindings
 
     def _get_nested_models_sub_plan(
         self,
@@ -249,14 +273,13 @@ class BuiltinConverterProvider(ConverterProvider):
             ),
         )
 
-    def _generate_binding_sub_plans(
+    def _generate_field_to_sub_plan(
         self,
         mediator: Mediator,
-        dst_shape: InputShape,
         extra_params: Sequence[BindingSource],
-        bindings: Iterable[BindingResult],
+        field_bindings: Iterable[Tuple[InputField, BindingResult]],
         owner_binding_dst: BindingDest,
-    ) -> Iterable[BroachingPlan]:
+    ) -> Mapping[InputField, BroachingPlan]:
         def generate_sub_plan(input_field: InputField, binding: BindingResult):
             binding_dst = owner_binding_dst.append_with(input_field)
             try:
@@ -276,11 +299,15 @@ class BuiltinConverterProvider(ConverterProvider):
                     return result
                 raise e
 
-        return mandatory_apply_by_iterable(
+        coercers = mandatory_apply_by_iterable(
             generate_sub_plan,
-            zip(dst_shape.fields, bindings),
+            field_bindings,
             lambda: 'Coercers for some bindings are not found',
         )
+        return {
+            dst_field: coercer
+            for (dst_field, binding), coercer in zip(field_bindings, coercers)
+        }
 
     def _make_broaching_plan(
         self,
@@ -291,7 +318,7 @@ class BuiltinConverterProvider(ConverterProvider):
         owner_binding_src: BindingSource,
         owner_binding_dst: BindingDest,
     ) -> BroachingPlan:
-        bindings = self._fetch_bindings(
+        field_bindings = self._fetch_bindings(
             mediator=mediator,
             dst_shape=dst_shape,
             src_shape=src_shape,
@@ -299,19 +326,50 @@ class BuiltinConverterProvider(ConverterProvider):
             owner_binding_src=owner_binding_src,
             owner_binding_dst=owner_binding_dst,
         )
-        sub_plans = self._generate_binding_sub_plans(
+        field_to_sub_plan = self._generate_field_to_sub_plan(
             mediator=mediator,
-            dst_shape=dst_shape,
-            bindings=bindings,
+            field_bindings=[
+                (dst_field, binding)
+                for dst_field, binding in field_bindings
+                if binding is not None
+            ],
             extra_params=extra_params,
             owner_binding_dst=owner_binding_dst,
         )
+        return self._make_constructor_call(
+            dst_shape=dst_shape,
+            field_to_binding=dict(field_bindings),
+            field_to_sub_plan=field_to_sub_plan,
+        )
+
+    def _make_constructor_call(
+        self,
+        dst_shape: InputShape,
+        field_to_binding: Mapping[InputField, Optional[BindingResult]],
+        field_to_sub_plan: Mapping[InputField, BroachingPlan],
+    ) -> BroachingPlan:
+        args: List[FuncCallArg[BroachingPlan]] = []
+        has_skipped_params = False
+        for param in dst_shape.params:
+            field = dst_shape.fields_dict[param.field_id]
+
+            if field_to_binding[field] is None:
+                has_skipped_params = True
+                continue
+
+            sub_plan = field_to_sub_plan[field]
+            if param.kind == ParamKind.KW_ONLY or has_skipped_params:
+                args.append(KeywordArg(param.name, sub_plan))
+            elif param.kind == ParamKind.POS_ONLY and has_skipped_params:
+                raise CannotProvide(
+                    'Can not generate consistent constructor call,'
+                    ' positional-only parameter is skipped',
+                    is_demonstrative=True,
+                )
+            else:
+                args.append(PositionalArg(sub_plan))
+
         return FunctionElement(
             func=dst_shape.constructor,
-            args=tuple(
-                KeywordArg(param.name, sub_plan)
-                if param.kind == ParamKind.KW_ONLY else
-                PositionalArg(sub_plan)
-                for param, binding, sub_plan in zip(dst_shape.params, bindings, sub_plans)
-            ),
+            args=tuple(args),
         )
