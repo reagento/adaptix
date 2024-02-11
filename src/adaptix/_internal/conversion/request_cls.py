@@ -10,10 +10,10 @@ from ..provider.essential import Request
 from ..provider.fields import base_field_to_loc_map, input_field_to_loc_map, output_field_to_loc_map
 from ..provider.request_cls import LocatedRequest, LocStack
 
-BindingSourceItem = Union[OutputField, BaseField]
+LinkingSourceItem = Union[OutputField, BaseField]
 
 
-class BindingSource(ImmutableStack[BindingSourceItem]):
+class LinkingSource(ImmutableStack[LinkingSourceItem]):
     def to_loc_stack(self) -> LocStack:
         return LocStack.from_iter(
             chain(
@@ -31,39 +31,39 @@ class BindingSource(ImmutableStack[BindingSourceItem]):
         return islice(self, 1, None)  # type: ignore[arg-type]
 
 
-class BindingDest(ImmutableStack[InputField]):
+class LinkingDest(ImmutableStack[InputField]):
     def to_loc_stack(self) -> LocStack:
         return LocStack.from_iter(map(input_field_to_loc_map, self))
 
 
 @dataclass(frozen=True)
-class BindingResult:
-    source: BindingSource
+class LinkingResult:
+    source: LinkingSource
     is_default: bool = False
 
 
-SourceCandidates = VarTuple[Union[BindingSource, VarTuple[BindingSource]]]
+SourceCandidates = VarTuple[Union[LinkingSource, VarTuple[LinkingSource]]]
 
 
 @dataclass(frozen=True)
-class BindingRequest(Request[BindingResult]):
+class LinkingRequest(Request[LinkingResult]):
     sources: SourceCandidates
-    destination: BindingDest
+    destination: LinkingDest
 
 
 @dataclass(frozen=True)
 class CoercerRequest(Request[Coercer]):
-    src: BindingSource
-    dst: BindingDest
+    src: LinkingSource
+    dst: LinkingDest
 
 
 @dataclass(frozen=True)
-class UnboundOptionalPolicy:
+class UnlinkedOptionalPolicy:
     is_allowed: bool
 
 
 @dataclass(frozen=True)
-class UnboundOptionalPolicyRequest(LocatedRequest):
+class UnlinkedOptionalPolicyRequest(LocatedRequest):
     pass
 
 

@@ -26,7 +26,7 @@ Adaptix can transform between any of the supported models, see :ref:`supported-m
 for exact list of models and known limitations.
 
 How it works? Adaptix scans each field of the destination model and matches it with the field of the source model.
-By default, only fields with the same name are matched. You can :ref:`override <field-binding>` this behavior.
+By default, only fields with the same name are matched. You can :ref:`override <field-linking>` this behavior.
 
 Also, it works for nested models.
 
@@ -53,16 +53,16 @@ because mypy forbids functions without body.
 Also, you can set this option at `mypy config <https://mypy.readthedocs.io/en/stable/config_file.html#example-mypy-ini>`_
 or supress each error individually via ``# type: ignore[empty-body]``.
 
-.. _field-binding:
+.. _field-linking:
 
-Fields binding
+Fields linking
 ================
 
-If the names of the fields are different, then you have to bind them manually.
+If the names of the fields are different, then you have to link them manually.
 
-.. literalinclude:: /examples/conversion/tutorial/fields_binding.py
+.. literalinclude:: /examples/conversion/tutorial/fields_linking.py
 
-The first parameter of :func:`.conversion.bind` is the predicate describing the field of the source model,
+The first parameter of :func:`.conversion.link` is the predicate describing the field of the source model,
 the second parameter is the pointing to the field of the destination model.
 
 This notation means that the field ``author`` of class ``Book``
@@ -71,14 +71,14 @@ will be linked with the field ``writer`` of class ``BookDTO``.
 You can use simple strings instead of ``P`` construct,
 but it will match any field with the same name despite of owner class.
 
-Binding algorithm
+Linking algorithm
 ===================
 
 The building of the converter is based on a need to construct the destination model.
 
 For each field of the destination model, adaptix searches a corresponding field.
 Additional parameters are checked (from right to left) before the fields.
-So, your custom binding looks among the additional parameters too.
+So, your custom linking looks among the additional parameters too.
 
 By default, fields are matched by exact name equivalence.
 

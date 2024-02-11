@@ -1,6 +1,6 @@
 from typing import Any
 
-from adaptix.conversion import bind, get_converter, impl_converter
+from adaptix.conversion import get_converter, impl_converter, link
 
 from .local_helpers import FactoryWay
 
@@ -17,11 +17,11 @@ def test_field_rename(src_model_spec, dst_model_spec, factory_way):
         field2_dst: Any
 
     if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter(recipe=[bind('field2_src', 'field2_dst')])
+        @impl_converter(recipe=[link('field2_src', 'field2_dst')])
         def convert(a: SourceModel) -> DestModel:
             ...
     else:
-        convert = get_converter(SourceModel, DestModel, recipe=[bind('field2_src', 'field2_dst')])
+        convert = get_converter(SourceModel, DestModel, recipe=[link('field2_src', 'field2_dst')])
 
     assert convert(SourceModel(field1=1, field2_src=2)) == DestModel(field1=1, field2_dst=2)
 
@@ -38,11 +38,11 @@ def test_field_swap(src_model_spec, dst_model_spec, factory_way):
         field2: Any
 
     if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter(recipe=[bind('field1', 'field2'), bind('field2', 'field1')])
+        @impl_converter(recipe=[link('field1', 'field2'), link('field2', 'field1')])
         def convert(a: SourceModel) -> DestModel:
             ...
     else:
-        convert = get_converter(SourceModel, DestModel, recipe=[bind('field1', 'field2'), bind('field2', 'field1')])
+        convert = get_converter(SourceModel, DestModel, recipe=[link('field1', 'field2'), link('field2', 'field1')])
 
     assert convert(SourceModel(field1=1, field2=2)) == DestModel(field1=2, field2=1)
 
@@ -59,7 +59,7 @@ def test_upcast(src_model_spec, dst_model_spec):
         field2: Any
         field3: Any
 
-    @impl_converter(recipe=[bind('field4', 'field3')])
+    @impl_converter(recipe=[link('field4', 'field3')])
     def convert(a: SourceModel, field4: Any) -> DestModel:
         ...
 
@@ -88,11 +88,11 @@ def test_nested(src_model_spec, dst_model_spec, factory_way):
         nested: DestModelNested
 
     if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter(recipe=[bind('field1_src', 'field1_dst')])
+        @impl_converter(recipe=[link('field1_src', 'field1_dst')])
         def convert(a: SourceModel) -> DestModel:
             ...
     else:
-        convert = get_converter(SourceModel, DestModel, recipe=[bind('field1_src', 'field1_dst')])
+        convert = get_converter(SourceModel, DestModel, recipe=[link('field1_src', 'field1_dst')])
 
     assert convert(
         SourceModel(
@@ -129,11 +129,11 @@ def test_nested_several(src_model_spec, dst_model_spec, factory_way):
         nested: DestModelNested
 
     if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter(recipe=[bind('field1_src', 'field1_dst')])
+        @impl_converter(recipe=[link('field1_src', 'field1_dst')])
         def convert(a: SourceModel) -> DestModel:
             ...
     else:
-        convert = get_converter(SourceModel, DestModel, recipe=[bind('field1_src', 'field1_dst')])
+        convert = get_converter(SourceModel, DestModel, recipe=[link('field1_src', 'field1_dst')])
 
     assert convert(
         SourceModel(

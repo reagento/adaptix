@@ -2,7 +2,7 @@ from abc import ABC
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Type
 
 from ..common import TypeHint, VarTuple
-from ..conversion.request_cls import BindingRequest, CoercerRequest
+from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from ..provider.request_cls import FieldLoc, LocatedRequest, LocMap, LocStack, TypeHintLoc, find_owner_with_field
@@ -51,7 +51,7 @@ class NoSuitableProvider(Exception):
 
 class BuiltinErrorRepresentor(ErrorRepresentor):
     _NO_PROVIDER_DESCRIPTION_METHOD: Mapping[Type[Request], str] = {
-        BindingRequest: '_get_binding_request_description',
+        LinkingRequest: '_get_linking_request_description',
         CoercerRequest: '_get_coercer_request_description',
     }
     _NO_PROVIDER_DESCRIPTION_CONST: Mapping[Type[Request], str] = {
@@ -59,7 +59,7 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         DumperRequest: "There is no provider that can create specified dumper",
     }
 
-    def _get_binding_request_description(self, request: BindingRequest) -> str:
+    def _get_linking_request_description(self, request: LinkingRequest) -> str:
         try:
             dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.destination.to_loc_stack())
         except ValueError:
@@ -67,7 +67,7 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
 
         dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
         dst_field = dst_field_loc_map[FieldLoc].field_id
-        return f"Cannot find paired field of `{dst_owner}.{dst_field}` for binding"
+        return f"Cannot find paired field of `{dst_owner}.{dst_field}` for linking"
 
     def _get_coercer_request_description(self, request: CoercerRequest) -> str:
         try:
@@ -84,7 +84,7 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         src_field = src_field_loc_map[FieldLoc].field_id
         dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
         dst_field = dst_field_loc_map[FieldLoc].field_id
-        return f"Cannot find coercer for binding `{src_owner}.{src_field} -> {dst_owner}.{dst_field}`"
+        return f"Cannot find coercer for linking `{src_owner}.{src_field} -> {dst_owner}.{dst_field}`"
 
     def _get_type_desc(self, tp: TypeHint) -> str:
         try:

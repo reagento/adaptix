@@ -15,13 +15,13 @@ from ..conversion.broaching.definitions import (
     PositionalArg,
 )
 from ..conversion.request_cls import (
-    BindingDest,
-    BindingRequest,
-    BindingResult,
-    BindingSource,
     CoercerRequest,
     ConverterRequest,
-    UnboundOptionalPolicyRequest,
+    LinkingDest,
+    LinkingRequest,
+    LinkingResult,
+    LinkingSource,
+    UnlinkedOptionalPolicyRequest,
 )
 from ..model_tools.definitions import BaseField, DefaultValue, InputField, InputShape, NoDefault, OutputShape, ParamKind
 from ..morphing.model.basic_gen import NameSanitizer, compile_closure_with_globals_capturing, fetch_code_gen_hook
@@ -72,9 +72,9 @@ class BuiltinConverterProvider(ConverterProvider):
             mediator=mediator,
             dst_shape=dst_shape,
             src_shape=src_shape,
-            owner_binding_src=BindingSource(source_model_field),
-            owner_binding_dst=BindingDest(dst_model_field),
-            extra_params=tuple(map(BindingSource, extra_params)),
+            owner_linking_src=LinkingSource(source_model_field),
+            owner_linking_dst=LinkingDest(dst_model_field),
+            extra_params=tuple(map(LinkingSource, extra_params)),
         )
         return self._make_converter(mediator, request, broaching_plan, signature)
 
@@ -163,26 +163,26 @@ class BuiltinConverterProvider(ConverterProvider):
     def _create_broaching_code_gen(self, plan: BroachingPlan) -> BroachingCodeGenerator:
         return BuiltinBroachingCodeGenerator(plan=plan)
 
-    def _fetch_bindings(
+    def _fetch_linkings(
         self,
         mediator: Mediator,
         dst_shape: InputShape,
         src_shape: OutputShape,
-        owner_binding_src: BindingSource,
-        owner_binding_dst: BindingDest,
-        extra_params: Sequence[BindingSource],
-    ) -> Iterable[Tuple[InputField, Optional[BindingResult]]]:
-        model_binding_sources = tuple(
-            owner_binding_src.append_with(src_field)
+        owner_linking_src: LinkingSource,
+        owner_linking_dst: LinkingDest,
+        extra_params: Sequence[LinkingSource],
+    ) -> Iterable[Tuple[InputField, Optional[LinkingResult]]]:
+        model_linking_sources = tuple(
+            owner_linking_src.append_with(src_field)
             for src_field in src_shape.fields
         )
-        sources = (model_binding_sources, *extra_params)
+        sources = (model_linking_sources, *extra_params)
 
-        def fetch_field_binding(dst_field: InputField) -> Tuple[InputField, Optional[BindingResult]]:
-            destination = owner_binding_dst.append_with(dst_field)
+        def fetch_field_linking(dst_field: InputField) -> Tuple[InputField, Optional[LinkingResult]]:
+            destination = owner_linking_dst.append_with(dst_field)
             try:
-                binding = mediator.provide(
-                    BindingRequest(
+                linking = mediator.provide(
+                    LinkingRequest(
                         sources=sources,  # type: ignore[arg-type]
                         destination=destination,
                     )
@@ -193,40 +193,40 @@ class BuiltinConverterProvider(ConverterProvider):
                     raise
 
                 policy = mediator.mandatory_provide(
-                    UnboundOptionalPolicyRequest(loc_stack=destination.to_loc_stack())
+                    UnlinkedOptionalPolicyRequest(loc_stack=destination.to_loc_stack())
                 )
                 if policy.is_allowed:
                     return dst_field, None
                 add_note(
                     e,
-                    'Note: Current policy limits unbound optional fields,'
+                    'Note: Current policy forbids unlinked optional fields,'
                     ' so you need to link it to another field'
-                    ' or explicitly confirm the desire to skipping using `allow_unbound_optional`'
+                    ' or explicitly confirm the desire to skipping using `allow_unlinked_optional`'
                 )
                 raise
-            return dst_field, binding
+            return dst_field, linking
 
         return mandatory_apply_by_iterable(
-            fetch_field_binding,
+            fetch_field_linking,
             zip(dst_shape.fields),
-            lambda: 'Bindings for some fields are not found',
+            lambda: 'Linkings for some fields are not found',
         )
 
     def _get_nested_models_sub_plan(
         self,
         mediator: Mediator,
-        binding_src: BindingSource,
-        binding_dst: BindingDest,
-        extra_params: Sequence[BindingSource],
+        linking_src: LinkingSource,
+        linking_dst: LinkingDest,
+        extra_params: Sequence[LinkingSource],
     ) -> Optional[BroachingPlan]:
         try:
             dst_shape = provide_generic_resolved_shape(
                 mediator,
-                InputShapeRequest(loc_stack=binding_dst.to_loc_stack())
+                InputShapeRequest(loc_stack=linking_dst.to_loc_stack())
             )
             src_shape = provide_generic_resolved_shape(
                 mediator,
-                OutputShapeRequest(loc_stack=binding_src.to_loc_stack())
+                OutputShapeRequest(loc_stack=linking_src.to_loc_stack())
             )
         except CannotProvide:
             return None
@@ -236,11 +236,11 @@ class BuiltinConverterProvider(ConverterProvider):
             dst_shape=dst_shape,
             src_shape=src_shape,
             extra_params=extra_params,
-            owner_binding_src=binding_src,
-            owner_binding_dst=binding_dst,
+            owner_linking_src=linking_src,
+            owner_linking_dst=linking_dst,
         )
 
-    def _binding_source_to_plan(self, binding_src: BindingSource) -> BroachingPlan:
+    def _linking_source_to_plan(self, linking_src: LinkingSource) -> BroachingPlan:
         return reduce(
             lambda plan, item: (
                 AccessorElement(
@@ -248,27 +248,27 @@ class BuiltinConverterProvider(ConverterProvider):
                     accessor=item.accessor,
                 )
             ),
-            binding_src.tail,
-            cast(BroachingPlan, ParameterElement(binding_src.head.id)),
+            linking_src.tail,
+            cast(BroachingPlan, ParameterElement(linking_src.head.id)),
         )
 
     def _get_coercer_sub_plan(
         self,
         mediator: Mediator,
-        binding_src: BindingSource,
-        binding_dst: BindingDest,
+        linking_src: LinkingSource,
+        linking_dst: LinkingDest,
     ) -> BroachingPlan:
         coercer = mediator.provide(
             CoercerRequest(
-                src=binding_src,
-                dst=binding_dst,
+                src=linking_src,
+                dst=linking_dst,
             )
         )
         return FunctionElement(
             func=coercer,
             args=(
                 PositionalArg(
-                    self._binding_source_to_plan(binding_src)
+                    self._linking_source_to_plan(linking_src)
                 ),
             ),
         )
@@ -276,23 +276,23 @@ class BuiltinConverterProvider(ConverterProvider):
     def _generate_field_to_sub_plan(
         self,
         mediator: Mediator,
-        extra_params: Sequence[BindingSource],
-        field_bindings: Iterable[Tuple[InputField, BindingResult]],
-        owner_binding_dst: BindingDest,
+        extra_params: Sequence[LinkingSource],
+        field_linkings: Iterable[Tuple[InputField, LinkingResult]],
+        owner_linking_dst: LinkingDest,
     ) -> Mapping[InputField, BroachingPlan]:
-        def generate_sub_plan(input_field: InputField, binding: BindingResult):
-            binding_dst = owner_binding_dst.append_with(input_field)
+        def generate_sub_plan(input_field: InputField, linking: LinkingResult):
+            linking_dst = owner_linking_dst.append_with(input_field)
             try:
                 return self._get_coercer_sub_plan(
                     mediator=mediator,
-                    binding_src=binding.source,
-                    binding_dst=binding_dst,
+                    linking_src=linking.source,
+                    linking_dst=linking_dst,
                 )
             except CannotProvide as e:
                 result = self._get_nested_models_sub_plan(
                     mediator=mediator,
-                    binding_src=binding.source,
-                    binding_dst=binding_dst,
+                    linking_src=linking.source,
+                    linking_dst=linking_dst,
                     extra_params=extra_params,
                 )
                 if result is not None:
@@ -301,12 +301,12 @@ class BuiltinConverterProvider(ConverterProvider):
 
         coercers = mandatory_apply_by_iterable(
             generate_sub_plan,
-            field_bindings,
-            lambda: 'Coercers for some bindings are not found',
+            field_linkings,
+            lambda: 'Coercers for some linkings are not found',
         )
         return {
             dst_field: coercer
-            for (dst_field, binding), coercer in zip(field_bindings, coercers)
+            for (dst_field, linking), coercer in zip(field_linkings, coercers)
         }
 
     def _make_broaching_plan(
@@ -314,38 +314,38 @@ class BuiltinConverterProvider(ConverterProvider):
         mediator: Mediator,
         dst_shape: InputShape,
         src_shape: OutputShape,
-        extra_params: Sequence[BindingSource],
-        owner_binding_src: BindingSource,
-        owner_binding_dst: BindingDest,
+        extra_params: Sequence[LinkingSource],
+        owner_linking_src: LinkingSource,
+        owner_linking_dst: LinkingDest,
     ) -> BroachingPlan:
-        field_bindings = self._fetch_bindings(
+        field_linkings = self._fetch_linkings(
             mediator=mediator,
             dst_shape=dst_shape,
             src_shape=src_shape,
             extra_params=extra_params,
-            owner_binding_src=owner_binding_src,
-            owner_binding_dst=owner_binding_dst,
+            owner_linking_src=owner_linking_src,
+            owner_linking_dst=owner_linking_dst,
         )
         field_to_sub_plan = self._generate_field_to_sub_plan(
             mediator=mediator,
-            field_bindings=[
-                (dst_field, binding)
-                for dst_field, binding in field_bindings
-                if binding is not None
+            field_linkings=[
+                (dst_field, linking)
+                for dst_field, linking in field_linkings
+                if linking is not None
             ],
             extra_params=extra_params,
-            owner_binding_dst=owner_binding_dst,
+            owner_linking_dst=owner_linking_dst,
         )
         return self._make_constructor_call(
             dst_shape=dst_shape,
-            field_to_binding=dict(field_bindings),
+            field_to_linking=dict(field_linkings),
             field_to_sub_plan=field_to_sub_plan,
         )
 
     def _make_constructor_call(
         self,
         dst_shape: InputShape,
-        field_to_binding: Mapping[InputField, Optional[BindingResult]],
+        field_to_linking: Mapping[InputField, Optional[LinkingResult]],
         field_to_sub_plan: Mapping[InputField, BroachingPlan],
     ) -> BroachingPlan:
         args: List[FuncCallArg[BroachingPlan]] = []
@@ -353,7 +353,7 @@ class BuiltinConverterProvider(ConverterProvider):
         for param in dst_shape.params:
             field = dst_shape.fields_dict[param.field_id]
 
-            if field_to_binding[field] is None:
+            if field_to_linking[field] is None:
                 has_skipped_params = True
                 continue
 

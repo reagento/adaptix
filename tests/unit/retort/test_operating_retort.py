@@ -102,7 +102,7 @@ def test_cannot_produce_dumper():
     )
 
 
-def test_cannot_produce_converter_no_binding_required():
+def test_cannot_produce_converter_no_linking_required():
     @dataclass
     class Book:
         title: str
@@ -122,11 +122,11 @@ def test_cannot_produce_converter_no_binding_required():
                 f' -> {BookDTO.__module__}.{BookDTO.__qualname__}>'
             ),
             AggregateCannotProvide(
-                'Bindings for some fields are not found',
+                'Linkings for some fields are not found',
                 [
                     with_notes(
                         CannotProvide(
-                            f'Cannot find paired field of `{BookDTO.__qualname__}.author` for binding',
+                            f'Cannot find paired field of `{BookDTO.__qualname__}.author` for linking',
                             is_terminal=False,
                             is_demonstrative=True,
                         ),
@@ -141,7 +141,7 @@ def test_cannot_produce_converter_no_binding_required():
     )
 
 
-def test_cannot_produce_converter_no_binding_optional():
+def test_cannot_produce_converter_no_linking_optional():
     @dataclass
     class Book:
         title: str
@@ -161,17 +161,17 @@ def test_cannot_produce_converter_no_binding_optional():
                 f' -> {BookDTO.__module__}.{BookDTO.__qualname__}>'
             ),
             AggregateCannotProvide(
-                'Bindings for some fields are not found',
+                'Linkings for some fields are not found',
                 [
                     with_notes(
                         CannotProvide(
-                            f'Cannot find paired field of `{BookDTO.__qualname__}.author` for binding',
+                            f'Cannot find paired field of `{BookDTO.__qualname__}.author` for linking',
                             is_terminal=False,
                             is_demonstrative=True,
                         ),
-                        'Note: Current policy limits unbound optional fields,'
+                        'Note: Current policy forbids unlinked optional fields,'
                         ' so you need to link it to another field'
-                        ' or explicitly confirm the desire to skipping using `allow_unbound_optional`',
+                        ' or explicitly confirm the desire to skipping using `allow_unlinked_optional`',
                     ),
                 ],
                 is_terminal=True,
@@ -203,10 +203,10 @@ def test_cannot_produce_converter_no_coercer():
                 f' -> {BookDTO.__module__}.{BookDTO.__qualname__}>'
             ),
             AggregateCannotProvide(
-                'Coercers for some bindings are not found',
+                'Coercers for some linkings are not found',
                 [
                     CannotProvide(
-                        f'Cannot find coercer for binding'
+                        f'Cannot find coercer for linking'
                         f' `{Book.__qualname__}.author -> {BookDTO.__qualname__}.author`',
                         is_terminal=False,
                         is_demonstrative=True,

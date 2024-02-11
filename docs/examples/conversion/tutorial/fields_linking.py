@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from adaptix import P
-from adaptix.conversion import bind, get_converter
+from adaptix.conversion import get_converter, link
 
 
 @dataclass
@@ -21,7 +21,7 @@ class BookDTO:
 convert_book_to_dto = get_converter(
     src=Book,
     dst=BookDTO,
-    recipe=[bind(P[Book].author, P[BookDTO].writer)],
+    recipe=[link(P[Book].author, P[BookDTO].writer)],
 )
 
 assert (
