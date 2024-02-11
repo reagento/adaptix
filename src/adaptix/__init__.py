@@ -1,12 +1,10 @@
-from adaptix._internal.definitions import DebugTrail
-
 from ._internal.common import Dumper, Loader, TypeHint
+from ._internal.definitions import DebugTrail
 from ._internal.model_tools.introspection.typed_dict import TypedDictAt38Warning
 from ._internal.morphing.facade.func import dump, load
 from ._internal.morphing.facade.provider import (
     as_is_dumper,
     as_is_loader,
-    bound,
     constructor,
     default_dict,
     dumper,
@@ -31,6 +29,7 @@ from ._internal.morphing.model.crown_definitions import (
 )
 from ._internal.morphing.name_layout.base import ExtraIn, ExtraOut
 from ._internal.name_style import NameStyle
+from ._internal.provider.facade.provider import bound
 from ._internal.utils import Omittable, Omitted
 from .provider import (
     AggregateCannotProvide,

@@ -44,17 +44,18 @@ class UnpackMapping(Generic[PlanT]):
     element: PlanT
 
 
+FuncCallArg = Union[
+    PositionalArg[PlanT],
+    KeywordArg[PlanT],
+    UnpackIterable[PlanT],
+    UnpackMapping[PlanT],
+]
+
+
 @dataclass(frozen=True)
 class FunctionElement(BasePlanElement, Generic[PlanT]):
     func: Callable[..., Any]
-    args: VarTuple[
-        Union[
-            PositionalArg[PlanT],
-            KeywordArg[PlanT],
-            UnpackIterable[PlanT],
-            UnpackMapping[PlanT],
-        ]
-    ]
+    args: VarTuple[FuncCallArg[PlanT]]
 
 
 @dataclass(frozen=True)
