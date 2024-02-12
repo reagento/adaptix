@@ -1,11 +1,28 @@
 from typing import Any, Generic, TypeVar
 
-from tests_helpers import only_generic_models, requires
+from tests_helpers import ModelSpec, exclude_model_spec, only_generic_models, requires
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix.conversion import get_converter, impl_converter
 
 from .local_helpers import FactoryWay
+
+
+@exclude_model_spec(ModelSpec.TYPED_DICT)
+def test_convert(model_spec):
+    from adaptix.conversion import convert
+
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
+        field1: Any
+        field2: Any
+
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
+        field1: Any
+        field2: Any
+
+    assert convert(SourceModel(field1=1, field2=2), DestModel) == DestModel(field1=1, field2=2)
 
 
 def test_copy(model_spec, factory_way):
