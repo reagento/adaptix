@@ -102,20 +102,19 @@ class BaseFlagProvider(LoaderProvider, DumperProvider, ABC):
     pass
 
 
-def _enum_name_dumper(data):
-    return data.name
-
-
 class EnumNameProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world by their name"""
+    def __init__(self, mapping_generator: BaseEnumMappingGenerator):
+        self._mapping_generator = mapping_generator
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
-        variants = [case.name for case in enum]
+        mapping = self._mapping_generator.generate_for_loading(enum.__members__.values())
+        variants = list(mapping.keys())
 
         def enum_loader(data):
             try:
-                return enum[data]
+                return mapping[data]
             except KeyError:
                 raise BadVariantError(variants, data) from None
             except TypeError:
@@ -124,7 +123,13 @@ class EnumNameProvider(BaseEnumProvider):
         return enum_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return _enum_name_dumper
+        enum = get_type_from_request(request)
+        mapping = self._mapping_generator.generate_for_dumping(enum.__members__.values())
+
+        def enum_dumper(data: Enum) -> str:
+            return mapping[data]
+
+        return enum_dumper
 
 
 class EnumValueProvider(BaseEnumProvider):
@@ -251,8 +256,8 @@ class FlagByExactValueProvider(BaseFlagProvider):
             if data < 0 or data > flag_mask:
                 raise OutOfRange(0, flag_mask, data)
 
-            #  data already has been validated for all edge cases
-            #  so enum lookup cannot raise an error
+            # data already has been validated for all edge cases
+            # so enum lookup cannot raise an error
 
             return enum(data)
 
@@ -296,7 +301,7 @@ class FlagByListProvider(BaseFlagProvider):
         variants = list(mapping.keys())
         zero_case = enum(0)
 
-        #  treat str and Iterable[str] as different types
+        # treat str and Iterable[str] as different types
         expected_type = Union[str, Iterable[str]] if allow_single_value else Iterable[str]
 
         def flag_loader(data) -> Flag:  # noqa: CCR001

@@ -28,7 +28,8 @@ Install
 pip install adaptix==3.0.0b1
 ```
 
-Use
+Use for model loading and dumping.
+
 ```python
 from dataclasses import dataclass
 
@@ -55,13 +56,45 @@ assert book == Book(title="Fahrenheit 451", price=100)
 assert retort.dump(book) == data
 ```
 
+Use for converting one model to another.
+
+```python
+from dataclasses import dataclass
+
+from adaptix.conversion import get_converter
+
+
+@dataclass
+class Book:
+    title: str
+    price: int
+    author: str = "Unknown author"
+
+
+@dataclass
+class BookDTO:
+    title: str
+    price: int
+    author: str
+
+
+convert_book_to_dto = get_converter(Book, BookDTO)
+
+assert (
+    convert_book_to_dto(Book(title="Fahrenheit 451", price=100))
+    ==
+    BookDTO(title="Fahrenheit 451", price=100, author="Unknown author")
+)
+```
+
 ## Use cases
 
 * Validation and transformation of received data for your API.
+* Conversion between data models and DTOs.
 * Config loading/dumping via codec that produces/takes dict.
 * Storing JSON in a database and representing it as a model inside the application code.
 * Creating API clients that convert a model to JSON sending to the server.
-* Persisting entities in cache storage.
+* Persisting entities at cache storage.
 * Implementing fast and primitive ORM.
 
 ## Advantages

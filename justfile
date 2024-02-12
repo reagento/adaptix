@@ -42,10 +42,10 @@ set windows-powershell := true
 @test-on target:
     tox -e $(tox list --no-desc | grep '^{{ target }}' | sort -r | tr '\n' ',')
 
-@cov:
-    inv cov
-
 inv := "inv -r scripts -c invoke_tasks"
+
+@cov:
+    {{ inv }} cov
 
 @deps-compile:
     {{ inv }} deps-compile

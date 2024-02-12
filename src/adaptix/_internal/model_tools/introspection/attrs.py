@@ -30,7 +30,7 @@ except ImportError:
     attrs = None  # type: ignore[assignment]
 
 
-def _get_attrs_default(attrs_field) -> Default:
+def _get_default(attrs_field) -> Default:
     default: Any = attrs_field.default
 
     if isinstance(default, attrs.Factory):  # type: ignore
@@ -44,7 +44,7 @@ def _get_attrs_default(attrs_field) -> Default:
     return DefaultValue(default)
 
 
-def _get_attrs_field_type(attrs_field, type_hints):
+def _get_field_type(attrs_field, type_hints):
     try:
         return type_hints[attrs_field.name]
     except KeyError:
@@ -54,7 +54,7 @@ def _get_attrs_field_type(attrs_field, type_hints):
 NoneType = type(None)
 
 
-def _process_attr_input_field(
+def _process_input_field(
     field: InputField,
     param_name_to_base_field: Dict[str, BaseField],
     has_custom_init: bool,
@@ -83,7 +83,7 @@ def _process_attr_input_field(
     )
 
 
-def _get_attrs_param_name(attrs_field):
+def _get_param_name(attrs_field):
     if hasattr(attrs_field, 'alias'):
         return attrs_field.alias
     return (
@@ -93,15 +93,15 @@ def _get_attrs_param_name(attrs_field):
     )
 
 
-def _get_attrs_input_shape(tp, attrs_fields, type_hints) -> InputShape:
+def _get_input_shape(tp, attrs_fields, type_hints) -> InputShape:
     param_name_to_field_from_attrs = {
-        _get_attrs_param_name(attrs_fld): InputField(
+        _get_param_name(attrs_fld): InputField(
             id=attrs_fld.name,
-            type=_get_attrs_field_type(attrs_fld, type_hints),
-            default=_get_attrs_default(attrs_fld),
+            type=_get_field_type(attrs_fld, type_hints),
+            default=_get_default(attrs_fld),
             metadata=attrs_fld.metadata,
             original=attrs_fld,
-            is_required=_get_attrs_default(attrs_fld) == NoDefault(),
+            is_required=_get_default(attrs_fld) == NoDefault(),
         )
         for attrs_fld in attrs_fields
         if attrs_fld.init
@@ -155,12 +155,12 @@ def _get_attrs_input_shape(tp, attrs_fields, type_hints) -> InputShape:
     )
 
 
-def _get_attrs_output_shape(attrs_fields, type_hints) -> OutputShape:
+def _get_output_shape(attrs_fields, type_hints) -> OutputShape:
     output_fields = tuple(
         OutputField(
             id=attrs_fld.name,
-            type=_get_attrs_field_type(attrs_fld, type_hints),
-            default=_get_attrs_default(attrs_fld),
+            type=_get_field_type(attrs_fld, type_hints),
+            default=_get_default(attrs_fld),
             metadata=attrs_fld.metadata,
             original=attrs_fld,
             accessor=create_attr_accessor(attrs_fld.name, is_required=True),
@@ -195,6 +195,6 @@ def get_attrs_shape(tp) -> FullShape:
 
     type_hints = get_all_type_hints(tp)
     return Shape(
-        input=_get_attrs_input_shape(tp, attrs_fields, type_hints),
-        output=_get_attrs_output_shape(attrs_fields, type_hints),
+        input=_get_input_shape(tp, attrs_fields, type_hints),
+        output=_get_output_shape(attrs_fields, type_hints),
     )

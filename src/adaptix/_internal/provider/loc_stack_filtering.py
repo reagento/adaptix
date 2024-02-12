@@ -95,26 +95,26 @@ class BinOperatorLSC(LocStackChecker, ABC):
         self._loc_stack_checkers = loc_stack_checkers
 
     @abstractmethod
-    def reduce(self, elements: Iterable[bool], /) -> bool:
+    def _reduce(self, elements: Iterable[bool], /) -> bool:
         ...
 
     def check_loc_stack(self, mediator: DirectMediator, loc_stack: LocStack) -> bool:
-        return self.reduce(
+        return self._reduce(
             loc_stack_checker.check_loc_stack(mediator, loc_stack)
             for loc_stack_checker in self._loc_stack_checkers
         )
 
 
 class OrLocStackChecker(BinOperatorLSC):
-    reduce = any  # type: ignore[assignment]
+    _reduce = any  # type: ignore[assignment]
 
 
 class AndLocStackChecker(BinOperatorLSC):
-    reduce = all  # type: ignore[assignment]
+    _reduce = all  # type: ignore[assignment]
 
 
 class XorLocStackChecker(BinOperatorLSC):
-    def reduce(self, elements: Iterable[bool], /) -> bool:
+    def _reduce(self, elements: Iterable[bool], /) -> bool:
         return reduce(operator.xor, elements)
 
 

@@ -23,12 +23,12 @@ def strip_tags(norm: BaseNormType) -> BaseNormType:
     return norm
 
 
-T = TypeVar('T')
+N = TypeVar('N', bound=BaseNormType)
 
 
-def strip_annotated(value: T) -> T:
+def strip_annotated(value: N) -> N:
     if HAS_ANNOTATED and isinstance(value, BaseNormType) and value.origin == typing.Annotated:
-        return strip_annotated(value)  # type: ignore[return-value]
+        return strip_annotated(value)
     return value
 
 

@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, TypeVar, Union
+from typing import Any, Callable, Iterable, List, Mapping, Optional, TypeVar, Union
 
 from ...common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
 from ...model_tools.introspection.callable import get_callable_shape
 from ...name_style import NameStyle
 from ...provider.essential import Provider
+from ...provider.facade.provider import bound, bound_by_any
 from ...provider.loc_stack_filtering import (
     AnyLocStackChecker,
     LocStackChecker,
@@ -19,7 +20,7 @@ from ...provider.loc_stack_filtering import (
 )
 from ...provider.overlay_schema import OverlayProvider
 from ...provider.provider_template import ValueProvider
-from ...provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider
+from ...provider.provider_wrapper import Chain, ChainingProvider
 from ...provider.shape_provider import PropertyExtender
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
@@ -47,12 +48,6 @@ from ..request_cls import DumperRequest, LoaderRequest
 T = TypeVar('T')
 
 
-def bound(pred: Pred, provider: Provider) -> Provider:
-    if pred == Omitted():
-        return provider
-    return BoundingProvider(create_loc_stack_checker(pred), provider)
-
-
 def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
     if chain is None:
         return provider
@@ -75,7 +70,7 @@ def loader(pred: Pred, func: Loader, chain: Optional[Chain] = None) -> Provider:
 
         If the parameter is ``Chain.LAST``, the specified function gets result of the previous loader.
 
-    :return: desired provider
+    :return: Desired provider
     """
     return bound(
         pred,
@@ -101,7 +96,7 @@ def dumper(pred: Pred, func: Dumper, chain: Optional[Chain] = None) -> Provider:
 
         If the parameter is ``Chain.LAST``, the specified function gets result of the previous dumper.
 
-    :return: desired provider
+    :return: Desired provider
     """
     return bound(
         pred,
@@ -116,7 +111,7 @@ def as_is_loader(pred: Pred) -> Provider:
     """Provider that creates loader which does nothing with input data.
 
     :param pred: Predicate specifying where loader should be used. See :ref:`predicate-system` for details.
-    :return: desired provider
+    :return: Desired provider
     """
     return loader(pred, as_is_stub)
 
@@ -125,7 +120,7 @@ def as_is_dumper(pred: Pred) -> Provider:
     """Provider that creates dumper which does nothing with input data.
 
     :param pred: Predicate specifying where dumper should be used. See :ref:`predicate-system` for details.
-    :return: desired provider
+    :return: Desired provider
     """
     return dumper(pred, as_is_stub)
 
@@ -305,29 +300,30 @@ def _ensure_attr_name(prop: NameOrProp) -> str:
 EnumPred = Union[TypeHint, str, EnumMeta, LocStackPattern]
 
 
-def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provider:
-    if len(preds) == 0:
-        return provider
-
-    if Enum in preds:
-        raise ValueError(f"Can not apply enum provider to {Enum}")
-
-    return bound(
-        OrLocStackChecker([create_loc_stack_checker(pred) for pred in preds]),
-        provider,
-    )
-
-
-def enum_by_name(*preds: EnumPred) -> Provider:
+def enum_by_name(
+    *preds: EnumPred,
+    name_style: Optional[NameStyle] = None,
+    map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
+) -> Provider:
     """Provider that represents enum members to the outside world by their name.
 
     :param preds: Predicates specifying where the provider should be used.
         The provider will be applied if any predicates meet the conditions,
         if no predicates are passed, the provider will be used for all Enums.
         See :ref:`predicate-system` for details.
-    :return: desired provider
+    :param name_style: Name style for representing members to the outside world.
+        If it is set, the provider will automatically convert the names of enum members to the specified convention.
+    :param map: Mapping for representing members to the outside world.
+        If it is set, the provider will use it to rename members individually;
+        its keys can either be member names as strings or member instances.
+    :return: Desired provider
     """
-    return _wrap_enum_provider(preds, EnumNameProvider())
+    return bound_by_any(
+        preds,
+        EnumNameProvider(
+            ByNameEnumMappingGenerator(name_style=name_style, map=map)
+        )
+    )
 
 
 def enum_by_exact_value(*preds: EnumPred) -> Provider:
@@ -337,9 +333,9 @@ def enum_by_exact_value(*preds: EnumPred) -> Provider:
         The provider will be applied if any predicates meet the conditions,
         if no predicates are passed, the provider will be used for all Enums.
         See :ref:`predicate-system` for details.
-    :return: desired provider
+    :return: Desired provider
     """
-    return _wrap_enum_provider(preds, EnumExactValueProvider())
+    return bound_by_any(preds, EnumExactValueProvider())
 
 
 def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Provider:
@@ -352,9 +348,9 @@ def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Pr
     :param preds: Additional predicates. The provider will be applied if any predicates meet the conditions.
     :param tp: Type of enum members.
         This type must cover all enum members for the correct operation of loader and dumper
-    :return: desired provider
+    :return: Desired provider
     """
-    return _wrap_enum_provider([first_pred, *preds], EnumValueProvider(tp))
+    return bound_by_any([first_pred, *preds], EnumValueProvider(tp))
 
 
 def flag_by_exact_value(*preds: EnumPred) -> Provider:
@@ -366,9 +362,9 @@ def flag_by_exact_value(*preds: EnumPred) -> Provider:
         The provider will be applied if any predicates meet the conditions,
         if no predicates are passed, the provider will be used for all Flags.
         See :ref:`predicate-system` for details.
-    :return: desired provider
+    :return: Desired provider
     """
-    return _wrap_enum_provider(preds, FlagByExactValueProvider())
+    return bound_by_any(preds, FlagByExactValueProvider())
 
 
 def flag_by_member_names(
@@ -402,9 +398,9 @@ def flag_by_member_names(
     :param map: Mapping for representing members to the outside world.
         If it is set, the provider will use it to rename members individually;
         its keys can either be member names as strings or member instances.
-    :return: desired provider
+    :return: Desired provider
     """
-    return _wrap_enum_provider(
+    return bound_by_any(
         preds,
         FlagByListProvider(
             ByNameEnumMappingGenerator(name_style=name_style, map=map),

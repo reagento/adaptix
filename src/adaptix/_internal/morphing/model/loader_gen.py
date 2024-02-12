@@ -1,11 +1,10 @@
 import collections.abc
 import contextlib
 from dataclasses import dataclass
-from typing import Dict, List, Mapping, Optional, Set
+from typing import AbstractSet, Dict, List, Mapping, Optional, Set, Tuple
 
-from ...code_generator import CodeGenerator
+from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
-from ...code_tools.context_namespace import ContextNamespace
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory
 from ...common import Loader
 from ...compat import CompatExceptionGroup
@@ -23,6 +22,7 @@ from ..load_error import (
     NoRequiredItemsError,
     TypeLoadError,
 )
+from .basic_gen import ModelLoaderGen
 from .crown_definitions import (
     BranchInpCrown,
     CrownPath,
@@ -102,13 +102,13 @@ class GenState(Namer):
     def __init__(
         self,
         builder: CodeBuilder,
-        ctx_namespace: ContextNamespace,
+        namespace: CascadeNamespace,
         name_to_field: Dict[str, InputField],
         debug_trail: DebugTrail,
         root_crown: InpCrown,
     ):
         self.builder = builder
-        self.ctx_namespace = ctx_namespace
+        self.namespace = namespace
         self._name_to_field = name_to_field
 
         self.field_id_to_path: Dict[str, CrownPath] = {}
@@ -168,8 +168,8 @@ class ModelLoaderProps:
     use_default_for_omitted: bool = True
 
 
-class ModelLoaderGen(CodeGenerator):
-    """ModelLoaderGen generates code that extracts raw values from input data,
+class BuiltinModelLoaderGen(ModelLoaderGen):
+    """BuiltinModelLoaderGen generates code that extracts raw values from input data,
     calls loaders and stores results to variables.
     """
 
@@ -180,6 +180,7 @@ class ModelLoaderGen(CodeGenerator):
         debug_trail: DebugTrail,
         strict_coercion: bool,
         field_loaders: Mapping[str, Loader],
+        skipped_fields: AbstractSet[str],
         model_identity: str,
         props: ModelLoaderProps,
     ):
@@ -194,6 +195,7 @@ class ModelLoaderGen(CodeGenerator):
             param.field_id: param for param in self._shape.params
         }
         self._field_loaders = field_loaders
+        self._skipped_fields = skipped_fields
         self._model_identity = model_identity
         self._props = props
 
@@ -208,10 +210,10 @@ class ModelLoaderGen(CodeGenerator):
             field.id in self._name_layout.extra_move.fields
         )
 
-    def _create_state(self, ctx_namespace: ContextNamespace) -> GenState:
+    def _create_state(self, namespace: CascadeNamespace) -> GenState:
         return GenState(
             builder=CodeBuilder(),
-            ctx_namespace=ctx_namespace,
+            namespace=namespace,
             name_to_field=self._id_to_field,
             debug_trail=self._debug_trail,
             root_crown=self._name_layout.crown,
@@ -226,11 +228,12 @@ class ModelLoaderGen(CodeGenerator):
             return False
         return field.is_optional and not self._is_extra_target(field)
 
-    def produce_code(self, ctx_namespace: ContextNamespace) -> CodeBuilder:
-        state = self._create_state(ctx_namespace)
+    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+        namespace = BuiltinCascadeNamespace()
+        state = self._create_state(namespace)
 
         for field_id, loader in self._field_loaders.items():
-            state.ctx_namespace.add(state.v_field_loader(field_id), loader)
+            state.namespace.add_constant(state.v_field_loader(field_id), loader)
 
         for named_value in (
             append_trail, extend_trail, render_trail_as_note,
@@ -239,17 +242,17 @@ class ModelLoaderGen(CodeGenerator):
             TypeLoadError, ExcludedTypeLoadError,
             LoadError, AggregateLoadError,
         ):
-            state.ctx_namespace.add(named_value.__name__, named_value)  # type: ignore[attr-defined]
+            state.namespace.add_constant(named_value.__name__, named_value)  # type: ignore[attr-defined]
 
-        state.ctx_namespace.add('CompatExceptionGroup', CompatExceptionGroup)
-        state.ctx_namespace.add('CollectionsMapping', collections.abc.Mapping)
-        state.ctx_namespace.add('CollectionsSequence', collections.abc.Sequence)
-        state.ctx_namespace.add('sentinel', object())
+        state.namespace.add_constant('CompatExceptionGroup', CompatExceptionGroup)
+        state.namespace.add_constant('CollectionsMapping', collections.abc.Mapping)
+        state.namespace.add_constant('CollectionsSequence', collections.abc.Sequence)
+        state.namespace.add_constant('sentinel', object())
 
         if self._debug_trail == DebugTrail.ALL:
             state.builder += "errors = []"
             state.builder += "has_unexpected_error = False"
-            state.ctx_namespace.add('model_identity', self._model_identity)
+            state.namespace.add_constant('model_identity', self._model_identity)
 
         if self._has_packed_fields:
             state.builder += "packed_fields = {}"
@@ -278,7 +281,11 @@ class ModelLoaderGen(CodeGenerator):
 
         self._gen_constructor_call(state)
         self._gen_header(state)
-        return state.builder
+
+        builder = CodeBuilder()
+        with builder(f'def {closure_name}(data):'):
+            builder.extend(state.builder)
+        return builder.string(), namespace.constants
 
     def _gen_header(self, state: GenState):
         header_builder = CodeBuilder()
@@ -298,21 +305,29 @@ class ModelLoaderGen(CodeGenerator):
 
         state.builder.extend_above(header_builder)
 
-    def _gen_constructor_call(self, state: GenState) -> None:
-        state.ctx_namespace.add('constructor', self._shape.constructor)
+    def _gen_constructor_call(self, state: GenState) -> None:  # noqa: CCR001
+        state.namespace.add_constant('constructor', self._shape.constructor)
 
         constructor_builder = CodeBuilder()
+        has_skipped_params = False
         with constructor_builder("constructor("):
             for param in self._shape.params:
                 field = self._shape.fields_dict[param.field_id]
 
-                if not self._is_packed_field(field):
-                    value = state.v_field(field)
-                else:
+                if field.id in self._skipped_fields:
+                    has_skipped_params = True
+                    continue
+                if self._is_packed_field(field):
                     continue
 
-                if param.kind == ParamKind.KW_ONLY:
+                value = state.v_field(field)
+                if param.kind == ParamKind.KW_ONLY or has_skipped_params:
                     constructor_builder(f"{param.name}={value},")
+                elif param.kind == ParamKind.POS_ONLY and has_skipped_params:
+                    raise ValueError(
+                        'Can not generate consistent constructor call,'
+                        ' positional-only parameter is skipped'
+                    )
                 else:
                     constructor_builder(f"{value},")
 
@@ -325,7 +340,7 @@ class ModelLoaderGen(CodeGenerator):
         constructor_builder += ")"
 
         if isinstance(self._name_layout.extra_move, ExtraSaturate):
-            state.ctx_namespace.add('saturator', self._name_layout.extra_move.func)
+            state.namespace.add_constant('saturator', self._name_layout.extra_move.func)
             state.builder += "result = "
             state.builder.extend_including(constructor_builder)
             state.builder += f"saturator(result, {state.v_extra})"
@@ -479,8 +494,8 @@ class ModelLoaderGen(CodeGenerator):
         }
 
     def _gen_dict_crown(self, state: GenState, crown: InpDictCrown):
-        state.ctx_namespace.add(state.v_known_keys, set(crown.map.keys()))
-        state.ctx_namespace.add(state.v_required_keys, self._get_dict_crown_required_keys(crown))
+        state.namespace.add_constant(state.v_known_keys, set(crown.map.keys()))
+        state.namespace.add_constant(state.v_required_keys, self._get_dict_crown_required_keys(crown))
 
         if state.path:
             self._gen_assigment_from_parent_data(state, assign_to=state.v_data)
@@ -570,13 +585,13 @@ class ModelLoaderGen(CodeGenerator):
             literal_expr = get_literal_expr(field.default.value)
             if literal_expr is not None:
                 return literal_expr
-            state.ctx_namespace.add(f'dfl_{field.id}', field.default.value)
+            state.namespace.add_constant(f'dfl_{field.id}', field.default.value)
             return f'dfl_{field.id}'
         if isinstance(field.default, DefaultFactory):
             literal_expr = get_literal_from_factory(field.default.factory)
             if literal_expr is not None:
                 return literal_expr
-            state.ctx_namespace.add(f'dfl_{field.id}', field.default.factory)
+            state.namespace.add_constant(f'dfl_{field.id}', field.default.factory)
             return f'dfl_{field.id}()'
         raise ValueError
 

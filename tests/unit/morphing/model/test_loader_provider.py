@@ -8,7 +8,16 @@ from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametriz
 
 from adaptix import DebugTrail, ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
-from adaptix._internal.model_tools.definitions import InputField, InputShape, NoDefault, Param, ParamKind, ParamKwargs
+from adaptix._internal.model_tools.definitions import (
+    Default,
+    DefaultValue,
+    InputField,
+    InputShape,
+    NoDefault,
+    Param,
+    ParamKind,
+    ParamKwargs,
+)
 from adaptix._internal.morphing.load_error import AggregateLoadError, ExcludedTypeLoadError, ValueLoadError
 from adaptix._internal.morphing.model.crown_definitions import (
     ExtraCollect,
@@ -60,6 +69,7 @@ class TestField:
     id: str
     param_kind: ParamKind
     is_required: bool
+    default: Default = NoDefault()
 
 
 def shape(*fields: TestField, kwargs: Optional[ParamKwargs] = None):
@@ -68,7 +78,7 @@ def shape(*fields: TestField, kwargs: Optional[ParamKwargs] = None):
             InputField(
                 type=int,
                 id=fld.id,
-                default=NoDefault(),
+                default=fld.default,
                 is_required=fld.is_required,
                 metadata=MappingProxyType({}),
                 original=None,
@@ -1165,3 +1175,28 @@ def test_empty_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_c
                 ),
                 lambda: loader('abc'),
             )
+
+
+def test_skipped_pos_optional_pos_field(debug_ctx, extra_policy):
+    loader_getter = make_loader_getter(
+        shape=shape(
+            TestField('a', ParamKind.POS_OR_KW, is_required=True),
+            TestField('b', ParamKind.POS_OR_KW, is_required=False, default=DefaultValue(10)),
+            TestField('c', ParamKind.POS_OR_KW, is_required=False, default=DefaultValue(20)),
+        ),
+        name_layout=InputNameLayout(
+            crown=InpDictCrown(
+                {
+                    'a': InpFieldCrown('a'),
+                    'c': InpFieldCrown('c'),
+                },
+                extra_policy=ExtraForbid(),
+            ),
+            extra_move=None,
+        ),
+        debug_trail=DebugTrail.ALL,
+        debug_ctx=debug_ctx,
+    )
+    loader = loader_getter()
+
+    assert loader({'a': 1, 'c': 3}) == gauge(1, c=3)

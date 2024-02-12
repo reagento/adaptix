@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, Generic, Iterable, Optional, Sequence, TypeVar, final
+from typing import Any, Callable, Generic, Iterable, Optional, Sequence, TypeVar, final
 
+from ..common import VarTuple
 from ..compat import CompatExceptionGroup
 from ..feature_requirement import HAS_NATIVE_EXC_GROUP
 from ..utils import with_module
@@ -185,6 +186,30 @@ class Mediator(ABC, Generic[V]):
                 is_terminal=True,
             )
         return results
+
+
+def mandatory_apply_by_iterable(
+    func: Callable[..., T],
+    args_iterable: Iterable[VarTuple[Any]],
+    error_describer: Optional[Callable[[], str]] = None,
+) -> Iterable[T]:
+    results = []
+    exceptions = []
+    for args in args_iterable:
+        try:
+            result = func(*args)
+        except CannotProvide as e:
+            exceptions.append(e)
+        else:
+            results.append(result)
+    if exceptions:
+        raise AggregateCannotProvide.make(
+            '' if error_describer is None else error_describer(),
+            exceptions,
+            is_demonstrative=True,
+            is_terminal=True,
+        )
+    return results
 
 
 class Provider(ABC):
