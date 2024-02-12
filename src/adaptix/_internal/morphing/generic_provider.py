@@ -34,7 +34,7 @@ from .request_cls import DumperRequest, LoaderRequest
 class NewTypeUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
 
         if not is_new_type(loc.type):
             raise CannotProvide
@@ -42,7 +42,7 @@ class NewTypeUnwrappingProvider(StaticProvider):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_map=request.loc_map.add(TypeHintLoc(type=loc.type.__supertype__))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=loc.type.__supertype__))
             ),
         )
 
@@ -50,7 +50,7 @@ class NewTypeUnwrappingProvider(StaticProvider):
 class TypeHintTagsUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
         norm = try_normalize_type(loc.type)
         unwrapped = strip_tags(norm)
         if unwrapped.source == loc.type:  # type has not changed, continue search
@@ -59,7 +59,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_map=request.loc_map.add(TypeHintLoc(type=unwrapped.source))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=unwrapped.source))
             ),
         )
 
@@ -67,7 +67,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
 class TypeAliasUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.loc_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
         norm = try_normalize_type(loc.type)
         if not isinstance(norm, NormTypeAlias):
             raise CannotProvide
@@ -80,7 +80,7 @@ class TypeAliasUnwrappingProvider(StaticProvider):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_map=request.loc_map.add(TypeHintLoc(type=unwrapped))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=unwrapped))
             ),
         )
 
@@ -101,7 +101,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(get_type_from_request(request))
-        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
 
         cleaned_args = [strip_annotated(arg) for arg in norm.args]
 
@@ -158,15 +158,17 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 class UnionProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(get_type_from_request(request))
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
 
         if self._is_single_optional(norm):
             not_none = next(case for case in norm.args if case.origin is not None)
             not_none_loader = mediator.mandatory_provide(
                 LoaderRequest(
-                    loc_map=LocMap(
-                        TypeHintLoc(type=not_none.source),
-                        GenericParamLoc(generic_pos=0),
+                    loc_stack=request.loc_stack.append_with(
+                        LocMap(
+                            TypeHintLoc(type=not_none.source),
+                            GenericParamLoc(generic_pos=0),
+                        )
                     )
                 ),
                 lambda x: 'Cannot create loader for union. Loaders for some union cases cannot be created',
@@ -180,9 +182,11 @@ class UnionProvider(LoaderProvider, DumperProvider):
         loaders = mediator.mandatory_provide_by_iterable(
             [
                 LoaderRequest(
-                    loc_map=LocMap(
-                        TypeHintLoc(type=tp.source),
-                        GenericParamLoc(generic_pos=i),
+                    loc_stack=request.loc_stack.append_with(
+                        LocMap(
+                            TypeHintLoc(type=tp.source),
+                            GenericParamLoc(generic_pos=i),
+                        )
                     )
                 )
                 for i, tp in enumerate(norm.args)
@@ -278,9 +282,11 @@ class UnionProvider(LoaderProvider, DumperProvider):
             not_none = next(case for case in norm.args if case.origin is not None)
             not_none_dumper = mediator.mandatory_provide(
                 DumperRequest(
-                    loc_map=LocMap(
-                        TypeHintLoc(type=not_none.source),
-                        GenericParamLoc(generic_pos=0),
+                    loc_stack=request.loc_stack.append_with(
+                        LocMap(
+                            TypeHintLoc(type=not_none.source),
+                            GenericParamLoc(generic_pos=0),
+                        )
                     )
                 ),
                 lambda x: 'Cannot create dumper for union. Dumpers for some union cases cannot be created',
@@ -300,9 +306,11 @@ class UnionProvider(LoaderProvider, DumperProvider):
         dumpers = mediator.mandatory_provide_by_iterable(
             [
                 DumperRequest(
-                    loc_map=LocMap(
-                        TypeHintLoc(type=tp.source),
-                        GenericParamLoc(generic_pos=i),
+                    loc_stack=request.loc_stack.append_with(
+                        LocMap(
+                            TypeHintLoc(type=tp.source),
+                            GenericParamLoc(generic_pos=i),
+                        )
                     )
                 )
                 for i, tp in enumerate(norm.args)
@@ -343,7 +351,7 @@ class PathLikeProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return mediator.mandatory_provide(
             LoaderRequest(
-                loc_map=LocMap(TypeHintLoc(type=self._impl))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl))
             ),
             lambda x: f'Cannot create loader for {PathLike}. Loader for {Path} cannot be created',
         )

@@ -1,7 +1,7 @@
 import dataclasses
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Union
 
 from ..common import TypeHint, VarTuple
 from ..compat import CompatExceptionGroup
@@ -132,6 +132,28 @@ class BadVariantError(LoadError):
 
 @custom_exception
 @dataclass(eq=False)
+class MultipleBadVariant(LoadError):
+    allowed_values: Iterable[Any]
+    invalid_values: Iterable[Any]
+    input_value: Any
+
+
+@custom_exception
+@dataclass(eq=False)
 class DatetimeFormatMismatch(LoadError):
     format: str
+    input_value: Any
+
+
+@custom_exception
+@dataclass(eq=False)
+class DuplicatedValues(LoadError):
+    input_value: Any
+
+
+@custom_exception
+@dataclass(eq=False)
+class OutOfRange(LoadError):
+    min_value: Optional[Union[int, float]]
+    max_value: Optional[Union[int, float]]
     input_value: Any

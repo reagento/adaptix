@@ -1,28 +1,28 @@
 from typing import Generic, Optional, Type, TypeVar
 
 from .essential import CannotProvide, Mediator, Request
-from .provider_wrapper import RequestClassDeterminedProvider
-from .request_filtering import AnyRequestChecker, Pred, ProviderWithRC, RequestChecker, create_request_checker
+from .loc_stack_filtering import LocStackChecker, P, Pred, create_loc_stack_checker
+from .provider_wrapper import ProviderWithLSC, RequestClassDeterminedProvider
 from .static_provider import StaticProvider
 
 T = TypeVar('T')
 
 
-class ProviderWithAttachableRC(StaticProvider, ProviderWithRC):
-    _request_checker: RequestChecker = AnyRequestChecker()
+class ProviderWithAttachableLSC(StaticProvider, ProviderWithLSC):
+    _loc_stack_checker: LocStackChecker = P.ANY
 
-    def get_request_checker(self) -> Optional[RequestChecker]:
-        return self._request_checker
+    def get_loc_stack_checker(self) -> Optional[LocStackChecker]:
+        return self._loc_stack_checker
 
 
 def for_predicate(pred: Pred):
-    def decorator(cls: Type[ProviderWithAttachableRC]):
-        if not (isinstance(cls, type) and issubclass(cls, ProviderWithAttachableRC)):
-            raise TypeError(f"Only {ProviderWithAttachableRC} child is allowed")
+    def decorator(cls: Type[ProviderWithAttachableLSC]):
+        if not (isinstance(cls, type) and issubclass(cls, ProviderWithAttachableLSC)):
+            raise TypeError(f"Only {ProviderWithAttachableLSC} child is allowed")
 
         # noinspection PyProtectedMember
         # pylint: disable=protected-access
-        cls._request_checker = create_request_checker(pred)
+        cls._loc_stack_checker = create_loc_stack_checker(pred)
         return cls
 
     return decorator

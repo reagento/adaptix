@@ -126,7 +126,7 @@ class ItemAccessor(Accessor):
 
     def __repr__(self):
         return (
-            "{type(self).__qualname__}"
+            f"{type(self).__qualname__}"
             f"(key={self.key!r}, access_error={self.access_error}, path_element={self.trail_element!r})"
         )
 

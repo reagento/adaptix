@@ -73,15 +73,17 @@ class IterableProvider(LoaderProvider, DumperProvider):
         iter_factory = self._get_iter_factory(norm.origin)
         arg_loader = mediator.mandatory_provide(
             LoaderRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=arg),
-                    GenericParamLoc(generic_pos=0),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=arg),
+                        GenericParamLoc(generic_pos=0),
+                    )
                 )
             ),
             lambda x: 'Cannot create loader for iterable. Loader for element cannot be created',
         )
-        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._make_loader(
             origin=norm.origin,
             iter_factory=iter_factory,
@@ -212,14 +214,16 @@ class IterableProvider(LoaderProvider, DumperProvider):
         iter_factory = self._get_iter_factory(norm.origin)
         arg_dumper = mediator.mandatory_provide(
             DumperRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=arg),
-                    GenericParamLoc(generic_pos=0),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=arg),
+                        GenericParamLoc(generic_pos=0),
+                    )
                 )
             ),
             lambda x: 'Cannot create dumper for iterable. Dumper for element cannot be created',
         )
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._make_dumper(
             origin=norm.origin,
             iter_factory=iter_factory,

@@ -1,0 +1,4 @@
+Added flags support
+
+Now adaptix has two different ways to process flags: :func:`.flag_by_exact_value` (by default)
+and :func:`.flag_by_member_names`.

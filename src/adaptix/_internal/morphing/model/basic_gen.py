@@ -2,27 +2,13 @@ import itertools
 import re
 import string
 from dataclasses import dataclass, replace
-from typing import (
-    Any,
-    Callable,
-    Collection,
-    Container,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Sequence,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Collection, Container, Dict, Iterable, List, Mapping, Set, Tuple, TypeVar, Union
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
 from ...model_tools.definitions import InputField, InputShape, OutputField, OutputShape
-from ...provider.essential import Mediator, Request
+from ...provider.essential import Mediator
 from ...provider.request_cls import LocatedRequest, TypeHintLoc
 from ...provider.static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
@@ -59,7 +45,7 @@ def stub_code_gen_hook(data: CodeGenHookData):
 
 
 @dataclass(frozen=True)
-class CodeGenHookRequest(Request[CodeGenHook]):
+class CodeGenHookRequest(LocatedRequest[CodeGenHook]):
     pass
 
 
@@ -67,27 +53,23 @@ class CodeGenAccumulator(StaticProvider):
     """Accumulates all generated code. It may be useful for debugging"""
 
     def __init__(self) -> None:
-        self.list: List[Tuple[Sequence[Request], CodeGenHookData]] = []
+        self.list: List[Tuple[CodeGenHookRequest, CodeGenHookData]] = []
 
     @static_provision_action
     def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
-        request_stack = mediator.request_stack
-
         def hook(data: CodeGenHookData):
-            self.list.append((request_stack, data))
+            self.list.append((request, data))
 
         return hook
 
     @property
     def code_pairs(self):
         return [
-            (request_stack[-2].loc_map[TypeHintLoc].type, hook_data.source)
-            for request_stack, hook_data in self.list
+            (request.loc_stack[-2].loc_map[TypeHintLoc].type, hook_data.source)
+            for request, hook_data in self.list
             if (
-                len(request_stack) >= 2
-                and isinstance(request_stack[-2], LocatedRequest)
-                and request_stack[-2].loc_map.has(TypeHintLoc)
-                and request_stack[-2].loc_map[TypeHintLoc].type
+                len(request.loc_stack) >= 2
+                and request.loc_stack[-2].loc_map.has(TypeHintLoc)
             )
         ]
 

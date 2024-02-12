@@ -48,16 +48,18 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         loaders = mediator.mandatory_provide_by_iterable(
             [
                 LoaderRequest(
-                    loc_map=LocMap(
-                        TypeHintLoc(type=tp.source),
-                        GenericParamLoc(generic_pos=i),
+                    loc_stack=request.loc_stack.append_with(
+                        LocMap(
+                            TypeHintLoc(type=tp.source),
+                            GenericParamLoc(generic_pos=i),
+                        )
                     )
                 )
                 for i, tp in enumerate(norm.args)
             ]
         )
-        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._make_loader(tuple(loaders), strict_coercion, debug_trail)
 
     def _make_loader(self, loaders: Collection[Loader], strict_coercion: bool, debug_trail: DebugTrail):
@@ -185,8 +187,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             return tuple(
                 loader(field)
-                for loader, field
-                in zip(loaders, data)
+                for loader, field in zip(loaders, data)
             )
 
         return dt_disable_non_sc_loader
@@ -213,8 +214,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             return tuple(
                 loader(field)
-                for loader, field
-                in zip(loaders, data)
+                for loader, field in zip(loaders, data)
             )
 
         return dt_disable_sc_loader
@@ -232,15 +232,17 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         dumpers = mediator.mandatory_provide_by_iterable(
             [
                 DumperRequest(
-                    loc_map=LocMap(
-                        TypeHintLoc(type=tp.source),
-                        GenericParamLoc(generic_pos=i),
+                    loc_stack=request.loc_stack.append_with(
+                        LocMap(
+                            TypeHintLoc(type=tp.source),
+                            GenericParamLoc(generic_pos=i),
+                        )
                     )
                 )
                 for i, tp in enumerate(norm.args)
             ]
         )
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._make_dumper(tuple(dumpers), debug_trail)
 
     def _make_dumper(self, dumpers: Collection[Dumper], debug_trail: DebugTrail):
@@ -334,8 +336,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             return tuple(
                 dumper(field)
-                for dumper, field
-                in zip(dumpers, data)
+                for dumper, field in zip(dumpers, data)
             )
 
         return tuple_dumper

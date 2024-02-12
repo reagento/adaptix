@@ -6,7 +6,7 @@ from tests_helpers import cond_list
 
 from adaptix import Retort, TypeHint
 from adaptix._internal.feature_requirement import HAS_ATTRS_PKG, HAS_PY_311
-from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocMap, LocStack, TypeHintLoc
 from adaptix._internal.provider.shape_provider import (
     InputShapeRequest,
     OutputShapeRequest,
@@ -16,18 +16,18 @@ from adaptix._internal.provider.shape_provider import (
 
 def assert_fields_types(tp: TypeHint, expected: Mapping[str, TypeHint]) -> None:
     retort = Retort()
-    mediator = retort._create_mediator(request_stack=())
+    mediator = retort._create_mediator()
 
     input_shape = provide_generic_resolved_shape(
         mediator,
-        InputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+        InputShapeRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
     )
     input_field_types = {field.id: field.type for field in input_shape.fields}
     assert input_field_types == expected
 
     output_shape = provide_generic_resolved_shape(
         mediator,
-        OutputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+        OutputShapeRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
     )
     output_field_types = {field.id: field.type for field in output_shape.fields}
     assert output_field_types == expected

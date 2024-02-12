@@ -9,21 +9,29 @@ from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, O
 from ...model_tools.introspection.callable import get_callable_shape
 from ...name_style import NameStyle
 from ...provider.essential import Provider
+from ...provider.loc_stack_filtering import (
+    AnyLocStackChecker,
+    LocStackChecker,
+    LocStackPattern,
+    OrLocStackChecker,
+    Pred,
+    create_loc_stack_checker,
+)
 from ...provider.overlay_schema import OverlayProvider
 from ...provider.provider_template import ValueProvider
 from ...provider.provider_wrapper import BoundingProvider, Chain, ChainingProvider
-from ...provider.request_filtering import (
-    AnyRequestChecker,
-    OrRequestChecker,
-    Pred,
-    RequestChecker,
-    RequestPattern,
-    create_request_checker,
-)
 from ...provider.shape_provider import PropertyExtender
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
-from ..enum_provider import EnumExactValueProvider, EnumNameProvider, EnumValueProvider
+from ..dict_provider import DefaultDictProvider
+from ..enum_provider import (
+    ByNameEnumMappingGenerator,
+    EnumExactValueProvider,
+    EnumNameProvider,
+    EnumValueProvider,
+    FlagByExactValueProvider,
+    FlagByListProvider,
+)
 from ..load_error import LoadError, ValidationError
 from ..model.loader_provider import InlinedShapeModelLoaderProvider
 from ..name_layout.base import ExtraIn, ExtraOut
@@ -42,7 +50,7 @@ T = TypeVar('T')
 def bound(pred: Pred, provider: Provider) -> Provider:
     if pred == Omitted():
         return provider
-    return BoundingProvider(create_request_checker(pred), provider)
+    return BoundingProvider(create_loc_stack_checker(pred), provider)
 
 
 def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
@@ -148,26 +156,26 @@ def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider
         else:
             pred, value = element
             result.append(
-                FuncNameMappingProvider(create_request_checker(pred), value)
+                FuncNameMappingProvider(create_loc_stack_checker(pred), value)
                 if callable(value) else
-                ConstNameMappingProvider(create_request_checker(pred), value)
+                ConstNameMappingProvider(create_loc_stack_checker(pred), value)
             )
     return tuple(result)
 
 
-def _name_mapping_convert_preds(value: Omittable[Union[Iterable[Pred], Pred]]) -> Omittable[RequestChecker]:
+def _name_mapping_convert_preds(value: Omittable[Union[Iterable[Pred], Pred]]) -> Omittable[LocStackChecker]:
     if isinstance(value, Omitted):
         return value
     if isinstance(value, Iterable) and not isinstance(value, str):
-        return OrRequestChecker([create_request_checker(el) for el in value])
-    return create_request_checker(value)
+        return OrLocStackChecker([create_loc_stack_checker(el) for el in value])
+    return create_loc_stack_checker(value)
 
 
 def _name_mapping_convert_omit_default(
     value: Omittable[Union[Iterable[Pred], Pred, bool]]
-) -> Omittable[RequestChecker]:
+) -> Omittable[LocStackChecker]:
     if isinstance(value, bool):
-        return AnyRequestChecker() if value else ~AnyRequestChecker()
+        return AnyLocStackChecker() if value else ~AnyLocStackChecker()
     return _name_mapping_convert_preds(value)
 
 
@@ -294,7 +302,7 @@ def _ensure_attr_name(prop: NameOrProp) -> str:
     return fget.__name__
 
 
-EnumPred = Union[TypeHint, str, EnumMeta, RequestPattern]
+EnumPred = Union[TypeHint, str, EnumMeta, LocStackPattern]
 
 
 def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provider:
@@ -304,8 +312,8 @@ def _wrap_enum_provider(preds: Sequence[EnumPred], provider: Provider) -> Provid
     if Enum in preds:
         raise ValueError(f"Can not apply enum provider to {Enum}")
 
-    return BoundingProvider(
-        OrRequestChecker([create_request_checker(pred) for pred in preds]),
+    return bound(
+        OrLocStackChecker([create_loc_stack_checker(pred) for pred in preds]),
         provider,
     )
 
@@ -349,6 +357,64 @@ def enum_by_value(first_pred: EnumPred, /, *preds: EnumPred, tp: TypeHint) -> Pr
     return _wrap_enum_provider([first_pred, *preds], EnumValueProvider(tp))
 
 
+def flag_by_exact_value(*preds: EnumPred) -> Provider:
+    """Provider that represents flag members to the outside world by their value without any processing.
+    It does not support flags with skipped bits and negative values (it is recommended to use ``enum.auto()``
+    to define flag values instead of manually specifying them).
+
+    :param preds: Predicates specifying where the provider should be used.
+        The provider will be applied if any predicates meet the conditions,
+        if no predicates are passed, the provider will be used for all Flags.
+        See :ref:`predicate-system` for details.
+    :return: desired provider
+    """
+    return _wrap_enum_provider(preds, FlagByExactValueProvider())
+
+
+def flag_by_member_names(
+    *preds: EnumPred,
+    allow_single_value: bool = False,
+    allow_duplicates: bool = True,
+    allow_compound: bool = True,
+    name_style: Optional[NameStyle] = None,
+    map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
+) -> Provider:
+    """Provider that represents flag members to the outside world by list of their names.
+
+    Loader takes a flag members name list and returns united flag member
+    (given members combined by operator ``|``, namely `bitwise or`).
+
+    Dumper takes a flag member and returns a list of names of flag members, included in the given flag member.
+
+    :param preds: Predicates specifying where the provider should be used.
+        The provider will be applied if any predicates meet the conditions,
+        if no predicates are passed, the provider will be used for all Flags.
+        See :ref:`predicate-system` for details.
+    :param allow_single_value: Allows calling the loader with a single value.
+        If this is allowed, singlular values are treated as one element list.
+    :param allow_duplicates: Allows calling the loader with a list containing non-unique elements.
+        Unless this is allowed, loader will raise :exc:`.DuplicatedValues` in that case.
+    :param allow_compound: Allows the loader to accept names of compound members
+        (e.g. ``WHITE = RED | GREEN | BLUE``) and the dumper to return names of compound members.
+        If this is allowed, dumper will use compound members names to serialize value.
+    :param name_style: Name style for representing members to the outside world.
+        If it is set, the provider will automatically convert the names of all flag members to the specified convention.
+    :param map: Mapping for representing members to the outside world.
+        If it is set, the provider will use it to rename members individually;
+        its keys can either be member names as strings or member instances.
+    :return: desired provider
+    """
+    return _wrap_enum_provider(
+        preds,
+        FlagByListProvider(
+            ByNameEnumMappingGenerator(name_style=name_style, map=map),
+            allow_single_value=allow_single_value,
+            allow_duplicates=allow_duplicates,
+            allow_compound=allow_compound,
+        ),
+    )
+
+
 def validator(
     pred: Pred,
     func: Callable[[Any], bool],
@@ -368,3 +434,13 @@ def validator(
         raise exception_factory(data)
 
     return loader(pred, validating_loader, chain)
+
+
+def default_dict(pred: Pred, default_factory: Callable) -> Provider:
+    """DefaultDict provider with overriden default_factory parameter
+
+    :param pred: Predicate specifying where the provider should be used.
+        See :ref:`predicate-system` for details.
+    :param default_factory: default_factory parameter of the defaultdict instance to be created by the loader
+    """
+    return bound(pred, DefaultDictProvider(default_factory))

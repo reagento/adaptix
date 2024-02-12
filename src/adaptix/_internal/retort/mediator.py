@@ -1,51 +1,23 @@
 from abc import ABC, abstractmethod
-from itertools import islice
-from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Set, Tuple, Type, TypeVar
+from typing import Any, Dict, Generic, Iterable, Optional, TypeVar
 
-from ..common import TypeHint
-from ..datastructures import ClassDispatcher
-from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from ..provider.provider_wrapper import RequestClassDeterminedProvider
-from ..provider.request_filtering import ExactOriginMergedProvider, ExactOriginRC, ProviderWithRC
+from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Request
 from ..utils import add_note
+from .routing import RecipeSearcher
 
 T = TypeVar('T')
 
 
-class StubsRecursionResolver(ABC, Generic[T]):
+class RecursionResolver(ABC, Generic[T]):
     @abstractmethod
-    def create_stub(self, request: Request[T]) -> T:
+    def track_recursion(self, request: Request[T]) -> Optional[Any]:
         ...
 
     @abstractmethod
-    def saturate_stub(self, actual: T, stub: T) -> None:
+    def process_request_result(self, request: Request[T], result: T) -> None:
         ...
 
 
-ProvideCallable = Callable[[Mediator, Request[T]], T]
-SearchResult = Tuple[ProvideCallable[T], int]
-
-
-class RecipeSearcher(ABC):
-    """An object that implements iterating over recipe list.
-
-    An offset of each element must belong to [0; max_offset)
-    """
-
-    @abstractmethod
-    def search_candidates(self, search_offset: int, request: Request[T]) -> Iterable[SearchResult[T]]:
-        ...
-
-    @abstractmethod
-    def get_max_offset(self) -> int:
-        ...
-
-    @abstractmethod
-    def clear_cache(self):
-        ...
-
-
-RecursionResolving = ClassDispatcher[Request, StubsRecursionResolver]
 E = TypeVar('E', bound=Exception)
 
 
@@ -55,7 +27,7 @@ class ErrorRepresentor(ABC):
         ...
 
     @abstractmethod
-    def get_request_context_notes(self, request: Request, request_stack: Sequence[Request]) -> Iterable[str]:
+    def get_request_context_notes(self, request: Request) -> Iterable[str]:
         ...
 
 
@@ -63,57 +35,35 @@ class BuiltinMediator(Mediator):
     def __init__(
         self,
         searcher: RecipeSearcher,
-        recursion_resolving: RecursionResolving,
+        recursion_resolver: RecursionResolver,
         error_representor: ErrorRepresentor,
-        request_stack: Sequence[Request[Any]],
     ):
         self.searcher = searcher
-        self.recursion_resolving = recursion_resolving
+        self.recursion_resolver = recursion_resolver
         self.error_representor = error_representor
 
-        self._request_stack = list(request_stack)
-        self._sent_request: Set[Request] = set()
+        self._current_request: Optional[Request] = None
         self.next_offset = 0
         self.recursion_stubs: Dict[Request, Any] = {}
 
-    def provide(self, request: Request[T], *, extra_stack: Sequence[Request[Any]] = ()) -> T:
-        if request in self._sent_request:
-            if request in self.recursion_stubs:
-                return self.recursion_stubs[request]
-            try:
-                resolver = self._get_resolver(request)
-            except KeyError:
-                raise RecursionError("Infinite recursion has been detected that can not be resolved") from None
-
-            stub = resolver.create_stub(request)
-            self.recursion_stubs[request] = stub
+    def provide(self, request: Request[T]) -> T:
+        stub = self.recursion_resolver.track_recursion(request)
+        if stub is not None:
             return stub
 
-        self._request_stack.extend(extra_stack)
-        self._request_stack.append(request)
-        self._sent_request.add(request)
+        self._current_request = request
         try:
             result = self._provide_non_recursive(request, 0)
         finally:
-            del self._request_stack[-1 - len(extra_stack):]
-            self._sent_request.discard(request)
+            self._current_request = None
 
-        if request in self.recursion_stubs:
-            resolver = self._get_resolver(request)
-            stub = self.recursion_stubs.pop(request)
-            resolver.saturate_stub(result, stub)
-
+        self.recursion_resolver.process_request_result(request, result)
         return result
 
     def provide_from_next(self) -> Any:
-        return self._provide_non_recursive(self._request_stack[-1], self.next_offset)
-
-    @property
-    def request_stack(self) -> Sequence[Request[Any]]:
-        return self._request_stack.copy()
-
-    def _get_resolver(self, request: Request) -> StubsRecursionResolver:
-        return self.recursion_resolving.dispatch(type(request))
+        if self._current_request is None:
+            raise ValueError
+        return self._provide_non_recursive(self._current_request, self.next_offset)
 
     def _provide_non_recursive(self, request: Request[T], search_offset: int) -> T:
         init_next_offset = self.next_offset
@@ -144,130 +94,7 @@ class BuiltinMediator(Mediator):
         )
 
     def _attach_request_context_note(self, exc: E, request: Request) -> E:
-        notes = self.error_representor.get_request_context_notes(request, self.request_stack)
+        notes = self.error_representor.get_request_context_notes(request)
         for note in notes:
             add_note(exc, note)
         return exc
-
-
-class RawRecipeSearcher(RecipeSearcher):
-    def __init__(self, recipe: Sequence[Provider]):
-        self.recipe = recipe
-
-    def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
-        for i, provider in enumerate(
-            islice(self.recipe, search_offset, None),
-            start=search_offset
-        ):
-            yield provider.apply_provider, i + 1
-
-    def clear_cache(self):
-        pass
-
-    def get_max_offset(self) -> int:
-        return len(self.recipe)
-
-
-class Combiner(ABC):
-    @abstractmethod
-    def add_element(self, provider: Provider) -> bool:
-        ...
-
-    @abstractmethod
-    def combine_elements(self) -> Sequence[Provider]:
-        ...
-
-    @abstractmethod
-    def has_elements(self) -> bool:
-        ...
-
-
-class ExactOriginCombiner(Combiner):
-    def __init__(self) -> None:
-        self._combo: List[Tuple[ExactOriginRC, Provider]] = []
-        self._origins: Set[TypeHint] = set()
-
-    def add_element(self, provider: Provider) -> bool:
-        if not isinstance(provider, ProviderWithRC):
-            return False
-        request_checker = provider.get_request_checker()
-        if request_checker is None:
-            return False
-        if not isinstance(request_checker, ExactOriginRC):
-            return False
-        if request_checker.origin in self._origins:
-            return False
-
-        self._combo.append((request_checker, provider))
-        self._origins.add(request_checker.origin)
-        return True
-
-    def combine_elements(self) -> Sequence[Provider]:
-        if len(self._combo) == 1:
-            element = self._combo[0][1]
-            self._combo.clear()
-            self._origins.clear()
-            return [element]
-
-        merged_provider = ExactOriginMergedProvider(self._combo)
-        self._combo.clear()
-        self._origins.clear()
-        return [merged_provider]
-
-    def has_elements(self) -> bool:
-        return bool(self._combo)
-
-
-class IntrospectingRecipeSearcher(RecipeSearcher):
-    def __init__(self, recipe: Sequence[Provider]):
-        self._recipe = recipe
-        self._cls_to_recipe: Dict[Type[Request], Sequence[Provider]] = {}
-
-    def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
-        request_cls = type(request)
-        try:
-            sub_recipe = self._cls_to_recipe[request_cls]
-        except KeyError:
-            sub_recipe = self._collect_candidates(request_cls, self._recipe)
-            self._cls_to_recipe[request_cls] = sub_recipe
-
-        for i, provider in enumerate(
-            islice(sub_recipe, search_offset, None),
-            start=search_offset
-        ):
-            yield provider.apply_provider, i + 1
-
-    def _create_combiner(self) -> Combiner:
-        return ExactOriginCombiner()
-
-    def _merge_providers(self, recipe: Sequence[Provider]) -> Sequence[Provider]:
-        combiner = self._create_combiner()
-
-        result: List[Provider] = []
-        for provider in recipe:
-            is_added = combiner.add_element(provider)
-            if not is_added:
-                if combiner.has_elements():
-                    result.extend(combiner.combine_elements())
-                result.append(provider)
-
-        if combiner.has_elements():
-            result.extend(combiner.combine_elements())
-        return result
-
-    def _collect_candidates(self, request_cls: Type[Request], recipe: Sequence[Provider]) -> Sequence[Provider]:
-        candidates = [
-            provider
-            for provider in recipe
-            if (
-                not isinstance(provider, RequestClassDeterminedProvider)
-                or provider.maybe_can_process_request_cls(request_cls)
-            )
-        ]
-        return self._merge_providers(candidates)
-
-    def clear_cache(self):
-        self._cls_to_recipe = {}
-
-    def get_max_offset(self) -> int:
-        return len(self._recipe)

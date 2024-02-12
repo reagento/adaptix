@@ -1,47 +1,48 @@
 import pytest
 
 from adaptix import NameStyle
-from adaptix._internal.name_style import convert_snake_style, is_snake_case
+from adaptix._internal.name_style import convert_snake_style, is_snake_style
 
 
-def test_is_snake_case():
-    assert is_snake_case('a')
-    assert is_snake_case('a_b')
-    assert is_snake_case('a_')
-    assert is_snake_case('_a')
-    assert is_snake_case('a_b_')
-    assert is_snake_case('_a_')
-    assert is_snake_case('_a_b')
-    assert is_snake_case('_a_b_')
+def test_is_snake_style():
+    assert is_snake_style('a')
+    assert is_snake_style('a_b')
+    assert is_snake_style('a_')
+    assert is_snake_style('_a')
+    assert is_snake_style('a_b_')
+    assert is_snake_style('_a_')
+    assert is_snake_style('_a_b')
+    assert is_snake_style('_a_b_')
 
-    assert is_snake_case('1')
-    assert is_snake_case('1_2')
-    assert is_snake_case('1_')
-    assert is_snake_case('_1')
-    assert is_snake_case('1_2_')
-    assert is_snake_case('_1_')
-    assert is_snake_case('_1_2')
-    assert is_snake_case('_1_2_')
+    assert is_snake_style('1')
+    assert is_snake_style('1_2')
+    assert is_snake_style('1_')
+    assert is_snake_style('_1')
+    assert is_snake_style('1_2_')
+    assert is_snake_style('_1_')
+    assert is_snake_style('_1_2')
+    assert is_snake_style('_1_2_')
 
-    assert is_snake_case('a_1')
-    assert is_snake_case('a_1_')
+    assert is_snake_style('a_1')
+    assert is_snake_style('a_1_')
 
-    assert is_snake_case('a__b')
-    assert is_snake_case('a__b_')
+    assert is_snake_style('a__b')
+    assert is_snake_style('a__b_')
 
-    assert is_snake_case('_')
-    assert is_snake_case('___')
+    assert is_snake_style('_')
+    assert is_snake_style('___')
 
-    assert not is_snake_case('A_1_')
-    assert not is_snake_case('Aa_1_')
+    assert is_snake_style('A_1_')
+    assert is_snake_style('Aa_1_')
 
-    assert not is_snake_case('123%')
-    assert not is_snake_case('_123%')
+    assert not is_snake_style('123%')
+    assert not is_snake_style('_123%')
 
 
 def check_conversion(style, maps):
     for src, trg in maps.items():
         assert convert_snake_style(src, style) == trg
+        assert convert_snake_style(src.upper(), style) == trg
 
 
 def test_snake_case_conversion():
@@ -146,6 +147,6 @@ def test_snake_case_conversion_fail():
             convert_snake_style('___', style)
 
     for style in NameStyle:
-        for name in ['AbcXyz', 'abcXyz', 'abcxyz?']:
+        for name in ['abcxyz?']:
             with pytest.raises(ValueError):
                 convert_snake_style(name, style)

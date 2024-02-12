@@ -218,7 +218,7 @@ class ModelLoaderGen(CodeGenerator):
         )
 
     @property
-    def has_packed_fields(self):
+    def _has_packed_fields(self):
         return any(self._is_packed_field(fld) for fld in self._shape.fields)
 
     def _is_packed_field(self, field: InputField) -> bool:
@@ -251,7 +251,7 @@ class ModelLoaderGen(CodeGenerator):
             state.builder += "has_unexpected_error = False"
             state.ctx_namespace.add('model_identity', self._model_identity)
 
-        if self.has_packed_fields:
+        if self._has_packed_fields:
             state.builder += "packed_fields = {}"
 
         if not self._gen_root_crown_dispatch(state, self._name_layout.crown):
@@ -316,7 +316,7 @@ class ModelLoaderGen(CodeGenerator):
                 else:
                     constructor_builder(f"{value},")
 
-            if self.has_packed_fields:
+            if self._has_packed_fields:
                 constructor_builder("**packed_fields,")
 
             if self._name_layout.extra_move == ExtraKwargs():

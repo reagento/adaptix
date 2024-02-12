@@ -35,6 +35,8 @@ classifiers = [
 [project.optional-dependencies]
 attrs = ['attrs >= 21.3.0']
 attrs-strict = ['attrs >= 21.3.0, <= 23.1.0']
+sqlalchemy = ['sqlalchemy >= 2.0.0']
+sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.25']
 
 [project.urls]
 'Homepage' = 'https://github.com/reagento/dataclass_factory'

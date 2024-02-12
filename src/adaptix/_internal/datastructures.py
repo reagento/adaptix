@@ -11,13 +11,17 @@ from typing import (
     Mapping,
     Optional,
     Protocol,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
     Union,
     ValuesView,
+    overload,
     runtime_checkable,
 )
+
+from .common import VarTuple
 
 K = TypeVar('K', bound=Hashable)
 V = TypeVar('V')
@@ -210,3 +214,42 @@ class ClassMap(Generic[H]):
             value for key, value in self._mapping.items()
             if key not in classes
         )
+
+
+T = TypeVar('T')
+CustomTupleT = TypeVar('CustomTupleT', bound='CustomTuple')
+
+
+class CustomTuple(Sequence[T], Generic[T]):
+    __slots__ = ('_tuple', )
+
+    def __init__(self, *args: T):
+        self._tuple = args
+
+    @classmethod
+    def from_tuple(cls: Type[CustomTupleT], tpl: VarTuple[T]) -> CustomTupleT:
+        self = cls.__new__(cls)
+        self._tuple = tpl
+        return self
+
+    def __repr__(self):
+        return f"{type(self).__name__}{self._tuple!r}"
+
+    @overload
+    def __getitem__(self, index: int) -> T:
+        ...
+
+    @overload
+    def __getitem__(self: CustomTupleT, index: slice) -> CustomTupleT:
+        ...
+
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            return self._tuple[index]
+        return self.from_tuple(self._tuple[index])
+
+    def __len__(self):
+        return len(self._tuple)
+
+    def append_with(self: CustomTupleT, item: T) -> CustomTupleT:
+        return self.from_tuple(self._tuple + (item, ))

@@ -1,11 +1,12 @@
 from dataclasses import dataclass, field
-from typing import Any, Mapping, TypeVar
+from typing import Any, Mapping, Tuple, TypeVar
 
 from ..common import TypeHint
-from ..datastructures import ClassMap
+from ..datastructures import ClassMap, CustomTuple
 from ..definitions import DebugTrail
 from ..model_tools.definitions import Accessor, Default
 from ..type_tools import BaseNormType, normalize_type
+from ..utils import pairs
 from .essential import CannotProvide, Request
 
 T = TypeVar('T')
@@ -23,7 +24,6 @@ class TypeHintLoc(Location):
 
 @dataclass(frozen=True)
 class FieldLoc(Location):
-    owner_type: TypeHint
     field_id: str
     default: Default
     metadata: Mapping[Any, Any] = field(hash=False)
@@ -46,15 +46,28 @@ class GenericParamLoc(Location):
 
 LocMap = ClassMap[Location]
 LR = TypeVar('LR', bound='LocatedRequest')
+LocStackT = TypeVar('LocStackT', bound='LocStack')
+
+
+class LocStack(CustomTuple[LocMap]):
+    def replace_last(self: LocStackT, loc: LocMap) -> LocStackT:
+        return self[:-1].append_with(loc)
+
+    def add_to_last_map(self: LocStackT, *locs: Location) -> LocStackT:
+        return self.replace_last(self[-1].add(*locs))
 
 
 @dataclass(frozen=True)
 class LocatedRequest(Request[T]):
-    loc_map: LocMap
+    loc_stack: LocStack
+
+    @property
+    def last_map(self) -> LocMap:
+        return self.loc_stack[-1]
 
 
 def get_type_from_request(request: LocatedRequest) -> TypeHint:
-    return request.loc_map.get_or_raise(TypeHintLoc, CannotProvide).type
+    return request.last_map.get_or_raise(TypeHintLoc, CannotProvide).type
 
 
 def try_normalize_type(tp: TypeHint) -> BaseNormType:
@@ -70,3 +83,10 @@ class StrictCoercionRequest(LocatedRequest[bool]):
 
 class DebugTrailRequest(LocatedRequest[DebugTrail]):
     pass
+
+
+def find_owner_with_field(stack: LocStack) -> Tuple[LocMap, LocMap]:
+    for next_loc_map, prev_loc_map in pairs(reversed(stack)):
+        if next_loc_map.has(FieldLoc):
+            return prev_loc_map, next_loc_map
+    raise ValueError

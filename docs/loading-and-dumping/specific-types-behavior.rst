@@ -112,7 +112,18 @@ timedelta
 Loader accepts instance of ``int``, ``float`` or ``Decimal`` representing seconds,
 dumper serialize value via ``total_seconds`` method.
 
-Enum subclasses
+
+Flag subclasses
+'''''''''''''''''''''''
+
+Flag members by default are represented by their value. Note that flags with skipped
+bits and negative values are not supported, so it is highly recommended to define flag
+values via ``enum.auto()`` instead of manually specifying them.
+Besides, adaptix provides another way to process flags: by list using their names.
+See: :func:`.flag_by_member_names` for details.
+
+
+Other Enum subclasses
 '''''''''''''''''''''''
 
 Enum members are represented by their value without any conversion.
@@ -216,6 +227,11 @@ Dict and Mapping
 Loader accepts any other ``Mapping`` and makes ``dict`` instances.
 Dumper also constructs dict with converted keys and values.
 
+DefaultDict
+'''''''''''''''''''''
+Loader makes instances of ``defaultdict`` with the ``default_factory`` parameter set to ``None``.
+To customize this behavior, there are factory :func:`.default_dict` that have :paramref:`.default_dict.default_factory` parameter that can be overridden.
+
 Models
 ''''''''''
 
@@ -249,3 +265,4 @@ Known limitations:
 - ``__init__`` introspection or using :func:`.constructor`
 
   - Fields of unpacked typed dict (``**kwargs: Unpack[YourTypedDict]``) cannot collide with parameters of function
+

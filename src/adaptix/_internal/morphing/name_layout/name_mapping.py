@@ -6,8 +6,9 @@ from typing import Callable, Iterable, Mapping, Optional, Tuple, Union
 from ...common import EllipsisType
 from ...model_tools.definitions import BaseField, BaseShape, is_valid_field_id
 from ...provider.essential import CannotProvide, Mediator, Provider
+from ...provider.loc_stack_filtering import LocStackChecker, Pred
+from ...provider.provider_wrapper import ProviderWithLSC
 from ...provider.request_cls import LocatedRequest
-from ...provider.request_filtering import Pred, ProviderWithRC, RequestChecker
 from ...provider.static_provider import StaticProvider, static_provision_action
 from .base import Key, KeyPath
 
@@ -66,35 +67,30 @@ class DictNameMappingProvider(StaticProvider):
         return resolve_map_result(request.generated_key, map_result)
 
 
-class ConstNameMappingProvider(StaticProvider, ProviderWithRC):
-    def __init__(self, request_checker: RequestChecker, result: MapResult):
-        self._request_checker = request_checker
+class ConstNameMappingProvider(StaticProvider, ProviderWithLSC):
+    def __init__(self, loc_stack_checker: LocStackChecker, result: MapResult):
+        self._loc_stack_checker = loc_stack_checker
         self._result = result
 
-    def get_request_checker(self) -> Optional[RequestChecker]:
-        return self._request_checker
+    def get_loc_stack_checker(self) -> Optional[LocStackChecker]:
+        return self._loc_stack_checker
 
     @static_provision_action
     def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
-        self._request_checker.check_request(mediator, request)
+        self._apply_loc_stack_checker(mediator, request)
         return resolve_map_result(request.generated_key, self._result)
 
 
-class FuncNameMappingProvider(StaticProvider, ProviderWithRC):
-    def __init__(self, request_checker: RequestChecker, func: Callable[[BaseShape, BaseField], MapResult]):
-        self._request_checker = request_checker
+class FuncNameMappingProvider(StaticProvider, ProviderWithLSC):
+    def __init__(self, loc_stack_checker: LocStackChecker, func: Callable[[BaseShape, BaseField], MapResult]):
+        self._loc_stack_checker = loc_stack_checker
         self._func = func
 
-    def get_request_checker(self) -> Optional[RequestChecker]:
-        return self._request_checker
+    def get_loc_stack_checker(self) -> Optional[LocStackChecker]:
+        return self._loc_stack_checker
 
     @static_provision_action
     def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
-        self._request_checker.check_request(mediator, request)
+        self._apply_loc_stack_checker(mediator, request)
         result = self._func(request.shape, request.field)
         return resolve_map_result(request.generated_key, result)
-
-
-@dataclass(frozen=True)
-class NameMappingFilterRequest(LocatedRequest[None]):
-    pass
