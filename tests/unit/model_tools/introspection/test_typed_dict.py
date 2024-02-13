@@ -672,11 +672,11 @@ def test_required_annotated():
     class Base(TypedDict):
         f1: int
         f2: typing.Annotated[typing.Required[int], "metadata"]
-        f3: typing.NotRequired[typing.Annotated[int, "metadata"]]
+        f3: 'typing.NotRequired[typing.Annotated[int, "metadata"]]'
 
     class Child(Base, total=False):
         f4: int
-        f5: typing.Annotated[typing.Required[int], "metadata"]
+        f5: 'typing.Annotated[typing.Required[int], "metadata"]'
         f6: typing.NotRequired[typing.Annotated[int, "metadata"]]
 
     assert (

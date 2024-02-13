@@ -1,9 +1,9 @@
 import typing
 import warnings
 from types import MappingProxyType
-from typing import Sequence, Tuple
+from typing import AbstractSet, Sequence, Set, Tuple
 
-from ...feature_requirement import HAS_PY_39, HAS_PY_311
+from ...feature_requirement import HAS_PY_39, HAS_TYPED_DICT_REQUIRED
 from ...type_tools import BaseNormType, get_all_type_hints, is_typed_dict_class, normalize_type
 from ..definitions import (
     FullShape,
@@ -38,35 +38,38 @@ def _get_td_hints(tp):
     return elements
 
 
-if HAS_PY_311:
-    def _make_requirement_determinant(required_fields: set):
-        return lambda name: name in required_fields
+def _extract_item_type(tp) -> BaseNormType:
+    if tp.origin is typing.Annotated:
+        return tp.args[0]
+    return tp
 
-    def _extract_item_type(tp) -> BaseNormType:
-        if tp.origin is typing.Annotated:
-            return tp.args[0]
-        return tp
 
-    def _fetch_required_keys(
-        fields: Sequence[Tuple[str, BaseNormType]],
-        frozen_required_keys: frozenset[str],
-    ) -> set:
-        required_keys = set(frozen_required_keys)
+def _fetch_required_keys(
+    fields: Sequence[Tuple[str, BaseNormType]],
+    frozen_required_keys: AbstractSet[str],
+) -> Set:
+    required_keys = set(frozen_required_keys)
 
-        for field_name, field_tp in fields:
-            require_type = _extract_item_type(field_tp)
-            if require_type.origin is typing.Required and field_name not in required_keys:
-                required_keys.add(field_name)
-            elif require_type.origin is typing.NotRequired and field_name in required_keys:
-                required_keys.remove(field_name)
+    for field_name, field_tp in fields:
+        require_type = _extract_item_type(field_tp)
+        if require_type.origin is typing.Required and field_name not in required_keys:
+            required_keys.add(field_name)
+        elif require_type.origin is typing.NotRequired and field_name in required_keys:
+            required_keys.remove(field_name)
 
-        return required_keys
-elif HAS_PY_39:
-    def _make_requirement_determinant(tp):  # type: ignore
+    return required_keys
+
+
+def _make_requirement_determinant_from_keys(required_fields: set):
+    return lambda name: name in required_fields
+
+
+if HAS_PY_39:
+    def _make_requirement_determinant_from_type(tp):
         required_fields = tp.__required_keys__
         return lambda name: name in required_fields
 else:
-    def _make_requirement_determinant(tp):  # type: ignore
+    def _make_requirement_determinant_from_type(tp):
         warnings.warn(TypedDictAt38Warning(), stacklevel=3)
         is_total = tp.__total__
         return lambda name: is_total
@@ -80,16 +83,16 @@ def get_typed_dict_shape(tp) -> FullShape:
 
     type_hints = _get_td_hints(tp)
 
-    if HAS_PY_311:
+    if HAS_TYPED_DICT_REQUIRED:
         norm_types = [normalize_type(tp) for _, tp in type_hints]
 
         required_keys = _fetch_required_keys(
             [(field_name, field_tp) for (field_name, _), field_tp in zip(type_hints, norm_types)],
             tp.__required_keys__,
         )
-        requirement_determinant = _make_requirement_determinant(required_keys)
+        requirement_determinant = _make_requirement_determinant_from_keys(required_keys)
     else:
-        requirement_determinant = _make_requirement_determinant(tp)
+        requirement_determinant = _make_requirement_determinant_from_type(tp)
 
     return Shape(
         input=InputShape(
