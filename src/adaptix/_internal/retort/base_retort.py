@@ -55,7 +55,7 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
     def _get_full_recipe(self) -> Sequence[Provider]:
         return self._full_recipe
 
-    def _calculate_derived(self):
+    def _calculate_derived(self) -> None:
         super()._calculate_derived()
         self._full_recipe = (
             self._inc_instance_recipe

@@ -15,12 +15,12 @@ from ..provider.provider_template import for_predicate
 from ..provider.request_cls import LocMap, StrictCoercionRequest, TypeHintLoc, get_type_from_request
 from ..type_tools import is_subclass_soft, normalize_type
 from .load_error import (
-    BadVariantError,
-    DuplicatedValues,
+    BadVariantLoadError,
+    DuplicatedValuesLoadError,
     ExcludedTypeLoadError,
-    MsgError,
-    MultipleBadVariant,
-    OutOfRange,
+    MsgLoadError,
+    MultipleBadVariantLoadError,
+    OutOfRangeLoadError,
     TypeLoadError,
 )
 from .request_cls import DumperRequest, LoaderRequest
@@ -116,9 +116,9 @@ class EnumNameProvider(BaseEnumProvider):
             try:
                 return mapping[data]
             except KeyError:
-                raise BadVariantError(variants, data) from None
+                raise BadVariantLoadError(variants, data) from None
             except TypeError:
-                raise BadVariantError(variants, data)
+                raise BadVariantLoadError(variants, data)
 
         return enum_loader
 
@@ -153,7 +153,7 @@ class EnumValueProvider(BaseEnumProvider):
             try:
                 return enum(loaded_value)
             except ValueError:
-                raise MsgError("Bad enum value", data)
+                raise MsgLoadError("Bad enum value", data)
 
         return enum_loader
 
@@ -194,12 +194,12 @@ class EnumExactValueProvider(BaseEnumProvider):
             def enum_exact_loader(data):
                 # since MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
                 if type(data) is enum:  # pylint: disable=unidiomatic-typecheck
-                    raise BadVariantError(variants, data)
+                    raise BadVariantLoadError(variants, data)
 
                 try:
                     return enum(data)
                 except ValueError:
-                    raise BadVariantError(variants, data) from None
+                    raise BadVariantLoadError(variants, data) from None
 
             return enum_exact_loader
 
@@ -207,9 +207,9 @@ class EnumExactValueProvider(BaseEnumProvider):
             try:
                 return value_to_member[data]
             except KeyError:
-                raise BadVariantError(variants, data) from None
+                raise BadVariantLoadError(variants, data) from None
             except TypeError:
-                raise BadVariantError(variants, data)
+                raise BadVariantLoadError(variants, data)
 
         return enum_exact_loader_v2m
 
@@ -254,7 +254,7 @@ class FlagByExactValueProvider(BaseFlagProvider):
                 raise TypeLoadError(int, data)
 
             if data < 0 or data > flag_mask:
-                raise OutOfRange(0, flag_mask, data)
+                raise OutOfRangeLoadError(0, flag_mask, data)
 
             # data already has been validated for all edge cases
             # so enum lookup cannot raise an error
@@ -318,7 +318,7 @@ class FlagByListProvider(BaseFlagProvider):
 
             if not allow_duplicates:
                 if len(process_data) != len(set(process_data)):
-                    raise DuplicatedValues(data)
+                    raise DuplicatedValuesLoadError(data)
 
             bad_variants = []
             result = zero_case
@@ -329,7 +329,7 @@ class FlagByListProvider(BaseFlagProvider):
                 result |= mapping[item]
 
             if bad_variants:
-                raise MultipleBadVariant(
+                raise MultipleBadVariantLoadError(
                     allowed_values=variants,
                     invalid_values=bad_variants,
                     input_value=data,

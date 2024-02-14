@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from adaptix import ExtraForbid, Retort, name_mapping
-from adaptix.load_error import AggregateLoadError, ExtraFieldsError
+from adaptix.load_error import AggregateLoadError, ExtraFieldsLoadError
 
 
 @dataclass
@@ -27,5 +27,5 @@ try:
     retort.load(data, Book)
 except AggregateLoadError as e:
     assert len(e.exceptions) == 1
-    assert isinstance(e.exceptions[0], ExtraFieldsError)
+    assert isinstance(e.exceptions[0], ExtraFieldsLoadError)
     assert set(e.exceptions[0].fields) == {"unknown1", "unknown2"}
