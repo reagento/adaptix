@@ -33,7 +33,7 @@ from ..enum_provider import (
     FlagByExactValueProvider,
     FlagByListProvider,
 )
-from ..load_error import LoadError, ValidationError
+from ..load_error import LoadError, ValidationLoadError
 from ..model.loader_provider import InlinedShapeModelLoaderProvider
 from ..name_layout.base import ExtraIn, ExtraOut
 from ..name_layout.component import ExtraMoveAndPoliciesOverlay, SievesOverlay, StructureOverlay
@@ -389,7 +389,7 @@ def flag_by_member_names(
     :param allow_single_value: Allows calling the loader with a single value.
         If this is allowed, singlular values are treated as one element list.
     :param allow_duplicates: Allows calling the loader with a list containing non-unique elements.
-        Unless this is allowed, loader will raise :exc:`.DuplicatedValues` in that case.
+        Unless this is allowed, loader will raise :exc:`.DuplicatedValuesLoadError` in that case.
     :param allow_compound: Allows the loader to accept names of compound members
         (e.g. ``WHITE = RED | GREEN | BLUE``) and the dumper to return names of compound members.
         If this is allowed, dumper will use compound members names to serialize value.
@@ -419,7 +419,7 @@ def validator(
 ) -> Provider:
     # pylint: disable=C3001
     exception_factory = (
-        (lambda x: ValidationError(error, x))
+        (lambda x: ValidationLoadError(error, x))
         if error is None or isinstance(error, str) else
         error
     )

@@ -43,7 +43,7 @@ CallableT = TypeVar('CallableT', bound=Callable)
 
 
 class AdornedConversionRetort(OperatingRetort):
-    def _calculate_derived(self):
+    def _calculate_derived(self) -> None:
         super()._calculate_derived()
         self._simple_converter_cache: Dict[Tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
 

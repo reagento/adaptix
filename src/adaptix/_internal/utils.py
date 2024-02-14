@@ -1,4 +1,6 @@
 import itertools
+import sys
+import warnings
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from copy import copy
@@ -204,3 +206,19 @@ def with_module(module: str) -> Callable[[ClassT], ClassT]:
         return cls
 
     return decorator
+
+
+def create_deprecated_alias_getter(module_name, old_name_to_new_name):
+    def __getattr__(name):
+        if name not in old_name_to_new_name:
+            raise AttributeError(f"module {module_name!r} has no attribute {name!r}")
+
+        new_name = old_name_to_new_name[name]
+        warnings.warn(
+            f"Name {name!r} is deprecated, use {new_name!r} instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return getattr(sys.modules[module_name], new_name)
+
+    return __getattr__

@@ -7,7 +7,7 @@ from tests_helpers import TestRetort, raises_exc
 
 from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
 from adaptix._internal.morphing.generic_provider import LiteralProvider, UnionProvider
-from adaptix._internal.morphing.load_error import BadVariantError
+from adaptix._internal.morphing.load_error import BadVariantLoadError
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def test_loader_base(retort, strict_coercion, debug_trail):
     assert loader(10) == 10
 
     raises_exc(
-        BadVariantError({'a', 'b', 10}, 'c'),
+        BadVariantLoadError({'a', 'b', 10}, 'c'),
         lambda: loader("c")
     )
 
@@ -65,11 +65,11 @@ def test_strict_coercion(retort, debug_trail):
     assert _is_exact_one(literal_loader(1))
 
     raises_exc(
-        BadVariantError({0, 1, rnd_val1}, False),
+        BadVariantLoadError({0, 1, rnd_val1}, False),
         lambda: literal_loader(False)
     )
     raises_exc(
-        BadVariantError({0, 1, rnd_val1}, True),
+        BadVariantLoadError({0, 1, rnd_val1}, True),
         lambda: literal_loader(True)
     )
 
@@ -85,11 +85,11 @@ def test_strict_coercion(retort, debug_trail):
     assert bool_loader(True) is True
 
     raises_exc(
-        BadVariantError({False, True, rnd_val2}, 0),
+        BadVariantLoadError({False, True, rnd_val2}, 0),
         lambda: bool_loader(0)
     )
     raises_exc(
-        BadVariantError({False, True, rnd_val2}, 1),
+        BadVariantLoadError({False, True, rnd_val2}, 1),
         lambda: bool_loader(1)
     )
 
@@ -126,7 +126,7 @@ def test_loader_with_enums(retort, strict_coercion, debug_trail):
     assert loader(10) == 10
 
     raises_exc(
-        BadVariantError({Enum1.CASE1.value, Enum2.CASE2.value, 10}, 15),
+        BadVariantLoadError({Enum1.CASE1.value, Enum2.CASE2.value, 10}, 15),
         lambda: loader(15)
     )
 

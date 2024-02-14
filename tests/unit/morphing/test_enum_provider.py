@@ -17,13 +17,13 @@ from adaptix import (
 )
 from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
 from adaptix._internal.morphing.load_error import (
-    DuplicatedValues,
+    DuplicatedValuesLoadError,
     ExcludedTypeLoadError,
-    MultipleBadVariant,
-    OutOfRange,
+    MultipleBadVariantLoadError,
+    OutOfRangeLoadError,
     TypeLoadError,
 )
-from adaptix.load_error import BadVariantError, MsgError
+from adaptix.load_error import BadVariantLoadError, MsgLoadError
 
 
 class MyEnum(Enum):
@@ -72,17 +72,17 @@ def test_name_provider(strict_coercion, debug_trail):
     assert loader("V1") == MyEnum.V1
 
     raises_exc(
-        BadVariantError(['V1'], '1'),
+        BadVariantLoadError(['V1'], '1'),
         lambda: loader("1")
     )
 
     raises_exc(
-        BadVariantError(['V1'], 1),
+        BadVariantLoadError(['V1'], 1),
         lambda: loader(1)
     )
 
     raises_exc(
-        BadVariantError(['V1'], MyEnum.V1),
+        BadVariantLoadError(['V1'], MyEnum.V1),
         lambda: loader(MyEnum.V1)
     )
 
@@ -105,7 +105,7 @@ def test_name_provider_with_mapping(strict_coercion, debug_trail, mapping_option
     assert loader("v1") == MyEnum.V1
 
     raises_exc(
-        BadVariantError(["v1"], "V1"),
+        BadVariantLoadError(["v1"], "V1"),
         lambda: loader("V1")
     )
 
@@ -128,17 +128,17 @@ def test_exact_value_provider(strict_coercion, debug_trail, enum_cls):
     assert loader("1") == enum_cls.V1
 
     raises_exc(
-        BadVariantError(['1'], 'V1'),
+        BadVariantLoadError(['1'], 'V1'),
         lambda: loader("V1")
     )
 
     raises_exc(
-        BadVariantError(['1'], 1),
+        BadVariantLoadError(['1'], 1),
         lambda: loader(1)
     )
 
     raises_exc(
-        BadVariantError(['1'], enum_cls.V1),
+        BadVariantLoadError(['1'], enum_cls.V1),
         lambda: loader(enum_cls.V1)
     )
 
@@ -160,12 +160,12 @@ def test_exact_value_provider_int_enum(strict_coercion, debug_trail):
     assert int_enum_loader(1) == MyIntEnum.V1
 
     raises_exc(
-        BadVariantError([1], MyEnum.V1),
+        BadVariantLoadError([1], MyEnum.V1),
         lambda: int_enum_loader(MyEnum.V1),
     )
 
     raises_exc(
-        BadVariantError([1], 'V1'),
+        BadVariantLoadError([1], 'V1'),
         lambda: int_enum_loader("V1")
     )
 
@@ -196,12 +196,12 @@ def test_value_provider(strict_coercion, debug_trail):
     assert enum_loader(1) == MyEnum.V1
 
     raises_exc(
-        MsgError('Bad enum value', "V1"),
+        MsgLoadError('Bad enum value', "V1"),
         lambda: enum_loader("V1")
     )
 
     raises_exc(
-        MsgError('Bad enum value', MyEnum.V1),
+        MsgLoadError('Bad enum value', MyEnum.V1),
         lambda: enum_loader(MyEnum.V1)
     )
 
@@ -226,10 +226,10 @@ def test_flag_by_exact_value(strict_coercion, debug_trail):
     assert dumper(FlagEnum.CASE_ONE | FlagEnum.CASE_FOUR) == 5
 
     raises_exc(
-        OutOfRange(0, 15, 16), lambda: loader(16)
+        OutOfRangeLoadError(0, 15, 16), lambda: loader(16)
     )
     raises_exc(
-        OutOfRange(0, 15, -1), lambda: loader(-1)
+        OutOfRangeLoadError(0, 15, -1), lambda: loader(-1)
     )
 
 
@@ -310,7 +310,7 @@ def test_flag_by_member_names(
         variants = ["CASE_ONE", "CASE_TWO", "CASE_FOUR", "CASE_EIGHT"]
 
     raises_exc(
-        MultipleBadVariant(
+        MultipleBadVariantLoadError(
             allowed_values=variants,
             invalid_values=["NOT_EXISTING_CASE_1", "NOT_EXISTING_CASE_2"],
             input_value=["CASE_ONE", "NOT_EXISTING_CASE_1", "NOT_EXISTING_CASE_2"],
@@ -323,7 +323,7 @@ def test_flag_by_member_names(
         assert loader(data_with_compound) == FlagEnum.CASE_THREE
     else:
         raises_exc(
-            MultipleBadVariant(variants, ["CASE_THREE"], data_with_compound),
+            MultipleBadVariantLoadError(variants, ["CASE_THREE"], data_with_compound),
             lambda: loader(data_with_compound)
         )
 
@@ -332,7 +332,7 @@ def test_flag_by_member_names(
         assert loader(data_with_duplicates) == FlagEnum.CASE_ONE
     else:
         raises_exc(
-            DuplicatedValues(data_with_duplicates),
+            DuplicatedValuesLoadError(data_with_duplicates),
             lambda: loader(data_with_duplicates)
         )
 
@@ -424,7 +424,7 @@ def test_flag_by_member_names_with_mapping(strict_coercion, debug_trail):
 
     variants = ["caseFirst", "caseSecond", "caseThree", "caseFour", "caseEight"]
     raises_exc(
-        MultipleBadVariant(
+        MultipleBadVariantLoadError(
             allowed_values=variants,
             input_value=["caseThree", "CASE_TWO", "CASE_1"],
             invalid_values=["CASE_TWO", "CASE_1"]

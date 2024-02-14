@@ -7,11 +7,11 @@ from tests_helpers import raises_exc, with_trail
 
 from adaptix.load_error import (
     AggregateLoadError,
-    BadVariantError,
-    ExtraFieldsError,
+    BadVariantLoadError,
+    ExtraFieldsLoadError,
     TypeLoadError,
     UnionLoadError,
-    ValidationError,
+    ValidationLoadError,
     ValueLoadError,
 )
 
@@ -72,7 +72,7 @@ def test_outer_loading_no_rec_items():
             f'while loading model {Receipt}',
             [
                 with_trail(
-                    ValidationError('At least one item must be presented', []),
+                    ValidationLoadError('At least one item must be presented', []),
                     ['items'],
                 )
             ]
@@ -119,7 +119,7 @@ def test_outer_loading_bad_phone():
                                                     f'while loading model {NotifyEmail}',
                                                     [
                                                         with_trail(
-                                                            BadVariantError({'email'}, 'phone'),
+                                                            BadVariantLoadError({'email'}, 'phone'),
                                                             ['type']
                                                         )
                                                     ]
@@ -155,7 +155,7 @@ def test_outer_loading_bad_receipt_type():
     raises_exc(
         AggregateLoadError(
             f'while loading model {Receipt}',
-            [with_trail(BadVariantError(['INCOME', 'INCOME_REFUND'], 'BAD_TYPE'), ['type'])]
+            [with_trail(BadVariantLoadError(['INCOME', 'INCOME_REFUND'], 'BAD_TYPE'), ['type'])]
         ),
         lambda: outer_receipt_loader(bad_receipt_type_data),
     )
@@ -165,7 +165,7 @@ def test_outer_loading_with_version_tag():
     with_version_data = change(outer_sample_data, ["version"], 1)
 
     raises_exc(
-        ExtraFieldsError(['version'], with_version_data),
+        ExtraFieldsLoadError(['version'], with_version_data),
         lambda: outer_receipt_loader(with_version_data),
     )
 
@@ -186,7 +186,7 @@ def test_outer_loading_bad_item_quantity():
                                     f'while loading model {RecItem!r}',
                                     [
                                         with_trail(
-                                            ValidationError('Value must be > 0', 0),
+                                            ValidationLoadError('Value must be > 0', 0),
                                             ['quantity'],
                                         ),
                                     ]
@@ -219,7 +219,7 @@ def test_outer_loading_bad_item_price():
                                     f'while loading model {RecItem}',
                                     [
                                         with_trail(
-                                            ValidationError('Value must be >= 0', rubles(-10)),
+                                            ValidationLoadError('Value must be >= 0', rubles(-10)),
                                             ['price'],
                                         )
                                     ]

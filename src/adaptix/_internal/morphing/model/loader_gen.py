@@ -15,11 +15,11 @@ from ...struct_trail import append_trail, extend_trail, render_trail_as_note
 from ..load_error import (
     AggregateLoadError,
     ExcludedTypeLoadError,
-    ExtraFieldsError,
-    ExtraItemsError,
+    ExtraFieldsLoadError,
+    ExtraItemsLoadError,
     LoadError,
-    NoRequiredFieldsError,
-    NoRequiredItemsError,
+    NoRequiredFieldsLoadError,
+    NoRequiredItemsLoadError,
     TypeLoadError,
 )
 from .basic_gen import ModelLoaderGen
@@ -237,8 +237,8 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
 
         for named_value in (
             append_trail, extend_trail, render_trail_as_note,
-            ExtraFieldsError, ExtraItemsError,
-            NoRequiredFieldsError, NoRequiredItemsError,
+            ExtraFieldsLoadError, ExtraItemsLoadError,
+            NoRequiredFieldsLoadError, NoRequiredItemsLoadError,
             TypeLoadError, ExcludedTypeLoadError,
             LoadError, AggregateLoadError,
         ):
@@ -408,7 +408,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             bad_type_error = '(TypeError, IndexError)'
             bad_type_load_error = f'TypeLoadError(CollectionsMapping, {state.parent.v_data})'
             not_found_error = (
-                "NoRequiredFieldsError("
+                "NoRequiredFieldsLoadError("
                 f"{state.parent.v_required_keys} - set({state.parent.v_data}), {state.parent.v_data}"
                 ")"
             )
@@ -416,7 +416,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             lookup_error = 'IndexError'
             bad_type_error = '(TypeError, KeyError)'
             bad_type_load_error = f'TypeLoadError(CollectionsSequence, {state.parent.v_data})'
-            not_found_error = f"NoRequiredItemsError({len(state.parent_crown.map)}, {state.parent.v_data})"
+            not_found_error = f"NoRequiredItemsLoadError({len(state.parent_crown.map)}, {state.parent.v_data})"
 
         with state.builder(
             f"""
@@ -520,7 +520,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 state.builder += f"""
                     {state.v_extra}_set = set({state.v_data}) - {state.v_known_keys}
                     if {state.v_extra}_set:
-                        {state.emit_error(f"ExtraFieldsError({state.v_extra}_set, {state.v_data})")}
+                        {state.emit_error(f"ExtraFieldsLoadError({state.v_extra}_set, {state.v_data})")}
                 """
                 state.builder.empty_line()
             elif crown.extra_policy == ExtraCollect():
@@ -567,14 +567,14 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 state.builder += f"""
                     if len({state.v_data}) != {expected_len}:
                         if len({state.v_data}) < {expected_len}:
-                            {state.emit_error(f"NoRequiredItemsError({expected_len}, {state.v_data})")}
+                            {state.emit_error(f"NoRequiredItemsLoadError({expected_len}, {state.v_data})")}
                         else:
-                            {state.emit_error(f"ExtraItemsError({expected_len}, {state.v_data})")}
+                            {state.emit_error(f"ExtraItemsLoadError({expected_len}, {state.v_data})")}
                 """
             else:
                 state.builder += f"""
                     if len({state.v_data}) < {expected_len}:
-                        {state.emit_error(f"NoRequiredItemsError({expected_len}, {state.v_data})")}
+                        {state.emit_error(f"NoRequiredItemsLoadError({expected_len}, {state.v_data})")}
                 """
 
         if self._can_collect_extra:

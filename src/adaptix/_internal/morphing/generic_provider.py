@@ -27,7 +27,7 @@ from ..provider.static_provider import StaticProvider, static_provision_action
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
 from ..type_tools.norm_utils import strip_annotated
-from .load_error import BadVariantError, LoadError, TypeLoadError, UnionLoadError
+from .load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider
 from .request_cls import DumperRequest, LoaderRequest
 
@@ -209,7 +209,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             def literal_loader_sc(data):
                 if (type(data), data) in allowed_values_with_types:
                     return data
-                raise BadVariantError(allowed_values_repr, data)
+                raise BadVariantLoadError(allowed_values_repr, data)
 
             return self._get_literal_loader_with_enum(
                 literal_loader_sc, enum_loaders, allowed_values_with_types
@@ -220,7 +220,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         def literal_loader(data):
             if data in allowed_values:
                 return data
-            raise BadVariantError(allowed_values_repr, data)
+            raise BadVariantLoadError(allowed_values_repr, data)
 
         return self._get_literal_loader_with_enum(literal_loader, enum_loaders, allowed_values)
 
