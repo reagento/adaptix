@@ -107,7 +107,8 @@ assert (
 * There is no forced model representation, adaptix can adjust to your needs.
 * Support [dozens](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/specific-types-behavior.html) of types,
   including different model kinds:
-  ``@dataclass``, ``TypedDict``, ``NamedTuple``, and [``attrs``](https://www.attrs.org/en/stable/)
+  ``@dataclass``, ``TypedDict``, ``NamedTuple``,
+  [``attrs``](https://www.attrs.org/en/stable/) and [``sqlalchemy``](https://docs.sqlalchemy.org/en/20/)
 * Working with self-referenced data types (such as linked lists or trees).
 * Saving [path](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/tutorial.html#error-handling)
   where an exception is raised (including unexpected errors).
