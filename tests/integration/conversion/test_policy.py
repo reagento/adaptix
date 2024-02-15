@@ -25,4 +25,8 @@ def test_unbound_optional(src_model_spec, dst_model_spec, factory_way):
     else:
         convert = get_converter(SourceModel, DestModel, recipe=[allow_unlinked_optional('wild')])
 
-    assert convert(SourceModel(field1='1', field2='2')) == DestModel(field1='1', field2='2', wild='')
+    if dst_model_spec.kind == ModelSpec.SQLALCHEMY:
+        # sqlalchemy set default after flush
+        assert convert(SourceModel(field1='1', field2='2')) == DestModel(field1='1', field2='2')
+    else:
+        assert convert(SourceModel(field1='1', field2='2')) == DestModel(field1='1', field2='2', wild='')
