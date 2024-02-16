@@ -1,5 +1,5 @@
 [build-system]
-requires = ['setuptools==69.0.2']
+requires = ['setuptools==69.1.0']
 build-backend = 'setuptools.build_meta'
 
 [project]
@@ -35,9 +35,9 @@ classifiers = [
 
 [project.optional-dependencies]
 attrs = ['attrs >= 21.3.0']
-attrs-strict = ['attrs >= 21.3.0, <= 23.1.0']
+attrs-strict = ['attrs >= 21.3.0, <= 23.2.0']
 sqlalchemy = ['sqlalchemy >= 2.0.0']
-sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.25']
+sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.27']
 
 [project.urls]
 'Homepage' = 'https://github.com/reagento/adaptix'

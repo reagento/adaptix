@@ -20,11 +20,11 @@ the second (strict) additionally checks that the version same or older than the 
    * - ``attrs``
      - ``attrs >= 21.3.0``
    * - ``attrs-strict``
-     - ``attrs >= 21.3.0, <= 23.1.0``
+     - ``attrs >= 21.3.0, <= 23.2.0``
    * - ``sqlalchemy``
      - ``sqlalchemy >= 2.0.0``
    * - ``sqlalchemy-strict``
-     - ``sqlalchemy >= 2.0.0, <= 2.0.25``
+     - ``sqlalchemy >= 2.0.0, <= 2.0.27``
 
 
 Extras are specified inside square brackets, separating by comma.
