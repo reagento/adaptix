@@ -121,13 +121,13 @@ def _get_autoincrement_column(table: 'sqlalchemy.Table'):
 
 def _get_input_shape(
     tp: TypeHint,
-    table: 'FromClause',
+    table: 'Table',
     columns: 'ColumnCollection',
     relationships: 'ReadOnlyProperties[RelationshipProperty[Any]]',
     type_hints: Mapping[str, TypeHint],
 ) -> InputShape:
     # FromClause has no autoincrement_column
-    autoincrement_column = _get_autoincrement_column(table) if isinstance(table, sqlalchemy.Table) else None
+    autoincrement_column = _get_autoincrement_column(table)
     fields = []
     params = []
     for column in columns:

@@ -46,10 +46,12 @@ Known limitations:
   - Only mapping to ``Table`` is supported,
     implementations for ``FromClause`` instances such as ``Subquery`` and ``Join`` are not provided.
 
+  - Mapping to ``dataclass`` and ``attrs`` are not supported.
+
   - It does not support registering order of mapped fields by design,
     so you should use manual mapping to list instead automatic ``as_list=True``.
 
-  - Relationships with custom ``collection_class`` is not supported.
+  - Relationships with custom ``collection_class`` are not supported.
 
   - All input fields of foreign keys and relationships are considered as optional
     due to user can pass only relationship instance or only foreign key value.
