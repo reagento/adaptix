@@ -16,7 +16,7 @@ from ..provider.provider_template import for_predicate
 from ..provider.request_cls import LocatedRequest, StrictCoercionRequest, TypeHintLoc, find_owner_with_field
 from ..provider.static_provider import static_provision_action
 from ..special_cases_optimization import as_is_stub
-from .load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
+from .load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableLSC
 from .request_cls import DumperRequest, LoaderRequest
 
@@ -59,7 +59,7 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
             try:
                 return datetime.strptime(data, fmt)
             except ValueError:
-                raise DatetimeFormatMismatch(fmt, data)
+                raise FormatMismatchLoadError(fmt, data)
             except TypeError:
                 raise TypeLoadError(str, data)
 

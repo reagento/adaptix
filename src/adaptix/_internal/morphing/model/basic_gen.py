@@ -2,15 +2,29 @@ import itertools
 import re
 import string
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, replace
-from typing import Any, Callable, Collection, Container, Dict, Iterable, List, Mapping, Set, Tuple, TypeVar, Union
+from dataclasses import dataclass
+from typing import (
+    AbstractSet,
+    Any,
+    Callable,
+    Collection,
+    Container,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
-from ...model_tools.definitions import InputField, InputShape, OutputField, OutputShape
-from ...provider.essential import Mediator
-from ...provider.request_cls import LocatedRequest, TypeHintLoc
+from ...model_tools.definitions import InputField, OutputField
+from ...provider.essential import CannotProvide, Mediator
+from ...provider.request_cls import LocatedRequest, LocStack, TypeHintLoc
 from ...provider.static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
     BaseCrown,
@@ -48,6 +62,13 @@ def stub_code_gen_hook(data: CodeGenHookData):
 @dataclass(frozen=True)
 class CodeGenHookRequest(LocatedRequest[CodeGenHook]):
     pass
+
+
+def fetch_code_gen_hook(mediator: Mediator, loc_stack: LocStack) -> CodeGenHook:
+    try:
+        return mediator.delegating_provide(CodeGenHookRequest(loc_stack=loc_stack))
+    except CannotProvide:
+        return stub_code_gen_hook
 
 
 class CodeGenAccumulator(StaticProvider):
@@ -116,17 +137,17 @@ def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
     return used_set
 
 
-def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> Collection[str]:
+def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> AbstractSet[str]:
     used_direct_fields = _collect_used_direct_fields(name_layout.crown)
     if isinstance(name_layout.extra_move, ExtraTargets):
         extra_targets = name_layout.extra_move.fields
     else:
         extra_targets = ()
 
-    return [
+    return {
         field.id for field in shape.fields
         if field.id not in used_direct_fields and field.id not in extra_targets
-    ]
+    }
 
 
 def _inner_get_extra_targets_at_crown(extra_targets: Container[str], crown: BaseCrown) -> Collection[str]:
@@ -187,47 +208,6 @@ def get_wild_extra_targets(shape: BaseShape, extra_move: Union[InpExtraMove, Out
         target for target in extra_move.fields
         if target not in shape.fields_dict.keys()
     ]
-
-
-def strip_input_shape_fields(shape: InputShape, skipped_fields: Collection[str]) -> InputShape:
-    skipped_required_fields = [
-        field.id
-        for field in shape.fields
-        if field.is_required and field.id in skipped_fields
-    ]
-    if skipped_required_fields:
-        raise ValueError(
-            f"Required fields {skipped_required_fields} are skipped"
-        )
-    return replace(
-        shape,
-        fields=tuple(
-            field for field in shape.fields
-            if field.id not in skipped_fields
-        ),
-        params=tuple(
-            param for param in shape.params
-            if param.field_id not in skipped_fields
-        ),
-        overriden_types=frozenset(
-            field.id for field in shape.fields
-            if field.id not in skipped_fields
-        ),
-    )
-
-
-def strip_output_shape_fields(shape: OutputShape, skipped_fields: Collection[str]) -> OutputShape:
-    return replace(
-        shape,
-        fields=tuple(
-            field for field in shape.fields
-            if field.id not in skipped_fields
-        ),
-        overriden_types=frozenset(
-            field.id for field in shape.fields
-            if field.id not in skipped_fields
-        )
-    )
 
 
 class NameSanitizer:

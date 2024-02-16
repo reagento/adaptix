@@ -42,7 +42,6 @@ spec.loader.exec_module(module)
 extensions = [
     'sphinx_copybutton',
     'sphinx_design',
-    'sphinx.ext.autosectionlabel',
     'sphinx.ext.extlinks',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',

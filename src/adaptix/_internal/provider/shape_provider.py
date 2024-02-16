@@ -4,17 +4,21 @@ from typing import Any, Container, Generic, Iterable, Optional, TypeVar, Union, 
 
 from ..common import TypeHint
 from ..model_tools.definitions import (
+    ClarifiedIntrospectionImpossible,
     DescriptorAccessor,
     InputShape,
     IntrospectionImpossible,
     OutputField,
     OutputShape,
+    PackageIsTooOld,
+    Shape,
     ShapeIntrospector,
 )
 from ..model_tools.introspection.attrs import get_attrs_shape
 from ..model_tools.introspection.class_init import get_class_init_shape
 from ..model_tools.introspection.dataclass import get_dataclass_shape
 from ..model_tools.introspection.named_tuple import get_named_tuple_shape
+from ..model_tools.introspection.sqlalchemy import get_sqlalchemy_shape
 from ..model_tools.introspection.typed_dict import get_typed_dict_shape
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import create_loc_stack_checker
@@ -42,30 +46,30 @@ class ShapeProvider(StaticProvider):
     def __repr__(self):
         return f"{type(self)}({self._introspector})"
 
+    def _get_shape(self, tp) -> Shape:
+        try:
+            return self._introspector(tp)
+        except PackageIsTooOld as e:
+            raise CannotProvide(message=e.requirement.fail_reason, is_demonstrative=True) from e
+        except ClarifiedIntrospectionImpossible as e:
+            raise CannotProvide(message=e.description, is_demonstrative=True) from e
+        except IntrospectionImpossible as e:
+            raise CannotProvide from e
+
     @static_provision_action
     def _provide_input_shape(self, mediator: Mediator, request: InputShapeRequest) -> InputShape:
         loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
-        try:
-            shape = self._introspector(loc.type)
-        except IntrospectionImpossible:
-            raise CannotProvide
-
+        shape = self._get_shape(loc.type)
         if shape.input is None:
             raise CannotProvide
-
         return shape.input
 
     @static_provision_action
     def _provide_output_shape(self, mediator: Mediator, request: OutputShapeRequest) -> OutputShape:
         loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
-        try:
-            shape = self._introspector(loc.type)
-        except IntrospectionImpossible:
+        shape = self._get_shape(loc.type)
+        if shape.input is None:
             raise CannotProvide
-
-        if shape.output is None:
-            raise CannotProvide
-
         return shape.output
 
 
@@ -74,6 +78,7 @@ BUILTIN_SHAPE_PROVIDER = ConcatProvider(
     ShapeProvider(get_typed_dict_shape),
     ShapeProvider(get_dataclass_shape),
     ShapeProvider(get_attrs_shape),
+    ShapeProvider(get_sqlalchemy_shape),
     # class init introspection must be the last
     ShapeProvider(get_class_init_shape),
 )

@@ -6,6 +6,7 @@ from keyword import iskeyword
 from typing import Any, Callable, FrozenSet, Generic, Hashable, Mapping, Optional, TypeVar, Union
 
 from ..common import Catchable, TypeHint, VarTuple
+from ..feature_requirement import DistributionRequirement, DistributionVersionRequirement
 from ..struct_trail import Attr, TrailElement
 from ..utils import SingletonMeta, pairs
 
@@ -331,9 +332,15 @@ class IntrospectionImpossible(Exception):
 
 
 class NoTargetPackage(IntrospectionImpossible):
-    pass
+    def __init__(self, requirement: DistributionRequirement):
+        self.requirement = requirement
 
 
 class PackageIsTooOld(IntrospectionImpossible):
-    def __init__(self, required_version: str):
-        self.required_version = required_version
+    def __init__(self, requirement: DistributionVersionRequirement):
+        self.requirement = requirement
+
+
+class ClarifiedIntrospectionImpossible(IntrospectionImpossible):
+    def __init__(self, description: str):
+        self.description = description

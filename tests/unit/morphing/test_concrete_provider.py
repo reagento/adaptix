@@ -11,7 +11,7 @@ from tests_helpers import cond_list, raises_exc
 from adaptix import Retort
 from adaptix._internal.feature_requirement import HAS_PY_311, IS_PYPY
 from adaptix._internal.morphing.concrete_provider import DatetimeFormatProvider
-from adaptix.load_error import DatetimeFormatMismatch, TypeLoadError, ValueLoadError
+from adaptix.load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 
 
 def check_any_dt(loader):
@@ -119,7 +119,7 @@ def test_datetime_format_provider(strict_coercion, debug_trail):
     check_any_dt(loader)
 
     raises_exc(
-        DatetimeFormatMismatch("%Y-%m-%d", "some string"),
+        FormatMismatchLoadError("%Y-%m-%d", "some string"),
         lambda: loader("some string")
     )
 
