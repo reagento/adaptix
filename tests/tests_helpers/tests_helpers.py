@@ -35,7 +35,7 @@ from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import HAS_ATTRS_PKG, HAS_PY_311, DistributionVersionRequirement, Requirement
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
 from adaptix._internal.struct_trail import TrailElement, extend_trail, render_trail_as_note
-from adaptix._internal.type_tools import is_parametrized
+from adaptix._internal.type_tools import get_all_type_hints, is_parametrized
 from adaptix._internal.utils import add_note
 from adaptix.struct_trail import get_trail
 
@@ -248,11 +248,36 @@ def with_trail(exc: E, sub_trail: Reversible[TrailElement]) -> E:
     return render_trail_as_note(extend_trail(exc, sub_trail))
 
 
+class FailedRequirement(Requirement):
+    def __init__(self, fail_reason: str):
+        self._fail_reason = fail_reason
+        super().__init__()
+
+    def _evaluate(self) -> bool:
+        return False
+
+    @property
+    def fail_reason(self) -> str:
+        return self._fail_reason
+
+
+def sqlalchemy_equals(self, other):
+    if type(self) is not type(other):
+        return False
+
+    self_state = vars(self).copy()
+    self_state.pop('_sa_instance_state')
+    other_state = vars(other).copy()
+    other_state.pop('_sa_instance_state')
+    return self_state == other_state
+
+
 class ModelSpec(Enum):
     DATACLASS = 'dataclass'
     TYPED_DICT = 'typed_dict'
     NAMED_TUPLE = 'named_tuple'
     ATTRS = 'attrs'
+    SQLALCHEMY = 'sqlalchemy'
 
     @classmethod
     def default_requirements(cls):
@@ -266,18 +291,51 @@ class ModelSpecSchema:
     decorator: Any
     bases: Any
     get_field: Callable[[Any, str], Any]
+    kind: ModelSpec
+
+
+def create_sqlalchemy_decorator():
+    from sqlalchemy import String
+    from sqlalchemy.orm import Mapped, mapped_column, registry
+    from sqlalchemy.sql.base import NO_ARG
+
+    def sqlalchemy_decorator(cls):
+        reg = registry()
+
+        cls.__tablename__ = cls.__name__
+        cls.__annotations__ = {
+            key: Mapped[value]
+            for key, value in get_all_type_hints(cls).items()
+        }
+        for idx, key in enumerate(cls.__annotations__.keys()):
+            setattr(
+                cls,
+                key,
+                mapped_column(
+                    String(),
+                    primary_key=idx == 0,
+                    default=getattr(cls, key) if hasattr(cls, key) else NO_ARG,
+                ),
+            )
+
+        cls.__eq__ = sqlalchemy_equals
+        return reg.mapped(cls)
+
+    return sqlalchemy_decorator
 
 
 def model_spec_to_schema(spec: ModelSpec):
     if spec == ModelSpec.DATACLASS:
-        return ModelSpecSchema(decorator=dataclass, bases=(), get_field=getattr)
+        return ModelSpecSchema(decorator=dataclass, bases=(), get_field=getattr, kind=spec)
     if spec == ModelSpec.TYPED_DICT:
-        return ModelSpecSchema(decorator=lambda x: x, bases=(TypedDict,), get_field=getitem)
+        return ModelSpecSchema(decorator=lambda x: x, bases=(TypedDict,), get_field=getitem, kind=spec)
     if spec == ModelSpec.NAMED_TUPLE:
-        return ModelSpecSchema(decorator=lambda x: x, bases=(NamedTuple,), get_field=getattr)
+        return ModelSpecSchema(decorator=lambda x: x, bases=(NamedTuple,), get_field=getattr, kind=spec)
     if spec == ModelSpec.ATTRS:
         from attrs import define
-        return ModelSpecSchema(decorator=define, bases=(), get_field=getattr)
+        return ModelSpecSchema(decorator=define, bases=(), get_field=getattr, kind=spec)
+    if spec == ModelSpec.SQLALCHEMY:
+        return ModelSpecSchema(decorator=create_sqlalchemy_decorator(), bases=(), get_field=getattr, kind=spec)
     raise ValueError
 
 
@@ -294,6 +352,7 @@ def exclude_model_spec(first_spec: ModelSpec, *other_specs: ModelSpec):
 GENERIC_MODELS_REQUIREMENTS: Mapping[ModelSpec, Requirement] = {
     ModelSpec.TYPED_DICT: HAS_PY_311,
     ModelSpec.NAMED_TUPLE: HAS_PY_311,
+    ModelSpec.SQLALCHEMY: FailedRequirement('SQLAlchemy models can not be generic'),
 }
 
 

@@ -36,13 +36,16 @@ classifiers = [
 [project.optional-dependencies]
 attrs = ['attrs >= 21.3.0']
 attrs-strict = ['attrs >= 21.3.0, <= 23.1.0']
+sqlalchemy = ['sqlalchemy >= 2.0.0']
+sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.25']
 
 [project.urls]
-'Homepage' = 'https://github.com/reagento/dataclass_factory'
-'Bug Tracker' = 'https://github.com/reagento/dataclass_factory/issues'
+'Homepage' = 'https://github.com/reagento/adaptix'
+'Bug Tracker' = 'https://github.com/reagento/adaptix/issues'
 'Documentation' = 'https://adaptix.readthedocs.io/en/latest/'
-'Source' = 'https://github.com/reagento/dataclass_factory/'
-'Download' = 'https://github.com/reagento/dataclass_factory/#files'
+'Changelog' = 'https://adaptix.readthedocs.io/en/latest/reference/changelog.html'
+'Source' = 'https://github.com/reagento/adaptix/'
+'Download' = 'https://github.com/reagento/adaptix/#files'
 
 [tool.setuptools]
 package-dir = {"" = "src"}

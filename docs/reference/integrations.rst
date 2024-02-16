@@ -19,6 +19,7 @@ Models that are supported out of the box:
   also is supported, but types of all fields will be ``Any``)
 - `TypedDict <https://docs.python.org/3/library/typing.html#typing.TypedDict>`_
 - `attrs <https://www.attrs.org/en/stable/>`_ (only from ``>=21.3.0``)
+- `sqlalchemy <https://docs.sqlalchemy.org/en/20/>`_ (only from ``>=2.0.0``)
 
 Arbitrary types also are supported to be loaded by introspection of ``__init__`` method,
 but it can not be dumped.
@@ -38,5 +39,19 @@ Known limitations:
 
 - ``__init__`` introspection or using :func:`.constructor`
 
-  - Fields of unpacked typed dict (``**kwargs: Unpack[YourTypedDict]``) cannot collide with parameters of function
+  - Fields of unpacked typed dict (``**kwargs: Unpack[YourTypedDict]``) cannot collide with parameters of function.
 
+- sqlalchemy
+
+  - Only mapping to ``Table`` is supported,
+    implementations for ``FromClause`` instances such as ``Subquery`` and ``Join`` are not provided.
+
+  - Mapping to ``dataclass`` and ``attrs`` are not supported.
+
+  - It does not support registering order of mapped fields by design,
+    so you should use manual mapping to list instead automatic ``as_list=True``.
+
+  - Relationships with custom ``collection_class`` are not supported.
+
+  - All input fields of foreign keys and relationships are considered as optional
+    due to user can pass only relationship instance or only foreign key value.

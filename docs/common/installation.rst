@@ -21,4 +21,17 @@ the second (strict) additionally checks that the version same or older than the 
      - ``attrs >= 21.3.0``
    * - ``attrs-strict``
      - ``attrs >= 21.3.0, <= 23.1.0``
+   * - ``sqlalchemy``
+     - ``sqlalchemy >= 2.0.0``
+   * - ``sqlalchemy-strict``
+     - ``sqlalchemy >= 2.0.0, <= 2.0.25``
 
+
+Extras are specified inside square brackets, separating by comma.
+
+So, this is valid installation variants:
+
+.. code-block:: text
+
+   pip install adaptix[attrs-strict]==3.0.0b1
+   pip install adaptix[attrs, sqlalchemy-strict]==3.0.0b1

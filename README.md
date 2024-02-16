@@ -61,29 +61,36 @@ Use for converting one model to another.
 ```python
 from dataclasses import dataclass
 
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
 from adaptix.conversion import get_converter
 
 
-@dataclass
-class Book:
-    title: str
-    price: int
-    author: str = "Unknown author"
+class Base(DeclarativeBase):
+    pass
+
+
+class Book(Base):
+    __tablename__ = 'books'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str]
+    price: Mapped[int]
 
 
 @dataclass
 class BookDTO:
+    id: int
     title: str
     price: int
-    author: str
 
 
 convert_book_to_dto = get_converter(Book, BookDTO)
 
 assert (
-    convert_book_to_dto(Book(title="Fahrenheit 451", price=100))
+    convert_book_to_dto(Book(id=183, title="Fahrenheit 451", price=100))
     ==
-    BookDTO(title="Fahrenheit 451", price=100, author="Unknown author")
+    BookDTO(id=183, title="Fahrenheit 451", price=100)
 )
 ```
 
@@ -107,7 +114,8 @@ assert (
 * There is no forced model representation, adaptix can adjust to your needs.
 * Support [dozens](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/specific-types-behavior.html) of types,
   including different model kinds:
-  ``@dataclass``, ``TypedDict``, ``NamedTuple``, and [``attrs``](https://www.attrs.org/en/stable/)
+  ``@dataclass``, ``TypedDict``, ``NamedTuple``,
+  [``attrs``](https://www.attrs.org/en/stable/) and [``sqlalchemy``](https://docs.sqlalchemy.org/en/20/)
 * Working with self-referenced data types (such as linked lists or trees).
 * Saving [path](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/tutorial.html#error-handling)
   where an exception is raised (including unexpected errors).

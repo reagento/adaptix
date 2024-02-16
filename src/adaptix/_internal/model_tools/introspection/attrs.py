@@ -178,8 +178,8 @@ def _get_output_shape(attrs_fields, type_hints) -> OutputShape:
 def get_attrs_shape(tp) -> FullShape:
     if not HAS_SUPPORTED_ATTRS_PKG:
         if not HAS_ATTRS_PKG:
-            raise NoTargetPackage
-        raise PackageIsTooOld(HAS_SUPPORTED_ATTRS_PKG.min_version)
+            raise NoTargetPackage(HAS_ATTRS_PKG)
+        raise PackageIsTooOld(HAS_SUPPORTED_ATTRS_PKG)
 
     try:
         is_attrs = attrs.has(tp)

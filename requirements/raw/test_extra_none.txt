@@ -2,7 +2,7 @@ pytest==7.4.2
 -e ./tests/tests_helpers
 
 phonenumberslite==8.13.26
-sqlalchemy==2.0.23
+sqlalchemy>=2.0.0
 
 dirty-equals==0.7.1.post0
 
