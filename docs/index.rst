@@ -39,3 +39,4 @@ Adaptix
 
    GitHub <https://github.com/reagento/adaptix>
    PyPI <https://pypi.org/project/adaptix>
+   Chat <https://t.me/reagento_ru>
