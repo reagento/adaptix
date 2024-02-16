@@ -5,7 +5,7 @@ from ...common import TypeHint
 
 try:
     import sqlalchemy
-    from sqlalchemy import Column, ColumnCollection, FromClause
+    from sqlalchemy import Column, ColumnCollection
     from sqlalchemy.exc import NoInspectionAvailable
     from sqlalchemy.orm import Mapped, Mapper, RelationshipProperty
     from sqlalchemy.sql.schema import (
@@ -111,7 +111,7 @@ def _is_input_required_for_column(column: 'ColumnElement', autoincrement_column:
     )
 
 
-def _get_autoincrement_column(table: 'sqlalchemy.Table'):
+def _get_autoincrement_column(table: 'Table'):
     try:
         return table.autoincrement_column
     except AttributeError:
