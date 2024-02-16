@@ -266,3 +266,9 @@ Known limitations:
 
   - Fields of unpacked typed dict (``**kwargs: Unpack[YourTypedDict]``) cannot collide with parameters of function
 
+TypedDict and stringified annotations or ``from __future__ import annotations``:
+
+Due to the way Python works with annotations, there is a bug,
+when field annotation of TypedDict is stringified or ``from __future__ import annotations`` is placed
+in file ``Required`` and ``NotRequired`` specifiers is ignored when ``required_keys`` and ``optional_keys`` is calculated.
+Adaptix takes this into account and processes it properly.
