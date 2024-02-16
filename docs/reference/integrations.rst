@@ -55,3 +55,10 @@ Known limitations:
 
   - All input fields of foreign keys and relationships are considered as optional
     due to user can pass only relationship instance or only foreign key value.
+
+TypedDict and stringified annotations or ``from __future__ import annotations``:
+
+Due to the way Python works with annotations, there is a bug,
+when field annotation of TypedDict is stringified or ``from __future__ import annotations`` is placed
+in file ``Required`` and ``NotRequired`` specifiers is ignored when ``required_keys`` and ``optional_keys`` is calculated.
+Adaptix takes this into account and processes it properly.
