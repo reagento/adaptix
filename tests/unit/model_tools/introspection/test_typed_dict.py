@@ -665,3 +665,163 @@ def test_required():
             )
         )
     )
+
+
+@requires(HAS_TYPED_DICT_REQUIRED)
+def test_required_annotated():
+    class Base(TypedDict):
+        f1: int
+        f2: typing.Annotated[typing.Required[int], "metadata"]
+        f3: 'typing.NotRequired[typing.Annotated[int, "metadata"]]'
+
+    class Child(Base, total=False):
+        f4: int
+        f5: 'typing.Annotated[typing.Required[int], "metadata"]'
+        f6: typing.NotRequired[typing.Annotated[int, "metadata"]]
+
+    assert (
+        get_typed_dict_shape(Child)
+        ==
+        Shape(
+            input=InputShape(
+                constructor=Child,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        id='f1',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    InputField(
+                        type=typing.Annotated[typing.Required[int], "metadata"],
+                        id='f2',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    InputField(
+                        type=typing.NotRequired[typing.Annotated[int, "metadata"]],
+                        id='f3',
+                        default=NoDefault(),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    InputField(
+                        type=int,
+                        id='f4',
+                        default=NoDefault(),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    InputField(
+                        type=typing.Annotated[typing.Required[int], "metadata"],
+                        id='f5',
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    InputField(
+                        type=typing.NotRequired[typing.Annotated[int, "metadata"]],
+                        id='f6',
+                        default=NoDefault(),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id='f1',
+                        name='f1',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id='f2',
+                        name='f2',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id='f3',
+                        name='f3',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id='f4',
+                        name='f4',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id='f5',
+                        name='f5',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id='f6',
+                        name='f6',
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                ),
+                overriden_types=frozenset({}),
+            ),
+            output=OutputShape(
+                fields=(
+                    OutputField(
+                        type=int,
+                        id='f1',
+                        default=NoDefault(),
+                        accessor=create_key_accessor('f1', access_error=None),
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    OutputField(
+                        type=typing.Annotated[typing.Required[int], "metadata"],
+                        id='f2',
+                        default=NoDefault(),
+                        accessor=create_key_accessor('f2', access_error=None),
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    OutputField(
+                        type=typing.NotRequired[typing.Annotated[int, "metadata"]],
+                        id='f3',
+                        default=NoDefault(),
+                        accessor=create_key_accessor('f3', access_error=KeyError),
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    OutputField(
+                        type=int,
+                        id='f4',
+                        default=NoDefault(),
+                        accessor=create_key_accessor('f4', access_error=KeyError),
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    OutputField(
+                        type=typing.Annotated[typing.Required[int], "metadata"],
+                        id='f5',
+                        default=NoDefault(),
+                        accessor=create_key_accessor('f5', access_error=None),
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                    OutputField(
+                        type=typing.NotRequired[typing.Annotated[int, "metadata"]],
+                        id='f6',
+                        default=NoDefault(),
+                        accessor=create_key_accessor('f6', access_error=KeyError),
+                        metadata=MappingProxyType({}),
+                        original=None,
+                    ),
+                ),
+                overriden_types=frozenset({}),
+            )
+        )
+    )
