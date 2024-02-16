@@ -7,6 +7,7 @@ T = TypeVar('T')
 Loader = Callable[[Any], V_co]
 Dumper = Callable[[K_contra], Any]
 Converter = Callable[..., Any]
+Coercer = Callable[[Any], Any]
 
 TypeHint = Any
 

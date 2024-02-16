@@ -1,7 +1,7 @@
 import dataclasses
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Union
 
 from ..common import TypeHint, VarTuple
 from ..compat import CompatExceptionGroup
@@ -48,6 +48,10 @@ class LoadExceptionGroup(CompatExceptionGroup[LoadError], LoadError):
     message: str
     exceptions: VarTuple[LoadError]
 
+    # stub `__init__` is required for right introspection
+    def __init__(self, message: str, exceptions: VarTuple[LoadError]):
+        pass
+
 
 @custom_exception(str_by_fields=False)
 @dataclass(eq=False, init=False)
@@ -63,35 +67,35 @@ class UnionLoadError(LoadExceptionGroup):
 
 @custom_exception
 @dataclass(eq=False)
-class MsgError(LoadError):
+class MsgLoadError(LoadError):
     msg: Optional[str]
     input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
-class ExtraFieldsError(LoadError):
+class ExtraFieldsLoadError(LoadError):
     fields: Iterable[str]
     input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
-class ExtraItemsError(LoadError):
+class ExtraItemsLoadError(LoadError):
     expected_len: int
     input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
-class NoRequiredFieldsError(LoadError):
+class NoRequiredFieldsLoadError(LoadError):
     fields: Iterable[str]
     input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
-class NoRequiredItemsError(LoadError):
+class NoRequiredItemsLoadError(LoadError):
     expected_len: int
     input_value: Any
 
@@ -113,25 +117,47 @@ class ExcludedTypeLoadError(TypeLoadError):
 
 @custom_exception(str_by_fields=False)
 @dataclass(eq=False)
-class ValueLoadError(MsgError):
+class ValueLoadError(MsgLoadError):
     pass
 
 
 @custom_exception(str_by_fields=False)
 @dataclass(eq=False)
-class ValidationError(MsgError):
+class ValidationLoadError(MsgLoadError):
     pass
 
 
 @custom_exception
 @dataclass(eq=False)
-class BadVariantError(LoadError):
+class BadVariantLoadError(LoadError):
     allowed_values: Iterable[Any]
     input_value: Any
 
 
 @custom_exception
 @dataclass(eq=False)
-class DatetimeFormatMismatch(LoadError):
+class MultipleBadVariantLoadError(LoadError):
+    allowed_values: Iterable[Any]
+    invalid_values: Iterable[Any]
+    input_value: Any
+
+
+@custom_exception
+@dataclass(eq=False)
+class FormatMismatchLoadError(LoadError):
     format: str
+    input_value: Any
+
+
+@custom_exception
+@dataclass(eq=False)
+class DuplicatedValuesLoadError(LoadError):
+    input_value: Any
+
+
+@custom_exception
+@dataclass(eq=False)
+class OutOfRangeLoadError(LoadError):
+    min_value: Optional[Union[int, float]]
+    max_value: Optional[Union[int, float]]
     input_value: Any

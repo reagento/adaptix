@@ -1,15 +1,16 @@
 [build-system]
-requires = ['setuptools==69.0.2']
+requires = ['setuptools==69.1.0']
 build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'adaptix'
-version = '3.0.0b1'
+version = '3.0.0b2'
 description = 'An extremely flexible and configurable data model conversion library'
 readme = 'README.md'
 requires-python = '>=3.8'
 dependencies = [
     'exceptiongroup>=1.1.3; python_version<"3.11"',
+    'astunparse>=1.6.3; python_version<="3.8"',
 ]
 
 classifiers = [
@@ -34,14 +35,17 @@ classifiers = [
 
 [project.optional-dependencies]
 attrs = ['attrs >= 21.3.0']
-attrs-strict = ['attrs >= 21.3.0, <= 23.1.0']
+attrs-strict = ['attrs >= 21.3.0, <= 23.2.0']
+sqlalchemy = ['sqlalchemy >= 2.0.0']
+sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.27']
 
 [project.urls]
-'Homepage' = 'https://github.com/reagento/dataclass_factory'
-'Bug Tracker' = 'https://github.com/reagento/dataclass_factory/issues'
+'Homepage' = 'https://github.com/reagento/adaptix'
+'Bug Tracker' = 'https://github.com/reagento/adaptix/issues'
 'Documentation' = 'https://adaptix.readthedocs.io/en/latest/'
-'Source' = 'https://github.com/reagento/dataclass_factory/'
-'Download' = 'https://github.com/reagento/dataclass_factory/#files'
+'Changelog' = 'https://adaptix.readthedocs.io/en/latest/reference/changelog.html'
+'Source' = 'https://github.com/reagento/adaptix/'
+'Download' = 'https://github.com/reagento/adaptix/#files'
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -86,9 +90,9 @@ issue_format = '`#{issue} <https://github.com/reagento/adaptix/issues/{issue}>`_
 directory = 'docs/changelog/fragments'
 
 type = [
+  { name = "Features",         directory = "feature",     showcontent = true },
   { name = "Breaking Changes", directory = "breaking",    showcontent = true },
   { name = "Deprecations",     directory = "deprecation", showcontent = true },
-  { name = "Features",         directory = "feature",     showcontent = true },
   { name = "Bug Fixes",        directory = "bugfix",      showcontent = true },
   { name = "Other",            directory = "other",       showcontent = true },
 ]

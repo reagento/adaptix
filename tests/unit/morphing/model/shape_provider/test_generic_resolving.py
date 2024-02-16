@@ -2,7 +2,14 @@ from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import pytest
 from pytest import param
-from tests_helpers import cond_list, load_namespace_keeping_module, requires
+from tests_helpers import (
+    GENERIC_MODELS_REQUIREMENTS,
+    ModelSpec,
+    cond_list,
+    exclude_model_spec,
+    load_namespace_keeping_module,
+    requires,
+)
 
 from adaptix import CannotProvide, Retort
 from adaptix._internal.feature_requirement import (
@@ -14,18 +21,21 @@ from adaptix._internal.feature_requirement import (
     HAS_TV_TUPLE,
     IS_PYPY,
 )
-from adaptix._internal.provider.request_cls import LocMap, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocMap, LocStack, TypeHintLoc
 from adaptix._internal.provider.shape_provider import (
     InputShapeRequest,
     OutputShapeRequest,
     provide_generic_resolved_shape,
 )
 
-from .local_helpers import assert_fields_types, exclude_model_spec
+from .local_helpers import assert_fields_types
 
 T = TypeVar('T')
 K = TypeVar('K')
 V = TypeVar('V')
+
+
+adaptix_model_spec_requirements = GENERIC_MODELS_REQUIREMENTS
 
 
 @pytest.fixture(
@@ -120,7 +130,7 @@ def test_sub_generic(model_spec):
     )
 
 
-@exclude_model_spec('named_tuple')
+@exclude_model_spec(ModelSpec.NAMED_TUPLE)
 def test_single_inheritance(model_spec):
     @model_spec.decorator
     class Parent(*model_spec.bases, Generic[T]):
@@ -136,7 +146,7 @@ def test_single_inheritance(model_spec):
     )
 
 
-@exclude_model_spec('named_tuple')
+@exclude_model_spec(ModelSpec.NAMED_TUPLE)
 def test_single_inheritance_generic_child(model_spec):
     @model_spec.decorator
     class Parent(*model_spec.bases, Generic[T]):
@@ -161,7 +171,7 @@ def test_single_inheritance_generic_child(model_spec):
     )
 
 
-@exclude_model_spec('named_tuple', 'attrs')
+@exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS)
 def test_multiple_inheritance(model_spec):
     @model_spec.decorator
     class Parent1(*model_spec.bases, Generic[T]):
@@ -199,7 +209,7 @@ T6 = TypeVar('T6')
 T7 = TypeVar('T7')
 
 
-@exclude_model_spec('named_tuple', 'attrs')
+@exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS)
 @pytest.mark.parametrize('tp', [List, list] if HAS_STD_CLASSES_GENERICS else [List])
 def test_generic_multiple_inheritance(model_spec, tp) -> None:
     @model_spec.decorator
@@ -256,22 +266,22 @@ skip_if_pypy_39_or_310 = pytest.mark.skipif(
 )
 def test_not_a_model(tp):
     retort = Retort()
-    mediator = retort._create_mediator(request_stack=())
+    mediator = retort._create_mediator()
 
     with pytest.raises(CannotProvide):
         provide_generic_resolved_shape(
             mediator,
-            InputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+            InputShapeRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
         )
 
     with pytest.raises(CannotProvide):
         provide_generic_resolved_shape(
             mediator,
-            OutputShapeRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+            OutputShapeRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
         )
 
 
-@exclude_model_spec('named_tuple', 'attrs')
+@exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS)
 def test_generic_mixed_inheritance(model_spec):
     @model_spec.decorator
     class Parent1(*model_spec.bases):
@@ -300,7 +310,7 @@ def test_generic_mixed_inheritance(model_spec):
     )
 
 
-@exclude_model_spec('named_tuple')
+@exclude_model_spec(ModelSpec.NAMED_TUPLE)
 def test_generic_parents_with_type_override(model_spec):
     @model_spec.decorator
     class Parent(*model_spec.bases, Generic[T]):
@@ -316,7 +326,7 @@ def test_generic_parents_with_type_override(model_spec):
     )
 
 
-@exclude_model_spec('named_tuple')
+@exclude_model_spec(ModelSpec.NAMED_TUPLE)
 def test_generic_parents_with_type_override_generic(model_spec):
     @model_spec.decorator
     class Parent(*model_spec.bases, Generic[T]):

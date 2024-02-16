@@ -42,7 +42,6 @@ spec.loader.exec_module(module)
 extensions = [
     'sphinx_copybutton',
     'sphinx_design',
-    'sphinx.ext.autosectionlabel',
     'sphinx.ext.extlinks',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
@@ -106,7 +105,6 @@ paramlinks_hyperlink_param = 'name'
 add_function_parentheses = False
 
 repo = git.Repo(search_parent_directories=True)
-sha = repo.head.object.hexsha
 benchmark_data_submodule = next(submodule for submodule in repo.submodules if submodule.name == 'benchmark-data')
 
 extlinks = {

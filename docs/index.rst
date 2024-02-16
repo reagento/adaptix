@@ -18,8 +18,16 @@ Adaptix
 
 .. toctree::
    :maxdepth: 2
+   :caption: Conversion:
+
+   conversion/tutorial
+
+
+.. toctree::
+   :maxdepth: 2
    :caption: Reference:
 
+   reference/integrations
    reference/examples
    API <reference/api/modules>
    reference/changelog
@@ -31,3 +39,4 @@ Adaptix
 
    GitHub <https://github.com/reagento/adaptix>
    PyPI <https://pypi.org/project/adaptix>
+   Chat <https://t.me/reagento_ru>

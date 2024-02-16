@@ -11,16 +11,10 @@ from uuid import UUID
 from ...common import Dumper, Loader, TypeHint, VarTuple
 from ...definitions import DebugTrail
 from ...provider.essential import Provider, Request
+from ...provider.loc_stack_filtering import P
 from ...provider.provider_template import ValueProvider
-from ...provider.request_cls import DebugTrailRequest, LocMap, StrictCoercionRequest, TypeHintLoc
-from ...provider.request_filtering import P
-from ...provider.shape_provider import (
-    ATTRS_SHAPE_PROVIDER,
-    CLASS_INIT_SHAPE_PROVIDER,
-    DATACLASS_SHAPE_PROVIDER,
-    NAMED_TUPLE_SHAPE_PROVIDER,
-    TYPED_DICT_SHAPE_PROVIDER,
-)
+from ...provider.request_cls import DebugTrailRequest, LocMap, LocStack, StrictCoercionRequest, TypeHintLoc
+from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...retort.operating_retort import OperatingRetort
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
@@ -42,8 +36,7 @@ from ..concrete_provider import (
     SelfTypeProvider,
 )
 from ..constant_length_tuple_provider import ConstantLengthTupleProvider
-from ..dict_provider import DictProvider
-from ..enum_provider import EnumExactValueProvider
+from ..dict_provider import DefaultDictProvider, DictProvider
 from ..generic_provider import (
     LiteralProvider,
     NewTypeUnwrappingProvider,
@@ -60,7 +53,7 @@ from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSie
 from ..name_layout.provider import BuiltinNameLayoutProvider
 from ..provider_template import ABCProxy
 from ..request_cls import DumperRequest, LoaderRequest
-from .provider import as_is_dumper, as_is_loader, dumper, loader, name_mapping
+from .provider import as_is_dumper, as_is_loader, dumper, enum_by_exact_value, flag_by_exact_value, loader, name_mapping
 
 
 class FilledRetort(OperatingRetort, ABC):
@@ -79,7 +72,8 @@ class FilledRetort(OperatingRetort, ABC):
         IsoFormatProvider(time),
         SecondsTimedeltaProvider(),
 
-        EnumExactValueProvider(),  # it has higher priority than scalar types for Enum with mixins
+        flag_by_exact_value(),
+        enum_by_exact_value(),  # it has higher priority than scalar types for Enum with mixins
 
         INT_LOADER_PROVIDER,
         as_is_dumper(int),
@@ -135,6 +129,7 @@ class FilledRetort(OperatingRetort, ABC):
         ConstantLengthTupleProvider(),
         IterableProvider(),
         DictProvider(),
+        DefaultDictProvider(),
         RegexPatternProvider(),
         SelfTypeProvider(),
         LiteralStringProvider(),
@@ -164,12 +159,7 @@ class FilledRetort(OperatingRetort, ABC):
         ModelLoaderProvider(),
         ModelDumperProvider(),
 
-        NAMED_TUPLE_SHAPE_PROVIDER,
-        TYPED_DICT_SHAPE_PROVIDER,
-        DATACLASS_SHAPE_PROVIDER,
-        ATTRS_SHAPE_PROVIDER,
-
-        CLASS_INIT_SHAPE_PROVIDER,
+        BUILTIN_SHAPE_PROVIDER,
 
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),
@@ -243,7 +233,7 @@ class AdornedRetort(OperatingRetort):
 
     def _make_loader(self, tp: Type[T]) -> Loader[T]:
         loader_ = self._facade_provide(
-            LoaderRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+            LoaderRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
             error_message=f'Cannot produce loader for type {tp!r}',
         )
         if self._debug_trail == DebugTrail.FIRST:
@@ -269,7 +259,7 @@ class AdornedRetort(OperatingRetort):
 
     def _make_dumper(self, tp: Type[T]) -> Dumper[T]:
         dumper_ = self._facade_provide(
-            DumperRequest(loc_map=LocMap(TypeHintLoc(type=tp))),
+            DumperRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
             error_message=f'Cannot produce dumper for type {tp!r}',
         )
         if self._debug_trail == DebugTrail.FIRST:

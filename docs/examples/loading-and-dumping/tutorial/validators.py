@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from adaptix import P, Retort, validator
-from adaptix.load_error import AggregateLoadError, LoadError, ValidationError
+from adaptix.load_error import AggregateLoadError, LoadError, ValidationLoadError
 
 
 @dataclass
@@ -25,7 +25,7 @@ try:
     retort.load(data, Book)
 except AggregateLoadError as e:
     assert len(e.exceptions) == 1
-    assert isinstance(e.exceptions[0], ValidationError)
+    assert isinstance(e.exceptions[0], ValidationLoadError)
     assert e.exceptions[0].msg == "value must be greater or equal 0"
 
 

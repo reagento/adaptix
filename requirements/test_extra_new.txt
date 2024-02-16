@@ -6,7 +6,7 @@
 #
 -e ./tests/tests_helpers
     # via -r requirements/raw/test_extra_none.txt
-attrs==23.1.0
+attrs==23.2.0
     # via -r requirements/raw/test_extra_new.txt
 dirty-equals==0.7.1.post0
     # via -r requirements/raw/test_extra_none.txt
@@ -26,8 +26,10 @@ pytest==7.4.2
     # via -r requirements/raw/test_extra_none.txt
 pytz==2023.3.post1
     # via dirty-equals
-sqlalchemy==2.0.23
-    # via -r requirements/raw/test_extra_none.txt
+sqlalchemy==2.0.27
+    # via
+    #   -r requirements/raw/test_extra_new.txt
+    #   -r requirements/raw/test_extra_none.txt
 typing-extensions==4.9.0
     # via
     #   -r requirements/raw/test_extra_none.txt

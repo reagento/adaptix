@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Generic, Iterable, Optional, Sequence, TypeVar, final
 
+from ..common import VarTuple
 from ..compat import CompatExceptionGroup
 from ..feature_requirement import HAS_NATIVE_EXC_GROUP
 from ..utils import with_module
@@ -116,13 +117,18 @@ class Mediator(ABC, Generic[V]):
     """
 
     @abstractmethod
-    def provide(self, request: Request[T], *, extra_stack: Sequence[Request[Any]] = ()) -> T:
+    def provide(self, request: Request[T]) -> T:
         """Get response of sent request.
 
         :param request: A request instance
-        :param extra_stack: Additional stack that will be added to :attr:`.request_stack` before passed request
         :return: Result of the request processing
         :raise CannotProvide: A provider able to process the request does not be found
+        """
+
+    @abstractmethod
+    def provide_from_next(self) -> V:
+        """Forward current request to providers
+        that placed after current provider at the recipe.
         """
 
     @final
@@ -181,18 +187,29 @@ class Mediator(ABC, Generic[V]):
             )
         return results
 
-    @abstractmethod
-    def provide_from_next(self) -> V:
-        """Forward current request to providers
-        that placed after current provider at the recipe.
-        """
 
-    @property
-    @abstractmethod
-    def request_stack(self) -> Sequence[Request[Any]]:
-        """Call stack, but consisting of requests.
-        Last element of ``request_stack`` is current request.
-        """
+def mandatory_apply_by_iterable(
+    func: Callable[..., T],
+    args_iterable: Iterable[VarTuple[Any]],
+    error_describer: Optional[Callable[[], str]] = None,
+) -> Iterable[T]:
+    results = []
+    exceptions = []
+    for args in args_iterable:
+        try:
+            result = func(*args)
+        except CannotProvide as e:
+            exceptions.append(e)
+        else:
+            results.append(result)
+    if exceptions:
+        raise AggregateCannotProvide.make(
+            '' if error_describer is None else error_describer(),
+            exceptions,
+            is_demonstrative=True,
+            is_terminal=True,
+        )
+    return results
 
 
 class Provider(ABC):

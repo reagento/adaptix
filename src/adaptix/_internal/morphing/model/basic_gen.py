@@ -1,8 +1,10 @@
 import itertools
 import re
 import string
-from dataclasses import dataclass, replace
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import (
+    AbstractSet,
     Any,
     Callable,
     Collection,
@@ -11,7 +13,6 @@ from typing import (
     Iterable,
     List,
     Mapping,
-    Sequence,
     Set,
     Tuple,
     TypeVar,
@@ -21,9 +22,9 @@ from typing import (
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
-from ...model_tools.definitions import InputField, InputShape, OutputField, OutputShape
-from ...provider.essential import Mediator, Request
-from ...provider.request_cls import LocatedRequest, TypeHintLoc
+from ...model_tools.definitions import InputField, OutputField
+from ...provider.essential import CannotProvide, Mediator
+from ...provider.request_cls import LocatedRequest, LocStack, TypeHintLoc
 from ...provider.static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
     BaseCrown,
@@ -59,35 +60,38 @@ def stub_code_gen_hook(data: CodeGenHookData):
 
 
 @dataclass(frozen=True)
-class CodeGenHookRequest(Request[CodeGenHook]):
+class CodeGenHookRequest(LocatedRequest[CodeGenHook]):
     pass
+
+
+def fetch_code_gen_hook(mediator: Mediator, loc_stack: LocStack) -> CodeGenHook:
+    try:
+        return mediator.delegating_provide(CodeGenHookRequest(loc_stack=loc_stack))
+    except CannotProvide:
+        return stub_code_gen_hook
 
 
 class CodeGenAccumulator(StaticProvider):
     """Accumulates all generated code. It may be useful for debugging"""
 
     def __init__(self) -> None:
-        self.list: List[Tuple[Sequence[Request], CodeGenHookData]] = []
+        self.list: List[Tuple[CodeGenHookRequest, CodeGenHookData]] = []
 
     @static_provision_action
     def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
-        request_stack = mediator.request_stack
-
         def hook(data: CodeGenHookData):
-            self.list.append((request_stack, data))
+            self.list.append((request, data))
 
         return hook
 
     @property
     def code_pairs(self):
         return [
-            (request_stack[-2].loc_map[TypeHintLoc].type, hook_data.source)
-            for request_stack, hook_data in self.list
+            (request.loc_stack[-2].loc_map[TypeHintLoc].type, hook_data.source)
+            for request, hook_data in self.list
             if (
-                len(request_stack) >= 2
-                and isinstance(request_stack[-2], LocatedRequest)
-                and request_stack[-2].loc_map.has(TypeHintLoc)
-                and request_stack[-2].loc_map[TypeHintLoc].type
+                len(request.loc_stack) >= 2
+                and request.loc_stack[-2].loc_map.has(TypeHintLoc)
             )
         ]
 
@@ -133,17 +137,17 @@ def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
     return used_set
 
 
-def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> Collection[str]:
+def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> AbstractSet[str]:
     used_direct_fields = _collect_used_direct_fields(name_layout.crown)
     if isinstance(name_layout.extra_move, ExtraTargets):
         extra_targets = name_layout.extra_move.fields
     else:
         extra_targets = ()
 
-    return [
+    return {
         field.id for field in shape.fields
         if field.id not in used_direct_fields and field.id not in extra_targets
-    ]
+    }
 
 
 def _inner_get_extra_targets_at_crown(extra_targets: Container[str], crown: BaseCrown) -> Collection[str]:
@@ -206,47 +210,6 @@ def get_wild_extra_targets(shape: BaseShape, extra_move: Union[InpExtraMove, Out
     ]
 
 
-def strip_input_shape_fields(shape: InputShape, skipped_fields: Collection[str]) -> InputShape:
-    skipped_required_fields = [
-        field.id
-        for field in shape.fields
-        if field.is_required and field.id in skipped_fields
-    ]
-    if skipped_required_fields:
-        raise ValueError(
-            f"Required fields {skipped_required_fields} are skipped"
-        )
-    return replace(
-        shape,
-        fields=tuple(
-            field for field in shape.fields
-            if field.id not in skipped_fields
-        ),
-        params=tuple(
-            param for param in shape.params
-            if param.field_id not in skipped_fields
-        ),
-        overriden_types=frozenset(
-            field.id for field in shape.fields
-            if field.id not in skipped_fields
-        ),
-    )
-
-
-def strip_output_shape_fields(shape: OutputShape, skipped_fields: Collection[str]) -> OutputShape:
-    return replace(
-        shape,
-        fields=tuple(
-            field for field in shape.fields
-            if field.id not in skipped_fields
-        ),
-        overriden_types=frozenset(
-            field.id for field in shape.fields
-            if field.id not in skipped_fields
-        )
-    )
-
-
 class NameSanitizer:
     _BAD_CHARS = re.compile(r'\W')
     _TRANSLATE_MAP = str.maketrans({'.': '_', '[': '_'})
@@ -262,11 +225,10 @@ class NameSanitizer:
 def compile_closure_with_globals_capturing(
     compiler: ClosureCompiler,
     code_gen_hook: CodeGenHook,
-    namespace: Dict[str, object],
-    body_builders: Iterable[CodeBuilder],
+    namespace: Mapping[str, object],
     *,
     closure_name: str,
-    closure_params: str,
+    closure_code: str,
     file_name: str,
 ):
     builder = CodeBuilder()
@@ -282,11 +244,7 @@ def compile_closure_with_globals_capturing(
             builder += f"{name} = {value_literal}"
 
     builder.empty_line()
-
-    with builder(f"def {closure_name}({closure_params}):"):
-        for body_builder in body_builders:
-            builder.extend(body_builder)
-
+    builder += closure_code
     builder += f"return {closure_name}"
 
     code_gen_hook(
@@ -318,3 +276,15 @@ def has_collect_policy(crown: InpCrown) -> bool:
     if isinstance(crown, (InpFieldCrown, InpNoneCrown)):
         return False
     raise TypeError
+
+
+class ModelLoaderGen(ABC):
+    @abstractmethod
+    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+        ...
+
+
+class ModelDumperGen(ABC):
+    @abstractmethod
+    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+        ...

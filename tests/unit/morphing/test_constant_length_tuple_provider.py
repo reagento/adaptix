@@ -12,7 +12,7 @@ from adaptix._internal.feature_requirement import HAS_UNPACK
 from adaptix._internal.morphing.concrete_provider import INT_LOADER_PROVIDER, STR_LOADER_PROVIDER
 from adaptix._internal.morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
 from adaptix._internal.morphing.load_error import AggregateLoadError
-from adaptix.load_error import ExcludedTypeLoadError, ExtraItemsError, NoRequiredItemsError, TypeLoadError
+from adaptix.load_error import ExcludedTypeLoadError, ExtraItemsLoadError, NoRequiredItemsLoadError, TypeLoadError
 
 
 def string_dumper(data):
@@ -227,11 +227,11 @@ def test_loading_not_enough_fields(retort):
 
     loader_ = retort.get_loader(Tuple[int, int])
     raises_exc(
-        ExtraItemsError(2, (1, 2, 3)),
+        ExtraItemsLoadError(2, (1, 2, 3)),
         lambda: loader_([1, 2, 3])
     )
     raises_exc(
-        NoRequiredItemsError(2, (1,)),
+        NoRequiredItemsLoadError(2, (1,)),
         lambda: loader_([1])
     )
 
@@ -245,11 +245,11 @@ def test_dumping_not_enough_fields(retort):
 
     dumper_ = retort.get_dumper(Tuple[int, int])
     raises_exc(
-        ExtraItemsError(2, [1, 2, 3]),
+        ExtraItemsLoadError(2, [1, 2, 3]),
         lambda: dumper_([1, 2, 3])
     )
     raises_exc(
-        NoRequiredItemsError(2, [1]),
+        NoRequiredItemsLoadError(2, [1]),
         lambda: dumper_([1])
     )
 

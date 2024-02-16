@@ -1,17 +1,18 @@
-from adaptix._internal.definitions import DebugTrail
-
 from ._internal.common import Dumper, Loader, TypeHint
+from ._internal.definitions import DebugTrail
 from ._internal.model_tools.introspection.typed_dict import TypedDictAt38Warning
 from ._internal.morphing.facade.func import dump, load
 from ._internal.morphing.facade.provider import (
     as_is_dumper,
     as_is_loader,
-    bound,
     constructor,
+    default_dict,
     dumper,
     enum_by_exact_value,
     enum_by_name,
     enum_by_value,
+    flag_by_exact_value,
+    flag_by_member_names,
     loader,
     name_mapping,
     validator,
@@ -28,17 +29,18 @@ from ._internal.morphing.model.crown_definitions import (
 )
 from ._internal.morphing.name_layout.base import ExtraIn, ExtraOut
 from ._internal.name_style import NameStyle
+from ._internal.provider.facade.provider import bound
 from ._internal.utils import Omittable, Omitted
 from .provider import (
     AggregateCannotProvide,
     CannotProvide,
     Chain,
+    LocStackPattern,
     Mediator,
     P,
     Provider,
     Request,
-    RequestPattern,
-    create_request_checker,
+    create_loc_stack_checker,
 )
 from .retort import NoSuitableProvider
 
@@ -58,7 +60,10 @@ __all__ = (
     'enum_by_exact_value',
     'enum_by_name',
     'enum_by_value',
+    'flag_by_exact_value',
+    'flag_by_member_names',
     'name_mapping',
+    'default_dict',
     'AdornedRetort',
     'FilledRetort',
     'Retort',
@@ -78,10 +83,10 @@ __all__ = (
     'ExtraSkip',
     'Mediator',
     'NameStyle',
-    'RequestPattern',
+    'LocStackPattern',
     'P',
     'Saturator',
-    'create_request_checker',
+    'create_loc_stack_checker',
     'retort',
     'Provider',
     'NoSuitableProvider',

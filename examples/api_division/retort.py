@@ -5,7 +5,7 @@ import phonenumbers
 from phonenumbers import PhoneNumber
 
 from adaptix import Chain, ExtraForbid, ExtraSkip, P, Retort, dumper, enum_by_name, loader, name_mapping, validator
-from adaptix.load_error import ExtraFieldsError, ValueLoadError
+from adaptix.load_error import ExtraFieldsLoadError, ValueLoadError
 
 from .models import Receipt, ReceiptType, RecItem
 from .money import Money, TooPreciseAmount
@@ -51,7 +51,7 @@ def money_loader(data):
 
 def forbid_version_key(data):
     if isinstance(data, dict) and 'version' in data:
-        raise ExtraFieldsError(['version'], data)
+        raise ExtraFieldsLoadError(['version'], data)
     return data
 
 

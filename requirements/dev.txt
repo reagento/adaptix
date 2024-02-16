@@ -18,7 +18,7 @@ astpath==0.9.1
     #   astpath
 astroid==3.0.2
     # via pylint
-attrs==23.1.0
+attrs==23.2.0
     # via
     #   -r requirements/raw/test_extra_new.txt
     #   cattrs
@@ -323,8 +323,10 @@ sphinxcontrib-serializinghtml==1.1.9
     # via sphinx
 sphinxext-opengraph==0.9.1
     # via -r requirements/raw/doc.txt
-sqlalchemy==2.0.23
-    # via -r requirements/raw/test_extra_none.txt
+sqlalchemy==2.0.27
+    # via
+    #   -r requirements/raw/test_extra_new.txt
+    #   -r requirements/raw/test_extra_none.txt
 stevedore==5.1.0
     # via bandit
 tenacity==8.2.3

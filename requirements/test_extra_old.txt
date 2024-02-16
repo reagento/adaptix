@@ -26,8 +26,10 @@ pytest==7.4.2
     # via -r requirements/raw/test_extra_none.txt
 pytz==2023.3.post1
     # via dirty-equals
-sqlalchemy==2.0.23
-    # via -r requirements/raw/test_extra_none.txt
+sqlalchemy==2.0.0
+    # via
+    #   -r requirements/raw/test_extra_none.txt
+    #   -r requirements/raw/test_extra_old.txt
 typing-extensions==4.9.0
     # via
     #   -r requirements/raw/test_extra_none.txt

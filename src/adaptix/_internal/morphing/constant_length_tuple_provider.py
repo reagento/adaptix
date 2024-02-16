@@ -21,9 +21,9 @@ from ..struct_trail import append_trail, render_trail_as_note
 from .load_error import (
     AggregateLoadError,
     ExcludedTypeLoadError,
-    ExtraItemsError,
+    ExtraItemsLoadError,
     LoadError,
-    NoRequiredItemsError,
+    NoRequiredItemsLoadError,
     TypeLoadError,
 )
 from .provider_template import DumperProvider, LoaderProvider
@@ -48,16 +48,19 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         loaders = mediator.mandatory_provide_by_iterable(
             [
                 LoaderRequest(
-                    loc_map=LocMap(
-                        TypeHintLoc(type=tp.source),
-                        GenericParamLoc(generic_pos=i),
+                    loc_stack=request.loc_stack.append_with(
+                        LocMap(
+                            TypeHintLoc(type=tp.source),
+                            GenericParamLoc(generic_pos=i),
+                        )
                     )
                 )
                 for i, tp in enumerate(norm.args)
-            ]
+            ],
+            lambda: 'Cannot create loader for tuple. Loaders for some elements cannot be created',
         )
-        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_map=request.loc_map))
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
+        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._make_loader(tuple(loaders), strict_coercion, debug_trail)
 
     def _make_loader(self, loaders: Collection[Loader], strict_coercion: bool, debug_trail: DebugTrail):
@@ -111,9 +114,9 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             if data_len != loaders_len:
                 if data_len > loaders_len:
-                    raise ExtraItemsError(loaders_len, data)
+                    raise ExtraItemsLoadError(loaders_len, data)
                 if loaders_len > data_len:
-                    raise NoRequiredItemsError(loaders_len, data)
+                    raise NoRequiredItemsLoadError(loaders_len, data)
 
             idx = 0
             errors = []
@@ -153,9 +156,9 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             if data_len != loaders_len:
                 if data_len > loaders_len:
-                    raise ExtraItemsError(loaders_len, data)
+                    raise ExtraItemsLoadError(loaders_len, data)
                 if loaders_len > data_len:
-                    raise NoRequiredItemsError(loaders_len, data)
+                    raise NoRequiredItemsLoadError(loaders_len, data)
 
             idx = 0
             for loader, field in zip(loaders, data):
@@ -179,14 +182,13 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             if data_len != loaders_len:
                 if data_len > loaders_len:
-                    raise ExtraItemsError(loaders_len, data)
+                    raise ExtraItemsLoadError(loaders_len, data)
                 if loaders_len > data_len:
-                    raise NoRequiredItemsError(loaders_len, data)
+                    raise NoRequiredItemsLoadError(loaders_len, data)
 
             return tuple(
                 loader(field)
-                for loader, field
-                in zip(loaders, data)
+                for loader, field in zip(loaders, data)
             )
 
         return dt_disable_non_sc_loader
@@ -207,14 +209,13 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             if data_len != loaders_len:
                 if data_len > loaders_len:
-                    raise ExtraItemsError(loaders_len, data)
+                    raise ExtraItemsLoadError(loaders_len, data)
                 if loaders_len > data_len:
-                    raise NoRequiredItemsError(loaders_len, data)
+                    raise NoRequiredItemsLoadError(loaders_len, data)
 
             return tuple(
                 loader(field)
-                for loader, field
-                in zip(loaders, data)
+                for loader, field in zip(loaders, data)
             )
 
         return dt_disable_sc_loader
@@ -232,15 +233,18 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         dumpers = mediator.mandatory_provide_by_iterable(
             [
                 DumperRequest(
-                    loc_map=LocMap(
-                        TypeHintLoc(type=tp.source),
-                        GenericParamLoc(generic_pos=i),
+                    loc_stack=request.loc_stack.append_with(
+                        LocMap(
+                            TypeHintLoc(type=tp.source),
+                            GenericParamLoc(generic_pos=i),
+                        )
                     )
                 )
                 for i, tp in enumerate(norm.args)
-            ]
+            ],
+            lambda: 'Cannot create dumper for tuple. Dumpers for some elements cannot be created',
         )
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_map=request.loc_map))
+        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._make_dumper(tuple(dumpers), debug_trail)
 
     def _make_dumper(self, dumpers: Collection[Dumper], debug_trail: DebugTrail):
@@ -263,9 +267,9 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             if data_len != dumpers_len:
                 if data_len > dumpers_len:
-                    raise ExtraItemsError(dumpers_len, data)
+                    raise ExtraItemsLoadError(dumpers_len, data)
                 if dumpers_len > data_len:
-                    raise NoRequiredItemsError(dumpers_len, data)
+                    raise NoRequiredItemsLoadError(dumpers_len, data)
 
             idx = 0
             errors = []
@@ -296,9 +300,9 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             if data_len != dumpers_len:
                 if data_len > dumpers_len:
-                    raise ExtraItemsError(dumpers_len, data)
+                    raise ExtraItemsLoadError(dumpers_len, data)
                 if dumpers_len > data_len:
-                    raise NoRequiredItemsError(dumpers_len, data)
+                    raise NoRequiredItemsLoadError(dumpers_len, data)
 
             idx = 0
             for dumper, field in zip(dumpers, data):
@@ -328,14 +332,13 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             if data_len != dumpers_len:
                 if data_len > dumpers_len:
-                    raise ExtraItemsError(dumpers_len, data)
+                    raise ExtraItemsLoadError(dumpers_len, data)
                 if dumpers_len > data_len:
-                    raise NoRequiredItemsError(dumpers_len, data)
+                    raise NoRequiredItemsLoadError(dumpers_len, data)
 
             return tuple(
                 dumper(field)
-                for dumper, field
-                in zip(dumpers, data)
+                for dumper, field in zip(dumpers, data)
             )
 
         return tuple_dumper

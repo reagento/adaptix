@@ -1,5 +1,7 @@
 import collections.abc
-from typing import Dict, Mapping, Tuple
+from collections import defaultdict
+from dataclasses import replace
+from typing import Callable, DefaultDict, Dict, Mapping, Optional, Tuple
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -35,24 +37,28 @@ class DictProvider(LoaderProvider, DumperProvider):
 
         key_loader = mediator.mandatory_provide(
             LoaderRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=key.source),
-                    GenericParamLoc(generic_pos=0),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=key.source),
+                        GenericParamLoc(generic_pos=0),
+                    )
                 )
             ),
             lambda x: 'Cannot create loader for dict. Loader for key cannot be created',
         )
         value_loader = mediator.mandatory_provide(
             LoaderRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=value.source),
-                    GenericParamLoc(generic_pos=1),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=value.source),
+                        GenericParamLoc(generic_pos=1),
+                    )
                 )
             ),
             lambda x: 'Cannot create loader for dict. Loader for value cannot be created',
         )
         debug_trail = mediator.mandatory_provide(
-            DebugTrailRequest(loc_map=request.loc_map)
+            DebugTrailRequest(loc_stack=request.loc_stack)
         )
         return self._make_loader(
             key_loader=key_loader,
@@ -160,24 +166,28 @@ class DictProvider(LoaderProvider, DumperProvider):
 
         key_dumper = mediator.mandatory_provide(
             DumperRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=key.source),
-                    GenericParamLoc(generic_pos=0),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=key.source),
+                        GenericParamLoc(generic_pos=0),
+                    )
                 )
             ),
             lambda x: 'Cannot create dumper for dict. Dumper for key cannot be created',
         )
         value_dumper = mediator.mandatory_provide(
             DumperRequest(
-                loc_map=LocMap(
-                    TypeHintLoc(type=value.source),
-                    GenericParamLoc(generic_pos=1),
+                loc_stack=request.loc_stack.append_with(
+                    LocMap(
+                        TypeHintLoc(type=value.source),
+                        GenericParamLoc(generic_pos=1),
+                    )
                 )
             ),
             lambda x: 'Cannot create dumper for dict. Dumper for value cannot be created',
         )
         debug_trail = mediator.mandatory_provide(
-            DebugTrailRequest(loc_map=request.loc_map)
+            DebugTrailRequest(loc_stack=request.loc_stack)
         )
         return self._make_dumper(
             key_dumper=key_dumper,
@@ -261,3 +271,38 @@ class DictProvider(LoaderProvider, DumperProvider):
             return result
 
         return dict_dumper_dt_all
+
+
+@for_predicate(DefaultDict)
+class DefaultDictProvider(LoaderProvider, DumperProvider):
+    _DICT_PROVIDER = DictProvider()
+
+    def __init__(self, default_factory: Optional[Callable] = None):
+        self.default_factory = default_factory
+
+    def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
+        norm = try_normalize_type(get_type_from_request(request))
+        return norm.args
+
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        key, value = self._extract_key_value(request)
+        dict_type_hint = Dict[key.source, value.source]  # type: ignore
+        dict_loader = self._DICT_PROVIDER.apply_provider(
+            mediator,
+            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint)))
+        )
+        default_factory = self.default_factory
+
+        def defaultdict_loader(data):
+            return defaultdict(default_factory, dict_loader(data))
+
+        return defaultdict_loader
+
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        key, value = self._extract_key_value(request)
+        dict_type_hint = Dict[key.source, value.source]  # type: ignore
+
+        return self._DICT_PROVIDER.apply_provider(
+            mediator,
+            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint)))
+        )

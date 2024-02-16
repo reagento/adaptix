@@ -11,13 +11,17 @@ from typing import (
     Mapping,
     Optional,
     Protocol,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
     Union,
     ValuesView,
+    overload,
     runtime_checkable,
 )
+
+from .common import VarTuple
 
 K = TypeVar('K', bound=Hashable)
 V = TypeVar('V')
@@ -210,3 +214,61 @@ class ClassMap(Generic[H]):
             value for key, value in self._mapping.items()
             if key not in classes
         )
+
+
+T = TypeVar('T')
+StackT = TypeVar('StackT', bound='ImmutableStack')
+
+
+class ImmutableStack(Sequence[T], Generic[T]):
+    __slots__ = ('_tuple', )
+
+    def __init__(self, *args: T):
+        self._tuple = args
+
+    @classmethod
+    def from_tuple(cls: Type[StackT], tpl: VarTuple[T]) -> StackT:
+        self = cls.__new__(cls)
+        self._tuple = tpl
+        return self
+
+    @classmethod
+    def from_iter(cls: Type[StackT], iterable: Iterable[T]) -> StackT:
+        return cls.from_tuple(tuple(iterable))
+
+    @property
+    def last(self) -> T:
+        return self[-1]
+
+    def __repr__(self):
+        return f"{type(self).__name__}{self._tuple!r}"
+
+    @overload
+    def __getitem__(self, index: int) -> T:
+        ...
+
+    @overload
+    def __getitem__(self: StackT, index: slice) -> StackT:
+        ...
+
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            return self._tuple[index]
+        return self.from_tuple(self._tuple[index])
+
+    def __len__(self):
+        return len(self._tuple)
+
+    def __hash__(self):
+        return hash(self._tuple)
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self._tuple == other._tuple
+        return NotImplemented
+
+    def __iter__(self) -> Iterator[T]:
+        return iter(self._tuple)
+
+    def append_with(self: StackT, item: T) -> StackT:
+        return self.from_tuple(self._tuple + (item, ))

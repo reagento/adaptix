@@ -66,11 +66,8 @@ STYLE_CONVERSIONS = {
 ONLY_WORD_CHARS = re.compile(r'\w+')
 
 
-def is_snake_case(name: str) -> bool:
-    return (
-        ONLY_WORD_CHARS.fullmatch(name) is not None
-        and name.lower() == name
-    )
+def is_snake_style(name: str) -> bool:
+    return ONLY_WORD_CHARS.fullmatch(name) is not None
 
 
 SNAKE_SPLITTER = re.compile(r'(_*)([^_]+)(.*?)(_*)$')
@@ -84,8 +81,8 @@ def rest_sub(conv: StyleConversion, match_: re.Match):
 
 
 def convert_snake_style(name: str, style: NameStyle) -> str:
-    if not is_snake_case(name):
-        raise ValueError("Cannot convert a name that not follows snake_case")
+    if not is_snake_style(name):
+        raise ValueError("Cannot convert a name that not follows snake style")
 
     match = SNAKE_SPLITTER.match(name)
     if match is None:
