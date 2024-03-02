@@ -4,6 +4,7 @@ from inspect import Parameter, Signature
 from typing import Any, Iterable, List, Mapping, Optional, Sequence, Tuple, cast, final
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
+from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
 from ..common import Converter, TypeHint
 from ..conversion.broaching.code_generator import BroachingCodeGenerator, BroachingPlan, BuiltinBroachingCodeGenerator
 from ..conversion.broaching.definitions import (
@@ -24,7 +25,7 @@ from ..conversion.request_cls import (
     UnlinkedOptionalPolicyRequest,
 )
 from ..model_tools.definitions import BaseField, DefaultValue, InputField, InputShape, NoDefault, OutputShape, ParamKind
-from ..morphing.model.basic_gen import NameSanitizer, compile_closure_with_globals_capturing, fetch_code_gen_hook
+from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import base_field_to_loc_map, input_field_to_loc_map
 from ..provider.request_cls import LocMap, LocStack, TypeHintLoc
@@ -45,7 +46,7 @@ class ConverterProvider(StaticProvider, ABC):
 
 
 class BuiltinConverterProvider(ConverterProvider):
-    def __init__(self, *, name_sanitizer: NameSanitizer = NameSanitizer()):
+    def __init__(self, *, name_sanitizer: NameSanitizer = BuiltinNameSanitizer()):
         self._name_sanitizer = name_sanitizer
 
     def _provide_converter(self, mediator: Mediator, request: ConverterRequest) -> Converter:
@@ -161,7 +162,7 @@ class BuiltinConverterProvider(ConverterProvider):
         return BasicClosureCompiler()
 
     def _create_broaching_code_gen(self, plan: BroachingPlan) -> BroachingCodeGenerator:
-        return BuiltinBroachingCodeGenerator(plan=plan)
+        return BuiltinBroachingCodeGenerator(plan=plan, name_sanitizer=self._name_sanitizer)
 
     def _fetch_linkings(
         self,

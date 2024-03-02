@@ -1,6 +1,4 @@
 import itertools
-import re
-import string
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import (
@@ -208,18 +206,6 @@ def get_wild_extra_targets(shape: BaseShape, extra_move: Union[InpExtraMove, Out
         target for target in extra_move.fields
         if target not in shape.fields_dict.keys()
     ]
-
-
-class NameSanitizer:
-    _BAD_CHARS = re.compile(r'\W')
-    _TRANSLATE_MAP = str.maketrans({'.': '_', '[': '_'})
-
-    def sanitize(self, name: str) -> str:
-        if name == "":
-            return ""
-
-        first_letter = name[0] if name[0] in string.ascii_letters else '_'
-        return first_letter + self._BAD_CHARS.sub('', name[1:].translate(self._TRANSLATE_MAP))
 
 
 def compile_closure_with_globals_capturing(
