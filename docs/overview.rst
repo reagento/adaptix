@@ -1,6 +1,14 @@
+.. include:: new_major_version.rst
+
 ****************
 Overview
 ****************
+
+1. Support for model-to-model conversion.
+2. Support for attrs and sqlalchemy (integration with many other libraries is coming).
+3. Fully redesigned API helping to follow DRY.
+4. Performance improvements of `up to two times <https://adaptix.readthedocs.io/en/latest/benchmarks.html>`_.
+
 
 Requirements
 ==================

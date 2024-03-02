@@ -1,3 +1,5 @@
+.. include:: new_major_version.rst
+
 ***************************
 Specific types behavior
 ***************************
