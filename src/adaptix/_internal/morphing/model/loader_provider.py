@@ -3,6 +3,7 @@ from typing import AbstractSet, Mapping
 from adaptix._internal.provider.fields import input_field_to_loc_map
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
+from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
 from ...common import Loader
 from ...definitions import DebugTrail
 from ...model_tools.definitions import InputShape
@@ -14,7 +15,6 @@ from ..provider_template import LoaderProvider
 from ..request_cls import LoaderRequest
 from .basic_gen import (
     ModelLoaderGen,
-    NameSanitizer,
     compile_closure_with_globals_capturing,
     fetch_code_gen_hook,
     get_extra_targets_at_crown,
@@ -30,7 +30,7 @@ class ModelLoaderProvider(LoaderProvider):
     def __init__(
         self,
         *,
-        name_sanitizer: NameSanitizer = NameSanitizer(),
+        name_sanitizer: NameSanitizer = BuiltinNameSanitizer(),
         props: ModelLoaderProps = ModelLoaderProps(),
     ):
         self._name_sanitizer = name_sanitizer
@@ -201,7 +201,7 @@ class InlinedShapeModelLoaderProvider(ModelLoaderProvider):
     def __init__(
         self,
         *,
-        name_sanitizer: NameSanitizer = NameSanitizer(),
+        name_sanitizer: NameSanitizer = BuiltinNameSanitizer(),
         props: ModelLoaderProps = ModelLoaderProps(),
         shape: InputShape,
     ):

@@ -3,6 +3,7 @@ from typing import Mapping
 from adaptix._internal.provider.fields import output_field_to_loc_map
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
+from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
 from ...common import Dumper
 from ...definitions import DebugTrail
 from ...model_tools.definitions import OutputShape
@@ -13,7 +14,6 @@ from ..provider_template import DumperProvider
 from ..request_cls import DumperRequest
 from .basic_gen import (
     ModelDumperGen,
-    NameSanitizer,
     compile_closure_with_globals_capturing,
     fetch_code_gen_hook,
     get_extra_targets_at_crown,
@@ -25,7 +25,7 @@ from .dumper_gen import BuiltinModelDumperGen
 
 
 class ModelDumperProvider(DumperProvider):
-    def __init__(self, *, name_sanitizer: NameSanitizer = NameSanitizer()):
+    def __init__(self, *, name_sanitizer: NameSanitizer = BuiltinNameSanitizer()):
         self._name_sanitizer = name_sanitizer
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:

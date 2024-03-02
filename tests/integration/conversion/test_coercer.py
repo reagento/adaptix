@@ -1,11 +1,20 @@
 from typing import Any
 
+import pytest
+
 from adaptix.conversion import coercer, get_converter, impl_converter
 
 from .local_helpers import FactoryWay
 
 
-def test_simple(src_model_spec, dst_model_spec, factory_way):
+@pytest.mark.parametrize(
+    'func',
+    [
+        pytest.param(int, id='int'),
+        pytest.param(lambda x: int(x), id='lambda'),
+    ],
+)
+def test_simple(src_model_spec, dst_model_spec, factory_way, func):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: str
@@ -17,11 +26,11 @@ def test_simple(src_model_spec, dst_model_spec, factory_way):
         field2: int
 
     if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter(recipe=[coercer(str, int, func=int)])
+        @impl_converter(recipe=[coercer(str, int, func=func)])
         def convert(a: SourceModel) -> DestModel:
             ...
     else:
-        convert = get_converter(SourceModel, DestModel, recipe=[coercer(str, int, func=int)])
+        convert = get_converter(SourceModel, DestModel, recipe=[coercer(str, int, func=func)])
 
     assert convert(SourceModel(field1='1', field2='2')) == DestModel(field1=1, field2=2)
 

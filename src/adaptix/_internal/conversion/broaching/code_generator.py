@@ -10,6 +10,7 @@ from typing import Callable, DefaultDict, Mapping, Optional, Tuple, Union
 from ...code_tools.ast_templater import ast_substitute
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
+from ...code_tools.name_sanitizer import NameSanitizer
 from ...code_tools.utils import get_literal_expr
 from ...compat import compat_ast_unparse
 from ...model_tools.definitions import DescriptorAccessor, ItemAccessor
@@ -34,8 +35,9 @@ BroachingPlan = Union[
 
 
 class GenState:
-    def __init__(self, namespace: CascadeNamespace):
+    def __init__(self, namespace: CascadeNamespace, name_sanitizer: NameSanitizer):
         self._namespace = namespace
+        self._name_sanitizer = name_sanitizer
         self._prefix_counter: DefaultDict[str, int] = defaultdict(lambda: 0)
 
     def register_next_id(self, prefix: str, obj: object) -> str:
@@ -45,6 +47,7 @@ class GenState:
         return self.register_mangled(name, obj)
 
     def register_mangled(self, base: str, obj: object) -> str:
+        base = self._name_sanitizer.sanitize(base)
         if self._namespace.try_add_constant(base, obj):
             return base
 
@@ -67,12 +70,14 @@ class BroachingCodeGenerator(ABC):
 
 
 class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
-    def __init__(self, plan: BroachingPlan):
+    def __init__(self, plan: BroachingPlan, name_sanitizer: NameSanitizer):
         self._plan = plan
+        self._name_sanitizer = name_sanitizer
 
     def _create_state(self, namespace: CascadeNamespace) -> GenState:
         return GenState(
             namespace=namespace,
+            name_sanitizer=self._name_sanitizer,
         )
 
     def produce_code(
