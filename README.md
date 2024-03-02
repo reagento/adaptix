@@ -9,6 +9,17 @@
 
 ## Help
 
+> [!IMPORTANT]
+> The new major version is [out](https://adaptix.readthedocs.io/en/latest/)
+> The library was renamed to *adaptix* due to extending of the working scope.
+>
+> This update features:
+> 1. Support for model-to-model conversion.
+> 2. Support for attrs and sqlalchemy (integration with many other libraries is coming).
+> 3. Fully redesigned API helping to follow DRY.
+> 4. Performance improvements of [up to two times](https://adaptix.readthedocs.io/en/latest/benchmarks.html)
+
+
 See [documentation](https://dataclass-factory.readthedocs.io/) for more details.
 
 ## TL;DR
@@ -38,14 +49,14 @@ data = {
 
 factory = dataclass_factory.Factory()
 book: Book = factory.load(data, Book)  # Same as Book(title="Fahrenheit 451", price=100)
-serialized = factory.dump(book) 
-``` 
+serialized = factory.dump(book)
+```
 
 ## Requirements
 
 * python >= 3.6
 
-You can use `dataclass_factory` with python 3.6 and `dataclass` library installed from pip. 
+You can use `dataclass_factory` with python 3.6 and `dataclass` library installed from pip.
 
 On python 3.7 it has no external dependencies outside of the Python standard library.
 
