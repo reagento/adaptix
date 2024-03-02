@@ -7,8 +7,6 @@
 
 **dataclass_factory** is a modern way to convert dataclasses or other objects to and from more common types like dicts
 
-## Help
-
 > [!IMPORTANT]
 > The new major version is [out](https://adaptix.readthedocs.io/en/latest/)
 > The library was renamed to *adaptix* due to extending of the working scope.
@@ -19,6 +17,8 @@
 > 3. Fully redesigned API helping to follow DRY.
 > 4. Performance improvements of [up to two times](https://adaptix.readthedocs.io/en/latest/benchmarks.html)
 
+
+## Help
 
 See [documentation](https://dataclass-factory.readthedocs.io/) for more details.
 
