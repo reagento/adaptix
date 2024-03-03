@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 import pytest
-from tests_helpers import full_match_regex_str
+from tests_helpers import full_match
 
 from adaptix import Mediator, Request
 from adaptix._internal.provider.static_provider import RequestDispatcher, StaticProvider, static_provision_action
@@ -98,7 +98,7 @@ def test_error_raising_with_one_class():
 
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str("@static_provision_action decorator cannot be applied twice"),
+        match=full_match("@static_provision_action decorator cannot be applied twice"),
     ):
         class DoubleDecoration(StaticProvider):
             @static_provision_action

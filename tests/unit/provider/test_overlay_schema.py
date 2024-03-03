@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Callable, Iterable
 
 import pytest
-from tests_helpers import TestRetort, full_match_regex_str
+from tests_helpers import TestRetort, full_match
 
 from adaptix import Chain, Mediator, Omittable, Omitted, Provider, Request, bound
 from adaptix._internal.common import VarTuple
@@ -298,7 +298,7 @@ def test_typehint_location():
 def test_omitted_fields():
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str("Can not create schema because overlay contains omitted values at ['number']"),
+        match=full_match("Can not create schema because overlay contains omitted values at ['number']"),
     ):
         provide_overlay_schema(
             recipe=[

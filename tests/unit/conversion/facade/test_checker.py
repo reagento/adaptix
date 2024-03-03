@@ -1,5 +1,5 @@
 import pytest
-from tests_helpers import full_match_regex_str
+from tests_helpers import full_match
 
 from adaptix._internal.conversion.facade.checker import ensure_function_is_stub
 
@@ -29,5 +29,5 @@ def test_exception():
     def func():
         return 1 + 2
 
-    with pytest.raises(ValueError, match=full_match_regex_str("Body of function must be empty")):
+    with pytest.raises(ValueError, match=full_match("Body of function must be empty")):
         ensure_function_is_stub(func)

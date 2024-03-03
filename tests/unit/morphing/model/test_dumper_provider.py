@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, Optional, Type
 from unittest.mock import ANY
 
 import pytest
-from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc, with_trail
+from tests_helpers import DebugCtx, TestRetort, full_match, parametrize_bool, raises_exc, with_trail
 
 from adaptix import DebugTrail, Dumper, bound
 from adaptix._internal.common import Catchable
@@ -402,7 +402,7 @@ def test_wild_extra_targets(debug_ctx, debug_trail, acc_schema):
     )
 
     pytest.raises(ValueError, dumper_getter).match(
-        full_match_regex_str("ExtraTargets ['b'] are attached to non-existing fields"),
+        full_match("ExtraTargets ['b'] are attached to non-existing fields"),
     )
 
 
@@ -832,7 +832,7 @@ def test_optional_fields_at_list(debug_ctx, debug_trail, acc_schema):
     )
 
     pytest.raises(ValueError, dumper_getter).match(
-        full_match_regex_str("Optional fields ['b'] are found at list crown"),
+        full_match("Optional fields ['b'] are found at list crown"),
     )
 
 
@@ -1298,7 +1298,7 @@ def test_extra_target_at_crown(debug_ctx, debug_trail, acc_schema, is_required_a
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, dumper_getter).match(
-        full_match_regex_str("Extra targets ['b'] are found at crown"),
+        full_match("Extra targets ['b'] are found at crown"),
     )
 
     dumper_getter = make_dumper_getter(
@@ -1320,7 +1320,7 @@ def test_extra_target_at_crown(debug_ctx, debug_trail, acc_schema, is_required_a
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, dumper_getter).match(
-        full_match_regex_str("Extra targets ['b'] are found at crown"),
+        full_match("Extra targets ['b'] are found at crown"),
     )
 
 

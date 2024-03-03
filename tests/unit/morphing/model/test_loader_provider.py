@@ -5,7 +5,7 @@ from types import MappingProxyType
 from typing import Any, Callable, Dict, Optional
 
 import pytest
-from tests_helpers import DebugCtx, TestRetort, full_match_regex_str, parametrize_bool, raises_exc, with_trail
+from tests_helpers import DebugCtx, TestRetort, full_match, parametrize_bool, raises_exc, with_trail
 
 from adaptix import DebugTrail, ExtraKwargs, Loader, bound
 from adaptix._internal.common import VarTuple
@@ -426,7 +426,7 @@ def test_wild_extra_targets(debug_ctx, debug_trail):
     )
 
     pytest.raises(ValueError, loader_getter).match(
-        full_match_regex_str("ExtraTargets ['b'] are attached to non-existing fields"),
+        full_match("ExtraTargets ['b'] are attached to non-existing fields"),
     )
 
 
@@ -567,7 +567,7 @@ def test_skipped_required_field(debug_ctx, debug_trail, extra_policy):
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
     )
-    pytest.raises(ValueError, loader_getter).match(full_match_regex_str("Required fields ['b'] are skipped"))
+    pytest.raises(ValueError, loader_getter).match(full_match("Required fields ['b'] are skipped"))
 
     loader_getter = make_loader_getter(
         shape=shape(
@@ -609,7 +609,7 @@ def test_extra_target_at_crown(debug_ctx, debug_trail, extra_policy):
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, loader_getter).match(
-        full_match_regex_str("Extra targets ['b'] are found at crown"),
+        full_match("Extra targets ['b'] are found at crown"),
     )
 
     loader_getter = make_loader_getter(
@@ -631,7 +631,7 @@ def test_extra_target_at_crown(debug_ctx, debug_trail, extra_policy):
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, loader_getter).match(
-        full_match_regex_str("Extra targets ['b'] are found at crown"),
+        full_match("Extra targets ['b'] are found at crown"),
     )
 
 
@@ -655,7 +655,7 @@ def test_optional_fields_at_list(debug_ctx, debug_trail, extra_policy):
         debug_ctx=debug_ctx,
     )
     pytest.raises(ValueError, loader_getter).match(
-        full_match_regex_str("Optional fields ['b'] are found at list crown"),
+        full_match("Optional fields ['b'] are found at list crown"),
     )
 
 

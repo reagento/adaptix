@@ -1,5 +1,5 @@
 import pytest
-from tests_helpers import full_match_regex_str
+from tests_helpers import full_match
 
 from adaptix._internal.model_tools.definitions import (
     InputField,
@@ -128,7 +128,7 @@ def _make_triple_input_shape(first: ParamKind, second: ParamKind, third: ParamKi
 def test_bad_non_required_field_order(first, second, third):
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str(
+        match=full_match(
             "All not required fields must be after required ones except ParamKind.KW_ONLY fields",
         ),
     ):
@@ -149,7 +149,7 @@ def test_ok_non_required_field_order(first, second, third):
 
 
 def test_field_id_duplicates():
-    with pytest.raises(ValueError, match=full_match_regex_str("Field ids {'a'} are duplicated")):
+    with pytest.raises(ValueError, match=full_match("Field ids {'a'} are duplicated")):
         InputShape(
             constructor=stub_constructor,
             kwargs=None,
@@ -186,7 +186,7 @@ def test_field_id_duplicates():
             overriden_types=frozenset({"a"}),
         )
 
-    with pytest.raises(ValueError, match=full_match_regex_str("Field ids {'a'} are duplicated")):
+    with pytest.raises(ValueError, match=full_match("Field ids {'a'} are duplicated")):
         OutputShape(
             fields=(
                 OutputField(
@@ -211,7 +211,7 @@ def test_field_id_duplicates():
 
 
 def test_param_name_duplicates():
-    with pytest.raises(ValueError, match=full_match_regex_str("Parameter names {'a'} are duplicated")):
+    with pytest.raises(ValueError, match=full_match("Parameter names {'a'} are duplicated")):
         InputShape(
             constructor=stub_constructor,
             kwargs=None,
@@ -250,7 +250,7 @@ def test_param_name_duplicates():
 
 
 def test_optional_and_positional_only():
-    with pytest.raises(ValueError, match=full_match_regex_str("Field 'a' can not be positional only and optional")):
+    with pytest.raises(ValueError, match=full_match("Field 'a' can not be positional only and optional")):
         InputShape(
             constructor=stub_constructor,
             kwargs=None,
@@ -278,7 +278,7 @@ def test_optional_and_positional_only():
 def test_non_existing_fields_overriden_types():
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str("overriden_types contains non existing fields frozenset({'c'})"),
+        match=full_match("overriden_types contains non existing fields frozenset({'c'})"),
     ):
         InputShape(
             constructor=stub_constructor,
@@ -318,7 +318,7 @@ def test_non_existing_fields_overriden_types():
 
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str("overriden_types contains non existing fields frozenset({'c'})"),
+        match=full_match("overriden_types contains non existing fields frozenset({'c'})"),
     ):
         OutputShape(
             fields=(
@@ -346,7 +346,7 @@ def test_non_existing_fields_overriden_types():
 def test_parameter_bound_to_non_existing_field():
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str("Parameters {'b': 'b'} bind to non-existing fields"),
+        match=full_match("Parameters {'b': 'b'} bind to non-existing fields"),
     ):
         InputShape(
             constructor=stub_constructor,
@@ -380,7 +380,7 @@ def test_parameter_bound_to_non_existing_field():
 def test_field_without_parameters():
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str("Fields {'a'} do not bound to any parameter"),
+        match=full_match("Fields {'a'} do not bound to any parameter"),
     ):
         InputShape(
             constructor=stub_constructor,

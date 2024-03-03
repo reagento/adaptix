@@ -1,5 +1,5 @@
 import pytest
-from tests_helpers import PlaceholderProvider, full_match_regex_str
+from tests_helpers import PlaceholderProvider, full_match
 
 from adaptix import Retort
 from adaptix._internal.retort.base_retort import BaseRetort
@@ -66,29 +66,29 @@ def test_recipe_access():
             PlaceholderProvider(1),
         ]
 
-    with pytest.raises(AttributeError, match=full_match_regex_str("Can not read 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Can not read 'recipe' attribute")):
         RetortWithRecipe.recipe  # noqa: B018
 
-    with pytest.raises(AttributeError, match=full_match_regex_str("Can not set 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Can not set 'recipe' attribute")):
         RetortWithRecipe.recipe = []
 
-    with pytest.raises(AttributeError, match=full_match_regex_str("Can not delete 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Can not delete 'recipe' attribute")):
         del RetortWithRecipe.recipe
 
     with_recipe = RetortWithRecipe()
 
-    with pytest.raises(AttributeError, match=full_match_regex_str("Can not read 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Can not read 'recipe' attribute")):
         with_recipe.recipe  # noqa: B018
 
-    with pytest.raises(AttributeError, match=full_match_regex_str("Can not set 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Can not set 'recipe' attribute")):
         with_recipe.recipe = []
 
-    with pytest.raises(AttributeError, match=full_match_regex_str("Can not delete 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Can not delete 'recipe' attribute")):
         del with_recipe.recipe
 
 
 def test_bad_recipe():
-    with pytest.raises(TypeError, match=full_match_regex_str("Recipe attributes must be Iterable[Provider]")):
+    with pytest.raises(TypeError, match=full_match("Recipe attributes must be Iterable[Provider]")):
         class StringItemRecipe(BaseRetort):
             recipe = [
                 "hello",

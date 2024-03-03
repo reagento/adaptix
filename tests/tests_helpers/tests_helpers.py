@@ -157,7 +157,7 @@ class PlaceholderProvider(Provider):
         raise CannotProvide
 
 
-def full_match_regex_str(string_to_match: str) -> str:
+def full_match(string_to_match: str) -> str:
     return "^" + re.escape(string_to_match) + "$"
 
 

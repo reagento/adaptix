@@ -32,7 +32,7 @@ from typing import (
 from uuid import uuid4
 
 import pytest
-from tests_helpers import cond_list, full_match_regex_str, requires
+from tests_helpers import cond_list, full_match, requires
 
 from adaptix._internal.feature_requirement import (
     HAS_ANNOTATED,
@@ -503,7 +503,7 @@ def test_optional():
 def test_new_type():
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str(f"{NewType} must be instantiated"),
+        match=full_match(f"{NewType} must be instantiated"),
     ):
         normalize_type(NewType)
 
@@ -882,16 +882,16 @@ def test_param_spec_args_and_kwargs():
 
 
 def test_bad_arg_types():
-    with pytest.raises(ValueError, match=full_match_regex_str(f"Can not normalize value {100!r}")):
+    with pytest.raises(ValueError, match=full_match(f"Can not normalize value {100!r}")):
         normalize_type(100)
 
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str("Can not normalize value 'string', there are no namespace to evaluate types"),
+        match=full_match("Can not normalize value 'string', there are no namespace to evaluate types"),
     ):
         normalize_type("string")
 
-    with pytest.raises(ValueError, match=full_match_regex_str(f"{TypeVar!r} must be instantiated")):
+    with pytest.raises(ValueError, match=full_match(f"{TypeVar!r} must be instantiated")):
         normalize_type(TypeVar)
 
 

@@ -1,5 +1,5 @@
 import pytest
-from tests_helpers import PlaceholderProvider, full_match_regex_str
+from tests_helpers import PlaceholderProvider, full_match
 
 from adaptix import DebugTrail, Retort
 
@@ -39,7 +39,7 @@ def test_hashability():
 def test_generic_class_inferring():
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str(
+        match=full_match(
             "Can not infer the actual type of generic class instance (<class 'list'>),"
             " you have to explicitly pass the type of object",
         ),

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar, Union, overload
 
 import pytest
-from tests_helpers import cond_list, full_match_regex_str
+from tests_helpers import cond_list, full_match
 
 from adaptix import Chain, P, Retort, loader
 from adaptix._internal.common import TypeHint
@@ -46,7 +46,7 @@ def param_result(*values: Any, id: Optional[str] = None, raises: Type[Exception]
 def param_result(*values, result=None, raises=None, exact_match=None, match=None, id=None):
     if raises is not None:
         context = pytest.raises(
-            raises, match=full_match_regex_str(exact_match) if exact_match is not None else match,
+            raises, match=full_match(exact_match) if exact_match is not None else match,
         )
     else:
         context = None
@@ -273,7 +273,7 @@ def test_request_pattern(pattern, loc_stack, result, context):
 def test_generic_pattern_create_fail():
     with pytest.raises(
         TypeError,
-        match=full_match_regex_str(
+        match=full_match(
             "Can not use LocStackPattern as predicate inside LocStackPattern."
             " If you want to combine several LocStackPattern, you can use `+` operator",
         ),
