@@ -113,7 +113,7 @@ class GetRepoIssuesResponse:
 
 DEFAULT_SCHEMA = Schema(omit_default=True)
 SCHEMAS = {
-    Reactions: Schema(name_mapping={'plus_one': '+1', 'minus_one': '-1'}),
+    Reactions: Schema(name_mapping={"plus_one": "+1", "minus_one": "-1"}),
 }
 
 

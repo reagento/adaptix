@@ -167,9 +167,9 @@ class FilledRetort(OperatingRetort, ABC):
     ]
 
 
-T = TypeVar('T')
-RequestT = TypeVar('RequestT', bound=Request)
-AR = TypeVar('AR', bound='AdornedRetort')
+T = TypeVar("T")
+RequestT = TypeVar("RequestT", bound=Request)
+AR = TypeVar("AR", bound="AdornedRetort")
 
 
 class AdornedRetort(OperatingRetort):
@@ -234,7 +234,7 @@ class AdornedRetort(OperatingRetort):
     def _make_loader(self, tp: Type[T]) -> Loader[T]:
         loader_ = self._facade_provide(
             LoaderRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
-            error_message=f'Cannot produce loader for type {tp!r}',
+            error_message=f"Cannot produce loader for type {tp!r}",
         )
         if self._debug_trail == DebugTrail.FIRST:
             def trail_rendering_wrapper(data):
@@ -260,7 +260,7 @@ class AdornedRetort(OperatingRetort):
     def _make_dumper(self, tp: Type[T]) -> Dumper[T]:
         dumper_ = self._facade_provide(
             DumperRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
-            error_message=f'Cannot produce dumper for type {tp!r}',
+            error_message=f"Cannot produce dumper for type {tp!r}",
         )
         if self._debug_trail == DebugTrail.FIRST:
             def trail_rendering_wrapper(data):
@@ -298,8 +298,8 @@ class AdornedRetort(OperatingRetort):
             tp = type(data)
             if is_generic_class(tp):
                 raise ValueError(
-                    f'Can not infer the actual type of generic class instance ({tp!r}),'
-                    ' you have to explicitly pass the type of object'
+                    f"Can not infer the actual type of generic class instance ({tp!r}),"
+                    " you have to explicitly pass the type of object",
                 )
         return self.get_dumper(tp)(data)
 

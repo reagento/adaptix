@@ -23,9 +23,9 @@ data = {
 
 retort = Retort(
     recipe=[
-        name_mapping(Book, map={'title': 'name'}),
+        name_mapping(Book, map={"title": "name"}),
         name_mapping(Book, extra_in=ExtraKwargs()),
-    ]
+    ],
 )
 
 try:

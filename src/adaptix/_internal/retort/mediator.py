@@ -5,7 +5,7 @@ from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator
 from ..utils import add_note
 from .routing import RecipeSearcher
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class RecursionResolver(ABC, Generic[T]):
@@ -18,7 +18,7 @@ class RecursionResolver(ABC, Generic[T]):
         ...
 
 
-E = TypeVar('E', bound=Exception)
+E = TypeVar("E", bound=Exception)
 
 
 class ErrorRepresentor(ABC):
@@ -69,7 +69,7 @@ class BuiltinMediator(Mediator):
         init_next_offset = self.next_offset
         exceptions = []
         for provide_callable, next_offset in self.searcher.search_candidates(
-            search_offset, request
+            search_offset, request,
         ):
             self.next_offset = next_offset
             try:

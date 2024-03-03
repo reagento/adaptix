@@ -20,7 +20,7 @@ retort = Retort(
     recipe=[
         loader(int, add_one),
         loader(int, add_two),
-    ]
+    ],
 )
 
-assert retort.load({'value': 10}, Foo) == Foo(11)
+assert retort.load({"value": 10}, Foo) == Foo(11)

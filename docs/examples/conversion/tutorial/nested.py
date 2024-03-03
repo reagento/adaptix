@@ -31,7 +31,7 @@ convert_book_to_dto = get_converter(Book, BookDTO)
 
 assert (
     convert_book_to_dto(
-        Book(title="Fahrenheit 451", price=100, author=Person("Ray Bradbury"))
+        Book(title="Fahrenheit 451", price=100, author=Person("Ray Bradbury")),
     )
     ==
     BookDTO(title="Fahrenheit 451", price=100, author=PersonDTO("Ray Bradbury"))

@@ -23,7 +23,7 @@ class Book:
 
 
 SCHEMAS = {
-    Review: Schema(name_mapping={'content': 'text'}),
+    Review: Schema(name_mapping={"content": "text"}),
 }
 
 

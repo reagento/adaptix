@@ -23,12 +23,13 @@ class CascadeNamespace(ABC):
 
 
 class BuiltinCascadeNamespace(CascadeNamespace):
-    __slots__ = ('_constants', '_occupied', '_variables', '_allow_builtins')
+    __slots__ = ("_constants", "_occupied", "_variables", "_allow_builtins")
 
     def __init__(
         self,
         constants: Optional[Mapping[str, object]] = None,
         occupied: Optional[AbstractSet[str]] = None,
+        *,
         allow_builtins: bool = False,
     ):
         self._constants = {} if constants is None else dict(constants)

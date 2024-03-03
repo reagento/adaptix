@@ -8,7 +8,7 @@ from .audit_logs import UserChanged, UserCreated
 from .db_models import AuditLogRecord, Base
 
 
-@pytest.fixture
+@pytest.fixture()
 def engine():
     engine = create_sa_engine()
     try:
@@ -18,12 +18,12 @@ def engine():
         engine.dispose()
 
 
-@pytest.fixture
+@pytest.fixture()
 def session_factory(engine):
     return sessionmaker(engine)
 
 
-@pytest.fixture
+@pytest.fixture()
 def session(session_factory):
     with session_factory() as session:
         yield session
@@ -34,9 +34,9 @@ def test_add(session):
         AuditLogRecord(
             data=UserCreated(
                 id=1,
-                name='Example',
+                name="Example",
             ),
-        )
+        ),
     )
     session.commit()
 
@@ -47,9 +47,9 @@ def test_insert(session):
         .values(
             data=UserChanged(
                 id=1,
-                name='Example',
+                name="Example",
             ),
-        )
+        ),
     )
     session.commit()
 
@@ -59,9 +59,9 @@ def test_select(session):
         AuditLogRecord(
             data=UserCreated(
                 id=1,
-                name='Example',
+                name="Example",
             ),
-        )
+        ),
     )
     session.commit()
 
@@ -69,11 +69,11 @@ def test_select(session):
     # If there are name_mapping, you should refer to dumped fields
     record = session.scalar(
         select(AuditLogRecord)
-        .where(AuditLogRecord.data['id'].as_integer() == 1)
+        .where(AuditLogRecord.data["id"].as_integer() == 1),
     )
     assert record.data == UserCreated(
         id=1,
-        name='Example',
+        name="Example",
     )
 
 
@@ -82,13 +82,13 @@ def test_update(session):
     user_created_record = AuditLogRecord(
         data=UserCreated(
             id=1,
-            name='Example1',
+            name="Example1",
         ),
     )
     user_changed_record = AuditLogRecord(
         data=UserChanged(
             id=1,
-            name='Example2',
+            name="Example2",
         ),
     )
     session.add(user_created_record)
@@ -98,21 +98,21 @@ def test_update(session):
     session.execute(
         update(AuditLogRecord)
         .where(
-            AuditLogRecord.data['id'].as_integer() == 1,
-            AuditLogRecord.data['tag'].as_string() == UserChanged.tag,
+            AuditLogRecord.data["id"].as_integer() == 1,
+            AuditLogRecord.data["tag"].as_string() == UserChanged.tag,
         )
         .values(
             data=UserChanged(
                 id=1,
-                name='Example3',
+                name="Example3",
             ),
-        )
+        ),
     )
 
     session.refresh(user_created_record)
     session.refresh(user_changed_record)
-    assert user_created_record.data.name == 'Example1'
-    assert user_changed_record.data.name == 'Example3'
+    assert user_created_record.data.name == "Example1"
+    assert user_changed_record.data.name == "Example3"
 
 
 def test_mutation_tracking(session_factory):
@@ -138,7 +138,7 @@ def test_mutation_tracking(session_factory):
         record = AuditLogRecord(
             data=UserCreated(
                 id=1,
-                name='Example',
+                name="Example",
             ),
         )
         session.add(record)
@@ -149,9 +149,9 @@ def test_mutation_tracking(session_factory):
 
     with session_factory() as session:
         record = session.get(AuditLogRecord, record_id)
-        record.data.name = 'Example2'
+        record.data.name = "Example2"
         session.commit()
 
     with session_factory() as session:
         record = session.get(AuditLogRecord, record_id)
-        assert record.data.name == 'Example'  # (!) mutation tracking does not work (!)
+        assert record.data.name == "Example"  # (!) mutation tracking does not work (!)

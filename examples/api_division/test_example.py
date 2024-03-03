@@ -38,11 +38,11 @@ outer_sample_data = {
             "name": "Matchbox",
             "price": Decimal("10.0"),
             "quantity": Decimal("3.0"),
-        }
+        },
     ],
     "taxation": 4,
     "notify": [
-        {"type": "email", "value": "mail@example.com"}
+        {"type": "email", "value": "mail@example.com"},
     ],
 }
 
@@ -57,7 +57,7 @@ def test_outer_loading_basic():
                 name="Matchbox",
                 price=rubles("10"),
                 quantity=Decimal(3),
-            )
+            ),
         ],
         taxation=Taxation.USN_MINUS,
         notify=[NotifyEmail("mail@example.com")],
@@ -69,13 +69,13 @@ def test_outer_loading_no_rec_items():
 
     raises_exc(
         AggregateLoadError(
-            f'while loading model {Receipt}',
+            f"while loading model {Receipt}",
             [
                 with_trail(
-                    ValidationLoadError('At least one item must be presented', []),
-                    ['items'],
-                )
-            ]
+                    ValidationLoadError("At least one item must be presented", []),
+                    ["items"],
+                ),
+            ],
         ),
         lambda: outer_receipt_loader(no_rec_items_data),
     )
@@ -91,7 +91,7 @@ def test_outer_loading_bad_phone():
                 name="Matchbox",
                 price=rubles("10"),
                 quantity=Decimal(3),
-            )
+            ),
         ],
         taxation=Taxation.USN_MINUS,
         notify=[NotifyPhone(phonenumbers.parse("+14155552671"))],
@@ -101,47 +101,47 @@ def test_outer_loading_bad_phone():
 
     raises_exc(
         AggregateLoadError(
-            f'while loading model {Receipt}',
+            f"while loading model {Receipt}",
             [
                 with_trail(
                     UnionLoadError(
-                        f'while loading {Optional[List[NotifyTarget]]}',
+                        f"while loading {Optional[List[NotifyTarget]]}",
                         [
                             TypeLoadError(None, [{"type": "phone", "value": "+1-541-754-3010"}]),
                             AggregateLoadError(
-                                f'while loading iterable {list}',
+                                f"while loading iterable {list}",
                                 [
                                     with_trail(
                                         UnionLoadError(
-                                            f'while loading {NotifyTarget}',
+                                            f"while loading {NotifyTarget}",
                                             [
                                                 AggregateLoadError(
-                                                    f'while loading model {NotifyEmail}',
+                                                    f"while loading model {NotifyEmail}",
                                                     [
                                                         with_trail(
-                                                            BadVariantLoadError({'email'}, 'phone'),
-                                                            ['type']
-                                                        )
-                                                    ]
+                                                            BadVariantLoadError({"email"}, "phone"),
+                                                            ["type"],
+                                                        ),
+                                                    ],
                                                 ),
                                                 AggregateLoadError(
-                                                    f'while loading model {NotifyPhone}',
+                                                    f"while loading model {NotifyPhone}",
                                                     [
                                                         with_trail(
-                                                            ValueLoadError('Bad phone number', "+1-541-754-3010"),
-                                                            ['value']
-                                                        )
-                                                    ]
+                                                            ValueLoadError("Bad phone number", "+1-541-754-3010"),
+                                                            ["value"],
+                                                        ),
+                                                    ],
                                                 ),
                                             ],
                                         ),
                                         [0],
-                                    )
+                                    ),
                                 ],
                             ),
                         ],
                     ),
-                    ['notify']
+                    ["notify"],
                 ),
             ],
         ),
@@ -154,8 +154,8 @@ def test_outer_loading_bad_receipt_type():
 
     raises_exc(
         AggregateLoadError(
-            f'while loading model {Receipt}',
-            [with_trail(BadVariantLoadError(['INCOME', 'INCOME_REFUND'], 'BAD_TYPE'), ['type'])]
+            f"while loading model {Receipt}",
+            [with_trail(BadVariantLoadError(["INCOME", "INCOME_REFUND"], "BAD_TYPE"), ["type"])],
         ),
         lambda: outer_receipt_loader(bad_receipt_type_data),
     )
@@ -165,7 +165,7 @@ def test_outer_loading_with_version_tag():
     with_version_data = change(outer_sample_data, ["version"], 1)
 
     raises_exc(
-        ExtraFieldsLoadError(['version'], with_version_data),
+        ExtraFieldsLoadError(["version"], with_version_data),
         lambda: outer_receipt_loader(with_version_data),
     )
 
@@ -175,29 +175,29 @@ def test_outer_loading_bad_item_quantity():
 
     raises_exc(
         AggregateLoadError(
-            f'while loading model {Receipt}',
+            f"while loading model {Receipt}",
             [
                 with_trail(
                     AggregateLoadError(
-                        f'while loading iterable {list}',
+                        f"while loading iterable {list}",
                         [
                             with_trail(
                                 AggregateLoadError(
-                                    f'while loading model {RecItem!r}',
+                                    f"while loading model {RecItem!r}",
                                     [
                                         with_trail(
-                                            ValidationLoadError('Value must be > 0', 0),
-                                            ['quantity'],
+                                            ValidationLoadError("Value must be > 0", 0),
+                                            ["quantity"],
                                         ),
-                                    ]
+                                    ],
                                 ),
                                 [0],
                             ),
-                        ]
+                        ],
                     ),
                     ["items"],
-                )
-            ]
+                ),
+            ],
         ),
         lambda: outer_receipt_loader(bad_quantity_data),
     )
@@ -208,69 +208,69 @@ def test_outer_loading_bad_item_price():
 
     raises_exc(
         AggregateLoadError(
-            f'while loading model {Receipt}',
+            f"while loading model {Receipt}",
             [
                 with_trail(
                     AggregateLoadError(
-                        f'while loading iterable {list}',
+                        f"while loading iterable {list}",
                         [
                             with_trail(
                                 AggregateLoadError(
-                                    f'while loading model {RecItem}',
+                                    f"while loading model {RecItem}",
                                     [
                                         with_trail(
-                                            ValidationLoadError('Value must be >= 0', rubles(-10)),
-                                            ['price'],
-                                        )
-                                    ]
+                                            ValidationLoadError("Value must be >= 0", rubles(-10)),
+                                            ["price"],
+                                        ),
+                                    ],
                                 ),
                                 [0],
-                            )
+                            ),
                         ],
                     ),
                     ["items"],
                 ),
-            ]
+            ],
         ),
         lambda: outer_receipt_loader(bad_price_data),
     )
 
 
 def test_outer_loading_bad_item_name():
-    bad_name_data = change(outer_sample_data, ["items", 0, "name"], 'Matchbox 🔥')
+    bad_name_data = change(outer_sample_data, ["items", 0, "name"], "Matchbox 🔥")
 
     raises_exc(
         AggregateLoadError(
-            f'while loading model {Receipt}',
+            f"while loading model {Receipt}",
             [
                 with_trail(
                     AggregateLoadError(
-                        f'while loading iterable {list}',
+                        f"while loading iterable {list}",
                         [
                             with_trail(
                                 AggregateLoadError(
-                                    f'while loading model {RecItem}',
+                                    f"while loading model {RecItem}",
                                     [
                                         with_trail(
-                                            ValueLoadError("Char '🔥' can not be represented at CP866", 'Matchbox 🔥'),
-                                            ['name'],
-                                        )
-                                    ]
+                                            ValueLoadError("Char '🔥' can not be represented at CP866", "Matchbox 🔥"),
+                                            ["name"],
+                                        ),
+                                    ],
                                 ),
                                 [0],
-                            )
-                        ]
+                            ),
+                        ],
                     ),
-                    ["items"]
+                    ["items"],
                 ),
-            ]
+            ],
         ),
         lambda: outer_receipt_loader(bad_name_data),
     )
 
 
 def test_outer_loading_item_name_chars_replacing():
-    replace_name_data = change(outer_sample_data, ["items", 0, "name"], 'Matchbox «Dry Fire»')
+    replace_name_data = change(outer_sample_data, ["items", 0, "name"], "Matchbox «Dry Fire»")
 
     assert outer_receipt_loader(replace_name_data) == Receipt(
         type=ReceiptType.INCOME,
@@ -279,7 +279,7 @@ def test_outer_loading_item_name_chars_replacing():
                 name='Matchbox "Dry Fire"',
                 price=rubles("10"),
                 quantity=Decimal(3),
-            )
+            ),
         ],
         taxation=Taxation.USN_MINUS,
         notify=[NotifyEmail(value="mail@example.com")],
@@ -294,13 +294,13 @@ def test_inner():
                 "name": "Matchbox",
                 "price": Decimal("10.0"),
                 "quantity": Decimal("3.0"),
-            }
+            },
         ],
         "taxation": 4,
         "notify": [
-            {"type": "email", "value": "mail@example.com"}
+            {"type": "email", "value": "mail@example.com"},
         ],
-        "version": '1',
+        "version": "1",
     }
 
     receipt = Receipt(
@@ -310,7 +310,7 @@ def test_inner():
                 name="Matchbox",
                 price=rubles("10"),
                 quantity=Decimal(3),
-            )
+            ),
         ],
         taxation=Taxation.USN_MINUS,
         notify=[NotifyEmail("mail@example.com")],

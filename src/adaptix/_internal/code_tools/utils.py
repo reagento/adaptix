@@ -1,3 +1,4 @@
+# ruff: noqa: E721
 import builtins
 import math
 from enum import Enum
@@ -6,12 +7,12 @@ from typing import Any, Dict, Optional
 BUILTIN_TO_NAME = {
     getattr(builtins, name): name
     for name in sorted(dir(builtins))
-    if not name.startswith('__') and name != '_'
+    if not name.startswith("__") and name != "_"
 }
 NAME_TO_BUILTIN = {name: obj for obj, name in BUILTIN_TO_NAME.items()}
 
 
-class _CannotBeRendered(Exception):
+class _CannotBeRenderedError(Exception):
     pass
 
 
@@ -29,7 +30,7 @@ def get_literal_expr(obj: object) -> Optional[str]:
     except (KeyError, TypeError):
         try:
             return _get_complex_literal_expr(obj)
-        except _CannotBeRendered:
+        except _CannotBeRenderedError:
             return None
 
     return name
@@ -38,7 +39,7 @@ def get_literal_expr(obj: object) -> Optional[str]:
 def _provide_lit_expr(obj: object) -> str:
     literal_repr = get_literal_expr(obj)
     if literal_repr is None:
-        raise _CannotBeRendered
+        raise _CannotBeRenderedError
     return literal_repr
 
 
@@ -53,7 +54,7 @@ def _try_sort(iterable):
         return iterable
 
 
-def _get_complex_literal_expr(obj: object) -> Optional[str]:
+def _get_complex_literal_expr(obj: object) -> Optional[str]:  # noqa: PLR0911
     # pylint: disable=unidiomatic-typecheck,too-many-return-statements
     if type(obj) is list:
         return _parenthesize("[]", obj)
@@ -90,18 +91,18 @@ def _get_complex_literal_expr(obj: object) -> Optional[str]:
 
 
 _CLS_TO_FACTORY_LITERAL: Dict[Any, str] = {
-    list: '[]',
-    dict: '{}',
-    tuple: '()',
+    list: "[]",
+    dict: "{}",
+    tuple: "()",
     str: '""',
     bytes: 'b""',
-    type(None): 'None',
+    type(None): "None",
 }
 
 
 def get_literal_from_factory(obj: object) -> Optional[str]:
     try:
-        return _CLS_TO_FACTORY_LITERAL.get(obj, None)
+        return _CLS_TO_FACTORY_LITERAL.get(obj)
     except TypeError:
         return None
 

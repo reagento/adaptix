@@ -1,3 +1,4 @@
+# ruff: noqa
 import itertools
 
 import matplotlib.transforms as mtransforms
@@ -7,12 +8,12 @@ from matplotlib.axes import Axes
 
 
 # modified version of Axes.bar_label
-def bar_left_aligned_label(  # noqa: CCR001, C901
+def bar_left_aligned_label(
     ax: Axes, container, labels=None, *, fmt="%g",
-    padding=0, **kwargs
+    padding=0, **kwargs,
 ):
     # pylint: disable-all
-    label_type = 'center'
+    label_type = "center"
     a, b = ax.yaxis.get_view_interval()
     y_inverted = a > b
     c, d = ax.xaxis.get_view_interval()
@@ -43,7 +44,7 @@ def bar_left_aligned_label(  # noqa: CCR001, C901
     annotations = []
 
     for bar, err, dat, lbl in itertools.zip_longest(
-        bars, errs, datavalues, labels
+        bars, errs, datavalues, labels,
     ):
         (x0, y0), (x1, y1) = bar.get_bbox().get_points()
         xc, yc = (x0 + x1) / 2, (y0 + y1) / 2
@@ -72,7 +73,7 @@ def bar_left_aligned_label(  # noqa: CCR001, C901
             kwargs["xycoords"] = (
                 lambda r, b=bar:
                 mtransforms.Bbox.intersection(
-                    b.get_window_extent(r), b.get_clip_box()
+                    b.get_window_extent(r), b.get_clip_box(),
                 )
             )
         else:  # edge
@@ -92,20 +93,20 @@ def bar_left_aligned_label(  # noqa: CCR001, C901
             ha, va = "left", "center"
         else:  # edge
             if orientation == "vertical":
-                ha = 'center'
+                ha = "center"
                 if y_inverted:
-                    va = 'top' if dat > 0 else 'bottom'  # also handles NaN
+                    va = "top" if dat > 0 else "bottom"  # also handles NaN
                 else:
-                    va = 'top' if dat < 0 else 'bottom'  # also handles NaN
+                    va = "top" if dat < 0 else "bottom"  # also handles NaN
             else:  # horizontal
                 if x_inverted:
-                    ha = 'right' if dat > 0 else 'left'  # also handles NaN
+                    ha = "right" if dat > 0 else "left"  # also handles NaN
                 else:
-                    ha = 'right' if dat < 0 else 'left'  # also handles NaN
-                va = 'center'
+                    ha = "right" if dat < 0 else "left"  # also handles NaN
+                va = "center"
 
         if np.isnan(dat):
-            lbl = ''
+            lbl = ""
 
         if lbl is None:
             if isinstance(fmt, str):
@@ -117,6 +118,6 @@ def bar_left_aligned_label(  # noqa: CCR001, C901
         annotation = ax.annotate(
             lbl,
             xy, xytext, textcoords="offset points",
-            ha=ha, va=va, **kwargs
+            ha=ha, va=va, **kwargs,
         )
         annotations.append(annotation)

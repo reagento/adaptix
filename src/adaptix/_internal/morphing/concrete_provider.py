@@ -20,7 +20,7 @@ from .load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableLSC
 from .request_cls import DumperRequest, LoaderRequest
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass
@@ -57,7 +57,7 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
 
         def datetime_format_loader(data):
             try:
-                return datetime.strptime(data, fmt)
+                return datetime.strptime(data, fmt)  # noqa: DTZ007
             except ValueError:
                 raise FormatMismatchLoadError(fmt, data)
             except TypeError:
@@ -94,7 +94,7 @@ class SecondsTimedeltaProvider(LoaderProvider, DumperProvider):
 
 def none_loader(data):
     if data is None:
-        return None
+        return None  # noqa: RET501
     raise TypeLoadError(None, data)
 
 
@@ -110,12 +110,12 @@ class NoneProvider(LoaderProvider, DumperProvider):
 class Base64DumperMixin(DumperProvider):
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def bytes_base64_dumper(data):
-            return b2a_base64(data, newline=False).decode('ascii')
+            return b2a_base64(data, newline=False).decode("ascii")
 
         return bytes_base64_dumper
 
 
-B64_PATTERN = re.compile(b'[A-Za-z0-9+/]*={0,2}')
+B64_PATTERN = re.compile(b"[A-Za-z0-9+/]*={0,2}")
 
 
 @for_predicate(bytes)
@@ -123,12 +123,12 @@ class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         def bytes_base64_loader(data):
             try:
-                encoded = data.encode('ascii')
+                encoded = data.encode("ascii")
             except AttributeError:
                 raise TypeLoadError(str, data)
 
             if not B64_PATTERN.fullmatch(encoded):
-                raise ValueLoadError('Bad base64 string', data)
+                raise ValueLoadError("Bad base64 string", data)
 
             try:
                 return a2b_base64(encoded)
@@ -146,7 +146,7 @@ class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
         request.last_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
         bytes_loader = self._BYTES_PROVIDER.apply_provider(
             mediator,
-            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(bytes)))
+            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(bytes))),
         )
 
         def bytearray_base64_loader(data):
@@ -196,7 +196,7 @@ class ScalarLoaderProvider(LoaderProvider, Generic[T]):
 
 
 def int_strict_coercion_loader(data):
-    if type(data) is int:  # pylint: disable=unidiomatic-typecheck
+    if type(data) is int:  # pylint: disable=unidiomatic-typecheck # noqa: E721
         return data
     raise TypeLoadError(int, data)
 
@@ -206,7 +206,7 @@ def int_lax_coercion_loader(data):
         return int(data)
     except ValueError as e:
         e_str = str(e)
-        if e_str.startswith('invalid literal'):
+        if e_str.startswith("invalid literal"):
             raise ValueLoadError("Bad string format", data)
         raise ValueLoadError(e_str, data)
     except TypeError:
@@ -231,7 +231,7 @@ def float_lax_coercion_loader(data):
         return float(data)
     except ValueError as e:
         e_str = str(e)
-        if e_str.startswith('could not convert string'):
+        if e_str.startswith("could not convert string"):
             raise ValueLoadError("Bad string format", data)
         raise ValueLoadError(e_str, data)
     except TypeError:
@@ -246,7 +246,7 @@ FLOAT_LOADER_PROVIDER = ScalarLoaderProvider(
 
 
 def str_strict_coercion_loader(data):
-    if type(data) is str:  # pylint: disable=unidiomatic-typecheck
+    if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
         return data
     raise TypeLoadError(str, data)
 
@@ -259,7 +259,7 @@ STR_LOADER_PROVIDER = ScalarLoaderProvider(
 
 
 def bool_strict_coercion_loader(data):
-    if type(data) is bool:  # pylint: disable=unidiomatic-typecheck
+    if type(data) is bool:  # pylint: disable=unidiomatic-typecheck # noqa: E721
         return data
     raise TypeLoadError(bool, data)
 
@@ -272,7 +272,7 @@ BOOL_LOADER_PROVIDER = ScalarLoaderProvider(
 
 
 def decimal_strict_coercion_loader(data):
-    if type(data) is str:  # pylint: disable=unidiomatic-typecheck
+    if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
         try:
             return Decimal(data)
         except InvalidOperation:
@@ -316,7 +316,7 @@ def fraction_lax_coercion_loader(data):
         raise TypeLoadError(Union[str, Fraction], data)
     except ValueError as e:
         str_e = str(e)
-        if str_e.startswith('Invalid literal'):
+        if str_e.startswith("Invalid literal"):
             raise ValueLoadError("Bad string format", data)
         raise ValueLoadError(str(e), data)
 
@@ -363,15 +363,15 @@ class SelfTypeProvider(ProviderWithAttachableLSC):
             owner_loc_map, _field_loc_map = find_owner_with_field(request.loc_stack)
         except ValueError:
             raise CannotProvide(
-                'Owner type is not found',
+                "Owner type is not found",
                 is_terminal=True,
-                is_demonstrative=True
+                is_demonstrative=True,
             ) from None
 
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(owner_loc_map[TypeHintLoc])
+                loc_stack=request.loc_stack.add_to_last_map(owner_loc_map[TypeHintLoc]),
             ),
         )
 

@@ -4,8 +4,8 @@ import pytest
 
 
 class FactoryWay(Enum):
-    IMPL_CONVERTER = 'impl_converter'
-    GET_CONVERTER = 'get_converter'
+    IMPL_CONVERTER = "impl_converter"
+    GET_CONVERTER = "get_converter"
 
     @classmethod
     def params(cls):

@@ -5,7 +5,7 @@ from .loc_stack_filtering import LocStackChecker, P, Pred, create_loc_stack_chec
 from .provider_wrapper import ProviderWithLSC, RequestClassDeterminedProvider
 from .static_provider import StaticProvider
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class ProviderWithAttachableLSC(StaticProvider, ProviderWithLSC):

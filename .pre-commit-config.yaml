@@ -8,7 +8,6 @@ files: |-
       |(docs/custom_ext/.*)
       |(benchmarks/.*)
       |(scripts/.*)
-      |(tasks\.py)
   )$
 
 default_stages:
@@ -32,6 +31,12 @@ repos:
     hooks:
       - id: eradicate
         args: ['-e']  # remove default --in-place argument and emit error
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        args: [ --fix-only ]
 
   - repo: 'https://github.com/pycqa/isort'
     rev: 5.13.2

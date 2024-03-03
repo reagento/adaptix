@@ -15,12 +15,12 @@ retort = Retort(
             Interval,
             trim_trailing_underscore=False,
         ),
-    ]
+    ],
 )
 
 data = {
-    'from_': 10,
-    'to_': 20,
+    "from_": 10,
+    "to_": 20,
 }
 event = retort.load(data, Interval)
 assert event == Interval(from_=10, to_=20)

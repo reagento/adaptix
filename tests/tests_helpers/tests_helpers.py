@@ -42,7 +42,7 @@ from adaptix.struct_trail import get_trail
 T = TypeVar("T")
 
 
-ATTRS_WITH_ALIAS = DistributionVersionRequirement('attrs', '22.2.0')
+ATTRS_WITH_ALIAS = DistributionVersionRequirement("attrs", "22.2.0")
 
 
 def requires(requirement: Requirement):
@@ -57,10 +57,10 @@ def requires(requirement: Requirement):
 
 class TestRetort(AdornedRetort):
     def provide(self, request: Request[T]) -> T:
-        return self._facade_provide(request, error_message=f'cannot provide {request}')
+        return self._facade_provide(request, error_message=f"cannot provide {request}")
 
 
-E = TypeVar('E', bound=Exception)
+E = TypeVar("E", bound=Exception)
 
 
 def _repr_value(obj: Any) -> Dict[str, Any]:
@@ -73,25 +73,25 @@ def _repr_value(obj: Any) -> Dict[str, Any]:
             **{
                 fld.name: _repr_value(getattr(obj, fld.name))
                 for fld in dataclasses.fields(obj)
-            }
+            },
         )
     if isinstance(obj, CompatExceptionGroup):
-        result['message'] = obj.message
-        result['exceptions'] = [_repr_value(exc) for exc in obj.exceptions]
+        result["message"] = obj.message
+        result["exceptions"] = [_repr_value(exc) for exc in obj.exceptions]
     if isinstance(obj, CannotProvide):
-        result['message'] = obj.message
-        result['is_terminal'] = obj.is_terminal
-        result['is_demonstrative'] = obj.is_demonstrative
+        result["message"] = obj.message
+        result["is_terminal"] = obj.is_terminal
+        result["is_demonstrative"] = obj.is_demonstrative
     if isinstance(obj, NoSuitableProvider):
-        result['message'] = obj.message
+        result["message"] = obj.message
     if not result:
-        result['args'] = [_repr_value(arg) for arg in obj.args]
+        result["args"] = [_repr_value(arg) for arg in obj.args]
     return {
-        '__type__': type(obj),
-        '__trail__': list(get_trail(obj)),
+        "__type__": type(obj),
+        "__trail__": list(get_trail(obj)),
         **result,
-        '__cause__': _repr_value(obj.__cause__),
-        '__notes__': getattr(obj, '__notes__', []),
+        "__cause__": _repr_value(obj.__cause__),
+        "__notes__": getattr(obj, "__notes__", []),
     }
 
 
@@ -123,7 +123,7 @@ def parametrize_bool(param: str, *params: str):
         for p in full_params:
             func = pytest.mark.parametrize(
                 p, [False, True],
-                ids=[f'{p}=False', f'{p}=True']
+                ids=[f"{p}=False", f"{p}=True"],
             )(func)
         return func
 
@@ -158,7 +158,7 @@ class PlaceholderProvider(Provider):
 
 
 def full_match_regex_str(string_to_match: str) -> str:
-    return '^' + re.escape(string_to_match) + '$'
+    return "^" + re.escape(string_to_match) + "$"
 
 
 def pretty_typehint_test_id(config, val, argname):
@@ -177,9 +177,9 @@ def create_sa_engine(**kwargs) -> Engine:
     return create_engine("sqlite://", **kwargs)
 
 
-T1 = TypeVar('T1')
-T2 = TypeVar('T2')
-T3 = TypeVar('T3')
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+T3 = TypeVar("T3")
 
 
 class ByTrailSelector:
@@ -210,7 +210,7 @@ def load_namespace(
         run_name=run_name,
     )
     if ns_id is not None:
-        ns_dict['__ns_id__'] = ns_id
+        ns_dict["__ns_id__"] = ns_id
     return SimpleNamespace(**ns_dict)
 
 
@@ -222,7 +222,7 @@ def load_namespace_keeping_module(
     run_name: Optional[str] = None,
 ) -> Generator[SimpleNamespace, None, None]:
     if run_name is None:
-        run_name = 'temp_module_' + uuid4().hex
+        run_name = "temp_module_" + uuid4().hex
     ns = load_namespace(file_name=file_name, ns_id=ns_id, vars=vars, run_name=run_name, stack_offset=3)
     module = ModuleType(run_name)
     for attr, value in ns.__dict__.items():
@@ -266,18 +266,18 @@ def sqlalchemy_equals(self, other):
         return False
 
     self_state = vars(self).copy()
-    self_state.pop('_sa_instance_state')
+    self_state.pop("_sa_instance_state")
     other_state = vars(other).copy()
-    other_state.pop('_sa_instance_state')
+    other_state.pop("_sa_instance_state")
     return self_state == other_state
 
 
 class ModelSpec(Enum):
-    DATACLASS = 'dataclass'
-    TYPED_DICT = 'typed_dict'
-    NAMED_TUPLE = 'named_tuple'
-    ATTRS = 'attrs'
-    SQLALCHEMY = 'sqlalchemy'
+    DATACLASS = "dataclass"
+    TYPED_DICT = "typed_dict"
+    NAMED_TUPLE = "named_tuple"
+    ATTRS = "attrs"
+    SQLALCHEMY = "sqlalchemy"
 
     @classmethod
     def default_requirements(cls):
@@ -352,7 +352,7 @@ def exclude_model_spec(first_spec: ModelSpec, *other_specs: ModelSpec):
 GENERIC_MODELS_REQUIREMENTS: Mapping[ModelSpec, Requirement] = {
     ModelSpec.TYPED_DICT: HAS_PY_311,
     ModelSpec.NAMED_TUPLE: HAS_PY_311,
-    ModelSpec.SQLALCHEMY: FailedRequirement('SQLAlchemy models can not be generic'),
+    ModelSpec.SQLALCHEMY: FailedRequirement("SQLAlchemy models can not be generic"),
 }
 
 
@@ -364,11 +364,11 @@ def parametrize_model_spec(fixture_name: str, metafunc: Metafunc) -> None:
     if fixture_name not in metafunc.fixturenames:
         return
 
-    excluded = getattr(metafunc.function, 'adaptix_exclude_model_spec', [])
+    excluded = getattr(metafunc.function, "adaptix_exclude_model_spec", [])
     requirements = {
         **ModelSpec.default_requirements(),
-        **getattr(metafunc.module, 'adaptix_model_spec_requirements', {}),
-        **getattr(metafunc.function, 'adaptix_model_spec_requirements', {}),
+        **getattr(metafunc.module, "adaptix_model_spec_requirements", {}),
+        **getattr(metafunc.function, "adaptix_model_spec_requirements", {}),
     }
     metafunc.parametrize(
         fixture_name,
@@ -376,5 +376,5 @@ def parametrize_model_spec(fixture_name: str, metafunc: Metafunc) -> None:
             pytest.param(model_spec_to_schema(spec), id=spec.value)
             for spec in ModelSpec
             if spec not in excluded and (spec not in requirements or bool(requirements[spec]))
-        ]
+        ],
     )

@@ -38,7 +38,7 @@ def attr_extractor(model: Book) -> Mapping[str, Any]:
 retort = Retort(
     recipe=[
         name_mapping(Book, extra_in=attr_saturator, extra_out=attr_extractor),
-    ]
+    ],
 )
 
 book = retort.load(data, Book)

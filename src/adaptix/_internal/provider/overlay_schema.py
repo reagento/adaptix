@@ -15,8 +15,8 @@ class Schema:
     pass
 
 
-Sc = TypeVar('Sc', bound=Schema)
-Ov = TypeVar('Ov', bound='Overlay')
+Sc = TypeVar("Sc", bound=Schema)
+Ov = TypeVar("Ov", bound="Overlay")
 
 Merger = Callable[[Any, Any, Any], Any]
 
@@ -46,7 +46,7 @@ class Overlay(Generic[Sc]):
     def _load_mergers(cls) -> Mapping[str, Merger]:
         if cls._mergers is None:
             cls._mergers = {
-                field.name: getattr(cls, f'_merge_{field.name}', cls._default_merge)
+                field.name: getattr(cls, f"_merge_{field.name}", cls._default_merge)
                 for field in fields(cls)
             }
         return cls._mergers
@@ -71,7 +71,7 @@ class Overlay(Generic[Sc]):
         ]
         if omitted_fields:
             raise ValueError(
-                f"Can not create schema because overlay contains omitted values at {omitted_fields}"
+                f"Can not create schema because overlay contains omitted values at {omitted_fields}",
             )
         # noinspection PyArgumentList
         return self._schema_cls(**vars(self))  # type: ignore[return-value]
@@ -87,7 +87,7 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: Lo
         OverlayRequest(
             loc_stack=loc_stack,
             overlay_cls=overlay,
-        )
+        ),
     )
     loc_map = loc_stack[-1]
     if loc_map.has(TypeHintLoc) and isinstance(loc_map[TypeHintLoc].type, type):
@@ -97,7 +97,7 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: Lo
                     OverlayRequest(
                         loc_stack=loc_stack.add_to_last_map(TypeHintLoc(type=parent)),
                         overlay_cls=overlay,
-                    )
+                    ),
                 )
             except CannotProvide:
                 pass

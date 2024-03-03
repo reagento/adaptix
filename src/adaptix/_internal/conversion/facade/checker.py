@@ -20,4 +20,4 @@ def ensure_function_is_stub(func):
             value = body_element.value.value
             if value == Ellipsis or isinstance(value, str):
                 return
-    raise ValueError('Body of function must be empty')
+    raise ValueError("Body of function must be empty")

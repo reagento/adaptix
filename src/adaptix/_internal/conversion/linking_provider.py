@@ -23,7 +23,7 @@ def iterate_source_candidates(candidates: SourceCandidates) -> Iterable[LinkingS
 
 
 class SameNameLinkingProvider(LinkingProvider):
-    def __init__(self, is_default: bool):
+    def __init__(self, *, is_default: bool):
         self._is_default = is_default
 
     def _provide_linking(self, mediator: Mediator, request: LinkingRequest) -> LinkingResult:

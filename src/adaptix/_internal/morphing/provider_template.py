@@ -36,7 +36,7 @@ class DumperProvider(ProviderWithAttachableLSC, ABC):
 
 
 class ABCProxy(LoaderProvider, DumperProvider):
-    def __init__(self, abstract: TypeHint, impl: TypeHint, for_loader: bool = True, for_dumper: bool = True):
+    def __init__(self, abstract: TypeHint, impl: TypeHint, *, for_loader: bool = True, for_dumper: bool = True):
         self._abstract = normalize_type(abstract).origin
         self._impl = impl
         self._loc_stack_checker = ExactOriginLSC(self._abstract)
@@ -49,9 +49,9 @@ class ABCProxy(LoaderProvider, DumperProvider):
 
         return mediator.mandatory_provide(
             LoaderRequest(
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl)),
             ),
-            lambda x: f'Cannot create loader for union. Loader for {self._impl} cannot be created',
+            lambda x: f"Cannot create loader for union. Loader for {self._impl} cannot be created",
         )
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
@@ -60,7 +60,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
 
         return mediator.mandatory_provide(
             DumperRequest(
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl)),
             ),
-            lambda x: f'Cannot create dumper for union. Dumper for {self._impl} cannot be created',
+            lambda x: f"Cannot create dumper for union. Dumper for {self._impl} cannot be created",
         )

@@ -29,8 +29,8 @@ from .definitions import (
 BroachingPlan = Union[
     ParameterElement,
     ConstantElement,
-    FunctionElement['BroachingPlan'],
-    AccessorElement['BroachingPlan'],
+    FunctionElement["BroachingPlan"],
+    AccessorElement["BroachingPlan"],
 ]
 
 
@@ -52,7 +52,7 @@ class GenState:
             return base
 
         for i in itertools.count(1):
-            name = f'{base}_{i}'
+            name = f"{base}_{i}"
             if self._namespace.try_add_constant(name, obj):
                 return name
         raise RuntimeError
@@ -90,22 +90,22 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
         namespace = BuiltinCascadeNamespace(occupied=signature.parameters.keys())
         state = self._create_state(namespace=namespace)
 
-        namespace.add_constant('_closure_signature', signature)
-        namespace.add_constant('_stub_function', stub_function)
-        namespace.add_constant('_update_wrapper', update_wrapper)
+        namespace.add_constant("_closure_signature", signature)
+        namespace.add_constant("_stub_function", stub_function)
+        namespace.add_constant("_update_wrapper", update_wrapper)
         no_types_signature = signature.replace(
             parameters=[param.replace(annotation=Signature.empty) for param in signature.parameters.values()],
             return_annotation=Signature.empty,
         )
-        with builder(f'def {closure_name}{no_types_signature}:'):
+        with builder(f"def {closure_name}{no_types_signature}:"):
             body = self._gen_plan_element_dispatch(state, self._plan)
-            builder += 'return ' + compat_ast_unparse(body)
+            builder += "return " + compat_ast_unparse(body)
 
         if stub_function is not None:
-            builder += f'_update_wrapper({closure_name}, _stub_function)'
+            builder += f"_update_wrapper({closure_name}, _stub_function)"
 
-        builder += f'{closure_name}.__signature__ = _closure_signature'
-        builder += f'{closure_name}.__name__ = {closure_name!r}'
+        builder += f"{closure_name}.__signature__ = _closure_signature"
+        builder += f"{closure_name}.__name__ = {closure_name!r}"
         return builder.string(), namespace.constants
 
     def _gen_plan_element_dispatch(self, state: GenState, element: BroachingPlan) -> AST:
@@ -127,7 +127,7 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
         if expr is not None:
             return ast.parse(expr)
 
-        name = state.register_next_id('constant', element.value)
+        name = state.register_next_id("constant", element.value)
         return ast.Name(id=name, ctx=ast.Load())
 
     def _gen_function_element(self, state: GenState, element: FunctionElement[BroachingPlan]) -> AST:
@@ -138,10 +138,10 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
         ):
             return self._gen_plan_element_dispatch(state, element.args[0].element)
 
-        if getattr(element.func, '__name__', None) is not None:
+        if getattr(element.func, "__name__", None) is not None:
             name = state.register_mangled(element.func.__name__, element.func)
         else:
-            name = state.register_next_id('func', element.func)
+            name = state.register_next_id("func", element.func)
 
         args = []
         keywords = []
@@ -172,7 +172,7 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
         if isinstance(element.accessor, DescriptorAccessor):
             if element.accessor.attr_name.isidentifier():
                 return ast_substitute(
-                    f'__target_expr__.{element.accessor.attr_name}',
+                    f"__target_expr__.{element.accessor.attr_name}",
                     target_expr=target_expr,
                 )
             return ast_substitute(
@@ -186,7 +186,7 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
                 target_expr=target_expr,
             )
 
-        name = state.register_next_id('accessor', element.accessor.getter)
+        name = state.register_next_id("accessor", element.accessor.getter)
         return ast_substitute(
             f"{name}(__target_expr__)",
             target_expr=target_expr,

@@ -138,7 +138,7 @@ class SimpleUserSchema(Schema):
     def _to_model(self, data, **kwargs):
         return SimpleUser(**data)
 
-    SKIP_NONE = ['name', 'email', 'starred_at']
+    SKIP_NONE = ["name", "email", "starred_at"]
 
     @post_dump(pass_many=False)
     def _skip_default(self, data, **kwargs):
@@ -165,8 +165,8 @@ class LabelSchema(Schema):
 class ReactionsSchema(Schema):
     url = fields.Str()
     total_count = fields.Int()
-    plus_one = fields.Int(data_key='+1')
-    minus_one = fields.Int(data_key='-1')
+    plus_one = fields.Int(data_key="+1")
+    minus_one = fields.Int(data_key="-1")
     laugh = fields.Int()
     confused = fields.Int()
     heart = fields.Int()
@@ -190,7 +190,7 @@ class PullRequestSchema(Schema):
     def _to_model(self, data, **kwargs):
         return PullRequest(**data)
 
-    SKIP_NONE = ['merged_at']
+    SKIP_NONE = ["merged_at"]
 
     @post_dump(pass_many=False)
     def _skip_none(self, data, **kwargs):
@@ -235,7 +235,7 @@ class IssueSchema(Schema):
     def _to_model(self, data, **kwargs):
         return Issue(**data)
 
-    SKIP_NONE = ['reactions', 'pull_request', 'body_html', 'body_text', 'timeline_url', 'body']
+    SKIP_NONE = ["reactions", "pull_request", "body_html", "body_text", "timeline_url", "body"]
 
     @post_dump(pass_many=False)
     def _skip_none(self, data, **kwargs):
@@ -264,7 +264,7 @@ def test_loading():
 def test_dumping():
     assert (
         GetRepoIssuesResponseSchema().dump(
-            create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)
+            create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser),
         )
         ==
         create_dumped_response()

@@ -1,4 +1,3 @@
-from abc import ABC
 from dataclasses import dataclass
 from typing import Any, Callable, Generic, TypeVar, Union
 
@@ -6,11 +5,11 @@ from adaptix._internal.common import VarTuple
 from adaptix._internal.model_tools.definitions import Accessor
 
 
-class BasePlanElement(ABC):
+class BasePlanElement:
     pass
 
 
-PlanT = TypeVar('PlanT', bound=BasePlanElement)
+PlanT = TypeVar("PlanT", bound=BasePlanElement)
 
 
 @dataclass(frozen=True)

@@ -35,7 +35,7 @@ def test_singleton_copy():
     assert copy(SomeSingleton()) is SomeSingleton()
     assert deepcopy(SomeSingleton()) is SomeSingleton()
 
-    assert pickle.loads(pickle.dumps(SomeSingleton())) is SomeSingleton()  # noqa: DUO103
+    assert pickle.loads(pickle.dumps(SomeSingleton())) is SomeSingleton()  # noqa: S301
 
 
 def test_singleton_new():
@@ -43,37 +43,37 @@ def test_singleton_new():
 
 
 @pytest.mark.parametrize(
-    ['values', 'result'],
+    ["values", "result"],
     [
         (
             [],
             [],
         ),
         (
-            ['a'],
+            ["a"],
             [],
         ),
         (
-            ['a', 'b'],
+            ["a", "b"],
             [],
         ),
         (
-            ['a', 'b', 'c'],
+            ["a", "b", "c"],
             [],
         ),
         (
-            ['a', 'ab', 'ac'],
-            [('a', ['ab', 'ac'])],
+            ["a", "ab", "ac"],
+            [("a", ["ab", "ac"])],
         ),
         (
-            ['a', 'ab', 'ac', 'foo'],
-            [('a', ['ab', 'ac'])],
+            ["a", "ab", "ac", "foo"],
+            [("a", ["ab", "ac"])],
         ),
         (
-            ['a', 'ab', 'ac', 'foo', 'bar', 'bar1'],
-            [('a', ['ab', 'ac']), ('bar', ['bar1'])],
+            ["a", "ab", "ac", "foo", "bar", "bar1"],
+            [("a", ["ab", "ac"]), ("bar", ["bar1"])],
         ),
-    ]
+    ],
 )
 def test_get_prefix_groups(values, result):
     assert get_prefix_groups(values) == result

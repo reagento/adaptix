@@ -20,7 +20,7 @@ data = {
     "price": 100,
     "author": {
         "name": "Ray Bradbury",
-    }
+    },
 }
 
 retort = Retort()

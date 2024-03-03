@@ -99,7 +99,7 @@ class PropertyExtender(StaticProvider):
         if bad_fields_accessors:
             raise ValueError(
                 f"Fields {bad_fields_accessors} has bad accessors,"
-                f" all fields must use DescriptorAccessor"
+                f" all fields must use DescriptorAccessor",
             )
 
     @static_provision_action
@@ -134,7 +134,7 @@ class PropertyExtender(StaticProvider):
         return signature.return_annotation
 
 
-ShapeT = TypeVar('ShapeT', bound=Union[InputShape, OutputShape])
+ShapeT = TypeVar("ShapeT", bound=Union[InputShape, OutputShape])
 
 
 class ShapeGenericResolver(Generic[ShapeT]):
@@ -145,7 +145,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
     def provide(self) -> ShapeT:
         resolver = GenericResolver(self._get_members)
         members_storage = resolver.get_resolved_members(
-            self._initial_request.last_map[TypeHintLoc].type
+            self._initial_request.last_map[TypeHintLoc].type,
         )
         if members_storage.meta is None:
             raise CannotProvide
@@ -154,7 +154,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
             fields=tuple(  # type: ignore[arg-type]
                 replace(fld, type=members_storage.members[fld.id])
                 for fld in members_storage.meta.fields
-            )
+            ),
         )
 
     def _get_members(self, tp) -> MembersStorage[str, Optional[ShapeT]]:
@@ -163,7 +163,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
                 replace(
                     self._initial_request,
                     loc_stack=self._initial_request.loc_stack.add_to_last_map(TypeHintLoc(type=tp)),
-                )
+                ),
             )
         except CannotProvide:
             return MembersStorage(
@@ -184,11 +184,11 @@ def provide_generic_resolved_shape(mediator: Mediator, request: LocatedRequest[S
     return ShapeGenericResolver(mediator, request).provide()
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class SimilarShapeProvider(ProviderWithAttachableLSC):
-    def __init__(self, target: TypeHint, prototype: TypeHint, for_input: bool = True, for_output: bool = True):
+    def __init__(self, target: TypeHint, prototype: TypeHint, *, for_input: bool = True, for_output: bool = True):
         self._target = target
         self._prototype = prototype
         self._loc_stack_checker = create_loc_stack_checker(self._target)
@@ -205,7 +205,7 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
             replace(
                 request,
                 loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(self._prototype)),
-            )
+            ),
         )
         return replace(shape, constructor=self._target)
 
@@ -215,10 +215,9 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
             raise CannotProvide
 
         self._apply_loc_stack_checker(mediator, request)
-        shape = mediator.delegating_provide(
+        return mediator.delegating_provide(
             replace(
                 request,
                 loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(self._prototype)),
-            )
+            ),
         )
-        return shape

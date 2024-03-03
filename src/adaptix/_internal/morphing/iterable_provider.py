@@ -1,3 +1,4 @@
+# ruff: noqa: SIM113
 import collections.abc
 from inspect import isabstract
 from typing import Callable, Iterable, Mapping
@@ -77,10 +78,10 @@ class IterableProvider(LoaderProvider, DumperProvider):
                     LocMap(
                         TypeHintLoc(type=arg),
                         GenericParamLoc(generic_pos=0),
-                    )
-                )
+                    ),
+                ),
             ),
-            lambda x: 'Cannot create loader for iterable. Loader for element cannot be created',
+            lambda x: "Cannot create loader for iterable. Loader for element cannot be created",
         )
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
@@ -127,11 +128,11 @@ class IterableProvider(LoaderProvider, DumperProvider):
             if errors:
                 if has_unexpected_error:
                     raise CompatExceptionGroup(
-                        f'while loading iterable {origin}',
+                        f"while loading iterable {origin}",
                         [render_trail_as_note(e) for e in errors],
                     )
                 raise AggregateLoadError(
-                    f'while loading iterable {origin}',
+                    f"while loading iterable {origin}",
                     [render_trail_as_note(e) for e in errors],
                 )
 
@@ -169,7 +170,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         def iter_loader_dt_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Iterable, Mapping, data)
-            if type(data) is str:  # pylint: disable=unidiomatic-typecheck
+            if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
                 raise ExcludedTypeLoadError(Iterable, str, data)
 
             try:
@@ -185,7 +186,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         def iter_loader_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Iterable, Mapping, data)
-            if type(data) is str:  # pylint: disable=unidiomatic-typecheck
+            if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
                 raise ExcludedTypeLoadError(Iterable, str, data)
 
             try:
@@ -218,10 +219,10 @@ class IterableProvider(LoaderProvider, DumperProvider):
                     LocMap(
                         TypeHintLoc(type=arg),
                         GenericParamLoc(generic_pos=0),
-                    )
-                )
+                    ),
+                ),
             ),
-            lambda x: 'Cannot create dumper for iterable. Dumper for element cannot be created',
+            lambda x: "Cannot create dumper for iterable. Dumper for element cannot be created",
         )
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._make_dumper(
@@ -270,7 +271,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
             if errors:
                 raise CompatExceptionGroup(
-                    f'while dumping iterable {origin}',
+                    f"while dumping iterable {origin}",
                     [render_trail_as_note(e) for e in errors],
                 )
 

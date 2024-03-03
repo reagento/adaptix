@@ -4,12 +4,12 @@ from typing import Mapping
 
 
 class Substitutor(NodeTransformer):
-    __slots__ = ('substitution', )
+    __slots__ = ("substitution", )
 
     def __init__(self, substitution: Mapping[str, AST]):
         self._substitution = substitution
 
-    def visit_Name(self, node: ast.Name):  # pylint: disable=invalid-name
+    def visit_Name(self, node: ast.Name):  # pylint: disable=invalid-name  # noqa: N802
         if node.id in self._substitution:
             return self._substitution[node.id]
         return node

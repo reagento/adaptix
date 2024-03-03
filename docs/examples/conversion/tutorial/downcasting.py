@@ -31,8 +31,8 @@ assert (
             author="Ray Bradbury",
             release_date=date(1953, 10, 19),
             page_count=158,
-            isbn='978-0-7432-4722-1',
-        )
+            isbn="978-0-7432-4722-1",
+        ),
     )
     ==
     BookDTO(

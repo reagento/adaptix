@@ -20,7 +20,7 @@ retort = Retort(
     recipe=[
         loader(HiddenStr, HiddenStr),
         dumper(HiddenStr, str),
-    ]
+    ],
 )
 skipping_retort = retort.extend(
     recipe=[
@@ -28,21 +28,21 @@ skipping_retort = retort.extend(
             User,
             skip=HiddenStr,
         ),
-    ]
+    ],
 )
 
 user = User(
     id=52,
-    name='Ken Thompson',
-    password_hash=HiddenStr('ZghOT0eRm4U9s'),
+    name="Ken Thompson",
+    password_hash=HiddenStr("ZghOT0eRm4U9s"),
 )
 data = {
-    'id': 52,
-    'name': 'Ken Thompson',
+    "id": 52,
+    "name": "Ken Thompson",
 }
 data_with_password_hash = {
     **data,
-    'password_hash': 'ZghOT0eRm4U9s',
+    "password_hash": "ZghOT0eRm4U9s",
 }
 assert repr(user) == "User(id=52, name='Ken Thompson', password_hash='<hidden>')"
 assert retort.dump(user) == data_with_password_hash

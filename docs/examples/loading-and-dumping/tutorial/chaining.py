@@ -21,8 +21,8 @@ class Message:
 
 data = {
     "id": "ajsVre",
-    "timestamp": '2023-01-29T21:26:28.026860',
-    "body": '{"title": "Fahrenheit 451", "price": 100, "author": "Ray Bradbury"}'
+    "timestamp": "2023-01-29T21:26:28.026860",
+    "body": '{"title": "Fahrenheit 451", "price": 100, "author": "Ray Bradbury"}',
 }
 
 retort = Retort(

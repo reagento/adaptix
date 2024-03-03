@@ -4,7 +4,7 @@ from .request_cls import UnlinkedOptionalPolicy, UnlinkedOptionalPolicyRequest
 
 
 class UnlinkedOptionalPolicyProvider(StaticProvider):
-    def __init__(self, is_allowed: bool):
+    def __init__(self, *, is_allowed: bool):
         self._is_allowed = is_allowed
 
     @static_provision_action

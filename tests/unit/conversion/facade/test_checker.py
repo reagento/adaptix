@@ -29,5 +29,5 @@ def test_exception():
     def func():
         return 1 + 2
 
-    with pytest.raises(ValueError, match=full_match_regex_str('Body of function must be empty')):
+    with pytest.raises(ValueError, match=full_match_regex_str("Body of function must be empty")):
         ensure_function_is_stub(func)

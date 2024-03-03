@@ -12,7 +12,7 @@ from .mediator import ErrorRepresentor, RecursionResolver, T
 
 
 class FuncWrapper:
-    __slots__ = ('__call__',)
+    __slots__ = ("__call__",)
 
     def __init__(self):
         self.__call__ = None
@@ -43,7 +43,7 @@ class MorphingRecursionResolver(RecursionResolver):
             self._loc_map_to_stub.pop(request.last_map).set_func(result)
 
 
-@with_module('adaptix')
+@with_module("adaptix")
 class NoSuitableProvider(Exception):
     def __init__(self, message: str):
         self.message = message
@@ -51,8 +51,8 @@ class NoSuitableProvider(Exception):
 
 class BuiltinErrorRepresentor(ErrorRepresentor):
     _NO_PROVIDER_DESCRIPTION_METHOD: Mapping[Type[Request], str] = {
-        LinkingRequest: '_get_linking_request_description',
-        CoercerRequest: '_get_coercer_request_description',
+        LinkingRequest: "_get_linking_request_description",
+        CoercerRequest: "_get_coercer_request_description",
     }
     _NO_PROVIDER_DESCRIPTION_CONST: Mapping[Type[Request], str] = {
         LoaderRequest: "There is no provider that can create specified loader",
@@ -63,7 +63,7 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         try:
             dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.destination.to_loc_stack())
         except ValueError:
-            return 'Cannot find coercer'
+            return "Cannot find coercer"
 
         dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
         dst_field = dst_field_loc_map[FieldLoc].field_id
@@ -73,12 +73,12 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         try:
             src_owner_loc_map, src_field_loc_map = find_owner_with_field(request.src.to_loc_stack())
         except ValueError:
-            return 'Cannot find coercer'
+            return "Cannot find coercer"
 
         try:
             dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.dst.to_loc_stack())
         except ValueError:
-            return 'Cannot find coercer'
+            return "Cannot find coercer"
 
         src_owner = self._get_type_desc(src_owner_loc_map[TypeHintLoc].type)
         src_field = src_field_loc_map[FieldLoc].field_id
@@ -100,7 +100,7 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
             return self._NO_PROVIDER_DESCRIPTION_CONST[request_cls]
         return f"There is no provider that can process {request}"
 
-    _LOC_KEYS_ORDER = {fld: idx for idx, fld in enumerate(['type', 'field_id'])}
+    _LOC_KEYS_ORDER = {fld: idx for idx, fld in enumerate(["type", "field_id"])}
 
     def _get_loc_stack_context_notes(self, loc_desc: str, field_desc: str, loc_stack: LocStack) -> Iterable[str]:
         try:
@@ -110,10 +110,10 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         else:
             owner_type = owner_loc_map[TypeHintLoc].type
             field_id = field_loc_map[FieldLoc].field_id
-            yield f'Exception was raised while processing {field_desc} {field_id!r} of {owner_type}'
+            yield f"Exception was raised while processing {field_desc} {field_id!r} of {owner_type}"
 
-        location_desc = ', '.join(
-            f'{key}={value!r}'
+        location_desc = ", ".join(
+            f"{key}={value!r}"
             for key, value in sorted(
                 (
                     (key, value)
@@ -124,13 +124,13 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
             )
         )
         if location_desc:
-            yield f'{loc_desc}: {location_desc}'
+            yield f"{loc_desc}: {location_desc}"
 
     def get_request_context_notes(self, request: Request) -> Iterable[str]:
         if isinstance(request, LocatedRequest):
             yield from self._get_loc_stack_context_notes(
-                loc_desc='Location',
-                field_desc='field',
+                loc_desc="Location",
+                field_desc="field",
                 loc_stack=request.loc_stack,
             )
 
@@ -157,7 +157,7 @@ class OperatingRetort(BaseRetort, Provider, ABC):
         demonstrative_exc_list: List[CannotProvide] = []
         for sub_exc in exc.exceptions:
             if isinstance(sub_exc, AggregateCannotProvide):
-                sub_exc = self._extract_demonstrative_exc(sub_exc)  # type: ignore[assignment]
+                sub_exc = self._extract_demonstrative_exc(sub_exc)  # type: ignore[assignment]  # noqa: PLW2901
                 if sub_exc is not None:
                     demonstrative_exc_list.append(sub_exc)
             elif sub_exc.is_demonstrative:  # type: ignore[union-attr]

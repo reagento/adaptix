@@ -71,21 +71,21 @@ class GenState:
     def _with_path_suffix(self, basis: str, extra_path: CrownPath = ()) -> str:
         if not self._path and not extra_path:
             return basis
-        return basis + '_' + self._ensure_path_idx(self._path + extra_path)
+        return basis + "_" + self._ensure_path_idx(self._path + extra_path)
 
     @property
     def v_crown(self) -> str:
-        return self._with_path_suffix('result')
+        return self._with_path_suffix("result")
 
     @property
     def v_placeholder(self) -> str:
-        return self._with_path_suffix('placeholder')
+        return self._with_path_suffix("placeholder")
 
     def v_sieve(self, key: CrownPathElem) -> str:
-        return self._with_path_suffix('sieve', (key,))
+        return self._with_path_suffix("sieve", (key,))
 
     def v_default(self, key: CrownPathElem) -> str:
-        return self._with_path_suffix('dfl', (key,))
+        return self._with_path_suffix("dfl", (key,))
 
 
 class ElementExpr(NamedTuple):
@@ -118,14 +118,14 @@ class BuiltinModelDumperGen(ModelDumperGen):
         body_builder = CodeBuilder()
 
         namespace = BuiltinCascadeNamespace()
-        namespace.add_constant('CompatExceptionGroup', CompatExceptionGroup)
+        namespace.add_constant("CompatExceptionGroup", CompatExceptionGroup)
         namespace.add_constant("append_trail", append_trail)
         namespace.add_constant("extend_trail", extend_trail)
         for field_id, dumper in self._fields_dumpers.items():
             namespace.add_constant(self._v_dumper(self._id_to_field[field_id]), dumper)
 
         if self._debug_trail == DebugTrail.ALL:
-            body_builder('errors = []')
+            body_builder("errors = []")
             body_builder.empty_line()
 
         if any(field.is_optional for field in self._shape.fields):
@@ -161,7 +161,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         self._gen_header(state)
 
         builder = CodeBuilder()
-        with builder(f'def {closure_name}(data):'):
+        with builder(f"def {closure_name}(data):"):
             builder.extend(body_builder)
         return builder.string(), namespace.constants
 
@@ -169,7 +169,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         return field.id in self._extra_targets
 
     def _v_field(self, field: OutputField) -> str:
-        return f'f_{field.id}'
+        return f"f_{field.id}"
 
     def _v_dumper(self, field: OutputField) -> str:
         return f"dumper_{field.id}"
@@ -338,8 +338,8 @@ class BuiltinModelDumperGen(ModelDumperGen):
         if self._debug_trail != DebugTrail.ALL:
             return
 
-        namespace.add_constant('model_identity', self._model_identity)
-        namespace.add_constant('render_trail_as_note', render_trail_as_note)
+        namespace.add_constant("model_identity", self._model_identity)
+        namespace.add_constant("render_trail_as_note", render_trail_as_note)
         builder(
             """
             if errors:
@@ -347,7 +347,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                     f'while dumping model {model_identity}',
                     [render_trail_as_note(e) for e in errors],
                 )
-            """
+            """,
         )
 
     def _gen_extra_extraction(
@@ -390,12 +390,12 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 )
 
             self._gen_raising_extraction_errors(builder, namespace)
-            builder += 'extra = {'
+            builder += "extra = {"
             builder <<= ", ".join(
                 "**" + self._v_field(self._id_to_field[field_id])
                 for field_id in self._extra_targets
             )
-            builder <<= '}'
+            builder <<= "}"
         else:
             builder += "extra_stack = []"
             for field_id in self._extra_targets:
@@ -421,7 +421,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         namespace: CascadeNamespace,
         extra_move: ExtraExtract,
     ):
-        namespace.add_constant('extractor', extra_move.func)
+        namespace.add_constant("extractor", extra_move.func)
 
         if self._debug_trail == DebugTrail.ALL:
             builder += """
@@ -486,7 +486,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 return ElementExpr(literal_expr, can_inline=True)
 
             state.namespace.add_constant(state.v_placeholder, crown.placeholder.factory)
-            return ElementExpr(state.v_placeholder + '()', can_inline=False)
+            return ElementExpr(state.v_placeholder + "()", can_inline=False)
 
         if isinstance(crown.placeholder, DefaultValue):
             literal_expr = get_literal_expr(crown.placeholder.value)
@@ -553,7 +553,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         state: GenState,
         crown: OutDictCrown,
         key: str,
-        sub_crown: OutCrown
+        sub_crown: OutCrown,
     ):
         if isinstance(sub_crown, OutFieldCrown) and self._id_to_field[sub_crown.id].is_optional:
             with state.builder(
@@ -563,19 +563,19 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 except KeyError:
                     pass
                 else:
-                """
+                """,
             ):
                 if key in crown.sieves:
                     self._gen_dict_sieved_append(
                         state, crown.sieves[key], key,
-                        element_expr=ElementExpr('value', can_inline=True),
+                        element_expr=ElementExpr("value", can_inline=True),
                     )
                 else:
                     state.builder(f"{state.v_crown}[{key!r}] = value")
         else:
             element_expr = self._get_element_expr(state, key, sub_crown)
             self._gen_dict_sieved_append(
-                state, crown.sieves[key], key, element_expr
+                state, crown.sieves[key], key, element_expr,
             )
 
     def _gen_dict_sieved_append(
@@ -604,7 +604,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         if default_clause is None:
             v_sieve = state.v_sieve(key)
             state.namespace.add_constant(v_sieve, sieve)
-            return f'{v_sieve}({input_expr})'
+            return f"{v_sieve}({input_expr})"
 
         if isinstance(default_clause, DefaultValue):
             literal_expr = get_literal_expr(default_clause.value)

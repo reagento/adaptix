@@ -19,12 +19,12 @@ def test_simple():
     retort = Retort(
         recipe=[
             constructor(Device, Device.from_config),
-        ]
+        ],
     )
     assert (
-        retort.load({'name': 'dxf', 'coordinates': '1 2'}, Device)
+        retort.load({"name": "dxf", "coordinates": "1 2"}, Device)
         ==
-        Device(name='dxf', x=1, y=2)
+        Device(name="dxf", x=1, y=2)
     )
 
 
@@ -34,14 +34,14 @@ def test_name_mapping():
             constructor(Device, Device.from_config),
             name_mapping(
                 Device,
-                map={'coordinates': 'coords'},
+                map={"coordinates": "coords"},
             ),
-        ]
+        ],
     )
     assert (
-        retort.load({'name': 'dxf', 'coords': '1 2'}, Device)
+        retort.load({"name": "dxf", "coords": "1 2"}, Device)
         ==
-        Device(name='dxf', x=1, y=2)
+        Device(name="dxf", x=1, y=2)
     )
 
 
@@ -54,12 +54,12 @@ def test_override_loader():
         recipe=[
             constructor(Device, Device.from_config),
             loader(Device, device_loader),
-        ]
+        ],
     )
     assert (
-        retort.load({'name': 'dxf', 'coordinates': '1 2'}, Device)
+        retort.load({"name": "dxf", "coordinates": "1 2"}, Device)
         ==
-        Device(name='dxf', x=1, y=2)
+        Device(name="dxf", x=1, y=2)
     )
 
 
@@ -67,10 +67,10 @@ def test_self():
     retort = Retort(
         recipe=[
             constructor(Device, Device),
-        ]
+        ],
     )
     assert (
-        retort.load({'name': 'dxf', 'x': 1, 'y': 2}, Device)
+        retort.load({"name": "dxf", "x": 1, "y": 2}, Device)
         ==
-        Device(name='dxf', x=1, y=2)
+        Device(name="dxf", x=1, y=2)
     )

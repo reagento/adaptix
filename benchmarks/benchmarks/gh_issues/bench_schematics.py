@@ -46,7 +46,7 @@ class SimpleUser(Model):
     site_admin = BooleanType(required=True)
     name = StringType(serialize_when_none=False)
     email = StringType(serialize_when_none=False)
-    starred_at = DateTimeType(serialize_when_none=False, serialized_format='%Y-%m-%dT%H:%M:%S')
+    starred_at = DateTimeType(serialize_when_none=False, serialized_format="%Y-%m-%dT%H:%M:%S")
 
 
 class Label(Model):
@@ -62,8 +62,8 @@ class Label(Model):
 class Reactions(Model):
     url = StringType(required=True)
     total_count = IntType(required=True)
-    plus_one = IntType(required=True, serialized_name='+1')
-    minus_one = IntType(required=True, serialized_name='-1')
+    plus_one = IntType(required=True, serialized_name="+1")
+    minus_one = IntType(required=True, serialized_name="-1")
     laugh = IntType(required=True)
     confused = IntType(required=True)
     heart = IntType(required=True)
@@ -77,7 +77,7 @@ class PullRequest(Model):
     html_url = StringType()
     patch_url = StringType()
     url = StringType()
-    merged_at = DateTimeType(serialize_when_none=False, serialized_format='%Y-%m-%dT%H:%M:%S')
+    merged_at = DateTimeType(serialize_when_none=False, serialized_format="%Y-%m-%dT%H:%M:%S")
 
 
 class Issue(Model):
@@ -100,9 +100,9 @@ class Issue(Model):
     locked = BooleanType(required=True)
     active_lock_reason = StringType()
     comments = IntType(required=True)
-    closed_at = DateTimeType(serialized_format='%Y-%m-%dT%H:%M:%S')
-    created_at = DateTimeType(serialized_format='%Y-%m-%dT%H:%M:%S')
-    updated_at = DateTimeType(serialized_format='%Y-%m-%dT%H:%M:%S')
+    closed_at = DateTimeType(serialized_format="%Y-%m-%dT%H:%M:%S")
+    created_at = DateTimeType(serialized_format="%Y-%m-%dT%H:%M:%S")
+    updated_at = DateTimeType(serialized_format="%Y-%m-%dT%H:%M:%S")
     author_association = EnumValueType(AuthorAssociation, required=True)
     reactions = ModelType(Reactions, serialize_when_none=False)
     pull_request = ModelType(PullRequest, serialize_when_none=False)

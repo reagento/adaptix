@@ -40,23 +40,23 @@ from ..definitions import (
     create_attr_accessor,
 )
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class IdWrapper(Generic[T]):
     def __init__(self, value):
         self.value = value
 
-    def __eq__(self, other: Any):
+    def __eq__(self, other: object):
         if isinstance(other, IdWrapper):
             return self.value is other.value
         return NotImplemented
 
     def __repr__(self):
-        return f'{type(self).__name__}({self.value})'
+        return f"{type(self).__name__}({self.value})"
 
 
-def _is_context_sensitive(default: 'CallableColumnDefault'):
+def _is_context_sensitive(default: "CallableColumnDefault"):
     try:
         wrapped_callable = default.arg.__wrapped__  # type: ignore[attr-defined]
     except AttributeError:
@@ -72,7 +72,7 @@ def _unwrap_mapped_annotation(type_hint: TypeHint) -> TypeHint:
     return type_hint
 
 
-def _get_type_for_column(column: 'ColumnElement', type_hints: Mapping[str, TypeHint]):
+def _get_type_for_column(column: "ColumnElement", type_hints: Mapping[str, TypeHint]):
     try:
         return _unwrap_mapped_annotation(type_hints[column.name])
     except KeyError:
@@ -81,7 +81,7 @@ def _get_type_for_column(column: 'ColumnElement', type_hints: Mapping[str, TypeH
         return column.type.python_type
 
 
-def _get_type_for_relationship(relationship: 'RelationshipProperty', type_hints: Mapping[str, TypeHint]):
+def _get_type_for_relationship(relationship: "RelationshipProperty", type_hints: Mapping[str, TypeHint]):
     try:
         return _unwrap_mapped_annotation(type_hints[relationship.key])
     except KeyError:
@@ -90,7 +90,7 @@ def _get_type_for_relationship(relationship: 'RelationshipProperty', type_hints:
         return Optional[relationship.entity.class_]
 
 
-def _get_default(column_default: 'Optional[DefaultGenerator]'):
+def _get_default(column_default: "Optional[DefaultGenerator]"):
     if isinstance(column_default, CallableColumnDefault):
         if _is_context_sensitive(column_default):
             return NoDefault()
@@ -100,7 +100,7 @@ def _get_default(column_default: 'Optional[DefaultGenerator]'):
     return NoDefault()
 
 
-def _is_input_required_for_column(column: 'ColumnElement', autoincrement_column: 'Optional[Column[int]]'):
+def _is_input_required_for_column(column: "ColumnElement", autoincrement_column: "Optional[Column[int]]"):
     return not (
         # columns constrained by FK are not required since they can be specified by instances
         column.default is not None
@@ -111,7 +111,7 @@ def _is_input_required_for_column(column: 'ColumnElement', autoincrement_column:
     )
 
 
-def _get_autoincrement_column(table: 'Table'):
+def _get_autoincrement_column(table: "Table"):
     try:
         return table.autoincrement_column
     except AttributeError:
@@ -121,9 +121,9 @@ def _get_autoincrement_column(table: 'Table'):
 
 def _get_input_shape(
     tp: TypeHint,
-    table: 'Table',
-    columns: 'ColumnCollection',
-    relationships: 'ReadOnlyProperties[RelationshipProperty[Any]]',
+    table: "Table",
+    columns: "ColumnCollection",
+    relationships: "ReadOnlyProperties[RelationshipProperty[Any]]",
     type_hints: Mapping[str, TypeHint],
 ) -> InputShape:
     # FromClause has no autoincrement_column
@@ -139,14 +139,14 @@ def _get_input_shape(
                 is_required=_is_input_required_for_column(column, autoincrement_column),
                 metadata=column.info,
                 original=IdWrapper(column),
-            )
+            ),
         )
         params.append(
             Param(
                 field_id=column.key,
                 name=column.key,
                 kind=ParamKind.KW_ONLY,
-            )
+            ),
         )
 
     for relationship in relationships:
@@ -163,14 +163,14 @@ def _get_input_shape(
                 is_required=False,
                 metadata={},
                 original=relationship,
-            )
+            ),
         )
         params.append(
             Param(
                 field_id=relationship.key,
                 name=relationship.key,
-                kind=ParamKind.KW_ONLY
-            )
+                kind=ParamKind.KW_ONLY,
+            ),
         )
 
     return InputShape(
@@ -178,13 +178,13 @@ def _get_input_shape(
         fields=tuple(fields),
         overriden_types=frozenset(),
         kwargs=None,
-        params=tuple(params)
+        params=tuple(params),
     )
 
 
 def _get_output_shape(
-    columns: 'ColumnCollection',
-    relationships: 'ReadOnlyProperties[RelationshipProperty[Any]]',
+    columns: "ColumnCollection",
+    relationships: "ReadOnlyProperties[RelationshipProperty[Any]]",
     type_hints: Mapping[str, TypeHint],
 ) -> OutputShape:
     output_fields = [
@@ -194,7 +194,7 @@ def _get_output_shape(
             default=_get_default(column.default),
             metadata=column.info,
             original=IdWrapper(column),
-            accessor=create_attr_accessor(column.name, is_required=True)
+            accessor=create_attr_accessor(column.name, is_required=True),
         )
         for column in columns
     ]
@@ -211,12 +211,12 @@ def _get_output_shape(
                 default=NoDefault(),
                 metadata={},
                 original=relationship,
-                accessor=create_attr_accessor(relationship.key, is_required=True)
-            )
+                accessor=create_attr_accessor(relationship.key, is_required=True),
+            ),
         )
     return OutputShape(
         fields=tuple(output_fields),
-        overriden_types=frozenset()
+        overriden_types=frozenset(),
     )
 
 
@@ -236,7 +236,7 @@ def get_sqlalchemy_shape(tp) -> FullShape:
 
     if not isinstance(mapper.local_table, Table):
         raise ClarifiedIntrospectionImpossible(
-            'Only sqlalchemy mapping to Table is supported'
+            "Only sqlalchemy mapping to Table is supported",
         )
 
     type_hints = get_all_type_hints(tp)
@@ -246,11 +246,11 @@ def get_sqlalchemy_shape(tp) -> FullShape:
             table=mapper.local_table,
             columns=mapper.columns,
             relationships=mapper.relationships,
-            type_hints=type_hints
+            type_hints=type_hints,
         ),
         output=_get_output_shape(
             columns=mapper.columns,
             relationships=mapper.relationships,
             type_hints=type_hints,
-        )
+        ),
     )

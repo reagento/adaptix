@@ -8,7 +8,7 @@ from ..provider.loc_stack_filtering import ExactOriginLSC
 from ..provider.provider_wrapper import ProviderWithLSC, RequestClassDeterminedProvider
 from ..provider.request_cls import LocatedRequest, TypeHintLoc, try_normalize_type
 
-T = TypeVar('T')
+T = TypeVar("T")
 ProvideCallable = Callable[[Mediator, Request[T]], T]
 SearchResult = Tuple[ProvideCallable[T], int]
 
@@ -39,7 +39,7 @@ class RawRecipeSearcher(RecipeSearcher):
     def search_candidates(self, search_offset: int, request: Request) -> Iterable[SearchResult]:
         for i, provider in enumerate(
             islice(self.recipe, search_offset, None),
-            start=search_offset
+            start=search_offset,
         ):
             yield provider.apply_provider, i + 1
 
@@ -107,11 +107,11 @@ class ExactOriginMergedProvider(Provider):
 
     def apply_provider(self, mediator: Mediator[T], request: Request[T]) -> T:
         if not isinstance(request, LocatedRequest):
-            raise CannotProvide(f'Request must be instance of {LocatedRequest}')
+            raise CannotProvide(f"Request must be instance of {LocatedRequest}")
 
         loc = request.last_map.get_or_raise(
             TypeHintLoc,
-            lambda: CannotProvide(f'Request location must be instance of {TypeHintLoc}')
+            lambda: CannotProvide(f"Request location must be instance of {TypeHintLoc}"),
         )
         norm = try_normalize_type(loc.type)
         try:
@@ -137,7 +137,7 @@ class IntrospectingRecipeSearcher(RecipeSearcher):
 
         for i, provider in enumerate(
             islice(sub_recipe, search_offset, None),
-            start=search_offset
+            start=search_offset,
         ):
             yield provider.apply_provider, i + 1
 

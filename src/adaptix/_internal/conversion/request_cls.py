@@ -18,8 +18,8 @@ class LinkingSource(ImmutableStack[LinkingSourceItem]):
         return LocStack.from_iter(
             chain(
                 (base_field_to_loc_map(self.head), ),
-                map(output_field_to_loc_map, self.tail)
-            )
+                map(output_field_to_loc_map, self.tail),
+            ),
         )
 
     @property

@@ -156,7 +156,7 @@ def test_nested(src_model_spec, dst_model_spec, factory_way):
             field1=1,
             field2=2,
             nested=SourceModelNested(field1=3),
-        )
+        ),
     ) == DestModel(
         field1=1,
         field2=2,
@@ -200,7 +200,7 @@ def test_same_nested(src_model_spec, dst_model_spec, factory_way):
             field2=2,
             nested1=SourceModelNested(field1=3),
             nested2=SourceModelNested(field1=4),
-        )
+        ),
     ) == DestModel(
         field1=1,
         field2=2,
@@ -216,7 +216,7 @@ def test_annotated_ignoring(src_model_spec, dst_model_spec, factory_way):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: Any
-        field2: Annotated[Any, 'meta']
+        field2: Annotated[Any, "meta"]
 
     @dst_model_spec.decorator
     class DestModel(*dst_model_spec.bases):
@@ -233,7 +233,7 @@ def test_annotated_ignoring(src_model_spec, dst_model_spec, factory_way):
     assert convert(SourceModel(field1=1, field2=2)) == DestModel(field1=1, field2=2)
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @only_generic_models

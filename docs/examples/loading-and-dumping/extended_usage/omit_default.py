@@ -17,8 +17,8 @@ retort = Retort(
             Book,
             omit_default=True,
         ),
-    ]
+    ],
 )
 
-book = Book(title='Fahrenheit 451')
-assert retort.dump(book) == {'title': 'Fahrenheit 451'}
+book = Book(title="Fahrenheit 451")
+assert retort.dump(book) == {"title": "Fahrenheit 451"}

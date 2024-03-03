@@ -83,6 +83,7 @@ class ModelLoaderProvider(LoaderProvider):
 
     def _create_model_loader_gen(
         self,
+        *,
         debug_trail: DebugTrail,
         strict_coercion: bool,
         shape: InputShape,
@@ -108,19 +109,19 @@ class ModelLoaderProvider(LoaderProvider):
             if isinstance(tp, type):
                 return tp.__name__
             return str(tp)
-        return ''
+        return ""
 
     def _merge_view_string(self, *fragments: str) -> str:
-        return '_'.join(filter(None, fragments))
+        return "_".join(filter(None, fragments))
 
     def _get_file_name(self, request: LoaderRequest) -> str:
         return self._merge_view_string(
-            'model_loader', self._request_to_view_string(request),
+            "model_loader", self._request_to_view_string(request),
         )
 
     def _get_closure_name(self, request: LoaderRequest) -> str:
         return self._merge_view_string(
-            'model_loader', self._name_sanitizer.sanitize(self._request_to_view_string(request)),
+            "model_loader", self._name_sanitizer.sanitize(self._request_to_view_string(request)),
         )
 
     def _get_compiler(self) -> ClosureCompiler:
@@ -135,7 +136,7 @@ class ModelLoaderProvider(LoaderProvider):
                 loc_stack=request.loc_stack,
                 shape=shape,
             ),
-            lambda x: 'Cannot create loader for model. Cannot fetch InputNameLayout',
+            lambda x: "Cannot create loader for model. Cannot fetch InputNameLayout",
         )
 
     def _fetch_field_loaders(
@@ -166,7 +167,7 @@ class ModelLoaderProvider(LoaderProvider):
         ]
         if skipped_required_fields:
             raise ValueError(
-                f"Required fields {skipped_required_fields} are skipped"
+                f"Required fields {skipped_required_fields} are skipped",
             )
 
         if name_layout.extra_move is None and has_collect_policy(name_layout.crown):
@@ -178,7 +179,7 @@ class ModelLoaderProvider(LoaderProvider):
         extra_targets_at_crown = get_extra_targets_at_crown(name_layout)
         if extra_targets_at_crown:
             raise ValueError(
-                f"Extra targets {extra_targets_at_crown} are found at crown"
+                f"Extra targets {extra_targets_at_crown} are found at crown",
             )
 
         optional_fields_at_list_crown = get_optional_fields_at_list_crown(
@@ -187,13 +188,13 @@ class ModelLoaderProvider(LoaderProvider):
         )
         if optional_fields_at_list_crown:
             raise ValueError(
-                f"Optional fields {optional_fields_at_list_crown} are found at list crown"
+                f"Optional fields {optional_fields_at_list_crown} are found at list crown",
             )
 
         wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)
         if wild_extra_targets:
             raise ValueError(
-                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
+                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields",
             )
 
 

@@ -176,7 +176,7 @@ retort = Retort(
         name_mapping(HttpRequestContext, name_style=NameStyle.CAMEL),
         loader(P[HttpRequest].body, process_json_body, Chain.FIRST),
         loader(P[HttpRequest].query_string_parameters, fix_empty_query, Chain.FIRST),
-    ]
+    ],
 )
 
 INPUT_DATA = {
@@ -189,32 +189,32 @@ INPUT_DATA = {
         "Host": "127.0.0.1:3000",
         "User-Agent": "curl/7.68.0",
         "X-Forwarded-Port": "3000",
-        "X-Forwarded-Proto": "http"
+        "X-Forwarded-Proto": "http",
     },
     "httpMethod": "POST",
     "isBase64Encoded": False,
     "multiValueHeaders": {
         "Accept": [
-            "*/*"
+            "*/*",
         ],
         "Content-Length": [
-            "26"
+            "26",
         ],
         "Content-Type": [
-            "application/x-www-form-urlencoded"
+            "application/x-www-form-urlencoded",
         ],
         "Host": [
-            "127.0.0.1:3000"
+            "127.0.0.1:3000",
         ],
         "User-Agent": [
-            "curl/7.68.0"
+            "curl/7.68.0",
         ],
         "X-Forwarded-Port": [
-            "3000"
+            "3000",
         ],
         "X-Forwarded-Proto": [
-            "http"
-        ]
+            "http",
+        ],
     },
     "multiValueQueryStringParameters": None,
     "path": "/phagehits",
@@ -236,7 +236,7 @@ INPUT_DATA = {
             "sourceIp": "127.0.0.1",
             "user": None,
             "userAgent": "Custom User Agent String",
-            "userArn": None
+            "userArn": None,
         },
         "path": "/phagehits",
         "protocol": "HTTP/1.1",
@@ -245,11 +245,11 @@ INPUT_DATA = {
         "requestTimeEpoch": 1642682009,
         "resourceId": "123456",
         "resourcePath": "/filter",
-        "stage": "Prod"
+        "stage": "Prod",
     },
     "resource": "/filter",
     "stageVariables": None,
-    "version": "1.0"
+    "version": "1.0",
 }
 
 
@@ -260,45 +260,45 @@ def test_phage_hits_filter_request():
     )
     assert result == HttpRequest(
         headers={
-            'Accept': '*/*',
-            'Content-Length': '26',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Host': '127.0.0.1:3000',
-            'User-Agent': 'curl/7.68.0',
-            'X-Forwarded-Port': '3000',
-            'X-Forwarded-Proto': 'http'
+            "Accept": "*/*",
+            "Content-Length": "26",
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Host": "127.0.0.1:3000",
+            "User-Agent": "curl/7.68.0",
+            "X-Forwarded-Port": "3000",
+            "X-Forwarded-Proto": "http",
         },
-        http_method='POST',
+        http_method="POST",
         request_context=HttpRequestContext(
-            account_id='123456789012',
-            api_id='1234567890',
+            account_id="123456789012",
+            api_id="1234567890",
             identity={
-                'accountId': None,
-                'apiKey': None,
-                'caller': None,
-                'cognitoAuthenticationProvider': None,
-                'cognitoAuthenticationType': None,
-                'cognitoIdentityPoolId': None,
-                'sourceIp': '127.0.0.1',
-                'user': None,
-                'userAgent': 'Custom User Agent String',
-                'userArn': None,
+                "accountId": None,
+                "apiKey": None,
+                "caller": None,
+                "cognitoAuthenticationProvider": None,
+                "cognitoAuthenticationType": None,
+                "cognitoIdentityPoolId": None,
+                "sourceIp": "127.0.0.1",
+                "user": None,
+                "userAgent": "Custom User Agent String",
+                "userArn": None,
             },
-            path='/phagehits',
-            protocol='HTTP/1.1',
-            request_id='fc030cd1-4463-405d-8c7c-27111faa2d97',
-            resource_id='123456',
-            resource_path='/filter',
-            stage='Prod',
+            path="/phagehits",
+            protocol="HTTP/1.1",
+            request_id="fc030cd1-4463-405d-8c7c-27111faa2d97",
+            resource_id="123456",
+            resource_path="/filter",
+            stage="Prod",
         ),
-        path='/phagehits',
-        resource='/filter',
+        path="/phagehits",
+        resource="/filter",
         body=PhageHitsFilterRequest(
             filters={
-                'hit_strength': MinMax(min_value=20.0, max_value=50.0),
-                'samples': {
-                    'competitor': 'abc',
-                    'concentration': MinMax(min_value=1.2, max_value=None)
+                "hit_strength": MinMax(min_value=20.0, max_value=50.0),
+                "samples": {
+                    "competitor": "abc",
+                    "concentration": MinMax(min_value=1.2, max_value=None),
                 },
             },
             sort=SortingParams(
@@ -306,7 +306,7 @@ def test_phage_hits_filter_request():
                 order=Order.desc,
                 sort_key=None,
             ),
-            pagination=PagingRequest(offset=0, limit=20)
+            pagination=PagingRequest(offset=0, limit=20),
         ),
         path_parameters=None,
         query_string_parameters={},

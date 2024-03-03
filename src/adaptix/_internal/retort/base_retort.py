@@ -14,23 +14,23 @@ class RetortMeta(ABCMeta):  # inherits from ABCMeta to be compatible with ABC
 
     def __new__(mcs, name, bases, namespace, **kwargs):
         try:
-            _cls_recipe = tuple(namespace.get('recipe', []))
+            _cls_recipe = tuple(namespace.get("recipe", []))
         except TypeError:
             raise TypeError("Recipe attributes must be Iterable[Provider]") from None
 
         if not all(isinstance(el, Provider) for el in _cls_recipe):
             raise TypeError("Recipe attributes must be Iterable[Provider]")
 
-        namespace['_own_class_recipe'] = _cls_recipe
-        namespace['recipe'] = ForbiddingDescriptor()
+        namespace["_own_class_recipe"] = _cls_recipe
+        namespace["recipe"] = ForbiddingDescriptor()
         return super().__new__(mcs, name, bases, namespace, **kwargs)
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
-    recipe: Iterable[Provider] = []
+    recipe: ClassVar[Iterable[Provider]] = []
     _full_class_recipe: ClassVar[VarTuple[Provider]]
 
     def __init_subclass__(cls, **kwargs):

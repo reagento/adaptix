@@ -1,4 +1,5 @@
 # pylint: disable=invalid-name,import-error
+# ruff: noqa: FBT002
 import shlex
 from pathlib import Path
 from typing import Union
@@ -13,10 +14,10 @@ def q(value: Union[Path, str]) -> str:
 @task
 def cov(c: Context):
     inner_bash_command = q(
-        'coverage run'
-        ' --branch'
-        ' --data-file=.tox/cov-storage/.coverage.$TOX_ENV_NAME'
-        ' -m pytest'
+        "coverage run"
+        " --branch"
+        " --data-file=.tox/cov-storage/.coverage.$TOX_ENV_NAME"
+        " -m pytest",
     )
     tox_commands = f"bash -c '{q(inner_bash_command)}'"
     c.run(
@@ -26,27 +27,27 @@ def cov(c: Context):
         f" --override 'testenv.commands={tox_commands}'",
         pty=True,
     )
-    c.run('coverage combine --data-file .tox/cov-storage/.coverage .tox/cov-storage')
-    c.run('coverage xml --data-file .tox/cov-storage/.coverage')
+    c.run("coverage combine --data-file .tox/cov-storage/.coverage .tox/cov-storage")
+    c.run("coverage xml --data-file .tox/cov-storage/.coverage")
 
 
 @task
 def deps_compile(c: Context, upgrade=False):
-    extra = ''
+    extra = ""
     if upgrade:
-        extra += ' --upgrade'
+        extra += " --upgrade"
     promises = [
         c.run(
             f'pip-compile {req} -o {Path("requirements") / req.name}'
             ' -q --allow-unsafe --strip-extras' + extra,
             asynchronous=True,
         )
-        for req in Path('.').glob('requirements/raw/*.txt')
-        if not req.name.startswith('_')
+        for req in Path(".").glob("requirements/raw/*.txt")
+        if not req.name.startswith("_")
     ]
     for promise in promises:
         promise.join()
 
-    for file in Path('.').glob('requirements/*.txt'):
+    for file in Path(".").glob("requirements/*.txt"):
         c.run(fr'sed -i -E "s/-e file:.+\/tests\/tests_helpers/-e .\/tests\/tests_helpers/" {file}')
         c.run(fr'sed -i -E "s/-e file:.+\/benchmarks/-e .\/benchmarks/" {file}')

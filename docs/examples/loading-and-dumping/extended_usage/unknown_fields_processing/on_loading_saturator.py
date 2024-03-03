@@ -26,7 +26,7 @@ def attr_saturator(model: Book, extra_data: Mapping[str, Any]) -> None:
 retort = Retort(
     recipe=[
         name_mapping(Book, extra_in=attr_saturator),
-    ]
+    ],
 )
 
 book = retort.load(data, Book)

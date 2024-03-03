@@ -9,9 +9,9 @@ from benchmarks.pybench.utils import load_by_object_ref
 
 
 def main():
-    bench_name = os.environ['PYBENCH_NAME']
-    func = load_by_object_ref(os.environ['PYBENCH_ENTRYPOINT'])
-    params = json.loads(os.environ['PYBENCH_PARAMS'])
+    bench_name = os.environ["PYBENCH_NAME"]
+    func = load_by_object_ref(os.environ["PYBENCH_ENTRYPOINT"])
+    params = json.loads(os.environ["PYBENCH_PARAMS"])
 
     benchmark_plan = func(*params)
 
@@ -24,5 +24,5 @@ def main():
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

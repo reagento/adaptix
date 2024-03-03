@@ -14,7 +14,7 @@ from benchmarks.gh_issues.common import (
 )
 from benchmarks.pybench.bench_api import benchmark_plan
 
-reactions_rename = {'plus_one': '+1', 'minus_one': '-1'}
+reactions_rename = {"plus_one": "+1", "minus_one": "-1"}
 
 
 class SimpleUser(msgspec.Struct, omit_defaults=True):
@@ -200,7 +200,7 @@ class GetRepoIssuesResponseNoGC(msgspec.Struct, gc=False):
 
 
 
-@pytest.mark.parametrize('strict', [False, True])
+@pytest.mark.parametrize("strict", [False, True])
 def test_loading(strict):
     assert (
         msgspec.convert(create_dumped_response(), GetRepoIssuesResponse, strict=strict)
@@ -238,7 +238,7 @@ def test_dumping():
                 PullRequest,
                 Label,
                 SimpleUser,
-            )
+            ),
         )
         ==
         create_dumped_response()
@@ -252,7 +252,7 @@ def test_dumping():
                 PullRequestNoGC,
                 LabelNoGC,
                 SimpleUserNoGC,
-            )
+            ),
         )
         ==
         create_dumped_response()

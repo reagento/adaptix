@@ -45,10 +45,9 @@ def provide_overlay_schema(recipe: Iterable[Provider], provide_action: Callable[
         recipe=[
             *recipe,
             SampleRequestProvider(provide_action),
-        ]
+        ],
     )
-    result = retort.provide(SampleRequest())
-    return result
+    return retort.provide(SampleRequest())
 
 
 def test_simple():
@@ -58,16 +57,16 @@ def test_simple():
                 overlays=[
                     MyOverlay(
                         number=1,
-                        char_list=('a', 'b'),
-                    )
+                        char_list=("a", "b"),
+                    ),
                 ],
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap()))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap())),
     ) == MySchema(
         number=1,
-        char_list=('a', 'b'),
+        char_list=("a", "b"),
     )
 
 
@@ -78,8 +77,8 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=1,
-                        char_list=('a', 'b'),
-                    )
+                        char_list=("a", "b"),
+                    ),
                 ],
                 chain=Chain.FIRST,
             ),
@@ -87,16 +86,16 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=('c', 'd'),
-                    )
+                        char_list=("c", "d"),
+                    ),
                 ],
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap()))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap())),
     ) == MySchema(
         number=1,
-        char_list=('a', 'b', 'c', 'd'),
+        char_list=("a", "b", "c", "d"),
     )
 
     assert provide_overlay_schema(
@@ -105,8 +104,8 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=1,
-                        char_list=('a', 'b'),
-                    )
+                        char_list=("a", "b"),
+                    ),
                 ],
                 chain=Chain.LAST,
             ),
@@ -114,16 +113,16 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=('c', 'd'),
-                    )
+                        char_list=("c", "d"),
+                    ),
                 ],
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap()))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap())),
     ) == MySchema(
         number=2,
-        char_list=('c', 'd', 'a', 'b'),
+        char_list=("c", "d", "a", "b"),
     )
 
     assert provide_overlay_schema(
@@ -132,8 +131,8 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=Omitted(),
-                        char_list=('a', 'b'),
-                    )
+                        char_list=("a", "b"),
+                    ),
                 ],
                 chain=Chain.FIRST,
             ),
@@ -141,16 +140,16 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=('c', 'd'),
-                    )
+                        char_list=("c", "d"),
+                    ),
                 ],
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap()))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap())),
     ) == MySchema(
         number=2,
-        char_list=('a', 'b', 'c', 'd'),
+        char_list=("a", "b", "c", "d"),
     )
 
     assert provide_overlay_schema(
@@ -160,7 +159,7 @@ def test_chaining():
                     MyOverlay(
                         number=1,
                         char_list=Omitted(),
-                    )
+                    ),
                 ],
                 chain=Chain.FIRST,
             ),
@@ -168,16 +167,16 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=('c', 'd'),
-                    )
+                        char_list=("c", "d"),
+                    ),
                 ],
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap()))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap())),
     ) == MySchema(
         number=1,
-        char_list=('c', 'd'),
+        char_list=("c", "d"),
     )
 
     assert provide_overlay_schema(
@@ -187,7 +186,7 @@ def test_chaining():
                     MyOverlay(
                         number=Omitted(),
                         char_list=Omitted(),
-                    )
+                    ),
                 ],
                 chain=Chain.FIRST,
             ),
@@ -195,16 +194,16 @@ def test_chaining():
                 overlays=[
                     MyOverlay(
                         number=2,
-                        char_list=('c', 'd'),
-                    )
+                        char_list=("c", "d"),
+                    ),
                 ],
                 chain=None,
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap()))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap())),
     ) == MySchema(
         number=2,
-        char_list=('c', 'd'),
+        char_list=("c", "d"),
     )
 
 
@@ -225,8 +224,8 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=1,
-                            char_list=('a', 'b'),
-                        )
+                            char_list=("a", "b"),
+                        ),
                     ],
                     chain=None,
                 ),
@@ -237,17 +236,17 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=2,
-                            char_list=('c', 'd'),
-                        )
+                            char_list=("c", "d"),
+                        ),
                     ],
                     chain=None,
                 ),
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap(TypeHintLoc(type=MyClass2))))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap(TypeHintLoc(type=MyClass2)))),
     ) == MySchema(
         number=1,
-        char_list=('a', 'b', 'c', 'd'),
+        char_list=("a", "b", "c", "d"),
     )
 
     assert provide_overlay_schema(
@@ -258,8 +257,8 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=1,
-                            char_list=('a', 'b'),
-                        )
+                            char_list=("a", "b"),
+                        ),
                     ],
                     chain=None,
                 ),
@@ -270,8 +269,8 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=2,
-                            char_list=('c', 'd'),
-                        )
+                            char_list=("c", "d"),
+                        ),
                     ],
                     chain=Chain.FIRST,
                 ),
@@ -282,24 +281,24 @@ def test_typehint_location():
                     overlays=[
                         MyOverlay(
                             number=3,
-                            char_list=('e', 'f'),
-                        )
+                            char_list=("e", "f"),
+                        ),
                     ],
                     chain=None,
                 ),
             ),
         ],
-        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap(TypeHintLoc(type=MyClass2))))
+        provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap(TypeHintLoc(type=MyClass2)))),
     ) == MySchema(
         number=1,
-        char_list=('a', 'b', 'c', 'd', 'e', 'f'),
+        char_list=("a", "b", "c", "d", "e", "f"),
     )
 
 
 def test_omitted_fields():
     with pytest.raises(
         ValueError,
-        match=full_match_regex_str("Can not create schema because overlay contains omitted values at ['number']")
+        match=full_match_regex_str("Can not create schema because overlay contains omitted values at ['number']"),
     ):
         provide_overlay_schema(
             recipe=[
@@ -307,8 +306,8 @@ def test_omitted_fields():
                     overlays=[
                         MyOverlay(
                             number=Omitted(),
-                            char_list=('a', 'b'),
-                        )
+                            char_list=("a", "b"),
+                        ),
                     ],
                     chain=Chain.FIRST,
                 ),
@@ -316,11 +315,11 @@ def test_omitted_fields():
                     overlays=[
                         MyOverlay(
                             number=Omitted(),
-                            char_list=('c', 'd'),
-                        )
+                            char_list=("c", "d"),
+                        ),
                     ],
                     chain=None,
                 ),
             ],
-            provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap()))
+            provide_action=lambda m: provide_schema(MyOverlay, m, LocStack(LocMap())),
         )

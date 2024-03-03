@@ -54,8 +54,8 @@ class DictNameMappingProvider(StaticProvider):
         invalid_keys = [key for key in self._name_map if not is_valid_field_id(key)]
         if invalid_keys:
             raise ValueError(
-                'Keys of dict name mapping must be valid field_id (valid python identifier).'
-                f' Keys {invalid_keys!r} does not meet this condition.'
+                "Keys of dict name mapping must be valid field_id (valid python identifier)."
+                f" Keys {invalid_keys!r} does not meet this condition.",
             )
 
     @static_provision_action

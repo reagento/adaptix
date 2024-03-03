@@ -19,7 +19,7 @@ from ..model.crown_definitions import (
     Sieve,
 )
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 ExtraIn = Union[ExtraSkip, str, Iterable[str], ExtraForbid, ExtraKwargs, Saturator]

@@ -15,7 +15,7 @@ class Book:
 retort = Retort(
     recipe=[
         name_mapping(Book, extra_out=["extra1", "extra2"]),
-    ]
+    ],
 )
 
 book = Book(

@@ -167,7 +167,7 @@ def make_layouts(
             ValueProvider(OutputShapeRequest, output_shape),
             ModelLoaderProvider(),
             ModelDumperProvider(),
-        ]
+        ],
     ).replace(
         strict_coercion=True,
         debug_trail=DebugTrail.ALL,
@@ -187,12 +187,12 @@ def make_layouts(
     retort.provide(
         LoaderRequest(
             loc_stack=LocStack(loc_map),
-        )
+        ),
     )
     retort.provide(
         DumperRequest(
             loc_stack=LocStack(loc_map),
-        )
+        ),
     )
     return Layouts(inp_name_layout, out_name_layout)
 
@@ -213,18 +213,18 @@ DEFAULT_NAME_MAPPING = name_mapping(
 
 def test_default_parameters():
     layouts = make_layouts(
-        TestField('a'),
-        TestField('b_'),
-        TestField('c_', default=DefaultValue(0)),
+        TestField("a"),
+        TestField("b_"),
+        TestField("c_", default=DefaultValue(0)),
         DEFAULT_NAME_MAPPING,
     )
     assert layouts == Layouts(
         InputNameLayout(
             crown=InpDictCrown(
                 map={
-                    'a': InpFieldCrown('a'),
-                    'b': InpFieldCrown('b_'),
-                    'c': InpFieldCrown('c_'),
+                    "a": InpFieldCrown("a"),
+                    "b": InpFieldCrown("b_"),
+                    "c": InpFieldCrown("c_"),
                 },
                 extra_policy=ExtraSkip(),
             ),
@@ -233,9 +233,9 @@ def test_default_parameters():
         OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    'a': OutFieldCrown('a'),
-                    'b': OutFieldCrown('b_'),
-                    'c': OutFieldCrown('c_'),
+                    "a": OutFieldCrown("a"),
+                    "b": OutFieldCrown("b_"),
+                    "c": OutFieldCrown("c_"),
                 },
                 sieves={},
             ),
@@ -251,14 +251,14 @@ def assert_flat_name_mapping(
     layouts = make_layouts(
         *[
             TestField(field_name, is_required=False)
-            for field_name in mapping.keys()
+            for field_name in mapping
         ],
         provider,
         DEFAULT_NAME_MAPPING,
     )
     assert {
-        crown.id: key  # type: ignore
-        for key, crown in layouts.inp.crown.map.items()  # type: ignore
+        crown.id: key
+        for key, crown in layouts.inp.crown.map.items()
     } == {
         key: mapped_key
         for key, mapped_key in mapping.items()
@@ -274,10 +274,10 @@ def test_name_mutating():
             name_style=NameStyle.UPPER,
         ),
         {
-            'a': 'A',
-            'b': 'B',
-            'c_': 'C',
-            'd__': 'D__',
+            "a": "A",
+            "b": "B",
+            "c_": "C",
+            "d__": "D__",
         },
     )
     assert_flat_name_mapping(
@@ -287,36 +287,36 @@ def test_name_mutating():
             name_style=NameStyle.UPPER,
         ),
         {
-            'a': 'A',
-            'b': 'B',
-            'c_': 'C_',
-            'd__': 'D__',
+            "a": "A",
+            "b": "B",
+            "c_": "C_",
+            "d__": "D__",
         },
     )
     assert_flat_name_mapping(
         name_mapping(
-            map={'a': 'z'},
+            map={"a": "z"},
             trim_trailing_underscore=True,
             name_style=NameStyle.UPPER,
         ),
         {
-            'a': 'z',
-            'b': 'B',
-            'c_': 'C',
-            'd__': 'D__',
+            "a": "z",
+            "b": "B",
+            "c_": "C",
+            "d__": "D__",
         },
     )
     assert_flat_name_mapping(
         name_mapping(
-            map={'a': 'z', 'c_': 'y'},
+            map={"a": "z", "c_": "y"},
             trim_trailing_underscore=True,
             name_style=NameStyle.UPPER,
         ),
         {
-            'a': 'z',
-            'b': 'B',
-            'c_': 'y',
-            'd__': 'D__',
+            "a": "z",
+            "b": "B",
+            "c_": "y",
+            "d__": "D__",
         },
     )
 
@@ -324,58 +324,58 @@ def test_name_mutating():
 def test_name_filtering():
     assert_flat_name_mapping(
         name_mapping(
-            skip=['a', 'xxx'],
+            skip=["a", "xxx"],
             only=P.ANY,
             map={},
         ),
         {
-            'a': None,
-            'b': 'b',
-            'c': 'c',
+            "a": None,
+            "b": "b",
+            "c": "c",
         },
     )
     assert_flat_name_mapping(
         name_mapping(
             skip=[],
-            only=['a'],
+            only=["a"],
             map={},
         ),
         {
-            'a': 'a',
-            'b': None,
-            'c': None,
+            "a": "a",
+            "b": None,
+            "c": None,
         },
     )
     assert_flat_name_mapping(
         name_mapping(
-            skip=['b'],
+            skip=["b"],
             only=P.ANY,
             map={},
         ),
         {
-            'a': 'a',
-            'b': None,
-            'c': 'c',
+            "a": "a",
+            "b": None,
+            "c": "c",
         },
     )
     assert_flat_name_mapping(
         name_mapping(
-            skip=['b'],
-            only=['a', 'b'],
+            skip=["b"],
+            only=["a", "b"],
             map={},
         ),
         {
-            'a': 'a',
-            'b': None,
-            'c': None,
+            "a": "a",
+            "b": None,
+            "c": None,
         },
     )
 
 
 def test_as_list():
     assert make_layouts(
-        TestField('a'),
-        TestField('b'),
+        TestField("a"),
+        TestField("b"),
         name_mapping(
             map={},
             as_list=True,
@@ -385,32 +385,32 @@ def test_as_list():
         inp=InputNameLayout(
             crown=InpListCrown(
                 map=[
-                    InpFieldCrown(id='a'),
-                    InpFieldCrown(id='b'),
+                    InpFieldCrown(id="a"),
+                    InpFieldCrown(id="b"),
                 ],
-                extra_policy=ExtraSkip()
+                extra_policy=ExtraSkip(),
             ),
             extra_move=None,
         ),
         out=OutputNameLayout(
             crown=OutListCrown(
                 map=[
-                    OutFieldCrown(id='a'),
-                    OutFieldCrown(id='b')
-                ]
+                    OutFieldCrown(id="a"),
+                    OutFieldCrown(id="b"),
+                ],
             ),
-            extra_move=None
-        )
+            extra_move=None,
+        ),
     )
 
     assert make_layouts(
-        TestField('a'),
-        TestField('b'),
-        TestField('c'),
+        TestField("a"),
+        TestField("b"),
+        TestField("c"),
         name_mapping(
             map={
-                'a': 1,
-                'b': 0,
+                "a": 1,
+                "b": 0,
             },
             as_list=True,
         ),
@@ -419,35 +419,35 @@ def test_as_list():
         inp=InputNameLayout(
             crown=InpListCrown(
                 map=[
-                    InpFieldCrown(id='b'),
-                    InpFieldCrown(id='a'),
-                    InpFieldCrown(id='c'),
+                    InpFieldCrown(id="b"),
+                    InpFieldCrown(id="a"),
+                    InpFieldCrown(id="c"),
                 ],
-                extra_policy=ExtraSkip()
+                extra_policy=ExtraSkip(),
             ),
             extra_move=None,
         ),
         out=OutputNameLayout(
             crown=OutListCrown(
                 map=[
-                    OutFieldCrown(id='b'),
-                    OutFieldCrown(id='a'),
-                    OutFieldCrown(id='c')
-                ]
+                    OutFieldCrown(id="b"),
+                    OutFieldCrown(id="a"),
+                    OutFieldCrown(id="c"),
+                ],
             ),
-            extra_move=None
-        )
+            extra_move=None,
+        ),
     )
 
 
 def test_map_via_pred():
     assert make_layouts(
-        TestField('a'),
-        TestField('b'),
-        TestField('c'),
+        TestField("a"),
+        TestField("b"),
+        TestField("c"),
         name_mapping(
             map=[
-                ('a|b', ('foo', ...))
+                ("a|b", ("foo", ...)),
             ],
         ),
         DEFAULT_NAME_MAPPING,
@@ -455,14 +455,14 @@ def test_map_via_pred():
         inp=InputNameLayout(
             crown=InpDictCrown(
                 map={
-                    'foo': InpDictCrown(
+                    "foo": InpDictCrown(
                         map={
-                            'a': InpFieldCrown('a'),
-                            'b': InpFieldCrown('b'),
+                            "a": InpFieldCrown("a"),
+                            "b": InpFieldCrown("b"),
                         },
                         extra_policy=ExtraSkip(),
                     ),
-                    'c': InpFieldCrown('c'),
+                    "c": InpFieldCrown("c"),
                 },
                 extra_policy=ExtraSkip(),
             ),
@@ -471,34 +471,34 @@ def test_map_via_pred():
         out=OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    'foo': OutDictCrown(
+                    "foo": OutDictCrown(
                         map={
-                            'a': OutFieldCrown('a'),
-                            'b': OutFieldCrown('b'),
+                            "a": OutFieldCrown("a"),
+                            "b": OutFieldCrown("b"),
                         },
                         sieves={},
                     ),
-                    'c': OutFieldCrown('c'),
+                    "c": OutFieldCrown("c"),
                 },
                 sieves={},
             ),
-            extra_move=None
-        )
+            extra_move=None,
+        ),
     )
 
 
 def my_func_mapper(shape: BaseShape, field: BaseField):
-    return '$' + field.id
+    return "$" + field.id
 
 
 def test_map_via_func():
     assert make_layouts(
-        TestField('a'),
-        TestField('b'),
-        TestField('c'),
+        TestField("a"),
+        TestField("b"),
+        TestField("c"),
         name_mapping(
             map=[
-                ('a|b', my_func_mapper)
+                ("a|b", my_func_mapper),
             ],
         ),
         DEFAULT_NAME_MAPPING,
@@ -506,9 +506,9 @@ def test_map_via_func():
         inp=InputNameLayout(
             crown=InpDictCrown(
                 map={
-                    '$a': InpFieldCrown('a'),
-                    '$b': InpFieldCrown('b'),
-                    'c': InpFieldCrown('c'),
+                    "$a": InpFieldCrown("a"),
+                    "$b": InpFieldCrown("b"),
+                    "c": InpFieldCrown("c"),
                 },
                 extra_policy=ExtraSkip(),
             ),
@@ -517,25 +517,25 @@ def test_map_via_func():
         out=OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    '$a': OutFieldCrown('a'),
-                    '$b': OutFieldCrown('b'),
-                    'c': OutFieldCrown('c'),
+                    "$a": OutFieldCrown("a"),
+                    "$b": OutFieldCrown("b"),
+                    "c": OutFieldCrown("c"),
                 },
                 sieves={},
             ),
-            extra_move=None
-        )
+            extra_move=None,
+        ),
     )
 
 
 def test_map_to_none():
     assert make_layouts(
-        TestField('a', is_required=False),
-        TestField('b', is_required=False),
-        TestField('c', is_required=False),
+        TestField("a", is_required=False),
+        TestField("b", is_required=False),
+        TestField("c", is_required=False),
         name_mapping(
             map={
-                'b': None,
+                "b": None,
             },
         ),
         DEFAULT_NAME_MAPPING,
@@ -543,8 +543,8 @@ def test_map_to_none():
         inp=InputNameLayout(
             crown=InpDictCrown(
                 map={
-                    'a': InpFieldCrown('a'),
-                    'c': InpFieldCrown('c'),
+                    "a": InpFieldCrown("a"),
+                    "c": InpFieldCrown("c"),
                 },
                 extra_policy=ExtraSkip(),
             ),
@@ -553,24 +553,24 @@ def test_map_to_none():
         out=OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    'a': OutFieldCrown('a'),
-                    'c': OutFieldCrown('c'),
+                    "a": OutFieldCrown("a"),
+                    "c": OutFieldCrown("c"),
                 },
                 sieves={},
             ),
-            extra_move=None
-        )
+            extra_move=None,
+        ),
     )
 
 
 def test_gaps_filling():
     assert make_layouts(
-        TestField('a'),
-        TestField('b'),
+        TestField("a"),
+        TestField("b"),
         name_mapping(
             map={
-                'a': 0,
-                'b': 2,
+                "a": 0,
+                "b": 2,
             },
         ),
         DEFAULT_NAME_MAPPING,
@@ -578,42 +578,42 @@ def test_gaps_filling():
         inp=InputNameLayout(
             crown=InpListCrown(
                 map=[
-                    InpFieldCrown(id='a'),
+                    InpFieldCrown(id="a"),
                     InpNoneCrown(),
-                    InpFieldCrown(id='b'),
+                    InpFieldCrown(id="b"),
                 ],
-                extra_policy=ExtraSkip()
+                extra_policy=ExtraSkip(),
             ),
             extra_move=None,
         ),
         out=OutputNameLayout(
             crown=OutListCrown(
                 map=[
-                    OutFieldCrown(id='a'),
+                    OutFieldCrown(id="a"),
                     OutNoneCrown(placeholder=DefaultValue(value=None)),
-                    OutFieldCrown(id='b')
-                ]
+                    OutFieldCrown(id="b"),
+                ],
             ),
-            extra_move=None
-        )
+            extra_move=None,
+        ),
     )
 
 
 def test_structure_flattening():
     assert make_layouts(
-        TestField('a'),
-        TestField('b'),
-        TestField('c'),
-        TestField('d'),
-        TestField('e'),
-        TestField('f'),
+        TestField("a"),
+        TestField("b"),
+        TestField("c"),
+        TestField("d"),
+        TestField("e"),
+        TestField("f"),
         name_mapping(
             map={
-                'a': ('x', 'y', 0),
-                'b': ('x', 'y', 1),
-                'c': ('x', 'z'),
-                'd': ('w', 0),
-                'e': ('x', ...),
+                "a": ("x", "y", 0),
+                "b": ("x", "y", 1),
+                "c": ("x", "z"),
+                "d": ("w", 0),
+                "e": ("x", ...),
             },
         ),
         DEFAULT_NAME_MAPPING,
@@ -621,67 +621,67 @@ def test_structure_flattening():
         inp=InputNameLayout(
             crown=InpDictCrown(
                 map={
-                    'f': InpFieldCrown(id='f'),
-                    'w': InpListCrown(
+                    "f": InpFieldCrown(id="f"),
+                    "w": InpListCrown(
                         map=[
-                            InpFieldCrown(id='d'),
+                            InpFieldCrown(id="d"),
                         ],
                         extra_policy=ExtraSkip(),
                     ),
-                    'x': InpDictCrown(
+                    "x": InpDictCrown(
                         map={
-                            'e': InpFieldCrown(id='e'),
-                            'y': InpListCrown(
+                            "e": InpFieldCrown(id="e"),
+                            "y": InpListCrown(
                                 map=[
-                                    InpFieldCrown(id='a'),
-                                    InpFieldCrown(id='b'),
+                                    InpFieldCrown(id="a"),
+                                    InpFieldCrown(id="b"),
                                 ],
                                 extra_policy=ExtraSkip(),
                             ),
-                            'z': InpFieldCrown(id='c'),
+                            "z": InpFieldCrown(id="c"),
                         },
-                        extra_policy=ExtraSkip()
+                        extra_policy=ExtraSkip(),
                     ),
                 },
-                extra_policy=ExtraSkip()
+                extra_policy=ExtraSkip(),
             ),
-            extra_move=None
+            extra_move=None,
         ),
         out=OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    'f': OutFieldCrown(id='f'),
-                    'w': OutListCrown(
+                    "f": OutFieldCrown(id="f"),
+                    "w": OutListCrown(
                         map=[
-                            OutFieldCrown(id='d'),
-                        ]
+                            OutFieldCrown(id="d"),
+                        ],
                     ),
-                    'x': OutDictCrown(
+                    "x": OutDictCrown(
                         map={
-                            'e': OutFieldCrown(id='e'),
-                            'y': OutListCrown(
+                            "e": OutFieldCrown(id="e"),
+                            "y": OutListCrown(
                                 map=[
-                                    OutFieldCrown(id='a'),
-                                    OutFieldCrown(id='b'),
-                                ]
+                                    OutFieldCrown(id="a"),
+                                    OutFieldCrown(id="b"),
+                                ],
                             ),
-                            'z': OutFieldCrown(id='c')
+                            "z": OutFieldCrown(id="c"),
                         },
-                        sieves={}
-                    )
+                        sieves={},
+                    ),
                 },
-                sieves={}
+                sieves={},
             ),
-            extra_move=None
-        )
+            extra_move=None,
+        ),
     )
 
 
 def test_omit_default():
     layouts = make_layouts(
-        TestField('a_', default=NoDefault()),
-        TestField('b_', default=DefaultValue(0)),
-        TestField('c_', default=DefaultFactory(list)),
+        TestField("a_", default=NoDefault()),
+        TestField("b_", default=DefaultValue(0)),
+        TestField("c_", default=DefaultFactory(list)),
         name_mapping(omit_default=True),
         DEFAULT_NAME_MAPPING,
     )
@@ -690,13 +690,13 @@ def test_omit_default():
         OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    'a': OutFieldCrown('a_'),
-                    'b': OutFieldCrown('b_'),
-                    'c': OutFieldCrown('c_'),
+                    "a": OutFieldCrown("a_"),
+                    "b": OutFieldCrown("b_"),
+                    "c": OutFieldCrown("c_"),
                 },
                 sieves={
-                    'b': IsInstance(FunctionType),
-                    'c': IsInstance(FunctionType),
+                    "b": IsInstance(FunctionType),
+                    "c": IsInstance(FunctionType),
                 },
             ),
             extra_move=None,
@@ -704,9 +704,9 @@ def test_omit_default():
     )
 
     layouts = make_layouts(
-        TestField('a_', default=NoDefault()),
-        TestField('b_', default=DefaultValue(0)),
-        TestField('c_', default=DefaultFactory(list)),
+        TestField("a_", default=NoDefault()),
+        TestField("b_", default=DefaultValue(0)),
+        TestField("c_", default=DefaultFactory(list)),
         name_mapping(
             omit_default=False,
         ),
@@ -717,9 +717,9 @@ def test_omit_default():
         OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    'a': OutFieldCrown('a_'),
-                    'b': OutFieldCrown('b_'),
-                    'c': OutFieldCrown('c_'),
+                    "a": OutFieldCrown("a_"),
+                    "b": OutFieldCrown("b_"),
+                    "c": OutFieldCrown("c_"),
                 },
                 sieves={},
             ),
@@ -733,7 +733,7 @@ def my_saturator(obj, extra):
 
 
 @pytest.mark.parametrize(
-    ['extra_in', 'extra_policy', 'extra_move'],
+    ["extra_in", "extra_policy", "extra_move"],
     [
         (
             ExtraSkip(),
@@ -751,35 +751,35 @@ def my_saturator(obj, extra):
             ExtraKwargs(),
         ),
         (
-            'a',
+            "a",
             ExtraCollect(),
-            ExtraTargets(('a',)),
+            ExtraTargets(("a",)),
         ),
         (
-            ['a'],
+            ["a"],
             ExtraCollect(),
-            ExtraTargets(('a',)),
+            ExtraTargets(("a",)),
         ),
         (
-            ('a',),
+            ("a",),
             ExtraCollect(),
-            ExtraTargets(('a',)),
+            ExtraTargets(("a",)),
         ),
         (
-            {'a'},
+            {"a"},
             ExtraCollect(),
-            ExtraTargets(('a',)),
+            ExtraTargets(("a",)),
         ),
         (
             my_saturator,
             ExtraCollect(),
             ExtraSaturate(my_saturator),
         ),
-    ]
+    ],
 )
 def test_input_extra_dict(extra_in, extra_policy, extra_move):
     layouts = make_layouts(
-        TestField('a'),
+        TestField("a"),
         name_mapping(
             extra_in=extra_in,
         ),
@@ -788,7 +788,7 @@ def test_input_extra_dict(extra_in, extra_policy, extra_move):
     assert layouts == Layouts(
         InputNameLayout(
             crown=InpDictCrown(
-                map={} if isinstance(extra_move, ExtraTargets) else {'a': InpFieldCrown('a')},
+                map={} if isinstance(extra_move, ExtraTargets) else {"a": InpFieldCrown("a")},
                 extra_policy=extra_policy,
             ),
             extra_move=extra_move,
@@ -802,37 +802,37 @@ def my_extractor(obj):
 
 
 @pytest.mark.parametrize(
-    ['extra_out', 'extra_move'],
+    ["extra_out", "extra_move"],
     [
         (
             ExtraSkip(),
             None,
         ),
         (
-            'a',
-            ExtraTargets(('a',)),
+            "a",
+            ExtraTargets(("a",)),
         ),
         (
-            ['a'],
-            ExtraTargets(('a',)),
+            ["a"],
+            ExtraTargets(("a",)),
         ),
         (
-            ('a',),
-            ExtraTargets(('a',)),
+            ("a",),
+            ExtraTargets(("a",)),
         ),
         (
-            {'a'},
-            ExtraTargets(('a',)),
+            {"a"},
+            ExtraTargets(("a",)),
         ),
         (
             my_extractor,
             ExtraExtract(my_extractor),
         ),
-    ]
+    ],
 )
 def test_output_extra_dict(extra_out, extra_move):
     layouts = make_layouts(
-        TestField('a'),
+        TestField("a"),
         name_mapping(
             extra_out=extra_out,
         ),
@@ -842,7 +842,7 @@ def test_output_extra_dict(extra_out, extra_move):
         IsInstance(InputNameLayout),
         OutputNameLayout(
             crown=OutDictCrown(
-                map={} if isinstance(extra_move, ExtraTargets) else {'a': OutFieldCrown('a')},
+                map={} if isinstance(extra_move, ExtraTargets) else {"a": OutFieldCrown("a")},
                 sieves={},
             ),
             extra_move=extra_move,
@@ -852,10 +852,10 @@ def test_output_extra_dict(extra_out, extra_move):
 
 def test_extra_at_list():
     layouts = make_layouts(
-        TestField('a'),
+        TestField("a"),
         name_mapping(
             map={
-                'a': 0,
+                "a": 0,
             },
             extra_in=ExtraSkip(),
             extra_out=ExtraSkip(),
@@ -866,7 +866,7 @@ def test_extra_at_list():
         InputNameLayout(
             crown=InpListCrown(
                 map=[
-                    InpFieldCrown('a'),
+                    InpFieldCrown("a"),
                 ],
                 extra_policy=ExtraSkip(),
             ),
@@ -875,7 +875,7 @@ def test_extra_at_list():
         OutputNameLayout(
             crown=OutListCrown(
                 map=[
-                    OutFieldCrown('a'),
+                    OutFieldCrown("a"),
                 ],
             ),
             extra_move=None,
@@ -883,10 +883,10 @@ def test_extra_at_list():
     )
 
     layouts = make_layouts(
-        TestField('a'),
+        TestField("a"),
         name_mapping(
             map={
-                'a': 0,
+                "a": 0,
             },
             extra_in=ExtraForbid(),
             extra_out=ExtraSkip(),
@@ -897,7 +897,7 @@ def test_extra_at_list():
         InputNameLayout(
             crown=InpListCrown(
                 map=[
-                    InpFieldCrown('a'),
+                    InpFieldCrown("a"),
                 ],
                 extra_policy=ExtraForbid(),
             ),
@@ -906,7 +906,7 @@ def test_extra_at_list():
         OutputNameLayout(
             crown=OutListCrown(
                 map=[
-                    OutFieldCrown('a'),
+                    OutFieldCrown("a"),
                 ],
             ),
             extra_move=None,
@@ -915,14 +915,14 @@ def test_extra_at_list():
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
             with_notes(
                 AggregateCannotProvide(
-                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    "Cannot create loader for model. Cannot fetch InputNameLayout",
                     [
                         with_notes(
                             CannotProvide(
-                                'Can not use collecting extra_in with list mapping',
+                                "Can not use collecting extra_in with list mapping",
                                 is_terminal=True,
                                 is_demonstrative=True,
                             ),
@@ -933,31 +933,31 @@ def test_extra_at_list():
                     is_demonstrative=True,
                 ),
                 "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
-            )
+            ),
         ),
         lambda: make_layouts(
-            TestField('a'),
-            TestField('b'),
+            TestField("a"),
+            TestField("b"),
             name_mapping(
                 map={
-                    'a': 0,
+                    "a": 0,
                 },
-                extra_in='b',
-                extra_out='b',
+                extra_in="b",
+                extra_out="b",
             ),
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
-        )
+        ),
     )
 
 
 def test_required_field_skip():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
             with_notes(
                 AggregateCannotProvide(
-                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    "Cannot create loader for model. Cannot fetch InputNameLayout",
                     [
                         with_notes(
                             CannotProvide(
@@ -972,27 +972,27 @@ def test_required_field_skip():
                     is_demonstrative=True,
                 ),
                 "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
-            )
+            ),
         ),
         lambda: make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=True),
+            TestField("a", is_required=True),
+            TestField("b", is_required=True),
             name_mapping(
-                skip=['a'],
+                skip=["a"],
             ),
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
-        )
+        ),
     )
 
 
 def test_inconsistent_path_elements():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
             with_notes(
                 AggregateCannotProvide(
-                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    "Cannot create loader for model. Cannot fetch InputNameLayout",
                     [
                         with_notes(
                             CannotProvide(
@@ -1007,30 +1007,30 @@ def test_inconsistent_path_elements():
                     is_demonstrative=True,
                 ),
                 "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
-            )
+            ),
         ),
         lambda: make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=True),
+            TestField("a", is_required=True),
+            TestField("b", is_required=True),
             name_mapping(
                 map={
-                    'a': ('x', 'y'),
-                    'b': ('x', 0),
+                    "a": ("x", "y"),
+                    "b": ("x", 0),
                 },
             ),
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
-        )
+        ),
     )
 
 
 def test_duplicated_path():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
             with_notes(
                 AggregateCannotProvide(
-                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    "Cannot create loader for model. Cannot fetch InputNameLayout",
                     [
                         with_notes(
                             CannotProvide(
@@ -1045,30 +1045,30 @@ def test_duplicated_path():
                     is_demonstrative=True,
                 ),
                 "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
-            )
+            ),
         ),
         lambda: make_layouts(
-            TestField('a'),
-            TestField('b'),
+            TestField("a"),
+            TestField("b"),
             name_mapping(
                 map={
-                    'a': 'x',
-                    'b': 'x',
+                    "a": "x",
+                    "b": "x",
                 },
             ),
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
-        )
+        ),
     )
 
 
 def test_optional_field_at_list():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
             with_notes(
                 AggregateCannotProvide(
-                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    "Cannot create loader for model. Cannot fetch InputNameLayout",
                     [
                         with_notes(
                             CannotProvide(
@@ -1083,30 +1083,30 @@ def test_optional_field_at_list():
                     is_demonstrative=True,
                 ),
                 "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
-            )
+            ),
         ),
         lambda: make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=False),
+            TestField("a", is_required=True),
+            TestField("b", is_required=False),
             name_mapping(
                 map={
-                    'a': 0,
-                    'b': 1,
+                    "a": 0,
+                    "b": 1,
                 },
             ),
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
-        )
+        ),
     )
 
 
 def test_one_path_is_prefix_of_another():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
             with_notes(
                 AggregateCannotProvide(
-                    'Cannot create loader for model. Cannot fetch InputNameLayout',
+                    "Cannot create loader for model. Cannot fetch InputNameLayout",
                     [
                         with_notes(
                             CannotProvide(
@@ -1122,36 +1122,36 @@ def test_one_path_is_prefix_of_another():
                     is_demonstrative=True,
                 ),
                 "Location: type=<class 'tests.unit.morphing.name_layout.test_provider.Stub'>",
-            )
+            ),
         ),
         lambda: make_layouts(
-            TestField('a', is_required=True),
-            TestField('b', is_required=True),
-            TestField('c', is_required=True),
+            TestField("a", is_required=True),
+            TestField("b", is_required=True),
+            TestField("c", is_required=True),
             name_mapping(
                 map={
-                    'a': 0,
-                    'b': (0, 'b'),
-                    'c': (0, 'c'),
+                    "a": 0,
+                    "b": (0, "b"),
+                    "c": (0, "c"),
                 },
             ),
             DEFAULT_NAME_MAPPING,
             loc_map=TYPE_HINT_LOC_MAP,
-        )
+        ),
     )
 
 
 def test_chaining_priority():
     layouts = make_layouts(
-        TestField('a'),
+        TestField("a"),
         name_mapping(
             map={
-                'a': 'x',
+                "a": "x",
             },
         ),
         name_mapping(
             map={
-                'a': 'y',
+                "a": "y",
             },
         ),
         DEFAULT_NAME_MAPPING,
@@ -1159,14 +1159,14 @@ def test_chaining_priority():
     assert layouts == Layouts(
         InputNameLayout(
             crown=InpDictCrown(
-                map={'x': InpFieldCrown('a')},
+                map={"x": InpFieldCrown("a")},
                 extra_policy=ExtraSkip(),
             ),
             extra_move=None,
         ),
         OutputNameLayout(
             crown=OutDictCrown(
-                map={'x': OutFieldCrown('a')},
+                map={"x": OutFieldCrown("a")},
                 sieves={},
             ),
             extra_move=None,
@@ -1176,12 +1176,12 @@ def test_chaining_priority():
 
 def test_ellipsis_replacing_str_key():
     layouts = make_layouts(
-        TestField('a_'),
-        TestField('b'),
+        TestField("a_"),
+        TestField("b"),
         name_mapping(
             name_style=NameStyle.UPPER,
             map=[
-                ('.*', ('data', ...)),
+                (".*", ("data", ...)),
             ],
         ),
         DEFAULT_NAME_MAPPING,
@@ -1190,10 +1190,10 @@ def test_ellipsis_replacing_str_key():
         InputNameLayout(
             crown=InpDictCrown(
                 map={
-                    'data': InpDictCrown(
+                    "data": InpDictCrown(
                         map={
-                            'A': InpFieldCrown('a_'),
-                            'B': InpFieldCrown('b'),
+                            "A": InpFieldCrown("a_"),
+                            "B": InpFieldCrown("b"),
                         },
                         extra_policy=ExtraSkip(),
                     ),
@@ -1205,10 +1205,10 @@ def test_ellipsis_replacing_str_key():
         OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    'data': OutDictCrown(
+                    "data": OutDictCrown(
                         map={
-                            'A': OutFieldCrown('a_'),
-                            'B': OutFieldCrown('b'),
+                            "A": OutFieldCrown("a_"),
+                            "B": OutFieldCrown("b"),
                         },
                         sieves={},
                     ),
@@ -1222,12 +1222,12 @@ def test_ellipsis_replacing_str_key():
 
 def test_ellipsis_replacing_int_key():
     layouts = make_layouts(
-        TestField('a_'),
-        TestField('b'),
+        TestField("a_"),
+        TestField("b"),
         name_mapping(
             as_list=True,
             map=[
-                ('.*', ('data', ...)),
+                (".*", ("data", ...)),
             ],
         ),
         DEFAULT_NAME_MAPPING,
@@ -1236,10 +1236,10 @@ def test_ellipsis_replacing_int_key():
         InputNameLayout(
             crown=InpDictCrown(
                 map={
-                    'data': InpListCrown(
+                    "data": InpListCrown(
                         map=[
-                            InpFieldCrown('a_'),
-                            InpFieldCrown('b'),
+                            InpFieldCrown("a_"),
+                            InpFieldCrown("b"),
                         ],
                         extra_policy=ExtraSkip(),
                     ),
@@ -1251,10 +1251,10 @@ def test_ellipsis_replacing_int_key():
         OutputNameLayout(
             crown=OutDictCrown(
                 map={
-                    'data': OutListCrown(
+                    "data": OutListCrown(
                         map=[
-                            OutFieldCrown('a_'),
-                            OutFieldCrown('b'),
+                            OutFieldCrown("a_"),
+                            OutFieldCrown("b"),
                         ],
                     ),
                 },

@@ -1,7 +1,6 @@
 from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import pytest
-from pytest import param
 from tests_helpers import (
     GENERIC_MODELS_REQUIREMENTS,
     ModelSpec,
@@ -30,9 +29,9 @@ from adaptix._internal.provider.shape_provider import (
 
 from .local_helpers import assert_fields_types
 
-T = TypeVar('T')
-K = TypeVar('K')
-V = TypeVar('V')
+T = TypeVar("T")
+K = TypeVar("K")
+V = TypeVar("V")
 
 
 adaptix_model_spec_requirements = GENERIC_MODELS_REQUIREMENTS
@@ -40,16 +39,16 @@ adaptix_model_spec_requirements = GENERIC_MODELS_REQUIREMENTS
 
 @pytest.fixture(
     params=[
-        pytest.param('data_gen_models.py', id='inheritance'),
+        pytest.param("data_gen_models.py", id="inheritance"),
         *cond_list(
             HAS_PY_312,
-            [pytest.param('data_gen_models_312.py', id='syntax_sugar')],
+            [pytest.param("data_gen_models_312.py", id="syntax_sugar")],
         ),
-    ]
+    ],
 )
 def gen_models_ns(model_spec, request):
     # need to pass tests at 3.9
-    with load_namespace_keeping_module(request.param, vars={'model_spec': model_spec}) as ns:
+    with load_namespace_keeping_module(request.param, vars={"model_spec": model_spec}) as ns:
         yield ns
 
 
@@ -59,31 +58,31 @@ def test_no_generic(model_spec):
         a: int
         b: str
 
-    assert_fields_types(Simple, {'a': int, 'b': str})
+    assert_fields_types(Simple, {"a": int, "b": str})
 
 
 def test_type_var_field(gen_models_ns):
     WithTVField = gen_models_ns.WithTVField
 
-    assert_fields_types(WithTVField, {'a': int, 'b': Any})
-    assert_fields_types(WithTVField[str], {'a': int, 'b': str})
-    assert_fields_types(WithTVField[T], {'a': int, 'b': T})
+    assert_fields_types(WithTVField, {"a": int, "b": Any})
+    assert_fields_types(WithTVField[str], {"a": int, "b": str})
+    assert_fields_types(WithTVField[T], {"a": int, "b": T})
 
 
-@pytest.mark.parametrize('tp', [List, list] if HAS_STD_CLASSES_GENERICS else [List])
+@pytest.mark.parametrize("tp", [List, list] if HAS_STD_CLASSES_GENERICS else [List])
 def test_gen_field(model_spec, tp):
     @model_spec.decorator
     class WithGenField(*model_spec.bases, Generic[T]):
         a: int
         b: tp[T]
 
-    assert_fields_types(WithGenField, {'a': int, 'b': tp[Any]})
-    assert_fields_types(WithGenField[str], {'a': int, 'b': tp[str]})
-    assert_fields_types(WithGenField[T], {'a': int, 'b': tp[T]})
+    assert_fields_types(WithGenField, {"a": int, "b": tp[Any]})
+    assert_fields_types(WithGenField[str], {"a": int, "b": tp[str]})
+    assert_fields_types(WithGenField[T], {"a": int, "b": tp[T]})
 
 
-@pytest.mark.parametrize('tp1', [List, list] if HAS_STD_CLASSES_GENERICS else [List])
-@pytest.mark.parametrize('tp2', [Dict, dict] if HAS_STD_CLASSES_GENERICS else [Dict])
+@pytest.mark.parametrize("tp1", [List, list] if HAS_STD_CLASSES_GENERICS else [List])
+@pytest.mark.parametrize("tp2", [Dict, dict] if HAS_STD_CLASSES_GENERICS else [Dict])
 def test_two_params(model_spec, tp1, tp2):
     @model_spec.decorator
     class WithStdGenField(*model_spec.bases, Generic[K, V]):
@@ -93,15 +92,15 @@ def test_two_params(model_spec, tp1, tp2):
 
     assert_fields_types(
         WithStdGenField,
-        {'a': int, 'b': tp1[Any], 'c': tp2[Any, Any]},
+        {"a": int, "b": tp1[Any], "c": tp2[Any, Any]},
     )
     assert_fields_types(
         WithStdGenField[str, int],
-        {'a': int, 'b': tp1[str], 'c': tp2[str, int]},
+        {"a": int, "b": tp1[str], "c": tp2[str, int]},
     )
     assert_fields_types(
         WithStdGenField[K, V],
-        {'a': int, 'b': tp1[K], 'c': tp2[K, V]},
+        {"a": int, "b": tp1[K], "c": tp2[K, V]},
     )
 
 
@@ -118,15 +117,15 @@ def test_sub_generic(model_spec):
 
     assert_fields_types(
         WithSubUnparametrized,
-        {'a': int, 'b': Any, 'c': SubGen},
+        {"a": int, "b": Any, "c": SubGen},
     )
     assert_fields_types(
         WithSubUnparametrized[str],
-        {'a': int, 'b': str, 'c': SubGen},
+        {"a": int, "b": str, "c": SubGen},
     )
     assert_fields_types(
         WithSubUnparametrized[K],
-        {'a': int, 'b': K, 'c': SubGen},
+        {"a": int, "b": K, "c": SubGen},
     )
 
 
@@ -142,7 +141,7 @@ def test_single_inheritance(model_spec):
 
     assert_fields_types(
         Child,
-        {'a': int, 'b': str},
+        {"a": int, "b": str},
     )
 
 
@@ -159,15 +158,15 @@ def test_single_inheritance_generic_child(model_spec):
 
     assert_fields_types(
         Child[bool],
-        {'a': int, 'b': str, 'c': bool},
+        {"a": int, "b": str, "c": bool},
     )
     assert_fields_types(
         Child,
-        {'a': int, 'b': str, 'c': Any},
+        {"a": int, "b": str, "c": Any},
     )
     assert_fields_types(
         Child[T],
-        {'a': int, 'b': str, 'c': T},
+        {"a": int, "b": str, "c": T},
     )
 
 
@@ -188,29 +187,29 @@ def test_multiple_inheritance(model_spec):
 
     assert_fields_types(
         Child[bool],
-        {'a': int, 'b': str, 'c': bool},
+        {"a": int, "b": str, "c": bool},
     )
     assert_fields_types(
         Child[T],
-        {'a': int, 'b': str, 'c': T},
+        {"a": int, "b": str, "c": T},
     )
     assert_fields_types(
         Child,
-        {'a': int, 'b': str, 'c': Any},
+        {"a": int, "b": str, "c": Any},
     )
 
 
-T1 = TypeVar('T1')
-T2 = TypeVar('T2')
-T3 = TypeVar('T3')
-T4 = TypeVar('T4')
-T5 = TypeVar('T5')
-T6 = TypeVar('T6')
-T7 = TypeVar('T7')
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+T3 = TypeVar("T3")
+T4 = TypeVar("T4")
+T5 = TypeVar("T5")
+T6 = TypeVar("T6")
+T7 = TypeVar("T7")
 
 
 @exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS)
-@pytest.mark.parametrize('tp', [List, list] if HAS_STD_CLASSES_GENERICS else [List])
+@pytest.mark.parametrize("tp", [List, list] if HAS_STD_CLASSES_GENERICS else [List])
 def test_generic_multiple_inheritance(model_spec, tp) -> None:
     @model_spec.decorator
     class GrandParent(*model_spec.bases, Generic[T1, T2]):
@@ -231,38 +230,38 @@ def test_generic_multiple_inheritance(model_spec, tp) -> None:
 
     assert_fields_types(
         Child,
-        {'a': int, 'b': tp[int], 'c': bool, 'd': bytes, 'e': Any},
+        {"a": int, "b": tp[int], "c": bool, "d": bytes, "e": Any},
     )
     assert_fields_types(
         Child[complex],
-        {'a': int, 'b': tp[int], 'c': bool, 'd': bytes, 'e': complex},
+        {"a": int, "b": tp[int], "c": bool, "d": bytes, "e": complex},
     )
     assert_fields_types(
         Child[T],
-        {'a': int, 'b': tp[int], 'c': bool, 'd': bytes, 'e': T},
+        {"a": int, "b": tp[int], "c": bool, "d": bytes, "e": T},
     )
 
 
-# TODO: fix it
+# TODO: fix it  # noqa: TD003
 skip_if_pypy_39_or_310 = pytest.mark.skipif(
     IS_PYPY and (HAS_PY_39 or HAS_PY_310),
-    reason='At this python version and implementation list has __init__ that allow to generate Shape',
+    reason="At this python version and implementation list has __init__ that allow to generate Shape",
 )
 
 
 @pytest.mark.parametrize(
-    'tp',
+    "tp",
     [
         int,
-        param(list, id='list', marks=skip_if_pypy_39_or_310),
-        param(List, id='List', marks=skip_if_pypy_39_or_310),
-        param(List[T], id='List[T]', marks=skip_if_pypy_39_or_310),
-        param(List[int], id='List[int]', marks=skip_if_pypy_39_or_310),
-    ] + (
-        [param(list[T], id='list[T]', marks=skip_if_pypy_39_or_310)]
-        if HAS_STD_CLASSES_GENERICS else
-        []
-    )
+        pytest.param(list, id="list", marks=skip_if_pypy_39_or_310),
+        pytest.param(List, id="List", marks=skip_if_pypy_39_or_310),
+        pytest.param(List[T], id="List[T]", marks=skip_if_pypy_39_or_310),
+        pytest.param(List[int], id="List[int]", marks=skip_if_pypy_39_or_310),
+        *cond_list(
+            HAS_STD_CLASSES_GENERICS,
+            lambda: [pytest.param(list[T], id="list[T]", marks=skip_if_pypy_39_or_310)],
+        ),
+    ],
 )
 def test_not_a_model(tp):
     retort = Retort()
@@ -297,7 +296,7 @@ def test_generic_mixed_inheritance(model_spec):
 
     assert_fields_types(
         Child12,
-        {'a': int, 'b': str, 'c': bool},
+        {"a": int, "b": str, "c": bool},
     )
 
     @model_spec.decorator
@@ -306,7 +305,7 @@ def test_generic_mixed_inheritance(model_spec):
 
     assert_fields_types(
         Child21,
-        {'b': str, 'a': int, 'c': bool},
+        {"b": str, "a": int, "c": bool},
     )
 
 
@@ -322,7 +321,7 @@ def test_generic_parents_with_type_override(model_spec):
 
     assert_fields_types(
         Child,
-        {'a': bool},
+        {"a": bool},
     )
 
 
@@ -339,15 +338,15 @@ def test_generic_parents_with_type_override_generic(model_spec):
 
     assert_fields_types(
         Child,
-        {'a': bool, 'b': Any},
+        {"a": bool, "b": Any},
     )
     assert_fields_types(
         Child[T],
-        {'a': bool, 'b': T},
+        {"a": bool, "b": T},
     )
     assert_fields_types(
         Child[str],
-        {'a': bool, 'b': str},
+        {"a": bool, "b": str},
     )
 
 
@@ -361,7 +360,7 @@ def test_self_type(model_spec):
 
     assert_fields_types(
         WithSelf,
-        {'a': Self},
+        {"a": Self},
     )
 
 
@@ -374,36 +373,36 @@ def test_type_var_tuple_begin(model_spec, gen_models_ns):
     assert_fields_types(
         WithTVTupleBegin,
         {
-            'a': Tuple[Unpack[Tuple[Any, ...]]],
-            'b': Any,
+            "a": Tuple[Unpack[Tuple[Any, ...]]],
+            "b": Any,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[int, str],
         {
-            'a': Tuple[int],
-            'b': str,
+            "a": Tuple[int],
+            "b": str,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[int, str, bool],
         {
-            'a': Tuple[int, str],
-            'b': bool,
+            "a": Tuple[int, str],
+            "b": bool,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[int, Unpack[Tuple[str, bool]]],
         {
-            'a': Tuple[int, str],
-            'b': bool,
+            "a": Tuple[int, str],
+            "b": bool,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
         {
-            'a': Tuple[str, bool, str],
-            'b': bool,
+            "a": Tuple[str, bool, str],
+            "b": bool,
         },
     )
 
@@ -417,36 +416,36 @@ def test_type_var_tuple_end(model_spec, gen_models_ns):
     assert_fields_types(
         WithTVTupleEnd,
         {
-            'a': Any,
-            'b': Tuple[Unpack[Tuple[Any, ...]]],
+            "a": Any,
+            "b": Tuple[Unpack[Tuple[Any, ...]]],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[int, str],
         {
-            'a': int,
-            'b': Tuple[str],
+            "a": int,
+            "b": Tuple[str],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[int, str, bool],
         {
-            'a': int,
-            'b': Tuple[str, bool],
+            "a": int,
+            "b": Tuple[str, bool],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[int, Unpack[Tuple[str, bool]]],
         {
-            'a': int,
-            'b': Tuple[str, bool],
+            "a": int,
+            "b": Tuple[str, bool],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
         {
-            'a': str,
-            'b': Tuple[bool, str, bool],
+            "a": str,
+            "b": Tuple[bool, str, bool],
         },
     )
 
@@ -460,64 +459,64 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
     assert_fields_types(
         WithTVTupleMiddle,
         {
-            'a': Any,
-            'b': Tuple[Unpack[Tuple[Any, ...]]],
-            'c': Any,
+            "a": Any,
+            "b": Tuple[Unpack[Tuple[Any, ...]]],
+            "c": Any,
         },
     )
     assert_fields_types(
         WithTVTupleMiddle[int, str],
         {
-            'a': int,
-            'b': Tuple[()],
-            'c': str,
+            "a": int,
+            "b": Tuple[()],
+            "c": str,
         },
     )
     assert_fields_types(
         WithTVTupleMiddle[int, str, bool],
         {
-            'a': int,
-            'b': Tuple[str],
-            'c': bool
+            "a": int,
+            "b": Tuple[str],
+            "c": bool,
         },
     )
     assert_fields_types(
         WithTVTupleMiddle[int, str, str, bool],
         {
-            'a': int,
-            'b': Tuple[str, str],
-            'c': bool
+            "a": int,
+            "b": Tuple[str, str],
+            "c": bool,
         },
     )
     assert_fields_types(
         WithTVTupleMiddle[int, Unpack[Tuple[str, bool]]],
         {
-            'a': int,
-            'b': Tuple[str],
-            'c': bool
+            "a": int,
+            "b": Tuple[str],
+            "c": bool,
         },
     )
     assert_fields_types(
         WithTVTupleMiddle[int, Unpack[Tuple[str, bool]], int],
         {
-            'a': int,
-            'b': Tuple[str, bool],
-            'c': int
+            "a": int,
+            "b": Tuple[str, bool],
+            "c": int,
         },
     )
     assert_fields_types(
         WithTVTupleMiddle[int, Unpack[Tuple[str, ...]], int],
         {
-            'a': int,
-            'b': Tuple[Unpack[Tuple[str, ...]]],
-            'c': int
+            "a": int,
+            "b": Tuple[Unpack[Tuple[str, ...]]],
+            "c": int,
         },
     )
     assert_fields_types(
         WithTVTupleMiddle[int, bool, Unpack[Tuple[str, ...]], int],
         {
-            'a': int,
-            'b': Tuple[bool, Unpack[Tuple[str, ...]]],
-            'c': int
+            "a": int,
+            "b": Tuple[bool, Unpack[Tuple[str, ...]]],
+            "c": int,
         },
     )

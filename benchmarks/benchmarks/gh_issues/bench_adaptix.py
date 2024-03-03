@@ -115,8 +115,8 @@ retort = Retort(
         name_mapping(
             Reactions,
             map={
-                'plus_one': '+1',
-                'minus_one': '-1',
+                "plus_one": "+1",
+                "minus_one": "-1",
             },
         ),
         name_mapping(

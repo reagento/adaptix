@@ -1,3 +1,4 @@
+# ruff: noqa: FBT001, FBT003
 import typing
 from types import MappingProxyType
 from typing import TypedDict
@@ -22,13 +23,13 @@ from adaptix._internal.model_tools.introspection.typed_dict import get_typed_dic
 class Foo(TypedDict, total=True):
     a: int
     b: str
-    c: 'bool'
+    c: "bool"
 
 
 class Bar(TypedDict, total=False):
     a: int
     b: str
-    c: 'bool'
+    c: "bool"
 
 
 def test_total():
@@ -42,7 +43,7 @@ def test_total():
                 fields=(
                     InputField(
                         type=int,
-                        id='a',
+                        id="a",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -50,7 +51,7 @@ def test_total():
                     ),
                     InputField(
                         type=str,
-                        id='b',
+                        id="b",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -58,7 +59,7 @@ def test_total():
                     ),
                     InputField(
                         type=bool,
-                        id='c',
+                        id="c",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -67,18 +68,18 @@ def test_total():
                 ),
                 params=(
                     Param(
-                        field_id='a',
-                        name='a',
+                        field_id="a",
+                        name="a",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='b',
-                        name='b',
+                        field_id="b",
+                        name="b",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='c',
-                        name='c',
+                        field_id="c",
+                        name="c",
                         kind=ParamKind.KW_ONLY,
                     ),
                 ),
@@ -88,26 +89,26 @@ def test_total():
                 fields=(
                     OutputField(
                         type=int,
-                        id='a',
+                        id="a",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('a', access_error=None),
+                        accessor=create_key_accessor("a", access_error=None),
                         original=None,
                     ),
                     OutputField(
                         type=str,
-                        id='b',
+                        id="b",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('b', access_error=None),
+                        accessor=create_key_accessor("b", access_error=None),
                         original=None,
                     ),
                     OutputField(
                         type=bool,
-                        id='c',
+                        id="c",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('c', access_error=None),
+                        accessor=create_key_accessor("c", access_error=None),
                         original=None,
                     ),
                 ),
@@ -128,7 +129,7 @@ def test_non_total():
                 fields=(
                     InputField(
                         type=int,
-                        id='a',
+                        id="a",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -136,7 +137,7 @@ def test_non_total():
                     ),
                     InputField(
                         type=str,
-                        id='b',
+                        id="b",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -144,7 +145,7 @@ def test_non_total():
                     ),
                     InputField(
                         type=bool,
-                        id='c',
+                        id="c",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -153,18 +154,18 @@ def test_non_total():
                 ),
                 params=(
                     Param(
-                        field_id='a',
-                        name='a',
+                        field_id="a",
+                        name="a",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='b',
-                        name='b',
+                        field_id="b",
+                        name="b",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='c',
-                        name='c',
+                        field_id="c",
+                        name="c",
                         kind=ParamKind.KW_ONLY,
                     ),
                 ),
@@ -174,26 +175,26 @@ def test_non_total():
                 fields=(
                     OutputField(
                         type=int,
-                        id='a',
+                        id="a",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('a', access_error=KeyError),
+                        accessor=create_key_accessor("a", access_error=KeyError),
                         original=None,
                     ),
                     OutputField(
                         type=str,
-                        id='b',
+                        id="b",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('b', access_error=KeyError),
+                        accessor=create_key_accessor("b", access_error=KeyError),
                         original=None,
                     ),
                     OutputField(
                         type=bool,
-                        id='c',
+                        id="c",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('c', access_error=KeyError),
+                        accessor=create_key_accessor("c", access_error=KeyError),
                         original=None,
                     ),
                 ),
@@ -230,7 +231,7 @@ def test_inheritance_first():
                 fields=(
                     InputField(
                         type=int,
-                        id='x',
+                        id="x",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -239,8 +240,8 @@ def test_inheritance_first():
                 ),
                 params=(
                     Param(
-                        field_id='x',
-                        name='x',
+                        field_id="x",
+                        name="x",
                         kind=ParamKind.KW_ONLY,
                     ),
                 ),
@@ -250,10 +251,10 @@ def test_inheritance_first():
                 fields=(
                     OutputField(
                         type=int,
-                        id='x',
+                        id="x",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('x', access_error=KeyError),
+                        accessor=create_key_accessor("x", access_error=KeyError),
                         original=None,
                     ),
                 ),
@@ -274,7 +275,7 @@ def test_inheritance_second():
                 fields=(
                     InputField(
                         type=int,
-                        id='x',
+                        id="x",
                         default=NoDefault(),
                         is_required=_negate_if_not_py39(False),
                         metadata=MappingProxyType({}),
@@ -282,7 +283,7 @@ def test_inheritance_second():
                     ),
                     InputField(
                         type=str,
-                        id='y',
+                        id="y",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -291,13 +292,13 @@ def test_inheritance_second():
                 ),
                 params=(
                     Param(
-                        field_id='x',
-                        name='x',
+                        field_id="x",
+                        name="x",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='y',
-                        name='y',
+                        field_id="y",
+                        name="y",
                         kind=ParamKind.KW_ONLY,
                     ),
                 ),
@@ -307,23 +308,23 @@ def test_inheritance_second():
                 fields=(
                     OutputField(
                         type=int,
-                        id='x',
+                        id="x",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('x', access_error=KeyError if HAS_PY_39 else None),
+                        accessor=create_key_accessor("x", access_error=KeyError if HAS_PY_39 else None),
                         original=None,
                     ),
                     OutputField(
                         type=str,
-                        id='y',
+                        id="y",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('y', access_error=None),
+                        accessor=create_key_accessor("y", access_error=None),
                         original=None,
                     ),
                 ),
                 overriden_types=frozenset({}),
-            )
+            ),
         )
     )
 
@@ -339,7 +340,7 @@ def test_inheritance_third():
                 fields=(
                     InputField(
                         type=int,
-                        id='x',
+                        id="x",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -347,7 +348,7 @@ def test_inheritance_third():
                     ),
                     InputField(
                         type=str,
-                        id='y',
+                        id="y",
                         default=NoDefault(),
                         is_required=_negate_if_not_py39(True),
                         metadata=MappingProxyType({}),
@@ -355,7 +356,7 @@ def test_inheritance_third():
                     ),
                     InputField(
                         type=str,
-                        id='z',
+                        id="z",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -364,18 +365,18 @@ def test_inheritance_third():
                 ),
                 params=(
                     Param(
-                        field_id='x',
-                        name='x',
+                        field_id="x",
+                        name="x",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='y',
-                        name='y',
+                        field_id="y",
+                        name="y",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='z',
-                        name='z',
+                        field_id="z",
+                        name="z",
                         kind=ParamKind.KW_ONLY,
                     ),
                 ),
@@ -385,31 +386,31 @@ def test_inheritance_third():
                 fields=(
                     OutputField(
                         type=int,
-                        id='x',
+                        id="x",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('x', access_error=KeyError),
+                        accessor=create_key_accessor("x", access_error=KeyError),
                         original=None,
                     ),
                     OutputField(
                         type=str,
-                        id='y',
+                        id="y",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('y', access_error=None if HAS_PY_39 else KeyError),
+                        accessor=create_key_accessor("y", access_error=None if HAS_PY_39 else KeyError),
                         original=None,
                     ),
                     OutputField(
                         type=str,
-                        id='z',
+                        id="z",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor('z', access_error=KeyError),
+                        accessor=create_key_accessor("z", access_error=KeyError),
                         original=None,
                     ),
                 ),
                 overriden_types=frozenset({}),
-            )
+            ),
         )
     )
 
@@ -417,7 +418,7 @@ def test_inheritance_third():
 @requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotatedTotal(TypedDict):
-        annotated_field: typing.Annotated[int, 'metadata']
+        annotated_field: typing.Annotated[int, "metadata"]
 
     assert (
         get_typed_dict_shape(WithAnnotatedTotal)
@@ -428,8 +429,8 @@ def test_annotated():
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=typing.Annotated[int, 'metadata'],
-                        id='annotated_field',
+                        type=typing.Annotated[int, "metadata"],
+                        id="annotated_field",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -438,8 +439,8 @@ def test_annotated():
                 ),
                 params=(
                     Param(
-                        field_id='annotated_field',
-                        name='annotated_field',
+                        field_id="annotated_field",
+                        name="annotated_field",
                         kind=ParamKind.KW_ONLY,
                     ),
                 ),
@@ -448,21 +449,21 @@ def test_annotated():
             output=OutputShape(
                 fields=(
                     OutputField(
-                        type=typing.Annotated[int, 'metadata'],
-                        id='annotated_field',
+                        type=typing.Annotated[int, "metadata"],
+                        id="annotated_field",
                         default=NoDefault(),
-                        accessor=create_key_accessor('annotated_field', access_error=None),
+                        accessor=create_key_accessor("annotated_field", access_error=None),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                 ),
                 overriden_types=frozenset({}),
-            )
+            ),
         )
     )
 
     class WithAnnotatedNotTotal(TypedDict, total=False):
-        annotated_field: typing.Annotated[int, 'metadata']
+        annotated_field: typing.Annotated[int, "metadata"]
 
     assert (
         get_typed_dict_shape(WithAnnotatedNotTotal)
@@ -473,8 +474,8 @@ def test_annotated():
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=typing.Annotated[int, 'metadata'],
-                        id='annotated_field',
+                        type=typing.Annotated[int, "metadata"],
+                        id="annotated_field",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -483,8 +484,8 @@ def test_annotated():
                 ),
                 params=(
                     Param(
-                        field_id='annotated_field',
-                        name='annotated_field',
+                        field_id="annotated_field",
+                        name="annotated_field",
                         kind=ParamKind.KW_ONLY,
                     ),
                 ),
@@ -493,16 +494,16 @@ def test_annotated():
             output=OutputShape(
                 fields=(
                     OutputField(
-                        type=typing.Annotated[int, 'metadata'],
-                        id='annotated_field',
+                        type=typing.Annotated[int, "metadata"],
+                        id="annotated_field",
                         default=NoDefault(),
-                        accessor=create_key_accessor('annotated_field', access_error=KeyError),
+                        accessor=create_key_accessor("annotated_field", access_error=KeyError),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                 ),
                 overriden_types=frozenset({}),
-            )
+            ),
         )
     )
 
@@ -529,7 +530,7 @@ def test_required():
                 fields=(
                     InputField(
                         type=int,
-                        id='f1',
+                        id="f1",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -537,7 +538,7 @@ def test_required():
                     ),
                     InputField(
                         type=typing.Required[int],
-                        id='f2',
+                        id="f2",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -545,7 +546,7 @@ def test_required():
                     ),
                     InputField(
                         type=typing.NotRequired[int],
-                        id='f3',
+                        id="f3",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -553,7 +554,7 @@ def test_required():
                     ),
                     InputField(
                         type=int,
-                        id='f4',
+                        id="f4",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -561,7 +562,7 @@ def test_required():
                     ),
                     InputField(
                         type=typing.Required[int],
-                        id='f5',
+                        id="f5",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -569,7 +570,7 @@ def test_required():
                     ),
                     InputField(
                         type=typing.NotRequired[int],
-                        id='f6',
+                        id="f6",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -578,33 +579,33 @@ def test_required():
                 ),
                 params=(
                     Param(
-                        field_id='f1',
-                        name='f1',
+                        field_id="f1",
+                        name="f1",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f2',
-                        name='f2',
+                        field_id="f2",
+                        name="f2",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f3',
-                        name='f3',
+                        field_id="f3",
+                        name="f3",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f4',
-                        name='f4',
+                        field_id="f4",
+                        name="f4",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f5',
-                        name='f5',
+                        field_id="f5",
+                        name="f5",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f6',
-                        name='f6',
+                        field_id="f6",
+                        name="f6",
                         kind=ParamKind.KW_ONLY,
                     ),
                 ),
@@ -614,55 +615,55 @@ def test_required():
                 fields=(
                     OutputField(
                         type=int,
-                        id='f1',
+                        id="f1",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f1', access_error=None),
+                        accessor=create_key_accessor("f1", access_error=None),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=typing.Required[int],
-                        id='f2',
+                        id="f2",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f2', access_error=None),
+                        accessor=create_key_accessor("f2", access_error=None),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=typing.NotRequired[int],
-                        id='f3',
+                        id="f3",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f3', access_error=KeyError),
+                        accessor=create_key_accessor("f3", access_error=KeyError),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=int,
-                        id='f4',
+                        id="f4",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f4', access_error=KeyError),
+                        accessor=create_key_accessor("f4", access_error=KeyError),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=typing.Required[int],
-                        id='f5',
+                        id="f5",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f5', access_error=None),
+                        accessor=create_key_accessor("f5", access_error=None),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=typing.NotRequired[int],
-                        id='f6',
+                        id="f6",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f6', access_error=KeyError),
+                        accessor=create_key_accessor("f6", access_error=KeyError),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                 ),
                 overriden_types=frozenset({}),
-            )
+            ),
         )
     )
 
@@ -689,7 +690,7 @@ def test_required_annotated():
                 fields=(
                     InputField(
                         type=int,
-                        id='f1',
+                        id="f1",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -697,7 +698,7 @@ def test_required_annotated():
                     ),
                     InputField(
                         type=typing.Annotated[typing.Required[int], "metadata"],
-                        id='f2',
+                        id="f2",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -705,7 +706,7 @@ def test_required_annotated():
                     ),
                     InputField(
                         type=typing.NotRequired[typing.Annotated[int, "metadata"]],
-                        id='f3',
+                        id="f3",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -713,7 +714,7 @@ def test_required_annotated():
                     ),
                     InputField(
                         type=int,
-                        id='f4',
+                        id="f4",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -721,7 +722,7 @@ def test_required_annotated():
                     ),
                     InputField(
                         type=typing.Annotated[typing.Required[int], "metadata"],
-                        id='f5',
+                        id="f5",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -729,7 +730,7 @@ def test_required_annotated():
                     ),
                     InputField(
                         type=typing.NotRequired[typing.Annotated[int, "metadata"]],
-                        id='f6',
+                        id="f6",
                         default=NoDefault(),
                         is_required=False,
                         metadata=MappingProxyType({}),
@@ -738,33 +739,33 @@ def test_required_annotated():
                 ),
                 params=(
                     Param(
-                        field_id='f1',
-                        name='f1',
+                        field_id="f1",
+                        name="f1",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f2',
-                        name='f2',
+                        field_id="f2",
+                        name="f2",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f3',
-                        name='f3',
+                        field_id="f3",
+                        name="f3",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f4',
-                        name='f4',
+                        field_id="f4",
+                        name="f4",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f5',
-                        name='f5',
+                        field_id="f5",
+                        name="f5",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='f6',
-                        name='f6',
+                        field_id="f6",
+                        name="f6",
                         kind=ParamKind.KW_ONLY,
                     ),
                 ),
@@ -774,54 +775,54 @@ def test_required_annotated():
                 fields=(
                     OutputField(
                         type=int,
-                        id='f1',
+                        id="f1",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f1', access_error=None),
+                        accessor=create_key_accessor("f1", access_error=None),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=typing.Annotated[typing.Required[int], "metadata"],
-                        id='f2',
+                        id="f2",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f2', access_error=None),
+                        accessor=create_key_accessor("f2", access_error=None),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=typing.NotRequired[typing.Annotated[int, "metadata"]],
-                        id='f3',
+                        id="f3",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f3', access_error=KeyError),
+                        accessor=create_key_accessor("f3", access_error=KeyError),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=int,
-                        id='f4',
+                        id="f4",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f4', access_error=KeyError),
+                        accessor=create_key_accessor("f4", access_error=KeyError),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=typing.Annotated[typing.Required[int], "metadata"],
-                        id='f5',
+                        id="f5",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f5', access_error=None),
+                        accessor=create_key_accessor("f5", access_error=None),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                     OutputField(
                         type=typing.NotRequired[typing.Annotated[int, "metadata"]],
-                        id='f6',
+                        id="f6",
                         default=NoDefault(),
-                        accessor=create_key_accessor('f6', access_error=KeyError),
+                        accessor=create_key_accessor("f6", access_error=KeyError),
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
                 ),
                 overriden_types=frozenset({}),
-            )
+            ),
         )
     )

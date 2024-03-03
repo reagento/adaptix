@@ -18,7 +18,7 @@ from ..model.crown_definitions import (
 from .base import ExtraMoveMaker, ExtraPoliciesMaker, PathsTo, SievesMaker, StructureMaker
 from .crown_builder import InpCrownBuilder, OutCrownBuilder
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BuiltinNameLayoutProvider(StaticProvider):
@@ -48,10 +48,10 @@ class BuiltinNameLayoutProvider(StaticProvider):
             )
         else:
             crown = self._create_empty_input_crown(
-                mediator,
-                request.shape,
-                extra_policies,
-                self._structure_maker.empty_as_list_inp(mediator, request),
+                mediator=mediator,
+                shape=request.shape,
+                extra_policies=extra_policies,
+                as_list=self._structure_maker.empty_as_list_inp(mediator, request),
             )
         return InputNameLayout(crown=crown, extra_move=extra_move)
 
@@ -69,9 +69,10 @@ class BuiltinNameLayoutProvider(StaticProvider):
         mediator: Mediator,
         shape: InputShape,
         extra_policies: PathsTo[DictExtraPolicy],
+        *,
         as_list: bool,
     ) -> BranchInpCrown:
-        return InpCrownBuilder(extra_policies).build_empty_crown(as_list)
+        return InpCrownBuilder(extra_policies).build_empty_crown(as_list=as_list)
 
     @static_provision_action
     def _provide_output_name_layout(self, mediator: Mediator, request: OutputNameLayoutRequest) -> OutputNameLayout:
@@ -87,10 +88,10 @@ class BuiltinNameLayoutProvider(StaticProvider):
             )
         else:
             crown = self._create_empty_output_crown(
-                mediator,
-                request.shape,
-                path_to_sieve,
-                self._structure_maker.empty_as_list_out(mediator, request),
+                mediator=mediator,
+                shape=request.shape,
+                path_to_sieve=path_to_sieve,
+                as_list=self._structure_maker.empty_as_list_out(mediator, request),
             )
         return OutputNameLayout(crown=crown, extra_move=extra_move)
 
@@ -108,6 +109,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
         mediator: Mediator,
         shape: OutputShape,
         path_to_sieve: PathsTo[Sieve],
+        *,
         as_list: bool,
     ):
-        return OutCrownBuilder(path_to_sieve).build_empty_crown(as_list)
+        return OutCrownBuilder(path_to_sieve).build_empty_crown(as_list=as_list)

@@ -15,17 +15,17 @@ class Book:
 data = {
     "title": "Fahrenheit 451",
     "price": 100,
-    "created_at": '2023-10-07T16:25:19.303579',
+    "created_at": "2023-10-07T16:25:19.303579",
 }
 
 
 def broken_title_loader(data):
-    raise ArithmeticError('Some unexpected error')
+    raise ArithmeticError("Some unexpected error")
 
 
 retort = Retort(
     recipe=[
-        loader('title', broken_title_loader),
+        loader("title", broken_title_loader),
     ],
 )
 
@@ -35,7 +35,7 @@ except Exception as e:
     assert isinstance(e, ExceptionGroup)
     assert len(e.exceptions) == 1
     assert isinstance(e.exceptions[0], ArithmeticError)
-    assert list(get_trail(e.exceptions[0])) == ['title']
+    assert list(get_trail(e.exceptions[0])) == ["title"]
 
 book = Book(
     title="Fahrenheit 451",
@@ -49,4 +49,4 @@ except Exception as e:
     assert isinstance(e, ExceptionGroup)
     assert len(e.exceptions) == 1
     assert isinstance(e.exceptions[0], TypeError)
-    assert list(get_trail(e.exceptions[0])) == [Attr('created_at')]
+    assert list(get_trail(e.exceptions[0])) == [Attr("created_at")]

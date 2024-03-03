@@ -43,7 +43,7 @@ class NewTypeUnwrappingProvider(StaticProvider):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=loc.type.__supertype__))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=loc.type.__supertype__)),
             ),
         )
 
@@ -60,7 +60,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=unwrapped.source))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=unwrapped.source)),
             ),
         )
 
@@ -73,21 +73,17 @@ class TypeAliasUnwrappingProvider(StaticProvider):
         if not isinstance(norm, NormTypeAlias):
             raise CannotProvide
 
-        if norm.args:
-            unwrapped = norm.value[tuple(arg.source for arg in norm.args)]
-        else:
-            unwrapped = norm.value
-
+        unwrapped = norm.value[tuple(arg.source for arg in norm.args)] if norm.args else norm.value
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=unwrapped))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=unwrapped)),
             ),
         )
 
 
 def _is_exact_zero_or_one(arg):
-    return type(arg) is int and arg in (0, 1)  # pylint: disable=unidiomatic-typecheck
+    return type(arg) is int and arg in (0, 1)  # pylint: disable=unidiomatic-typecheck  # noqa: E721
 
 
 @dataclass
@@ -119,42 +115,42 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return enum_types
 
     def _fetch_enum_loaders(
-        self, mediator: Mediator, request: LoaderRequest, enum_classes: Iterable[Type[Enum]]
+        self, mediator: Mediator, request: LoaderRequest, enum_classes: Iterable[Type[Enum]],
     ) -> Iterable[Loader[Enum]]:
         requests = [
             LoaderRequest(
                 loc_stack=request.loc_stack.append_with(
                     LocMap(
                         TypeHintLoc(type=enum_cls),
-                    )
-                )
+                    ),
+                ),
             ) for enum_cls in enum_classes
         ]
         return mediator.mandatory_provide_by_iterable(
             requests,
-            lambda: 'Cannot create loaders for enum. Loader for literal cannot be created',
+            lambda: "Cannot create loaders for enum. Loader for literal cannot be created",
         )
 
     def _fetch_enum_dumpers(
-        self, mediator: Mediator, request: DumperRequest, enum_classes: Iterable[Type[Enum]]
+        self, mediator: Mediator, request: DumperRequest, enum_classes: Iterable[Type[Enum]],
     ) -> Dict[Type[Enum], Dumper[Enum]]:
         requests = [
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
                     LocMap(
                         TypeHintLoc(type=enum_cls),
-                    )
-                )
+                    ),
+                ),
             ) for enum_cls in enum_classes
         ]
         dumpers = mediator.mandatory_provide_by_iterable(
             requests,
-            lambda: 'Cannot create loaders for enum. Loader for literal cannot be created',
+            lambda: "Cannot create loaders for enum. Loader for literal cannot be created",
         )
         return dict(zip(enum_classes, dumpers))
 
-    def _get_literal_loader_with_enum(  # noqa: CCR001
-        self, basic_loader: Loader, enum_loaders: Sequence[Loader[Enum]], allowed_values: Collection
+    def _get_literal_loader_with_enum(  # noqa: C901
+        self, basic_loader: Loader, enum_loaders: Sequence[Loader[Enum]], allowed_values: Collection,
     ) -> Loader:
         if not enum_loaders:
             return basic_loader
@@ -202,7 +198,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             for arg in cleaned_args
         ):
             allowed_values_with_types = self._get_allowed_values_collection(
-                [(type(el), el) for el in cleaned_args]
+                [(type(el), el) for el in cleaned_args],
             )
 
             # since True == 1 and False == 0
@@ -212,7 +208,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
                 raise BadVariantLoadError(allowed_values_repr, data)
 
             return self._get_literal_loader_with_enum(
-                literal_loader_sc, enum_loaders, allowed_values_with_types
+                literal_loader_sc, enum_loaders, allowed_values_with_types,
             )
 
         allowed_values = self._get_allowed_values_collection(cleaned_args)
@@ -235,7 +231,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         enum_dumpers = self._fetch_enum_dumpers(mediator, request, self._get_enum_types(enum_cases))
 
         if len(enum_dumpers) == 1:
-            enum_dumper = list(enum_dumpers.values())[0]
+            enum_dumper = next(iter(enum_dumpers.values()))
 
             def literal_dumper_with_single_enum(data):
                 if isinstance(data, Enum):
@@ -266,10 +262,10 @@ class UnionProvider(LoaderProvider, DumperProvider):
                         LocMap(
                             TypeHintLoc(type=not_none.source),
                             GenericParamLoc(generic_pos=0),
-                        )
-                    )
+                        ),
+                    ),
                 ),
-                lambda x: 'Cannot create loader for union. Loaders for some union cases cannot be created',
+                lambda x: "Cannot create loader for union. Loaders for some union cases cannot be created",
             )
             if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
                 return self._single_optional_dt_loader(norm.source, not_none_loader)
@@ -284,12 +280,12 @@ class UnionProvider(LoaderProvider, DumperProvider):
                         LocMap(
                             TypeHintLoc(type=tp.source),
                             GenericParamLoc(generic_pos=i),
-                        )
-                    )
+                        ),
+                    ),
                 )
                 for i, tp in enumerate(norm.args)
             ],
-            lambda: 'Cannot create loader for union. Loaders for some union cases cannot be created',
+            lambda: "Cannot create loader for union. Loaders for some union cases cannot be created",
         )
         if debug_trail == DebugTrail.DISABLE:
             return self._get_loader_dt_disable(tuple(loaders))
@@ -314,7 +310,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
             try:
                 return loader(data)
             except LoadError as e:
-                raise UnionLoadError(f'while loading {tp}', [TypeLoadError(None, data), e])
+                raise UnionLoadError(f"while loading {tp}", [TypeLoadError(None, data), e])
 
         return optional_dt_loader
 
@@ -338,7 +334,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 except LoadError as e:
                     errors.append(e)
 
-            raise UnionLoadError(f'while loading {tp}', errors)
+            raise UnionLoadError(f"while loading {tp}", errors)
 
         return union_loader_dt_first
 
@@ -359,13 +355,13 @@ class UnionProvider(LoaderProvider, DumperProvider):
                         return result
 
             if has_unexpected_error:
-                raise CompatExceptionGroup(f'while loading {tp}', errors)
-            raise UnionLoadError(f'while loading {tp}', errors)
+                raise CompatExceptionGroup(f"while loading {tp}", errors)
+            raise UnionLoadError(f"while loading {tp}", errors)
 
         return union_loader_dt_all
 
     def _is_single_optional(self, norm: BaseNormType) -> bool:
-        return len(norm.args) == 2 and None in [case.origin for case in norm.args]
+        return len(norm.args) == 2 and None in [case.origin for case in norm.args]  # noqa: PLR2004
 
     def _is_class_origin(self, origin) -> bool:
         return (origin is None or isinstance(origin, type)) and not is_subclass_soft(origin, collections.abc.Callable)
@@ -373,8 +369,6 @@ class UnionProvider(LoaderProvider, DumperProvider):
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         request_type = get_type_from_request(request)
         norm = try_normalize_type(request_type)
-
-        # TODO: allow use Literal[..., None] with non single optional
 
         if self._is_single_optional(norm):
             not_none = next(case for case in norm.args if case.origin is not None)
@@ -384,10 +378,10 @@ class UnionProvider(LoaderProvider, DumperProvider):
                         LocMap(
                             TypeHintLoc(type=not_none.source),
                             GenericParamLoc(generic_pos=0),
-                        )
-                    )
+                        ),
+                    ),
                 ),
-                lambda x: 'Cannot create dumper for union. Dumpers for some union cases cannot be created',
+                lambda x: "Cannot create dumper for union. Dumpers for some union cases cannot be created",
             )
             if not_none_dumper == as_is_stub:
                 return as_is_stub
@@ -408,18 +402,18 @@ class UnionProvider(LoaderProvider, DumperProvider):
                         LocMap(
                             TypeHintLoc(type=tp.source),
                             GenericParamLoc(generic_pos=i),
-                        )
-                    )
+                        ),
+                    ),
                 )
                 for i, tp in enumerate(norm.args)
             ],
-            lambda: 'Cannot create dumper for union. Dumpers for some union cases cannot be created',
+            lambda: "Cannot create dumper for union. Dumpers for some union cases cannot be created",
         )
         if all(dumper == as_is_stub for dumper in dumpers):
             return as_is_stub
 
         dumper_type_dispatcher = ClassDispatcher(
-            {type(None) if case.origin is None else case.origin: dumper for case, dumper in zip(norm.args, dumpers)}
+            {type(None) if case.origin is None else case.origin: dumper for case, dumper in zip(norm.args, dumpers)},
         )
         return self._get_dumper(dumper_type_dispatcher)
 
@@ -449,9 +443,9 @@ class PathLikeProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return mediator.mandatory_provide(
             LoaderRequest(
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl))
+                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl)),
             ),
-            lambda x: f'Cannot create loader for {PathLike}. Loader for {Path} cannot be created',
+            lambda x: f"Cannot create loader for {PathLike}. Loader for {Path} cannot be created",
         )
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:

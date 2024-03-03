@@ -13,14 +13,14 @@ def get_review_text(*, idx: int) -> str:
 
 def create_dumped_book(*, reviews_count: int) -> Dict[str, Any]:
     return {
-        'id': 24,
-        'name': 'The End of Eternity',
-        'reviews': [
+        "id": 24,
+        "name": "The End of Eternity",
+        "reviews": [
             {
-                'id': 482 + i ** 2,
-                'title': 'Funny thing',
-                'rating': 4.6,
-                'text': get_review_text(idx=i),
+                "id": 482 + i ** 2,
+                "title": "Funny thing",
+                "rating": 4.6,
+                "text": get_review_text(idx=i),
             }
             for i in range(reviews_count)
         ],
@@ -30,11 +30,11 @@ def create_dumped_book(*, reviews_count: int) -> Dict[str, Any]:
 def create_book(book_cls: type, review_cls: type, *, reviews_count: int):
     return book_cls(
         id=24,
-        name='The End of Eternity',
+        name="The End of Eternity",
         reviews=[
             review_cls(
                 id=482 + i ** 2,
-                title='Funny thing',
+                title="Funny thing",
                 rating=4.6,
                 content=get_review_text(idx=i),
             )

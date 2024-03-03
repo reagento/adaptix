@@ -52,8 +52,8 @@ data = {
             "name": "Fahrenheit 451",
             "genre": "PROSE",
             "uploaded_at": 1675111113,
-        }
-    ]
+        },
+    ],
 }
 
 person = retort.load(data, Person)
@@ -65,6 +65,6 @@ assert person == Person(
             name="Fahrenheit 451",
             genre=LiteraryGenre.PROSE,
             uploaded_at=datetime(2023, 1, 30, 20, 38, 33, tzinfo=timezone.utc),
-        )
-    ]
+        ),
+    ],
 )

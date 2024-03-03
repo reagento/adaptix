@@ -32,7 +32,7 @@ from typing import (
 from uuid import uuid4
 
 import pytest
-from tests_helpers import cond_list, requires
+from tests_helpers import cond_list, full_match_regex_str, requires
 
 from adaptix._internal.feature_requirement import (
     HAS_ANNOTATED,
@@ -72,7 +72,7 @@ def test_atomic():
     assert_strict_equal(normalize_type(None), nt_zero(None))
     assert_strict_equal(
         normalize_type(type(None)),
-        nt_zero(None, source=type(None))
+        nt_zero(None, source=type(None)),
     )
 
     assert_strict_equal(normalize_type(object), nt_zero(object))
@@ -90,7 +90,7 @@ def test_literal_string():
 
 
 @pytest.mark.parametrize(
-    ['tp', 'alias'],
+    ["tp", "alias"],
     [
         (list, List),
         (set, Set),
@@ -102,78 +102,78 @@ def test_literal_string():
 def test_generic_concrete_one_arg(tp, alias):
     assert_normalize(
         tp,
-        tp, [nt_zero(Any)]
+        tp, [nt_zero(Any)],
     )
     assert_normalize(
         alias,
-        tp, [nt_zero(Any)]
+        tp, [nt_zero(Any)],
     )
     if HAS_STD_CLASSES_GENERICS:
         assert_normalize(
             tp[int],
-            tp, [nt_zero(int)]
+            tp, [nt_zero(int)],
         )
     assert_normalize(
         alias[int],
-        tp, [nt_zero(int)]
+        tp, [nt_zero(int)],
     )
 
 
 @pytest.mark.parametrize(
-    ['tp', 'alias'],
+    ["tp", "alias"],
     [
         (dict, Dict),
         (defaultdict, DefaultDict),
         (collections.OrderedDict, typing.OrderedDict),
         (collections.ChainMap, typing.ChainMap),
-    ]
+    ],
 )
 def test_generic_concrete_two_args(tp, alias):
     assert_normalize(
         tp,
-        tp, [nt_zero(Any), nt_zero(Any)]
+        tp, [nt_zero(Any), nt_zero(Any)],
     )
     assert_normalize(
         alias,
-        tp, [nt_zero(Any), nt_zero(Any)]
+        tp, [nt_zero(Any), nt_zero(Any)],
     )
     if HAS_STD_CLASSES_GENERICS:
         assert_normalize(
             tp[int, str],
-            tp, [nt_zero(int), nt_zero(str)]
+            tp, [nt_zero(int), nt_zero(str)],
         )
     assert_normalize(
         alias[int, str],
-        tp, [nt_zero(int), nt_zero(str)]
+        tp, [nt_zero(int), nt_zero(str)],
     )
 
 
 def test_special_generics():
     assert_normalize(
         tuple,
-        tuple, [nt_zero(Any), ...]
+        tuple, [nt_zero(Any), ...],
     )
     assert_normalize(
         Tuple,
-        tuple, [nt_zero(Any), ...]
+        tuple, [nt_zero(Any), ...],
     )
     if HAS_STD_CLASSES_GENERICS:
         assert_normalize(
             tuple[int],
-            tuple, [nt_zero(int)]
+            tuple, [nt_zero(int)],
         )
     assert_normalize(
         Tuple[int],
-        tuple, [nt_zero(int)]
+        tuple, [nt_zero(int)],
     )
     if HAS_STD_CLASSES_GENERICS:
         assert_normalize(
             tuple[int, ...],
-            tuple, [nt_zero(int), ...]
+            tuple, [nt_zero(int), ...],
         )
     assert_normalize(
         Tuple[int, ...],
-        tuple, [nt_zero(int), ...]
+        tuple, [nt_zero(int), ...],
     )
 
     if HAS_STD_CLASSES_GENERICS:
@@ -181,7 +181,7 @@ def test_special_generics():
     assert_normalize(Tuple[()], tuple, [])
 
     any_str_placeholder = make_norm_type(
-        Union, (nt_zero(bytes), nt_zero(str)), source=Union[bytes, str]
+        Union, (nt_zero(bytes), nt_zero(str)), source=Union[bytes, str],
     )
 
     assert_normalize(Pattern, re.Pattern, [any_str_placeholder])
@@ -192,11 +192,11 @@ def test_special_generics():
 
 
 @pytest.mark.parametrize(
-    'callable_tp',
+    "callable_tp",
     [
         Callable,
         *cond_list(HAS_STD_CLASSES_GENERICS, [c_abc.Callable]),
-    ]
+    ],
 )
 def test_callable(callable_tp):
     assert_normalize(
@@ -231,11 +231,11 @@ def test_callable(callable_tp):
 
 @requires(HAS_TV_TUPLE)
 @pytest.mark.parametrize(
-    'callable_tp',
+    "callable_tp",
     [
         Callable,
         c_abc.Callable,
-    ]
+    ],
 )
 def test_callable_unpack(callable_tp):
     from typing import TypeVarTuple, Unpack
@@ -253,7 +253,7 @@ def test_callable_unpack(callable_tp):
         c_abc.Callable, [(normalize_type(Unpack[Tuple[int, ...]]), ), nt_zero(Any)],
     )
 
-    t1 = TypeVarTuple('t1')
+    t1 = TypeVarTuple("t1")
     assert_normalize(
         callable_tp[[Unpack[t1]], Any],
         c_abc.Callable, [(normalize_type(Unpack[t1]), ), nt_zero(Any)],
@@ -275,22 +275,22 @@ def test_type(make_union):
 
     assert_normalize(
         Type[make_union[int, str]],
-        Union, [normalize_type(Type[int]), normalize_type(Type[str])]
+        Union, [normalize_type(Type[int]), normalize_type(Type[str])],
     )
 
     assert_normalize(
         Union[Type[make_union[int, str]], Type[bool]],
-        Union, [normalize_type(Type[int]), normalize_type(Type[str]), normalize_type(Type[bool])]
+        Union, [normalize_type(Type[int]), normalize_type(Type[str]), normalize_type(Type[bool])],
     )
 
     assert_normalize(
         Union[Type[make_union[int, str]], Type[int]],
-        Union, [normalize_type(Type[int]), normalize_type(Type[str])]
+        Union, [normalize_type(Type[int]), normalize_type(Type[str])],
     )
 
 
 @pytest.mark.parametrize(
-    'tp',
+    "tp",
     [
         ClassVar,
         InitVar,
@@ -303,7 +303,7 @@ def test_var_tag(tp):
 
     assert_normalize(
         tp[int],
-        tp, [nt_zero(int)]
+        tp, [nt_zero(int)],
     )
 
 
@@ -313,7 +313,7 @@ def test_kw_only():
 
     assert_normalize(
         KW_ONLY,
-        KW_ONLY, []
+        KW_ONLY, [],
     )
 
 
@@ -324,48 +324,48 @@ def n_lit(*args):
 def test_literal(make_union):
     pytest.raises(NotSubscribedError, lambda: normalize_type(Literal))
 
-    assert_normalize(Literal['a'], Literal, ['a'])
-    assert_normalize(Literal['a', 'b'], Literal, ['a', 'b'])
+    assert_normalize(Literal["a"], Literal, ["a"])
+    assert_normalize(Literal["a", "b"], Literal, ["a", "b"])
     assert_normalize(Literal[None], None, [])
 
     assert_normalize(Optional[Literal[None]], None, [])
 
     assert_strict_equal(
-        normalize_type(make_union[Literal[None, 'a'], None]),
+        normalize_type(make_union[Literal[None, "a"], None]),
         make_norm_type(
             Union,
-            (nt_zero(None, source=make_union[Literal[None], None]), n_lit('a')),
-            source=make_union[Literal[None, 'a'], None]
-        )
+            (nt_zero(None, source=make_union[Literal[None], None]), n_lit("a")),
+            source=make_union[Literal[None, "a"], None],
+        ),
     )
 
     assert_normalize(
-        make_union[Literal['a'], Literal['b']],
-        Literal, ['a', 'b']
+        make_union[Literal["a"], Literal["b"]],
+        Literal, ["a", "b"],
     )
 
     assert_normalize(
-        make_union[Literal['a'], Literal['b'], int],
+        make_union[Literal["a"], Literal["b"], int],
         Union, [
-            n_lit('a', 'b'),
-            nt_zero(int)
-        ]
-    )
-
-    assert_normalize(
-        make_union[Literal['a'], int, Literal['b']],
-        Union, [
-            n_lit('a', 'b'),
+            n_lit("a", "b"),
             nt_zero(int),
-        ]
+        ],
     )
 
     assert_normalize(
-        make_union[int, Literal['a'], Literal['b']],
+        make_union[Literal["a"], int, Literal["b"]],
+        Union, [
+            n_lit("a", "b"),
+            nt_zero(int),
+        ],
+    )
+
+    assert_normalize(
+        make_union[int, Literal["a"], Literal["b"]],
         Union, [
             nt_zero(int),
-            n_lit('a', 'b'),
-        ]
+            n_lit("a", "b"),
+        ],
     )
 
     assert make_norm_type(Literal, (0, 1), source=...) != make_norm_type(Literal, (False, True), source=...)
@@ -383,7 +383,7 @@ class MyEnum(Enum):
 
 def test_literal_order(make_union):
     # check that union has a stable args order
-    args = ('1', 1, 'c', MyEnum.FOO, b'c')
+    args = ("1", 1, "c", MyEnum.FOO, b"c")
 
     for p_args in permutations(args):
         assert (
@@ -404,7 +404,7 @@ def test_final():
 
     assert_normalize(
         Final[int],
-        Final, [nt_zero(int)]
+        Final, [nt_zero(int)],
     )
 
 
@@ -415,19 +415,19 @@ def test_annotated():
     pytest.raises(NotSubscribedError, lambda: normalize_type(Annotated))
 
     assert_normalize(
-        Annotated[int, 'metadata'],
-        Annotated, [nt_zero(int), 'metadata']
+        Annotated[int, "metadata"],
+        Annotated, [nt_zero(int), "metadata"],
     )
     assert_normalize(
         Annotated[int, str],
-        Annotated, [nt_zero(int), str]
+        Annotated, [nt_zero(int), str],
     )
     assert_normalize(
         Annotated[int, int],
-        Annotated, [nt_zero(int), int]
+        Annotated, [nt_zero(int), int],
     )
 
-    hash(normalize_type(Annotated[int, 'metadata']))
+    hash(normalize_type(Annotated[int, "metadata"]))
 
     class UnHashableMetadata:
         __hash__ = None
@@ -441,28 +441,28 @@ def test_union(make_union):
 
     assert_normalize(
         make_union[int, str],
-        Union, [normalize_type(int), normalize_type(str)]
+        Union, [normalize_type(int), normalize_type(str)],
     )
 
     assert_normalize(
         make_union[list, List, int],
-        Union, [normalize_type(Union[list, List]), normalize_type(int)]
+        Union, [normalize_type(Union[list, List]), normalize_type(int)],
     )
     assert_normalize(
         make_union[list, List],
-        list, [nt_zero(Any)]
+        list, [nt_zero(Any)],
     )
     assert_normalize(
         make_union[list, str, List],
-        Union, [normalize_type(Union[list, List]), normalize_type(str)]
+        Union, [normalize_type(Union[list, List]), normalize_type(str)],
     )
 
     assert_normalize(
         make_union[Type[list], Type[Union[List, str]]],
         Union, [
             normalize_type(Union[Type[list], Type[List]]),
-            normalize_type(Type[str])
-        ]
+            normalize_type(Type[str]),
+        ],
     )
 
     # because Union[int] == int normalization does not need
@@ -485,41 +485,45 @@ def test_optional():
 
     assert_normalize(
         Optional[int],
-        Union, [nt_zero(int), nt_zero(None, source=type(None))]
+        Union, [nt_zero(int), nt_zero(None, source=type(None))],
     )
 
     if HAS_TYPE_UNION_OP:
         assert_normalize(
             int | None,
-            Union, [nt_zero(int), nt_zero(None, source=type(None))]
+            Union, [nt_zero(int), nt_zero(None, source=type(None))],
         )
 
     assert_normalize(
         Optional[None],
-        None, []
+        None, [],
     )
 
 
 def test_new_type():
-    pytest.raises(ValueError, lambda: normalize_type(NewType))
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str(f"{NewType} must be instantiated"),
+    ):
+        normalize_type(NewType)
 
-    new_int = NewType('new_int', int)
+    new_int = NewType("new_int", int)
     assert normalize_type(new_int) == nt_zero(new_int)
 
 
 def assert_norm_tv(tv: Any, target: NormTV):
     assert_strict_equal(
         normalize_type(tv),
-        target
+        target,
     )
 
 
 @pytest.mark.parametrize(
-    'variance',
+    "variance",
     [
         pytest.param({}, id="invariant"),
-        pytest.param({'covariant': True}, id='covariant'),
-        pytest.param({'contravariant': True}, id='contravariant'),
+        pytest.param({"covariant": True}, id="covariant"),
+        pytest.param({"contravariant": True}, id="contravariant"),
     ],
 )
 def test_type_var(variance: dict, make_union):
@@ -527,21 +531,21 @@ def test_type_var(variance: dict, make_union):
 
     assert_norm_tv(
         t1,
-        NormTV(t1, limit=Bound(nt_zero(Any)), source=t1)
+        NormTV(t1, limit=Bound(nt_zero(Any)), source=t1),
     )
 
     t2 = TypeVar("t2", bound=int, **variance)  # type: ignore[misc]
 
     assert_norm_tv(
         t2,
-        NormTV(t2, limit=Bound(nt_zero(int)), source=t2)
+        NormTV(t2, limit=Bound(nt_zero(int)), source=t2),
     )
 
     t3 = TypeVar("t3", int, str, **variance)  # type: ignore[misc]
 
     assert_norm_tv(
         t3,
-        NormTV(t3, limit=Constraints((nt_zero(int), nt_zero(str))), source=t3)
+        NormTV(t3, limit=Constraints((nt_zero(int), nt_zero(str))), source=t3),
     )
 
     t4 = TypeVar("t4", list, str, List, **variance)  # type: ignore[misc]
@@ -553,16 +557,16 @@ def test_type_var(variance: dict, make_union):
         NormTV(
             t4,
             limit=Constraints(
-                (t4_union, nt_zero(str))
+                (t4_union, nt_zero(str)),
             ),
             source=t4,
-        )
+        ),
     )
 
     if HAS_PARAM_SPEC:
         from typing import Concatenate, ParamSpec
 
-        p1 = ParamSpec('p1', **variance)  # type: ignore[misc]
+        p1 = ParamSpec("p1", **variance)  # type: ignore[misc]
 
         assert_normalize(
             Concatenate[int, p1],
@@ -580,7 +584,7 @@ def test_type_var(variance: dict, make_union):
                 make_norm_type(
                     Concatenate,
                     (nt_zero(int), NormTV(p1, limit=Bound(nt_zero(Any)), source=p1)),
-                    source=Concatenate[int, p1]
+                    source=Concatenate[int, p1],
                 ),
                 nt_zero(int),
             ],
@@ -592,16 +596,16 @@ def test_type_var(variance: dict, make_union):
                 make_norm_type(
                     Concatenate,
                     (nt_zero(int), nt_zero(str), NormTV(p1, limit=Bound(nt_zero(Any)), source=p1)),
-                    source=Concatenate[int, str, p1]
+                    source=Concatenate[int, str, p1],
                 ),
                 nt_zero(int),
             ],
         )
 
-        p2 = ParamSpec('p2', bound=str)  # type: ignore[misc]
+        p2 = ParamSpec("p2", bound=str)  # type: ignore[misc]
         assert_norm_tv(
             p2,
-            NormTV(p2, limit=Bound(nt_zero(str)), source=p2)
+            NormTV(p2, limit=Bound(nt_zero(str)), source=p2),
         )
 
         assert_normalize(
@@ -610,7 +614,7 @@ def test_type_var(variance: dict, make_union):
                 make_norm_type(
                     Concatenate,
                     (nt_zero(int), NormTV(p2, limit=Bound(nt_zero(str)), source=p2)),
-                    source=Concatenate[int, p2]
+                    source=Concatenate[int, p2],
                 ),
                 nt_zero(int),
             ],
@@ -622,7 +626,7 @@ def test_type_var(variance: dict, make_union):
                 make_norm_type(
                     Concatenate,
                     (nt_zero(int), nt_zero(str), NormTV(p2, limit=Bound(nt_zero(str)), source=p2)),
-                    source=Concatenate[int, str, p2]
+                    source=Concatenate[int, str, p2],
                 ),
                 nt_zero(int),
             ],
@@ -630,9 +634,9 @@ def test_type_var(variance: dict, make_union):
 
 
 # make it covariant to use at protocol
-K = TypeVar('K', covariant=True)
-V = TypeVar('V', covariant=True)
-H = TypeVar('H', int, str, covariant=True)
+K = TypeVar("K", covariant=True)
+V = TypeVar("V", covariant=True)
+H = TypeVar("H", int, str, covariant=True)
 
 
 class MyGeneric1(Generic[K]):
@@ -659,9 +663,9 @@ class MyProtocol3(MyProtocol1[K], Protocol[K, V, H]):
     pass
 
 
-T1 = TypeVar('T1')
-T2 = TypeVar('T2')
-T3 = TypeVar('T3')
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+T3 = TypeVar("T3")
 
 
 def any_tv(tv: Any):
@@ -695,10 +699,10 @@ def test_generic(make_union):
 def test_generic_and_protocol_with_param_spec():
     from typing import Concatenate, ParamSpec
 
-    p1 = ParamSpec('p1')
-    p2 = ParamSpec('p2')
-    p3 = ParamSpec('p3')
-    t1 = TypeVar('t1', covariant=True)
+    p1 = ParamSpec("p1")
+    p2 = ParamSpec("p2")
+    p3 = ParamSpec("p3")
+    t1 = TypeVar("t1", covariant=True)
 
     class MyGen1(Generic[p1]):
         pass
@@ -724,7 +728,7 @@ def test_generic_and_protocol_with_param_spec():
         assert_normalize(gen[p3], gen, [any_tv(p3)])
         assert_normalize(
             gen[Concatenate[int, p3]],
-            gen, [make_norm_type(Concatenate, (nt_zero(int), any_tv(p3)), source=Concatenate[int, p3])]
+            gen, [make_norm_type(Concatenate, (nt_zero(int), any_tv(p3)), source=Concatenate[int, p3])],
         )
 
     for gen in [MyGen2, MyProto2]:
@@ -732,19 +736,19 @@ def test_generic_and_protocol_with_param_spec():
         assert_normalize(gen[..., Any, ...], gen, [..., nt_zero(Any), ...])
         assert_normalize(
             gen[[int], str, [int]],
-            gen, [(nt_zero(int),), nt_zero(str), (nt_zero(int),)]
+            gen, [(nt_zero(int),), nt_zero(str), (nt_zero(int),)],
         )
         assert_normalize(
             gen[[int, str], str, [int, str]],
-            gen, [(nt_zero(int), nt_zero(str)), nt_zero(str), (nt_zero(int), nt_zero(str))]
+            gen, [(nt_zero(int), nt_zero(str)), nt_zero(str), (nt_zero(int), nt_zero(str))],
         )
         assert_normalize(
             gen[p3, str, p3],
-            gen, [any_tv(p3), nt_zero(str), any_tv(p3)]
+            gen, [any_tv(p3), nt_zero(str), any_tv(p3)],
         )
         assert_normalize(
             gen[p3, T3, p3],
-            gen, [any_tv(p3), any_tv(T3), any_tv(p3)]
+            gen, [any_tv(p3), any_tv(T3), any_tv(p3)],
         )
         assert_normalize(
             gen[Concatenate[int, p3], str, Concatenate[bool, p3]],
@@ -752,14 +756,14 @@ def test_generic_and_protocol_with_param_spec():
                 make_norm_type(Concatenate, (nt_zero(int), any_tv(p3)), source=Concatenate[int, p3]),
                 nt_zero(str),
                 make_norm_type(Concatenate, (nt_zero(bool), any_tv(p3)), source=Concatenate[bool, p3]),
-            ]
+            ],
         )
 
 
-T_FR1 = TypeVar('T_FR1', bound='int')
-T_FR2 = TypeVar('T_FR2', bound='MyForwardClass')
-T_FR3 = TypeVar('T_FR3', bound=List['MyForwardClass'])
-T_FR4 = TypeVar('T_FR4', 'MyForwardClass', 'MyAnotherForwardClass')
+T_FR1 = TypeVar("T_FR1", bound="int")
+T_FR2 = TypeVar("T_FR2", bound="MyForwardClass")
+T_FR3 = TypeVar("T_FR3", bound=List["MyForwardClass"])
+T_FR4 = TypeVar("T_FR4", "MyForwardClass", "MyAnotherForwardClass")
 
 
 class MyForwardClass:
@@ -771,9 +775,9 @@ class MyAnotherForwardClass:
 
 
 if HAS_PARAM_SPEC:
-    P_FR1 = typing.ParamSpec('P_FR1', bound='int')  # type: ignore[misc]
-    P_FR2 = typing.ParamSpec('P_FR2', bound='MyForwardClass')  # type: ignore[misc]
-    P_FR3 = typing.ParamSpec('P_FR3', bound=List['MyForwardClass'])  # type: ignore[misc]
+    P_FR1 = typing.ParamSpec("P_FR1", bound="int")  # type: ignore[misc]
+    P_FR2 = typing.ParamSpec("P_FR2", bound="MyForwardClass")  # type: ignore[misc]
+    P_FR3 = typing.ParamSpec("P_FR3", bound=List["MyForwardClass"])  # type: ignore[misc]
 
 
 def test_forward_ref_at_type_var_limit():
@@ -783,15 +787,15 @@ def test_forward_ref_at_type_var_limit():
         T_FR1,
         NormTV(
             T_FR1,
-            limit=Bound(nt_zero(int, source=ForwardRef('int'))),
-            source=T_FR1
+            limit=Bound(nt_zero(int, source=ForwardRef("int"))),
+            source=T_FR1,
         ),
     )
     assert_norm_tv(
         T_FR2,
         NormTV(
             T_FR2,
-            limit=Bound(nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass'))),
+            limit=Bound(nt_zero(MyForwardClass, source=ForwardRef("MyForwardClass"))),
             source=T_FR2,
         ),
     )
@@ -802,9 +806,9 @@ def test_forward_ref_at_type_var_limit():
             limit=Bound(
                 make_norm_type(
                     list,
-                    (nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass')),),
-                    source=List[ForwardRef('MyForwardClass')],
-                )
+                    (nt_zero(MyForwardClass, source=ForwardRef("MyForwardClass")),),
+                    source=List[ForwardRef("MyForwardClass")],
+                ),
             ),
             source=T_FR3,
         ),
@@ -815,9 +819,9 @@ def test_forward_ref_at_type_var_limit():
             T_FR4,
             limit=Constraints(
                 (
-                    make_norm_type(MyForwardClass, (), source=constraint_source('MyForwardClass')),
-                    make_norm_type(MyAnotherForwardClass, (), source=constraint_source('MyAnotherForwardClass')),
-                )
+                    make_norm_type(MyForwardClass, (), source=constraint_source("MyForwardClass")),
+                    make_norm_type(MyAnotherForwardClass, (), source=constraint_source("MyAnotherForwardClass")),
+                ),
             ),
             source=T_FR4,
         ),
@@ -828,7 +832,7 @@ def test_forward_ref_at_type_var_limit():
             P_FR1,
             NormTV(
                 P_FR1,
-                limit=Bound(nt_zero(int, source=ForwardRef('int'))),
+                limit=Bound(nt_zero(int, source=ForwardRef("int"))),
                 source=P_FR1,
             ),
         )
@@ -836,7 +840,7 @@ def test_forward_ref_at_type_var_limit():
             P_FR2,
             NormTV(
                 P_FR2,
-                limit=Bound(nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass'))),
+                limit=Bound(nt_zero(MyForwardClass, source=ForwardRef("MyForwardClass"))),
                 source=P_FR2,
             ),
         )
@@ -847,9 +851,9 @@ def test_forward_ref_at_type_var_limit():
                 limit=Bound(
                     make_norm_type(
                         list,
-                        (nt_zero(MyForwardClass, source=ForwardRef('MyForwardClass')),),
-                        source=List[ForwardRef('MyForwardClass')],
-                    )
+                        (nt_zero(MyForwardClass, source=ForwardRef("MyForwardClass")),),
+                        source=List[ForwardRef("MyForwardClass")],
+                    ),
                 ),
                 source=P_FR3,
             ),
@@ -860,7 +864,7 @@ def test_forward_ref_at_type_var_limit():
 def test_param_spec_args_and_kwargs():
     from typing import ParamSpec, ParamSpecArgs, ParamSpecKwargs
 
-    p1 = ParamSpec('p1')
+    p1 = ParamSpec("p1")
 
     assert_strict_equal(
         normalize_type(p1.args),
@@ -878,13 +882,16 @@ def test_param_spec_args_and_kwargs():
 
 
 def test_bad_arg_types():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=full_match_regex_str(f"Can not normalize value {100!r}")):
         normalize_type(100)
 
-    with pytest.raises(ValueError):
-        normalize_type('string')
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str("Can not normalize value 'string', there are no namespace to evaluate types"),
+    ):
+        normalize_type("string")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=full_match_regex_str(f"{TypeVar!r} must be instantiated")):
         normalize_type(TypeVar)
 
 
@@ -944,7 +951,7 @@ def test_unpack():
         Unpack, [normalize_type(Tuple[int, str])],
     )
 
-    t1 = TypeVarTuple('t1')
+    t1 = TypeVarTuple("t1")
     assert_normalize(
         Unpack[t1],
         Unpack, [normalize_type(t1)],
@@ -994,104 +1001,104 @@ def test_unpack():
 def test_type_var_tuple():
     from typing import TypeVarTuple
 
-    t1 = TypeVarTuple('t1')
+    t1 = TypeVarTuple("t1")
     assert_norm_tv(t1, NormTVTuple(t1, source=t1))
 
 
 @requires(HAS_TV_TUPLE)
-@pytest.mark.parametrize('tpl', [tuple, Tuple])
+@pytest.mark.parametrize("tpl", [tuple, Tuple])
 def test_type_var_tuple_generic(tpl):
     from typing import TypeVarTuple, Unpack
 
-    ShapeT = TypeVarTuple('ShapeT')
+    ShapeT = TypeVarTuple("ShapeT")
 
     class Array(Generic[Unpack[ShapeT]]):
         pass
 
     assert_normalize(
         Array,
-        Array, [normalize_type(Unpack[Tuple[Any, ...]])]
+        Array, [normalize_type(Unpack[Tuple[Any, ...]])],
     )
     assert_normalize(
         Array[int],
-        Array, [nt_zero(int)]
+        Array, [nt_zero(int)],
     )
     assert_normalize(
         Array[int, str],
-        Array, [nt_zero(int), nt_zero(str)]
+        Array, [nt_zero(int), nt_zero(str)],
     )
 
     assert_normalize(
         Array[int, Unpack[tpl[str, bool]]],
-        Array, [nt_zero(int), nt_zero(str), nt_zero(bool)]
+        Array, [nt_zero(int), nt_zero(str), nt_zero(bool)],
     )
     assert_normalize(
         Array[int, Unpack[tpl[()]]],
-        Array, [nt_zero(int)]
+        Array, [nt_zero(int)],
     )
 
 
 @requires(HAS_TV_TUPLE)
-@pytest.mark.parametrize('tpl', [tuple, Tuple])
+@pytest.mark.parametrize("tpl", [tuple, Tuple])
 def test_type_var_tuple_generic_pre(tpl):
     from typing import TypeVarTuple, Unpack
 
-    ShapeT = TypeVarTuple('ShapeT')
-    DType = TypeVar('DType')
+    ShapeT = TypeVarTuple("ShapeT")
+    DType = TypeVar("DType")
 
     class PreArray(Generic[DType, Unpack[ShapeT]]):
         pass
 
     assert_normalize(
         PreArray,
-        PreArray, [nt_zero(Any), normalize_type(Unpack[Tuple[Any, ...]])]
+        PreArray, [nt_zero(Any), normalize_type(Unpack[Tuple[Any, ...]])],
     )
     assert_normalize(
         PreArray[int],
-        PreArray, [nt_zero(int)]
+        PreArray, [nt_zero(int)],
     )
     assert_normalize(
         PreArray[int, str],
-        PreArray, [nt_zero(int), nt_zero(str)]
+        PreArray, [nt_zero(int), nt_zero(str)],
     )
     assert_normalize(
         PreArray[int, Unpack[tpl[str]]],
-        PreArray, [nt_zero(int), nt_zero(str)]
+        PreArray, [nt_zero(int), nt_zero(str)],
     )
     assert_normalize(
         PreArray[int, Unpack[tpl[str, bool]]],
-        PreArray, [nt_zero(int), nt_zero(str), nt_zero(bool)]
+        PreArray, [nt_zero(int), nt_zero(str), nt_zero(bool)],
     )
     assert_normalize(
         PreArray[int, Unpack[tpl[()]]],
-        PreArray, [nt_zero(int)]
+        PreArray, [nt_zero(int)],
     )
 
 
 @requires(HAS_TV_TUPLE)
-@pytest.mark.parametrize('tpl', [tuple, Tuple])
+@pytest.mark.parametrize("tpl", [tuple, Tuple])
 def test_type_var_tuple_generic_post(tpl):
     from typing import TypeVarTuple, Unpack
 
-    ShapeT = TypeVarTuple('ShapeT')
-    DType = TypeVar('DType')
+    ShapeT = TypeVarTuple("ShapeT")
+    DType = TypeVar("DType")
 
     class PostArray(Generic[Unpack[ShapeT], DType]):
         pass
 
     assert_normalize(
         PostArray,
-        PostArray, [normalize_type(Unpack[Tuple[Any, ...]]), nt_zero(Any)]
+        PostArray, [normalize_type(Unpack[Tuple[Any, ...]]), nt_zero(Any)],
     )
     assert_normalize(
         PostArray[int],
-        PostArray, [nt_zero(int)]
+        PostArray, [nt_zero(int)],
     )
     assert_normalize(
         PostArray[int, str],
-        PostArray, [nt_zero(int), nt_zero(str)]
+        PostArray, [nt_zero(int), nt_zero(str)],
     )
     assert_normalize(
         PostArray[Unpack[tpl[()]], int],
-        PostArray, [nt_zero(int)]
+        PostArray, [nt_zero(int)],
     )

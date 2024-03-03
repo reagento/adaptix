@@ -22,7 +22,7 @@ from adaptix._internal.model_tools.introspection.class_init import get_class_ini
 
 
 class Valid1:
-    def __init__(self, a, b: int, c: str = 'abc', *, d):
+    def __init__(self, a, b: int, c: str = "abc", *, d):
         self.a = a
         self.b = b
         self.c = c
@@ -30,7 +30,7 @@ class Valid1:
 
 
 class Valid2Kwargs:
-    def __init__(self, a, b: int, c: str = 'abc', *, d, **data):
+    def __init__(self, a, b: int, c: str = "abc", *, d, **data):
         self.a = a
         self.b = b
         self.c = c
@@ -39,7 +39,7 @@ class Valid2Kwargs:
 
 
 class Valid2KwargsTyped:
-    def __init__(self, a, b: int, c: str = 'abc', *, d, **data: str):
+    def __init__(self, a, b: int, c: str = "abc", *, d, **data: str):
         self.a = a
         self.b = b
         self.c = c
@@ -50,7 +50,7 @@ class Valid2KwargsTyped:
 VALID_FIELDS = (
     InputField(
         type=Any,
-        id='a',
+        id="a",
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
@@ -58,7 +58,7 @@ VALID_FIELDS = (
     ),
     InputField(
         type=int,
-        id='b',
+        id="b",
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
@@ -66,15 +66,15 @@ VALID_FIELDS = (
     ),
     InputField(
         type=str,
-        id='c',
-        default=DefaultValue('abc'),
+        id="c",
+        default=DefaultValue("abc"),
         is_required=False,
         metadata=MappingProxyType({}),
         original=ANY,
     ),
     InputField(
         type=Any,
-        id='d',
+        id="d",
         default=NoDefault(),
         is_required=True,
         metadata=MappingProxyType({}),
@@ -83,23 +83,23 @@ VALID_FIELDS = (
 )
 VALID_PARAMS = (
     Param(
-        field_id='a',
-        name='a',
+        field_id="a",
+        name="a",
         kind=ParamKind.POS_OR_KW,
     ),
     Param(
-        field_id='b',
-        name='b',
+        field_id="b",
+        name="b",
         kind=ParamKind.POS_OR_KW,
     ),
     Param(
-        field_id='c',
-        name='c',
+        field_id="c",
+        name="c",
         kind=ParamKind.POS_OR_KW,
     ),
     Param(
-        field_id='d',
-        name='d',
+        field_id="d",
+        name="d",
         kind=ParamKind.KW_ONLY,
     ),
 )
@@ -171,7 +171,7 @@ def test_pos_only():
                 fields=(
                     InputField(
                         type=Any,
-                        id='a',
+                        id="a",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -179,7 +179,7 @@ def test_pos_only():
                     ),
                     InputField(
                         type=Any,
-                        id='b',
+                        id="b",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -188,17 +188,17 @@ def test_pos_only():
                 ),
                 params=(
                     Param(
-                        field_id='a',
-                        name='a',
+                        field_id="a",
+                        name="a",
                         kind=ParamKind.POS_ONLY,
                     ),
                     Param(
-                        field_id='b',
-                        name='b',
+                        field_id="b",
+                        name="b",
                         kind=ParamKind.POS_OR_KW,
                     ),
                 ),
-                overriden_types=frozenset({'a', 'b'}),
+                overriden_types=frozenset({"a", "b"}),
             ),
             output=None,
         )
@@ -220,7 +220,7 @@ def test_pos_only():
                 fields=(
                     InputField(
                         type=Any,
-                        id='a',
+                        id="a",
                         default=DefaultValue(None),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -228,7 +228,7 @@ def test_pos_only():
                     ),
                     InputField(
                         type=Any,
-                        id='b',
+                        id="b",
                         default=DefaultValue(None),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -237,17 +237,17 @@ def test_pos_only():
                 ),
                 params=(
                     Param(
-                        field_id='a',
-                        name='a',
+                        field_id="a",
+                        name="a",
                         kind=ParamKind.POS_ONLY,
                     ),
                     Param(
-                        field_id='b',
-                        name='b',
+                        field_id="b",
+                        name="b",
                         kind=ParamKind.POS_ONLY,
                     ),
                 ),
-                overriden_types=frozenset({'a', 'b'}),
+                overriden_types=frozenset({"a", "b"}),
             ),
             output=None,
         )
@@ -268,7 +268,7 @@ def test_var_arg():
 @requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotated:
-        def __init__(self, a: typing.Annotated[int, 'metadata']):
+        def __init__(self, a: typing.Annotated[int, "metadata"]):
             pass
 
     assert (
@@ -280,8 +280,8 @@ def test_annotated():
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=typing.Annotated[int, 'metadata'],
-                        id='a',
+                        type=typing.Annotated[int, "metadata"],
+                        id="a",
                         default=NoDefault(),
                         is_required=True,
                         metadata=MappingProxyType({}),
@@ -290,12 +290,12 @@ def test_annotated():
                 ),
                 params=(
                     Param(
-                        field_id='a',
-                        name='a',
+                        field_id="a",
+                        name="a",
                         kind=ParamKind.POS_OR_KW,
                     ),
                 ),
-                overriden_types=frozenset({'a'}),
+                overriden_types=frozenset({"a"}),
             ),
             output=None,
         )

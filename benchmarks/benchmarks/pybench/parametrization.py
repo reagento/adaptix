@@ -1,7 +1,7 @@
 import itertools
 from typing import Any, Dict, Iterable, Iterator, Mapping, Optional, TypeVar
 
-P = TypeVar('P', bound='Parametrizer')
+P = TypeVar("P", bound="Parametrizer")
 
 
 class Parametrizer:
@@ -24,7 +24,7 @@ def bool_tag_spec(key: str, tag: Optional[str] = None) -> Mapping[str, Mapping[A
         key: {
             False: None,
             True: tag,
-        }
+        },
     }
 
 

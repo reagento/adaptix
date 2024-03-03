@@ -10,10 +10,10 @@ class Review(BaseModel):
     id: int
     title: str
     rating: float
-    content: str = Field(alias='text')
+    content: str = Field(alias="text")
 
     model_config = {
-        'populate_by_name': True,
+        "populate_by_name": True,
     }
 
 
@@ -27,11 +27,11 @@ class StrictReview(BaseModel):
     id: int
     title: str
     rating: float
-    content: str = Field(alias='text')
+    content: str = Field(alias="text")
 
     model_config = {
-        'populate_by_name': True,
-        'strict': True,
+        "populate_by_name": True,
+        "strict": True,
     }
 
 
@@ -41,7 +41,7 @@ class StrictBook(BaseModel):
     reviews: List[StrictReview]
 
     model_config = {
-        'strict': True,
+        "strict": True,
     }
 
 
@@ -60,12 +60,12 @@ def test_loading():
 
 def test_dumping():
     assert (
-        create_book(Book, Review, reviews_count=1).model_dump(mode='json', by_alias=True)
+        create_book(Book, Review, reviews_count=1).model_dump(mode="json", by_alias=True)
         ==
         create_dumped_book(reviews_count=1)
     )
     assert (
-        create_book(StrictBook, StrictReview, reviews_count=1).model_dump(mode='json', by_alias=True)
+        create_book(StrictBook, StrictReview, reviews_count=1).model_dump(mode="json", by_alias=True)
         ==
         create_dumped_book(reviews_count=1)
     )
@@ -87,4 +87,4 @@ def bench_dumping(strict: bool, reviews_count: int):
     else:
         data = create_book(Book, Review, reviews_count=reviews_count)
 
-    return benchmark_plan(lambda: data.model_dump(mode='json', by_alias=True))
+    return benchmark_plan(lambda: data.model_dump(mode="json", by_alias=True))

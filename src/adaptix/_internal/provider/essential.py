@@ -7,7 +7,7 @@ from ..compat import CompatExceptionGroup
 from ..feature_requirement import HAS_NATIVE_EXC_GROUP
 from ..utils import with_module
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass(frozen=True)
@@ -21,11 +21,12 @@ class Request(Generic[T]):
     """
 
 
-@with_module('adaptix')
+@with_module("adaptix")
 class CannotProvide(Exception):
     def __init__(
         self,
-        message: str = '',
+        message: str = "",
+        *,
         is_terminal: bool = False,
         is_demonstrative: bool = False,
     ):
@@ -40,7 +41,7 @@ class CannotProvide(Exception):
         )
 
 
-@with_module('adaptix')
+@with_module("adaptix")
 class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide):  # type: ignore[misc]
     def __init__(
         self,
@@ -66,7 +67,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         ):
             return super().__new__(cls, message, exceptions)  # type: ignore[arg-type]
 
-    def derive(self, excs: Sequence[CannotProvide]) -> 'AggregateCannotProvide':  # type: ignore[override]
+    def derive(self, excs: Sequence[CannotProvide]) -> "AggregateCannotProvide":  # type: ignore[override]
         return AggregateCannotProvide(
             self.message,
             excs,
@@ -106,7 +107,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         )
 
 
-V = TypeVar('V')
+V = TypeVar("V")
 
 
 class Mediator(ABC, Generic[V]):
@@ -141,7 +142,7 @@ class Mediator(ABC, Generic[V]):
             return self.provide(request)
         except CannotProvide as e:
             raise AggregateCannotProvide(
-                '' if error_describer is None else error_describer(e),
+                "" if error_describer is None else error_describer(e),
                 [e],
                 is_terminal=False,
                 is_demonstrative=error_describer is not None,
@@ -157,7 +158,7 @@ class Mediator(ABC, Generic[V]):
             return self.provide(request)
         except CannotProvide as e:
             raise AggregateCannotProvide(
-                '' if error_describer is None else error_describer(e),
+                "" if error_describer is None else error_describer(e),
                 [e],
                 is_terminal=True,
                 is_demonstrative=True,
@@ -180,7 +181,7 @@ class Mediator(ABC, Generic[V]):
                 results.append(result)
         if exceptions:
             raise AggregateCannotProvide.make(
-                '' if error_describer is None else error_describer(),
+                "" if error_describer is None else error_describer(),
                 exceptions,
                 is_demonstrative=True,
                 is_terminal=True,
@@ -204,7 +205,7 @@ def mandatory_apply_by_iterable(
             results.append(result)
     if exceptions:
         raise AggregateCannotProvide.make(
-            '' if error_describer is None else error_describer(),
+            "" if error_describer is None else error_describer(),
             exceptions,
             is_demonstrative=True,
             is_terminal=True,

@@ -66,7 +66,7 @@ class ModelDumperProvider(DumperProvider):
         return (
             repr(request.last_map[TypeHintLoc].type)
             if request.last_map.has(TypeHintLoc) else
-            '<unknown model>'
+            "<unknown model>"
         )
 
     def _create_model_dumper_gen(
@@ -91,19 +91,19 @@ class ModelDumperProvider(DumperProvider):
             if isinstance(tp, type):
                 return tp.__name__
             return str(tp)
-        return ''
+        return ""
 
     def _merge_view_string(self, *fragments: str) -> str:
-        return '_'.join(filter(None, fragments))
+        return "_".join(filter(None, fragments))
 
     def _get_file_name(self, request: DumperRequest) -> str:
         return self._merge_view_string(
-            'model_dumper', self._request_to_view_string(request),
+            "model_dumper", self._request_to_view_string(request),
         )
 
     def _get_closure_name(self, request: DumperRequest) -> str:
         return self._merge_view_string(
-            'model_dumper', self._name_sanitizer.sanitize(self._request_to_view_string(request)),
+            "model_dumper", self._name_sanitizer.sanitize(self._request_to_view_string(request)),
         )
 
     def _get_compiler(self) -> ClosureCompiler:
@@ -117,7 +117,7 @@ class ModelDumperProvider(DumperProvider):
             OutputNameLayoutRequest(
                 loc_stack=request.loc_stack,
                 shape=shape,
-            )
+            ),
         )
 
     def _fetch_field_dumpers(
@@ -142,17 +142,17 @@ class ModelDumperProvider(DumperProvider):
         )
         if optional_fields_at_list_crown:
             raise ValueError(
-                f"Optional fields {optional_fields_at_list_crown} are found at list crown"
+                f"Optional fields {optional_fields_at_list_crown} are found at list crown",
             )
 
         wild_extra_targets = get_wild_extra_targets(shape, name_layout.extra_move)
         if wild_extra_targets:
             raise ValueError(
-                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields"
+                f"ExtraTargets {wild_extra_targets} are attached to non-existing fields",
             )
 
         extra_targets_at_crown = get_extra_targets_at_crown(name_layout)
         if extra_targets_at_crown:
             raise ValueError(
-                f"Extra targets {extra_targets_at_crown} are found at crown"
+                f"Extra targets {extra_targets_at_crown} are found at crown",
             )

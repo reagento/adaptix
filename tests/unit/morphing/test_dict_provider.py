@@ -21,7 +21,7 @@ def string_dumper(data):
     raise TypeError
 
 
-@pytest.fixture
+@pytest.fixture()
 def retort():
     return TestRetort(
         recipe=[
@@ -29,8 +29,8 @@ def retort():
             DefaultDictProvider(),
             STR_LOADER_PROVIDER,
             dumper(str, string_dumper),
-            IterableProvider()
-        ]
+            IterableProvider(),
+        ],
     )
 
 
@@ -50,8 +50,8 @@ def test_loading(retort, strict_coercion, debug_trail):
         Dict[str, str],
     )
 
-    assert loader_({'a': 'b', 'c': 'd'}) == {'a': 'b', 'c': 'd'}
-    assert loader_(MyMapping({'a': 'b', 'c': 'd'})) == {'a': 'b', 'c': 'd'}
+    assert loader_({"a": "b", "c": "d"}) == {"a": "b", "c": "d"}
+    assert loader_(MyMapping({"a": "b", "c": "d"})) == {"a": "b", "c": "d"}
 
     raises_exc(
         TypeLoadError(collections.abc.Mapping, 123),
@@ -59,43 +59,43 @@ def test_loading(retort, strict_coercion, debug_trail):
     )
 
     raises_exc(
-        TypeLoadError(collections.abc.Mapping, ['a', 'b', 'c']),
-        lambda: loader_(['a', 'b', 'c']),
+        TypeLoadError(collections.abc.Mapping, ["a", "b", "c"]),
+        lambda: loader_(["a", "b", "c"]),
     )
 
     if strict_coercion:
         if debug_trail == DebugTrail.DISABLE:
             raises_exc(
                 TypeLoadError(str, 0),
-                lambda: loader_({'a': 'b', 'c': 0}),
+                lambda: loader_({"a": "b", "c": 0}),
             )
             raises_exc(
                 TypeLoadError(str, 0),
-                lambda: loader_({'a': 'b', 0: 'd'}),
+                lambda: loader_({"a": "b", 0: "d"}),
             )
         elif debug_trail == DebugTrail.FIRST:
             raises_exc(
-                with_trail(TypeLoadError(str, 0), ['c']),
-                lambda: loader_({'a': 'b', 'c': 0}),
+                with_trail(TypeLoadError(str, 0), ["c"]),
+                lambda: loader_({"a": "b", "c": 0}),
             )
             raises_exc(
                 with_trail(TypeLoadError(str, 0), [ItemKey(0)]),
-                lambda: loader_({'a': 'b', 0: 'd'}),
+                lambda: loader_({"a": "b", 0: "d"}),
             )
         elif debug_trail == DebugTrail.ALL:
             raises_exc(
                 AggregateLoadError(
                     "while loading <class 'dict'>",
-                    [with_trail(TypeLoadError(str, 0), ['c'])]
+                    [with_trail(TypeLoadError(str, 0), ["c"])],
                 ),
-                lambda: loader_({'a': 'b', 'c': 0}),
+                lambda: loader_({"a": "b", "c": 0}),
             )
             raises_exc(
                 AggregateLoadError(
                     "while loading <class 'dict'>",
-                    [with_trail(TypeLoadError(str, 0), [ItemKey(0)])]
+                    [with_trail(TypeLoadError(str, 0), [ItemKey(0)])],
                 ),
-                lambda: loader_({'a': 'b', 0: 'd'}),
+                lambda: loader_({"a": "b", 0: "d"}),
             )
 
 
@@ -112,7 +112,7 @@ def test_loader_unexpected_error(retort, strict_coercion, debug_trail):
     ).extend(
         recipe=[
             loader(str, bad_string_loader),
-        ]
+        ],
     ).get_loader(
         Dict[str, str],
     )
@@ -120,35 +120,35 @@ def test_loader_unexpected_error(retort, strict_coercion, debug_trail):
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
             TypeError(),
-            lambda: loader_({'a': 'b', 'c': 0}),
+            lambda: loader_({"a": "b", "c": 0}),
         )
         raises_exc(
             TypeError(),
-            lambda: loader_({'a': 'b', 0: 'd'}),
+            lambda: loader_({"a": "b", 0: "d"}),
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            with_trail(TypeError(), ['c']),
-            lambda: loader_({'a': 'b', 'c': 0}),
+            with_trail(TypeError(), ["c"]),
+            lambda: loader_({"a": "b", "c": 0}),
         )
         raises_exc(
             with_trail(TypeError(), [ItemKey(0)]),
-            lambda: loader_({'a': 'b', 0: 'd'}),
+            lambda: loader_({"a": "b", 0: "d"}),
         )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
                 "while loading <class 'dict'>",
-                [with_trail(TypeError(), ['c'])]
+                [with_trail(TypeError(), ["c"])],
             ),
-            lambda: loader_({'a': 'b', 'c': 0}),
+            lambda: loader_({"a": "b", "c": 0}),
         )
         raises_exc(
             CompatExceptionGroup(
                 "while loading <class 'dict'>",
-                [with_trail(TypeError(), [ItemKey(0)])]
+                [with_trail(TypeError(), [ItemKey(0)])],
             ),
-            lambda: loader_({'a': 'b', 0: 'd'}),
+            lambda: loader_({"a": "b", 0: "d"}),
         )
 
 
@@ -159,40 +159,40 @@ def test_dumping(retort, debug_trail):
         Dict[str, str],
     )
 
-    assert dumper_({'a': 'b', 'c': 'd'}) == {'a': 'b', 'c': 'd'}
+    assert dumper_({"a": "b", "c": "d"}) == {"a": "b", "c": "d"}
 
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
             TypeError(),
-            lambda: dumper_({'a': 'b', 'c': 0}),
+            lambda: dumper_({"a": "b", "c": 0}),
         )
         raises_exc(
             TypeError(),
-            lambda: dumper_({'a': 'b', 0: 'd'}),
+            lambda: dumper_({"a": "b", 0: "d"}),
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            with_trail(TypeError(), ['c']),
-            lambda: dumper_({'a': 'b', 'c': 0}),
+            with_trail(TypeError(), ["c"]),
+            lambda: dumper_({"a": "b", "c": 0}),
         )
         raises_exc(
             with_trail(TypeError(), [ItemKey(0)]),
-            lambda: dumper_({'a': 'b', 0: 'd'}),
+            lambda: dumper_({"a": "b", 0: "d"}),
         )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
                 "while dumping <class 'dict'>",
-                [with_trail(TypeError(), ['c'])],
+                [with_trail(TypeError(), ["c"])],
             ),
-            lambda: dumper_({'a': 'b', 'c': 0}),
+            lambda: dumper_({"a": "b", "c": 0}),
         )
         raises_exc(
             CompatExceptionGroup(
                 "while dumping <class 'dict'>",
                 [with_trail(TypeError(), [ItemKey(0)])],
             ),
-            lambda: dumper_({'a': 'b', 0: 'd'}),
+            lambda: dumper_({"a": "b", 0: "d"}),
         )
 
 
@@ -204,22 +204,22 @@ def test_defaultdict_loading(retort, strict_coercion, debug_trail):
         DefaultDict[str, str],
     )
 
-    assert loader_({'a': 'b', 'c': 'd'}) == defaultdict(None, {'a': 'b', 'c': 'd'})
+    assert loader_({"a": "b", "c": "d"}) == defaultdict(None, {"a": "b", "c": "d"})
 
 
 def test_defaultdict_loader(retort, strict_coercion, debug_trail):
-    df = list
+    default_factory = list
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     ).extend(
         recipe=[
-            default_dict(defaultdict, default_factory=df),
-        ]
+            default_dict(defaultdict, default_factory=default_factory),
+        ],
     ).get_loader(DefaultDict[str, List[str]])
 
-    assert loader_({'a': ['b', 'c']}) == defaultdict(list, {'a': ['b', 'c']})
-    assert loader_({'a': ['b', 'c']}).default_factory == df
+    assert loader_({"a": ["b", "c"]}) == defaultdict(list, {"a": ["b", "c"]})
+    assert loader_({"a": ["b", "c"]}).default_factory == default_factory
 
 
 def test_defaultdict_dumping(retort, debug_trail):
@@ -229,4 +229,4 @@ def test_defaultdict_dumping(retort, debug_trail):
         DefaultDict[str, str],
     )
 
-    assert dumper_(defaultdict(None, {'a': 'b', 'c': 'd'})) == {'a': 'b', 'c': 'd'}
+    assert dumper_(defaultdict(None, {"a": "b", "c": "d"})) == {"a": "b", "c": "d"}

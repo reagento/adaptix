@@ -9,14 +9,14 @@ OPEN_WEATHER_RETORT = Retort(
         name_mapping(
             Forecast,
             map={
-                'timestamp': 'dt',
+                "timestamp": "dt",
             },
         ),
         name_mapping(
             Weather,
             map={
-                'icon_id': 'icon',
-                'name': 'main',
+                "icon_id": "icon",
+                "name": "main",
             },
         ),
         name_mapping(
@@ -25,5 +25,5 @@ OPEN_WEATHER_RETORT = Retort(
         # default dumper and loader requires isoformat strings
         loader(datetime, lambda x: datetime.fromtimestamp(x, tz=timezone.utc)),
         dumper(datetime, lambda x: x.astimezone(timezone.utc).timestamp()),
-    ]
+    ],
 )

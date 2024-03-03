@@ -65,7 +65,7 @@ def test_declarative():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=str,
@@ -73,7 +73,7 @@ def test_declarative():
                         default=NoDefault(),
                         is_required=True,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=Optional[int],
@@ -81,7 +81,7 @@ def test_declarative():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -89,7 +89,7 @@ def test_declarative():
                         default=DefaultValue(2),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -97,7 +97,7 @@ def test_declarative():
                         default=DefaultFactory(default_factory),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -105,7 +105,7 @@ def test_declarative():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=str,
@@ -113,7 +113,7 @@ def test_declarative():
                         default=NoDefault(),
                         is_required=True,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=Optional[int],
@@ -121,7 +121,7 @@ def test_declarative():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=Optional[int],
@@ -129,7 +129,7 @@ def test_declarative():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=Optional[Declarative1],
@@ -143,56 +143,56 @@ def test_declarative():
                 overriden_types=frozenset(),
                 params=(
                     Param(
-                        field_id='id',
-                        name='id',
+                        field_id="id",
+                        name="id",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='text',
-                        name='text',
+                        field_id="text",
+                        name="text",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='nullable_field',
-                        name='nullable_field',
+                        field_id="nullable_field",
+                        name="nullable_field",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_default',
-                        name='field_with_default',
+                        field_id="field_with_default",
+                        name="field_with_default",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_default_factory',
-                        name='field_with_default_factory',
+                        field_id="field_with_default_factory",
+                        name="field_with_default_factory",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_default_context_factory',
-                        name='field_with_default_context_factory',
+                        field_id="field_with_default_context_factory",
+                        name="field_with_default_context_factory",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_old_syntax',
-                        name='field_with_old_syntax',
+                        field_id="field_with_old_syntax",
+                        name="field_with_old_syntax",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='nullable_field_with_old_syntax',
-                        name='nullable_field_with_old_syntax',
+                        field_id="nullable_field_with_old_syntax",
+                        name="nullable_field_with_old_syntax",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='parent_id',
-                        name='parent_id',
+                        field_id="parent_id",
+                        name="parent_id",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='parent',
-                        name='parent',
+                        field_id="parent",
+                        name="parent",
                         kind=ParamKind.KW_ONLY,
                     ),
-                )
+                ),
             ),
             output=OutputShape(
                 fields=(
@@ -202,7 +202,7 @@ def test_declarative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('id', is_required=True),
+                        accessor=create_attr_accessor("id", is_required=True),
                     ),
                     OutputField(
                         type=str,
@@ -210,7 +210,7 @@ def test_declarative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('text', is_required=True),
+                        accessor=create_attr_accessor("text", is_required=True),
                     ),
                     OutputField(
                         type=Optional[int],
@@ -218,7 +218,7 @@ def test_declarative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('nullable_field', is_required=True),
+                        accessor=create_attr_accessor("nullable_field", is_required=True),
                     ),
                     OutputField(
                         type=int,
@@ -226,7 +226,7 @@ def test_declarative():
                         default=DefaultValue(2),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_default', is_required=True),
+                        accessor=create_attr_accessor("field_with_default", is_required=True),
                     ),
                     OutputField(
                         type=int,
@@ -234,7 +234,7 @@ def test_declarative():
                         default=DefaultFactory(default_factory),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_default_factory', is_required=True),
+                        accessor=create_attr_accessor("field_with_default_factory", is_required=True),
                     ),
                     OutputField(
                         type=int,
@@ -242,7 +242,7 @@ def test_declarative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_default_context_factory', is_required=True),
+                        accessor=create_attr_accessor("field_with_default_context_factory", is_required=True),
                     ),
                     OutputField(
                         type=str,
@@ -250,7 +250,7 @@ def test_declarative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_old_syntax', is_required=True),
+                        accessor=create_attr_accessor("field_with_old_syntax", is_required=True),
                     ),
                     OutputField(
                         type=Optional[int],
@@ -258,7 +258,7 @@ def test_declarative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('nullable_field_with_old_syntax', is_required=True),
+                        accessor=create_attr_accessor("nullable_field_with_old_syntax", is_required=True),
                     ),
                     OutputField(
                         type=Optional[int],
@@ -266,7 +266,7 @@ def test_declarative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('parent_id', is_required=True),
+                        accessor=create_attr_accessor("parent_id", is_required=True),
                     ),
                     OutputField(
                         type=Optional[Declarative1],
@@ -274,11 +274,11 @@ def test_declarative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('parent', is_required=True),
+                        accessor=create_attr_accessor("parent", is_required=True),
                     ),
                 ),
-                overriden_types=frozenset()
-            )
+                overriden_types=frozenset(),
+            ),
         )
     )
 
@@ -319,8 +319,8 @@ def test_imperative():
         Imperative2,
         imperative_table2,
         properties={
-            "parent": relationship(Imperative1)
-        }
+            "parent": relationship(Imperative1),
+        },
     )
 
     assert (
@@ -337,7 +337,7 @@ def test_imperative():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=str,
@@ -345,7 +345,7 @@ def test_imperative():
                         default=NoDefault(),
                         is_required=True,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=Optional[int],
@@ -353,7 +353,7 @@ def test_imperative():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -361,7 +361,7 @@ def test_imperative():
                         default=DefaultValue(2),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -369,7 +369,7 @@ def test_imperative():
                         default=DefaultFactory(default_factory),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=int,
@@ -377,15 +377,15 @@ def test_imperative():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
-                        id='parent_id',
+                        id="parent_id",
                         type=int,
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        is_required=False
+                        is_required=False,
                     ),
                     InputField(
                         type=Optional[Imperative1],
@@ -393,52 +393,52 @@ def test_imperative():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                 ),
                 params=(
                     Param(
-                        field_id='id',
-                        name='id',
+                        field_id="id",
+                        name="id",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='text',
-                        name='text',
+                        field_id="text",
+                        name="text",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='nullable_field',
-                        name='nullable_field',
+                        field_id="nullable_field",
+                        name="nullable_field",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_default',
-                        name='field_with_default',
+                        field_id="field_with_default",
+                        name="field_with_default",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_default_factory',
-                        name='field_with_default_factory',
+                        field_id="field_with_default_factory",
+                        name="field_with_default_factory",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_default_context_factory',
-                        name='field_with_default_context_factory',
+                        field_id="field_with_default_context_factory",
+                        name="field_with_default_context_factory",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='parent_id',
-                        name='parent_id',
+                        field_id="parent_id",
+                        name="parent_id",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='parent',
-                        name='parent',
-                        kind=ParamKind.KW_ONLY
+                        field_id="parent",
+                        name="parent",
+                        kind=ParamKind.KW_ONLY,
                     ),
                 ),
-                overriden_types=frozenset()
+                overriden_types=frozenset(),
             ),
             output=OutputShape(
                 fields=(
@@ -448,7 +448,7 @@ def test_imperative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('id', is_required=True),
+                        accessor=create_attr_accessor("id", is_required=True),
                     ),
                     OutputField(
                         type=str,
@@ -456,7 +456,7 @@ def test_imperative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('text', is_required=True),
+                        accessor=create_attr_accessor("text", is_required=True),
                     ),
                     OutputField(
                         type=Optional[int],
@@ -464,7 +464,7 @@ def test_imperative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('nullable_field', is_required=True),
+                        accessor=create_attr_accessor("nullable_field", is_required=True),
                     ),
                     OutputField(
                         type=int,
@@ -472,7 +472,7 @@ def test_imperative():
                         default=DefaultValue(2),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_default', is_required=True),
+                        accessor=create_attr_accessor("field_with_default", is_required=True),
                     ),
                     OutputField(
                         type=int,
@@ -480,7 +480,7 @@ def test_imperative():
                         default=DefaultFactory(default_factory),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_default_factory', is_required=True),
+                        accessor=create_attr_accessor("field_with_default_factory", is_required=True),
                     ),
                     OutputField(
                         type=int,
@@ -488,27 +488,27 @@ def test_imperative():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_default_context_factory', is_required=True),
+                        accessor=create_attr_accessor("field_with_default_context_factory", is_required=True),
                     ),
                     OutputField(
-                        id='parent_id',
+                        id="parent_id",
                         type=int,
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('parent_id', is_required=True)
+                        accessor=create_attr_accessor("parent_id", is_required=True),
                     ),
                     OutputField(
-                        id='parent',
+                        id="parent",
                         type=Optional[Imperative1],
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('parent', is_required=True),
-                    )
+                        accessor=create_attr_accessor("parent", is_required=True),
+                    ),
                 ),
-                overriden_types=frozenset()
-            )
+                overriden_types=frozenset(),
+            ),
         )
     )
 
@@ -556,7 +556,7 @@ def test_declarative_annotated():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=tp_field_with_default,
@@ -564,7 +564,7 @@ def test_declarative_annotated():
                         default=DefaultValue(2),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=tp_field_with_default_factory,
@@ -572,7 +572,7 @@ def test_declarative_annotated():
                         default=DefaultFactory(default_factory),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=tp_field_with_default_context_factory,
@@ -580,7 +580,7 @@ def test_declarative_annotated():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=tp_parent_id,
@@ -588,7 +588,7 @@ def test_declarative_annotated():
                         default=NoDefault(),
                         is_required=False,
                         metadata={},
-                        original=ANY
+                        original=ANY,
                     ),
                     InputField(
                         type=Optional[Declarative1],
@@ -602,36 +602,36 @@ def test_declarative_annotated():
                 overriden_types=frozenset(),
                 params=(
                     Param(
-                        field_id='id',
-                        name='id',
+                        field_id="id",
+                        name="id",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_default',
-                        name='field_with_default',
+                        field_id="field_with_default",
+                        name="field_with_default",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_default_factory',
-                        name='field_with_default_factory',
+                        field_id="field_with_default_factory",
+                        name="field_with_default_factory",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='field_with_default_context_factory',
-                        name='field_with_default_context_factory',
+                        field_id="field_with_default_context_factory",
+                        name="field_with_default_context_factory",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='parent_id',
-                        name='parent_id',
+                        field_id="parent_id",
+                        name="parent_id",
                         kind=ParamKind.KW_ONLY,
                     ),
                     Param(
-                        field_id='parent',
-                        name='parent',
+                        field_id="parent",
+                        name="parent",
                         kind=ParamKind.KW_ONLY,
                     ),
-                )
+                ),
             ),
             output=OutputShape(
                 fields=(
@@ -641,7 +641,7 @@ def test_declarative_annotated():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('id', is_required=True),
+                        accessor=create_attr_accessor("id", is_required=True),
                     ),
                     OutputField(
                         type=tp_field_with_default,
@@ -649,7 +649,7 @@ def test_declarative_annotated():
                         default=DefaultValue(2),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_default', is_required=True),
+                        accessor=create_attr_accessor("field_with_default", is_required=True),
                     ),
                     OutputField(
                         type=tp_field_with_default_factory,
@@ -657,7 +657,7 @@ def test_declarative_annotated():
                         default=DefaultFactory(default_factory),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_default_factory', is_required=True),
+                        accessor=create_attr_accessor("field_with_default_factory", is_required=True),
                     ),
                     OutputField(
                         type=tp_field_with_default_context_factory,
@@ -665,7 +665,7 @@ def test_declarative_annotated():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('field_with_default_context_factory', is_required=True),
+                        accessor=create_attr_accessor("field_with_default_context_factory", is_required=True),
                     ),
                     OutputField(
                         type=tp_parent_id,
@@ -673,7 +673,7 @@ def test_declarative_annotated():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('parent_id', is_required=True),
+                        accessor=create_attr_accessor("parent_id", is_required=True),
                     ),
                     OutputField(
                         type=Optional[Declarative1],
@@ -681,10 +681,10 @@ def test_declarative_annotated():
                         default=NoDefault(),
                         metadata={},
                         original=ANY,
-                        accessor=create_attr_accessor('parent', is_required=True),
+                        accessor=create_attr_accessor("parent", is_required=True),
                     ),
                 ),
-                overriden_types=frozenset()
-            )
+                overriden_types=frozenset(),
+            ),
         )
     )

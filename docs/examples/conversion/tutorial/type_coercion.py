@@ -27,14 +27,14 @@ convert_book_to_dto = get_converter(
 assert (
     convert_book_to_dto(
         Book(
-            id=UUID('87000388-94e6-49a4-b51b-320e38577bd9'),
+            id=UUID("87000388-94e6-49a4-b51b-320e38577bd9"),
             title="Fahrenheit 451",
             author="Ray Bradbury",
-        )
+        ),
     )
     ==
     BookDTO(
-        id='87000388-94e6-49a4-b51b-320e38577bd9',
+        id="87000388-94e6-49a4-b51b-320e38577bd9",
         title="Fahrenheit 451",
         author="Ray Bradbury",
     )

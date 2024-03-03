@@ -75,7 +75,7 @@ def get_dataclass_shape(tp) -> FullShape:
     name_to_dc_field = all_dc_fields(tp)
     dc_fields_public = dc_fields(tp)
     init_params = list(
-        inspect.signature(tp.__init__).parameters.keys()
+        inspect.signature(tp.__init__).parameters.keys(),
     )[1:]
     type_hints = get_all_type_hints(tp)
 

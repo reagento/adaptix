@@ -9,7 +9,7 @@ from ..type_tools import BaseNormType, normalize_type
 from ..utils import pairs
 from .essential import CannotProvide, Request
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass(frozen=True)
@@ -45,8 +45,8 @@ class GenericParamLoc(Location):
 
 
 LocMap = ClassMap[Location]
-LR = TypeVar('LR', bound='LocatedRequest')
-LocStackT = TypeVar('LocStackT', bound='LocStack')
+LR = TypeVar("LR", bound="LocatedRequest")
+LocStackT = TypeVar("LocStackT", bound="LocStack")
 
 
 class LocStack(ImmutableStack[LocMap]):
@@ -74,7 +74,7 @@ def try_normalize_type(tp: TypeHint) -> BaseNormType:
     try:
         return normalize_type(tp)
     except ValueError:
-        raise CannotProvide(f'{tp} can not be normalized')
+        raise CannotProvide(f"{tp} can not be normalized")
 
 
 class StrictCoercionRequest(LocatedRequest[bool]):

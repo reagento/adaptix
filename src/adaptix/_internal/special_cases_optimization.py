@@ -6,10 +6,10 @@ from .morphing.model.crown_definitions import Sieve
 as_is_stub = lambda x: x  # noqa: E731  # pylint: disable=unnecessary-lambda-assignment
 
 
-S = TypeVar('S', bound=Sieve)
+S = TypeVar("S", bound=Sieve)
 
 
-_DEFAULT_CLAUSE_ATTR_NAME = '_adaptix_default_clause'
+_DEFAULT_CLAUSE_ATTR_NAME = "_adaptix_default_clause"
 
 
 def with_default_clause(default: Union[DefaultValue, DefaultFactory, DefaultFactoryWithSelf], sieve: S) -> S:

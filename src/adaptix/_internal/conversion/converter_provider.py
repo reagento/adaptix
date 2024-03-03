@@ -53,7 +53,7 @@ class BuiltinConverterProvider(ConverterProvider):
         signature = request.signature
         if len(signature.parameters.values()) == 0:
             raise CannotProvide(
-                message='At least one parameter is required',
+                message="At least one parameter is required",
                 is_demonstrative=True,
             )
         if any(
@@ -61,7 +61,7 @@ class BuiltinConverterProvider(ConverterProvider):
             for param in signature.parameters.values()
         ):
             raise CannotProvide(
-                message='Parameters specified by *args and **kwargs are not supported',
+                message="Parameters specified by *args and **kwargs are not supported",
                 is_demonstrative=True,
             )
 
@@ -106,22 +106,22 @@ class BuiltinConverterProvider(ConverterProvider):
     def _get_closure_name(self, request: ConverterRequest) -> str:
         if request.function_name is not None:
             return request.function_name
-        stub_function_name = getattr(request.stub_function, '__name__', None)
+        stub_function_name = getattr(request.stub_function, "__name__", None)
         if stub_function_name is not None:
             return stub_function_name
         src = next(iter(request.signature.parameters.values()))
         dst = self._get_type_from_annotation(request.signature.return_annotation)
-        return self._name_sanitizer.sanitize(f'convert_{src}_to_{dst}')
+        return self._name_sanitizer.sanitize(f"convert_{src}_to_{dst}")
 
     def _get_file_name(self, request: ConverterRequest) -> str:
         if request.function_name is not None:
             return request.function_name
-        stub_function_name = getattr(request.stub_function, '__name__', None)
+        stub_function_name = getattr(request.stub_function, "__name__", None)
         if stub_function_name is not None:
             return stub_function_name
         src = next(iter(request.signature.parameters.values()))
         dst = self._get_type_from_annotation(request.signature.return_annotation)
-        return f'convert_{src}_to_{dst}'
+        return f"convert_{src}_to_{dst}"
 
     def _get_type_from_annotation(self, annotation: Any) -> TypeHint:
         return Any if annotation == Signature.empty else annotation
@@ -137,7 +137,7 @@ class BuiltinConverterProvider(ConverterProvider):
 
     def _get_dst_field(self, return_annotation: Any) -> InputField:
         return InputField(
-            id='__return__',
+            id="__return__",
             type=self._get_type_from_annotation(return_annotation),
             metadata={},
             default=NoDefault(),
@@ -186,23 +186,23 @@ class BuiltinConverterProvider(ConverterProvider):
                     LinkingRequest(
                         sources=sources,  # type: ignore[arg-type]
                         destination=destination,
-                    )
+                    ),
                 )
             except CannotProvide as e:
                 if dst_field.is_required:
-                    add_note(e, 'Note: This is a required filed, so it must take value')
+                    add_note(e, "Note: This is a required filed, so it must take value")
                     raise
 
                 policy = mediator.mandatory_provide(
-                    UnlinkedOptionalPolicyRequest(loc_stack=destination.to_loc_stack())
+                    UnlinkedOptionalPolicyRequest(loc_stack=destination.to_loc_stack()),
                 )
                 if policy.is_allowed:
                     return dst_field, None
                 add_note(
                     e,
-                    'Note: Current policy forbids unlinked optional fields,'
-                    ' so you need to link it to another field'
-                    ' or explicitly confirm the desire to skipping using `allow_unlinked_optional`'
+                    "Note: Current policy forbids unlinked optional fields,"
+                    " so you need to link it to another field"
+                    " or explicitly confirm the desire to skipping using `allow_unlinked_optional`",
                 )
                 raise
             return dst_field, linking
@@ -210,7 +210,7 @@ class BuiltinConverterProvider(ConverterProvider):
         return mandatory_apply_by_iterable(
             fetch_field_linking,
             zip(dst_shape.fields),
-            lambda: 'Linkings for some fields are not found',
+            lambda: "Linkings for some fields are not found",
         )
 
     def _get_nested_models_sub_plan(
@@ -223,11 +223,11 @@ class BuiltinConverterProvider(ConverterProvider):
         try:
             dst_shape = provide_generic_resolved_shape(
                 mediator,
-                InputShapeRequest(loc_stack=linking_dst.to_loc_stack())
+                InputShapeRequest(loc_stack=linking_dst.to_loc_stack()),
             )
             src_shape = provide_generic_resolved_shape(
                 mediator,
-                OutputShapeRequest(loc_stack=linking_src.to_loc_stack())
+                OutputShapeRequest(loc_stack=linking_src.to_loc_stack()),
             )
         except CannotProvide:
             return None
@@ -263,13 +263,13 @@ class BuiltinConverterProvider(ConverterProvider):
             CoercerRequest(
                 src=linking_src,
                 dst=linking_dst,
-            )
+            ),
         )
         return FunctionElement(
             func=coercer,
             args=(
                 PositionalArg(
-                    self._linking_source_to_plan(linking_src)
+                    self._linking_source_to_plan(linking_src),
                 ),
             ),
         )
@@ -303,7 +303,7 @@ class BuiltinConverterProvider(ConverterProvider):
         coercers = mandatory_apply_by_iterable(
             generate_sub_plan,
             field_linkings,
-            lambda: 'Coercers for some linkings are not found',
+            lambda: "Coercers for some linkings are not found",
         )
         return {
             dst_field: coercer
@@ -363,8 +363,8 @@ class BuiltinConverterProvider(ConverterProvider):
                 args.append(KeywordArg(param.name, sub_plan))
             elif param.kind == ParamKind.POS_ONLY and has_skipped_params:
                 raise CannotProvide(
-                    'Can not generate consistent constructor call,'
-                    ' positional-only parameter is skipped',
+                    "Can not generate consistent constructor call,"
+                    " positional-only parameter is skipped",
                     is_demonstrative=True,
                 )
             else:

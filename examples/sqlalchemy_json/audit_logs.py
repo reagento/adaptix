@@ -12,7 +12,7 @@ class UserCreated(AuditLog):
     id: int
     name: str
 
-    tag: Literal['user_created'] = 'user_created'
+    tag: Literal["user_created"] = "user_created"
 
 
 @dataclass
@@ -20,14 +20,14 @@ class UserChanged(AuditLog):
     id: int
     name: str
 
-    tag: Literal['user_changed'] = 'user_changed'
+    tag: Literal["user_changed"] = "user_changed"
 
 
 @dataclass
 class UserDeleted(AuditLog):
     id: int
 
-    tag: Literal['user_deleted'] = 'user_deleted'
+    tag: Literal["user_deleted"] = "user_deleted"
 
 
 AnyAuditLog = Union[

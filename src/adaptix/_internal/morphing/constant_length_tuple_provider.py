@@ -1,3 +1,4 @@
+# ruff: noqa: SIM113
 import collections.abc
 import typing
 from typing import Collection, Mapping, Tuple
@@ -42,7 +43,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             raise CannotProvide(
                 "Unpacking tuples of dynamic length isn't supported yet",
                 is_terminal=True,
-                is_demonstrative=True
+                is_demonstrative=True,
             )
 
         loaders = mediator.mandatory_provide_by_iterable(
@@ -52,18 +53,18 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                         LocMap(
                             TypeHintLoc(type=tp.source),
                             GenericParamLoc(generic_pos=i),
-                        )
-                    )
+                        ),
+                    ),
                 )
                 for i, tp in enumerate(norm.args)
             ],
-            lambda: 'Cannot create loader for tuple. Loaders for some elements cannot be created',
+            lambda: "Cannot create loader for tuple. Loaders for some elements cannot be created",
         )
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        return self._make_loader(tuple(loaders), strict_coercion, debug_trail)
+        return self._make_loader(tuple(loaders), strict_coercion=strict_coercion, debug_trail=debug_trail)
 
-    def _make_loader(self, loaders: Collection[Loader], strict_coercion: bool, debug_trail: DebugTrail):
+    def _make_loader(self, loaders: Collection[Loader], *, strict_coercion: bool, debug_trail: DebugTrail):
         if debug_trail == DebugTrail.DISABLE:
             if strict_coercion:
                 return self._get_dt_disable_sc_loader(loaders)
@@ -92,7 +93,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         def dt_sc_loader(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(tuple, Mapping, data)
-            if type(data) is str:  # pylint: disable=unidiomatic-typecheck
+            if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
                 raise ExcludedTypeLoadError(tuple, str, data)
 
             try:
@@ -103,10 +104,10 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
         return dt_sc_loader
 
-    def _create_dt_all_loader(self, loaders: Collection[Loader]):  # noqa: C901, CCR001
+    def _create_dt_all_loader(self, loaders: Collection[Loader]):  # noqa: C901
         loaders_len = len(loaders)
 
-        def dt_all_loader(data):  # noqa: CCR001
+        def dt_all_loader(data):
             try:
                 data_len = len(data)
             except TypeError:
@@ -135,17 +136,17 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             if errors:
                 if has_unexpected_error:
                     raise CompatExceptionGroup(
-                        'while loading tuple',
+                        "while loading tuple",
                         [render_trail_as_note(e) for e in errors],
                     )
                 raise AggregateLoadError(
-                    'while loading tuple',
+                    "while loading tuple",
                     [render_trail_as_note(e) for e in errors],
                 )
 
         return dt_all_loader
 
-    def _create_dt_first_loader(self, loaders: Collection[Loader]):  # noqa: CCR001
+    def _create_dt_first_loader(self, loaders: Collection[Loader]):
         loaders_len = len(loaders)
 
         def dt_first_loader(data):
@@ -193,13 +194,13 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
         return dt_disable_non_sc_loader
 
-    def _get_dt_disable_sc_loader(self, loaders: Collection[Loader]):  # noqa: CCR001
+    def _get_dt_disable_sc_loader(self, loaders: Collection[Loader]):
         loaders_len = len(loaders)
 
         def dt_disable_sc_loader(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(tuple, Mapping, data)
-            if type(data) is str:  # pylint: disable=unidiomatic-typecheck
+            if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
                 raise ExcludedTypeLoadError(tuple, str, data)
 
             try:
@@ -228,7 +229,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             raise CannotProvide(
                 "tuples of dynamic length isn't supported yet",
                 is_terminal=True,
-                is_demonstrative=True
+                is_demonstrative=True,
             )
         dumpers = mediator.mandatory_provide_by_iterable(
             [
@@ -237,12 +238,12 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                         LocMap(
                             TypeHintLoc(type=tp.source),
                             GenericParamLoc(generic_pos=i),
-                        )
-                    )
+                        ),
+                    ),
                 )
                 for i, tp in enumerate(norm.args)
             ],
-            lambda: 'Cannot create dumper for tuple. Dumpers for some elements cannot be created',
+            lambda: "Cannot create dumper for tuple. Dumpers for some elements cannot be created",
         )
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         return self._make_dumper(tuple(dumpers), debug_trail)
@@ -256,7 +257,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             return self._get_dt_dumper(self._create_dt_all_dumper(dumpers))
         raise ValueError
 
-    def _create_dt_all_dumper(self, dumpers: Collection[Dumper]):  # noqa: CCR001
+    def _create_dt_all_dumper(self, dumpers: Collection[Dumper]):
         dumpers_len = len(dumpers)
 
         def dt_all_dumper(data):
@@ -283,13 +284,13 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
             if errors:
                 raise CompatExceptionGroup(
-                    'while dumping tuple',
-                    [render_trail_as_note(e) for e in errors]
+                    "while dumping tuple",
+                    [render_trail_as_note(e) for e in errors],
                 )
 
         return dt_all_dumper
 
-    def _create_dt_first_dumper(self, dumpers: Collection[Dumper]):  # noqa: CCR001
+    def _create_dt_first_dumper(self, dumpers: Collection[Dumper]):
         dumpers_len = len(dumpers)
 
         def dt_first_dumper(data):

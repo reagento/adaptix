@@ -29,7 +29,7 @@ class ClosureCompiler(ABC):
 
 
 class ConcurrentCounter:
-    __slots__ = ('_lock', '_name_to_idx')
+    __slots__ = ("_lock", "_name_to_idx")
 
     def __init__(self) -> None:
         self._lock = Lock()
@@ -56,10 +56,10 @@ class BasicClosureCompiler(ClosureCompiler):
         return main_builder
 
     def _compile(self, source: str, unique_filename: str, namespace: Dict[str, Any]):
-        code_obj = compile(source, unique_filename, "exec")  # noqa: DUO110
+        code_obj = compile(source, unique_filename, "exec")
 
         local_namespace: Dict[str, Any] = {}
-        exec(code_obj, namespace, local_namespace)  # noqa: DUO105
+        exec(code_obj, namespace, local_namespace)  # noqa: S102
         linecache.cache[unique_filename] = (
             len(source),
             None,
@@ -72,7 +72,7 @@ class BasicClosureCompiler(ClosureCompiler):
         idx = _counter.generate_idx(base_id)
         if idx == 0:
             return base_id
-        return f'{base_id} {idx}'
+        return f"{base_id} {idx}"
 
     def compile(
         self,

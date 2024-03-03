@@ -1,4 +1,5 @@
 # pylint: disable=import-error,no-name-in-module
+# ruff: noqa: T201, S603
 import importlib.metadata
 import inspect
 import json
@@ -19,12 +20,12 @@ from pyperf._cli import format_checks
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
 __all__ = (
-    'BenchmarkDirector',
-    'BenchSchema',
-    'PlotParams',
-    'CheckParams',
-    'BenchAccessor',
-    'BenchChecker',
+    "BenchmarkDirector",
+    "BenchSchema",
+    "PlotParams",
+    "CheckParams",
+    "BenchAccessor",
+    "BenchChecker",
 )
 
 EnvSpec = Mapping[str, str]
@@ -44,7 +45,7 @@ class BenchSchema:
     kwargs: Mapping[str, Any]
     used_distributions: Sequence[str]
     skip_if: Optional[Callable[[EnvSpec], bool]] = None
-    check_params: Callable[[EnvSpec], CheckParams] = lambda env_spec: CheckParams()
+    check_params: Callable[[EnvSpec], CheckParams] = lambda env_spec: CheckParams()  # noqa: E731
 
 
 @dataclass(frozen=True)
@@ -53,7 +54,7 @@ class PlotParams:
     fig_size: Tuple[float, float] = (8, 4.8)
     label_padding: float = 0
     trim_after: Optional[float] = None
-    label_format: str = '.1f'
+    label_format: str = ".1f"
 
 
 BUILTIN_CHECK_PARAMS = CheckParams(
@@ -76,8 +77,8 @@ class BenchAccessor:
         self._base_check_params = check_params
 
     def add_arguments(self, parser: ArgumentParser) -> None:
-        parser.add_argument('--data-dir', action='store', required=False, type=Path)
-        parser.add_argument('--env-spec', action='extend', nargs="+", required=False, metavar="KEY=VALUE")
+        parser.add_argument("--data-dir", action="store", required=False, type=Path)
+        parser.add_argument("--env-spec", action="extend", nargs="+", required=False, metavar="KEY=VALUE")
 
     def override_state(self, env_spec: Optional[Iterable[str]], data_dir: Optional[Path] = None):
         if data_dir is not None:
@@ -86,7 +87,7 @@ class BenchAccessor:
         if env_spec is not None:
             update_data = {}
             for item in env_spec:
-                key, value = item.split('=')
+                key, value = item.split("=")
                 if key not in self.env_spec:
                     raise KeyError(f"Unexpected key {key}")
                 update_data[key] = value
@@ -99,20 +100,20 @@ class BenchAccessor:
         return self.data_dir / f"{bench_id}.json"
 
     def env_spec_str(self) -> str:
-        return '[' + '-'.join(f"{k}={v}" for k, v in self.env_spec.items()) + ']'
+        return "[" + "-".join(f"{k}={v}" for k, v in self.env_spec.items()) + "]"
 
     def get_id(self, schema: BenchSchema) -> str:
         return self.get_local_id(schema) + self.env_spec_str()
 
     def get_local_id(self, schema: BenchSchema) -> str:
         if schema.tags:
-            tags_str = '-' + '-'.join(schema.tags)
+            tags_str = "-" + "-".join(schema.tags)
             return schema.base + tags_str
         return schema.base
 
     def get_label(self, schema: BenchSchema) -> str:
         if schema.tags:
-            tags_str = ', '.join(schema.tags)
+            tags_str = ", ".join(schema.tags)
             return f"{schema.base}\n({tags_str})"
         return schema.base
 
@@ -124,7 +125,7 @@ class BenchAccessor:
             return base_value
         builtin_value = getattr(BUILTIN_CHECK_PARAMS, key)
         if builtin_value is None:
-            raise ValueError(f'Check param {key!r} must be filled')
+            raise ValueError(f"Check param {key!r} must be filled")
         return builtin_value
 
     def resolve_check_params(self, schema: BenchSchema) -> CheckParams:
@@ -133,7 +134,7 @@ class BenchAccessor:
             **{
                 key: self._chain_check_param(base_check_params, key, value)
                 for key, value in vars(schema.check_params(self.env_spec)).items()
-            }
+            },
         )
 
     @cached_property
@@ -151,8 +152,8 @@ class BenchChecker:
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
-            '--local-id-list', action='store_true', required=False, default=False,
-            help='print only schema list with errors'
+            "--local-id-list", action="store_true", required=False, default=False,
+            help="print only schema list with errors",
         )
 
     def _process_pyperf_warnings(
@@ -167,7 +168,7 @@ class BenchChecker:
         return [
             line
             for line in warnings
-            if not line.startswith('Use')
+            if not line.startswith("Use")
         ]
 
     def get_warnings(self, schema: BenchSchema) -> Optional[Sequence[str]]:
@@ -189,18 +190,18 @@ class BenchChecker:
         if rate >= check_params.stdev_rel_threshold:
             lines.append(
                 f"the relative standard deviation is {rate:.1%},"
-                f" max allowed is {check_params.stdev_rel_threshold:.0%}"
+                f" max allowed is {check_params.stdev_rel_threshold:.0%}",
             )
         return lines
 
-    def check_results(self, local_id_list: bool = False):
+    def check_results(self, *, local_id_list: bool = False):
         lines = []
         schemas_with_warnings = []
         for schema in self.accessor.schemas:
             warnings = self.get_warnings(schema)
             if warnings is None:
-                lines.append(f'Result file of {self.accessor.get_id(schema)!r}')
-                lines.append('')
+                lines.append(f"Result file of {self.accessor.get_id(schema)!r}")
+                lines.append("")
                 schemas_with_warnings.append(schema)
             elif warnings:
                 lines.append(self.accessor.get_id(schema))
@@ -210,7 +211,7 @@ class BenchChecker:
         if local_id_list:
             print(json.dumps([self.accessor.get_local_id(schema) for schema in schemas_with_warnings]))
         else:
-            print('\n'.join(lines))
+            print("\n".join(lines))
 
 
 class BenchRunner:
@@ -220,21 +221,22 @@ class BenchRunner:
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         selective_group = parser.add_mutually_exclusive_group()
-        selective_group.add_argument('--include', '-i', action='extend', nargs="+", required=False)
-        selective_group.add_argument('--exclude', '-e', action='extend', nargs="+", required=False)
+        selective_group.add_argument("--include", "-i", action="extend", nargs="+", required=False)
+        selective_group.add_argument("--exclude", "-e", action="extend", nargs="+", required=False)
 
         scope_group = parser.add_mutually_exclusive_group()
         scope_group.add_argument(
-            '--missing', action='store_true', required=False, default=False,
-            help='run only missing benchmarks'
+            "--missing", action="store_true", required=False, default=False,
+            help="run only missing benchmarks",
         )
         scope_group.add_argument(
-            '--unstable', action='store_true', required=False, default=False,
-            help='run only unstable or missing benchmarks'
+            "--unstable", action="store_true", required=False, default=False,
+            help="run only unstable or missing benchmarks",
         )
 
     def run_benchmarks(
         self,
+        *,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         missing: bool = False,
@@ -277,7 +279,7 @@ class BenchRunner:
         else:
             benchmarks_to_run = [self.accessor.get_local_id(schema) for schema in schemas]
 
-        print('Benchmarks to run: ' + " ".join(benchmarks_to_run))
+        print("Benchmarks to run: " + " ".join(benchmarks_to_run))
         for tag in benchmarks_to_run:
             self.run_one_benchmark(local_id_to_schema[tag])
 
@@ -286,12 +288,12 @@ class BenchRunner:
         sig = inspect.signature(
             load_by_object_ref(schema.entry_point)
             if isinstance(schema.entry_point, str) else
-            schema.entry_point
+            schema.entry_point,
         )
         result_file = self.accessor.bench_result_file(bench_id)
         with TemporaryDirectory() as dir_name:
             temp_file = Path(dir_name) / f"{bench_id}.json"
-            print(f'start: {bench_id}')
+            print(f"start: {bench_id}")
             self.launch_benchmark(
                 bench_name=bench_id,
                 entrypoint=(
@@ -299,15 +301,15 @@ class BenchRunner:
                     if isinstance(schema.entry_point, str) else
                     get_function_object_ref(schema.entry_point)
                 ),
-                params=[schema.kwargs[param] for param in sig.parameters.keys()],
-                extra_args=['-o', str(temp_file)]
+                params=[schema.kwargs[param] for param in sig.parameters],
+                extra_args=["-o", str(temp_file)],
             )
             result_data = json.loads(temp_file.read_text())
-            result_data['pybench_data'] = {
-                'base': schema.base,
-                'tags': schema.tags,
-                'kwargs': schema.kwargs,
-                'distributions': {
+            result_data["pybench_data"] = {
+                "base": schema.base,
+                "tags": schema.tags,
+                "kwargs": schema.kwargs,
+                "distributions": {
                     dist: importlib.metadata.version(dist)
                     for dist in schema.used_distributions
                 },
@@ -317,12 +319,12 @@ class BenchRunner:
                     result_data,
                     ensure_ascii=False,
                     check_circular=False,
-                )
+                ),
             )
             bench = pyperf.Benchmark.load(str(result_file))
             check_params = self.accessor.resolve_check_params(schema)
             rel_stddev = bench.stdev() / bench.mean()
-            print(f'Relative stdev is {rel_stddev:.1%} (max allowed is {check_params.stdev_rel_threshold:.1%})')
+            print(f"Relative stdev is {rel_stddev:.1%} (max allowed is {check_params.stdev_rel_threshold:.1%})")
             print()
 
     def launch_benchmark(
@@ -334,15 +336,15 @@ class BenchRunner:
     ) -> None:
         subprocess.run(
             [
-                sys.executable, '-m', 'benchmarks.pybench.pyperf_runner',
-                '--inherit-environ', 'PYBENCH_NAME,PYBENCH_ENTRYPOINT,PYBENCH_PARAMS',
+                sys.executable, "-m", "benchmarks.pybench.pyperf_runner",
+                "--inherit-environ", "PYBENCH_NAME,PYBENCH_ENTRYPOINT,PYBENCH_PARAMS",
                 *extra_args,
             ],
             env={
                 **os.environ,
-                'PYBENCH_NAME': bench_name,
-                'PYBENCH_ENTRYPOINT': entrypoint,
-                'PYBENCH_PARAMS': json.dumps(params),
+                "PYBENCH_NAME": bench_name,
+                "PYBENCH_ENTRYPOINT": entrypoint,
+                "PYBENCH_PARAMS": json.dumps(params),
             },
             check=True,
         )
@@ -354,20 +356,20 @@ class BenchPlotter:
         self.accessor = accessor
 
     def add_arguments(self, parser: ArgumentParser) -> None:
-        parser.add_argument('--output', '-o', action='store', required=False, type=Path)
-        parser.add_argument('--dpi', action='store', required=False, type=float, default=100)
+        parser.add_argument("--output", "-o", action="store", required=False, type=Path)
+        parser.add_argument("--dpi", action="store", required=False, type=float, default=100)
 
     def _load_benchmarks(self) -> Iterable[pyperf.Benchmark]:
         return [
             pyperf.Benchmark.load(
-                str(self.accessor.bench_result_file(self.accessor.get_id(schema)))
+                str(self.accessor.bench_result_file(self.accessor.get_id(schema))),
             )
             for schema in self.accessor.schemas
         ]
 
     def draw_plot(self, output: Optional[Path], dpi: float):
         if output is None:
-            output = self.accessor.data_dir / f'plot{self.accessor.env_spec_str()}.png'
+            output = self.accessor.data_dir / f"plot{self.accessor.env_spec_str()}.png"
 
         self._render_plot(
             output=output,
@@ -390,10 +392,10 @@ class BenchPlotter:
             x_pos,
             means,
             xerr=errors,
-            align='center',
+            align="center",
             alpha=1,
-            color='orange',
-            ecolor='black',
+            color="orange",
+            ecolor="black",
             capsize=5,
             edgecolor="black",
         )
@@ -409,23 +411,23 @@ class BenchPlotter:
             fontsize=9,
             labels=[format(mean, self.params.label_format) for mean in means],
         )
-        ax.set_xlabel('Time (μs)')
+        ax.set_xlabel("Time (μs)")
         ax.set_yticks(x_pos)
         ax.tick_params(bottom=False, left=False)
         ax.set_yticklabels(
             [
                 self.accessor.get_label(self.accessor.id_to_schema[bench.get_name()])
                 for bench in benchmarks
-            ]
+            ],
         )
         ax.set_title(self.params.title)
-        ax.xaxis.grid(True)
+        ax.xaxis.grid(visible=True)
         plt.tight_layout(w_pad=1000)
         ax.set_axisbelow(True)
         plt.savefig(output, dpi=dpi)
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def call_by_namespace(func: Callable[..., T], namespace: Namespace) -> T:
@@ -434,7 +436,7 @@ def call_by_namespace(func: Callable[..., T], namespace: Namespace) -> T:
     return func(**{key: getattr(namespace, key) for key in kwargs_for_func})
 
 
-BD = TypeVar('BD', bound='BenchmarkDirector')
+BD = TypeVar("BD", bound="BenchmarkDirector")
 
 
 class BenchmarkDirector:
@@ -472,14 +474,14 @@ class BenchmarkDirector:
 
         call_by_namespace(accessor.override_state, namespace)
         accessor.apply_state()
-        if namespace.command == 'run':
+        if namespace.command == "run":
             call_by_namespace(runner.run_benchmarks, namespace)
-        elif namespace.command == 'render':
+        elif namespace.command == "render":
             call_by_namespace(plotter.draw_plot, namespace)
-        elif namespace.command == 'run-render':
+        elif namespace.command == "run-render":
             call_by_namespace(runner.run_benchmarks, namespace)
             call_by_namespace(plotter.draw_plot, namespace)
-        elif namespace.command == 'check':
+        elif namespace.command == "check":
             call_by_namespace(checker.check_results, namespace)
         else:
             raise TypeError
@@ -495,24 +497,24 @@ class BenchmarkDirector:
 
         subparsers = parser.add_subparsers(required=True)
 
-        run_parser = subparsers.add_parser('run')
-        run_parser.set_defaults(command='run')
+        run_parser = subparsers.add_parser("run")
+        run_parser.set_defaults(command="run")
         accessor.add_arguments(run_parser)
         runner.add_arguments(run_parser)
 
-        render_parser = subparsers.add_parser('render')
-        render_parser.set_defaults(command='render')
+        render_parser = subparsers.add_parser("render")
+        render_parser.set_defaults(command="render")
         accessor.add_arguments(render_parser)
         plotter.add_arguments(render_parser)
 
-        run_render_parser = subparsers.add_parser('run-render')
-        run_render_parser.set_defaults(command='run-render')
+        run_render_parser = subparsers.add_parser("run-render")
+        run_render_parser.set_defaults(command="run-render")
         accessor.add_arguments(run_render_parser)
         runner.add_arguments(run_render_parser)
         plotter.add_arguments(run_render_parser)
 
-        check_parser = subparsers.add_parser('check')
-        check_parser.set_defaults(command='check')
+        check_parser = subparsers.add_parser("check")
+        check_parser.set_defaults(command="check")
         accessor.add_arguments(check_parser)
         checker.add_arguments(check_parser)
 
@@ -540,7 +542,7 @@ class BenchmarkDirector:
         for schema in self.schemas:
             local_id = accessor.get_local_id(schema)
             if local_id in local_id_set:
-                raise ValueError(f'Local id {local_id} is duplicated')
+                raise ValueError(f"Local id {local_id} is duplicated")
             local_id_set.add(local_id)
 
     def replace(self: BD, *, env_spec: EnvSpec) -> BD:

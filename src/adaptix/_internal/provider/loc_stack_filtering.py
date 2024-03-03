@@ -23,7 +23,7 @@ from ..type_tools.normalize_type import NotSubscribedError
 from .essential import CannotProvide, Request
 from .request_cls import FieldLoc, GenericParamLoc, Location, LocStack, TypeHintLoc
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class DirectMediator(Protocol):
@@ -60,25 +60,25 @@ class LocStackChecker(ABC):
         ...
 
     @final
-    def __or__(self, other: Any) -> 'LocStackChecker':
+    def __or__(self, other: Any) -> "LocStackChecker":
         if isinstance(other, LocStackChecker):
             return OrLocStackChecker([self, other])
         return NotImplemented
 
     @final
-    def __and__(self, other: Any) -> 'LocStackChecker':
+    def __and__(self, other: Any) -> "LocStackChecker":
         if isinstance(other, LocStackChecker):
             return AndLocStackChecker([self, other])
         return NotImplemented
 
     @final
-    def __xor__(self, other: Any) -> 'LocStackChecker':
+    def __xor__(self, other: Any) -> "LocStackChecker":
         if isinstance(other, LocStackChecker):
             return XorLocStackChecker([self, other])
         return NotImplemented
 
     @final
-    def __invert__(self) -> 'LocStackChecker':
+    def __invert__(self) -> "LocStackChecker":
         return InvertLSC(self)
 
 
@@ -216,7 +216,7 @@ class AnyLocStackChecker(LocStackChecker):
         return True
 
 
-Pred = Union[str, re.Pattern, type, TypeHint, LocStackChecker, 'LocStackPattern']
+Pred = Union[str, re.Pattern, type, TypeHint, LocStackChecker, "LocStackPattern"]
 
 
 def _create_non_type_hint_loc_stack_checker(pred: Pred) -> Optional[LocStackChecker]:
@@ -253,17 +253,17 @@ def create_loc_stack_checker(pred: Pred) -> LocStackChecker:
     except NotSubscribedError:
         return ExactOriginLSC(pred)
     except ValueError:
-        raise ValueError(f'Can not create LocStackChecker from {pred}')
+        raise ValueError(f"Can not create LocStackChecker from {pred}")
 
     if isinstance(norm, NormTV):
-        raise ValueError(f'Can not create LocStackChecker from {pred} type var')
+        raise ValueError(f"Can not create LocStackChecker from {pred} type var")  # noqa: TRY004
 
     if is_bare_generic(pred):
         return _create_loc_stack_checker_by_origin(norm.origin)
 
     if is_generic(pred):
         raise ValueError(
-            f'Can not create LocStackChecker from {pred} generic alias (parametrized generic)'
+            f"Can not create LocStackChecker from {pred} generic alias (parametrized generic)",
         )
 
     if not is_generic(norm.origin) and not is_parametrized(pred):
@@ -271,7 +271,7 @@ def create_loc_stack_checker(pred: Pred) -> LocStackChecker:
     return ExactTypeLSC(norm)
 
 
-Pat = TypeVar('Pat', bound='LocStackPattern')
+Pat = TypeVar("Pat", bound="LocStackPattern")
 
 
 class LocStackPattern:
@@ -290,14 +290,14 @@ class LocStackPattern:
         return self_copy
 
     def __getattr__(self: Pat, item: str) -> Pat:
-        if item.startswith('__') and item.endswith('__'):
+        if item.startswith("__") and item.endswith("__"):
             raise AttributeError
         return self[item]
 
     def __getitem__(self: Pat, item: Union[Pred, VarTuple[Pred]]) -> Pat:
         if isinstance(item, tuple) or isgenerator(item):
             return self._extend_stack(
-                [OrLocStackChecker([self._ensure_loc_stack_checker_from_pred(el) for el in item])]
+                [OrLocStackChecker([self._ensure_loc_stack_checker_from_pred(el) for el in item])],
             )
         return self._extend_stack([self._ensure_loc_stack_checker_from_pred(item)])
 
@@ -308,37 +308,37 @@ class LocStackPattern:
 
     def __or__(self: Pat, other: Union[Pat, LocStackChecker]) -> Pat:
         return self._from_lsc(
-            self.build_loc_stack_checker() | self._ensure_loc_stack_checker(other)
+            self.build_loc_stack_checker() | self._ensure_loc_stack_checker(other),
         )
 
     def __ror__(self: Pat, other: Union[Pat, LocStackChecker]) -> Pat:
         return self._from_lsc(
-            self._ensure_loc_stack_checker(other) | self.build_loc_stack_checker()
+            self._ensure_loc_stack_checker(other) | self.build_loc_stack_checker(),
         )
 
     def __and__(self: Pat, other: Union[Pat, LocStackChecker]) -> Pat:
         return self._from_lsc(
-            self.build_loc_stack_checker() & self._ensure_loc_stack_checker(other)
+            self.build_loc_stack_checker() & self._ensure_loc_stack_checker(other),
         )
 
     def __rand__(self: Pat, other: Union[Pat, LocStackChecker]) -> Pat:
         return self._from_lsc(
-            self._ensure_loc_stack_checker(other) & self.build_loc_stack_checker()
+            self._ensure_loc_stack_checker(other) & self.build_loc_stack_checker(),
         )
 
     def __xor__(self: Pat, other: Union[Pat, LocStackChecker]) -> Pat:
         return self._from_lsc(
-            self.build_loc_stack_checker() ^ self._ensure_loc_stack_checker(other)
+            self.build_loc_stack_checker() ^ self._ensure_loc_stack_checker(other),
         )
 
     def __rxor__(self: Pat, other: Union[Pat, LocStackChecker]) -> Pat:
         return self._from_lsc(
-            self._ensure_loc_stack_checker(other) ^ self.build_loc_stack_checker()
+            self._ensure_loc_stack_checker(other) ^ self.build_loc_stack_checker(),
         )
 
     def __invert__(self: Pat) -> Pat:
         return self._from_lsc(
-            ~self.build_loc_stack_checker()
+            ~self.build_loc_stack_checker(),
         )
 
     def __add__(self: Pat, other: Pat) -> Pat:
@@ -348,21 +348,21 @@ class LocStackPattern:
         if isinstance(pred, LocStackPattern):
             raise TypeError(
                 "Can not use LocStackPattern as predicate inside LocStackPattern."
-                " If you want to combine several LocStackPattern, you can use `+` operator"
+                " If you want to combine several LocStackPattern, you can use `+` operator",
             )
 
         return create_loc_stack_checker(pred)
 
     def generic_arg(self: Pat, pos: int, pred: Pred) -> Pat:
         return self._extend_stack(
-            [GenericParamLSC(pos) & self._ensure_loc_stack_checker_from_pred(pred)]
+            [GenericParamLSC(pos) & self._ensure_loc_stack_checker_from_pred(pred)],
         )
 
     def build_loc_stack_checker(self) -> LocStackChecker:
         if len(self._stack) == 0:
             raise ValueError(
-                'Can not produce LocStackChecker from LocStackPattern without stack.'
-                ' You need to parametrize P object with predicates.'
+                "Can not produce LocStackChecker from LocStackPattern without stack."
+                " You need to parametrize P object with predicates.",
             )
         if len(self._stack) == 1:
             return self._stack[0]

@@ -14,7 +14,7 @@ def input_field_to_loc_map(field: InputField) -> LocMap:
         ),
         InputFieldLoc(
             is_required=field.is_required,
-        )
+        ),
     )
 
 
@@ -30,7 +30,7 @@ def output_field_to_loc_map(field: OutputField) -> LocMap:
         ),
         OutputFieldLoc(
             accessor=field.accessor,
-        )
+        ),
     )
 
 

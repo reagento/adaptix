@@ -35,10 +35,10 @@ class MyIntEnum(IntEnum):
 
 
 class MyEnumWithMissingHook(Enum):
-    V1 = '1'
+    V1 = "1"
 
     @classmethod
-    def _missing_(cls, value: object) -> 'MyEnumWithMissingHook':
+    def _missing_(cls, value: object) -> "MyEnumWithMissingHook":
         raise ValueError
 
 
@@ -64,7 +64,7 @@ def test_name_provider(strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            enum_by_name()
+            enum_by_name(),
         ],
     )
 
@@ -72,18 +72,18 @@ def test_name_provider(strict_coercion, debug_trail):
     assert loader("V1") == MyEnum.V1
 
     raises_exc(
-        BadVariantLoadError(['V1'], '1'),
-        lambda: loader("1")
+        BadVariantLoadError(["V1"], "1"),
+        lambda: loader("1"),
     )
 
     raises_exc(
-        BadVariantLoadError(['V1'], 1),
-        lambda: loader(1)
+        BadVariantLoadError(["V1"], 1),
+        lambda: loader(1),
     )
 
     raises_exc(
-        BadVariantLoadError(['V1'], MyEnum.V1),
-        lambda: loader(MyEnum.V1)
+        BadVariantLoadError(["V1"], MyEnum.V1),
+        lambda: loader(MyEnum.V1),
     )
 
     dumper = retort.get_dumper(MyEnum)
@@ -97,8 +97,8 @@ def test_name_provider_with_mapping(strict_coercion, debug_trail, mapping_option
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
-            enum_by_name(**mapping_options)
-        ]
+            enum_by_name(**mapping_options),
+        ],
     )
 
     loader = retort.get_loader(MyEnum)
@@ -106,14 +106,14 @@ def test_name_provider_with_mapping(strict_coercion, debug_trail, mapping_option
 
     raises_exc(
         BadVariantLoadError(["v1"], "V1"),
-        lambda: loader("V1")
+        lambda: loader("V1"),
     )
 
     dumper = retort.get_dumper(MyEnum)
     assert dumper(MyEnum.V1) == "v1"
 
 
-@pytest.mark.parametrize('enum_cls', [MyEnum, MyEnumWithMissingHook])
+@pytest.mark.parametrize("enum_cls", [MyEnum, MyEnumWithMissingHook])
 def test_exact_value_provider(strict_coercion, debug_trail, enum_cls):
     retort = TestRetort(
         strict_coercion=strict_coercion,
@@ -128,18 +128,18 @@ def test_exact_value_provider(strict_coercion, debug_trail, enum_cls):
     assert loader("1") == enum_cls.V1
 
     raises_exc(
-        BadVariantLoadError(['1'], 'V1'),
-        lambda: loader("V1")
+        BadVariantLoadError(["1"], "V1"),
+        lambda: loader("V1"),
     )
 
     raises_exc(
-        BadVariantLoadError(['1'], 1),
-        lambda: loader(1)
+        BadVariantLoadError(["1"], 1),
+        lambda: loader(1),
     )
 
     raises_exc(
-        BadVariantLoadError(['1'], enum_cls.V1),
-        lambda: loader(enum_cls.V1)
+        BadVariantLoadError(["1"], enum_cls.V1),
+        lambda: loader(enum_cls.V1),
     )
 
     dumper = retort.get_dumper(enum_cls)
@@ -165,14 +165,14 @@ def test_exact_value_provider_int_enum(strict_coercion, debug_trail):
     )
 
     raises_exc(
-        BadVariantLoadError([1], 'V1'),
-        lambda: int_enum_loader("V1")
+        BadVariantLoadError([1], "V1"),
+        lambda: int_enum_loader("V1"),
     )
 
 
 def test_exact_value_optimization(strict_coercion, debug_trail):
-    assert EnumExactValueProvider()._make_loader(MyEnum).__name__ == 'enum_exact_loader_v2m'
-    assert EnumExactValueProvider()._make_loader(MyEnumWithMissingHook).__name__ == 'enum_exact_loader'
+    assert EnumExactValueProvider()._make_loader(MyEnum).__name__ == "enum_exact_loader_v2m"
+    assert EnumExactValueProvider()._make_loader(MyEnumWithMissingHook).__name__ == "enum_exact_loader"
 
 
 def custom_string_dumper(value: str):
@@ -196,13 +196,13 @@ def test_value_provider(strict_coercion, debug_trail):
     assert enum_loader(1) == MyEnum.V1
 
     raises_exc(
-        MsgLoadError('Bad enum value', "V1"),
-        lambda: enum_loader("V1")
+        MsgLoadError("Bad enum value", "V1"),
+        lambda: enum_loader("V1"),
     )
 
     raises_exc(
-        MsgLoadError('Bad enum value', MyEnum.V1),
-        lambda: enum_loader(MyEnum.V1)
+        MsgLoadError("Bad enum value", MyEnum.V1),
+        lambda: enum_loader(MyEnum.V1),
     )
 
     enum_dumper = retort.get_dumper(MyEnum)
@@ -226,14 +226,14 @@ def test_flag_by_exact_value(strict_coercion, debug_trail):
     assert dumper(FlagEnum.CASE_ONE | FlagEnum.CASE_FOUR) == 5
 
     raises_exc(
-        OutOfRangeLoadError(0, 15, 16), lambda: loader(16)
+        OutOfRangeLoadError(0, 15, 16), lambda: loader(16),
     )
     raises_exc(
-        OutOfRangeLoadError(0, 15, -1), lambda: loader(-1)
+        OutOfRangeLoadError(0, 15, -1), lambda: loader(-1),
     )
 
 
-@pytest.mark.parametrize('data', [{"data": 1}, "1", [1], None])
+@pytest.mark.parametrize("data", [{"data": 1}, "1", [1], None])
 def test_flag_by_exact_value_loader_with_bad_types(strict_coercion, debug_trail, data):
     retort = Retort(
         strict_coercion=strict_coercion,
@@ -251,41 +251,41 @@ def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce loader for type {FlagEnumWithSkippedBit}'),
+            NoSuitableProvider(f"Cannot produce loader for type {FlagEnumWithSkippedBit}"),
             with_notes(
                 with_notes(
                     CannotProvide(
-                        'Cannot create a loader for flag with skipped bits',
+                        "Cannot create a loader for flag with skipped bits",
                         is_terminal=True,
                         is_demonstrative=True,
                     ),
                     f"Location: type={FlagEnumWithSkippedBit}",
                 ),
-            )
+            ),
         ),
-        lambda: retort.get_loader(FlagEnumWithSkippedBit)
+        lambda: retort.get_loader(FlagEnumWithSkippedBit),
     )
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce loader for type {FlagEnumWithNegativeValue}'),
+            NoSuitableProvider(f"Cannot produce loader for type {FlagEnumWithNegativeValue}"),
             with_notes(
                 with_notes(
                     CannotProvide(
-                        'Cannot create a loader for flag with negative values',
+                        "Cannot create a loader for flag with negative values",
                         is_terminal=True,
                         is_demonstrative=True,
                     ),
                     f"Location: type={FlagEnumWithNegativeValue}",
                 ),
-            )
+            ),
         ),
-        lambda: retort.get_loader(FlagEnumWithNegativeValue)
+        lambda: retort.get_loader(FlagEnumWithNegativeValue),
     )
 
 
 @parametrize_bool("allow_single_value", "allow_duplicates", "allow_compound")
 def test_flag_by_member_names(
-    strict_coercion, debug_trail, allow_single_value, allow_duplicates, allow_compound
+    strict_coercion, debug_trail, allow_single_value, allow_duplicates, allow_compound,
 ):
     retort = Retort(
         strict_coercion=strict_coercion,
@@ -294,9 +294,9 @@ def test_flag_by_member_names(
             flag_by_member_names(
                 allow_single_value=allow_single_value,
                 allow_duplicates=allow_duplicates,
-                allow_compound=allow_compound
-            )
-        ]
+                allow_compound=allow_compound,
+            ),
+        ],
     )
 
     loader = retort.get_loader(FlagEnum)
@@ -315,7 +315,7 @@ def test_flag_by_member_names(
             invalid_values=["NOT_EXISTING_CASE_1", "NOT_EXISTING_CASE_2"],
             input_value=["CASE_ONE", "NOT_EXISTING_CASE_1", "NOT_EXISTING_CASE_2"],
         ),
-        lambda: loader(["CASE_ONE", "NOT_EXISTING_CASE_1", "NOT_EXISTING_CASE_2"])
+        lambda: loader(["CASE_ONE", "NOT_EXISTING_CASE_1", "NOT_EXISTING_CASE_2"]),
     )
 
     data_with_compound = ["CASE_THREE"]
@@ -324,7 +324,7 @@ def test_flag_by_member_names(
     else:
         raises_exc(
             MultipleBadVariantLoadError(variants, ["CASE_THREE"], data_with_compound),
-            lambda: loader(data_with_compound)
+            lambda: loader(data_with_compound),
         )
 
     data_with_duplicates = ["CASE_ONE", "CASE_ONE"]
@@ -333,7 +333,7 @@ def test_flag_by_member_names(
     else:
         raises_exc(
             DuplicatedValuesLoadError(data_with_duplicates),
-            lambda: loader(data_with_duplicates)
+            lambda: loader(data_with_duplicates),
         )
 
     dumper = retort.get_dumper(FlagEnum)
@@ -353,7 +353,7 @@ def test_flag_by_member_names(
 
 @parametrize_bool("allow_single_value", "allow_duplicates", "allow_compound")
 def test_flag_by_member_names_with_bad_types(
-    strict_coercion, debug_trail, allow_single_value, allow_duplicates, allow_compound
+    strict_coercion, debug_trail, allow_single_value, allow_duplicates, allow_compound,
 ):
     retort = Retort(
         strict_coercion=strict_coercion,
@@ -362,9 +362,9 @@ def test_flag_by_member_names_with_bad_types(
             flag_by_member_names(
                 allow_single_value=allow_single_value,
                 allow_duplicates=allow_duplicates,
-                allow_compound=allow_compound
-            )
-        ]
+                allow_compound=allow_compound,
+            ),
+        ],
     )
 
     loader = retort.get_loader(FlagEnum)
@@ -374,7 +374,7 @@ def test_flag_by_member_names_with_bad_types(
     if strict_coercion:
         raises_exc(
             ExcludedTypeLoadError(expected_type, Mapping, dict_data),
-            lambda: loader(dict_data)
+            lambda: loader(dict_data),
         )
     else:
         assert loader(dict_data) == FlagEnum.CASE_ONE
@@ -385,16 +385,16 @@ def test_flag_by_member_names_with_bad_types(
     else:
         raises_exc(
             TypeLoadError(expected_type, str_data),
-            lambda: loader(str_data)
+            lambda: loader(str_data),
         )
 
     raises_exc(
         TypeLoadError(expected_type, 1),
-        lambda: loader(1)
+        lambda: loader(1),
     )
     raises_exc(
         TypeLoadError(expected_type, None),
-        lambda: loader(None)
+        lambda: loader(None),
     )
 
 
@@ -411,10 +411,10 @@ def test_flag_by_member_names_with_mapping(strict_coercion, debug_trail):
                     #  ones given by names.
                     FlagEnum.CASE_ONE: "caseFirst",
                     "CASE_TWO": "caseSecond",
-                    "ignore": "ignore"
-                }
+                    "ignore": "ignore",
+                },
             ),
-        ]
+        ],
     )
 
     loader = retort.get_loader(FlagEnum)
@@ -427,9 +427,9 @@ def test_flag_by_member_names_with_mapping(strict_coercion, debug_trail):
         MultipleBadVariantLoadError(
             allowed_values=variants,
             input_value=["caseThree", "CASE_TWO", "CASE_1"],
-            invalid_values=["CASE_TWO", "CASE_1"]
+            invalid_values=["CASE_TWO", "CASE_1"],
         ),
-        lambda: loader(["caseThree", "CASE_TWO", "CASE_1"])
+        lambda: loader(["caseThree", "CASE_TWO", "CASE_1"]),
     )
 
     dumper = retort.get_dumper(FlagEnum)

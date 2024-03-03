@@ -88,7 +88,7 @@ class CodeGenAccumulator(StaticProvider):
             (request.loc_stack[-2].loc_map[TypeHintLoc].type, hook_data.source)
             for request, hook_data in self.list
             if (
-                len(request.loc_stack) >= 2
+                len(request.loc_stack) >= 2  # noqa: PLR2004
                 and request.loc_stack[-2].loc_map.has(TypeHintLoc)
             )
         ]
@@ -98,7 +98,7 @@ class CodeGenAccumulator(StaticProvider):
         return dict(self.code_pairs)
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def _concatenate_iters(args: Iterable[Iterable[T]]) -> Collection[T]:
@@ -137,11 +137,7 @@ def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
 
 def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> AbstractSet[str]:
     used_direct_fields = _collect_used_direct_fields(name_layout.crown)
-    if isinstance(name_layout.extra_move, ExtraTargets):
-        extra_targets = name_layout.extra_move.fields
-    else:
-        extra_targets = ()
-
+    extra_targets = name_layout.extra_move.fields if isinstance(name_layout.extra_move, ExtraTargets) else ()
     return {
         field.id for field in shape.fields
         if field.id not in used_direct_fields and field.id not in extra_targets
@@ -204,7 +200,7 @@ def get_wild_extra_targets(shape: BaseShape, extra_move: Union[InpExtraMove, Out
 
     return [
         target for target in extra_move.fields
-        if target not in shape.fields_dict.keys()
+        if target not in shape.fields_dict
     ]
 
 
@@ -237,12 +233,12 @@ def compile_closure_with_globals_capturing(
         CodeGenHookData(
             namespace=global_namespace_dict,
             source=builder.string(),
-        )
+        ),
     )
 
     return compiler.compile(
         file_name,
-        lambda uid: f'<adaptix generated {uid}>',
+        lambda uid: f"<adaptix generated {uid}>",
         builder,
         global_namespace_dict,
     )

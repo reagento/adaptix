@@ -23,7 +23,7 @@ class Book:
 
 retort = Retort(
     recipe=[
-        name_mapping(Review, map={'content': 'text'}),
+        name_mapping(Review, map={"content": "text"}),
     ],
 )
 

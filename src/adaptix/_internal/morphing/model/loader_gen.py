@@ -55,7 +55,7 @@ class Namer:
     def _with_path_suffix(self, basis: str) -> str:
         if not self._path:
             return basis
-        return basis + '_' + self.path_to_suffix[self._path]
+        return basis + "_" + self.path_to_suffix[self._path]
 
     @property
     def path(self) -> CrownPath:
@@ -63,23 +63,23 @@ class Namer:
 
     @property
     def v_data(self) -> str:
-        return self._with_path_suffix('data')
+        return self._with_path_suffix("data")
 
     @property
     def v_known_keys(self) -> str:
-        return self._with_path_suffix('known_keys')
+        return self._with_path_suffix("known_keys")
 
     @property
     def v_required_keys(self) -> str:
-        return self._with_path_suffix('required_keys')
+        return self._with_path_suffix("required_keys")
 
     @property
     def v_extra(self) -> str:
-        return self._with_path_suffix('extra')
+        return self._with_path_suffix("extra")
 
     @property
     def v_has_not_found_error(self) -> str:
-        return self._with_path_suffix('has_not_found_error')
+        return self._with_path_suffix("has_not_found_error")
 
     def with_trail(self, error_expr: str) -> str:
         if self.debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
@@ -175,6 +175,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
 
     def __init__(
         self,
+        *,
         shape: InputShape,
         name_layout: InputNameLayout,
         debug_trail: DebugTrail,
@@ -244,15 +245,15 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         ):
             state.namespace.add_constant(named_value.__name__, named_value)  # type: ignore[attr-defined]
 
-        state.namespace.add_constant('CompatExceptionGroup', CompatExceptionGroup)
-        state.namespace.add_constant('CollectionsMapping', collections.abc.Mapping)
-        state.namespace.add_constant('CollectionsSequence', collections.abc.Sequence)
-        state.namespace.add_constant('sentinel', object())
+        state.namespace.add_constant("CompatExceptionGroup", CompatExceptionGroup)
+        state.namespace.add_constant("CollectionsMapping", collections.abc.Mapping)
+        state.namespace.add_constant("CollectionsSequence", collections.abc.Sequence)
+        state.namespace.add_constant("sentinel", object())
 
         if self._debug_trail == DebugTrail.ALL:
             state.builder += "errors = []"
             state.builder += "has_unexpected_error = False"
-            state.namespace.add_constant('model_identity', self._model_identity)
+            state.namespace.add_constant("model_identity", self._model_identity)
 
         if self._has_packed_fields:
             state.builder += "packed_fields = {}"
@@ -275,7 +276,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                         f'while loading model {model_identity}',
                         [render_trail_as_note(e) for e in errors],
                     )
-                """
+                """,
             )
             state.builder.empty_line()
 
@@ -283,7 +284,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         self._gen_header(state)
 
         builder = CodeBuilder()
-        with builder(f'def {closure_name}(data):'):
+        with builder(f"def {closure_name}(data):"):
             builder.extend(state.builder)
         return builder.string(), namespace.constants
 
@@ -305,8 +306,8 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
 
         state.builder.extend_above(header_builder)
 
-    def _gen_constructor_call(self, state: GenState) -> None:  # noqa: CCR001
-        state.namespace.add_constant('constructor', self._shape.constructor)
+    def _gen_constructor_call(self, state: GenState) -> None:
+        state.namespace.add_constant("constructor", self._shape.constructor)
 
         constructor_builder = CodeBuilder()
         has_skipped_params = False
@@ -325,8 +326,8 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                     constructor_builder(f"{param.name}={value},")
                 elif param.kind == ParamKind.POS_ONLY and has_skipped_params:
                     raise ValueError(
-                        'Can not generate consistent constructor call,'
-                        ' positional-only parameter is skipped'
+                        "Can not generate consistent constructor call,"
+                        " positional-only parameter is skipped",
                     )
                 else:
                     constructor_builder(f"{value},")
@@ -340,7 +341,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         constructor_builder += ")"
 
         if isinstance(self._name_layout.extra_move, ExtraSaturate):
-            state.namespace.add_constant('saturator', self._name_layout.extra_move.func)
+            state.namespace.add_constant("saturator", self._name_layout.extra_move.func)
             state.builder += "result = "
             state.builder.extend_including(constructor_builder)
             state.builder += f"saturator(result, {state.v_extra})"
@@ -388,11 +389,11 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                     f'while loading model {{model_identity}}',
                     [render_trail_as_note({namer.with_trail(bad_type_load_error)})],
                 )
-                """
+                """,
             )
         else:
             state.builder(
-                f'raise {namer.with_trail(bad_type_load_error)}'
+                f"raise {namer.with_trail(bad_type_load_error)}",
             )
 
     def _gen_assigment_from_parent_data(
@@ -404,18 +405,18 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
     ):
         last_path_el = state.path[-1]
         if isinstance(last_path_el, str):
-            lookup_error = 'KeyError'
-            bad_type_error = '(TypeError, IndexError)'
-            bad_type_load_error = f'TypeLoadError(CollectionsMapping, {state.parent.v_data})'
+            lookup_error = "KeyError"
+            bad_type_error = "(TypeError, IndexError)"
+            bad_type_load_error = f"TypeLoadError(CollectionsMapping, {state.parent.v_data})"
             not_found_error = (
                 "NoRequiredFieldsLoadError("
                 f"{state.parent.v_required_keys} - set({state.parent.v_data}), {state.parent.v_data}"
                 ")"
             )
         else:
-            lookup_error = 'IndexError'
-            bad_type_error = '(TypeError, KeyError)'
-            bad_type_load_error = f'TypeLoadError(CollectionsSequence, {state.parent.v_data})'
+            lookup_error = "IndexError"
+            bad_type_error = "(TypeError, KeyError)"
+            bad_type_load_error = f"TypeLoadError(CollectionsSequence, {state.parent.v_data})"
             not_found_error = f"NoRequiredItemsLoadError({len(state.parent_crown.map)}, {state.parent.v_data})"
 
         with state.builder(
@@ -429,18 +430,17 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 state.builder += on_lookup_error
             elif self._debug_trail != DebugTrail.ALL:
                 state.builder += f"raise {state.parent.with_trail(not_found_error)}"
+            elif isinstance(state.path[-1], str):
+                state.builder += f"""
+                    if not {state.parent.v_has_not_found_error}:
+                        errors.append({state.parent.with_trail(not_found_error)})
+                        {state.parent.v_has_not_found_error} = True
+                """
             else:
-                if isinstance(state.path[-1], str):
-                    state.builder += f"""
-                        if not {state.parent.v_has_not_found_error}:
-                            errors.append({state.parent.with_trail(not_found_error)})
-                            {state.parent.v_has_not_found_error} = True
-                    """
-                else:
-                    state.builder += 'pass'
+                state.builder += "pass"
 
         if state.parent_path not in state.type_checked_type_paths:
-            with state.builder(f'except {bad_type_error}:'):
+            with state.builder(f"except {bad_type_error}:"):
                 self._gen_raise_bad_type_error(state, bad_type_load_error, namer=state.parent)
             state.type_checked_type_paths.add(state.parent_path)
 
@@ -453,7 +453,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 except Exception as e:
                     {state.with_trail('e')}
                     raise
-                """
+                """,
             )
         elif self._debug_trail == DebugTrail.ALL:
             state.builder(
@@ -461,7 +461,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 except Exception as e:
                     errors.append({state.with_trail('e')})
                     has_unexpected_error = True
-                """
+                """,
             )
 
     def _gen_add_self_extra_to_parent_extra(self, state: GenState):
@@ -477,13 +477,13 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             yield
             return
 
-        with state.builder('try:'):
+        with state.builder("try:"):
             yield
         state.builder(
             """
             except TypeLoadError as e:
                 errors.append(e)
-            """
+            """,
         )
         state.builder.empty_line()
 
@@ -511,8 +511,8 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 self._gen_crown_dispatch(state, value, key)
 
             if state.path not in state.type_checked_type_paths:
-                with state.builder(f'if not isinstance({state.v_data}, CollectionsMapping):'):
-                    self._gen_raise_bad_type_error(state, f'TypeLoadError(CollectionsMapping, {state.v_data})')
+                with state.builder(f"if not isinstance({state.v_data}, CollectionsMapping):"):
+                    self._gen_raise_bad_type_error(state, f"TypeLoadError(CollectionsMapping, {state.v_data})")
                 state.builder.empty_line()
                 state.type_checked_type_paths.add(state.path)
 
@@ -534,8 +534,8 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             self._gen_add_self_extra_to_parent_extra(state)
 
     def _gen_forbidden_sequence_check(self, state: GenState) -> None:
-        with state.builder(f'if type({state.v_data}) is str:'):
-            self._gen_raise_bad_type_error(state, f'ExcludedTypeLoadError(CollectionsSequence, str, {state.v_data})')
+        with state.builder(f"if type({state.v_data}) is str:"):
+            self._gen_raise_bad_type_error(state, f"ExcludedTypeLoadError(CollectionsSequence, str, {state.v_data})")
 
     def _gen_list_crown(self, state: GenState, crown: InpListCrown):
         if state.path:
@@ -557,8 +557,8 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 self._gen_crown_dispatch(state, value, key)
 
             if state.path not in state.type_checked_type_paths:
-                with state.builder(f'if not isinstance({state.v_data}, CollectionsSequence):'):
-                    self._gen_raise_bad_type_error(state, f'TypeLoadError(CollectionsSequence, {state.v_data})')
+                with state.builder(f"if not isinstance({state.v_data}, CollectionsSequence):"):
+                    self._gen_raise_bad_type_error(state, f"TypeLoadError(CollectionsSequence, {state.v_data})")
                 state.builder.empty_line()
                 state.type_checked_type_paths.add(state.path)
 
@@ -585,14 +585,14 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             literal_expr = get_literal_expr(field.default.value)
             if literal_expr is not None:
                 return literal_expr
-            state.namespace.add_constant(f'dfl_{field.id}', field.default.value)
-            return f'dfl_{field.id}'
+            state.namespace.add_constant(f"dfl_{field.id}", field.default.value)
+            return f"dfl_{field.id}"
         if isinstance(field.default, DefaultFactory):
             literal_expr = get_literal_from_factory(field.default.factory)
             if literal_expr is not None:
                 return literal_expr
-            state.namespace.add_constant(f'dfl_{field.id}', field.default.factory)
-            return f'dfl_{field.id}()'
+            state.namespace.add_constant(f"dfl_{field.id}", field.default.factory)
+            return f"dfl_{field.id}()"
         raise ValueError
 
     def _gen_field_crown(self, state: GenState, crown: InpFieldCrown):
@@ -602,7 +602,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 state=state,
                 assign_to=state.v_raw_field(field),
             )
-            with state.builder('else:'):
+            with state.builder("else:"):
                 self._gen_field_assigment(
                     assign_to=state.v_field(field),
                     field_id=field.id,
@@ -613,10 +613,10 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             if self._is_packed_field(field):
                 param_name = self._field_id_to_param[field.id].name
                 assign_to = f"packed_fields[{param_name!r}]"
-                on_lookup_error = 'pass'
+                on_lookup_error = "pass"
             else:
                 assign_to = state.v_field(field)
-                on_lookup_error = f'{state.v_field(field)} = {self._get_default_clause_expr(state, field)}'
+                on_lookup_error = f"{state.v_field(field)} = {self._get_default_clause_expr(state, field)}"
 
             if isinstance(state.path[-1], int):
                 self._gen_assigment_from_parent_data(
@@ -624,7 +624,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                     assign_to=state.v_raw_field(field),
                     on_lookup_error=on_lookup_error,
                 )
-                with state.builder('else:'):
+                with state.builder("else:"):
                     self._gen_field_assigment(
                         assign_to=assign_to,
                         field_id=field.id,
@@ -654,14 +654,14 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 self._gen_field_assigment(
                     assign_to=assign_to,
                     field_id=field.id,
-                    loader_arg=f'{state.parent.v_data}[{state.path[-1]!r}]',
+                    loader_arg=f"{state.parent.v_data}[{state.path[-1]!r}]",
                     state=state,
                 )
             state.builder(
                 f"""
                 else:
                     {on_lookup_error}
-                """
+                """,
             )
             return
 
@@ -670,11 +670,11 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             try:
                 getter = {state.parent.v_data}.get
             except AttributeError:
-            """
+            """,
         ):
             self._gen_raise_bad_type_error(
                 state,
-                f'TypeLoadError(CollectionsMapping, {state.parent.v_data})',
+                f"TypeLoadError(CollectionsMapping, {state.parent.v_data})",
                 namer=state.parent,
             )
             state.type_checked_type_paths.add(state.parent_path)
@@ -685,21 +685,21 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 f"""
                 try:
                     value = getter({state.path[-1]!r}, sentinel)
-                """
+                """,
             )
             self._gen_unexpected_exc_catching(state)
-            with state.builder("else:"):
+            with state.builder("else:"):  # noqa: SIM117
                 with state.builder(
                     f"""
                     if value is sentinel:
                         {on_lookup_error}
                     else:
-                    """
+                    """,
                 ):
                     self._gen_field_assigment(
                         assign_to=assign_to,
                         field_id=field.id,
-                        loader_arg='value',
+                        loader_arg="value",
                         state=state,
                     )
 
@@ -714,7 +714,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             processing_expr = loader_arg
         else:
             field_loader = state.v_field_loader(field_id)
-            processing_expr = f'{field_loader}({loader_arg})'
+            processing_expr = f"{field_loader}({loader_arg})"
 
         if self._debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
             state.builder(
@@ -723,11 +723,11 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                     {assign_to} = {processing_expr}
                 except Exception as e:
                     {state.emit_error('e')}
-                """
+                """,
             )
         else:
             state.builder(
-                f"{assign_to} = {processing_expr}"
+                f"{assign_to} = {processing_expr}",
             )
 
     def _gen_extra_targets_assigment(self, state: GenState):

@@ -35,14 +35,14 @@ def string_dumper(data):
     raise TypeError
 
 
-@pytest.fixture
+@pytest.fixture()
 def retort():
     return TestRetort(
         recipe=[
             IterableProvider(),
             STR_LOADER_PROVIDER,
             dumper(str, string_dumper),
-        ]
+        ],
     )
 
 
@@ -107,7 +107,7 @@ def test_loading(retort, strict_coercion, debug_trail):
                         with_trail(TypeLoadError(str, 1), [0]),
                         with_trail(TypeLoadError(str, 2), [1]),
                         with_trail(TypeLoadError(str, 3), [2]),
-                    ]
+                    ],
                 ),
                 lambda: loader_([1, 2, 3]),
             )
@@ -117,7 +117,7 @@ def test_loading(retort, strict_coercion, debug_trail):
                     [
                         with_trail(TypeLoadError(str, 2), [1]),
                         with_trail(TypeLoadError(str, 3), [2]),
-                    ]
+                    ],
                 ),
                 lambda: loader_(["1", 2, 3]),
             )
@@ -132,7 +132,7 @@ def test_loading(retort, strict_coercion, debug_trail):
             raises_exc(
                 with_trail(
                     TypeLoadError(str, 2),
-                    [] if debug_trail == DebugTrail.DISABLE else [1]
+                    [] if debug_trail == DebugTrail.DISABLE else [1],
                 ),
                 lambda: loader_(["1", 2, 3]),
             )
@@ -147,11 +147,11 @@ def bad_string_loader(data):
 def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
-        debug_trail=debug_trail
+        debug_trail=debug_trail,
     ).extend(
         recipe=[
             loader(str, bad_string_loader),
-        ]
+        ],
     ).get_loader(List[str])
 
     if debug_trail == DebugTrail.DISABLE:
@@ -171,14 +171,14 @@ def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
                 [
                     with_trail(TypeError(), [1]),
                     with_trail(TypeError(), [2]),
-                ]
+                ],
             ),
             lambda: loader_(["1", 2, 3]),
         )
 
 
 @pytest.mark.parametrize(
-    ['tp', 'factory'],
+    ["tp", "factory"],
     [
         (Deque[str], deque),
         (Set[str], set),
@@ -187,12 +187,12 @@ def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
     ],
 )
 def test_specific_type_loading(retort, tp, factory):
-    loaded = retort.load(['a', 'b', 'c'], tp)
-    assert loaded == factory(['a', 'b', 'c'])
+    loaded = retort.load(["a", "b", "c"], tp)
+    assert loaded == factory(["a", "b", "c"])
 
 
 @pytest.mark.parametrize(
-    ['tp', 'factory'],
+    ["tp", "factory"],
     [
         (Deque[str], deque),
         (Set[str], set),
@@ -201,8 +201,8 @@ def test_specific_type_loading(retort, tp, factory):
     ],
 )
 def test_specific_type_dumping(retort, tp, factory):
-    dumped = retort.dump(factory(['a', 'b', 'c']), tp)
-    assert dumped == factory(['a', 'b', 'c'])
+    dumped = retort.dump(factory(["a", "b", "c"]), tp)
+    assert dumped == factory(["a", "b", "c"])
 
 
 def test_abc_impl(retort, strict_coercion, debug_trail):
@@ -231,48 +231,48 @@ def test_abc_impl(retort, strict_coercion, debug_trail):
 
 def test_dumping(retort, debug_trail):
     retort = retort.replace(
-        debug_trail=debug_trail
+        debug_trail=debug_trail,
     )
     list_dumper = retort.get_dumper(List[str])
     assert list_dumper(["a", "b"]) == ["a", "b"]
-    assert list_dumper({'a': 1, 'b': 2}) == ['a', 'b']
+    assert list_dumper({"a": 1, "b": 2}) == ["a", "b"]
 
     iterable_dumper = retort.get_dumper(Iterable[str])
     assert iterable_dumper(["a", "b"]) == ("a", "b")
     assert iterable_dumper(("a", "b")) == ("a", "b")
-    assert iterable_dumper(['1', '2']) == ("1", "2")
+    assert iterable_dumper(["1", "2"]) == ("1", "2")
     assert iterable_dumper({"a": 0, "b": 0}) == ("a", "b")
 
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
             TypeError(),
-            lambda: iterable_dumper([10, '20']),
+            lambda: iterable_dumper([10, "20"]),
         )
         raises_exc(
             TypeError(),
-            lambda: iterable_dumper(['10', 20]),
+            lambda: iterable_dumper(["10", 20]),
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
             with_trail(TypeError(), [0]),
-            lambda: iterable_dumper([10, '20']),
+            lambda: iterable_dumper([10, "20"]),
         )
         raises_exc(
             with_trail(TypeError(), [1]),
-            lambda: iterable_dumper(['10', 20]),
+            lambda: iterable_dumper(["10", 20]),
         )
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
                 "while dumping iterable <class 'collections.abc.Iterable'>",
-                [with_trail(TypeError(), [0])]
+                [with_trail(TypeError(), [0])],
             ),
-            lambda: iterable_dumper([10, '20']),
+            lambda: iterable_dumper([10, "20"]),
         )
         raises_exc(
             CompatExceptionGroup(
                 "while dumping iterable <class 'collections.abc.Iterable'>",
-                [with_trail(TypeError(), [1])]
+                [with_trail(TypeError(), [1])],
             ),
-            lambda: iterable_dumper(['10', 20]),
+            lambda: iterable_dumper(["10", 20]),
         )

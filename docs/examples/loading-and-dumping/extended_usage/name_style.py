@@ -15,13 +15,13 @@ retort = Retort(
             Person,
             name_style=NameStyle.CAMEL,
         ),
-    ]
+    ],
 )
 
 data = {
-    'firstName': 'Richard',
-    'lastName': 'Stallman',
+    "firstName": "Richard",
+    "lastName": "Stallman",
 }
 event = retort.load(data, Person)
-assert event == Person(first_name='Richard', last_name='Stallman')
+assert event == Person(first_name="Richard", last_name="Stallman")
 assert retort.dump(event) == data

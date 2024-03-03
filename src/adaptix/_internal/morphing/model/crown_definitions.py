@@ -6,7 +6,7 @@ from ...model_tools.definitions import BaseShape, DefaultFactory, DefaultValue, 
 from ...provider.request_cls import LocatedRequest
 from ...utils import SingletonMeta
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 CrownPathElem = Union[str, int]
 CrownPath = VarTuple[CrownPathElem]  # subset of struct_path.Trail
@@ -66,12 +66,12 @@ ListExtraPolicy = Union[ExtraSkip, ExtraForbid]
 
 
 @dataclass
-class InpDictCrown(BaseDictCrown['InpCrown']):
+class InpDictCrown(BaseDictCrown["InpCrown"]):
     extra_policy: DictExtraPolicy
 
 
 @dataclass
-class InpListCrown(BaseListCrown['InpCrown']):
+class InpListCrown(BaseListCrown["InpCrown"]):
     extra_policy: ListExtraPolicy
 
 
@@ -97,14 +97,14 @@ Sieve = Callable[[Any, Any], bool]
 
 
 @dataclass
-class OutDictCrown(BaseDictCrown['OutCrown']):
+class OutDictCrown(BaseDictCrown["OutCrown"]):
     sieves: Dict[str, Sieve]
 
     def _validate(self):
         wild_sieves = self.sieves.keys() - self.map.keys()
         if wild_sieves:
             raise ValueError(
-                f"Sieves {wild_sieves} are attached to non-existing keys"
+                f"Sieves {wild_sieves} are attached to non-existing keys",
             )
 
     def __post_init__(self):
@@ -112,7 +112,7 @@ class OutDictCrown(BaseDictCrown['OutCrown']):
 
 
 @dataclass
-class OutListCrown(BaseListCrown['OutCrown']):
+class OutListCrown(BaseListCrown["OutCrown"]):
     pass
 
 

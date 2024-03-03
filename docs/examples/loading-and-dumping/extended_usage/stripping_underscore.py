@@ -12,8 +12,8 @@ class Interval:
 retort = Retort()
 
 data = {
-    'from': 10,
-    'to': 20,
+    "from": 10,
+    "to": 20,
 }
 event = retort.load(data, Interval)
 assert event == Interval(from_=10, to_=20)

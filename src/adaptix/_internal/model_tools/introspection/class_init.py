@@ -10,12 +10,12 @@ def get_class_init_shape(tp) -> Shape[InputShape, None]:
 
     shape = get_callable_shape(
         tp.__init__,  # type: ignore[misc]
-        slice(1, None)
+        slice(1, None),
     )
     return replace(
         shape,
         input=replace(
             shape.input,
             constructor=tp,
-        )
+        ),
     )

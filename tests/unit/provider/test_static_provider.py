@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import pytest
+from tests_helpers import full_match_regex_str
 
 from adaptix import Mediator, Request
 from adaptix._internal.provider.static_provider import RequestDispatcher, StaticProvider, static_provision_action
@@ -19,7 +20,7 @@ def test_simple():
     assert (
         TestSimple1._sp_cls_request_dispatcher
         ==
-        RequestDispatcher({SampleRequest: '_provide_sample'})
+        RequestDispatcher({SampleRequest: "_provide_sample"})
     )
 
     class TestSimple2(StaticProvider):
@@ -30,7 +31,7 @@ def test_simple():
     assert (
         TestSimple2._sp_cls_request_dispatcher
         ==
-        RequestDispatcher({SampleRequest: '_provide_sample'})
+        RequestDispatcher({SampleRequest: "_provide_sample"})
     )
 
     class TestSimple3(StaticProvider):
@@ -41,7 +42,7 @@ def test_simple():
     assert (
         TestSimple3._sp_cls_request_dispatcher
         ==
-        RequestDispatcher({SampleRequest: '_provide_sample'})
+        RequestDispatcher({SampleRequest: "_provide_sample"})
     )
 
     class TestSimple4(StaticProvider):
@@ -52,7 +53,7 @@ def test_simple():
     assert (
         TestSimple4._sp_cls_request_dispatcher
         ==
-        RequestDispatcher({SampleRequest: '_provide_sample'})
+        RequestDispatcher({SampleRequest: "_provide_sample"})
     )
 
     class NotASampleRequest(Request):
@@ -66,7 +67,7 @@ def test_simple():
     assert (
         TestSimple5._sp_cls_request_dispatcher
         ==
-        RequestDispatcher({SampleRequest: '_provide_sample'})
+        RequestDispatcher({SampleRequest: "_provide_sample"})
     )
 
 
@@ -84,7 +85,7 @@ def test_abstract_method():
     assert (
         Child._sp_cls_request_dispatcher
         ==
-        RequestDispatcher({SampleRequest: '_provide_sample'})
+        RequestDispatcher({SampleRequest: "_provide_sample"})
     )
 
 
@@ -95,7 +96,10 @@ def test_error_raising_with_one_class():
             def _provide(self, mediator: Mediator, request: int):
                 pass
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str("@static_provision_action decorator cannot be applied twice"),
+    ):
         class DoubleDecoration(StaticProvider):
             @static_provision_action
             @static_provision_action

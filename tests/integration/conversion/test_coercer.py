@@ -8,10 +8,10 @@ from .local_helpers import FactoryWay
 
 
 @pytest.mark.parametrize(
-    'func',
+    "func",
     [
-        pytest.param(int, id='int'),
-        pytest.param(lambda x: int(x), id='lambda'),
+        pytest.param(int, id="int"),
+        pytest.param(lambda x: int(x), id="lambda"),
     ],
 )
 def test_simple(src_model_spec, dst_model_spec, factory_way, func):
@@ -32,7 +32,7 @@ def test_simple(src_model_spec, dst_model_spec, factory_way, func):
     else:
         convert = get_converter(SourceModel, DestModel, recipe=[coercer(str, int, func=func)])
 
-    assert convert(SourceModel(field1='1', field2='2')) == DestModel(field1=1, field2=2)
+    assert convert(SourceModel(field1="1", field2="2")) == DestModel(field1=1, field2=2)
 
 
 def test_model_priority(src_model_spec, dst_model_spec, factory_way):
@@ -57,7 +57,7 @@ def test_model_priority(src_model_spec, dst_model_spec, factory_way):
         nested: DestModelNested
 
     def my_coercer(a: SourceModelNested) -> DestModelNested:
-        return DestModelNested(field1=src_model_spec.get_field(a, 'field1') + 10)
+        return DestModelNested(field1=src_model_spec.get_field(a, "field1") + 10)
 
     if factory_way == FactoryWay.IMPL_CONVERTER:
         @impl_converter(recipe=[coercer(SourceModelNested, DestModelNested, func=my_coercer)])
@@ -75,7 +75,7 @@ def test_model_priority(src_model_spec, dst_model_spec, factory_way):
             field1=1,
             field2=2,
             nested=SourceModelNested(field1=3),
-        )
+        ),
     ) == DestModel(
         field1=1,
         field2=2,
@@ -101,7 +101,7 @@ def test_any_dest(src_model_spec, dst_model_spec, factory_way):
     else:
         convert = get_converter(SourceModel, DestModel)
 
-    assert convert(SourceModel(field1='1', field2='2')) == DestModel(field1='1', field2='2')
+    assert convert(SourceModel(field1="1", field2="2")) == DestModel(field1="1", field2="2")
 
 
 def test_subclass_builtin(src_model_spec, dst_model_spec, factory_way):

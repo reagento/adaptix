@@ -7,10 +7,10 @@ from typing import Mapping, TypeVar
 
 from ..common import VarTuple
 
-_AnyStrT = TypeVar('_AnyStrT', str, bytes)
-_T1 = TypeVar('_T1')
-_T2 = TypeVar('_T2')
-_T1_co = TypeVar('_T1_co', covariant=True)
+_AnyStrT = TypeVar("_AnyStrT", str, bytes)
+_T1 = TypeVar("_T1")
+_T2 = TypeVar("_T2")
+_T1_co = TypeVar("_T1_co", covariant=True)
 _AnyStr_co = TypeVar("_AnyStr_co", str, bytes, covariant=True)
 
 BUILTIN_ORIGIN_TO_TYPEVARS: Mapping[type, VarTuple[TypeVar]] = {

@@ -12,16 +12,16 @@ from dirty_equals import IsList, IsStr
 
 from adaptix import P, Retort, name_mapping, validator
 
-PositiveInt = NewType('PositiveInt', int)
-PositiveFloat = NewType('PositiveFloat', float)
+PositiveInt = NewType("PositiveInt", int)
+PositiveFloat = NewType("PositiveFloat", float)
 
 
 class EbookAccessLevel(Enum):
-    NO_EBOOK = 'no_ebook'
-    UNCLASSIFIED = 'unclassified'
-    PRINT_DISABLED = 'printdisabled'
-    BORROWABLE = 'borrowable'
-    PUBLIC = 'public'
+    NO_EBOOK = "no_ebook"
+    UNCLASSIFIED = "unclassified"
+    PRINT_DISABLED = "printdisabled"
+    BORROWABLE = "borrowable"
+    PUBLIC = "public"
 
 
 @dataclass
@@ -108,8 +108,8 @@ class OLSearchResponse:
     offset: Optional[int]
 
 
-def create_plural_stripper(*, exclude: Sequence[str] = (), suffixes: Iterable[str] = ('s', '_list')):
-    pattern = '^(.*)(' + '|'.join(suffixes) + ')$'
+def create_plural_stripper(*, exclude: Sequence[str] = (), suffixes: Iterable[str] = ("s", "_list")):
+    pattern = "^(.*)(" + "|".join(suffixes) + ")$"
 
     def plural_stripper(shape, fld):
         return re.sub(pattern, lambda m: m[1], fld.id)
@@ -125,22 +125,22 @@ retort = Retort(
         name_mapping(
             OLSearchResponse,
             map={
-                'query': 'q',
-                'num_found_exact': 'numFoundExact',
+                "query": "q",
+                "num_found_exact": "numFoundExact",
             },
         ),
         name_mapping(
             OLDoc,
             map=[
                 {
-                    'reading_log_count': 'readinglog_count',
-                    'version': '_version_',
+                    "reading_log_count": "readinglog_count",
+                    "version": "_version_",
                 },
-                create_plural_stripper(exclude=['redirects', 'ebook_access']),
+                create_plural_stripper(exclude=["redirects", "ebook_access"]),
             ],
-            omit_default=~P['has_fulltext', 'edition_count'],
-            extra_in='extra_data',
-            extra_out='extra_data',
+            omit_default=~P["has_fulltext", "edition_count"],
+            extra_in="extra_data",
+            extra_out="extra_data",
         ),
         validator(
             PositiveInt,
@@ -155,14 +155,14 @@ retort = Retort(
 
 
 def load_data():
-    path = Path(__file__).parent / 'open_library_search.zip'
-    with ZipFile(path).open('data.json') as f:
+    path = Path(__file__).parent / "open_library_search.zip"
+    with ZipFile(path).open("data.json") as f:
         return json.loads(f.read())
 
 
 def test_load():
     data = load_data()
-    data['docs'] = data['docs'][:1]
+    data["docs"] = data["docs"][:1]
     loaded_response = retort.load(data, OLSearchResponse)
     assert loaded_response == OLSearchResponse(
         start=0,
@@ -170,50 +170,50 @@ def test_load():
         docs=[
             OLDoc(
                 version=1780310972797288448,
-                key='/works/OL27448W',
-                type='work',
+                key="/works/OL27448W",
+                type="work",
                 ebook_access=EbookAccessLevel.BORROWABLE,
                 extra_data={
-                    'cover_i': 9255566,
-                    'ebook_count_i': 16,
-                    'ia_collection_s': IsStr,
-                    'id_alibris_id': IsList(length=5),
-                    'id_amazon': IsList(length=9),
-                    'id_canadian_national_library_archive': ['20600075'],
-                    'id_depósito_legal': IsList(length=4),
-                    'id_goodreads': IsList(length=91),
-                    'id_google': IsList(length=6),
-                    'id_librarything': IsList(length=7),
-                    'id_overdrive': [
-                        '417C4314-2354-4092-96A7-DB3C12598E8A',
-                        '2CCA69FD-FE09-4C2C-8C91-84D55F4AA425',
+                    "cover_i": 9255566,
+                    "ebook_count_i": 16,
+                    "ia_collection_s": IsStr,
+                    "id_alibris_id": IsList(length=5),
+                    "id_amazon": IsList(length=9),
+                    "id_canadian_national_library_archive": ["20600075"],
+                    "id_depósito_legal": IsList(length=4),
+                    "id_goodreads": IsList(length=91),
+                    "id_google": IsList(length=6),
+                    "id_librarything": IsList(length=7),
+                    "id_overdrive": [
+                        "417C4314-2354-4092-96A7-DB3C12598E8A",
+                        "2CCA69FD-FE09-4C2C-8C91-84D55F4AA425",
                     ],
-                    'id_paperback_swap': [
-                        '0618343997',
-                        '0395974682',
-                        '0618129022'
+                    "id_paperback_swap": [
+                        "0618343997",
+                        "0395974682",
+                        "0618129022",
                     ],
-                    'id_wikidata': [
-                        'Q22122681',
-                        'Q121942951'
+                    "id_wikidata": [
+                        "Q22122681",
+                        "Q121942951",
                     ],
-                    'last_modified_i': 1697836839,
-                    'lending_edition_s': 'OL16355419M',
-                    'lending_identifier_s': 'shinpanyubiwamon0005tolk',
-                    'person': IsList(length=33),
-                    'person_facet': IsList(length=33),
-                    'person_key': IsList(length=33),
-                    'printdisabled_s': IsStr,
-                    'public_scan_b': False
+                    "last_modified_i": 1697836839,
+                    "lending_edition_s": "OL16355419M",
+                    "lending_identifier_s": "shinpanyubiwamon0005tolk",
+                    "person": IsList(length=33),
+                    "person_facet": IsList(length=33),
+                    "person_key": IsList(length=33),
+                    "printdisabled_s": IsStr,
+                    "public_scan_b": False,
                 },
                 redirects=[],
                 has_fulltext=True,
-                title='The Lord of the Rings',
-                title_suggest='The Lord of the Rings',
-                title_sort='The Lord of the Rings',
+                title="The Lord of the Rings",
+                title_suggest="The Lord of the Rings",
+                title_sort="The Lord of the Rings",
                 edition_count=159,
                 edition_keys=IsList(length=159),
-                cover_edition_key='OL21058613M',
+                cover_edition_key="OL21058613M",
                 publish_dates=IsList(length=99),
                 publish_years=IsList(length=47),
                 first_publish_year=1954,
@@ -227,27 +227,27 @@ def test_load():
                 oclc_list=IsList(length=43),
                 isbn_list=IsList(length=312),
                 lcc_list=IsList(length=34),
-                lcc_sort='PR-6039.00000000.O32 L617 1993',
-                ddc_list=['823.91', '823.914', '823.912'],
-                ddc_sort='823.914',
+                lcc_sort="PR-6039.00000000.O32 L617 1993",
+                ddc_list=["823.91", "823.914", "823.912"],
+                ddc_sort="823.914",
                 contributors=IsList(length=11),
                 publish_places=IsList(length=28),
                 publishers=IsList(length=83),
                 publisher_facets=IsList(length=83),
                 first_sentences=IsList(length=1),
-                author_keys=['OL26320A'],
-                author_names=['J.R.R. Tolkien'],
+                author_keys=["OL26320A"],
+                author_names=["J.R.R. Tolkien"],
                 author_alternative_names=IsList(length=38),
-                author_facets=['OL26320A J.R.R. Tolkien'],
+                author_facets=["OL26320A J.R.R. Tolkien"],
                 subjects=IsList(length=26),
                 subject_facets=IsList(length=26),
                 subject_keys=IsList(length=26),
                 places=IsList(length=7),
                 place_facets=IsList(length=7),
                 place_keys=IsList(length=7),
-                time_list=['The end of the third age'],
-                time_facets=['The end of the third age'],
-                time_keys=['the_end_of_the_third_age'],
+                time_list=["The end of the third age"],
+                time_facets=["The end of the third age"],
+                time_keys=["the_end_of_the_third_age"],
                 ratings_average=PositiveFloat(4.530303),
                 ratings_sortable=PositiveFloat(4.2093663),
                 ratings_count=PositiveInt(66),
@@ -261,11 +261,11 @@ def test_load():
                 currently_reading_count=PositiveInt(101),
                 already_read_count=PositiveInt(119),
                 seeds=IsList(length=228),
-            )
+            ),
         ],
         num_found_exact=True,
-        query='the lord of the rings',
-        offset=None
+        query="the lord of the rings",
+        offset=None,
     )
 
 
@@ -275,5 +275,5 @@ def test_load_and_dump_equality():
     dumped_response = retort.dump(loaded_response)
 
     data_to_compare = deepcopy(data)
-    data_to_compare.pop('numFound')
+    data_to_compare.pop("numFound")
     assert dumped_response == data_to_compare

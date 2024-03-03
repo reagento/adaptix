@@ -12,7 +12,7 @@ def test_simple(accum):
 
     @mapper_registry.mapped
     class Book:
-        __tablename__ = 'books'
+        __tablename__ = "books"
 
         id: Mapped[int] = mapped_column(primary_key=True)
         title: Mapped[str]
@@ -23,10 +23,10 @@ def test_simple(accum):
     retort = Retort(recipe=[accum])
 
     loader = retort.get_loader(Book)
-    assert loader({'id': 1, 'title': 'abc', 'price': 100}) == Book(id=1, title='abc', price=100)
+    assert loader({"id": 1, "title": "abc", "price": 100}) == Book(id=1, title="abc", price=100)
 
     dumper = retort.get_dumper(Book)
-    assert dumper(Book(id=1, title='abc', price=100)) == {'id': 1, 'title': 'abc', 'price': 100}
+    assert dumper(Book(id=1, title="abc", price=100)) == {"id": 1, "title": "abc", "price": 100}
 
 
 def test_relationship(accum):
@@ -56,34 +56,34 @@ def test_relationship(accum):
 
     loader = retort.get_loader(Declarative2)
     assert (
-        loader({'id': 1, 'text': 'abc', 'parent_id': 100})
+        loader({"id": 1, "text": "abc", "parent_id": 100})
         ==
-        Declarative2(id=1, text='abc', parent_id=100)
+        Declarative2(id=1, text="abc", parent_id=100)
     )
     assert (
-        loader({'id': 1, 'text': 'abc', 'parent': {'id': 100}})
+        loader({"id": 1, "text": "abc", "parent": {"id": 100}})
         ==
-        Declarative2(id=1, text='abc', parent=Declarative1(id=100))
+        Declarative2(id=1, text="abc", parent=Declarative1(id=100))
     )
     assert (
-        loader({'id': 1, 'text': 'abc', 'parent_id': 100, 'parent': {'id': 100}})
+        loader({"id": 1, "text": "abc", "parent_id": 100, "parent": {"id": 100}})
         ==
-        Declarative2(id=1, text='abc', parent_id=100, parent=Declarative1(id=100))
+        Declarative2(id=1, text="abc", parent_id=100, parent=Declarative1(id=100))
     )
 
     dumper = retort.get_dumper(Declarative2)
     assert (
-        dumper(Declarative2(id=1, text='abc', parent_id=100))
+        dumper(Declarative2(id=1, text="abc", parent_id=100))
         ==
-        {'id': 1, 'text': 'abc', 'parent_id': 100, 'parent': None}
+        {"id": 1, "text": "abc", "parent_id": 100, "parent": None}
     )
     assert (
-        dumper(Declarative2(id=1, text='abc', parent=Declarative1(id=100)))
+        dumper(Declarative2(id=1, text="abc", parent=Declarative1(id=100)))
         ==
-        {'id': 1, 'text': 'abc', 'parent_id': None, 'parent': {'id': 100}}
+        {"id": 1, "text": "abc", "parent_id": None, "parent": {"id": 100}}
     )
     assert (
-        dumper(Declarative2(id=1, text='abc', parent_id=100, parent=Declarative1(id=100)))
+        dumper(Declarative2(id=1, text="abc", parent_id=100, parent=Declarative1(id=100)))
         ==
-        {'id': 1, 'text': 'abc', 'parent_id': 100, 'parent': {'id': 100}}
+        {"id": 1, "text": "abc", "parent_id": 100, "parent": {"id": 100}}
     )

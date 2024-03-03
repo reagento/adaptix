@@ -51,7 +51,7 @@ class ByNameEnumMappingGenerator(BaseEnumMappingGenerator):
     def __init__(
         self,
         name_style: Optional[NameStyle] = None,
-        map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
+        map: Optional[Mapping[Union[str, Enum], str]] = None,  # noqa: A002
     ):
         self._name_style = name_style
         self._map = map if map is not None else {}
@@ -143,8 +143,8 @@ class EnumValueProvider(BaseEnumProvider):
                 loc_stack=request.loc_stack.append_with(
                     LocMap(
                         TypeHintLoc(type=self._value_type),
-                    )
-                )
+                    ),
+                ),
             ),
         )
 
@@ -162,9 +162,9 @@ class EnumValueProvider(BaseEnumProvider):
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
                     LocMap(
-                        TypeHintLoc(type=self._value_type)
-                    )
-                )
+                        TypeHintLoc(type=self._value_type),
+                    ),
+                ),
             ),
         )
 
@@ -220,7 +220,7 @@ class EnumExactValueProvider(BaseEnumProvider):
             return None
 
         # pylint: disable=comparison-with-callable,protected-access
-        if getattr(enum._missing_, '__func__', None) != Enum._missing_.__func__:  # type: ignore[attr-defined]
+        if getattr(enum._missing_, "__func__", None) != Enum._missing_.__func__:  # type: ignore[attr-defined]
             return None
 
         return value_to_member
@@ -250,7 +250,7 @@ class FlagByExactValueProvider(BaseFlagProvider):
             )
 
         def flag_loader(data):
-            if type(data) is not int:   # pylint: disable=unidiomatic-typecheck
+            if type(data) is not int:   # pylint: disable=unidiomatic-typecheck  # noqa: E721
                 raise TypeLoadError(int, data)
 
             if data < 0 or data > flag_mask:
@@ -275,6 +275,7 @@ class FlagByListProvider(BaseFlagProvider):
     def __init__(
         self,
         mapping_generator: BaseEnumMappingGenerator,
+        *,
         allow_single_value: bool = False,
         allow_duplicates: bool = True,
         allow_compound: bool = True,
@@ -289,7 +290,7 @@ class FlagByListProvider(BaseFlagProvider):
             return list(enum.__members__.values())
         return _extract_non_compound_cases_from_flag(enum)
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:  # noqa: CCR001
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = get_type_from_request(request)
 
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
@@ -304,7 +305,7 @@ class FlagByListProvider(BaseFlagProvider):
         # treat str and Iterable[str] as different types
         expected_type = Union[str, Iterable[str]] if allow_single_value else Iterable[str]
 
-        def flag_loader(data) -> Flag:  # noqa: CCR001
+        def flag_loader(data) -> Flag:
             data_type = type(data)
 
             if isinstance(data, Iterable) and data_type is not str:
@@ -316,7 +317,7 @@ class FlagByListProvider(BaseFlagProvider):
                     raise TypeLoadError(expected_type, data)
                 process_data = (data,)
 
-            if not allow_duplicates:
+            if not allow_duplicates:  # noqa: SIM102
                 if len(process_data) != len(set(process_data)):
                     raise DuplicatedValuesLoadError(data)
 

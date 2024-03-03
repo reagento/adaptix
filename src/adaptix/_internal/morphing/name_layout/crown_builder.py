@@ -20,9 +20,9 @@ from ..model.crown_definitions import (
 )
 from .base import KeyPath, PathsTo
 
-LeafCr = TypeVar('LeafCr', bound=LeafBaseCrown)
-DictCr = TypeVar('DictCr', bound=BaseDictCrown)
-ListCr = TypeVar('ListCr', bound=BaseListCrown)
+LeafCr = TypeVar("LeafCr", bound=LeafBaseCrown)
+DictCr = TypeVar("DictCr", bound=BaseDictCrown)
+ListCr = TypeVar("ListCr", bound=BaseListCrown)
 
 
 @dataclass
@@ -35,7 +35,7 @@ PathedLeaves = Sequence[PathWithLeaf[LeafCr]]
 
 
 class BaseCrownBuilder(ABC, Generic[LeafCr, DictCr, ListCr]):
-    def build_empty_crown(self, as_list: bool) -> Union[DictCr, ListCr]:
+    def build_empty_crown(self, *, as_list: bool) -> Union[DictCr, ListCr]:
         if as_list:
             return self._make_list_crown(current_path=(), paths_with_leaves=[])
         return self._make_dict_crown(current_path=(), paths_with_leaves=[])

@@ -9,8 +9,8 @@ from .basic_utils import get_type_vars, get_type_vars_of_parametrized, is_generi
 from .implicit_params import fill_implicit_params
 from .normalize_type import normalize_type
 
-M = TypeVar('M')
-K = TypeVar('K', bound=Hashable)
+M = TypeVar("M")
+K = TypeVar("K", bound=Hashable)
 
 
 @dataclass
@@ -43,7 +43,7 @@ class GenericResolver(Generic[K, M]):
             members={
                 key: self._parametrize_by_dict(type_var_to_actual, tp)
                 for key, tp in members_storage.members.items()
-            }
+            },
         )
 
     def _unpack_args(self, args):
@@ -81,7 +81,7 @@ class GenericResolver(Generic[K, M]):
             for tp in members_storage.members.values()
         ):
             return members_storage
-        if not hasattr(tp, '__orig_bases__'):
+        if not hasattr(tp, "__orig_bases__"):
             return members_storage
 
         bases_members: Dict[K, TypeHint] = {}

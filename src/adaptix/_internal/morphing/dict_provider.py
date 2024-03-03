@@ -41,10 +41,10 @@ class DictProvider(LoaderProvider, DumperProvider):
                     LocMap(
                         TypeHintLoc(type=key.source),
                         GenericParamLoc(generic_pos=0),
-                    )
-                )
+                    ),
+                ),
             ),
-            lambda x: 'Cannot create loader for dict. Loader for key cannot be created',
+            lambda x: "Cannot create loader for dict. Loader for key cannot be created",
         )
         value_loader = mediator.mandatory_provide(
             LoaderRequest(
@@ -52,13 +52,13 @@ class DictProvider(LoaderProvider, DumperProvider):
                     LocMap(
                         TypeHintLoc(type=value.source),
                         GenericParamLoc(generic_pos=1),
-                    )
-                )
+                    ),
+                ),
             ),
-            lambda x: 'Cannot create loader for dict. Loader for value cannot be created',
+            lambda x: "Cannot create loader for dict. Loader for value cannot be created",
         )
         debug_trail = mediator.mandatory_provide(
-            DebugTrailRequest(loc_stack=request.loc_stack)
+            DebugTrailRequest(loc_stack=request.loc_stack),
         )
         return self._make_loader(
             key_loader=key_loader,
@@ -117,8 +117,8 @@ class DictProvider(LoaderProvider, DumperProvider):
 
         return dict_loader_dt_first
 
-    def _get_loader_dt_all(self, key_loader: Loader, value_loader: Loader):  # noqa: C901,CCR001
-        def dict_loader_dt_all(data):  # noqa: CCR001
+    def _get_loader_dt_all(self, key_loader: Loader, value_loader: Loader):  # noqa: C901
+        def dict_loader_dt_all(data):
             try:
                 items_method = data.items
             except AttributeError:
@@ -150,11 +150,11 @@ class DictProvider(LoaderProvider, DumperProvider):
             if errors:
                 if has_unexpected_error:
                     raise CompatExceptionGroup(
-                        f'while loading {dict}',
+                        f"while loading {dict}",
                         [render_trail_as_note(e) for e in errors],
                     )
                 raise AggregateLoadError(
-                    f'while loading {dict}',
+                    f"while loading {dict}",
                     [render_trail_as_note(e) for e in errors],
                 )
             return result
@@ -170,10 +170,10 @@ class DictProvider(LoaderProvider, DumperProvider):
                     LocMap(
                         TypeHintLoc(type=key.source),
                         GenericParamLoc(generic_pos=0),
-                    )
-                )
+                    ),
+                ),
             ),
-            lambda x: 'Cannot create dumper for dict. Dumper for key cannot be created',
+            lambda x: "Cannot create dumper for dict. Dumper for key cannot be created",
         )
         value_dumper = mediator.mandatory_provide(
             DumperRequest(
@@ -181,13 +181,13 @@ class DictProvider(LoaderProvider, DumperProvider):
                     LocMap(
                         TypeHintLoc(type=value.source),
                         GenericParamLoc(generic_pos=1),
-                    )
-                )
+                    ),
+                ),
             ),
-            lambda x: 'Cannot create dumper for dict. Dumper for value cannot be created',
+            lambda x: "Cannot create dumper for dict. Dumper for value cannot be created",
         )
         debug_trail = mediator.mandatory_provide(
-            DebugTrailRequest(loc_stack=request.loc_stack)
+            DebugTrailRequest(loc_stack=request.loc_stack),
         )
         return self._make_dumper(
             key_dumper=key_dumper,
@@ -265,7 +265,7 @@ class DictProvider(LoaderProvider, DumperProvider):
 
             if errors:
                 raise CompatExceptionGroup(
-                    f'while dumping {dict}',
+                    f"while dumping {dict}",
                     [render_trail_as_note(e) for e in errors],
                 )
             return result
@@ -286,10 +286,10 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         key, value = self._extract_key_value(request)
-        dict_type_hint = Dict[key.source, value.source]  # type: ignore
+        dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
         dict_loader = self._DICT_PROVIDER.apply_provider(
             mediator,
-            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint)))
+            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint))),
         )
         default_factory = self.default_factory
 
@@ -300,9 +300,9 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
-        dict_type_hint = Dict[key.source, value.source]  # type: ignore
+        dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
 
         return self._DICT_PROVIDER.apply_provider(
             mediator,
-            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint)))
+            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint))),
         )

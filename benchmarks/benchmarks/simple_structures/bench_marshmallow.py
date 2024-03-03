@@ -26,7 +26,7 @@ class ReviewSchema(Schema):
     id = fields.Int()
     title = fields.Str()
     rating = fields.Float()
-    content = fields.Str(data_key='text')
+    content = fields.Str(data_key="text")
 
     @post_load
     def _to_model(self, data, **kwargs):

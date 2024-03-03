@@ -20,25 +20,25 @@ class Book:
 retort = Retort(
     recipe=[
         name_mapping(Person, name_style=NameStyle.CAMEL),
-        name_mapping('author', extra_in='extra', extra_out='extra'),
-    ]
+        name_mapping("author", extra_in="extra", extra_out="extra"),
+    ],
 )
 
 data = {
-    'title': 'Lord of Light',
-    'author': {
-        'firstName': 'Roger',
-        'lastName': 'Zelazny',
-        'unknown_field': 1995,
+    "title": "Lord of Light",
+    "author": {
+        "firstName": "Roger",
+        "lastName": "Zelazny",
+        "unknown_field": 1995,
     },
 }
 book = retort.load(data, Book)
 assert book == Book(
-    title='Lord of Light',
+    title="Lord of Light",
     author=Person(
-        first_name='Roger',
-        last_name='Zelazny',
-        extra={'unknown_field': 1995},
+        first_name="Roger",
+        last_name="Zelazny",
+        extra={"unknown_field": 1995},
     ),
 )
 assert retort.dump(book) == data

@@ -21,7 +21,7 @@ import pyperf
 from adaptix._internal.utils import pairs
 from benchmarks.pybench.director_api import BenchAccessor, BenchChecker, BenchmarkDirector
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def call_by_namespace(func: Callable[..., T], namespace: Namespace) -> T:
@@ -39,7 +39,7 @@ class Foundation(ABC):
 
     def call(self, command: str) -> str:
         proc = subprocess.run(command, shell=True, capture_output=True, check=True)  # nosec  # noqa: DUO116
-        return proc.stdout.decode('utf-8')
+        return proc.stdout.decode("utf-8")
 
     @classmethod
     @abstractmethod
@@ -106,48 +106,48 @@ class HubDescription:
     x_bounder: AxisBounder
 
 
-RELEASE_DATA = Path(__file__).parent.parent / 'release_data'
+RELEASE_DATA = Path(__file__).parent.parent / "release_data"
 
 BENCHMARK_ENVS: Iterable[EnvDescription] = [
     EnvDescription(
-        title='CPython 3.8',
-        key='py38',
-        tox_env='py38-bench',
+        title="CPython 3.8",
+        key="py38",
+        tox_env="py38-bench",
     ),
     EnvDescription(
-        title='CPython 3.9',
-        key='py39',
-        tox_env='py39-bench',
+        title="CPython 3.9",
+        key="py39",
+        tox_env="py39-bench",
     ),
     EnvDescription(
-        title='CPython 3.10',
-        key='py310',
-        tox_env='py310-bench',
+        title="CPython 3.10",
+        key="py310",
+        tox_env="py310-bench",
     ),
     EnvDescription(
-        title='CPython 3.11',
-        key='py311',
-        tox_env='py311-bench',
+        title="CPython 3.11",
+        key="py311",
+        tox_env="py311-bench",
     ),
     EnvDescription(
-        title='CPython 3.12',
-        key='py312',
-        tox_env='py312-bench',
+        title="CPython 3.12",
+        key="py312",
+        tox_env="py312-bench",
     ),
     EnvDescription(
-        title='PyPy 3.8',
-        key='pypy38',
-        tox_env='pypy38-bench',
+        title="PyPy 3.8",
+        key="pypy38",
+        tox_env="pypy38-bench",
     ),
     EnvDescription(
-        title='PyPy 3.9',
-        key='pypy39',
-        tox_env='pypy39-bench',
+        title="PyPy 3.9",
+        key="pypy39",
+        tox_env="pypy39-bench",
     ),
     EnvDescription(
-        title='PyPy 3.10',
-        key='pypy310',
-        tox_env='pypy310-bench',
+        title="PyPy 3.10",
+        key="pypy310",
+        tox_env="pypy310-bench",
     ),
 ]
 KEY_TO_ENV = {
@@ -157,40 +157,40 @@ KEY_TO_ENV = {
 
 BENCHMARK_HUBS: Iterable[HubDescription] = [
     HubDescription(
-        key='simple_structures-loading',
-        title='Simple Structures (loading)',
-        module='benchmarks.simple_structures.hub_loading',
+        key="simple_structures-loading",
+        title="Simple Structures (loading)",
+        module="benchmarks.simple_structures.hub_loading",
         x_bounder=ClusterAxisBounder(
             last_cluster_idx=-2,
             boundary_rate=3,
-        )
+        ),
     ),
     HubDescription(
-        key='simple_structures-dumping',
-        title='Simple Structures (dumping)',
-        module='benchmarks.simple_structures.hub_dumping',
+        key="simple_structures-dumping",
+        title="Simple Structures (dumping)",
+        module="benchmarks.simple_structures.hub_dumping",
         x_bounder=ClusterAxisBounder(
             last_cluster_idx=-3,
             boundary_rate=2,
-        )
+        ),
     ),
     HubDescription(
-        key='gh_issues-loading',
-        title='Github Issues (loading)',
-        module='benchmarks.gh_issues.hub_loading',
+        key="gh_issues-loading",
+        title="Github Issues (loading)",
+        module="benchmarks.gh_issues.hub_loading",
         x_bounder=ClusterAxisBounder(
             last_cluster_idx=-2,
             boundary_rate=2,
-        )
+        ),
     ),
     HubDescription(
-        key='gh_issues-dumping',
-        title='Github Issues (dumping)',
-        module='benchmarks.gh_issues.hub_dumping',
+        key="gh_issues-dumping",
+        title="Github Issues (dumping)",
+        module="benchmarks.gh_issues.hub_dumping",
         x_bounder=ClusterAxisBounder(
             last_cluster_idx=-3,
             boundary_rate=1.5,
-        )
+        ),
     ),
 ]
 KEY_TO_HUB = {
@@ -204,31 +204,31 @@ class HubProcessor(Foundation, ABC):
     def add_arguments(cls, parser: ArgumentParser) -> None:
         hub_selective_group = parser.add_mutually_exclusive_group()
         hub_selective_group.add_argument(
-            '--include',
-            '-i',
-            action='extend',
+            "--include",
+            "-i",
+            action="extend",
             nargs="+",
             required=False,
         )
         hub_selective_group.add_argument(
-            '--exclude',
-            '-e',
-            action='extend',
+            "--exclude",
+            "-e",
+            action="extend",
             nargs="+",
             required=False,
         )
         env_selective_group = parser.add_mutually_exclusive_group()
         env_selective_group.add_argument(
-            '--env-include',
-            '-ei',
-            action='extend',
+            "--env-include",
+            "-ei",
+            action="extend",
             nargs="+",
             required=False,
         )
         env_selective_group.add_argument(
-            '--env-exclude',
-            '-ee',
-            action='extend',
+            "--env-exclude",
+            "-ee",
+            action="extend",
             nargs="+",
             required=False,
         )
@@ -295,7 +295,7 @@ class HubProcessor(Foundation, ABC):
     ) -> concurrent.futures.Future[str]:
         return executor.submit(
             lambda: self.call(
-                f"tox exec -e {env_description.tox_env} --skip-pkg-install -qq -- python -c '{code}'"
+                f"tox exec -e {env_description.tox_env} --skip-pkg-install -qq -- python -c '{code}'",
             ),
         )
 
@@ -309,7 +309,7 @@ class HubProcessor(Foundation, ABC):
                     import json
                     from {hub_description.module} import director
                     print(json.dumps(director.env_spec))
-                """
+                """,
             )
             for hub_description in hub_descriptions
         ]
@@ -325,7 +325,7 @@ class HubProcessor(Foundation, ABC):
                 hub_description: {
                     env_description: (
                         importlib.import_module(hub_description.module).director.replace(
-                            env_spec=json.loads(future.result())
+                            env_spec=json.loads(future.result()),
                         )
                     )
                     for env_description, future in env_to_future.items()
@@ -357,15 +357,15 @@ class Orchestrator(HubProcessor):
     def add_arguments(cls, parser: ArgumentParser) -> None:
         super().add_arguments(parser)
         parser.add_argument(
-            '--series',
-            action='store',
+            "--series",
+            action="store",
             required=False,
             type=int,
             default=2,
         )
         parser.add_argument(
-            '--max-tries',
-            action='store',
+            "--max-tries",
+            action="store",
             required=False,
             type=int,
             default=None,
@@ -390,11 +390,11 @@ class Orchestrator(HubProcessor):
         self.max_tries = max_tries
 
     def start(self) -> None:
-        self.print('Start environments preparation')
+        self.print("Start environments preparation")
         joined_envs = ",".join(env_description.tox_env for env_description in self.filtered_envs())
-        self.run(f'tox --notest -p auto -e {joined_envs}')
+        self.run(f"tox --notest -p auto -e {joined_envs}")
 
-        self.print('Loading all cases')
+        self.print("Loading all cases")
         hub_to_env_to_case_state: Dict[HubDescription, Dict[EnvDescription, CaseState]] = {}
         for hub_description, env_to_director in self.load_directors(self.filtered_hubs()).items():
             env_to_case_state = {}
@@ -417,8 +417,8 @@ class Orchestrator(HubProcessor):
 
     def _render_tries(self, tries_max_size: int, case_state: CaseState) -> str:
         if case_state.max_tries is None:
-            return str(case_state.tries_count).ljust(tries_max_size) + ' ' * (tries_max_size + 1)
-        return f'{str(case_state.tries_count).ljust(tries_max_size)}/{str(case_state.max_tries).ljust(tries_max_size)}'
+            return str(case_state.tries_count).ljust(tries_max_size) + " " * (tries_max_size + 1)
+        return f"{str(case_state.tries_count).ljust(tries_max_size)}/{str(case_state.max_tries).ljust(tries_max_size)}"
 
     def _render_cases_to_complete(
         self,
@@ -443,10 +443,10 @@ class Orchestrator(HubProcessor):
             for env_to_case_state in hub_to_env_to_case_state.values()
             for case_state in env_to_case_state.values()
         )
-        return '\n'.join(
-            f'{hub_description.key.rjust(hub_max_size)} tries:  '
-            + '  '.join(
-                f'{env_description.key.ljust(env_max_size)} - {self._render_tries(tries_max_size, case_state)}'
+        return "\n".join(
+            f"{hub_description.key.rjust(hub_max_size)} tries:  "
+            + "  ".join(
+                f"{env_description.key.ljust(env_max_size)} - {self._render_tries(tries_max_size, case_state)}"
                 for env_description, case_state in env_to_case_state.items()
                 if not case_state.is_completed
             )
@@ -466,9 +466,9 @@ class Orchestrator(HubProcessor):
 
                     has_uncompleted = True
                     cases_to_complete = (
-                        '\n' + self._render_cases_to_complete(hub_to_env_to_case_state)
-                    ).replace('\n', '\n  ')
-                    self.print('Cases to complete:' + cases_to_complete)
+                        "\n" + self._render_cases_to_complete(hub_to_env_to_case_state)
+                    ).replace("\n", "\n  ")
+                    self.print("Cases to complete:" + cases_to_complete)
                     self.print()
 
                     self.run_case(hub_description, env_description, case_state)
@@ -482,7 +482,7 @@ class Orchestrator(HubProcessor):
             warnings = case_state.checker.get_warnings(schema)
             if warnings is None or warnings:
                 local_ids_with_warnings.append(
-                    case_state.accessor.get_local_id(schema)
+                    case_state.accessor.get_local_id(schema),
                 )
 
         case_state.local_ids_with_warnings = local_ids_with_warnings
@@ -491,30 +491,30 @@ class Orchestrator(HubProcessor):
         hub_module = hub_description.module
         env = env_description.tox_env
         for _ in range(self.series):
-            self.print(f'Running   hub: {hub_description.key:<30} env: {env}')
-            self.run(f'tox exec -e {env} --skip-pkg-install -- python -m {hub_module} run --unstable')
+            self.print(f"Running   hub: {hub_description.key:<30} env: {env}")
+            self.run(f"tox exec -e {env} --skip-pkg-install -- python -m {hub_module} run --unstable")
             case_state.tries_count += 1
             self.update_local_ids_with_warnings(case_state)
             if case_state.is_completed:
                 case_state.director.make_bench_plotter(case_state.accessor).draw_plot(output=None, dpi=100)
                 return
-            self.print('Got unstable results for ' + ' '.join(case_state.local_ids_with_warnings))
+            self.print("Got unstable results for " + " ".join(case_state.local_ids_with_warnings))
             if case_state.is_out_of_tries:
                 self.print(
-                    f'WARNING: too many tries to get stable benchmark results -- {case_state.tries_count},'
-                    f' restarting is stopped'
+                    f"WARNING: too many tries to get stable benchmark results -- {case_state.tries_count},"
+                    f" restarting is stopped",
                 )
                 return
 
 
 def pyperf_bench_to_measure(data: Union[str, bytes]) -> BenchmarkMeasure:
-    pybench_data = json.loads(data)['pybench_data']
+    pybench_data = json.loads(data)["pybench_data"]
     return BenchmarkMeasure(
-        base=pybench_data['base'],
-        tags=pybench_data['tags'],
-        kwargs=pybench_data['kwargs'],
-        distributions=pybench_data['distributions'],
-        pyperf=pyperf.Benchmark.loads(data)
+        base=pybench_data["base"],
+        tags=pybench_data["tags"],
+        kwargs=pybench_data["kwargs"],
+        distributions=pybench_data["distributions"],
+        pyperf=pyperf.Benchmark.loads(data),
     )
 
 
@@ -538,9 +538,9 @@ class Renderer(HubProcessor):
     def add_arguments(cls, parser: ArgumentParser) -> None:
         super().add_arguments(parser)
         parser.add_argument(
-            '--output',
-            '-o',
-            action='store',
+            "--output",
+            "-o",
+            action="store",
             required=False,
         )
 
@@ -550,7 +550,7 @@ class Renderer(HubProcessor):
         exclude: Optional[Sequence[str]] = None,
         env_include: Optional[Sequence[str]] = None,
         env_exclude: Optional[Sequence[str]] = None,
-        output: Optional[str] = None
+        output: Optional[str] = None,
     ):
         super().__init__(
             include=include,
@@ -561,7 +561,7 @@ class Renderer(HubProcessor):
         self.output = output
 
     HTML_TEMPLATE = dedent(
-        '''
+        """
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -571,24 +571,24 @@ class Renderer(HubProcessor):
             {body}
         </body>
         </html>
-        '''
+        """,
     )
 
     def start(self) -> None:
-        body = ''
+        body = ""
         for hub_description, env_to_director in self.load_directors(self.filtered_hubs()).items():
             figure = self.render_hub_from_workbench(hub_description, env_to_director)
             figure.update_layout(width=809)
             body += plotly.offline.plot(
                 figure,
-                config={'displaylogo': False},
-                include_plotlyjs='cdn',
-                output_type='div'
+                config={"displaylogo": False},
+                include_plotlyjs="cdn",
+                output_type="div",
             )
-            body += '<p></p>'
-        output = 'benchmark_plots.html' if self.output is None else self.output
+            body += "<p></p>"
+        output = "benchmark_plots.html" if self.output is None else self.output
         Path(output).write_text(self.HTML_TEMPLATE.format(body=body))
-        self.print(f'Open file://{Path(output).absolute()}')
+        self.print(f"Open file://{Path(output).absolute()}")
 
     def _director_to_measures(self, director: BenchmarkDirector) -> Sequence[BenchmarkMeasure]:
         accessor = director.make_accessor()
@@ -596,7 +596,7 @@ class Renderer(HubProcessor):
         for schema in accessor.schemas:
             path = accessor.bench_result_file(accessor.get_id(schema))
             measures.append(
-                pyperf_bench_to_measure(path.read_text())
+                pyperf_bench_to_measure(path.read_text()),
             )
         measures.sort(key=lambda x: x.pyperf.mean())
         return measures
@@ -605,11 +605,11 @@ class Renderer(HubProcessor):
         self,
         hub_description: HubDescription,
     ) -> Mapping[EnvDescription, Sequence[BenchmarkMeasure]]:
-        with ZipFile(RELEASE_DATA / f'{hub_description.key}.zip') as release_zip:
-            index = json.loads(release_zip.read('index.json'))
+        with ZipFile(RELEASE_DATA / f"{hub_description.key}.zip") as release_zip:
+            index = json.loads(release_zip.read("index.json"))
             env_to_files = {
                 KEY_TO_ENV[env_key]: files
-                for env_key, files in index['env_files'].items()
+                for env_key, files in index["env_files"].items()
             }
             return {
                 env: sorted(
@@ -617,7 +617,7 @@ class Renderer(HubProcessor):
                         pyperf_bench_to_measure(release_zip.read(file))
                         for file in files
                     ),
-                    key=lambda x: x.pyperf.mean()
+                    key=lambda x: x.pyperf.mean(),
                 )
                 for env, files in env_to_files.items()
             }
@@ -642,41 +642,41 @@ class Renderer(HubProcessor):
         return figure
 
     BASE_RENAMING = {
-        'pydantic': 'pydantic v2'
+        "pydantic": "pydantic v2",
     }
 
     def _get_label(self, measure: BenchmarkMeasure) -> str:
         base = self.BASE_RENAMING.get(measure.base) or measure.base
         if measure.tags:
-            tags_str = ', '.join(measure.tags)
+            tags_str = ", ".join(measure.tags)
             return f"{base}<br>({tags_str})"
         return base
 
     LIGHT_COLOR_SCHEME = ColorScheme(
-        bg_color='white',
-        bar_color='rgba(129, 182, 230, 1.0)',
-        bar_bordercolor='rgba(17, 95, 143, 1.0)',
-        button_bordercolor='black',
-        button_bgcolor='white',
-        button_font_color='black',
-        font_color='black',
-        hoverlabel_bgcolor='white',
-        template='plotly_white',
+        bg_color="white",
+        bar_color="rgba(129, 182, 230, 1.0)",
+        bar_bordercolor="rgba(17, 95, 143, 1.0)",
+        button_bordercolor="black",
+        button_bgcolor="white",
+        button_font_color="black",
+        font_color="black",
+        hoverlabel_bgcolor="white",
+        template="plotly_white",
         updatemenus_showactive=True,
-        selected_env_annotation_color='rgb(171, 171, 171)',
+        selected_env_annotation_color="rgb(171, 171, 171)",
     )
     DARK_COLOR_SCHEME = ColorScheme(
-        bg_color='#131416',
-        bar_color='#1a687d',
-        bar_bordercolor='#4abdd4',
-        button_bordercolor='white',
-        button_bgcolor='#202020',
-        button_font_color='rgb(171, 171, 171)',
-        font_color='white',
-        hoverlabel_bgcolor='#202020',
-        template='plotly_dark',
+        bg_color="#131416",
+        bar_color="#1a687d",
+        bar_bordercolor="#4abdd4",
+        button_bordercolor="white",
+        button_bgcolor="#202020",
+        button_font_color="rgb(171, 171, 171)",
+        font_color="white",
+        hoverlabel_bgcolor="#202020",
+        template="plotly_dark",
         updatemenus_showactive=False,
-        selected_env_annotation_color='rgb(171, 171, 171)',
+        selected_env_annotation_color="rgb(171, 171, 171)",
     )
 
     def _create_bar_chart(self, color_scheme: ColorScheme, measures: Sequence[BenchmarkMeasure]) -> go.Bar:
@@ -690,43 +690,43 @@ class Renderer(HubProcessor):
                 for measure in measures
             ],
             error_x={
-                'type': 'data',
-                'array': [
+                "type": "data",
+                "array": [
                     measure.pyperf.stdev() * 10 ** 6
                     for measure in measures
                 ],
-                'width': 4,
-                'thickness': 1.5,
-                'color': color_scheme.bar_bordercolor,
+                "width": 4,
+                "thickness": 1.5,
+                "color": color_scheme.bar_bordercolor,
             },
-            texttemplate='%{x:,.1f}',
-            textposition='inside',
-            insidetextanchor='start',
+            texttemplate="%{x:,.1f}",
+            textposition="inside",
+            insidetextanchor="start",
             insidetextfont={
-                "family": 'Helvetica',
-                "color": 'white'
+                "family": "Helvetica",
+                "color": "white",
             },
-            orientation='h',
+            orientation="h",
             marker={
-                'color': color_scheme.bar_color,
-                'line': {
-                    'color': color_scheme.bar_bordercolor,
-                    'width': 1.2,
-                }
+                "color": color_scheme.bar_color,
+                "line": {
+                    "color": color_scheme.bar_bordercolor,
+                    "width": 1.2,
+                },
             },
             hovertemplate=(
-                '<b>%{customdata.base}</b><br>'
-                '%{x:,.1f} μs ± %{error_x.array:.1f} μs (%{customdata.rel_error:.1f}%)<br>'
-                '<br>'
-                '%{customdata.kwargs}'
-                '<extra></extra>'
+                "<b>%{customdata.base}</b><br>"
+                "%{x:,.1f} μs ± %{error_x.array:.1f} μs (%{customdata.rel_error:.1f}%)<br>"
+                "<br>"
+                "%{customdata.kwargs}"
+                "<extra></extra>"
             ),
             customdata=[
                 {
-                    'base': measure.base,
-                    'rel_error': measure.pyperf.stdev() / measure.pyperf.mean() * 100,
-                    'kwargs': '<br>'.join(
-                        f'{key}={value}'
+                    "base": measure.base,
+                    "rel_error": measure.pyperf.stdev() / measure.pyperf.mean() * 100,
+                    "kwargs": "<br>".join(
+                        f"{key}={value}"
                         for key, value in measure.kwargs.items()
                     ),
                 }
@@ -734,7 +734,7 @@ class Renderer(HubProcessor):
             ],
         )
 
-    DEFAULT_ENV_KEY = 'py312'
+    DEFAULT_ENV_KEY = "py312"
 
     def create_hub_plot(
         self,
@@ -753,35 +753,35 @@ class Renderer(HubProcessor):
         bar_charts[visible_by_default].update(visible=True)
         buttons = [
             {
-                'args': [
-                    {'visible': [env_idx == bar_idx for bar_idx in range(len(bar_charts))]},
-                    {'annotations[0].text': env_description.title},
+                "args": [
+                    {"visible": [env_idx == bar_idx for bar_idx in range(len(bar_charts))]},
+                    {"annotations[0].text": env_description.title},
                 ],
-                'label': env_description.title,
-                'method': 'update',
+                "label": env_description.title,
+                "method": "update",
             }
             for env_idx, env_description in enumerate(self.filtered_envs())
         ]
         height = max(len(measures) for accessor, measures in env_to_measures.items()) * 40 + 185
         # pylint: disable=no-member
         figure = go.Figure(
-            bar_charts
+            bar_charts,
         ).update_layout(
             title={
-                'text': f"<b>{hub_description.title}</b>",
-                'x': 0.5,
-                'y': 0.97,
-                'xanchor': 'center',
-                'yanchor': 'top',
-                'font': {
-                    'size': 18,
+                "text": f"<b>{hub_description.title}</b>",
+                "x": 0.5,
+                "y": 0.97,
+                "xanchor": "center",
+                "yanchor": "top",
+                "font": {
+                    "size": 18,
                 },
             },
             xaxis_title="Time (μs)",
             font={
-                'family': 'Helvetica',
-                'size': 12,
-                'color': color_scheme.font_color,
+                "family": "Helvetica",
+                "size": 12,
+                "color": color_scheme.font_color,
             },
             template=color_scheme.template,
             margin_pad=10,
@@ -797,29 +797,29 @@ class Renderer(HubProcessor):
             autosize=True,
             xaxis_fixedrange=True,
             yaxis_fixedrange=True,
-            modebar_remove=['zoom', 'pan', 'select', 'zoomIn', 'zoomOut', 'autoScale', 'resetScale', 'lasso2d'],
-            clickmode='none',
+            modebar_remove=["zoom", "pan", "select", "zoomIn", "zoomOut", "autoScale", "resetScale", "lasso2d"],
+            clickmode="none",
             dragmode=False,
         ).update_layout(
             updatemenus=[
                 {
-                    "type": 'buttons',
-                    "direction": 'left',
+                    "type": "buttons",
+                    "direction": "left",
                     "buttons": buttons,
                     "borderwidth": 0.5,
-                    'bordercolor': color_scheme.button_bordercolor,
-                    'bgcolor': color_scheme.button_bgcolor,
-                    'showactive': color_scheme.updatemenus_showactive,
-                    'font': {
-                        'color': color_scheme.button_font_color,
+                    "bordercolor": color_scheme.button_bordercolor,
+                    "bgcolor": color_scheme.button_bgcolor,
+                    "showactive": color_scheme.updatemenus_showactive,
+                    "font": {
+                        "color": color_scheme.button_font_color,
                     },
-                    'active': visible_by_default,
-                    'x': 0.5,
-                    'y': 1 + (64 / height),
-                    'xanchor': 'center',
-                    'yanchor': 'top',
+                    "active": visible_by_default,
+                    "x": 0.5,
+                    "y": 1 + (64 / height),
+                    "xanchor": "center",
+                    "yanchor": "top",
                 },
-            ]
+            ],
         ).add_annotation(
             xref="x domain",
             yref="y domain",
@@ -829,7 +829,7 @@ class Renderer(HubProcessor):
                 env_description.title for env_description in self.filtered_envs()
                 if env_description.key == self.DEFAULT_ENV_KEY
             ),
-            xanchor='right',
+            xanchor="right",
             showarrow=False,
             font=dict(
                 size=13,
@@ -843,7 +843,7 @@ class HubValidator(HubProcessor):
     def start(self) -> None:
         errors = self.validate(self.filtered_hubs())
         if errors:
-            self.print('\n'.join(errors))
+            self.print("\n".join(errors))
 
     def validate(self, hub_descriptions: Iterable[HubDescription]) -> Sequence[str]:
         hub_to_director_to_env = self.load_directors(hub_descriptions)
@@ -861,13 +861,13 @@ class HubValidator(HubProcessor):
                 accessor = director.make_accessor()
                 for schema in accessor.schemas:
                     bench_report = json.loads(
-                        accessor.bench_result_file(accessor.get_id(schema)).read_text()
+                        accessor.bench_result_file(accessor.get_id(schema)).read_text(),
                     )
-                    for dist, version in bench_report['pybench_data']['distributions'].items():
+                    for dist, version in bench_report["pybench_data"]["distributions"].items():
                         dist_to_versions[dist].add(version)
 
         return [
-            f'Benchmarks using distribution {dist!r} were taken with different versions {versions!r}'
+            f"Benchmarks using distribution {dist!r} were taken with different versions {versions!r}"
             for dist, versions in dist_to_versions.items()
             if len(versions) > 1
         ]
@@ -894,8 +894,8 @@ class Releaser(HubProcessor):
                 for env_description, accessor in env_with_accessor
             }
             with ZipFile(
-                file=RELEASE_DATA / f'{hub_description.key}.zip',
-                mode='w',
+                file=RELEASE_DATA / f"{hub_description.key}.zip",
+                mode="w",
                 compression=ZIP_BZIP2,
                 compresslevel=9,
             ) as release_zip:
@@ -903,20 +903,20 @@ class Releaser(HubProcessor):
                     release_zip.write(file_path, arcname=file_path.name)
 
                 release_zip.writestr(
-                    'index.json',
+                    "index.json",
                     json.dumps(
-                        self._get_index_data(env_to_files)
-                    )
+                        self._get_index_data(env_to_files),
+                    ),
                 )
 
     def _get_index_data(self, env_to_files: Mapping[EnvDescription, Iterable[Path]]) -> Dict[str, Any]:
         return {
-            'env_files': {
+            "env_files": {
                 env_description.key: [
                     file.name for file in files
                 ]
                 for env_description, files in env_to_files.items()
-            }
+            },
         }
 
 
@@ -926,19 +926,19 @@ class ListGetter(Foundation):
         pass
 
     def start(self) -> None:
-        self.print('Hubs:')
-        self.print('\n'.join([hub_description.key for hub_description in BENCHMARK_HUBS]))
+        self.print("Hubs:")
+        self.print("\n".join([hub_description.key for hub_description in BENCHMARK_HUBS]))
         self.print()
-        self.print('Envs:')
-        self.print('\n'.join([env_description.key for env_description in BENCHMARK_ENVS]))
+        self.print("Envs:")
+        self.print("\n".join([env_description.key for env_description in BENCHMARK_ENVS]))
 
 
 COMMAND_TO_CLS = {
-    'run': Orchestrator,
-    'render': Renderer,
-    'validate': HubValidator,
-    'release': Releaser,
-    'list': ListGetter,
+    "run": Orchestrator,
+    "render": Renderer,
+    "validate": HubValidator,
+    "release": Releaser,
+    "list": ListGetter,
 }
 
 
@@ -957,5 +957,5 @@ def main():
     instance.start()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

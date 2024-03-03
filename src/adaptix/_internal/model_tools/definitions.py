@@ -10,8 +10,8 @@ from ..feature_requirement import DistributionRequirement, DistributionVersionRe
 from ..struct_trail import Attr, TrailElement
 from ..utils import SingletonMeta, pairs
 
-S = TypeVar('S')
-T = TypeVar('T')
+S = TypeVar("S")
+T = TypeVar("T")
 
 
 class NoDefault(metaclass=SingletonMeta):
@@ -132,7 +132,7 @@ class ItemAccessor(Accessor):
         )
 
 
-def create_attr_accessor(attr_name: str, is_required: bool) -> DescriptorAccessor:
+def create_attr_accessor(attr_name: str, *, is_required: bool) -> DescriptorAccessor:
     return DescriptorAccessor(
         attr_name=attr_name,
         access_error=None if is_required else AttributeError,
@@ -212,7 +212,7 @@ class BaseShape:
             raise ValueError(f"overriden_types contains non existing fields {wild_overriden_types}")
 
     def __post_init__(self):
-        super().__setattr__('fields_dict', {fld.id: fld for fld in self.fields})
+        super().__setattr__("fields_dict", {fld.id: fld for fld in self.fields})
         self._validate()
 
 
@@ -222,7 +222,7 @@ class ParamKind(Enum):
     KW_ONLY = 3  # 2 is for VAR_POS
 
     def __repr__(self):
-        return f'{type(self).__name__}.{self.name}'
+        return f"{type(self).__name__}.{self.name}"
 
 
 @dataclass(frozen=True)
@@ -263,7 +263,7 @@ class InputShape(BaseShape, Generic[T]):
     def allow_kwargs(self) -> bool:
         return self.kwargs is not None
 
-    def _validate(self):  # noqa: CCR001
+    def _validate(self):
         super()._validate()
 
         param_names = {param.name for param in self.params}
@@ -276,16 +276,16 @@ class InputShape(BaseShape, Generic[T]):
 
         wild_params = {param.name: param.field_id for param in self.params if param.field_id not in self.fields_dict}
         if wild_params:
-            raise ValueError(f'Parameters {wild_params} bind to non-existing fields')
+            raise ValueError(f"Parameters {wild_params} bind to non-existing fields")
 
         wild_fields = self.fields_dict.keys() - {param.field_id for param in self.params}
         if wild_fields:
-            raise ValueError(f'Fields {wild_fields} do not bound to any parameter')
+            raise ValueError(f"Fields {wild_fields} do not bound to any parameter")
 
         for past, current in pairs(self.params):
             if past.kind.value > current.kind.value:
                 raise ValueError(
-                    f"Inconsistent order of fields, {current.kind} must be after {past.kind}"
+                    f"Inconsistent order of fields, {current.kind} must be after {past.kind}",
                 )
 
             if (
@@ -295,7 +295,7 @@ class InputShape(BaseShape, Generic[T]):
             ):
                 raise ValueError(
                     f"All not required fields must be after required ones"
-                    f" except {ParamKind.KW_ONLY} fields"
+                    f" except {ParamKind.KW_ONLY} fields",
                 )
 
         for param in self.params:
@@ -313,8 +313,8 @@ class OutputShape(BaseShape):
     fields_dict: Mapping[str, OutputField] = field(init=False, hash=False, repr=False, compare=False)
 
 
-Inp = TypeVar('Inp', bound=Optional[InputShape])
-Out = TypeVar('Out', bound=Optional[OutputShape])
+Inp = TypeVar("Inp", bound=Optional[InputShape])
+Out = TypeVar("Out", bound=Optional[OutputShape])
 
 
 @dataclass(frozen=True)

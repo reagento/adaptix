@@ -42,42 +42,42 @@ PASCAL_CASE = (str.title, str.title)
 UPPER_CASE = (str.upper, str.upper)
 
 STYLE_CONVERSIONS = {
-    NameStyle.LOWER_SNAKE: StyleConversion('_', *LOWER_CASE),
-    NameStyle.CAMEL_SNAKE: StyleConversion('_', *CAMEL_CASE),
-    NameStyle.PASCAL_SNAKE: StyleConversion('_', *PASCAL_CASE),
-    NameStyle.UPPER_SNAKE: StyleConversion('_', *UPPER_CASE),
+    NameStyle.LOWER_SNAKE: StyleConversion("_", *LOWER_CASE),
+    NameStyle.CAMEL_SNAKE: StyleConversion("_", *CAMEL_CASE),
+    NameStyle.PASCAL_SNAKE: StyleConversion("_", *PASCAL_CASE),
+    NameStyle.UPPER_SNAKE: StyleConversion("_", *UPPER_CASE),
 
-    NameStyle.LOWER_KEBAB: StyleConversion('-', *LOWER_CASE),
-    NameStyle.CAMEL_KEBAB: StyleConversion('-', *CAMEL_CASE),
-    NameStyle.PASCAL_KEBAB: StyleConversion('-', *PASCAL_CASE),
-    NameStyle.UPPER_KEBAB: StyleConversion('-', *UPPER_CASE),
+    NameStyle.LOWER_KEBAB: StyleConversion("-", *LOWER_CASE),
+    NameStyle.CAMEL_KEBAB: StyleConversion("-", *CAMEL_CASE),
+    NameStyle.PASCAL_KEBAB: StyleConversion("-", *PASCAL_CASE),
+    NameStyle.UPPER_KEBAB: StyleConversion("-", *UPPER_CASE),
 
-    NameStyle.LOWER: StyleConversion('', *LOWER_CASE),
-    NameStyle.CAMEL: StyleConversion('', *CAMEL_CASE),
-    NameStyle.PASCAL: StyleConversion('', *PASCAL_CASE),
-    NameStyle.UPPER: StyleConversion('', *UPPER_CASE),
+    NameStyle.LOWER: StyleConversion("", *LOWER_CASE),
+    NameStyle.CAMEL: StyleConversion("", *CAMEL_CASE),
+    NameStyle.PASCAL: StyleConversion("", *PASCAL_CASE),
+    NameStyle.UPPER: StyleConversion("", *UPPER_CASE),
 
-    NameStyle.LOWER_DOT: StyleConversion('.', *LOWER_CASE),
-    NameStyle.CAMEL_DOT: StyleConversion('.', *CAMEL_CASE),
-    NameStyle.PASCAL_DOT: StyleConversion('.', *PASCAL_CASE),
-    NameStyle.UPPER_DOT: StyleConversion('.', *UPPER_CASE),
+    NameStyle.LOWER_DOT: StyleConversion(".", *LOWER_CASE),
+    NameStyle.CAMEL_DOT: StyleConversion(".", *CAMEL_CASE),
+    NameStyle.PASCAL_DOT: StyleConversion(".", *PASCAL_CASE),
+    NameStyle.UPPER_DOT: StyleConversion(".", *UPPER_CASE),
 }
 
-ONLY_WORD_CHARS = re.compile(r'\w+')
+ONLY_WORD_CHARS = re.compile(r"\w+")
 
 
 def is_snake_style(name: str) -> bool:
     return ONLY_WORD_CHARS.fullmatch(name) is not None
 
 
-SNAKE_SPLITTER = re.compile(r'(_*)([^_]+)(.*?)(_*)$')
-REST_SUB = re.compile(r'(_+)|([^_]+)')
+SNAKE_SPLITTER = re.compile(r"(_*)([^_]+)(.*?)(_*)$")
+REST_SUB = re.compile(r"(_+)|([^_]+)")
 
 
 def rest_sub(conv: StyleConversion, match_: re.Match):
     if match_[1] is None:
         return conv.other(match_[2])
-    return match_[1].replace('_', conv.sep)
+    return match_[1].replace("_", conv.sep)
 
 
 def convert_snake_style(name: str, style: NameStyle) -> str:

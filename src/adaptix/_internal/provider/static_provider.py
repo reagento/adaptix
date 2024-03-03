@@ -7,16 +7,16 @@ from ..type_tools import get_all_type_hints, is_subclass_soft, normalize_type, s
 from .essential import CannotProvide, Mediator, Provider, Request
 from .provider_wrapper import RequestClassDeterminedProvider
 
-__all__ = ('StaticProvider', 'static_provision_action', 'RequestDispatcher')
+__all__ = ("StaticProvider", "static_provision_action", "RequestDispatcher")
 
 RequestDispatcher = ClassDispatcher[Request, str]
 
-R = TypeVar('R', bound=Request)
-P = TypeVar('P', bound=Provider)
-T = TypeVar('T')
+R = TypeVar("R", bound=Request)
+P = TypeVar("P", bound=Provider)
+T = TypeVar("T")
 SPA = Callable[[P, Mediator[T], R], T]
 
-_SPA_RC_STORAGE = '_spa_request_cls'
+_SPA_RC_STORAGE = "_spa_request_cls"
 
 
 @overload
@@ -48,13 +48,13 @@ def static_provision_action(arg=None):
     if isfunction(arg):
         return _make_spa_decorator(_infer_rc(arg))(arg)
 
-    if hasattr(arg, '__func__'):
+    if hasattr(arg, "__func__"):
         return _make_spa_decorator(_infer_rc(arg.__func__))(arg)
 
     raise TypeError(
         "static_provision_action must be applied"
         " as @static_provision_action or @static_provision_action()"
-        " or @static_provision_action(Request)"
+        " or @static_provision_action(Request)",
     )
 
 
@@ -63,7 +63,7 @@ def _infer_rc(func) -> Type[Request]:
 
     params = list(signature.parameters.values())
 
-    if len(params) < 3:
+    if len(params) < 3:  # noqa: PLR2004
         raise ValueError("Can not infer request class from callable")
 
     if params[2].annotation == signature.empty:
@@ -117,7 +117,7 @@ class StaticProvider(RequestClassDeterminedProvider):
             if issubclass(parent, StaticProvider)
         ]
 
-        result = _merge_rc_dicts(cls, parent_rd_dicts + [own_spa])
+        result = _merge_rc_dicts(cls, [*parent_rd_dicts, own_spa])
 
         cls._sp_cls_request_dispatcher = RequestDispatcher(result)
 
@@ -143,7 +143,7 @@ def _rc_attached_to_several_spa(cls: type, name1: str, name2: str, rc: Type[Requ
     return TypeError(
         f"The {cls} has several @static_provision_action"
         " that attached to the same Request class"
-        f" ({name1!r} and {name2!r} attached to {rc})"
+        f" ({name1!r} and {name2!r} attached to {rc})",
     )
 
 
@@ -151,7 +151,7 @@ def _spa_has_different_rc(cls: type, name: str, rc1: Type[Request], rc2: Type[Re
     return TypeError(
         f"The {cls} has @static_provision_action"
         " that attached to the different Request class"
-        f" ({name!r} attached to {rc1} and {rc2})"
+        f" ({name!r} attached to {rc1} and {rc2})",
     )
 
 

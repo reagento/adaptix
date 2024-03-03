@@ -15,19 +15,19 @@ retort = Retort(
         name_mapping(
             Event,
             map={
-                'timestamp': 'ts',
+                "timestamp": "ts",
             },
         ),
-    ]
+    ],
 )
 
 data = {
-    'name': 'SystemStart',
-    'ts': '2023-05-14T00:06:33+00:00',
+    "name": "SystemStart",
+    "ts": "2023-05-14T00:06:33+00:00",
 }
 event = retort.load(data, Event)
 assert event == Event(
-    name='SystemStart',
+    name="SystemStart",
     timestamp=datetime(2023, 5, 14, 0, 6, 33, tzinfo=timezone.utc),
 )
 assert retort.dump(event) == data

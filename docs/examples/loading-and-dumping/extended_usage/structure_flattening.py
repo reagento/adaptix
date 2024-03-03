@@ -15,27 +15,27 @@ retort = Retort(
         name_mapping(
             Book,
             map={
-                'author': ['author', 'name'],
-                'title': ['book', 'title'],
-                'price': ['book', 'price'],
+                "author": ["author", "name"],
+                "title": ["book", "title"],
+                "price": ["book", "price"],
             },
         ),
-    ]
+    ],
 )
 
 data = {
-    'book': {
-        'title': 'Fahrenheit 451',
-        'price': 100,
+    "book": {
+        "title": "Fahrenheit 451",
+        "price": 100,
     },
-    'author': {
-        'name': 'Ray Bradbury',
-    }
+    "author": {
+        "name": "Ray Bradbury",
+    },
 }
 book = retort.load(data, Book)
 assert book == Book(
-    title='Fahrenheit 451',
+    title="Fahrenheit 451",
     price=100,
-    author='Ray Bradbury',
+    author="Ray Bradbury",
 )
 assert retort.dump(book) == data

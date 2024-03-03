@@ -32,7 +32,7 @@ def _is_empty(value):
 
 
 def _upack_typed_dict_kwargs(
-    param_kwargs: Optional[ParamKwargs]
+    param_kwargs: Optional[ParamKwargs],
 ) -> Tuple[VarTuple[InputField], VarTuple[Param], Optional[ParamKwargs]]:
     if not HAS_PY_312 or param_kwargs is None:
         return (), (), param_kwargs
@@ -64,9 +64,9 @@ def get_callable_shape(func, params_slice=slice(0, None)) -> Shape[InputShape, N
 
     if Parameter.VAR_POSITIONAL in kinds:
         raise IntrospectionImpossible(
-            f'Can not create InputShape'
-            f' from the function that has {Parameter.VAR_POSITIONAL}'
-            f' parameter'
+            f"Can not create InputShape"
+            f" from the function that has {Parameter.VAR_POSITIONAL}"
+            f" parameter",
         )
 
     param_kwargs = next(

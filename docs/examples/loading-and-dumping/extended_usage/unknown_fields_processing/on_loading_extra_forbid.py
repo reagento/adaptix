@@ -20,7 +20,7 @@ data = {
 retort = Retort(
     recipe=[
         name_mapping(Book, extra_in=ExtraForbid()),
-    ]
+    ],
 )
 
 try:

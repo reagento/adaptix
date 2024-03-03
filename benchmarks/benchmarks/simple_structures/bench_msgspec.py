@@ -7,7 +7,7 @@ import pytest
 from benchmarks.pybench.bench_api import benchmark_plan
 from benchmarks.simple_structures.common import create_book, create_dumped_book
 
-review_rename = {'content': 'text'}
+review_rename = {"content": "text"}
 
 
 class Review(msgspec.Struct, rename=review_rename):
@@ -36,7 +36,7 @@ class BookNoGC(msgspec.Struct, gc=False):
     reviews: List[ReviewNoGC]
 
 
-@pytest.mark.parametrize('strict', [False, True])
+@pytest.mark.parametrize("strict", [False, True])
 def test_loading(strict):
     assert (
         msgspec.convert(create_dumped_book(reviews_count=1), Book, strict=strict)

@@ -20,8 +20,8 @@ data = {
 
 retort = Retort(
     recipe=[
-        name_mapping(Book, extra_in='extra'),
-    ]
+        name_mapping(Book, extra_in="extra"),
+    ],
 )
 
 book = retort.load(data, Book)

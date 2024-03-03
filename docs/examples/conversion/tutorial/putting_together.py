@@ -40,11 +40,11 @@ class BookDTO:
 
 @impl_converter(
     recipe=[
-        link('pages_len', 'page_count'),
+        link("pages_len", "page_count"),
         link(P[Book].author, P[BookDTO].writer),
         coercer(UUID, str, func=str),
         coercer(P[Author].birthday, P[AuthorDTO].birthday, date.isoformat),
-    ]
+    ],
 )
 def convert_book_to_dto(book: Book, pages_len: int, rating: float) -> BookDTO:
     ...
@@ -53,8 +53,8 @@ def convert_book_to_dto(book: Book, pages_len: int, rating: float) -> BookDTO:
 assert (
     convert_book_to_dto(
         book=Book(
-            id=UUID('87000388-94e6-49a4-b51b-320e38577bd9'),
-            isbn='978-0-7432-4722-1',
+            id=UUID("87000388-94e6-49a4-b51b-320e38577bd9"),
+            isbn="978-0-7432-4722-1",
             title="Fahrenheit 451",
             author=Author(name="Ray", surname="Bradbury", birthday=date(1920, 7, 22)),
         ),
@@ -63,9 +63,9 @@ assert (
     )
     ==
     BookDTO(
-        id='87000388-94e6-49a4-b51b-320e38577bd9',
+        id="87000388-94e6-49a4-b51b-320e38577bd9",
         title="Fahrenheit 451",
-        writer=AuthorDTO(name="Ray", surname="Bradbury", birthday='1920-07-22'),
+        writer=AuthorDTO(name="Ray", surname="Bradbury", birthday="1920-07-22"),
         page_count=158,
         rating=4.8,
     )

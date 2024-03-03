@@ -1,3 +1,4 @@
+# ruff: noqa: A001, A002
 import collections.abc
 import typing
 from contextlib import nullcontext
@@ -45,15 +46,12 @@ def param_result(*values: Any, id: Optional[str] = None, raises: Type[Exception]
 def param_result(*values, result=None, raises=None, exact_match=None, match=None, id=None):
     if raises is not None:
         context = pytest.raises(
-            raises, match=full_match_regex_str(exact_match) if exact_match is not None else match
+            raises, match=full_match_regex_str(exact_match) if exact_match is not None else match,
         )
     else:
         context = None
     if id is None:
-        if len(values) == 1:
-            id = str(values[0])
-        else:
-            id = str(values)
+        id = str(values[0]) if len(values) == 1 else str(values)
     return pytest.param(*values, result, context, id=id)
 
 
@@ -62,14 +60,14 @@ def create_mediator():
 
 
 @pytest.mark.parametrize(
-    ['loc_stack', 'result', 'context'],
+    ["loc_stack", "result", "context"],
     [
         param_result(
             LocStack(
                 LocMap(TypeHintLoc(int)),
             ),
             result=False,
-            id='1-item',
+            id="1-item",
         ),
         param_result(
             LocStack(
@@ -77,7 +75,7 @@ def create_mediator():
                 LocMap(TypeHintLoc(str)),
             ),
             result=False,
-            id='2-items',
+            id="2-items",
         ),
         param_result(
             LocStack(
@@ -86,7 +84,7 @@ def create_mediator():
                 LocMap(TypeHintLoc(bool)),
             ),
             result=True,
-            id='ok',
+            id="ok",
         ),
         param_result(
             LocStack(
@@ -95,7 +93,7 @@ def create_mediator():
                 LocMap(TypeHintLoc(str)),
             ),
             result=False,
-            id='last-is-bad',
+            id="last-is-bad",
         ),
         param_result(
             LocStack(
@@ -105,7 +103,7 @@ def create_mediator():
                 LocMap(TypeHintLoc(bool)),
             ),
             result=True,
-            id='extra-stack-matched-with-prev',
+            id="extra-stack-matched-with-prev",
         ),
         param_result(
             LocStack(
@@ -115,7 +113,7 @@ def create_mediator():
                 LocMap(TypeHintLoc(bool)),
             ),
             result=True,
-            id='extra-stack',
+            id="extra-stack",
         ),
     ],
 )
@@ -125,13 +123,13 @@ def test_stack_end_rc(loc_stack, result, context):
             create_loc_stack_checker(int),
             create_loc_stack_checker(str),
             create_loc_stack_checker(bool),
-        ]
+        ],
     )
     assert checker.check_loc_stack(create_mediator(), loc_stack) == result
 
 
 @pytest.mark.parametrize(
-    ['loc_stack', 'result', 'context'],
+    ["loc_stack", "result", "context"],
     [
         param_result(
             LocStack(
@@ -141,7 +139,7 @@ def test_stack_end_rc(loc_stack, result, context):
                 LocMap(TypeHintLoc(bool)),
             ),
             result=True,
-            id='ok',
+            id="ok",
         ),
         param_result(
             LocStack(
@@ -150,7 +148,7 @@ def test_stack_end_rc(loc_stack, result, context):
                 LocMap(TypeHintLoc(bool)),
             ),
             result=False,
-            id='too-small',
+            id="too-small",
         ),
         param_result(
             LocStack(
@@ -160,7 +158,7 @@ def test_stack_end_rc(loc_stack, result, context):
                 LocMap(TypeHintLoc(bool)),
             ),
             result=False,
-            id='bad',
+            id="bad",
         ),
     ],
 )
@@ -173,10 +171,10 @@ def test_nested_start_rc(loc_stack, result, context):
                     create_loc_stack_checker(bool),
                     create_loc_stack_checker(int),
                     create_loc_stack_checker(str),
-                ]
+                ],
             ),
             create_loc_stack_checker(bool),
-        ]
+        ],
     )
     assert checker.check_loc_stack(create_mediator(), loc_stack) == result
 
@@ -193,60 +191,60 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
             field_id=name,
             default=NoDefault(),
             metadata={},
-        )
+        ),
     )
 
 
 @pytest.mark.parametrize(
-    ['pattern', 'loc_stack', 'result', 'context'],
+    ["pattern", "loc_stack", "result", "context"],
     [
         param_result(
             P[int],
             LocStack(LocMap(TypeHintLoc(int))),
             result=True,
-            id='int-ok',
+            id="int-ok",
         ),
         param_result(
             P[int],
             LocStack(LocMap(TypeHintLoc(str))),
             result=False,
-            id='int-fail',
+            id="int-fail",
         ),
         param_result(
             P[WithUserName].user_name,
             LocStack(
                 LocMap(TypeHintLoc(WithUserName)),
-                field_loc_map('user_name', str),
+                field_loc_map("user_name", str),
             ),
             result=True,
-            id='model-attr-ok-1',
+            id="model-attr-ok-1",
         ),
         param_result(
             P[WithUserName].user_name,
             LocStack(
                 LocMap(TypeHintLoc(WithUserName)),
-                field_loc_map('user_name', int),
+                field_loc_map("user_name", int),
             ),
             result=True,
-            id='model-attr-ok-2',
+            id="model-attr-ok-2",
         ),
         param_result(
             P[WithUserName].user_id,
             LocStack(
                 LocMap(TypeHintLoc(WithUserName)),
-                field_loc_map('user_name', int),
+                field_loc_map("user_name", int),
             ),
             result=False,
-            id='model-attr-fail',
+            id="model-attr-fail",
         ),
         param_result(
             P[WithUserName] + P.user_name,
             LocStack(
                 LocMap(TypeHintLoc(WithUserName)),
-                field_loc_map('user_name', int),
+                field_loc_map("user_name", int),
             ),
             result=True,
-            id='model-attr-ok-concat',
+            id="model-attr-ok-concat",
         ),
         param_result(
             P[Dict].generic_arg(0, str),
@@ -255,7 +253,7 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
                 LocMap(TypeHintLoc(str), GenericParamLoc(0)),
             ),
             result=True,
-            id='generic-arg-ok',
+            id="generic-arg-ok",
         ),
         param_result(
             P[Dict].generic_arg(0, str),
@@ -264,7 +262,7 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
                 LocMap(TypeHintLoc(str), GenericParamLoc(1)),
             ),
             result=False,
-            id='generic-arg-fail',
+            id="generic-arg-fail",
         ),
     ],
 )
@@ -276,9 +274,9 @@ def test_generic_pattern_create_fail():
     with pytest.raises(
         TypeError,
         match=full_match_regex_str(
-            'Can not use LocStackPattern as predicate inside LocStackPattern.'
-            ' If you want to combine several LocStackPattern, you can use `+` operator'
-        )
+            "Can not use LocStackPattern as predicate inside LocStackPattern."
+            " If you want to combine several LocStackPattern, you can use `+` operator",
+        ),
     ):
         P[WithUserName][P.user_name]
 
@@ -296,14 +294,14 @@ def test_request_pattern_generic_arg_dict_override():
         recipe=[
             loader(P[Dict].generic_arg(0, int), plus_one, Chain.LAST),
             loader(P[Dict].generic_arg(1, int), plus_two, Chain.LAST),
-        ]
+        ],
     )
 
     loaded_dict = retort.load({10: 20}, Dict[int, int])
     assert loaded_dict == {11: 22}
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class MyGeneric(Generic[T]):
@@ -311,7 +309,7 @@ class MyGeneric(Generic[T]):
 
 
 @pytest.mark.parametrize(
-    ['value', 'result', 'context'],
+    ["value", "result", "context"],
     [
         param_result(
             int,
@@ -340,29 +338,29 @@ class MyGeneric(Generic[T]):
         param_result(
             List[T],
             raises=ValueError,
-            exact_match='Can not create LocStackChecker from typing.List[~T] generic alias (parametrized generic)',
+            exact_match="Can not create LocStackChecker from typing.List[~T] generic alias (parametrized generic)",
         ),
         param_result(
             Union,
-            result=ExactOriginLSC(Union)
+            result=ExactOriginLSC(Union),
         ),
         *cond_list(
             HAS_ANNOTATED,
             lambda: [
                 param_result(
                     typing.Annotated,
-                    result=ExactOriginLSC(typing.Annotated)
+                    result=ExactOriginLSC(typing.Annotated),
                 ),
                 param_result(
-                    typing.Annotated[int, 'meta'],
-                    result=ExactTypeLSC(normalize_type(typing.Annotated[int, 'meta']))
+                    typing.Annotated[int, "meta"],
+                    result=ExactTypeLSC(normalize_type(typing.Annotated[int, "meta"])),
                 ),
                 param_result(
-                    typing.Annotated[List[int], 'meta'],
-                    result=ExactTypeLSC(normalize_type(typing.Annotated[list[int], 'meta']))
+                    typing.Annotated[List[int], "meta"],
+                    result=ExactTypeLSC(normalize_type(typing.Annotated[list[int], "meta"])),
                 ),
                 param_result(
-                    typing.Annotated[list, 'meta'],
+                    typing.Annotated[list, "meta"],
                     raises=ValueError,
                     exact_match=(
                         "Can not create LocStackChecker from"
@@ -370,7 +368,7 @@ class MyGeneric(Generic[T]):
                     ),
                 ),
                 param_result(
-                    typing.Annotated[List[T], 'meta'],
+                    typing.Annotated[List[T], "meta"],
                     raises=ValueError,
                     exact_match=(
                         "Can not create LocStackChecker from"
@@ -378,14 +376,14 @@ class MyGeneric(Generic[T]):
                     ),
                 ),
                 param_result(
-                    typing.Annotated[Dict[int, T], 'meta'],
+                    typing.Annotated[Dict[int, T], "meta"],
                     raises=ValueError,
                     exact_match=(
                         "Can not create LocStackChecker from"
                         " typing.Annotated[typing.Dict[int, ~T], 'meta'] generic alias (parametrized generic)"
                     ),
                 ),
-            ]
+            ],
         ),
     ],
 )

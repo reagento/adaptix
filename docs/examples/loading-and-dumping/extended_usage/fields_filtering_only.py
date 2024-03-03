@@ -14,20 +14,20 @@ retort = Retort(
     recipe=[
         name_mapping(
             User,
-            only=['id', 'name'],
+            only=["id", "name"],
         ),
-    ]
+    ],
 )
 
 
 user = User(
     id=52,
-    name='Ken Thompson',
-    password_hash='ZghOT0eRm4U9s',
+    name="Ken Thompson",
+    password_hash="ZghOT0eRm4U9s",
 )
 data = {
-    'id': 52,
-    'name': 'Ken Thompson',
+    "id": 52,
+    "name": "Ken Thompson",
 }
 assert retort.dump(user) == data
 

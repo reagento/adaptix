@@ -9,11 +9,11 @@ from ..utils import with_module
 
 
 def _str_by_fields(cls):
-    template = ', '.join("%s={self.%s!r}" % (fld.name, fld.name) for fld in dataclasses.fields(cls))
+    template = ", ".join("%s={self.%s!r}" % (fld.name, fld.name) for fld in dataclasses.fields(cls))  # noqa: UP031
     body = f'def __str__(self):\n    return f"{template}"'
     ns = {}
-    exec(body, ns, ns)  # noqa: DUO105  # pylint: disable=exec-used
-    cls.__str__ = ns['__str__']
+    exec(body, ns, ns)  # noqa: S102  # pylint: disable=exec-used
+    cls.__str__ = ns["__str__"]
     return cls
 
 
@@ -24,7 +24,7 @@ def custom_exception(cls=None, /, *, str_by_fields: bool = True, public_module: 
     if str_by_fields:
         cls = _str_by_fields(cls)
     if public_module:
-        cls = with_module('adaptix.load_error')(cls)
+        cls = with_module("adaptix.load_error")(cls)
     return cls
 
 

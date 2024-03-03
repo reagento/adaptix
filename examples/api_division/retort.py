@@ -24,7 +24,7 @@ def string_cp866_mutator(data: str):
         t_data.encode("cp866", "strict")
     except UnicodeEncodeError as e:
         bad_char = e.object[e.start: e.end]  # pylint: disable=unsubscriptable-object
-        raise ValueLoadError(f'Char {bad_char!r} can not be represented at CP866', data)
+        raise ValueLoadError(f"Char {bad_char!r} can not be represented at CP866", data)
     return t_data
 
 
@@ -32,12 +32,12 @@ def outer_phonenumber_loader(data: str):
     try:
         phone_number = phonenumbers.parse(data)
     except phonenumbers.NumberParseException:
-        raise ValueLoadError('Bad phone number', data)
+        raise ValueLoadError("Bad phone number", data)
 
     expected = phonenumbers.format_number(phone_number, phonenumbers.PhoneNumberFormat.E164)
 
     if data != expected:
-        raise ValueLoadError('Bad phone number', data)
+        raise ValueLoadError("Bad phone number", data)
 
     return phone_number
 
@@ -50,8 +50,8 @@ def money_loader(data):
 
 
 def forbid_version_key(data):
-    if isinstance(data, dict) and 'version' in data:
-        raise ExtraFieldsLoadError(['version'], data)
+    if isinstance(data, dict) and "version" in data:
+        raise ExtraFieldsLoadError(["version"], data)
     return data
 
 
@@ -81,9 +81,9 @@ inner_receipt_retort = _base_retort.extend(
 
 outer_receipt_retort = _base_retort.extend(
     recipe=[
-        validator(List[RecItem], lambda x: len(x) > 0, 'At least one item must be presented'),
-        validator(P[RecItem].quantity, lambda x: x > Decimal(0), 'Value must be > 0'),
-        validator(P[RecItem].price, lambda x: x >= Money(0), 'Value must be >= 0'),
+        validator(List[RecItem], lambda x: len(x) > 0, "At least one item must be presented"),
+        validator(P[RecItem].quantity, lambda x: x > Decimal(0), "Value must be > 0"),
+        validator(P[RecItem].price, lambda x: x >= Money(0), "Value must be >= 0"),
 
         loader(Receipt, forbid_version_key, Chain.FIRST),  # function will be applied BEFORE builtin loader
         loader(PhoneNumber, outer_phonenumber_loader),  # function will be applied INSTEAD OF builtin loader

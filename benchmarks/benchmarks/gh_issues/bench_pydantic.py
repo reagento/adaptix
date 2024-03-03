@@ -50,8 +50,8 @@ class Label(BaseModel):
 class Reactions(BaseModel):
     url: str
     total_count: int
-    plus_one: int = Field(alias='+1')
-    minus_one: int = Field(alias='-1')
+    plus_one: int = Field(alias="+1")
+    minus_one: int = Field(alias="-1")
     laugh: int
     confused: int
     heart: int
@@ -60,7 +60,7 @@ class Reactions(BaseModel):
     rocket: int
 
     model_config = {
-        'populate_by_name': True,
+        "populate_by_name": True,
     }
 
 
@@ -119,7 +119,7 @@ def test_loading():
 def test_dumping():
     assert (
         create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)
-        .model_dump(mode='json', by_alias=True, exclude_defaults=True)
+        .model_dump(mode="json", by_alias=True, exclude_defaults=True)
         ==
         create_dumped_response()
     )
@@ -132,4 +132,4 @@ def bench_loading():
 
 def bench_dumping():
     data = create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)
-    return benchmark_plan(lambda: data.model_dump(mode='json', by_alias=True, exclude_defaults=True))
+    return benchmark_plan(lambda: data.model_dump(mode="json", by_alias=True, exclude_defaults=True))

@@ -23,8 +23,8 @@ from typing import (
 
 from .common import VarTuple
 
-K = TypeVar('K', bound=Hashable)
-V = TypeVar('V')
+K = TypeVar("K", bound=Hashable)
+V = TypeVar("V")
 _VT_co = TypeVar("_VT_co", covariant=True)
 
 
@@ -50,7 +50,7 @@ class UnrewritableDict(Dict[K, V], Generic[K, V]):
         if len(args) == 1:
             obj = args[0]
             if isinstance(obj, SupportsKeysAndGetItem):
-                for k in obj.keys():
+                for k in obj:
                     self[k] = obj[k]
             else:
                 for k, v in obj:
@@ -66,7 +66,7 @@ class UnrewritableDict(Dict[K, V], Generic[K, V]):
         return f"{type(self).__name__}({super().__repr__()})"
 
 
-K_co = TypeVar('K_co', covariant=True)
+K_co = TypeVar("K_co", covariant=True)
 
 
 class ClassDispatcher(Generic[K_co, V]):
@@ -75,7 +75,7 @@ class ClassDispatcher(Generic[K_co, V]):
     If you look up for the value that is not presented in keys
     ClassDispatcher will return the value of the closest superclass.
     """
-    __slots__ = ('_mapping',)
+    __slots__ = ("_mapping",)
 
     def __init__(self, mapping: Optional[Mapping[Type[K_co], V]] = None):
         self._mapping: Dict[Type[K_co], V] = {} if mapping is None else dict(mapping)
@@ -96,14 +96,14 @@ class ClassDispatcher(Generic[K_co, V]):
     def values(self) -> Collection[V]:
         return self._mapping.values()
 
-    def keys(self) -> 'ClassDispatcherKeysView[K_co]':
+    def keys(self) -> "ClassDispatcherKeysView[K_co]":
         return ClassDispatcherKeysView(self._mapping.keys())
 
     def items(self) -> Collection[Tuple[Type[K_co], V]]:
         return self._mapping.items()
 
     def __repr__(self):
-        return f'{type(self).__qualname__}({self._mapping})'
+        return f"{type(self).__qualname__}({self._mapping})"
 
     def to_dict(self) -> Dict[Type[K_co], V]:
         return self._mapping.copy()
@@ -118,7 +118,7 @@ class ClassDispatcher(Generic[K_co, V]):
 # but there is no inverse of Type[]
 
 class ClassDispatcherKeysView(Generic[K_co]):
-    __slots__ = ('_keys',)
+    __slots__ = ("_keys",)
 
     def __init__(self, keys: AbstractSet[Type[K_co]]):
         self._keys = keys
@@ -139,16 +139,16 @@ class ClassDispatcherKeysView(Generic[K_co]):
         return element in self._keys
 
     def __repr__(self):
-        return f'{type(self).__qualname__}({self._keys!r})'
+        return f"{type(self).__qualname__}({self._keys!r})"
 
 
-CM = TypeVar('CM', bound='ClassMap')
-D = TypeVar('D')
-H = TypeVar('H', bound=Hashable)
+CM = TypeVar("CM", bound="ClassMap")
+D = TypeVar("D")
+H = TypeVar("H", bound=Hashable)
 
 
 class ClassMap(Generic[H]):
-    __slots__ = ('_mapping', '_hash')
+    __slots__ = ("_mapping", "_hash")
 
     def __init__(self, *values: H):
         # need stable order for hash calculation
@@ -181,7 +181,7 @@ class ClassMap(Generic[H]):
         try:
             return self._mapping[key]  # type: ignore[index,return-value]
         except KeyError:
-            raise exception_factory() from None
+            raise exception_factory() from None  # noqa: RSE102
 
     def keys(self) -> KeysView[Type[H]]:
         return self._mapping.keys()
@@ -203,8 +203,8 @@ class ClassMap(Generic[H]):
         return self._hash
 
     def __repr__(self):
-        args_str = ', '.join(repr(v) for v in self._mapping.values())
-        return f'{type(self).__qualname__}({args_str})'
+        args_str = ", ".join(repr(v) for v in self._mapping.values())
+        return f"{type(self).__qualname__}({args_str})"
 
     def add(self: CM, *values: H) -> CM:
         return type(self)(*self._mapping.values(), *values)
@@ -216,12 +216,12 @@ class ClassMap(Generic[H]):
         )
 
 
-T = TypeVar('T')
-StackT = TypeVar('StackT', bound='ImmutableStack')
+T = TypeVar("T")
+StackT = TypeVar("StackT", bound="ImmutableStack")
 
 
 class ImmutableStack(Sequence[T], Generic[T]):
-    __slots__ = ('_tuple', )
+    __slots__ = ("_tuple", )
 
     def __init__(self, *args: T):
         self._tuple = args
@@ -271,4 +271,4 @@ class ImmutableStack(Sequence[T], Generic[T]):
         return iter(self._tuple)
 
     def append_with(self: StackT, item: T) -> StackT:
-        return self.from_tuple(self._tuple + (item, ))
+        return self.from_tuple((*self._tuple, item))

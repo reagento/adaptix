@@ -1,3 +1,4 @@
+# ruff: noqa: T201
 # I really want to prevent using typing.get_type_hints(),
 # but I found no linters that can check this.
 # There is flake8-forbidden-func, but it crashes when trying to check this project.
@@ -57,17 +58,17 @@ class RuleMatch:
     rule: Rule
 
 
-GLOBAL_EXCLUDE = '*_312.py'
+GLOBAL_EXCLUDE = "*_312.py"
 RULES = [
     ImportRule(
-        module='typing',
-        variable='get_type_hints',
-        error_msg='Use type_tools.get_all_type_hints() instead of typing.get_type_hints()',
-        exclude=['src/adaptix/_internal/type_tools/basic_utils.py'],
+        module="typing",
+        variable="get_type_hints",
+        error_msg="Use type_tools.get_all_type_hints() instead of typing.get_type_hints()",
+        exclude=["src/adaptix/_internal/type_tools/basic_utils.py"],
     ),
     ImportRule(
-        module='_decimal',
-        variable='Decimal',
+        module="_decimal",
+        variable="Decimal",
         error_msg='Import Decimal from public module "decimal"',
         exclude=[],
     ),
@@ -83,11 +84,10 @@ def analyze_file(filename: str, rule_matches: List[RuleMatch]) -> None:
 
         for pattern in rule.get_patterns():
             matches_lines = find_in_ast(xml_ast, pattern)
-
-            for line in matches_lines:
-                rule_matches.append(
-                    RuleMatch(file_path=filename, line=line, rule=rule)
-                )
+            rule_matches.extend(
+                RuleMatch(file_path=filename, line=line, rule=rule)
+                for line in matches_lines
+            )
 
 
 def print_rule_matches(rule_matches: Iterable[RuleMatch]):
@@ -104,7 +104,7 @@ def print_rule_matches(rule_matches: Iterable[RuleMatch]):
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument('targets', help="files to lint", nargs='+', )
+    parser.add_argument("targets", help="files to lint", nargs="+")
     args = parser.parse_args()
 
     rule_matches: List[RuleMatch] = []
@@ -112,7 +112,7 @@ def main() -> None:
     for target in args.targets:
         for root, _, filenames in os.walk(target):
             python_filenames = (
-                os.path.join(root, filename)
+                os.path.join(root, filename)  # noqa: PTH118
                 for filename in filenames
                 if filename.endswith(".py")
             )

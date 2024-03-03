@@ -1,3 +1,4 @@
+# ruff: noqa: FBT003
 from enum import Enum
 from typing import Literal
 from uuid import uuid4
@@ -10,14 +11,14 @@ from adaptix._internal.morphing.generic_provider import LiteralProvider, UnionPr
 from adaptix._internal.morphing.load_error import BadVariantLoadError
 
 
-@pytest.fixture
+@pytest.fixture()
 def retort():
     return TestRetort(
         recipe=[
             LiteralProvider(),
             EnumExactValueProvider(),
-            UnionProvider()
-        ]
+            UnionProvider(),
+        ],
     )
 
 
@@ -26,7 +27,7 @@ def test_loader_base(retort, strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     ).get_loader(
-        Literal["a", "b", 10]
+        Literal["a", "b", 10],
     )
 
     assert loader("a") == "a"
@@ -34,17 +35,17 @@ def test_loader_base(retort, strict_coercion, debug_trail):
     assert loader(10) == 10
 
     raises_exc(
-        BadVariantLoadError({'a', 'b', 10}, 'c'),
-        lambda: loader("c")
+        BadVariantLoadError({"a", "b", 10}, "c"),
+        lambda: loader("c"),
     )
 
 
 def _is_exact_zero(arg):
-    return type(arg) is int and arg == 0
+    return type(arg) is int and arg == 0  # noqa: E721
 
 
 def _is_exact_one(arg):
-    return type(arg) is int and arg == 1
+    return type(arg) is int and arg == 1  # noqa: E721
 
 
 def test_strict_coercion(retort, debug_trail):
@@ -58,7 +59,7 @@ def test_strict_coercion(retort, debug_trail):
         strict_coercion=True,
         debug_trail=debug_trail,
     ).get_loader(
-        Literal[0, 1, rnd_val1]
+        Literal[0, 1, rnd_val1],
     )
 
     assert _is_exact_zero(literal_loader(0))
@@ -66,11 +67,11 @@ def test_strict_coercion(retort, debug_trail):
 
     raises_exc(
         BadVariantLoadError({0, 1, rnd_val1}, False),
-        lambda: literal_loader(False)
+        lambda: literal_loader(False),
     )
     raises_exc(
         BadVariantLoadError({0, 1, rnd_val1}, True),
-        lambda: literal_loader(True)
+        lambda: literal_loader(True),
     )
 
     rnd_val2 = uuid4().hex
@@ -78,7 +79,7 @@ def test_strict_coercion(retort, debug_trail):
         strict_coercion=True,
         debug_trail=debug_trail,
     ).get_loader(
-        Literal[False, True, rnd_val2]
+        Literal[False, True, rnd_val2],
     )
 
     assert bool_loader(False) is False
@@ -86,11 +87,11 @@ def test_strict_coercion(retort, debug_trail):
 
     raises_exc(
         BadVariantLoadError({False, True, rnd_val2}, 0),
-        lambda: bool_loader(0)
+        lambda: bool_loader(0),
     )
     raises_exc(
         BadVariantLoadError({False, True, rnd_val2}, 1),
-        lambda: bool_loader(1)
+        lambda: bool_loader(1),
     )
 
 
@@ -107,7 +108,7 @@ def test_loader_with_enums(retort, strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     ).get_loader(
-        Literal["a", Enum1.CASE1, 5]
+        Literal["a", Enum1.CASE1, 5],
     )
 
     assert loader("a") == "a"
@@ -118,7 +119,7 @@ def test_loader_with_enums(retort, strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     ).get_loader(
-        Literal[Enum1.CASE1, Enum2.CASE2, 10]
+        Literal[Enum1.CASE1, Enum2.CASE2, 10],
     )
 
     assert loader(1) == Enum1.CASE1
@@ -127,7 +128,7 @@ def test_loader_with_enums(retort, strict_coercion, debug_trail):
 
     raises_exc(
         BadVariantLoadError({Enum1.CASE1.value, Enum2.CASE2.value, 10}, 15),
-        lambda: loader(15)
+        lambda: loader(15),
     )
 
 
@@ -144,7 +145,7 @@ def test_dumper_with_enums(retort, strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     ).get_dumper(
-        Literal["a", Enum1.CASE1, 5]
+        Literal["a", Enum1.CASE1, 5],
     )
 
     assert dumper("a") == "a"
@@ -155,7 +156,7 @@ def test_dumper_with_enums(retort, strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     ).get_dumper(
-        Literal[Enum1.CASE1, Enum2.CASE2, 10]
+        Literal[Enum1.CASE1, Enum2.CASE2, 10],
     )
 
     assert dumper(Enum1.CASE1) == 1

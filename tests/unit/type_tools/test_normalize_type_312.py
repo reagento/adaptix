@@ -24,7 +24,7 @@ def test_type_alias_syntax_recursive():
     )
 
 
-T2 = TypeVar('T2')
+T2 = TypeVar("T2")
 
 
 def _norm_tp_param(alias: TypeAliasType, idx: int) -> AnyNormTypeVarLike:

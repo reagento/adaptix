@@ -12,8 +12,8 @@ def test_type_alias():
     class Foo:
         bar: MyAlias
 
-    assert retort.load({'bar': 10}, Foo) == Foo(bar=10)
-    assert retort.dump(Foo(bar=10)) == {'bar': 10}
+    assert retort.load({"bar": 10}, Foo) == Foo(bar=10)
+    assert retort.dump(Foo(bar=10)) == {"bar": 10}
 
 
 def test_type_alias_type_vars():
@@ -25,8 +25,8 @@ def test_type_alias_type_vars():
     class Foo:
         bar: MyAlias[int]
 
-    assert retort.load({'bar': [10]}, Foo) == Foo(bar=[10])
-    assert retort.dump(Foo(bar=[10])) == {'bar': [10]}
+    assert retort.load({"bar": [10]}, Foo) == Foo(bar=[10])
+    assert retort.dump(Foo(bar=[10])) == {"bar": [10]}
 
 
 def test_type_alias_type_vars_generics():
@@ -38,5 +38,5 @@ def test_type_alias_type_vars_generics():
     class Foo[T]:
         bar: MyAlias[T]
 
-    assert retort.load({'bar': [10]}, Foo) == Foo(bar=[10])
-    assert retort.dump(Foo(bar=[10]), Foo[int]) == {'bar': [10]}
+    assert retort.load({"bar": [10]}, Foo) == Foo(bar=[10])
+    assert retort.dump(Foo(bar=[10]), Foo[int]) == {"bar": [10]}

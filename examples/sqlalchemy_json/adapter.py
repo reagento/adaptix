@@ -13,6 +13,7 @@ class ModelJSON(TypeDecorator):
         self,
         tp: TypeHint,
         retort: AdornedRetort,
+        *,
         none_as_null: bool = False,
     ):
         super().__init__(none_as_null=none_as_null)

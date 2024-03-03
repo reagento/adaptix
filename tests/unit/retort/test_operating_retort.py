@@ -17,14 +17,14 @@ def test_cannot_produce_loader():
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce loader for type {Stub}'),
+            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
             with_notes(
                 AggregateCannotProvide(
-                    'Cannot create loader for model. Loaders for some fields cannot be created',
+                    "Cannot create loader for model. Loaders for some fields cannot be created",
                     [
                         with_notes(
                             CannotProvide(
-                                'There is no provider that can create specified loader',
+                                "There is no provider that can create specified loader",
                                 is_terminal=False,
                                 is_demonstrative=True,
                             ),
@@ -34,7 +34,7 @@ def test_cannot_produce_loader():
                         ),
                         with_notes(
                             CannotProvide(
-                                'There is no provider that can create specified loader',
+                                "There is no provider that can create specified loader",
                                 is_terminal=False,
                                 is_demonstrative=True,
                             ),
@@ -47,7 +47,7 @@ def test_cannot_produce_loader():
                     is_demonstrative=True,
                 ),
                 f"Location: type={Stub}",
-            )
+            ),
         ),
         lambda: retort.get_loader(Stub),
     )
@@ -64,14 +64,14 @@ def test_cannot_produce_dumper():
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(f'Cannot produce dumper for type {Stub}'),
+            NoSuitableProvider(f"Cannot produce dumper for type {Stub}"),
             with_notes(
                 AggregateCannotProvide(
-                    'Cannot create dumper for model. Dumpers for some fields cannot be created',
+                    "Cannot create dumper for model. Dumpers for some fields cannot be created",
                     [
                         with_notes(
                             CannotProvide(
-                                'There is no provider that can create specified dumper',
+                                "There is no provider that can create specified dumper",
                                 is_terminal=False,
                                 is_demonstrative=True,
                             ),
@@ -82,7 +82,7 @@ def test_cannot_produce_dumper():
                         ),
                         with_notes(
                             CannotProvide(
-                                'There is no provider that can create specified dumper',
+                                "There is no provider that can create specified dumper",
                                 is_terminal=False,
                                 is_demonstrative=True,
                             ),
@@ -96,7 +96,7 @@ def test_cannot_produce_dumper():
                     is_demonstrative=True,
                 ),
                 f"Location: type={Stub}",
-            )
+            ),
         ),
         lambda: retort.get_dumper(Stub),
     )
@@ -117,20 +117,20 @@ def test_cannot_produce_converter_no_linking_required():
     raises_exc(
         with_cause(
             NoSuitableProvider(
-                f'Cannot produce converter for'
-                f' <Signature (src: {Book.__module__}.{Book.__qualname__}, /)'
-                f' -> {BookDTO.__module__}.{BookDTO.__qualname__}>'
+                f"Cannot produce converter for"
+                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
+                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                'Linkings for some fields are not found',
+                "Linkings for some fields are not found",
                 [
                     with_notes(
                         CannotProvide(
-                            f'Cannot find paired field of `{BookDTO.__qualname__}.author` for linking',
+                            f"Cannot find paired field of `{BookDTO.__qualname__}.author` for linking",
                             is_terminal=False,
                             is_demonstrative=True,
                         ),
-                        'Note: This is a required filed, so it must take value',
+                        "Note: This is a required filed, so it must take value",
                     ),
                 ],
                 is_terminal=True,
@@ -151,27 +151,27 @@ def test_cannot_produce_converter_no_linking_optional():
     class BookDTO:
         title: str
         price: int
-        author: str = ''
+        author: str = ""
 
     raises_exc(
         with_cause(
             NoSuitableProvider(
-                f'Cannot produce converter for'
-                f' <Signature (src: {Book.__module__}.{Book.__qualname__}, /)'
-                f' -> {BookDTO.__module__}.{BookDTO.__qualname__}>'
+                f"Cannot produce converter for"
+                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
+                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                'Linkings for some fields are not found',
+                "Linkings for some fields are not found",
                 [
                     with_notes(
                         CannotProvide(
-                            f'Cannot find paired field of `{BookDTO.__qualname__}.author` for linking',
+                            f"Cannot find paired field of `{BookDTO.__qualname__}.author` for linking",
                             is_terminal=False,
                             is_demonstrative=True,
                         ),
-                        'Note: Current policy forbids unlinked optional fields,'
-                        ' so you need to link it to another field'
-                        ' or explicitly confirm the desire to skipping using `allow_unlinked_optional`',
+                        "Note: Current policy forbids unlinked optional fields,"
+                        " so you need to link it to another field"
+                        " or explicitly confirm the desire to skipping using `allow_unlinked_optional`",
                     ),
                 ],
                 is_terminal=True,
@@ -198,16 +198,16 @@ def test_cannot_produce_converter_no_coercer():
     raises_exc(
         with_cause(
             NoSuitableProvider(
-                f'Cannot produce converter for'
-                f' <Signature (src: {Book.__module__}.{Book.__qualname__}, /)'
-                f' -> {BookDTO.__module__}.{BookDTO.__qualname__}>'
+                f"Cannot produce converter for"
+                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
+                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                'Coercers for some linkings are not found',
+                "Coercers for some linkings are not found",
                 [
                     CannotProvide(
-                        f'Cannot find coercer for linking'
-                        f' `{Book.__qualname__}.author -> {BookDTO.__qualname__}.author`',
+                        f"Cannot find coercer for linking"
+                        f" `{Book.__qualname__}.author -> {BookDTO.__qualname__}.author`",
                         is_terminal=False,
                         is_demonstrative=True,
                     ),

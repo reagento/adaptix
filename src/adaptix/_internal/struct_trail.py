@@ -32,7 +32,7 @@ class ItemKey(TrailElementMarker):
 TrailElement = Union[str, int, Any, TrailElementMarker]
 Trail = Sequence[TrailElement]
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def append_trail(obj: T, trail_element: TrailElement) -> T:
@@ -76,20 +76,20 @@ def get_trail(obj: object) -> Trail:
         return deque()
 
 
-BaseExcT = TypeVar('BaseExcT', bound=BaseException)
+BaseExcT = TypeVar("BaseExcT", bound=BaseException)
 
 if HAS_NATIVE_EXC_GROUP:
     def render_trail_as_note(exc: BaseExcT) -> BaseExcT:
         trail = get_trail(exc)
         if trail:
-            exc.add_note(f'Exception was caused at {list(trail)}')
+            exc.add_note(f"Exception was caused at {list(trail)}")
         return exc
 else:
     def render_trail_as_note(exc: BaseExcT) -> BaseExcT:
         trail = get_trail(exc)
         if trail:
-            if hasattr(exc, '__notes__'):
-                exc.__notes__.append(f'Exception was caused at {list(trail)}')
+            if hasattr(exc, "__notes__"):
+                exc.__notes__.append(f"Exception was caused at {list(trail)}")
             else:
-                exc.__notes__ = [f'Exception was caused at {list(trail)}']
+                exc.__notes__ = [f"Exception was caused at {list(trail)}"]
         return exc

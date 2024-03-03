@@ -23,12 +23,12 @@ def stub_constructor(*args, **kwargs):
         (ParamKind.KW_ONLY, ParamKind.POS_ONLY),
         (ParamKind.KW_ONLY, ParamKind.POS_OR_KW),
         (ParamKind.POS_OR_KW, ParamKind.POS_ONLY),
-    ]
+    ],
 )
 def test_inconsistent_fields_order(first, second):
     with pytest.raises(
         ValueError,
-        match='^Inconsistent order of fields.*',
+        match="^Inconsistent order of fields.*",
     ):
         InputShape(
             constructor=stub_constructor,
@@ -53,21 +53,21 @@ def test_inconsistent_fields_order(first, second):
             ),
             params=(
                 Param(
-                    field_id='a',
-                    name='a',
+                    field_id="a",
+                    name="a",
                     kind=first,
                 ),
                 Param(
-                    field_id='b',
-                    name='b',
+                    field_id="b",
+                    name="b",
                     kind=second,
                 ),
             ),
-            overriden_types=frozenset({'a', 'b'}),
+            overriden_types=frozenset({"a", "b"}),
         )
 
 
-def _make_triple_iff(first, second, third):
+def _make_triple_input_shape(first: ParamKind, second: ParamKind, third: ParamKind):
     return InputShape(
         constructor=stub_constructor,
         kwargs=None,
@@ -99,22 +99,22 @@ def _make_triple_iff(first, second, third):
         ),
         params=(
             Param(
-                field_id='a',
-                name='a',
+                field_id="a",
+                name="a",
                 kind=first,
             ),
             Param(
-                field_id='b',
-                name='b',
+                field_id="b",
+                name="b",
                 kind=second,
             ),
             Param(
-                field_id='c',
-                name='c',
+                field_id="c",
+                name="c",
                 kind=third,
             ),
         ),
-        overriden_types=frozenset({'a', 'b', 'c'}),
+        overriden_types=frozenset({"a", "b", "c"}),
     )
 
 
@@ -123,11 +123,16 @@ def _make_triple_iff(first, second, third):
     [
         (ParamKind.POS_ONLY, ParamKind.POS_OR_KW, ParamKind.POS_OR_KW),
         (ParamKind.POS_OR_KW, ParamKind.POS_OR_KW, ParamKind.POS_OR_KW),
-    ]
+    ],
 )
 def test_bad_non_required_field_order(first, second, third):
-    with pytest.raises(ValueError):
-        _make_triple_iff(first, second, third)
+    with pytest.raises(
+        ValueError,
+        match=full_match_regex_str(
+            "All not required fields must be after required ones except ParamKind.KW_ONLY fields",
+        ),
+    ):
+        _make_triple_input_shape(first, second, third)
 
 
 @pytest.mark.parametrize(
@@ -137,10 +142,10 @@ def test_bad_non_required_field_order(first, second, third):
         (ParamKind.POS_OR_KW, ParamKind.POS_OR_KW, ParamKind.KW_ONLY),
         (ParamKind.POS_ONLY, ParamKind.KW_ONLY, ParamKind.KW_ONLY),
         (ParamKind.POS_OR_KW, ParamKind.KW_ONLY, ParamKind.KW_ONLY),
-    ]
+    ],
 )
 def test_ok_non_required_field_order(first, second, third):
-    _make_triple_iff(first, second, third)
+    _make_triple_input_shape(first, second, third)
 
 
 def test_field_id_duplicates():
@@ -168,17 +173,17 @@ def test_field_id_duplicates():
             ),
             params=(
                 Param(
-                    field_id='a',
-                    name='a1',
+                    field_id="a",
+                    name="a1",
                     kind=ParamKind.POS_OR_KW,
                 ),
                 Param(
-                    field_id='a',
-                    name='a2',
+                    field_id="a",
+                    name="a2",
                     kind=ParamKind.POS_OR_KW,
                 ),
             ),
-            overriden_types=frozenset({'a'}),
+            overriden_types=frozenset({"a"}),
         )
 
     with pytest.raises(ValueError, match=full_match_regex_str("Field ids {'a'} are duplicated")):
@@ -201,7 +206,7 @@ def test_field_id_duplicates():
                     original=None,
                 ),
             ),
-            overriden_types=frozenset({'a'}),
+            overriden_types=frozenset({"a"}),
         )
 
 
@@ -230,17 +235,17 @@ def test_param_name_duplicates():
             ),
             params=(
                 Param(
-                    field_id='a1',
-                    name='a',
+                    field_id="a1",
+                    name="a",
                     kind=ParamKind.POS_OR_KW,
                 ),
                 Param(
-                    field_id='a2',
-                    name='a',
+                    field_id="a2",
+                    name="a",
                     kind=ParamKind.POS_OR_KW,
-                )
+                ),
             ),
-            overriden_types=frozenset({'a1', 'a2'}),
+            overriden_types=frozenset({"a1", "a2"}),
         )
 
 
@@ -261,12 +266,12 @@ def test_optional_and_positional_only():
             ),
             params=(
                 Param(
-                    field_id='a',
-                    name='a',
+                    field_id="a",
+                    name="a",
                     kind=ParamKind.POS_ONLY,
                 ),
             ),
-            overriden_types=frozenset({'a'}),
+            overriden_types=frozenset({"a"}),
         )
 
 
@@ -298,17 +303,17 @@ def test_non_existing_fields_overriden_types():
             ),
             params=(
                 Param(
-                    field_id='a',
-                    name='a',
+                    field_id="a",
+                    name="a",
                     kind=ParamKind.POS_OR_KW,
                 ),
                 Param(
-                    field_id='b',
-                    name='b',
+                    field_id="b",
+                    name="b",
                     kind=ParamKind.POS_OR_KW,
                 ),
             ),
-            overriden_types=frozenset({'c'}),
+            overriden_types=frozenset({"c"}),
         )
 
     with pytest.raises(
@@ -334,7 +339,7 @@ def test_non_existing_fields_overriden_types():
                     original=None,
                 ),
             ),
-            overriden_types=frozenset({'c'}),
+            overriden_types=frozenset({"c"}),
         )
 
 
@@ -358,17 +363,17 @@ def test_parameter_bound_to_non_existing_field():
             ),
             params=(
                 Param(
-                    field_id='a',
-                    name='a',
+                    field_id="a",
+                    name="a",
                     kind=ParamKind.POS_OR_KW,
                 ),
                 Param(
-                    field_id='b',
-                    name='b',
+                    field_id="b",
+                    name="b",
                     kind=ParamKind.POS_OR_KW,
                 ),
             ),
-            overriden_types=frozenset({'a'}),
+            overriden_types=frozenset({"a"}),
         )
 
 
@@ -391,5 +396,5 @@ def test_field_without_parameters():
                 ),
             ),
             params=(),
-            overriden_types=frozenset({'a'}),
+            overriden_types=frozenset({"a"}),
         )

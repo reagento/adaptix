@@ -3,7 +3,7 @@ from adaptix import DebugTrail, Retort
 external_retort = Retort(
     recipe=[
         # very complex configuration
-    ]
+    ],
 )
 
 # create retort to faster load data from an internal trusted source

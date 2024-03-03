@@ -34,7 +34,7 @@ def make_dumper(tp: type):
     return dumper(tp, tp_dumper)
 
 
-@pytest.fixture
+@pytest.fixture()
 def retort():
     return TestRetort(
         recipe=[
@@ -44,7 +44,7 @@ def retort():
             make_dumper(str),
             make_dumper(int),
             make_dumper(type(None)),
-        ]
+        ],
     )
 
 
@@ -57,7 +57,7 @@ def test_loading(retort, strict_coercion, debug_trail):
     )
 
     assert loader_(1) == 1
-    assert loader_('a') == 'a'
+    assert loader_("a") == "a"
 
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
@@ -67,11 +67,11 @@ def test_loading(retort, strict_coercion, debug_trail):
     elif debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
         raises_exc(
             UnionLoadError(
-                f'while loading {Union[int, str]}',
+                f"while loading {Union[int, str]}",
                 [
                     TypeLoadError(int, []),
                     TypeLoadError(str, []),
-                ]
+                ],
             ),
             lambda: loader_([]),
         )
@@ -110,11 +110,11 @@ def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
-                f'while loading {Union[int, str]}',
+                f"while loading {Union[int, str]}",
                 [
                     TypeError(),
                     TypeError(),
-                ]
+                ],
             ),
             lambda: loader_([]),
         )
@@ -124,11 +124,11 @@ def test_dumping(retort, debug_trail):
     dumper_ = retort.replace(
         debug_trail=debug_trail,
     ).get_dumper(
-        Union[int, str]
+        Union[int, str],
     )
 
     assert dumper_(1) == 1
-    assert dumper_('a') == 'a'
+    assert dumper_("a") == "a"
 
     raises_exc(
         KeyError(list),
@@ -140,11 +140,11 @@ def test_dumping_of_none(retort, debug_trail):
     dumper_ = retort.replace(
         debug_trail=debug_trail,
     ).get_dumper(
-        Union[int, str, None]
+        Union[int, str, None],
     )
 
     assert dumper_(1) == 1
-    assert dumper_('a') == 'a'
+    assert dumper_("a") == "a"
     assert dumper_(None) is None
 
     raises_exc(
@@ -165,12 +165,12 @@ def test_dumping_subclass(retort, debug_trail):
     dumper_ = Retort(
         debug_trail=debug_trail,
     ).get_dumper(
-        Union[Parent, str]
+        Union[Parent, str],
     )
 
-    assert dumper_(Parent(foo=1)) == {'foo': 1}
-    assert dumper_(Child(foo=1, bar=2)) == {'foo': 1}
-    assert dumper_('a') == 'a'
+    assert dumper_(Parent(foo=1)) == {"foo": 1}
+    assert dumper_(Child(foo=1, bar=2)) == {"foo": 1}
+    assert dumper_("a") == "a"
 
     raises_exc(
         KeyError(list),
@@ -185,7 +185,7 @@ def test_optional_dumping(retort, debug_trail):
         Optional[str],
     )
 
-    assert opt_dumper('a') == 'a'
+    assert opt_dumper("a") == "a"
     assert opt_dumper(None) is None
 
     raises_exc(
@@ -198,15 +198,15 @@ def test_bad_optional_dumping(retort, debug_trail):
     raises_exc(
         with_cause(
             NoSuitableProvider(
-                f'Cannot produce dumper for type {Union[int, Callable[[int], str]]}',
+                f"Cannot produce dumper for type {Union[int, Callable[[int], str]]}",
             ),
             with_notes(
                 CannotProvide(
-                    message=f'All cases of union must be class, but found {[Callable[[int], str]]}',
+                    message=f"All cases of union must be class, but found {[Callable[[int], str]]}",
                     is_demonstrative=True,
                     is_terminal=True,
                 ),
-                f'Location: type={Union[int, Callable[[int], str]]}'
+                f"Location: type={Union[int, Callable[[int], str]]}",
             ),
         ),
         func=lambda: (
@@ -226,39 +226,39 @@ def test_literal(strict_coercion, debug_trail):
             UnionProvider(),
             make_loader(type(None)),
             make_dumper(type(None)),
-        ]
+        ],
     )
 
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     ).get_loader(
-        Literal['a', None],
+        Literal["a", None],
     )
 
-    assert loader_('a') == 'a'
+    assert loader_("a") == "a"
     assert loader_(None) is None
 
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
-            BadVariantLoadError({'a'}, 'b'),
-            lambda: loader_('b'),
+            BadVariantLoadError({"a"}, "b"),
+            lambda: loader_("b"),
         )
     elif debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
         raises_exc(
             UnionLoadError(
                 f'while loading {Literal["a", None]}',
-                [TypeLoadError(None, 'b'), BadVariantLoadError({'a'}, 'b')]
+                [TypeLoadError(None, "b"), BadVariantLoadError({"a"}, "b")],
             ),
-            lambda: loader_('b'),
+            lambda: loader_("b"),
         )
 
     dumper_ = retort.replace(
         debug_trail=debug_trail,
     ).get_dumper(
-        Literal['a', None],
+        Literal["a", None],
     )
 
-    assert dumper_('a') == 'a'
+    assert dumper_("a") == "a"
     assert dumper_(None) is None
-    assert dumper_('b') == 'b'
+    assert dumper_("b") == "b"

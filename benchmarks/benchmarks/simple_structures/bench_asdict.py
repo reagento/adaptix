@@ -22,7 +22,7 @@ class Book:
 
 def test_dumping():
     dumped_book = create_dumped_book(reviews_count=1)
-    dumped_book['reviews'][0]['content'] = dumped_book['reviews'][0].pop('text')
+    dumped_book["reviews"][0]["content"] = dumped_book["reviews"][0].pop("text")
     # asdict does not support renaming
     assert (
         asdict(create_book(Book, Review, reviews_count=1))

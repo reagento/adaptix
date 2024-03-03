@@ -36,10 +36,10 @@ class FilledConversionRetort(OperatingRetort):
     ]
 
 
-AR = TypeVar('AR', bound='AdornedConversionRetort')
-SrcT = TypeVar('SrcT')
-DstT = TypeVar('DstT')
-CallableT = TypeVar('CallableT', bound=Callable)
+AR = TypeVar("AR", bound="AdornedConversionRetort")
+SrcT = TypeVar("SrcT")
+DstT = TypeVar("DstT")
+CallableT = TypeVar("CallableT", bound=Callable)
 
 
 class AdornedConversionRetort(OperatingRetort):
@@ -68,13 +68,13 @@ class AdornedConversionRetort(OperatingRetort):
                 function_name=function_name,
                 stub_function=stub_function,
             ),
-            error_message=f'Cannot produce converter for {signature!r}',
+            error_message=f"Cannot produce converter for {signature!r}",
         )
 
     def _make_simple_converter(self, src: TypeHint, dst: TypeHint, name: Optional[str]) -> Converter:
         return self._produce_converter(
             signature=Signature(
-                parameters=[Parameter('src', kind=Parameter.POSITIONAL_ONLY, annotation=src)],
+                parameters=[Parameter("src", kind=Parameter.POSITIONAL_ONLY, annotation=src)],
                 return_annotation=dst,
             ),
             stub_function=None,
@@ -165,8 +165,8 @@ class AdornedConversionRetort(OperatingRetort):
         src = type(src_obj)
         if is_generic_class(src):
             raise ValueError(
-                f'Can not infer the actual type of generic class instance ({src!r}),'
-                ' you have to use `get_converter` explicitly passing the type of object'
+                f"Can not infer the actual type of generic class instance ({src!r}),"
+                " you have to use `get_converter` explicitly passing the type of object",
             )
 
         return self.get_converter(src, dst, recipe=recipe)(src_obj)

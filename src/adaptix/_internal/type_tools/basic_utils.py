@@ -45,14 +45,14 @@ def has_attrs(obj, attrs: Iterable[str]) -> bool:
 
 
 def is_new_type(tp) -> bool:
-    return has_attrs(tp, ['__supertype__', '__name__'])
+    return has_attrs(tp, ["__supertype__", "__name__"])
 
 
 def is_typed_dict_class(tp) -> bool:
     return isinstance(tp, TYPED_DICT_MCS)
 
 
-NAMED_TUPLE_METHODS = ('_fields', '_field_defaults', '_make', '_replace', '_asdict')
+NAMED_TUPLE_METHODS = ("_fields", "_field_defaults", "_make", "_replace", "_asdict")
 
 
 def is_named_tuple_class(tp) -> bool:
@@ -86,7 +86,7 @@ def is_parametrized(tp: TypeHint) -> bool:
 
 
 def get_type_vars(tp: TypeHint) -> VarTuple[TypeVar]:
-    return getattr(tp, '__parameters__', ())
+    return getattr(tp, "__parameters__", ())
 
 
 if HAS_PY_312:

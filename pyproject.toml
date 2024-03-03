@@ -81,6 +81,80 @@ skips = ['*/test_*.py', '*/*_test.py', 'docs/examples/*', '*/bench_*.py']
 min_confidence = 60
 ignore_decorators = ['@_aspect_storage.add', '@overload', '@abstractmethod']
 
+[tool.ruff]
+line-length = 120
+
+
+[tool.ruff.lint]
+select = ['ALL']
+fixable = [
+  'Q000',
+  'Q001',
+  'COM812',
+  'D400',
+  'PT001',
+]
+ignore = [
+  # Rules that should be turned on in the near future
+  'D',
+  'N818',
+  'B904',
+  'FIX002',
+  'RUF012',
+
+  # Rules emitting false alerts
+  'N804',
+  'B008',
+  'BLE001',
+  'RUF009',
+
+  # Rules that are not applicable in the project for now
+  'TID252',
+  'D104',
+  'ANN',
+  'SLF001',
+  'ARG',
+  'D100',
+  'PLR0913',
+  'TCH002',
+
+  # Strange and obscure rules that will never be turned on
+  'ANN101',
+  'FA100',
+  'TRY003',
+  'TRY201',
+  'EM',
+  'PERF203',
+  'TCH001',
+  'TD002',
+  'PTH201',
+
+  # Rules conflictin with other tools
+  'I001',
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ['F401']
+
+"test_*" = ['S101', 'PLR2004', 'PLC0105', 'N806']
+"tests/*/local_helpers.py" = ['S101', 'PLR2004', 'PLC0105', 'N806']
+"tests/*/data_*.py" = ['F821']
+"tests/tests_helpers/*" = ['INP001', 'S101']
+
+"docs/examples/*" = [
+  # test ignores
+  'S101', 'PLR2004', 'PLC0105', 'N806', 'PT017', 'SIM105',
+  # unique ignores
+  'SLOT000', 'S106', 'DTZ001'
+]
+
+"scripts/*" = ['INP001']
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.lint.flake8-pytest-style]
+parametrize-names-type = "list"
 
 [tool.towncrier]
 package = 'adaptix'

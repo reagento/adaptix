@@ -3,7 +3,7 @@ from typing import Generic, Tuple, TypeVar
 
 from adaptix._internal.feature_requirement import HAS_TV_TUPLE
 
-_T = TypeVar('_T')
+_T = TypeVar("_T")
 
 
 @model_spec.decorator
@@ -15,10 +15,10 @@ class WithTVField(*model_spec.bases, Generic[_T]):
 if HAS_TV_TUPLE:
     from typing import TypeVarTuple, Unpack
 
-    ShapeT = TypeVarTuple('ShapeT')
-    T = TypeVar('T')
-    T1 = TypeVar('T1')
-    T2 = TypeVar('T2')
+    ShapeT = TypeVarTuple("ShapeT")
+    T = TypeVar("T")
+    T1 = TypeVar("T1")
+    T2 = TypeVar("T2")
 
     @model_spec.decorator
     class WithTVTupleBegin(*model_spec.bases, Generic[Unpack[ShapeT], T]):

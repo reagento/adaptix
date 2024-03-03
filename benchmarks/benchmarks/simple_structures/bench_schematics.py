@@ -9,7 +9,7 @@ class Review(Model):
     id = IntType(required=True)
     title = StringType(required=True)
     rating = FloatType(required=True)
-    content = StringType(serialized_name='text', required=True)
+    content = StringType(serialized_name="text", required=True)
 
 
 class Book(Model):

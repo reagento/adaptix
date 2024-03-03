@@ -1,10 +1,8 @@
-from dataclasses import replace
-from typing import Any, Dict
+from typing import Any
 
 from ...feature_requirement import HAS_ATTRS_PKG, HAS_SUPPORTED_ATTRS_PKG
 from ...type_tools import get_all_type_hints
 from ..definitions import (
-    BaseField,
     Default,
     DefaultFactory,
     DefaultFactoryWithSelf,
@@ -33,7 +31,7 @@ except ImportError:
 def _get_default(attrs_field) -> Default:
     default: Any = attrs_field.default
 
-    if isinstance(default, attrs.Factory):  # type: ignore
+    if isinstance(default, attrs.Factory):  # type: ignore[arg-type]
         if default.takes_self:
             return DefaultFactoryWithSelf(default.factory)
         return DefaultFactory(default.factory)
@@ -51,40 +49,8 @@ def _get_field_type(attrs_field, type_hints):
         return Any if attrs_field.type is None else attrs_field.type
 
 
-NoneType = type(None)
-
-
-def _process_input_field(
-    field: InputField,
-    param_name_to_base_field: Dict[str, BaseField],
-    has_custom_init: bool,
-):
-    try:
-        base_field = param_name_to_base_field[field.id]
-    except KeyError:
-        return field
-
-    # When input shape is generating we rely on __init__ signature,
-    # but when field type is None attrs thinks that there is no type hint,
-    # so if there is no custom __init__ (that can do not set type for this attribute),
-    # we should use NoneType as type of field
-    if not has_custom_init and field.type == Any and base_field.type == NoneType:
-        field = replace(field, type=NoneType)
-
-    return replace(
-        field,
-        default=(
-            base_field.default
-            if isinstance(field.default, DefaultValue) and field.default.value is attrs.NOTHING else
-            field.default
-        ),
-        metadata=base_field.metadata,
-        id=base_field.id,
-    )
-
-
 def _get_param_name(attrs_field):
-    if hasattr(attrs_field, 'alias'):
+    if hasattr(attrs_field, "alias"):
         return attrs_field.alias
     return (
         attrs_field.name[1:]
@@ -108,7 +74,7 @@ def _get_input_shape(tp, attrs_fields, type_hints) -> InputShape:
     }
     init_shape = get_class_init_shape(tp)
 
-    if hasattr(tp, '__attrs_init__'):
+    if hasattr(tp, "__attrs_init__"):
         fields = tuple(
             InputField(
                 id=param_name_to_field_from_attrs[fld.id].id,
@@ -124,7 +90,7 @@ def _get_input_shape(tp, attrs_fields, type_hints) -> InputShape:
         )
         overriden_types = (
             frozenset(fld.id for fld in fields)
-            if '__attrs_init__' in vars(tp) else
+            if "__attrs_init__" in vars(tp) else
             frozenset()
         )
     else:

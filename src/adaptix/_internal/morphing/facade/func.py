@@ -4,7 +4,7 @@ from ...common import TypeHint
 from .retort import Retort
 
 _global_retort = Retort()
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @overload

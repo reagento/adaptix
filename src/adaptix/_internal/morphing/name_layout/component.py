@@ -86,9 +86,9 @@ class StructureOverlay(Overlay[StructureSchema]):
 
 
 AnyField = Union[InputField, OutputField]
-LeafCr = TypeVar('LeafCr', bound=LeafBaseCrown)
-FieldCr = TypeVar('FieldCr', bound=BaseFieldCrown)
-F = TypeVar('F', bound=BaseField)
+LeafCr = TypeVar("LeafCr", bound=LeafBaseCrown)
+FieldCr = TypeVar("FieldCr", bound=BaseFieldCrown)
+F = TypeVar("F", bound=BaseField)
 FieldAndPath = Tuple[F, Optional[KeyPath]]
 
 
@@ -108,8 +108,8 @@ class BuiltinStructureMaker(StructureMaker):
             return shape.fields.index(field)
 
         name = field.id
-        if schema.trim_trailing_underscore and name.endswith('_') and not name.endswith('__'):
-            name = name.rstrip('_')
+        if schema.trim_trailing_underscore and name.endswith("_") and not name.endswith("__"):
+            name = name.rstrip("_")
         if schema.name_style is not None:
             name = convert_snake_style(name, schema.name_style)
         return name
@@ -139,7 +139,7 @@ class BuiltinStructureMaker(StructureMaker):
                         field=field,
                         generated_key=generated_key,
                         loc_stack=request.loc_stack.append_with(field_to_loc_map(field)),
-                    )
+                    ),
                 )
             except CannotProvide:
                 path = (generated_key, )
@@ -178,14 +178,14 @@ class BuiltinStructureMaker(StructureMaker):
 
         prefix_groups = get_prefix_groups([path for field, path in fields_to_paths if path is not None])
         if prefix_groups:
-            details = '. '.join(
+            details = ". ".join(
                 # pylint: disable=consider-using-f-string
-                'Path {prefix} (field {prefix_field!r}) is prefix of {paths}'.format(
+                "Path {prefix} (field {prefix_field!r}) is prefix of {paths}".format(
                     prefix=list(prefix),
                     prefix_field=paths_to_fields[prefix][0].id,
-                    paths=', '.join(
+                    paths=", ".join(
                         # pylint: disable=consider-using-f-string
-                        '{path} (field {path_field!r})'.format(
+                        "{path} (field {path_field!r})".format(  # noqa: UP032
                             path=list(path),
                             path_field=paths_to_fields[path][0].id,
                         )
@@ -195,7 +195,7 @@ class BuiltinStructureMaker(StructureMaker):
                 for prefix, paths in prefix_groups
             )
             raise CannotProvide(
-                'Path to the field must not be a prefix of another path. ' + details,
+                "Path to the field must not be a prefix of another path. " + details,
                 is_terminal=True,
                 is_demonstrative=True,
             )
@@ -265,7 +265,7 @@ class BuiltinStructureMaker(StructureMaker):
         for path, indexes in paths_to_lists.items():
             for i in range(max(indexes)):
                 if i not in indexes:
-                    complete_path = path + (i, )
+                    complete_path = (*path, i)
                     paths_to_leaves[complete_path] = gaps_filler(complete_path)
 
         return paths_to_leaves
@@ -284,7 +284,7 @@ class BuiltinStructureMaker(StructureMaker):
     ) -> PathsTo[LeafInpCrown]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_stack)
         fields_to_paths: List[FieldAndPath[InputField]] = list(
-            self._map_fields(mediator, request, schema, extra_move)
+            self._map_fields(mediator, request, schema, extra_move),
         )
         skipped_required_fields = [
             field.id
@@ -309,7 +309,7 @@ class BuiltinStructureMaker(StructureMaker):
     ) -> PathsTo[LeafOutCrown]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_stack)
         fields_to_paths: List[FieldAndPath[OutputField]] = list(
-            self._map_fields(mediator, request, schema, extra_move)
+            self._map_fields(mediator, request, schema, extra_move),
         )
         paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, OutFieldCrown, self._fill_output_gap)
         self._validate_structure(request, fields_to_paths)
@@ -366,7 +366,7 @@ class BuiltinSievesMaker(SievesMaker):
 
 def _paths_to_branches(paths_to_leaves: PathsTo[LeafBaseCrown]) -> Iterable[Tuple[KeyPath, Key]]:
     yielded_branch_path: Set[KeyPath] = set()
-    for path in paths_to_leaves.keys():
+    for path in paths_to_leaves:
         for i in range(len(path) - 1, -2, -1):
             sub_path = path[:i]
             if sub_path in yielded_branch_path:

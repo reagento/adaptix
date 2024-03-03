@@ -17,4 +17,4 @@ class Dog:
 
 
 retort = Retort()
-retort.load({'name': 'Tardar Sauce', 'breed': 'mixed'}, Union[Cat, Dog])
+retort.load({"name": "Tardar Sauce", "breed": "mixed"}, Union[Cat, Dog])

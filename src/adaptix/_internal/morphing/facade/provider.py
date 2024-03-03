@@ -45,7 +45,7 @@ from ..name_layout.name_mapping import (
 )
 from ..request_cls import DumperRequest, LoaderRequest
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def make_chain(chain: Optional[Chain], provider: Provider) -> Provider:
@@ -76,8 +76,8 @@ def loader(pred: Pred, func: Loader, chain: Optional[Chain] = None) -> Provider:
         pred,
         make_chain(
             chain,
-            ValueProvider(LoaderRequest, func)
-        )
+            ValueProvider(LoaderRequest, func),
+        ),
     )
 
 
@@ -146,14 +146,14 @@ def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider
             result.append(element)
         elif isinstance(element, Mapping):
             result.append(
-                DictNameMappingProvider(element)
+                DictNameMappingProvider(element),
             )
         else:
             pred, value = element
             result.append(
                 FuncNameMappingProvider(create_loc_stack_checker(pred), value)
                 if callable(value) else
-                ConstNameMappingProvider(create_loc_stack_checker(pred), value)
+                ConstNameMappingProvider(create_loc_stack_checker(pred), value),
             )
     return tuple(result)
 
@@ -167,7 +167,7 @@ def _name_mapping_convert_preds(value: Omittable[Union[Iterable[Pred], Pred]]) -
 
 
 def _name_mapping_convert_omit_default(
-    value: Omittable[Union[Iterable[Pred], Pred, bool]]
+    value: Omittable[Union[Iterable[Pred], Pred, bool]],
 ) -> Omittable[LocStackChecker]:
     if isinstance(value, bool):
         return AnyLocStackChecker() if value else ~AnyLocStackChecker()
@@ -250,7 +250,7 @@ def name_mapping(
                 ),
             ],
             chain=chain,
-        )
+        ),
     )
 
 
@@ -282,7 +282,7 @@ def with_property(
         PropertyExtender(
             output_fields=[field],
             infer_types_for=[field.id] if tp == Omitted() else [],
-        )
+        ),
     )
 
 
@@ -303,7 +303,7 @@ EnumPred = Union[TypeHint, str, EnumMeta, LocStackPattern]
 def enum_by_name(
     *preds: EnumPred,
     name_style: Optional[NameStyle] = None,
-    map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
+    map: Optional[Mapping[Union[str, Enum], str]] = None,  # noqa: A002
 ) -> Provider:
     """Provider that represents enum members to the outside world by their name.
 
@@ -321,8 +321,8 @@ def enum_by_name(
     return bound_by_any(
         preds,
         EnumNameProvider(
-            ByNameEnumMappingGenerator(name_style=name_style, map=map)
-        )
+            ByNameEnumMappingGenerator(name_style=name_style, map=map),
+        ),
     )
 
 
@@ -373,7 +373,7 @@ def flag_by_member_names(
     allow_duplicates: bool = True,
     allow_compound: bool = True,
     name_style: Optional[NameStyle] = None,
-    map: Optional[Mapping[Union[str, Enum], str]] = None  # noqa: A002
+    map: Optional[Mapping[Union[str, Enum], str]] = None,  # noqa: A002
 ) -> Provider:
     """Provider that represents flag members to the outside world by list of their names.
 

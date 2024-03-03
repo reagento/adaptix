@@ -16,24 +16,24 @@ retort = Retort(
         name_mapping(
             Action,
             map={
-                'user_id': 1,
-                'kind': 0,
+                "user_id": 1,
+                "kind": 0,
             },
             as_list=True,
         ),
-    ]
+    ],
 )
 
 
 action = Action(
     user_id=23,
-    kind='click',
+    kind="click",
     timestamp=datetime(2023, 5, 20, 15, 58, 23, 410366, tzinfo=timezone.utc),
 )
 data = [
-    'click',
+    "click",
     23,
-    '2023-05-20T15:58:23.410366+00:00',
+    "2023-05-20T15:58:23.410366+00:00",
 ]
 assert retort.dump(action) == data
 assert retort.load(data, Action) == action

@@ -67,7 +67,7 @@ def test_recipe_access():
         ]
 
     with pytest.raises(AttributeError, match=full_match_regex_str("Can not read 'recipe' attribute")):
-        RetortWithRecipe.recipe
+        RetortWithRecipe.recipe  # noqa: B018
 
     with pytest.raises(AttributeError, match=full_match_regex_str("Can not set 'recipe' attribute")):
         RetortWithRecipe.recipe = []
@@ -78,7 +78,7 @@ def test_recipe_access():
     with_recipe = RetortWithRecipe()
 
     with pytest.raises(AttributeError, match=full_match_regex_str("Can not read 'recipe' attribute")):
-        with_recipe.recipe
+        with_recipe.recipe  # noqa: B018
 
     with pytest.raises(AttributeError, match=full_match_regex_str("Can not set 'recipe' attribute")):
         with_recipe.recipe = []
@@ -91,6 +91,6 @@ def test_bad_recipe():
     with pytest.raises(TypeError, match=full_match_regex_str("Recipe attributes must be Iterable[Provider]")):
         class StringItemRecipe(BaseRetort):
             recipe = [
-                'hello',
-                'world',
+                "hello",
+                "world",
             ]

@@ -6,9 +6,9 @@ from .retort import ConversionRetort
 
 _global_retort = ConversionRetort()
 
-SrcT = TypeVar('SrcT')
-DstT = TypeVar('DstT')
-CallableT = TypeVar('CallableT', bound=Callable)
+SrcT = TypeVar("SrcT")
+DstT = TypeVar("DstT")
+CallableT = TypeVar("CallableT", bound=Callable)
 
 
 def convert(src_obj: Any, dst: Type[DstT], *, recipe: Iterable[Provider] = ()) -> DstT:

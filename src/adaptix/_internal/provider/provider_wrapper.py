@@ -6,7 +6,7 @@ from .essential import AggregateCannotProvide, CannotProvide, Mediator, Provider
 from .loc_stack_filtering import LocStackChecker
 from .request_cls import LocatedRequest
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class RequestClassDeterminedProvider(Provider, ABC):
@@ -66,7 +66,7 @@ class ConcatProvider(RequestClassDeterminedProvider):
             except CannotProvide as e:
                 exceptions.append(e)
 
-        raise AggregateCannotProvide.make('', exceptions)
+        raise AggregateCannotProvide.make("", exceptions)
 
     def __repr__(self):
         return f"{type(self).__name__}({self._providers})"
@@ -80,8 +80,8 @@ class ConcatProvider(RequestClassDeterminedProvider):
 
 
 class Chain(Enum):
-    FIRST = 'FIRST'
-    LAST = 'LAST'
+    FIRST = "FIRST"
+    LAST = "LAST"
 
 
 class ChainingProvider(RequestClassDeterminedProvider):
