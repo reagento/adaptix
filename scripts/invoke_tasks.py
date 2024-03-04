@@ -59,9 +59,9 @@ def deps_compile(c: Context, upgrade=False):
 
 
 @task
-def test_on_ci(c: Context, py_target, cov_output):
+def test_on_ci(c: Context, py_target, cov_output=None):
     env_list = c.run(fr"tox list --no-desc | grep '^{py_target}' | sort -r | tr '\n' ','", hide=True).stdout
-    if 'pypy' in py_target:
+    if cov_output is None:
         c.run(fr"tox -e {env_list}", pty=True)
     else:
         cov(c, env_list=env_list, output=cov_output)

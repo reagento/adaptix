@@ -52,14 +52,14 @@ jobs:
       fail-fast: true
       matrix:
         python_version:
-          - { setup: '3.8',      tox: 'py38'    }
-          - { setup: '3.9',      tox: 'py39'    }
-          - { setup: '3.10',     tox: 'py310'   }
-          - { setup: '3.11',     tox: 'py311'   }
-          - { setup: '3.12',     tox: 'py312'   }
-          - { setup: 'pypy3.8',  tox: 'pypy38'  }
-          - { setup: 'pypy3.9',  tox: 'pypy39'  }
-          - { setup: 'pypy3.10', tox: 'pypy310' }
+          - { setup: '3.8',      tox: 'py38',    cov: true  }
+          - { setup: '3.9',      tox: 'py39',    cov: true  }
+          - { setup: '3.10',     tox: 'py310',   cov: true  }
+          - { setup: '3.11',     tox: 'py311',   cov: true  }
+          - { setup: '3.12',     tox: 'py312',   cov: true  }
+          - { setup: 'pypy3.8',  tox: 'pypy38',  cov: false }
+          - { setup: 'pypy3.9',  tox: 'pypy39',  cov: false }
+          - { setup: 'pypy3.10', tox: 'pypy310', cov: false }
 
         os: ['ubuntu-latest']
 
@@ -80,7 +80,8 @@ jobs:
         run:
           just setup-runner
 
-      - name: Run tests
+      - name: Run tests with coverage
+        if: matrix.python_version.cov
         run:
           just inv test-on-ci
             --py-target ${{ matrix.python_version.tox }}
@@ -88,10 +89,18 @@ jobs:
 
       - name: Store coverage file
         uses: actions/upload-artifact@v4
+        if: matrix.python_version.cov
         with:
           name: coverage-${{ matrix.python_version.setup }}
           path: .coverage.${{ matrix.python_version }}
           if-no-files-found: error
+
+      - name: Run tests without coverage
+        if: !matrix.python_version.cov
+        run:
+          just inv test-on-ci
+            --py-target ${{ matrix.python_version.tox }}
+
 
   coverage:
     name: Coverage
