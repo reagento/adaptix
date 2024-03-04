@@ -82,8 +82,8 @@ jobs:
 
       - name: Run tests
         run:
-          just inv test-on-ci                                    \
-            --py-target {{ matrix.python_version.tox }}          \
+          just inv test-on-ci
+            --py-target {{ matrix.python_version.tox }}
             --cov-output .coverage.${{ matrix.python_version }}
 
       - name: Store coverage file
