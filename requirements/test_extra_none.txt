@@ -6,6 +6,8 @@
 #
 -e ./tests/tests_helpers
     # via -r requirements/raw/test_extra_none.txt
+coverage==7.4.3
+    # via -r requirements/raw/test_extra_none.txt
 dirty-equals==0.7.1.post0
     # via -r requirements/raw/test_extra_none.txt
 greenlet==3.0.2

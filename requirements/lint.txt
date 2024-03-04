@@ -40,6 +40,8 @@ colorama==0.4.6
     # via radon
 contourpy==1.2.0
     # via matplotlib
+coverage==7.4.3
+    # via -r requirements/raw/test_extra_none.txt
 cycler==0.12.1
     # via matplotlib
 dataclass-factory==2.16
