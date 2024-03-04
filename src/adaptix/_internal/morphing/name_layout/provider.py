@@ -62,7 +62,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
         paths_to_leaves: PathsTo[LeafInpCrown],
         extra_policies: PathsTo[DictExtraPolicy],
     ) -> BranchInpCrown:
-        return InpCrownBuilder(extra_policies).build_crown(paths_to_leaves)
+        return InpCrownBuilder(extra_policies, paths_to_leaves).build_crown()
 
     def _create_empty_input_crown(
         self,
@@ -72,7 +72,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
         *,
         as_list: bool,
     ) -> BranchInpCrown:
-        return InpCrownBuilder(extra_policies).build_empty_crown(as_list=as_list)
+        return InpCrownBuilder(extra_policies, {}).build_empty_crown(as_list=as_list)
 
     @static_provision_action
     def _provide_output_name_layout(self, mediator: Mediator, request: OutputNameLayoutRequest) -> OutputNameLayout:
@@ -102,7 +102,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
         paths_to_leaves: PathsTo[LeafOutCrown],
         path_to_sieve: PathsTo[Sieve],
     ) -> BranchOutCrown:
-        return OutCrownBuilder(path_to_sieve).build_crown(paths_to_leaves)
+        return OutCrownBuilder(path_to_sieve, paths_to_leaves).build_crown()
 
     def _create_empty_output_crown(
         self,
@@ -112,4 +112,4 @@ class BuiltinNameLayoutProvider(StaticProvider):
         *,
         as_list: bool,
     ):
-        return OutCrownBuilder(path_to_sieve).build_empty_crown(as_list=as_list)
+        return OutCrownBuilder(path_to_sieve, {}).build_empty_crown(as_list=as_list)
