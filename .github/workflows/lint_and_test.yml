@@ -44,7 +44,7 @@ jobs:
           just lint
 
   testing:
-    name: Testing
+    name: Testing - ${{ matrix.python_version.tox }}
     runs-on: ${{ matrix.os }}
     needs: linting
 
@@ -100,7 +100,6 @@ jobs:
         run:
           just inv test-on-ci
             --py-target ${{ matrix.python_version.tox }}
-
 
   coverage:
     name: Coverage

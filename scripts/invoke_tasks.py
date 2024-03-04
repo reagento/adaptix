@@ -19,7 +19,6 @@ def if_str(flag: bool, value: str) -> str:  # noqa: FBT001
 def cov(c: Context, env_list, output="coverage.xml", parallel=False):
     inner_bash_command = q(
         "coverage run"
-        " --branch"
         " --data-file=.tox/cov-storage/.coverage.$TOX_ENV_NAME"
         " -m pytest",
     )
