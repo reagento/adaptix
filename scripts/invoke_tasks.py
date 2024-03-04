@@ -11,12 +11,12 @@ def q(value: Union[Path, str]) -> str:
     return shlex.quote(str(value))
 
 
-def if_str(flag: bool, value: str) -> str:
-    return value if flag else ''
+def if_str(flag: bool, value: str) -> str:  # noqa: FBT001
+    return value if flag else ""
 
 
 @task
-def cov(c: Context, env_list, output='coverage.xml', parallel=False):
+def cov(c: Context, env_list, output="coverage.xml", parallel=False):
     inner_bash_command = q(
         "coverage run"
         " --branch"
@@ -32,7 +32,7 @@ def cov(c: Context, env_list, output='coverage.xml', parallel=False):
         pty=True,
     )
     c.run("coverage combine --data-file .tox/cov-storage/.coverage .tox/cov-storage")
-    if output.endswith('.xml'):
+    if output.endswith(".xml"):
         c.run(f"coverage xml --data-file .tox/cov-storage/.coverage -o {output}")
     else:
         c.run(f"cp .tox/cov-storage/.coverage {output}")
