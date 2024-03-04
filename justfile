@@ -37,7 +37,7 @@ inv := "inv -r scripts -c invoke_tasks"
 
 @cov:
     {{ inv }} cov \
-      --env-list $(tox list --no-desc | grep -e '^py' | sort -r | tr '\n' ',') \
+      --env-list $(tox list --no-desc | grep -e '^py' | grep -v '^pypy' | sort -r | tr '\n' ',') \
       --output coverage.xml \
       --parallel
 
