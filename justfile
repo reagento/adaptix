@@ -39,13 +39,18 @@ set windows-powershell := true
     tox -e $(tox list --no-desc | grep '^py' | sort -r | tr '\n' ',') -p auto
 
 # run all tests on specific python version
-@test-on target:
-    tox -e $(tox list --no-desc | grep '^{{ target }}' | sort -r | tr '\n' ',')
+@test-with-coverage target:
+    {{ inv }} cov \
+      --env-list $(tox list --no-desc | grep '^{{ target }}' | sort -r | tr '\n' ',') \
+      --output coverage.db
 
 inv := "inv -r scripts -c invoke_tasks"
 
 @cov:
-    {{ inv }} cov
+    {{ inv }} cov \
+      --env-list $(tox list --no-desc | grep -e '^py' | sort -r | tr '\n' ',') \
+      --output coverage.db \
+      --parallel
 
 @deps-compile:
     {{ inv }} deps-compile

@@ -11,8 +11,12 @@ def q(value: Union[Path, str]) -> str:
     return shlex.quote(str(value))
 
 
+def if_str(flag: bool, value: str) -> str:
+    return value if flag else ''
+
+
 @task
-def cov(c: Context):
+def cov(c: Context, env_list, output='coverage.xml', parallel=False):
     inner_bash_command = q(
         "coverage run"
         " --branch"
@@ -21,25 +25,26 @@ def cov(c: Context):
     )
     tox_commands = f"bash -c '{q(inner_bash_command)}'"
     c.run(
-        r"tox -e $(tox -l | grep -e '^py' | grep -v 'bench' | sort -r | tr '\n' ',')"
-        " -p auto"
+        f"tox -e {q(env_list)}"
+        + if_str(parallel, " -p auto") +
         "  --override 'testenv.allowlist_externals=bash'"
         f" --override 'testenv.commands={tox_commands}'",
         pty=True,
     )
     c.run("coverage combine --data-file .tox/cov-storage/.coverage .tox/cov-storage")
-    c.run("coverage xml --data-file .tox/cov-storage/.coverage")
+    if output.endswith('.xml'):
+        c.run(f"coverage xml --data-file .tox/cov-storage/.coverage -o {output}")
+    else:
+        c.run(f"cp .tox/cov-storage/.coverage {output}")
 
 
 @task
 def deps_compile(c: Context, upgrade=False):
-    extra = ""
-    if upgrade:
-        extra += " --upgrade"
     promises = [
         c.run(
             f'pip-compile {req} -o {Path("requirements") / req.name}'
-            ' -q --allow-unsafe --strip-extras' + extra,
+            ' -q --allow-unsafe --strip-extras'
+            + if_str(upgrade, " --upgrade"),
             asynchronous=True,
         )
         for req in Path(".").glob("requirements/raw/*.txt")
