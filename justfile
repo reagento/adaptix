@@ -38,7 +38,7 @@ set windows-powershell := true
 @test-all:
     tox -e $(tox list --no-desc | grep '^py' | sort -r | tr '\n' ',') -p auto
 
-# run all tests on specific python version
+# run all tests on specific python version with coverage
 @test-with-coverage target:
     {{ inv }} cov \
       --env-list $(tox list --no-desc | grep '^{{ target }}' | sort -r | tr '\n' ',') \
