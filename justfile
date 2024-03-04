@@ -17,11 +17,6 @@ set windows-powershell := true
     pip-sync requirements/pre.txt requirements/dev.txt
     pip install -e .
 
-[private]
-@setup-runner:
-    pip install -r requirements/pre.txt
-    pip install -r requirements/runner.txt
-
 # run all linters
 @lint:
     tox -e lint
@@ -38,18 +33,12 @@ set windows-powershell := true
 @test-all:
     tox -e $(tox list --no-desc | grep '^py' | sort -r | tr '\n' ',') -p auto
 
-# run all tests on specific python version with coverage
-@test-with-coverage target:
-    {{ inv }} cov \
-      --env-list $(tox list --no-desc | grep '^{{ target }}' | sort -r | tr '\n' ',') \
-      --output coverage.db
-
 inv := "inv -r scripts -c invoke_tasks"
 
 @cov:
     {{ inv }} cov \
       --env-list $(tox list --no-desc | grep -e '^py' | sort -r | tr '\n' ',') \
-      --output coverage.db \
+      --output coverage.xml \
       --parallel
 
 @deps-compile:
@@ -69,3 +58,17 @@ doc_target := "docs-build"
 # clean generated documentation and build cache
 @doc-clean:
     sphinx-build -M clean {{ doc_source }} {{ doc_target }}
+
+
+# Continious integration
+
+[private]
+@setup-runner:
+    pip install -r requirements/pre.txt
+    pip install -r requirements/runner.txt
+
+[private]
+@inv *ARGS:
+    {{ inv }} {{ ARGS }}
+
+

@@ -82,13 +82,15 @@ jobs:
 
       - name: Run tests
         run:
-          just test-with-coverage ${{ matrix.python_version.tox }}
+          just inv test-on-ci                                    \
+            --py-target {{ matrix.python_version.tox }}          \
+            --cov-output .coverage.${{ matrix.python_version }}
 
       - name: Store coverage file
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.python_version.setup }}
-          path: coverage.db
+          path: .coverage.${{ matrix.python_version }}
           if-no-files-found: error
 
   coverage:
