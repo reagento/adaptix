@@ -1,0 +1,1 @@
+Fix introspection of sqlalchemy models with column_property (all ColumnElement is ignored excepting Column itself)
