@@ -131,6 +131,9 @@ def _get_input_shape(
     fields = []
     params = []
     for column in columns:
+        if not isinstance(column, sqlalchemy.Column):
+            continue
+
         fields.append(
             InputField(
                 id=column.key,
@@ -197,6 +200,7 @@ def _get_output_shape(
             accessor=create_attr_accessor(column.name, is_required=True),
         )
         for column in columns
+        if isinstance(column, sqlalchemy.Column)
     ]
     for relationship in relationships:
         if relationship.collection_class is not None:
