@@ -16,9 +16,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  NEED_COV: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   linting:
     name: Linting
@@ -92,14 +89,14 @@ jobs:
 
       - name: Store coverage file
         uses: actions/upload-artifact@v4
-        if: ${{ matrix.python_version.cov && env.NEED_COV }}
+        if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}
         with:
           name: coverage-${{ matrix.python_version.tox }}
           path: .coverage.${{ matrix.python_version.tox }}
           if-no-files-found: error
 
       - name: Run tests without coverage
-        if: ${{ !(matrix.python_version.cov && env.NEED_COV) }}
+        if: ${{ !(matrix.python_version.cov && github.event_name == 'pull_request') }}
         run:
           just inv test-on-ci
             --py-target ${{ matrix.python_version.tox }}
@@ -111,7 +108,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
-    if: ${{ env.NEED_COV }}
+    if: ${{ github.event_name == 'pull_request' }}
 
     steps:
       - uses: actions/checkout@v4
