@@ -108,6 +108,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: write
+    if: ${{ github.event_name == 'pull_request' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -124,3 +125,4 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MERGE_COVERAGE_FILES: true
+          MINIMUM_GREEN: 90
