@@ -11,35 +11,39 @@ def q(value: Union[Path, str]) -> str:
     return shlex.quote(str(value))
 
 
+def if_str(flag: bool, value: str) -> str:  # noqa: FBT001
+    return value if flag else ""
+
+
 @task
-def cov(c: Context):
+def cov(c: Context, env_list, output="coverage.xml", parallel=False):
     inner_bash_command = q(
         "coverage run"
-        " --branch"
         " --data-file=.tox/cov-storage/.coverage.$TOX_ENV_NAME"
         " -m pytest",
     )
     tox_commands = f"bash -c '{q(inner_bash_command)}'"
     c.run(
-        r"tox -e $(tox -l | grep -e '^py' | grep -v 'bench' | sort -r | tr '\n' ',')"
-        " -p auto"
+        f"tox -e {q(env_list)}"
+        + if_str(parallel, " -p auto") +
         "  --override 'testenv.allowlist_externals=bash'"
         f" --override 'testenv.commands={tox_commands}'",
         pty=True,
     )
     c.run("coverage combine --data-file .tox/cov-storage/.coverage .tox/cov-storage")
-    c.run("coverage xml --data-file .tox/cov-storage/.coverage")
+    if output.endswith(".xml"):
+        c.run(f"coverage xml --data-file .tox/cov-storage/.coverage -o {output}")
+    else:
+        c.run(f"cp .tox/cov-storage/.coverage {output}")
 
 
 @task
 def deps_compile(c: Context, upgrade=False):
-    extra = ""
-    if upgrade:
-        extra += " --upgrade"
     promises = [
         c.run(
             f'pip-compile {req} -o {Path("requirements") / req.name}'
-            ' -q --allow-unsafe --strip-extras' + extra,
+            ' -q --allow-unsafe --strip-extras'
+            + if_str(upgrade, " --upgrade"),
             asynchronous=True,
         )
         for req in Path(".").glob("requirements/raw/*.txt")
@@ -51,3 +55,12 @@ def deps_compile(c: Context, upgrade=False):
     for file in Path(".").glob("requirements/*.txt"):
         c.run(fr'sed -i -E "s/-e file:.+\/tests\/tests_helpers/-e .\/tests\/tests_helpers/" {file}')
         c.run(fr'sed -i -E "s/-e file:.+\/benchmarks/-e .\/benchmarks/" {file}')
+
+
+@task
+def test_on_ci(c: Context, py_target, cov_output=None):
+    env_list = c.run(fr"tox list --no-desc | grep '^{py_target}' | sort -r | tr '\n' ','", hide=True).stdout
+    if cov_output is None:
+        c.run(fr"tox -e {env_list}", pty=True)
+    else:
+        cov(c, env_list=env_list, output=cov_output)

@@ -52,8 +52,10 @@ colorama==0.4.6
     #   tox
 contourpy==1.2.0
     # via matplotlib
-coverage==7.3.3
-    # via -r requirements/raw/dev.txt
+coverage==7.4.3
+    # via
+    #   -r requirements/raw/runner.txt
+    #   -r requirements/raw/test_extra_none.txt
 cycler==0.12.1
     # via matplotlib
 dataclass-factory==2.16

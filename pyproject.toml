@@ -156,6 +156,7 @@ keep-runtime-typing = true
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-names-type = "list"
 
+
 [tool.towncrier]
 package = 'adaptix'
 filename = 'docs/changelog/changelog_body.rst'
@@ -170,3 +171,9 @@ type = [
   { name = "Bug Fixes",        directory = "bugfix",      showcontent = true },
   { name = "Other",            directory = "other",       showcontent = true },
 ]
+
+
+[tool.coverage.run]
+branch = true
+relative_files = true
+include = ["src/**"]

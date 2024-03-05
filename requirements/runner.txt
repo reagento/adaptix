@@ -10,6 +10,8 @@ chardet==5.2.0
     # via tox
 colorama==0.4.6
     # via tox
+coverage==7.4.3
+    # via -r requirements/raw/runner.txt
 distlib==0.3.8
     # via virtualenv
 filelock==3.13.1

@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   linting:
-    name: Run linters
+    name: Linting
     runs-on: ubuntu-latest
     timeout-minutes: 3
 
@@ -44,7 +44,7 @@ jobs:
           just lint
 
   testing:
-    name: Run tests
+    name: Testing (${{ matrix.python_version.tox }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     needs: linting
 
@@ -52,14 +52,14 @@ jobs:
       fail-fast: true
       matrix:
         python_version:
-          - { setup: '3.8',      tox: 'py38'    }
-          - { setup: '3.9',      tox: 'py39'    }
-          - { setup: '3.10',     tox: 'py310'   }
-          - { setup: '3.11',     tox: 'py311'   }
-          - { setup: '3.12',     tox: 'py312'   }
-          - { setup: 'pypy3.8',  tox: 'pypy38'  }
-          - { setup: 'pypy3.9',  tox: 'pypy39'  }
-          - { setup: 'pypy3.10', tox: 'pypy310' }
+          - { setup: '3.8',      tox: 'py38',    cov: true  }
+          - { setup: '3.9',      tox: 'py39',    cov: true  }
+          - { setup: '3.10',     tox: 'py310',   cov: true  }
+          - { setup: '3.11',     tox: 'py311',   cov: true  }
+          - { setup: '3.12',     tox: 'py312',   cov: true  }
+          - { setup: 'pypy3.8',  tox: 'pypy38',  cov: false }
+          - { setup: 'pypy3.9',  tox: 'pypy39',  cov: false }
+          - { setup: 'pypy3.10', tox: 'pypy310', cov: false }
 
         os: ['ubuntu-latest']
 
@@ -80,6 +80,49 @@ jobs:
         run:
           just setup-runner
 
-      - name: Run tests
+      - name: Run tests with coverage
+        if: ${{ matrix.python_version.cov }}
         run:
-          just test-on ${{ matrix.python_version.tox }}
+          just inv test-on-ci
+            --py-target ${{ matrix.python_version.tox }}
+            --cov-output .coverage.${{ matrix.python_version.tox }}
+
+      - name: Store coverage file
+        uses: actions/upload-artifact@v4
+        if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}
+        with:
+          name: coverage-${{ matrix.python_version.tox }}
+          path: .coverage.${{ matrix.python_version.tox }}
+          if-no-files-found: error
+
+      - name: Run tests without coverage
+        if: ${{ !(matrix.python_version.cov && github.event_name == 'pull_request') }}
+        run:
+          just inv test-on-ci
+            --py-target ${{ matrix.python_version.tox }}
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    needs: testing
+    permissions:
+      pull-requests: write
+      contents: write
+    if: ${{ github.event_name == 'pull_request' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        id: download
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+
+      - name: Coverage comment
+        id: coverage_comment
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_COVERAGE_FILES: true
+          MINIMUM_GREEN: 90

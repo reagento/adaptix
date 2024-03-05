@@ -1,2 +1,3 @@
 tox==4.11.4
 invoke==2.2.0
+coverage==7.4.3

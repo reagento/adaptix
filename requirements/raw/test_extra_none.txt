@@ -8,3 +8,4 @@ dirty-equals==0.7.1.post0
 
 typing-extensions==4.9.0
 greenlet==3.0.2
+coverage==7.4.3
