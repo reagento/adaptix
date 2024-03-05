@@ -176,4 +176,4 @@ type = [
 [tool.coverage.run]
 branch = true
 relative_files = true
-source = ["src/*"]
+include = ["src/**"]
