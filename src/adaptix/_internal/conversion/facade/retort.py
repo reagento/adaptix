@@ -12,7 +12,13 @@ from ...provider.loc_stack_filtering import P
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...retort.operating_retort import OperatingRetort
 from ...type_tools import is_generic_class
-from ..coercer_provider import DstAnyCoercerProvider, SameTypeCoercerProvider, SubclassCoercerProvider
+from ..coercer_provider import (
+    DstAnyCoercerProvider,
+    OptionalCoercerProvider,
+    SameTypeCoercerProvider,
+    SubclassCoercerProvider,
+    UnionSubcaseCoercerProvider,
+)
 from ..converter_provider import BuiltinConverterProvider
 from ..linking_provider import SameNameLinkingProvider
 from ..request_cls import ConverterRequest
@@ -31,6 +37,8 @@ class FilledConversionRetort(OperatingRetort):
         SameTypeCoercerProvider(),
         DstAnyCoercerProvider(),
         SubclassCoercerProvider(),
+        UnionSubcaseCoercerProvider(),
+        OptionalCoercerProvider(),
 
         forbid_unlinked_optional(P.ANY),
     ]

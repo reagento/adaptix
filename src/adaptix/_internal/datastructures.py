@@ -1,3 +1,4 @@
+from itertools import islice
 from typing import (
     AbstractSet,
     Callable,
@@ -272,3 +273,6 @@ class ImmutableStack(Sequence[T], Generic[T]):
 
     def append_with(self: StackT, item: T) -> StackT:
         return self.from_tuple((*self._tuple, item))
+
+    def replace_last(self: StackT, item: T) -> StackT:
+        return self.from_tuple((*islice(self, len(self) - 1), item))

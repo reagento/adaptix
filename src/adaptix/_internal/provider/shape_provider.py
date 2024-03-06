@@ -68,7 +68,7 @@ class ShapeProvider(StaticProvider):
     def _provide_output_shape(self, mediator: Mediator, request: OutputShapeRequest) -> OutputShape:
         loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
         shape = self._get_shape(loc.type)
-        if shape.input is None:
+        if shape.output is None:
             raise CannotProvide
         return shape.output
 

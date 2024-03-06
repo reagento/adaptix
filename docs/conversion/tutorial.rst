@@ -103,6 +103,8 @@ However, there are cases where type casting involves passing the data as is and 
 * source type and destination type are the same
 * destination type is ``Any``
 * source type is a subclass of destination type (excluding generics)
+* source union is subset of destination union (simple ``==`` check is using)
+* source type and destination type is ``Optional`` and inner types are coercible
 
 You can define your own coercion rule.
 

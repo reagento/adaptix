@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 import pytest
 
@@ -123,3 +123,36 @@ def test_subclass_builtin(src_model_spec, dst_model_spec, factory_way):
         convert = get_converter(SourceModel, DestModel)
 
     assert convert(SourceModel(field1=False, field2=True)) == DestModel(field1=False, field2=True)
+
+
+@pytest.mark.parametrize(
+    ["src_tp", "dst_tp", "value"],
+    [
+        pytest.param(Optional[int], Optional[int], 10),
+        pytest.param(Optional[int], Optional[int], None),
+        pytest.param(Optional[str], Optional[str], "abc"),
+        pytest.param(Optional[str], Optional[str], None),
+        pytest.param(Optional[bool], Optional[int], True),
+        pytest.param(Optional[bool], Optional[int], None),
+    ],
+)
+def test_optional(src_model_spec, dst_model_spec, factory_way, src_tp, dst_tp, value):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: int
+        field2: src_tp
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: int
+        field2: dst_tp
+
+    if factory_way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel)
+
+    assert convert(SourceModel(field1=1, field2=value)) == DestModel(field1=1, field2=value)
+
