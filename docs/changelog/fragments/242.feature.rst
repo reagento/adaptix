@@ -1,0 +1,1 @@
+Add coercer for case when source union is subset of destination union (simple ``==`` check is using)

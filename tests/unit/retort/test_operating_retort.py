@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from typing import List
 
-from tests_helpers import raises_exc, with_cause, with_notes
+from tests_helpers import raises_exc, requires, with_cause, with_notes
 
 from adaptix import AggregateCannotProvide, CannotProvide, NoSuitableProvider, Retort
+from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
 from adaptix.conversion import get_converter
 
 
@@ -208,6 +210,83 @@ def test_cannot_produce_converter_no_coercer():
                     CannotProvide(
                         f"Cannot find coercer for linking"
                         f" `{Book.__qualname__}.author: int -> {BookDTO.__qualname__}.author: str`",
+                        is_terminal=False,
+                        is_demonstrative=True,
+                    ),
+                ],
+                is_terminal=True,
+                is_demonstrative=True,
+            ),
+        ),
+        lambda: get_converter(Book, BookDTO),
+    )
+
+
+def test_cannot_produce_converter_no_coercer_complex_type():
+    @dataclass
+    class Book:
+        title: str
+        price: int
+        authors: List[str]
+
+    @dataclass
+    class BookDTO:
+        title: str
+        price: int
+        authors: List[int]
+
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(
+                f"Cannot produce converter for"
+                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
+                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+            ),
+            AggregateCannotProvide(
+                "Coercers for some linkings are not found",
+                [
+                    CannotProvide(
+                        f"Cannot find coercer for linking"
+                        f" `{Book.__qualname__}.authors: List[str] -> {BookDTO.__qualname__}.authors: List[int]`",
+                        is_terminal=False,
+                        is_demonstrative=True,
+                    ),
+                ],
+                is_terminal=True,
+                is_demonstrative=True,
+            ),
+        ),
+        lambda: get_converter(Book, BookDTO),
+    )
+
+
+@requires(HAS_STD_CLASSES_GENERICS)
+def test_cannot_produce_converter_no_coercer_complex_builtin_type():
+    @dataclass
+    class Book:
+        title: str
+        price: int
+        authors: list[str]
+
+    @dataclass
+    class BookDTO:
+        title: str
+        price: int
+        authors: list[int]
+
+    raises_exc(
+        with_cause(
+            NoSuitableProvider(
+                f"Cannot produce converter for"
+                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
+                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+            ),
+            AggregateCannotProvide(
+                "Coercers for some linkings are not found",
+                [
+                    CannotProvide(
+                        f"Cannot find coercer for linking"
+                        f" `{Book.__qualname__}.authors: list[str] -> {BookDTO.__qualname__}.authors: list[int]`",
                         is_terminal=False,
                         is_demonstrative=True,
                     ),

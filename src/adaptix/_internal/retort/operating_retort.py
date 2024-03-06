@@ -6,6 +6,7 @@ from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
 from ..provider.request_cls import FieldLoc, LocatedRequest, LocMap, LocStack, TypeHintLoc, find_owner_with_field
+from ..type_tools import is_parametrized
 from ..utils import copy_exception_dunders, with_module
 from .base_retort import BaseRetort
 from .mediator import ErrorRepresentor, RecursionResolver, T
@@ -92,10 +93,12 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         )
 
     def _get_type_desc(self, tp: TypeHint) -> str:
-        try:
+        if isinstance(tp, type) and not is_parametrized(tp):
             return tp.__qualname__
-        except AttributeError:
-            return str(tp)
+        str_tp = str(tp)
+        if str_tp.startswith("typing."):
+            return str_tp[7:]
+        return str_tp
 
     def get_no_provider_description(self, request: Request) -> str:
         request_cls = type(request)
