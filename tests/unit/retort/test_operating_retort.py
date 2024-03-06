@@ -207,7 +207,7 @@ def test_cannot_produce_converter_no_coercer():
                 [
                     CannotProvide(
                         f"Cannot find coercer for linking"
-                        f" `{Book.__qualname__}.author -> {BookDTO.__qualname__}.author`",
+                        f" `{Book.__qualname__}.author: int -> {BookDTO.__qualname__}.author: str`",
                         is_terminal=False,
                         is_demonstrative=True,
                     ),

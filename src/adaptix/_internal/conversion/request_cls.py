@@ -63,7 +63,7 @@ class UnlinkedOptionalPolicy:
 
 
 @dataclass(frozen=True)
-class UnlinkedOptionalPolicyRequest(LocatedRequest):
+class UnlinkedOptionalPolicyRequest(LocatedRequest[UnlinkedOptionalPolicy]):
     pass
 
 

@@ -82,9 +82,14 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
 
         src_owner = self._get_type_desc(src_owner_loc_map[TypeHintLoc].type)
         src_field = src_field_loc_map[FieldLoc].field_id
+        src_tp = self._get_type_desc(src_field_loc_map[TypeHintLoc].type)
         dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
         dst_field = dst_field_loc_map[FieldLoc].field_id
-        return f"Cannot find coercer for linking `{src_owner}.{src_field} -> {dst_owner}.{dst_field}`"
+        dst_tp = self._get_type_desc(dst_field_loc_map[TypeHintLoc].type)
+        return (
+            f"Cannot find coercer for linking"
+            f" `{src_owner}.{src_field}: {src_tp} -> {dst_owner}.{dst_field}: {dst_tp}`"
+        )
 
     def _get_type_desc(self, tp: TypeHint) -> str:
         try:
