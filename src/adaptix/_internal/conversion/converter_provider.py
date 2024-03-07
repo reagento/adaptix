@@ -5,7 +5,7 @@ from typing import Any, Iterable, List, Mapping, Optional, Sequence, Tuple, cast
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
-from ..common import Converter, TypeHint
+from ..common import Coercer, Converter, TypeHint
 from ..conversion.broaching.code_generator import BroachingCodeGenerator, BroachingPlan, BuiltinBroachingCodeGenerator
 from ..conversion.broaching.definitions import (
     AccessorElement,
@@ -253,18 +253,7 @@ class BuiltinConverterProvider(ConverterProvider):
             cast(BroachingPlan, ParameterElement(linking_src.head.id)),
         )
 
-    def _get_coercer_sub_plan(
-        self,
-        mediator: Mediator,
-        linking_src: LinkingSource,
-        linking_dst: LinkingDest,
-    ) -> BroachingPlan:
-        coercer = mediator.provide(
-            CoercerRequest(
-                src=linking_src,
-                dst=linking_dst,
-            ),
-        )
+    def _get_coercer_sub_plan(self, coercer: Coercer, linking_src: LinkingSource) -> BroachingPlan:
         return FunctionElement(
             func=coercer,
             args=(
@@ -282,12 +271,16 @@ class BuiltinConverterProvider(ConverterProvider):
         owner_linking_dst: LinkingDest,
     ) -> Mapping[InputField, BroachingPlan]:
         def generate_sub_plan(input_field: InputField, linking: LinkingResult):
+            if linking.coercer is not None:
+                return self._get_coercer_sub_plan(linking.coercer, linking.source)
+
             linking_dst = owner_linking_dst.append_with(input_field)
             try:
-                return self._get_coercer_sub_plan(
-                    mediator=mediator,
-                    linking_src=linking.source,
-                    linking_dst=linking_dst,
+                coercer = mediator.provide(
+                    CoercerRequest(
+                        src=linking.source,
+                        dst=linking_dst,
+                    ),
                 )
             except CannotProvide as e:
                 result = self._get_nested_models_sub_plan(
@@ -299,6 +292,7 @@ class BuiltinConverterProvider(ConverterProvider):
                 if result is not None:
                     return result
                 raise e
+            return self._get_coercer_sub_plan(coercer, linking.source)
 
         coercers = mandatory_apply_by_iterable(
             generate_sub_plan,

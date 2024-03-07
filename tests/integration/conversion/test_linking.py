@@ -1,6 +1,6 @@
 from typing import Any
 
-from adaptix.conversion import get_converter, impl_converter, link
+from adaptix.conversion import coercer, get_converter, impl_converter, link
 
 from .local_helpers import FactoryWay
 
@@ -47,7 +47,7 @@ def test_field_swap(src_model_spec, dst_model_spec, factory_way):
     assert convert(SourceModel(field1=1, field2=2)) == DestModel(field1=2, field2=1)
 
 
-def test_upcast(src_model_spec, dst_model_spec):
+def test_downcast(src_model_spec, dst_model_spec):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: Any
@@ -146,3 +146,50 @@ def test_nested_several(src_model_spec, dst_model_spec, factory_way):
         field2=2,
         nested=DestModelNested(field1_dst=3),
     )
+
+
+def test_coercer(src_model_spec, dst_model_spec, factory_way):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: Any
+        field2_src: int
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: Any
+        field2_dst: str
+
+    if factory_way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter(recipe=[link("field2_src", "field2_dst", coercer=str)])
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel, recipe=[link("field2_src", "field2_dst", coercer=str)])
+
+    assert convert(SourceModel(field1=1, field2_src=2)) == DestModel(field1=1, field2_dst="2")
+
+
+def test_coercer_priority(src_model_spec, dst_model_spec, factory_way):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: Any
+        field2_src: int
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: Any
+        field2_dst: str
+
+    recipe = [
+        coercer(int, str, func=str),
+        link("field2_src", "field2_dst", coercer=lambda x: str(x + 1)),
+    ]
+    if factory_way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter(recipe=recipe)
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel, recipe=recipe)
+
+    assert convert(SourceModel(field1=1, field2_src=2)) == DestModel(field1=1, field2_dst="3")
+

@@ -82,7 +82,7 @@ def test_replace(src_model_spec, dst_model_spec):
     assert convert(SourceModel(field1=1, field2=2), field2=3) == DestModel(field1=1, field2=3)
 
 
-def test_downcast(src_model_spec, dst_model_spec, factory_way):
+def test_upcast(src_model_spec, dst_model_spec, factory_way):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: Any
@@ -104,7 +104,7 @@ def test_downcast(src_model_spec, dst_model_spec, factory_way):
     assert convert(SourceModel(field1=1, field2=2, field3=3)) == DestModel(field1=1, field2=2)
 
 
-def test_upcast(src_model_spec, dst_model_spec):
+def test_downcast(src_model_spec, dst_model_spec):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: Any

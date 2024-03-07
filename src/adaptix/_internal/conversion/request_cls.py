@@ -39,6 +39,7 @@ class LinkingDest(ImmutableStack[InputField]):
 @dataclass(frozen=True)
 class LinkingResult:
     source: LinkingSource
+    coercer: Optional[Coercer] = None
     is_default: bool = False
 
 
