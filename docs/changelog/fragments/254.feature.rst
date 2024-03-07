@@ -1,1 +1,1 @@
-Add coercer for ``Optional[S] -> Optional[D]`` if ``S`` is coercible to ``D``
+Add coercer for ``Optional[S] -> Optional[D]`` if ``S`` is coercible to ``D``.

@@ -11,7 +11,7 @@ from ...code_tools.ast_templater import ast_substitute
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.name_sanitizer import NameSanitizer
-from ...code_tools.utils import get_literal_expr
+from ...code_tools.utils import get_literal_expr, get_literal_from_factory
 from ...compat import compat_ast_unparse
 from ...model_tools.definitions import DescriptorAccessor, ItemAccessor
 from ...special_cases_optimization import as_is_stub
@@ -137,6 +137,11 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
             and isinstance(element.args[0], PositionalArg)
         ):
             return self._gen_plan_element_dispatch(state, element.args[0].element)
+
+        if not element.args:
+            literal = get_literal_from_factory(element.func)
+            if literal is not None:
+                return ast.parse(literal)
 
         if getattr(element.func, "__name__", None) is not None:
             name = state.register_mangled(element.func.__name__, element.func)

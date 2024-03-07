@@ -1,12 +1,13 @@
 # pylint: disable=redefined-outer-name
-from typing import Optional
+from typing import Any, Callable, Optional, overload
 
 from ...common import Coercer
+from ...model_tools.definitions import DefaultFactory, DefaultValue
 from ...provider.essential import Provider
 from ...provider.facade.provider import bound_by_any
 from ...provider.loc_stack_filtering import Pred, create_loc_stack_checker
 from ..coercer_provider import MatchingCoercerProvider
-from ..linking_provider import MatchingLinkingProvider
+from ..linking_provider import ConstantLinkingProvider, MatchingLinkingProvider
 from ..policy_provider import UnlinkedOptionalPolicyProvider
 
 
@@ -23,6 +24,30 @@ def link(src: Pred, dst: Pred, *, coercer: Optional[Coercer] = None) -> Provider
         src_lsc=create_loc_stack_checker(src),
         dst_lsc=create_loc_stack_checker(dst),
         coercer=coercer,
+    )
+
+
+@overload
+def link_constant(dst: Pred, *, value: Any) -> Provider:
+    ...
+
+
+@overload
+def link_constant(dst: Pred, *, factory: Callable[[], Any]) -> Provider:
+    ...
+
+
+def link_constant(dst: Pred, *, value: Any = None, factory: Any = None) -> Provider:
+    """Provider that passes a constant value or the result of a function call to a field.
+
+    :param dst: Predicate specifying destination point of linking. See :ref:`predicate-system` for details.
+    :param value: A value is passed to the field.
+    :param factory: A callable producing value passed to the field.
+    :return: Desired provider
+    """
+    return ConstantLinkingProvider(
+        create_loc_stack_checker(dst),
+        DefaultFactory(factory) if factory is not None else DefaultValue(value),
     )
 
 

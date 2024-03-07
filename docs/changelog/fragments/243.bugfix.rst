@@ -1,1 +1,1 @@
-Fix SyntaxError with lambda in :func:`.coercer`
+Fix SyntaxError with lambda in :func:`.coercer`.
