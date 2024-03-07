@@ -39,15 +39,14 @@ but it is quite limited and can not configured, so it won't be considered onward
 
   .. literalinclude:: /examples/conversion/tutorial/convert_function.py
 
-
-Downcasting
+Upcasting
 =============
 
 All source model additional fields not found in the destination model are simply ignored.
 
 .. literalinclude:: /examples/conversion/tutorial/downcasting.py
 
-Upcasting
+Downcasting
 =============
 
 Sometimes you need to add extra data to the source model. For this, you can use a special decorator.
@@ -115,6 +114,12 @@ the second parameter is the pointing to the field of the destination model,
 the third parameter is the function that casts source data to the destination type.
 
 Usually, only field types are used as predicates here.
+
+Also you can set coercer for specific linking via :paramref:`.conversion.link.coercer` parameter.
+
+.. literalinclude:: /examples/conversion/tutorial/type_coercion_via_link.py
+
+This coercer will have higher priority than defined via :func:`.conversion.coercer` function.
 
 
 Putting together

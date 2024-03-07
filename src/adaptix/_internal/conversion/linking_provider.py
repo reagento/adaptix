@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Iterable
+from typing import Iterable, Optional
 
+from ..common import Coercer
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStackChecker
 from ..provider.static_provider import StaticProvider, static_provision_action
@@ -35,9 +36,10 @@ class SameNameLinkingProvider(LinkingProvider):
 
 
 class MatchingLinkingProvider(LinkingProvider):
-    def __init__(self, src_lsc: LocStackChecker, dst_lsc: LocStackChecker):
+    def __init__(self, src_lsc: LocStackChecker, dst_lsc: LocStackChecker, coercer: Optional[Coercer]):
         self._src_lsc = src_lsc
         self._dst_lsc = dst_lsc
+        self._coercer = coercer
 
     def _provide_linking(self, mediator: Mediator, request: LinkingRequest) -> LinkingResult:
         if not self._dst_lsc.check_loc_stack(mediator, request.destination.to_loc_stack()):
@@ -45,5 +47,5 @@ class MatchingLinkingProvider(LinkingProvider):
 
         for source in iterate_source_candidates(request.sources):
             if self._src_lsc.check_loc_stack(mediator, source.to_loc_stack()):
-                return LinkingResult(source=source)
+                return LinkingResult(source=source, coercer=self._coercer)
         raise CannotProvide

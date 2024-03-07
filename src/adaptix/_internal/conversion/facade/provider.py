@@ -1,3 +1,6 @@
+# pylint: disable=redefined-outer-name
+from typing import Optional
+
 from ...common import Coercer
 from ...provider.essential import Provider
 from ...provider.facade.provider import bound_by_any
@@ -7,16 +10,19 @@ from ..linking_provider import MatchingLinkingProvider
 from ..policy_provider import UnlinkedOptionalPolicyProvider
 
 
-def link(src: Pred, dst: Pred) -> Provider:
+def link(src: Pred, dst: Pred, *, coercer: Optional[Coercer] = None) -> Provider:
     """Basic provider to define custom linking between fields.
 
     :param src: Predicate specifying source point of linking. See :ref:`predicate-system` for details.
     :param dst: Predicate specifying destination point of linking. See :ref:`predicate-system` for details.
+    :param coercer: Function transforming source value to target.
+        It has higher priority than generic coercers defined by :func:`.coercer`.
     :return: Desired provider
     """
     return MatchingLinkingProvider(
         src_lsc=create_loc_stack_checker(src),
         dst_lsc=create_loc_stack_checker(dst),
+        coercer=coercer,
     )
 
 
