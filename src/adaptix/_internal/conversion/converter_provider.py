@@ -9,6 +9,7 @@ from ..common import Coercer, Converter, TypeHint
 from ..conversion.broaching.code_generator import BroachingCodeGenerator, BroachingPlan, BuiltinBroachingCodeGenerator
 from ..conversion.broaching.definitions import (
     AccessorElement,
+    ConstantElement,
     FuncCallArg,
     FunctionElement,
     KeywordArg,
@@ -17,7 +18,9 @@ from ..conversion.broaching.definitions import (
 )
 from ..conversion.request_cls import (
     CoercerRequest,
+    ConstantLinking,
     ConverterRequest,
+    FieldLinking,
     LinkingDest,
     LinkingRequest,
     LinkingResult,
@@ -263,6 +266,46 @@ class BuiltinConverterProvider(ConverterProvider):
             ),
         )
 
+    def _generate_field_linking_to_sub_plan(
+        self,
+        mediator: Mediator,
+        extra_params: Sequence[LinkingSource],
+        owner_linking_dst: LinkingDest,
+        input_field: InputField,
+        linking: FieldLinking,
+    ) -> BroachingPlan:
+        if linking.coercer is not None:
+            return self._get_coercer_sub_plan(linking.coercer, linking.source)
+
+        linking_dst = owner_linking_dst.append_with(input_field)
+        try:
+            coercer = mediator.provide(
+                CoercerRequest(
+                    src=linking.source,
+                    dst=linking_dst,
+                ),
+            )
+        except CannotProvide as e:
+            result = self._get_nested_models_sub_plan(
+                mediator=mediator,
+                linking_src=linking.source,
+                linking_dst=linking_dst,
+                extra_params=extra_params,
+            )
+            if result is not None:
+                return result
+            raise e
+        return self._get_coercer_sub_plan(coercer, linking.source)
+
+    def _generate_constant_linking_to_sub_plan(
+        self,
+        mediator: Mediator,
+        linking: ConstantLinking,
+    ) -> BroachingPlan:
+        if isinstance(linking.constant, DefaultValue):
+            return ConstantElement(value=linking.constant.value)
+        return FunctionElement(func=linking.constant.factory, args=())
+
     def _generate_field_to_sub_plan(
         self,
         mediator: Mediator,
@@ -270,29 +313,19 @@ class BuiltinConverterProvider(ConverterProvider):
         field_linkings: Iterable[Tuple[InputField, LinkingResult]],
         owner_linking_dst: LinkingDest,
     ) -> Mapping[InputField, BroachingPlan]:
-        def generate_sub_plan(input_field: InputField, linking: LinkingResult):
-            if linking.coercer is not None:
-                return self._get_coercer_sub_plan(linking.coercer, linking.source)
-
-            linking_dst = owner_linking_dst.append_with(input_field)
-            try:
-                coercer = mediator.provide(
-                    CoercerRequest(
-                        src=linking.source,
-                        dst=linking_dst,
-                    ),
-                )
-            except CannotProvide as e:
-                result = self._get_nested_models_sub_plan(
+        def generate_sub_plan(input_field: InputField, linking_result: LinkingResult):
+            if isinstance(linking_result.linking, ConstantLinking):
+                return self._generate_constant_linking_to_sub_plan(
                     mediator=mediator,
-                    linking_src=linking.source,
-                    linking_dst=linking_dst,
-                    extra_params=extra_params,
+                    linking=linking_result.linking,
                 )
-                if result is not None:
-                    return result
-                raise e
-            return self._get_coercer_sub_plan(coercer, linking.source)
+            return self._generate_field_linking_to_sub_plan(
+                mediator=mediator,
+                extra_params=extra_params,
+                owner_linking_dst=owner_linking_dst,
+                input_field=input_field,
+                linking=linking_result.linking,
+            )
 
         coercers = mandatory_apply_by_iterable(
             generate_sub_plan,

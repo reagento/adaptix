@@ -5,7 +5,7 @@ from typing import Callable, Iterator, Optional, Union
 
 from ..common import Coercer, VarTuple
 from ..datastructures import ImmutableStack
-from ..model_tools.definitions import BaseField, InputField, OutputField
+from ..model_tools.definitions import BaseField, DefaultFactory, DefaultValue, InputField, OutputField
 from ..provider.essential import Request
 from ..provider.fields import base_field_to_loc_map, input_field_to_loc_map, output_field_to_loc_map
 from ..provider.request_cls import LocatedRequest, LocStack
@@ -37,9 +37,19 @@ class LinkingDest(ImmutableStack[InputField]):
 
 
 @dataclass(frozen=True)
-class LinkingResult:
+class FieldLinking:
     source: LinkingSource
-    coercer: Optional[Coercer] = None
+    coercer: Optional[Coercer]
+
+
+@dataclass(frozen=True)
+class ConstantLinking:
+    constant: Union[DefaultValue, DefaultFactory]
+
+
+@dataclass(frozen=True)
+class LinkingResult:
+    linking: Union[FieldLinking, ConstantLinking]
     is_default: bool = False
 
 

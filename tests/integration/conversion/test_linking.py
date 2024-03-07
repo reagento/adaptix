@@ -1,5 +1,6 @@
 from typing import Any
 
+from adaptix._internal.conversion.facade.provider import link_constant
 from adaptix.conversion import coercer, get_converter, impl_converter, link
 
 from .local_helpers import FactoryWay
@@ -193,3 +194,48 @@ def test_coercer_priority(src_model_spec, dst_model_spec, factory_way):
 
     assert convert(SourceModel(field1=1, field2_src=2)) == DestModel(field1=1, field2_dst="3")
 
+
+def test_link_to_constant_value(src_model_spec, dst_model_spec, factory_way):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: Any
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: Any
+        field2: str
+
+    recipe = [
+        link_constant("field2", value="abc"),
+    ]
+    if factory_way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter(recipe=recipe)
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel, recipe=recipe)
+
+    assert convert(SourceModel(field1=1)) == DestModel(field1=1, field2="abc")
+
+
+def test_link_to_constant_factory(src_model_spec, dst_model_spec, factory_way):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: Any
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: Any
+        field2: list
+
+    recipe = [
+        link_constant("field2", factory=list),
+    ]
+    if factory_way == FactoryWay.IMPL_CONVERTER:
+        @impl_converter(recipe=recipe)
+        def convert(a: SourceModel) -> DestModel:
+            ...
+    else:
+        convert = get_converter(SourceModel, DestModel, recipe=recipe)
+
+    assert convert(SourceModel(field1=1)) == DestModel(field1=1, field2=[])
