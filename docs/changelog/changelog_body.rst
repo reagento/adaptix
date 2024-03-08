@@ -1,6 +1,34 @@
 ----------------------------------------------------
 
 
+.. _v3.0.0b3:
+
+`3.0.0b3 <https://github.com/reagento/adaptix/tree/v3.0.0b3>`_ -- 2024-03-08
+============================================================================
+
+.. _v3.0.0b3-Features:
+
+Features
+--------
+
+- :func:`.conversion.link` accepts ``coercer`` parameter. `#256 <https://github.com/reagento/adaptix/issues/256>`_
+- Add :func:`.conversion.link_constant` to link constant values and constant factories. `#258 <https://github.com/reagento/adaptix/issues/258>`_
+- Add coercer for case when source union is subset of destination union (simple ``==`` check is using). `#242 <https://github.com/reagento/adaptix/issues/242>`_
+- No coercer error now contains type information. `#252 <https://github.com/reagento/adaptix/issues/252>`_
+- Add coercer for ``Optional[S] -> Optional[D]`` if ``S`` is coercible to ``D``. `#254 <https://github.com/reagento/adaptix/issues/254>`_
+
+.. _v3.0.0b3-Bug Fixes:
+
+Bug Fixes
+---------
+
+- Fix ``SyntaxError`` with lambda in :func:`.coercer`. `#243 <https://github.com/reagento/adaptix/issues/243>`_
+- Model dumping now trying to save the original order of fields inside the dict. `#247 <https://github.com/reagento/adaptix/issues/247>`_
+- Fix introspection of sqlalchemy models with ``column_property`` (all ColumnElement is ignored excepting Column itself). `#250 <https://github.com/reagento/adaptix/issues/250>`_
+
+----------------------------------------------------
+
+
 .. _v3.0.0b2:
 
 `3.0.0b2 <https://github.com/reagento/adaptix/tree/v3.0.0b2>`_ -- 2024-02-16

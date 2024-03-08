@@ -1,1 +1,0 @@
-:func:`.conversion.link` accepts `coercer` parameter.

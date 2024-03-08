@@ -1,1 +1,0 @@
-No coercer error now contains type information.
