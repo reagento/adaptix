@@ -135,7 +135,7 @@ class OptionalCoercerProvider(StrippedTypeCoercerProvider):
         not_none_dst = self._get_not_none(stripped_dst)
         not_none_request = replace(
             request,
-            src=request.src.replace_last(replace(request.dst.last, type=not_none_src)),
+            src=request.src.replace_last(replace(request.src.last, type=not_none_src)),
             dst=request.dst.replace_last(replace(request.dst.last, type=not_none_dst)),
         )
         not_none_coercer = mediator.delegating_provide(not_none_request)

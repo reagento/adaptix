@@ -155,17 +155,17 @@ def test_union_subcase(src_model_spec, dst_model_spec, factory_way, src_tp, dst_
 
 
 @pytest.mark.parametrize(
-    ["src_tp", "dst_tp", "value"],
+    ["src_tp", "dst_tp", "src_value", "dst_value"],
     [
-        pytest.param(Optional[int], Optional[int], 10),
-        pytest.param(Optional[int], Optional[int], None),
-        pytest.param(Optional[str], Optional[str], "abc"),
-        pytest.param(Optional[str], Optional[str], None),
-        pytest.param(Optional[bool], Optional[int], True),
-        pytest.param(Optional[bool], Optional[int], None),
+        pytest.param(Optional[int], Optional[int], 10, 10),
+        pytest.param(Optional[int], Optional[int], None, None),
+        pytest.param(Optional[str], Optional[str], "abc", "abc"),
+        pytest.param(Optional[str], Optional[str], None, None),
+        pytest.param(Optional[bool], Optional[int], True, True),
+        pytest.param(Optional[str], Optional[int], "123", 123),
     ],
 )
-def test_optional(src_model_spec, dst_model_spec, factory_way, src_tp, dst_tp, value):
+def test_optional(src_model_spec, dst_model_spec, factory_way, src_tp, dst_tp, src_value, dst_value):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: int
@@ -176,12 +176,13 @@ def test_optional(src_model_spec, dst_model_spec, factory_way, src_tp, dst_tp, v
         field1: int
         field2: dst_tp
 
+    recipe = [coercer(str, int, func=int)]
     if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter
+        @impl_converter(recipe=recipe)
         def convert(a: SourceModel) -> DestModel:
             ...
     else:
-        convert = get_converter(SourceModel, DestModel)
+        convert = get_converter(SourceModel, DestModel, recipe=recipe)
 
-    assert convert(SourceModel(field1=1, field2=value)) == DestModel(field1=1, field2=value)
+    assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
 

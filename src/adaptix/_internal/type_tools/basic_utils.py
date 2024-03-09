@@ -86,7 +86,11 @@ def is_parametrized(tp: TypeHint) -> bool:
 
 
 def get_type_vars(tp: TypeHint) -> VarTuple[TypeVar]:
-    return getattr(tp, "__parameters__", ())
+    type_vars = getattr(tp, "__parameters__", ())
+    # UnionType object contains descriptor inside `__parameters__`
+    if not isinstance(type_vars, tuple):
+        return ()
+    return type_vars
 
 
 if HAS_PY_312:
