@@ -258,7 +258,6 @@ class FlagByExactValueProvider(BaseFlagProvider):
 
             # data already has been validated for all edge cases
             # so enum lookup cannot raise an error
-
             return enum(data)
 
         return flag_loader
