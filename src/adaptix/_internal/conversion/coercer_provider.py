@@ -21,8 +21,8 @@ class CoercerProvider(StaticProvider, ABC):
 
 class SameTypeCoercerProvider(CoercerProvider):
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        src_tp = request.src[-1].type
-        dst_tp = request.dst[-1].type
+        src_tp = request.src.last.type
+        dst_tp = request.dst.last.type
 
         if src_tp == dst_tp:
             return as_is_stub
@@ -36,7 +36,7 @@ class SameTypeCoercerProvider(CoercerProvider):
 
 class DstAnyCoercerProvider(CoercerProvider):
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        dst_tp = request.dst[-1].type
+        dst_tp = request.dst.last.type
         norm_dst = strip_tags(try_normalize_type(dst_tp))
         if norm_dst.origin == Any:
             return as_is_stub
@@ -45,8 +45,8 @@ class DstAnyCoercerProvider(CoercerProvider):
 
 class StrippedTypeCoercerProvider(CoercerProvider, ABC):
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        src_tp = request.src[-1].type
-        dst_tp = request.dst[-1].type
+        src_tp = request.src.last.type
+        dst_tp = request.dst.last.type
         norm_src = try_normalize_type(src_tp)
         norm_dst = try_normalize_type(dst_tp)
         stripped_src = strip_tags(norm_src)
@@ -92,8 +92,8 @@ class MatchingCoercerProvider(CoercerProvider):
 
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
         if (
-            self._src_lsc.check_loc_stack(mediator, request.src.to_loc_stack())
-            and self._dst_lsc.check_loc_stack(mediator, request.dst.to_loc_stack())
+            self._src_lsc.check_loc_stack(mediator, request.src)
+            and self._dst_lsc.check_loc_stack(mediator, request.dst)
         ):
             return self._coercer
         raise CannotProvide
@@ -135,8 +135,8 @@ class OptionalCoercerProvider(StrippedTypeCoercerProvider):
         not_none_dst = self._get_not_none(stripped_dst)
         not_none_request = replace(
             request,
-            src=request.src.replace_last(replace(request.src.last, type=not_none_src)),
-            dst=request.dst.replace_last(replace(request.dst.last, type=not_none_dst)),
+            src=request.src.replace_last_type(not_none_src),
+            dst=request.dst.replace_last_type(not_none_dst),
         )
         not_none_coercer = mediator.delegating_provide(not_none_request)
 

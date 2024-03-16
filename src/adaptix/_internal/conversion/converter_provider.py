@@ -27,11 +27,12 @@ from ..conversion.request_cls import (
     LinkingSource,
     UnlinkedOptionalPolicyRequest,
 )
-from ..model_tools.definitions import BaseField, DefaultValue, InputField, InputShape, NoDefault, OutputShape, ParamKind
+from ..model_tools.definitions import DefaultValue, InputField, InputShape, NoDefault, OutputShape, ParamKind
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
-from ..provider.fields import base_field_to_loc_map, input_field_to_loc_map
-from ..provider.request_cls import LocMap, LocStack, TypeHintLoc
+from ..provider.fields import input_field_to_loc, output_field_to_loc
+from ..provider.location import FieldLoc
+from ..provider.request_cls import LocStack, TypeHintLoc
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..provider.static_provider import StaticProvider, static_provision_action
 from ..utils import add_note
@@ -68,16 +69,16 @@ class BuiltinConverterProvider(ConverterProvider):
                 is_demonstrative=True,
             )
 
-        source_model_field, *extra_params = map(self._param_to_base_field, signature.parameters.values())
-        dst_model_field = self._get_dst_field(signature.return_annotation)
-        dst_shape = self._fetch_dst_shape(mediator, dst_model_field)
-        src_shape = self._fetch_src_shape(mediator, source_model_field)
+        source_model_loc, *extra_params = map(self._param_to_loc, signature.parameters.values())
+        dst_model_loc = self._get_dst_field(signature.return_annotation)
+        dst_shape = self._fetch_dst_shape(mediator, dst_model_loc)
+        src_shape = self._fetch_src_shape(mediator, source_model_loc)
         broaching_plan = self._make_broaching_plan(
             mediator=mediator,
             dst_shape=dst_shape,
             src_shape=src_shape,
-            owner_linking_src=LinkingSource(source_model_field),
-            owner_linking_dst=LinkingDest(dst_model_field),
+            owner_linking_src=LinkingSource(source_model_loc),
+            owner_linking_dst=LinkingDest(dst_model_loc),
             extra_params=tuple(map(LinkingSource, extra_params)),
         )
         return self._make_converter(mediator, request, broaching_plan, signature)
@@ -96,7 +97,7 @@ class BuiltinConverterProvider(ConverterProvider):
             closure_name=closure_name,
             stub_function=request.stub_function,
         )
-        code_gen_loc_stack = LocStack(LocMap(TypeHintLoc(self._get_type_from_annotation(signature.return_annotation))))
+        code_gen_loc_stack = LocStack(TypeHintLoc(self._get_type_from_annotation(signature.return_annotation)))
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
             code_gen_hook=fetch_code_gen_hook(mediator, code_gen_loc_stack),
@@ -129,36 +130,29 @@ class BuiltinConverterProvider(ConverterProvider):
     def _get_type_from_annotation(self, annotation: Any) -> TypeHint:
         return Any if annotation == Signature.empty else annotation
 
-    def _param_to_base_field(self, parameter: Parameter) -> BaseField:
-        return BaseField(
-            id=parameter.name,
+    def _param_to_loc(self, parameter: Parameter) -> FieldLoc:
+        return FieldLoc(
+            field_id=parameter.name,
             type=self._get_type_from_annotation(parameter.annotation),
             default=NoDefault() if parameter.default == Signature.empty else DefaultValue(parameter.default),
             metadata={},
-            original=None,
         )
 
-    def _get_dst_field(self, return_annotation: Any) -> InputField:
-        return InputField(
-            id="__return__",
-            type=self._get_type_from_annotation(return_annotation),
-            metadata={},
-            default=NoDefault(),
-            original=None,
-            is_required=True,
+    def _get_dst_field(self, return_annotation: Any) -> TypeHintLoc:
+        return TypeHintLoc(
+            self._get_type_from_annotation(return_annotation),
         )
 
-    def _fetch_dst_shape(self, mediator: Mediator, model_dst_field: InputField) -> InputShape:
+    def _fetch_dst_shape(self, mediator: Mediator, model_dst_loc: TypeHintLoc) -> InputShape:
         return provide_generic_resolved_shape(
             mediator,
-            InputShapeRequest(loc_stack=LocStack(input_field_to_loc_map(model_dst_field))),
+            InputShapeRequest(loc_stack=LocStack(model_dst_loc)),
         )
 
-    def _fetch_src_shape(self, mediator: Mediator, source_model_field: BaseField) -> OutputShape:
-        src_loc_map = base_field_to_loc_map(source_model_field)
+    def _fetch_src_shape(self, mediator: Mediator, source_model_loc: FieldLoc) -> OutputShape:
         return provide_generic_resolved_shape(
             mediator,
-            OutputShapeRequest(loc_stack=LocStack(src_loc_map)),
+            OutputShapeRequest(loc_stack=LocStack(source_model_loc)),
         )
 
     def _get_compiler(self) -> ClosureCompiler:
@@ -177,13 +171,13 @@ class BuiltinConverterProvider(ConverterProvider):
         extra_params: Sequence[LinkingSource],
     ) -> Iterable[Tuple[InputField, Optional[LinkingResult]]]:
         model_linking_sources = tuple(
-            owner_linking_src.append_with(src_field)
+            owner_linking_src.append_with(output_field_to_loc(src_field))
             for src_field in src_shape.fields
         )
         sources = (model_linking_sources, *extra_params)
 
         def fetch_field_linking(dst_field: InputField) -> Tuple[InputField, Optional[LinkingResult]]:
-            destination = owner_linking_dst.append_with(dst_field)
+            destination = owner_linking_dst.append_with(input_field_to_loc(dst_field))
             try:
                 linking = mediator.provide(
                     LinkingRequest(
@@ -197,7 +191,7 @@ class BuiltinConverterProvider(ConverterProvider):
                     raise
 
                 policy = mediator.mandatory_provide(
-                    UnlinkedOptionalPolicyRequest(loc_stack=destination.to_loc_stack()),
+                    UnlinkedOptionalPolicyRequest(loc_stack=destination),
                 )
                 if policy.is_allowed:
                     return dst_field, None
@@ -226,11 +220,11 @@ class BuiltinConverterProvider(ConverterProvider):
         try:
             dst_shape = provide_generic_resolved_shape(
                 mediator,
-                InputShapeRequest(loc_stack=linking_dst.to_loc_stack()),
+                InputShapeRequest(loc_stack=linking_dst),
             )
             src_shape = provide_generic_resolved_shape(
                 mediator,
-                OutputShapeRequest(loc_stack=linking_src.to_loc_stack()),
+                OutputShapeRequest(loc_stack=linking_src),
             )
         except CannotProvide:
             return None
@@ -253,7 +247,7 @@ class BuiltinConverterProvider(ConverterProvider):
                 )
             ),
             linking_src.tail,
-            cast(BroachingPlan, ParameterElement(linking_src.head.id)),
+            cast(BroachingPlan, ParameterElement(linking_src.head.field_id)),
         )
 
     def _get_coercer_sub_plan(self, coercer: Coercer, linking_src: LinkingSource) -> BroachingPlan:
@@ -277,7 +271,7 @@ class BuiltinConverterProvider(ConverterProvider):
         if linking.coercer is not None:
             return self._get_coercer_sub_plan(linking.coercer, linking.source)
 
-        linking_dst = owner_linking_dst.append_with(input_field)
+        linking_dst = owner_linking_dst.append_with(input_field_to_loc(input_field))
         try:
             coercer = mediator.provide(
                 CoercerRequest(

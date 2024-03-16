@@ -22,7 +22,7 @@ from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
 from ...model_tools.definitions import InputField, OutputField
 from ...provider.essential import CannotProvide, Mediator
-from ...provider.request_cls import LocatedRequest, LocStack, TypeHintLoc
+from ...provider.request_cls import LocatedRequest, LocStack
 from ...provider.static_provider import StaticProvider, static_provision_action
 from .crown_definitions import (
     BaseCrown,
@@ -85,12 +85,9 @@ class CodeGenAccumulator(StaticProvider):
     @property
     def code_pairs(self):
         return [
-            (request.loc_stack[-2].loc_map[TypeHintLoc].type, hook_data.source)
+            (request.loc_stack[-2].loc.type, hook_data.source)
             for request, hook_data in self.list
-            if (
-                len(request.loc_stack) >= 2  # noqa: PLR2004
-                and request.loc_stack[-2].loc_map.has(TypeHintLoc)
-            )
+            if len(request.loc_stack) >= 2  # noqa: PLR2004
         ]
 
     @property

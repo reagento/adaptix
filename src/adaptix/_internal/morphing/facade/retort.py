@@ -13,7 +13,7 @@ from ...definitions import DebugTrail
 from ...provider.essential import Provider, Request
 from ...provider.loc_stack_filtering import P
 from ...provider.provider_template import ValueProvider
-from ...provider.request_cls import DebugTrailRequest, LocMap, LocStack, StrictCoercionRequest, TypeHintLoc
+from ...provider.request_cls import DebugTrailRequest, LocStack, StrictCoercionRequest, TypeHintLoc
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...retort.operating_retort import OperatingRetort
 from ...struct_trail import render_trail_as_note
@@ -197,7 +197,6 @@ class AdornedRetort(OperatingRetort):
         strict_coercion: Optional[bool] = None,
         debug_trail: Optional[DebugTrail] = None,
     ) -> AR:
-        # pylint: disable=protected-access
         with self._clone() as clone:
             if strict_coercion is not None:
                 clone._strict_coercion = strict_coercion
@@ -208,7 +207,6 @@ class AdornedRetort(OperatingRetort):
         return clone
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
-        # pylint: disable=protected-access
         with self._clone() as clone:
             clone._inc_instance_recipe = (
                 tuple(recipe) + clone._inc_instance_recipe
@@ -233,7 +231,7 @@ class AdornedRetort(OperatingRetort):
 
     def _make_loader(self, tp: Type[T]) -> Loader[T]:
         loader_ = self._facade_provide(
-            LoaderRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
+            LoaderRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
             error_message=f"Cannot produce loader for type {tp!r}",
         )
         if self._debug_trail == DebugTrail.FIRST:
@@ -259,7 +257,7 @@ class AdornedRetort(OperatingRetort):
 
     def _make_dumper(self, tp: Type[T]) -> Dumper[T]:
         dumper_ = self._facade_provide(
-            DumperRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
+            DumperRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
             error_message=f"Cannot produce dumper for type {tp!r}",
         )
         if self._debug_trail == DebugTrail.FIRST:

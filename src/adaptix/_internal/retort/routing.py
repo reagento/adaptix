@@ -109,7 +109,7 @@ class ExactOriginMergedProvider(Provider):
         if not isinstance(request, LocatedRequest):
             raise CannotProvide(f"Request must be instance of {LocatedRequest}")
 
-        loc = request.last_map.get_or_raise(
+        loc = request.last_loc.cast_or_raise(
             TypeHintLoc,
             lambda: CannotProvide(f"Request location must be instance of {TypeHintLoc}"),
         )

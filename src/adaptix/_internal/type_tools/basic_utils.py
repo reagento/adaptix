@@ -95,7 +95,6 @@ def get_type_vars(tp: TypeHint) -> VarTuple[TypeVar]:
 
 if HAS_PY_312:
     def is_user_defined_generic(tp: TypeHint) -> bool:
-        # pylint: disable=no-member
         return (
             bool(get_type_vars(tp))
             and (
@@ -176,9 +175,7 @@ def get_type_vars_of_parametrized(tp: TypeHint) -> VarTuple[TypeVar]:
 
 if HAS_PY_39:
     def eval_forward_ref(namespace: Dict[str, Any], forward_ref: ForwardRef):
-        # pylint: disable=protected-access
         return forward_ref._evaluate(namespace, None, frozenset())
 else:
     def eval_forward_ref(namespace: Dict[str, Any], forward_ref: ForwardRef):
-        # pylint: disable=protected-access
         return forward_ref._evaluate(namespace, None)  # type: ignore[call-arg]

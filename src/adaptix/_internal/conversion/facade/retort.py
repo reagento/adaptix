@@ -1,4 +1,3 @@
-# pylint: disable=protected-access, not-callable
 import inspect
 from functools import partial
 from inspect import Parameter, Signature
@@ -56,7 +55,6 @@ class AdornedConversionRetort(OperatingRetort):
         self._simple_converter_cache: Dict[Tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
-        # pylint: disable=protected-access
         with self._clone() as clone:
             clone._inc_instance_recipe = (
                 tuple(recipe) + clone._inc_instance_recipe

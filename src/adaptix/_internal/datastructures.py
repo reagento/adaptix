@@ -12,13 +12,13 @@ from typing import (
     Mapping,
     Optional,
     Protocol,
-    Sequence,
+    Reversible,
+    Sized,
     Tuple,
     Type,
     TypeVar,
     Union,
     ValuesView,
-    overload,
     runtime_checkable,
 )
 
@@ -182,7 +182,7 @@ class ClassMap(Generic[H]):
         try:
             return self._mapping[key]  # type: ignore[index,return-value]
         except KeyError:
-            raise exception_factory() from None  # noqa: RSE102
+            raise exception_factory() from None
 
     def keys(self) -> KeysView[Type[H]]:
         return self._mapping.keys()
@@ -217,45 +217,32 @@ class ClassMap(Generic[H]):
         )
 
 
-T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)
 StackT = TypeVar("StackT", bound="ImmutableStack")
 
 
-class ImmutableStack(Sequence[T], Generic[T]):
+class ImmutableStack(Reversible[T_co], Hashable, Sized, Generic[T_co]):
     __slots__ = ("_tuple", )
 
-    def __init__(self, *args: T):
+    def __init__(self, *args: T_co):
         self._tuple = args
 
     @classmethod
-    def from_tuple(cls: Type[StackT], tpl: VarTuple[T]) -> StackT:
+    def _from_tuple(cls: Type[StackT], tpl: VarTuple[T_co]) -> StackT:
         self = cls.__new__(cls)
         self._tuple = tpl
         return self
 
     @classmethod
-    def from_iter(cls: Type[StackT], iterable: Iterable[T]) -> StackT:
-        return cls.from_tuple(tuple(iterable))
+    def from_iter(cls: Type[StackT], iterable: Iterable[T_co]) -> StackT:
+        return cls._from_tuple(tuple(iterable))
 
     @property
-    def last(self) -> T:
-        return self[-1]
+    def last(self) -> T_co:
+        return self._tuple[-1]
 
     def __repr__(self):
         return f"{type(self).__name__}{self._tuple!r}"
-
-    @overload
-    def __getitem__(self, index: int) -> T:
-        ...
-
-    @overload
-    def __getitem__(self: StackT, index: slice) -> StackT:
-        ...
-
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            return self._tuple[index]
-        return self.from_tuple(self._tuple[index])
 
     def __len__(self):
         return len(self._tuple)
@@ -268,11 +255,20 @@ class ImmutableStack(Sequence[T], Generic[T]):
             return self._tuple == other._tuple
         return NotImplemented
 
-    def __iter__(self) -> Iterator[T]:
+    def __iter__(self) -> Iterator[T_co]:
         return iter(self._tuple)
 
-    def append_with(self: StackT, item: T) -> StackT:
-        return self.from_tuple((*self._tuple, item))
+    def __reversed__(self) -> Iterator[T_co]:
+        return reversed(self._tuple)
 
-    def replace_last(self: StackT, item: T) -> StackT:
-        return self.from_tuple((*islice(self, len(self) - 1), item))
+    def append_with(self: StackT, item: T_co) -> StackT:  # type: ignore[misc]
+        return self._from_tuple((*self._tuple, item))
+
+    def replace_last(self: StackT, item: T_co) -> StackT:  # type: ignore[misc]
+        return self._from_tuple((*islice(self, len(self) - 1), item))
+
+    def reversed_slice(self: StackT, end_offset: int) -> StackT:
+        return self._from_tuple(self._tuple[:len(self) - end_offset])
+
+    def count(self, item: T_co) -> int:  # type: ignore[misc]
+        return sum(loc == item for loc in reversed(self))

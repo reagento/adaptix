@@ -37,7 +37,7 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
         # noinspection PyProtectedMember
         recipe_sum = sum(
             (
-                parent._own_class_recipe  # pylint: disable=E1101
+                parent._own_class_recipe
                 for parent in cls.mro()
                 if isinstance(parent, RetortMeta)
             ),

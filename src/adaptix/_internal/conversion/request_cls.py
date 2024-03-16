@@ -1,39 +1,41 @@
 from dataclasses import dataclass
 from inspect import Signature
-from itertools import chain, islice
+from itertools import islice
 from typing import Callable, Iterator, Optional, Union
 
 from ..common import Coercer, VarTuple
-from ..datastructures import ImmutableStack
-from ..model_tools.definitions import BaseField, DefaultFactory, DefaultValue, InputField, OutputField
+from ..model_tools.definitions import DefaultFactory, DefaultValue
 from ..provider.essential import Request
-from ..provider.fields import base_field_to_loc_map, input_field_to_loc_map, output_field_to_loc_map
+from ..provider.location import FieldLoc, GenericParamLoc, InputFieldLoc, OutputFieldLoc, TypeHintLoc
 from ..provider.request_cls import LocatedRequest, LocStack
 
-LinkingSourceItem = Union[OutputField, BaseField]
+LinkingSourceItem = Union[FieldLoc, OutputFieldLoc]
 
 
-class LinkingSource(ImmutableStack[LinkingSourceItem]):
-    def to_loc_stack(self) -> LocStack:
-        return LocStack.from_iter(
-            chain(
-                (base_field_to_loc_map(self.head), ),
-                map(output_field_to_loc_map, self.tail),
-            ),
-        )
+class LinkingSource(LocStack[LinkingSourceItem]):
+    @property
+    def head(self) -> FieldLoc:
+        return next(iter(self))  # type: ignore[return-value]
 
     @property
-    def head(self) -> BaseField:
-        return self[0]
-
-    @property
-    def tail(self) -> Iterator[OutputField]:
+    def tail(self) -> Iterator[OutputFieldLoc]:
         return islice(self, 1, None)  # type: ignore[arg-type]
 
+    @property
+    def last_field_id(self) -> str:
+        return self.last.field_id
 
-class LinkingDest(ImmutableStack[InputField]):
-    def to_loc_stack(self) -> LocStack:
-        return LocStack.from_iter(map(input_field_to_loc_map, self))
+
+LinkingDestItem = Union[TypeHintLoc, InputFieldLoc]
+
+
+class LinkingDest(LocStack[LinkingDestItem]):
+    @property
+    def last_field_id(self) -> Optional[str]:
+        try:
+            return self.last.field_id  # type: ignore[union-attr]
+        except AttributeError:
+            return None
 
 
 @dataclass(frozen=True)
@@ -62,10 +64,14 @@ class LinkingRequest(Request[LinkingResult]):
     destination: LinkingDest
 
 
+CoercingSourceItem = Union[LinkingSourceItem, GenericParamLoc]
+CoercingDestItem = Union[LinkingDestItem, GenericParamLoc]
+
+
 @dataclass(frozen=True)
 class CoercerRequest(Request[Coercer]):
-    src: LinkingSource
-    dst: LinkingDest
+    src: LocStack[CoercingSourceItem]
+    dst: LocStack[CoercingDestItem]
 
 
 @dataclass(frozen=True)

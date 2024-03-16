@@ -8,16 +8,9 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import Mediator
+from ..provider.location import GenericParamLoc
 from ..provider.provider_template import for_predicate
-from ..provider.request_cls import (
-    DebugTrailRequest,
-    GenericParamLoc,
-    LocatedRequest,
-    LocMap,
-    TypeHintLoc,
-    get_type_from_request,
-    try_normalize_type,
-)
+from ..provider.request_cls import DebugTrailRequest, LocatedRequest, get_type_from_request, try_normalize_type
 from ..struct_trail import ItemKey, append_trail, render_trail_as_note
 from ..type_tools import BaseNormType
 from .load_error import AggregateLoadError, LoadError, TypeLoadError
@@ -38,9 +31,9 @@ class DictProvider(LoaderProvider, DumperProvider):
         key_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=key.source),
-                        GenericParamLoc(generic_pos=0),
+                    GenericParamLoc(
+                        type=key.source,
+                        generic_pos=0,
                     ),
                 ),
             ),
@@ -49,9 +42,9 @@ class DictProvider(LoaderProvider, DumperProvider):
         value_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=value.source),
-                        GenericParamLoc(generic_pos=1),
+                    GenericParamLoc(
+                        type=value.source,
+                        generic_pos=1,
                     ),
                 ),
             ),
@@ -132,7 +125,7 @@ class DictProvider(LoaderProvider, DumperProvider):
                     loaded_key = key_loader(k)
                 except LoadError as e:
                     errors.append(append_trail(e, ItemKey(k)))
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, ItemKey(k)))
                     has_unexpected_error = True
 
@@ -140,7 +133,7 @@ class DictProvider(LoaderProvider, DumperProvider):
                     loaded_value = value_loader(v)
                 except LoadError as e:
                     errors.append(append_trail(e, k))
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, k))
                     has_unexpected_error = True
 
@@ -167,9 +160,9 @@ class DictProvider(LoaderProvider, DumperProvider):
         key_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=key.source),
-                        GenericParamLoc(generic_pos=0),
+                    GenericParamLoc(
+                        type=key.source,
+                        generic_pos=0,
                     ),
                 ),
             ),
@@ -178,9 +171,9 @@ class DictProvider(LoaderProvider, DumperProvider):
         value_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=value.source),
-                        GenericParamLoc(generic_pos=1),
+                    GenericParamLoc(
+                        type=value.source,
+                        generic_pos=1,
                     ),
                 ),
             ),
@@ -252,12 +245,12 @@ class DictProvider(LoaderProvider, DumperProvider):
             for k, v in data.items():
                 try:
                     dumped_key = key_dumper(k)
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, ItemKey(k)))
 
                 try:
                     dumped_value = value_dumper(v)
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, k))
 
                 if not errors:
@@ -289,7 +282,7 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
         dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
         dict_loader = self._DICT_PROVIDER.apply_provider(
             mediator,
-            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint))),
+            replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )
         default_factory = self.default_factory
 
@@ -304,5 +297,5 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
 
         return self._DICT_PROVIDER.apply_provider(
             mediator,
-            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint))),
+            replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )

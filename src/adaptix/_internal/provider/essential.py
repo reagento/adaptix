@@ -51,7 +51,6 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         is_terminal: bool = False,
         is_demonstrative: bool = False,
     ):
-        # pylint: disable=super-init-not-called
         # Parameter `message` is saved by `__new__` of CompatExceptionGroup
         self.is_terminal = is_terminal
         self.is_demonstrative = is_demonstrative
@@ -65,7 +64,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
             is_terminal: bool = False,
             is_demonstrative: bool = False,
         ):
-            return super().__new__(cls, message, exceptions)  # type: ignore[arg-type]
+            return super().__new__(cls, message, exceptions)
 
     def derive(self, excs: Sequence[CannotProvide]) -> "AggregateCannotProvide":  # type: ignore[override]
         return AggregateCannotProvide(

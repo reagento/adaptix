@@ -20,7 +20,7 @@ from adaptix._internal.feature_requirement import (
     HAS_TV_TUPLE,
     IS_PYPY,
 )
-from adaptix._internal.provider.request_cls import LocMap, LocStack, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocStack, TypeHintLoc
 from adaptix._internal.provider.shape_provider import (
     InputShapeRequest,
     OutputShapeRequest,
@@ -270,13 +270,13 @@ def test_not_a_model(tp):
     with pytest.raises(CannotProvide):
         provide_generic_resolved_shape(
             mediator,
-            InputShapeRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
+            InputShapeRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
         )
 
     with pytest.raises(CannotProvide):
         provide_generic_resolved_shape(
             mediator,
-            OutputShapeRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
+            OutputShapeRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
         )
 
 

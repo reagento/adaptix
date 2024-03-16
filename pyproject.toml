@@ -57,6 +57,39 @@ adaptix = ['py.typed']
 name = 'A. Tikhonov'
 email = '17@itishka.org'
 
+#   ┌             ┐
+#   │   TESTING   │
+#   └             ┘
+
+[tool.pytest.ini_options]
+python_classes = 'WeDoNotUseClassTestCase'
+python_files = ['test_*.py', '*_test.py', 'bench_[!nexus]*.py', 'tests_helpers.py', 'local_helpers.py']
+testpaths = ['tests', 'examples']
+filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
+
+[tool.coverage.run]
+branch = true
+relative_files = true
+include = ["src/**"]
+
+#   ┌             ┐
+#   │   LINTING   │
+#   └             ┘
+
+[tool.mypy]
+ignore_missing_imports = true
+
+show_error_codes = true
+warn_unused_configs = true
+no_implicit_optional = true
+
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+disallow_subclassing_any = true
+# disallow_any_generics = true # maybe turn on in the future
+local_partial_types = true
+
 
 [tool.isort]
 multi_line_output = 3
@@ -65,25 +98,14 @@ include_trailing_comma = true
 combine_as_imports = true
 remove_redundant_aliases = true
 
-[tool.pytest.ini_options]
-python_classes = 'WeDoNotUseClassTestCase'
-python_files = ['test_*.py', '*_test.py', 'bench_[!nexus]*.py', 'tests_helpers.py', 'local_helpers.py']
-testpaths = ['tests', 'examples']
-filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
-
-[tool.bandit]
-skips = ['B102', 'B106', 'B404', 'B603', 'B607']
-
-[tool.bandit.assert_used]
-skips = ['*/test_*.py', '*/*_test.py', 'docs/examples/*', '*/bench_*.py']
 
 [tool.vulture]
 min_confidence = 60
 ignore_decorators = ['@_aspect_storage.add', '@overload', '@abstractmethod']
 
+
 [tool.ruff]
 line-length = 120
-
 
 [tool.ruff.lint]
 select = ['ALL']
@@ -128,6 +150,7 @@ ignore = [
   'TCH001',
   'TD002',
   'PTH201',
+  'RSE102',
 
   # Rules conflictin with other tools
   'I001',
@@ -157,6 +180,11 @@ keep-runtime-typing = true
 parametrize-names-type = "list"
 
 
+#   ┌             ┐
+#   │    OTHER    │
+#   └             ┘
+
+
 [tool.towncrier]
 package = 'adaptix'
 filename = 'docs/changelog/changelog_body.rst'
@@ -171,9 +199,3 @@ type = [
   { name = "Bug Fixes",        directory = "bugfix",      showcontent = true },
   { name = "Other",            directory = "other",       showcontent = true },
 ]
-
-
-[tool.coverage.run]
-branch = true
-relative_files = true
-include = ["src/**"]

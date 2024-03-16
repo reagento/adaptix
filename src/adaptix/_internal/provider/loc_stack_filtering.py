@@ -21,7 +21,8 @@ from ..type_tools import (
 )
 from ..type_tools.normalize_type import NotSubscribedError
 from .essential import CannotProvide, Request
-from .request_cls import FieldLoc, GenericParamLoc, Location, LocStack, TypeHintLoc
+from .location import FieldLoc, GenericParamLoc, TypeHintLoc
+from .request_cls import LocStack
 
 T = TypeVar("T")
 
@@ -119,7 +120,7 @@ class XorLocStackChecker(BinOperatorLSC):
 
 
 class LastLocMapChecker(LocStackChecker, ABC):
-    _expected_location: ClassVar[Type[Location]]
+    _expected_location: ClassVar[type]
 
     def __init_subclass__(cls, **kwargs):
         param_list = list(inspect.signature(cls._check_location).parameters.values())
@@ -127,9 +128,9 @@ class LastLocMapChecker(LocStackChecker, ABC):
 
     @final
     def check_loc_stack(self, mediator: DirectMediator, loc_stack: LocStack) -> bool:
-        loc_map = loc_stack[-1]
-        if loc_map.has(self._expected_location):
-            return self._check_location(mediator, loc_map[self._expected_location])
+        last_loc = loc_stack.last
+        if last_loc.is_castable(self._expected_location):
+            return self._check_location(mediator, last_loc)
         return False
 
     @abstractmethod
@@ -206,7 +207,7 @@ class LocStackEndChecker(LocStackChecker):
             return False
 
         for i, checker in enumerate(reversed(self.loc_stack_checkers), start=0):
-            if not checker.check_loc_stack(mediator, loc_stack[:len(loc_stack) - i]):
+            if not checker.check_loc_stack(mediator, loc_stack.reversed_slice(i)):
                 return False
         return True
 
@@ -286,7 +287,7 @@ class LocStackPattern:
 
     def _extend_stack(self: Pat, elements: Iterable[LocStackChecker]) -> Pat:
         self_copy = copy(self)
-        self_copy._stack = self._stack + tuple(elements)  # pylint: disable=protected-access
+        self_copy._stack = self._stack + tuple(elements)
         return self_copy
 
     def __getattr__(self: Pat, item: str) -> Pat:

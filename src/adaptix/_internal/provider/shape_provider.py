@@ -58,7 +58,7 @@ class ShapeProvider(StaticProvider):
 
     @static_provision_action
     def _provide_input_shape(self, mediator: Mediator, request: InputShapeRequest) -> InputShape:
-        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
         shape = self._get_shape(loc.type)
         if shape.input is None:
             raise CannotProvide
@@ -66,7 +66,7 @@ class ShapeProvider(StaticProvider):
 
     @static_provision_action
     def _provide_output_shape(self, mediator: Mediator, request: OutputShapeRequest) -> OutputShape:
-        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
         shape = self._get_shape(loc.type)
         if shape.output is None:
             raise CannotProvide
@@ -104,7 +104,7 @@ class PropertyExtender(StaticProvider):
 
     @static_provision_action
     def _provide_output_shape(self, mediator: Mediator[OutputShape], request: OutputShapeRequest) -> OutputShape:
-        tp = request.last_map.get_or_raise(TypeHintLoc, CannotProvide).type
+        tp = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide).type
         shape = mediator.provide_from_next()
 
         additional_fields = tuple(
@@ -145,7 +145,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
     def provide(self) -> ShapeT:
         resolver = GenericResolver(self._get_members)
         members_storage = resolver.get_resolved_members(
-            self._initial_request.last_map[TypeHintLoc].type,
+            self._initial_request.last_loc.type,
         )
         if members_storage.meta is None:
             raise CannotProvide
@@ -162,7 +162,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
             shape = self._mediator.delegating_provide(
                 replace(
                     self._initial_request,
-                    loc_stack=self._initial_request.loc_stack.add_to_last_map(TypeHintLoc(type=tp)),
+                    loc_stack=self._initial_request.loc_stack.replace_last_type(tp),
                 ),
             )
         except CannotProvide:
@@ -179,8 +179,6 @@ class ShapeGenericResolver(Generic[ShapeT]):
 
 
 def provide_generic_resolved_shape(mediator: Mediator, request: LocatedRequest[ShapeT]) -> ShapeT:
-    if not request.last_map.has(TypeHintLoc):
-        return mediator.delegating_provide(request)
     return ShapeGenericResolver(mediator, request).provide()
 
 
@@ -204,7 +202,7 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
         shape = mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(self._prototype)),
+                loc_stack=request.loc_stack.replace_last_type(self._prototype),
             ),
         )
         return replace(shape, constructor=self._target)
@@ -218,6 +216,6 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(self._prototype)),
+                loc_stack=request.loc_stack.replace_last_type(self._prototype),
             ),
         )

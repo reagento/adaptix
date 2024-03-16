@@ -37,7 +37,7 @@ class Cloneable(ABC):
         try:
             yield self_copy
         finally:
-            self_copy._calculate_derived()  # pylint: disable=W0212
+            self_copy._calculate_derived()
 
 
 class ForbiddingDescriptor:
@@ -74,7 +74,7 @@ def _singleton_deepcopy(self, memo):
 
 
 def _singleton_new(cls):
-    return cls._instance  # pylint: disable=protected-access
+    return cls._instance
 
 
 class SingletonMeta(type):
@@ -100,7 +100,7 @@ class SingletonMeta(type):
 T = TypeVar("T")
 
 if HAS_PY_310:
-    pairs = itertools.pairwise  # pylint: disable=invalid-name
+    pairs = itertools.pairwise
 else:
     def pairs(iterable: Iterable[T]) -> Iterable[Tuple[T, T]]:  # type: ignore[no-redef]
         it = iter(iterable)

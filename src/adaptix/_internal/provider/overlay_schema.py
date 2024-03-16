@@ -6,7 +6,7 @@ from ..type_tools import strip_alias
 from ..utils import Omitted
 from .essential import CannotProvide, Mediator
 from .provider_wrapper import Chain
-from .request_cls import LocatedRequest, LocStack, TypeHintLoc
+from .request_cls import LocatedRequest, LocStack
 from .static_provider import StaticProvider, static_provision_action
 
 
@@ -27,7 +27,7 @@ class Overlay(Generic[Sc]):
     _mergers: ClassVar[Optional[Mapping[str, Merger]]]
 
     def __init_subclass__(cls, *args, **kwargs):
-        for base in cls.__orig_bases__:  # pylint: disable=no-member
+        for base in cls.__orig_bases__:
             if strip_alias(base) == Overlay:
                 cls._schema_cls = base.__args__[0]
                 break
@@ -89,13 +89,12 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: Lo
             overlay_cls=overlay,
         ),
     )
-    loc_map = loc_stack[-1]
-    if loc_map.has(TypeHintLoc) and isinstance(loc_map[TypeHintLoc].type, type):
-        for parent in loc_map[TypeHintLoc].type.mro()[1:]:
+    if isinstance(loc_stack.last.type, type):
+        for parent in loc_stack.last.type.mro()[1:]:
             try:
                 new_overlay = mediator.delegating_provide(
                     OverlayRequest(
-                        loc_stack=loc_stack.add_to_last_map(TypeHintLoc(type=parent)),
+                        loc_stack=loc_stack.replace_last_type(parent),
                         overlay_cls=overlay,
                     ),
                 )
