@@ -89,7 +89,7 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: Lo
             overlay_cls=overlay,
         ),
     )
-    loc_map = loc_stack[-1]
+    loc_map = loc_stack.last
     if loc_map.has(TypeHintLoc) and isinstance(loc_map[TypeHintLoc].type, type):
         for parent in loc_map[TypeHintLoc].type.mro()[1:]:
             try:

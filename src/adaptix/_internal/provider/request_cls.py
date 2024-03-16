@@ -51,7 +51,7 @@ LocStackT = TypeVar("LocStackT", bound="LocStack")
 
 class LocStack(ImmutableStack[LocMap]):
     def add_to_last_map(self: LocStackT, *locs: Location) -> LocStackT:
-        return self.replace_last(self[-1].add(*locs))
+        return self.replace_last(self.last.add(*locs))
 
 
 @dataclass(frozen=True)
@@ -60,7 +60,7 @@ class LocatedRequest(Request[T]):
 
     @property
     def last_map(self) -> LocMap:
-        return self.loc_stack[-1]
+        return self.loc_stack.last
 
 
 def get_type_from_request(request: LocatedRequest) -> TypeHint:

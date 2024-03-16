@@ -24,7 +24,7 @@ class LinkingSource(ImmutableStack[LinkingSourceItem]):
 
     @property
     def head(self) -> BaseField:
-        return self[0]
+        return next(iter(self))
 
     @property
     def tail(self) -> Iterator[OutputField]:

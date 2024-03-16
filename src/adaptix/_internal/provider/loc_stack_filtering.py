@@ -127,7 +127,7 @@ class LastLocMapChecker(LocStackChecker, ABC):
 
     @final
     def check_loc_stack(self, mediator: DirectMediator, loc_stack: LocStack) -> bool:
-        loc_map = loc_stack[-1]
+        loc_map = loc_stack.last
         if loc_map.has(self._expected_location):
             return self._check_location(mediator, loc_map[self._expected_location])
         return False
@@ -206,7 +206,7 @@ class LocStackEndChecker(LocStackChecker):
             return False
 
         for i, checker in enumerate(reversed(self.loc_stack_checkers), start=0):
-            if not checker.check_loc_stack(mediator, loc_stack[:len(loc_stack) - i]):
+            if not checker.check_loc_stack(mediator, loc_stack.reversed_slice(i)):
                 return False
         return True
 

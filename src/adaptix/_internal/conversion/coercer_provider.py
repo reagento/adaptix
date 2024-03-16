@@ -21,8 +21,8 @@ class CoercerProvider(StaticProvider, ABC):
 
 class SameTypeCoercerProvider(CoercerProvider):
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        src_tp = request.src[-1].type
-        dst_tp = request.dst[-1].type
+        src_tp = request.src.last.type
+        dst_tp = request.dst.last.type
 
         if src_tp == dst_tp:
             return as_is_stub
@@ -36,7 +36,7 @@ class SameTypeCoercerProvider(CoercerProvider):
 
 class DstAnyCoercerProvider(CoercerProvider):
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        dst_tp = request.dst[-1].type
+        dst_tp = request.dst.last.type
         norm_dst = strip_tags(try_normalize_type(dst_tp))
         if norm_dst.origin == Any:
             return as_is_stub
@@ -45,8 +45,8 @@ class DstAnyCoercerProvider(CoercerProvider):
 
 class StrippedTypeCoercerProvider(CoercerProvider, ABC):
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        src_tp = request.src[-1].type
-        dst_tp = request.dst[-1].type
+        src_tp = request.src.last.type
+        dst_tp = request.dst.last.type
         norm_src = try_normalize_type(src_tp)
         norm_dst = try_normalize_type(dst_tp)
         stripped_src = strip_tags(norm_src)

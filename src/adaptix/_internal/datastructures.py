@@ -12,13 +12,13 @@ from typing import (
     Mapping,
     Optional,
     Protocol,
-    Sequence,
+    Reversible,
+    Sized,
     Tuple,
     Type,
     TypeVar,
     Union,
     ValuesView,
-    overload,
     runtime_checkable,
 )
 
@@ -221,41 +221,28 @@ T = TypeVar("T")
 StackT = TypeVar("StackT", bound="ImmutableStack")
 
 
-class ImmutableStack(Sequence[T], Generic[T]):
+class ImmutableStack(Reversible[T], Hashable, Sized, Generic[T]):
     __slots__ = ("_tuple", )
 
     def __init__(self, *args: T):
         self._tuple = args
 
     @classmethod
-    def from_tuple(cls: Type[StackT], tpl: VarTuple[T]) -> StackT:
+    def _from_tuple(cls: Type[StackT], tpl: VarTuple[T]) -> StackT:
         self = cls.__new__(cls)
         self._tuple = tpl
         return self
 
     @classmethod
     def from_iter(cls: Type[StackT], iterable: Iterable[T]) -> StackT:
-        return cls.from_tuple(tuple(iterable))
+        return cls._from_tuple(tuple(iterable))
 
     @property
     def last(self) -> T:
-        return self[-1]
+        return self._tuple[-1]
 
     def __repr__(self):
         return f"{type(self).__name__}{self._tuple!r}"
-
-    @overload
-    def __getitem__(self, index: int) -> T:
-        ...
-
-    @overload
-    def __getitem__(self: StackT, index: slice) -> StackT:
-        ...
-
-    def __getitem__(self, index):
-        if isinstance(index, int):
-            return self._tuple[index]
-        return self.from_tuple(self._tuple[index])
 
     def __len__(self):
         return len(self._tuple)
@@ -271,8 +258,17 @@ class ImmutableStack(Sequence[T], Generic[T]):
     def __iter__(self) -> Iterator[T]:
         return iter(self._tuple)
 
+    def __reversed__(self) -> Iterator[T]:
+        return reversed(self._tuple)
+
     def append_with(self: StackT, item: T) -> StackT:
-        return self.from_tuple((*self._tuple, item))
+        return self._from_tuple((*self._tuple, item))
 
     def replace_last(self: StackT, item: T) -> StackT:
-        return self.from_tuple((*islice(self, len(self) - 1), item))
+        return self._from_tuple((*islice(self, len(self) - 1), item))
+
+    def reversed_slice(self: StackT, end_offset: int) -> StackT:
+        return self._from_tuple(self._tuple[:len(self) - end_offset])
+
+    def count(self, item: T) -> int:
+        return sum(loc_map == item for loc_map in reversed(self))
