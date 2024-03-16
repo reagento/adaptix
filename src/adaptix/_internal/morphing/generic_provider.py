@@ -43,7 +43,7 @@ class NewTypeUnwrappingProvider(StaticProvider):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=loc.type.__supertype__)),
+                loc_stack=request.loc_stack.replace_last_type(loc.type.__supertype__),
             ),
         )
 
@@ -60,7 +60,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=unwrapped.source)),
+                loc_stack=request.loc_stack.replace_last_type(unwrapped.source),
             ),
         )
 
@@ -77,7 +77,7 @@ class TypeAliasUnwrappingProvider(StaticProvider):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=unwrapped)),
+                loc_stack=request.loc_stack.replace_last_type(unwrapped),
             ),
         )
 
@@ -443,7 +443,7 @@ class PathLikeProvider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return mediator.mandatory_provide(
             LoaderRequest(
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl)),
+                loc_stack=request.loc_stack.replace_last_type(self._impl),
             ),
             lambda x: f"Cannot create loader for {PathLike}. Loader for {Path} cannot be created",
         )

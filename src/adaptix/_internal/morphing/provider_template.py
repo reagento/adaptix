@@ -49,7 +49,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
 
         return mediator.mandatory_provide(
             LoaderRequest(
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl)),
+                loc_stack=request.loc_stack.replace_last_type(self._impl),
             ),
             lambda x: f"Cannot create loader for union. Loader for {self._impl} cannot be created",
         )
@@ -60,7 +60,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
 
         return mediator.mandatory_provide(
             DumperRequest(
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(type=self._impl)),
+                loc_stack=request.loc_stack.replace_last_type(self._impl),
             ),
             lambda x: f"Cannot create dumper for union. Dumper for {self._impl} cannot be created",
         )

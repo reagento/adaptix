@@ -162,7 +162,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
             shape = self._mediator.delegating_provide(
                 replace(
                     self._initial_request,
-                    loc_stack=self._initial_request.loc_stack.add_to_last_map(TypeHintLoc(type=tp)),
+                    loc_stack=self._initial_request.loc_stack.replace_last_type(tp),
                 ),
             )
         except CannotProvide:
@@ -204,7 +204,7 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
         shape = mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(self._prototype)),
+                loc_stack=request.loc_stack.replace_last_type(self._prototype),
             ),
         )
         return replace(shape, constructor=self._target)
@@ -218,6 +218,6 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(self._prototype)),
+                loc_stack=request.loc_stack.replace_last_type(self._prototype),
             ),
         )

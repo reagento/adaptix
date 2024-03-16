@@ -95,7 +95,7 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: Lo
             try:
                 new_overlay = mediator.delegating_provide(
                     OverlayRequest(
-                        loc_stack=loc_stack.add_to_last_map(TypeHintLoc(type=parent)),
+                        loc_stack=loc_stack.replace_last_type(parent),
                         overlay_cls=overlay,
                     ),
                 )

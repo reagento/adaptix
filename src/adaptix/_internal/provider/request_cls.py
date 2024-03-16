@@ -50,8 +50,8 @@ LocStackT = TypeVar("LocStackT", bound="LocStack")
 
 
 class LocStack(ImmutableStack[LocMap]):
-    def add_to_last_map(self: LocStackT, *locs: Location) -> LocStackT:
-        return self.replace_last(self.last.add(*locs))
+    def replace_last_type(self: LocStackT, type: TypeHint) -> LocStackT:
+        return self.replace_last(self.last.add(TypeHintLoc(type)))
 
 
 @dataclass(frozen=True)

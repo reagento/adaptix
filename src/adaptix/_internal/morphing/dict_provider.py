@@ -289,7 +289,7 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
         dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
         dict_loader = self._DICT_PROVIDER.apply_provider(
             mediator,
-            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint))),
+            replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )
         default_factory = self.default_factory
 
@@ -304,5 +304,5 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
 
         return self._DICT_PROVIDER.apply_provider(
             mediator,
-            replace(request, loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(dict_type_hint))),
+            replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )
