@@ -11,10 +11,10 @@ from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
 from ..feature_requirement import HAS_PY_39
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.location import GenericParamLoc
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import (
     DebugTrailRequest,
-    GenericParamLoc,
     LocatedRequest,
     LocStack,
     StrictCoercionRequest,

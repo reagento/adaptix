@@ -15,7 +15,7 @@ from ...model_tools.definitions import (
 )
 from ...name_style import NameStyle, convert_snake_style
 from ...provider.essential import CannotProvide, Mediator, Provider
-from ...provider.fields import field_to_loc_map
+from ...provider.fields import field_to_loc
 from ...provider.loc_stack_filtering import LocStackChecker
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
 from ...provider.request_cls import LocatedRequest
@@ -98,7 +98,7 @@ def apply_lsc(
     loc_stack_checker: LocStackChecker,
     field: BaseField,
 ) -> bool:
-    loc_stack = request.loc_stack.append_with(field_to_loc_map(field))
+    loc_stack = request.loc_stack.append_with(field_to_loc(field))
     return loc_stack_checker.check_loc_stack(mediator, loc_stack)
 
 
@@ -138,7 +138,7 @@ class BuiltinStructureMaker(StructureMaker):
                         shape=request.shape,
                         field=field,
                         generated_key=generated_key,
-                        loc_stack=request.loc_stack.append_with(field_to_loc_map(field)),
+                        loc_stack=request.loc_stack.append_with(field_to_loc(field)),
                     ),
                 )
             except CannotProvide:

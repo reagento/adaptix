@@ -5,7 +5,8 @@ from ..common import TypeHint, VarTuple
 from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from ..provider.request_cls import LocatedRequest, LocStack, LocStackItem, find_owner_with_field
+from ..provider.location import AnyLoc
+from ..provider.request_cls import LocatedRequest, LocStack, find_owner_with_field
 from ..type_tools import is_parametrized
 from ..utils import copy_exception_dunders, with_module
 from .base_retort import BaseRetort
@@ -26,7 +27,7 @@ class MorphingRecursionResolver(RecursionResolver):
     REQUEST_CLASSES: VarTuple[Type[LocatedRequest]] = (LoaderRequest, DumperRequest)
 
     def __init__(self) -> None:
-        self._loc_to_stub: Dict[LocStackItem, FuncWrapper] = {}
+        self._loc_to_stub: Dict[AnyLoc, FuncWrapper] = {}
 
     def track_recursion(self, request: Request[T]) -> Optional[Any]:
         if not isinstance(request, self.REQUEST_CLASSES):
@@ -62,7 +63,7 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
 
     def _get_linking_request_description(self, request: LinkingRequest) -> str:
         try:
-            dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.destination.to_loc_stack())
+            dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.destination)
         except ValueError:
             return "Cannot find coercer"
 
@@ -72,12 +73,12 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
 
     def _get_coercer_request_description(self, request: CoercerRequest) -> str:
         try:
-            src_owner_loc_map, src_field_loc_map = find_owner_with_field(request.src.to_loc_stack())
+            src_owner_loc_map, src_field_loc_map = find_owner_with_field(request.src)
         except ValueError:
             return "Cannot find coercer"
 
         try:
-            dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.dst.to_loc_stack())
+            dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.dst)
         except ValueError:
             return "Cannot find coercer"
 

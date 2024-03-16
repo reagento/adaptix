@@ -1,6 +1,6 @@
 from typing import AbstractSet, Mapping
 
-from adaptix._internal.provider.fields import input_field_to_loc_map
+from adaptix._internal.provider.fields import input_field_to_loc
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
@@ -141,7 +141,7 @@ class ModelLoaderProvider(LoaderProvider):
     ) -> Mapping[str, Loader]:
         loaders = mediator.mandatory_provide_by_iterable(
             [
-                LoaderRequest(loc_stack=request.loc_stack.append_with(input_field_to_loc_map(field)))
+                LoaderRequest(loc_stack=request.loc_stack.append_with(input_field_to_loc(field)))
                 for field in shape.fields
             ],
             lambda: "Cannot create loader for model. Loaders for some fields cannot be created",

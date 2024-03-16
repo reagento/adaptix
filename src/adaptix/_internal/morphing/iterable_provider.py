@@ -8,10 +8,10 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.location import GenericParamLoc
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import (
     DebugTrailRequest,
-    GenericParamLoc,
     LocatedRequest,
     StrictCoercionRequest,
     get_type_from_request,

@@ -13,7 +13,7 @@ from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import P, create_loc_stack_checker
 from ..provider.provider_template import for_predicate
-from ..provider.request_cls import LocatedRequest, StrictCoercionRequest, TypeHintLoc, find_owner_with_field
+from ..provider.request_cls import LocatedRequest, StrictCoercionRequest, find_owner_with_field
 from ..provider.static_provider import static_provision_action
 from ..special_cases_optimization import as_is_stub
 from .load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
@@ -143,7 +143,6 @@ class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
     _BYTES_PROVIDER = BytesBase64Provider()
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        request.last_loc.cast_or_raise(TypeHintLoc, lambda: CannotProvide)
         bytes_loader = self._BYTES_PROVIDER.apply_provider(
             mediator,
             replace(request, loc_stack=request.loc_stack.replace_last_type(bytes)),

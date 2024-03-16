@@ -19,7 +19,8 @@ from adaptix._internal.provider.loc_stack_filtering import (
     OriginSubclassLSC,
     create_loc_stack_checker,
 )
-from adaptix._internal.provider.request_cls import FieldLoc, GenericParamLoc, LocStack, TypeHintLoc
+from adaptix._internal.provider.location import FieldLoc, GenericParamLoc, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocStack
 from adaptix._internal.type_tools import normalize_type
 
 

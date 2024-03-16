@@ -1,6 +1,6 @@
 from typing import Mapping
 
-from adaptix._internal.provider.fields import output_field_to_loc_map
+from adaptix._internal.provider.fields import output_field_to_loc
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
@@ -122,7 +122,7 @@ class ModelDumperProvider(DumperProvider):
     ) -> Mapping[str, Dumper]:
         dumpers = mediator.mandatory_provide_by_iterable(
             [
-                DumperRequest(loc_stack=request.loc_stack.append_with(output_field_to_loc_map(field)))
+                DumperRequest(loc_stack=request.loc_stack.append_with(output_field_to_loc(field)))
                 for field in shape.fields
             ],
             lambda: "Cannot create dumper for model. Dumpers for some fields cannot be created",

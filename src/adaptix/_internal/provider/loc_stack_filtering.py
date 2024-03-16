@@ -21,7 +21,8 @@ from ..type_tools import (
 )
 from ..type_tools.normalize_type import NotSubscribedError
 from .essential import CannotProvide, Request
-from .request_cls import FieldLoc, GenericParamLoc, LocStack, TypeHintLoc
+from .location import FieldLoc, GenericParamLoc, TypeHintLoc
+from .request_cls import LocStack
 
 T = TypeVar("T")
 

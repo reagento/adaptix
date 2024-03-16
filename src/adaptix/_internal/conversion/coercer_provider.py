@@ -92,8 +92,8 @@ class MatchingCoercerProvider(CoercerProvider):
 
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
         if (
-            self._src_lsc.check_loc_stack(mediator, request.src.to_loc_stack())
-            and self._dst_lsc.check_loc_stack(mediator, request.dst.to_loc_stack())
+            self._src_lsc.check_loc_stack(mediator, request.src)
+            and self._dst_lsc.check_loc_stack(mediator, request.dst)
         ):
             return self._coercer
         raise CannotProvide

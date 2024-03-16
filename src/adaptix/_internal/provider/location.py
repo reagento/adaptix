@@ -75,3 +75,5 @@ _CAST_SOURCES = {
     OutputFieldLoc: (OutputFieldLoc, ),
     GenericParamLoc: (GenericParamLoc, ),
 }
+
+AnyLoc = Union[TypeHintLoc, FieldLoc, InputFieldLoc, OutputFieldLoc, GenericParamLoc]

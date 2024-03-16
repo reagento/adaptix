@@ -29,9 +29,9 @@ class SameNameLinkingProvider(LinkingProvider):
         self._is_default = is_default
 
     def _provide_linking(self, mediator: Mediator, request: LinkingRequest) -> LinkingResult:
-        target_field_id = request.destination.last.id
+        target_field_id = request.destination.last_field_id
         for source in iterate_source_candidates(request.sources):
-            if source.last.id == target_field_id:
+            if source.last_field_id == target_field_id:
                 return LinkingResult(
                     linking=FieldLinking(source=source, coercer=None),
                     is_default=self._is_default,
@@ -46,11 +46,11 @@ class MatchingLinkingProvider(LinkingProvider):
         self._coercer = coercer
 
     def _provide_linking(self, mediator: Mediator, request: LinkingRequest) -> LinkingResult:
-        if not self._dst_lsc.check_loc_stack(mediator, request.destination.to_loc_stack()):
+        if not self._dst_lsc.check_loc_stack(mediator, request.destination):
             raise CannotProvide
 
         for source in iterate_source_candidates(request.sources):
-            if self._src_lsc.check_loc_stack(mediator, source.to_loc_stack()):
+            if self._src_lsc.check_loc_stack(mediator, source):
                 return LinkingResult(linking=FieldLinking(source=source, coercer=self._coercer))
         raise CannotProvide
 
@@ -61,6 +61,6 @@ class ConstantLinkingProvider(LinkingProvider):
         self._default = default
 
     def _provide_linking(self, mediator: Mediator, request: LinkingRequest) -> LinkingResult:
-        if self._dst_lsc.check_loc_stack(mediator, request.destination.to_loc_stack()):
+        if self._dst_lsc.check_loc_stack(mediator, request.destination):
             return LinkingResult(linking=ConstantLinking(self._default))
         raise CannotProvide

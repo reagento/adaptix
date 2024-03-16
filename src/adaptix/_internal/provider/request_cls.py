@@ -1,5 +1,5 @@
 from dataclasses import dataclass, replace
-from typing import Tuple, TypeVar, Union
+from typing import Tuple, TypeVar
 
 from ..common import TypeHint
 from ..datastructures import ImmutableStack
@@ -7,13 +7,13 @@ from ..definitions import DebugTrail
 from ..type_tools import BaseNormType, normalize_type
 from ..utils import pairs
 from .essential import CannotProvide, Request
-from .location import FieldLoc, GenericParamLoc, InputFieldLoc, OutputFieldLoc, TypeHintLoc
+from .location import AnyLoc, FieldLoc, TypeHintLoc
 
 LocStackT = TypeVar("LocStackT", bound="LocStack")
-LocStackItem = Union[TypeHintLoc, FieldLoc, OutputFieldLoc, InputFieldLoc, GenericParamLoc]
+AnyLocT = TypeVar("AnyLocT", bound=AnyLoc)
 
 
-class LocStack(ImmutableStack[LocStackItem]):
+class LocStack(ImmutableStack[AnyLocT]):
     def replace_last_type(self: LocStackT, tp: TypeHint, /) -> LocStackT:
         return self.replace_last(replace(self.last, type=tp))
 
@@ -26,7 +26,7 @@ class LocatedRequest(Request[T]):
     loc_stack: LocStack
 
     @property
-    def last_loc(self) -> LocStackItem:
+    def last_loc(self) -> AnyLoc:
         return self.loc_stack.last
 
 
@@ -52,5 +52,5 @@ class DebugTrailRequest(LocatedRequest[DebugTrail]):
 def find_owner_with_field(stack: LocStack) -> Tuple[TypeHintLoc, FieldLoc]:
     for next_loc, prev_loc in pairs(reversed(stack)):
         if next_loc.is_castable(FieldLoc):
-            return prev_loc, next_loc  # type: ignore[return-value]
+            return prev_loc, next_loc
     raise ValueError

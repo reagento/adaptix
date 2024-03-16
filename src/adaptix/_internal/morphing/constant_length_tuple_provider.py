@@ -8,14 +8,9 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..feature_requirement import HAS_UNPACK
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.location import GenericParamLoc
 from ..provider.provider_template import for_predicate
-from ..provider.request_cls import (
-    DebugTrailRequest,
-    GenericParamLoc,
-    StrictCoercionRequest,
-    get_type_from_request,
-    try_normalize_type,
-)
+from ..provider.request_cls import DebugTrailRequest, StrictCoercionRequest, get_type_from_request, try_normalize_type
 from ..struct_trail import append_trail, render_trail_as_note
 from .load_error import (
     AggregateLoadError,
