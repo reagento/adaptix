@@ -359,7 +359,7 @@ class SelfTypeProvider(ProviderWithAttachableLSC):
         self._apply_loc_stack_checker(mediator, request)
 
         try:
-            owner_loc_map, _field_loc_map = find_owner_with_field(request.loc_stack)
+            owner_loc, _field_loc = find_owner_with_field(request.loc_stack)
         except ValueError:
             raise CannotProvide(
                 "Owner type is not found",
@@ -370,7 +370,7 @@ class SelfTypeProvider(ProviderWithAttachableLSC):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.replace_last_type(owner_loc_map.type),
+                loc_stack=request.loc_stack.replace_last_type(owner_loc.type),
             ),
         )
 

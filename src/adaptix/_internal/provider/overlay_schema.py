@@ -89,9 +89,8 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: Lo
             overlay_cls=overlay,
         ),
     )
-    loc_map = loc_stack.last
-    if isinstance(loc_map.type, type):
-        for parent in loc_map.type.mro()[1:]:
+    if isinstance(loc_stack.last.type, type):
+        for parent in loc_stack.last.type.mro()[1:]:
             try:
                 new_overlay = mediator.delegating_provide(
                     OverlayRequest(

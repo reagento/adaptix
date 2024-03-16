@@ -217,28 +217,28 @@ class ClassMap(Generic[H]):
         )
 
 
-T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)
 StackT = TypeVar("StackT", bound="ImmutableStack")
 
 
-class ImmutableStack(Reversible[T], Hashable, Sized, Generic[T]):
+class ImmutableStack(Reversible[T_co], Hashable, Sized, Generic[T_co]):
     __slots__ = ("_tuple", )
 
-    def __init__(self, *args: T):
+    def __init__(self, *args: T_co):
         self._tuple = args
 
     @classmethod
-    def _from_tuple(cls: Type[StackT], tpl: VarTuple[T]) -> StackT:
+    def _from_tuple(cls: Type[StackT], tpl: VarTuple[T_co]) -> StackT:
         self = cls.__new__(cls)
         self._tuple = tpl
         return self
 
     @classmethod
-    def from_iter(cls: Type[StackT], iterable: Iterable[T]) -> StackT:
+    def from_iter(cls: Type[StackT], iterable: Iterable[T_co]) -> StackT:
         return cls._from_tuple(tuple(iterable))
 
     @property
-    def last(self) -> T:
+    def last(self) -> T_co:
         return self._tuple[-1]
 
     def __repr__(self):
@@ -255,20 +255,20 @@ class ImmutableStack(Reversible[T], Hashable, Sized, Generic[T]):
             return self._tuple == other._tuple
         return NotImplemented
 
-    def __iter__(self) -> Iterator[T]:
+    def __iter__(self) -> Iterator[T_co]:
         return iter(self._tuple)
 
-    def __reversed__(self) -> Iterator[T]:
+    def __reversed__(self) -> Iterator[T_co]:
         return reversed(self._tuple)
 
-    def append_with(self: StackT, item: T) -> StackT:
+    def append_with(self: StackT, item: T_co) -> StackT:  # type: ignore[misc]
         return self._from_tuple((*self._tuple, item))
 
-    def replace_last(self: StackT, item: T) -> StackT:
+    def replace_last(self: StackT, item: T_co) -> StackT:  # type: ignore[misc]
         return self._from_tuple((*islice(self, len(self) - 1), item))
 
     def reversed_slice(self: StackT, end_offset: int) -> StackT:
         return self._from_tuple(self._tuple[:len(self) - end_offset])
 
-    def count(self, item: T) -> int:
-        return sum(loc_map == item for loc_map in reversed(self))
+    def count(self, item: T_co) -> int:  # type: ignore[misc]
+        return sum(loc == item for loc in reversed(self))

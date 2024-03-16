@@ -10,10 +10,10 @@ from .essential import CannotProvide, Request
 from .location import AnyLoc, FieldLoc, TypeHintLoc
 
 LocStackT = TypeVar("LocStackT", bound="LocStack")
-AnyLocT = TypeVar("AnyLocT", bound=AnyLoc)
+AnyLocT_co = TypeVar("AnyLocT_co", bound=AnyLoc, covariant=True)
 
 
-class LocStack(ImmutableStack[AnyLocT]):
+class LocStack(ImmutableStack[AnyLocT_co]):
     def replace_last_type(self: LocStackT, tp: TypeHint, /) -> LocStackT:
         return self.replace_last(replace(self.last, type=tp))
 

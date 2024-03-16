@@ -9,7 +9,7 @@ from ..provider.essential import Request
 from ..provider.location import FieldLoc, GenericParamLoc, InputFieldLoc, OutputFieldLoc, TypeHintLoc
 from ..provider.request_cls import LocatedRequest, LocStack
 
-LinkingSourceItem = Union[FieldLoc, OutputFieldLoc, GenericParamLoc]
+LinkingSourceItem = Union[FieldLoc, OutputFieldLoc]
 
 
 class LinkingSource(LocStack[LinkingSourceItem]):
@@ -22,14 +22,11 @@ class LinkingSource(LocStack[LinkingSourceItem]):
         return islice(self, 1, None)  # type: ignore[arg-type]
 
     @property
-    def last_field_id(self) -> Optional[str]:
-        try:
-            return self.last.field_id  # type: ignore[union-attr]
-        except AttributeError:
-            return None
+    def last_field_id(self) -> str:
+        return self.last.field_id
 
 
-LinkingDestItem = Union[TypeHintLoc, InputFieldLoc, GenericParamLoc]
+LinkingDestItem = Union[TypeHintLoc, InputFieldLoc]
 
 
 class LinkingDest(LocStack[LinkingDestItem]):
@@ -67,10 +64,14 @@ class LinkingRequest(Request[LinkingResult]):
     destination: LinkingDest
 
 
+CoercingSourceItem = Union[LinkingSourceItem, GenericParamLoc]
+CoercingDestItem = Union[LinkingDestItem, GenericParamLoc]
+
+
 @dataclass(frozen=True)
 class CoercerRequest(Request[Coercer]):
-    src: LinkingSource
-    dst: LinkingDest
+    src: LocStack[CoercingSourceItem]
+    dst: LocStack[CoercingDestItem]
 
 
 @dataclass(frozen=True)
