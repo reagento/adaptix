@@ -3,7 +3,7 @@ from typing import Optional, TypeVar, Union
 from .model_tools.definitions import DefaultFactory, DefaultFactoryWithSelf, DefaultValue
 from .morphing.model.crown_definitions import Sieve
 
-as_is_stub = lambda x: x  # noqa: E731  # pylint: disable=unnecessary-lambda-assignment
+as_is_stub = lambda x: x  # noqa: E731
 
 
 S = TypeVar("S", bound=Sieve)

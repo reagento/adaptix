@@ -16,16 +16,12 @@ astpath==0.9.1
     # via
     #   -r requirements/raw/lint.txt
     #   astpath
-astroid==3.0.2
-    # via pylint
 attrs==23.2.0
     # via
     #   -r requirements/raw/test_extra_new.txt
     #   cattrs
 babel==2.14.0
     # via sphinx
-bandit==1.7.6
-    # via -r requirements/raw/lint.txt
 beautifulsoup4==4.12.2
     # via furo
 build==1.0.3
@@ -60,8 +56,6 @@ cycler==0.12.1
     # via matplotlib
 dataclass-factory==2.16
     # via -r requirements/raw/bench.txt
-dill==0.3.7
-    # via pylint
 dirty-equals==0.7.1.post0
     # via -r requirements/raw/test_extra_none.txt
 distlib==0.3.8
@@ -90,9 +84,7 @@ furo==2023.9.10
 gitdb==4.0.11
     # via gitpython
 gitpython==3.1.40
-    # via
-    #   -r requirements/raw/doc.txt
-    #   bandit
+    # via -r requirements/raw/doc.txt
 greenlet==3.0.2
     # via
     #   -r requirements/raw/test_extra_none.txt
@@ -109,8 +101,6 @@ iniconfig==2.0.0
     # via pytest
 invoke==2.2.0
     # via -r requirements/raw/runner.txt
-isort==5.13.2
-    # via pylint
 jinja2==3.1.2
     # via
     #   myst-parser
@@ -126,7 +116,6 @@ markdown-it-py==3.0.0
     # via
     #   mdit-py-plugins
     #   myst-parser
-    #   rich
 markupsafe==2.1.3
     # via jinja2
 marshmallow==3.20.1
@@ -136,9 +125,7 @@ mashumaro==3.10
 matplotlib==3.8.2
     # via -r requirements/raw/_bench-orchestrate.txt
 mccabe==0.7.0
-    # via
-    #   flake8
-    #   pylint
+    # via flake8
 mdit-py-plugins==0.4.0
     # via myst-parser
 mdurl==0.1.2
@@ -168,9 +155,7 @@ packaging==23.2
     #   sphinx
     #   tox
 pbr==6.0.0
-    # via
-    #   sphinxcontrib-apidoc
-    #   stevedore
+    # via sphinxcontrib-apidoc
 phonenumberslite==8.13.26
     # via -r requirements/raw/test_extra_none.txt
 pillow==10.2.0
@@ -179,7 +164,6 @@ pip-tools==7.3.0
     # via -r requirements/raw/dev.txt
 platformdirs==4.1.0
     # via
-    #   pylint
     #   tox
     #   virtualenv
 plotly==5.18.0
@@ -207,10 +191,7 @@ pyflakes==3.1.0
 pygments==2.17.2
     # via
     #   furo
-    #   rich
     #   sphinx
-pylint==3.0.3
-    # via -r requirements/raw/lint.txt
 pyparsing==3.1.1
     # via matplotlib
 pyperf==2.6.1
@@ -229,15 +210,12 @@ pytz==2023.3.post1
     # via dirty-equals
 pyyaml==6.0.1
     # via
-    #   bandit
     #   myst-parser
     #   pre-commit
 radon==6.0.1
     # via -r requirements/raw/lint.txt
 requests==2.31.0
     # via sphinx
-rich==13.7.0
-    # via bandit
 ruff==0.3.0
     # via -r requirements/raw/lint.txt
 schematics==2.1.1
@@ -301,14 +279,10 @@ sqlalchemy==2.0.27
     # via
     #   -r requirements/raw/test_extra_new.txt
     #   -r requirements/raw/test_extra_none.txt
-stevedore==5.1.0
-    # via bandit
 tenacity==8.2.3
     # via plotly
 toml==0.10.2
     # via vulture
-tomlkit==0.12.3
-    # via pylint
 towncrier==23.11.0
     # via -r requirements/raw/dev.txt
 tox==4.11.4

@@ -116,7 +116,7 @@ def _get_autoincrement_column(table: "Table"):
         return table.autoincrement_column
     except AttributeError:
         # for old sqlalchemy
-        return table._autoincrement_column  # pylint: disable=protected-access
+        return table._autoincrement_column
 
 
 def _get_input_shape(

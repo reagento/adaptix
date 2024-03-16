@@ -197,7 +197,6 @@ class AdornedRetort(OperatingRetort):
         strict_coercion: Optional[bool] = None,
         debug_trail: Optional[DebugTrail] = None,
     ) -> AR:
-        # pylint: disable=protected-access
         with self._clone() as clone:
             if strict_coercion is not None:
                 clone._strict_coercion = strict_coercion
@@ -208,7 +207,6 @@ class AdornedRetort(OperatingRetort):
         return clone
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
-        # pylint: disable=protected-access
         with self._clone() as clone:
             clone._inc_instance_recipe = (
                 tuple(recipe) + clone._inc_instance_recipe

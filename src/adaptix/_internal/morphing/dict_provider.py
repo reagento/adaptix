@@ -125,7 +125,7 @@ class DictProvider(LoaderProvider, DumperProvider):
                     loaded_key = key_loader(k)
                 except LoadError as e:
                     errors.append(append_trail(e, ItemKey(k)))
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, ItemKey(k)))
                     has_unexpected_error = True
 
@@ -133,7 +133,7 @@ class DictProvider(LoaderProvider, DumperProvider):
                     loaded_value = value_loader(v)
                 except LoadError as e:
                     errors.append(append_trail(e, k))
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, k))
                     has_unexpected_error = True
 
@@ -245,12 +245,12 @@ class DictProvider(LoaderProvider, DumperProvider):
             for k, v in data.items():
                 try:
                     dumped_key = key_dumper(k)
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, ItemKey(k)))
 
                 try:
                     dumped_value = value_dumper(v)
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, k))
 
                 if not errors:

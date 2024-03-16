@@ -82,11 +82,10 @@ class CodeBuilder:
         self._current_indent -= self._indent_delta
 
     def extend(self: CB, other: CB) -> CB:
-        self._add_indented_lines(other._lines)  # pylint: disable=protected-access
+        self._add_indented_lines(other._lines)
         return self
 
     def extend_including(self: CB, other: CB) -> CB:
-        # pylint: disable=protected-access
         if not other._lines:
             return self
         self._include_line(other._lines[0])
@@ -94,7 +93,7 @@ class CodeBuilder:
         return self
 
     def extend_above(self: CB, other: CB) -> CB:
-        self._lines.extendleft(reversed(other._lines))  # pylint: disable=protected-access
+        self._lines.extendleft(reversed(other._lines))
         return self
 
     def string(self) -> str:

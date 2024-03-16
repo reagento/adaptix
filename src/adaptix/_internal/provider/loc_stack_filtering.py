@@ -287,7 +287,7 @@ class LocStackPattern:
 
     def _extend_stack(self: Pat, elements: Iterable[LocStackChecker]) -> Pat:
         self_copy = copy(self)
-        self_copy._stack = self._stack + tuple(elements)  # pylint: disable=protected-access
+        self_copy._stack = self._stack + tuple(elements)
         return self_copy
 
     def __getattr__(self: Pat, item: str) -> Pat:

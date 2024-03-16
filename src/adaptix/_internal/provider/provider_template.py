@@ -21,7 +21,6 @@ def for_predicate(pred: Pred):
             raise TypeError(f"Only {ProviderWithAttachableLSC} child is allowed")
 
         # noinspection PyProtectedMember
-        # pylint: disable=protected-access
         cls._loc_stack_checker = create_loc_stack_checker(pred)
         return cls
 

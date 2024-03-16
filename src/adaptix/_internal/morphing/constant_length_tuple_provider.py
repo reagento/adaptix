@@ -86,7 +86,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         def dt_sc_loader(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(tuple, Mapping, data)
-            if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
+            if type(data) is str:  # noqa: E721
                 raise ExcludedTypeLoadError(tuple, str, data)
 
             try:
@@ -120,7 +120,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                     yield loader(field)
                 except LoadError as e:
                     errors.append(append_trail(e, idx))
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, idx))
                     has_unexpected_error = True
 
@@ -158,7 +158,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             for loader, field in zip(loaders, data):
                 try:
                     yield loader(field)
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     append_trail(e, idx)
                     raise
                 idx += 1
@@ -193,7 +193,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         def dt_disable_sc_loader(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(tuple, Mapping, data)
-            if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
+            if type(data) is str:  # noqa: E721
                 raise ExcludedTypeLoadError(tuple, str, data)
 
             try:
@@ -270,7 +270,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             for dumper, field in zip(dumpers, data):
                 try:
                     yield dumper(field)
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, idx))
 
                 idx += 1
@@ -302,7 +302,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             for dumper, field in zip(dumpers, data):
                 try:
                     yield dumper(field)
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     append_trail(e, idx)
                     raise
                 idx += 1

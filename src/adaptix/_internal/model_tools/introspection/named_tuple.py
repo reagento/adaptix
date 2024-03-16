@@ -19,7 +19,6 @@ from ..definitions import (
 
 
 def get_named_tuple_shape(tp) -> FullShape:
-    # pylint: disable=protected-access
     if not is_named_tuple_class(tp):
         raise IntrospectionImpossible
 

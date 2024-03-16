@@ -189,7 +189,7 @@ class EnumExactValueProvider(BaseEnumProvider):
         if value_to_member is None:
             def enum_exact_loader(data):
                 # since MyEnum(MyEnum.MY_CASE) == MyEnum.MY_CASE
-                if type(data) is enum:  # pylint: disable=unidiomatic-typecheck
+                if type(data) is enum:
                     raise BadVariantLoadError(variants, data)
 
                 try:
@@ -215,7 +215,6 @@ class EnumExactValueProvider(BaseEnumProvider):
         except TypeError:
             return None
 
-        # pylint: disable=comparison-with-callable,protected-access
         if getattr(enum._missing_, "__func__", None) != Enum._missing_.__func__:  # type: ignore[attr-defined]
             return None
 
@@ -246,7 +245,7 @@ class FlagByExactValueProvider(BaseFlagProvider):
             )
 
         def flag_loader(data):
-            if type(data) is not int:   # pylint: disable=unidiomatic-typecheck  # noqa: E721
+            if type(data) is not int: # noqa: E721
                 raise TypeLoadError(int, data)
 
             if data < 0 or data > flag_mask:

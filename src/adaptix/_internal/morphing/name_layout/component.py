@@ -179,12 +179,10 @@ class BuiltinStructureMaker(StructureMaker):
         prefix_groups = get_prefix_groups([path for field, path in fields_to_paths if path is not None])
         if prefix_groups:
             details = ". ".join(
-                # pylint: disable=consider-using-f-string
                 "Path {prefix} (field {prefix_field!r}) is prefix of {paths}".format(
                     prefix=list(prefix),
                     prefix_field=paths_to_fields[prefix][0].id,
                     paths=", ".join(
-                        # pylint: disable=consider-using-f-string
                         "{path} (field {path_field!r})".format(  # noqa: UP032
                             path=list(path),
                             path_field=paths_to_fields[path][0].id,

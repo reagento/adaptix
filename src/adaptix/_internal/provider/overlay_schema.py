@@ -27,7 +27,7 @@ class Overlay(Generic[Sc]):
     _mergers: ClassVar[Optional[Mapping[str, Merger]]]
 
     def __init_subclass__(cls, *args, **kwargs):
-        for base in cls.__orig_bases__:  # pylint: disable=no-member
+        for base in cls.__orig_bases__:
             if strip_alias(base) == Overlay:
                 cls._schema_cls = base.__args__[0]
                 break

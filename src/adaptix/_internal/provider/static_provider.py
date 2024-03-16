@@ -112,7 +112,7 @@ class StaticProvider(RequestClassDeterminedProvider):
         own_spa = _collect_class_own_rc_dict(cls)
 
         parent_rd_dicts = [
-            parent._sp_cls_request_dispatcher.to_dict()  # pylint: disable=no-member
+            parent._sp_cls_request_dispatcher.to_dict()
             for parent in cls.__bases__
             if issubclass(parent, StaticProvider)
         ]

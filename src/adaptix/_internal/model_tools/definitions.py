@@ -1,4 +1,3 @@
-# pylint: disable=invalid-overridden-method,arguments-differ
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum

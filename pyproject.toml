@@ -71,9 +71,6 @@ python_files = ['test_*.py', '*_test.py', 'bench_[!nexus]*.py', 'tests_helpers.p
 testpaths = ['tests', 'examples']
 filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
 
-[tool.bandit]
-skips = ['B102', 'B106', 'B404', 'B603', 'B607']
-
 [tool.bandit.assert_used]
 skips = ['*/test_*.py', '*/*_test.py', 'docs/examples/*', '*/bench_*.py']
 

@@ -1,4 +1,3 @@
-# pylint: disable=redefined-outer-name
 from typing import Any, Callable, Optional, overload
 
 from ...common import Coercer

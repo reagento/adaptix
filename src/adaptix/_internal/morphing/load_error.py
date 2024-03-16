@@ -12,7 +12,7 @@ def _str_by_fields(cls):
     template = ", ".join("%s={self.%s!r}" % (fld.name, fld.name) for fld in dataclasses.fields(cls))  # noqa: UP031
     body = f'def __str__(self):\n    return f"{template}"'
     ns = {}
-    exec(body, ns, ns)  # noqa: S102  # pylint: disable=exec-used
+    exec(body, ns, ns)  # noqa: S102
     cls.__str__ = ns["__str__"]
     return cls
 

@@ -3,13 +3,10 @@
 -r doc.txt
 
 pre-commit==3.6.0
-bandit==1.7.6
 
 mypy==1.7.1
 
 vulture==2.10
-
-pylint==3.0.3
 
 ruff==0.3.0
 

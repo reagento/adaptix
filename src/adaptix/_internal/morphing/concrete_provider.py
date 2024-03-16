@@ -195,7 +195,7 @@ class ScalarLoaderProvider(LoaderProvider, Generic[T]):
 
 
 def int_strict_coercion_loader(data):
-    if type(data) is int:  # pylint: disable=unidiomatic-typecheck # noqa: E721
+    if type(data) is int:  # noqa: E721
         return data
     raise TypeLoadError(int, data)
 
@@ -245,7 +245,7 @@ FLOAT_LOADER_PROVIDER = ScalarLoaderProvider(
 
 
 def str_strict_coercion_loader(data):
-    if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
+    if type(data) is str:  # noqa: E721
         return data
     raise TypeLoadError(str, data)
 
@@ -258,7 +258,7 @@ STR_LOADER_PROVIDER = ScalarLoaderProvider(
 
 
 def bool_strict_coercion_loader(data):
-    if type(data) is bool:  # pylint: disable=unidiomatic-typecheck # noqa: E721
+    if type(data) is bool:  # noqa: E721
         return data
     raise TypeLoadError(bool, data)
 
@@ -271,12 +271,12 @@ BOOL_LOADER_PROVIDER = ScalarLoaderProvider(
 
 
 def decimal_strict_coercion_loader(data):
-    if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
+    if type(data) is str:  # noqa: E721
         try:
             return Decimal(data)
         except InvalidOperation:
             raise ValueLoadError("Bad string format", data)
-    if type(data) is Decimal:  # pylint: disable=unidiomatic-typecheck
+    if type(data) is Decimal:
         return data
     raise TypeLoadError(Union[str, Decimal], data)
 

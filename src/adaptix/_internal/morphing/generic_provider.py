@@ -82,7 +82,7 @@ class TypeAliasUnwrappingProvider(StaticProvider):
 
 
 def _is_exact_zero_or_one(arg):
-    return type(arg) is int and arg in (0, 1)  # pylint: disable=unidiomatic-typecheck  # noqa: E721
+    return type(arg) is int and arg in (0, 1)  # noqa: E721
 
 
 @dataclass
@@ -342,7 +342,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
                     result = loader(data)
                 except LoadError as e:
                     errors.append(e)
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(e)
                     has_unexpected_error = True
                 else:
@@ -428,7 +428,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
 
 def path_like_dumper(data):
-    return data.__fspath__()  # pylint: disable=unnecessary-dunder-call
+    return data.__fspath__()
 
 
 @for_predicate(PathLike[str] if HAS_PY_39 else PathLike)
