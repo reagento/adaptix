@@ -19,7 +19,7 @@ from adaptix._internal.provider.loc_stack_filtering import (
     OriginSubclassLSC,
     create_loc_stack_checker,
 )
-from adaptix._internal.provider.request_cls import FieldLoc, GenericParamLoc, LocMap, LocStack, TypeHintLoc
+from adaptix._internal.provider.request_cls import FieldLoc, GenericParamLoc, LocStack, TypeHintLoc
 from adaptix._internal.type_tools import normalize_type
 
 
@@ -64,53 +64,53 @@ def create_mediator():
     [
         param_result(
             LocStack(
-                LocMap(TypeHintLoc(int)),
+                TypeHintLoc(int),
             ),
             result=False,
             id="1-item",
         ),
         param_result(
             LocStack(
-                LocMap(TypeHintLoc(int)),
-                LocMap(TypeHintLoc(str)),
+                TypeHintLoc(int),
+                TypeHintLoc(str),
             ),
             result=False,
             id="2-items",
         ),
         param_result(
             LocStack(
-                LocMap(TypeHintLoc(int)),
-                LocMap(TypeHintLoc(str)),
-                LocMap(TypeHintLoc(bool)),
+                TypeHintLoc(int),
+                TypeHintLoc(str),
+                TypeHintLoc(bool),
             ),
             result=True,
             id="ok",
         ),
         param_result(
             LocStack(
-                LocMap(TypeHintLoc(int)),
-                LocMap(TypeHintLoc(str)),
-                LocMap(TypeHintLoc(str)),
+                TypeHintLoc(int),
+                TypeHintLoc(str),
+                TypeHintLoc(str),
             ),
             result=False,
             id="last-is-bad",
         ),
         param_result(
             LocStack(
-                LocMap(TypeHintLoc(int)),
-                LocMap(TypeHintLoc(int)),
-                LocMap(TypeHintLoc(str)),
-                LocMap(TypeHintLoc(bool)),
+                TypeHintLoc(int),
+                TypeHintLoc(int),
+                TypeHintLoc(str),
+                TypeHintLoc(bool),
             ),
             result=True,
             id="extra-stack-matched-with-prev",
         ),
         param_result(
             LocStack(
-                LocMap(TypeHintLoc(str)),
-                LocMap(TypeHintLoc(int)),
-                LocMap(TypeHintLoc(str)),
-                LocMap(TypeHintLoc(bool)),
+                TypeHintLoc(str),
+                TypeHintLoc(int),
+                TypeHintLoc(str),
+                TypeHintLoc(bool),
             ),
             result=True,
             id="extra-stack",
@@ -133,29 +133,29 @@ def test_stack_end_rc(loc_stack, result, context):
     [
         param_result(
             LocStack(
-                LocMap(TypeHintLoc(bool)),
-                LocMap(TypeHintLoc(int)),
-                LocMap(TypeHintLoc(str)),
-                LocMap(TypeHintLoc(bool)),
+                TypeHintLoc(bool),
+                TypeHintLoc(int),
+                TypeHintLoc(str),
+                TypeHintLoc(bool),
             ),
             result=True,
             id="ok",
         ),
         param_result(
             LocStack(
-                LocMap(TypeHintLoc(int)),
-                LocMap(TypeHintLoc(str)),
-                LocMap(TypeHintLoc(bool)),
+                TypeHintLoc(int),
+                TypeHintLoc(str),
+                TypeHintLoc(bool),
             ),
             result=False,
             id="too-small",
         ),
         param_result(
             LocStack(
-                LocMap(TypeHintLoc(str)),
-                LocMap(TypeHintLoc(int)),
-                LocMap(TypeHintLoc(str)),
-                LocMap(TypeHintLoc(bool)),
+                TypeHintLoc(str),
+                TypeHintLoc(int),
+                TypeHintLoc(str),
+                TypeHintLoc(bool),
             ),
             result=False,
             id="bad",
@@ -184,14 +184,12 @@ class WithUserName:
     user_name: str
 
 
-def field_loc_map(name: str, tp: TypeHint) -> LocMap:
-    return LocMap(
-        TypeHintLoc(tp),
-        FieldLoc(
-            field_id=name,
-            default=NoDefault(),
-            metadata={},
-        ),
+def field_loc_map(name: str, tp: TypeHint) -> FieldLoc:
+    return FieldLoc(
+        type=tp,
+        field_id=name,
+        default=NoDefault(),
+        metadata={},
     )
 
 
@@ -200,20 +198,20 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
     [
         param_result(
             P[int],
-            LocStack(LocMap(TypeHintLoc(int))),
+            LocStack(TypeHintLoc(int)),
             result=True,
             id="int-ok",
         ),
         param_result(
             P[int],
-            LocStack(LocMap(TypeHintLoc(str))),
+            LocStack(TypeHintLoc(str)),
             result=False,
             id="int-fail",
         ),
         param_result(
             P[WithUserName].user_name,
             LocStack(
-                LocMap(TypeHintLoc(WithUserName)),
+                TypeHintLoc(WithUserName),
                 field_loc_map("user_name", str),
             ),
             result=True,
@@ -222,7 +220,7 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
         param_result(
             P[WithUserName].user_name,
             LocStack(
-                LocMap(TypeHintLoc(WithUserName)),
+                TypeHintLoc(WithUserName),
                 field_loc_map("user_name", int),
             ),
             result=True,
@@ -231,7 +229,7 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
         param_result(
             P[WithUserName].user_id,
             LocStack(
-                LocMap(TypeHintLoc(WithUserName)),
+                TypeHintLoc(WithUserName),
                 field_loc_map("user_name", int),
             ),
             result=False,
@@ -240,7 +238,7 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
         param_result(
             P[WithUserName] + P.user_name,
             LocStack(
-                LocMap(TypeHintLoc(WithUserName)),
+                TypeHintLoc(WithUserName),
                 field_loc_map("user_name", int),
             ),
             result=True,
@@ -249,8 +247,8 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
         param_result(
             P[Dict].generic_arg(0, str),
             LocStack(
-                LocMap(TypeHintLoc(Dict)),
-                LocMap(TypeHintLoc(str), GenericParamLoc(0)),
+                TypeHintLoc(Dict),
+                GenericParamLoc(str, 0),
             ),
             result=True,
             id="generic-arg-ok",
@@ -258,8 +256,8 @@ def field_loc_map(name: str, tp: TypeHint) -> LocMap:
         param_result(
             P[Dict].generic_arg(0, str),
             LocStack(
-                LocMap(TypeHintLoc(Dict)),
-                LocMap(TypeHintLoc(str), GenericParamLoc(1)),
+                TypeHintLoc(Dict),
+                GenericParamLoc(str, 1),
             ),
             result=False,
             id="generic-arg-fail",

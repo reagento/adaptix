@@ -5,7 +5,7 @@ from ..common import TypeHint, VarTuple
 from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from ..provider.request_cls import FieldLoc, LocatedRequest, LocMap, LocStack, TypeHintLoc, find_owner_with_field
+from ..provider.request_cls import LocatedRequest, LocStack, LocStackItem, find_owner_with_field
 from ..type_tools import is_parametrized
 from ..utils import copy_exception_dunders, with_module
 from .base_retort import BaseRetort
@@ -26,22 +26,22 @@ class MorphingRecursionResolver(RecursionResolver):
     REQUEST_CLASSES: VarTuple[Type[LocatedRequest]] = (LoaderRequest, DumperRequest)
 
     def __init__(self) -> None:
-        self._loc_map_to_stub: Dict[LocMap, FuncWrapper] = {}
+        self._loc_to_stub: Dict[LocStackItem, FuncWrapper] = {}
 
     def track_recursion(self, request: Request[T]) -> Optional[Any]:
         if not isinstance(request, self.REQUEST_CLASSES):
             return None
 
-        if request.loc_stack.count(request.last_map) == 1:
+        if request.loc_stack.count(request.last_loc) == 1:
             return None
 
         stub = FuncWrapper()
-        self._loc_map_to_stub[request.last_map] = stub
+        self._loc_to_stub[request.last_loc] = stub
         return stub
 
     def process_request_result(self, request: Request[T], result: T) -> None:
-        if isinstance(request, self.REQUEST_CLASSES) and request.last_map in self._loc_map_to_stub:
-            self._loc_map_to_stub.pop(request.last_map).set_func(result)
+        if isinstance(request, self.REQUEST_CLASSES) and request.last_loc in self._loc_to_stub:
+            self._loc_to_stub.pop(request.last_loc).set_func(result)
 
 
 @with_module("adaptix")
@@ -66,8 +66,8 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         except ValueError:
             return "Cannot find coercer"
 
-        dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
-        dst_field = dst_field_loc_map[FieldLoc].field_id
+        dst_owner = self._get_type_desc(dst_owner_loc_map.type)
+        dst_field = dst_field_loc_map.field_id
         return f"Cannot find paired field of `{dst_owner}.{dst_field}` for linking"
 
     def _get_coercer_request_description(self, request: CoercerRequest) -> str:
@@ -81,12 +81,12 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         except ValueError:
             return "Cannot find coercer"
 
-        src_owner = self._get_type_desc(src_owner_loc_map[TypeHintLoc].type)
-        src_field = src_field_loc_map[FieldLoc].field_id
-        src_tp = self._get_type_desc(src_field_loc_map[TypeHintLoc].type)
-        dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
-        dst_field = dst_field_loc_map[FieldLoc].field_id
-        dst_tp = self._get_type_desc(dst_field_loc_map[TypeHintLoc].type)
+        src_owner = self._get_type_desc(src_owner_loc_map.type)
+        src_field = src_field_loc_map.field_id
+        src_tp = self._get_type_desc(src_field_loc_map.type)
+        dst_owner = self._get_type_desc(dst_owner_loc_map.type)
+        dst_field = dst_field_loc_map.field_id
+        dst_tp = self._get_type_desc(dst_field_loc_map.type)
         return (
             f"Cannot find coercer for linking"
             f" `{src_owner}.{src_field}: {src_tp} -> {dst_owner}.{dst_field}: {dst_tp}`"
@@ -116,8 +116,8 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         except ValueError:
             pass
         else:
-            owner_type = owner_loc_map[TypeHintLoc].type
-            field_id = field_loc_map[FieldLoc].field_id
+            owner_type = owner_loc_map.type
+            field_id = field_loc_map.field_id
             yield f"Exception was raised while processing {field_desc} {field_id!r} of {owner_type}"
 
         location_desc = ", ".join(
@@ -125,8 +125,7 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
             for key, value in sorted(
                 (
                     (key, value)
-                    for loc in loc_stack.last.values()
-                    for key, value in vars(loc).items()
+                    for key, value in vars(loc_stack.last).items()
                 ),
                 key=lambda item: self._LOC_KEYS_ORDER.get(item[0], 1000),
             )

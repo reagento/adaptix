@@ -64,7 +64,7 @@ from adaptix._internal.morphing.name_layout.provider import BuiltinNameLayoutPro
 from adaptix._internal.morphing.request_cls import DumperRequest, LoaderRequest
 from adaptix._internal.provider.loc_stack_filtering import P
 from adaptix._internal.provider.provider_template import ValueProvider
-from adaptix._internal.provider.request_cls import LocMap, LocStack, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocStack, TypeHintLoc
 from adaptix._internal.provider.shape_provider import InputShapeRequest, OutputShapeRequest
 
 
@@ -85,21 +85,6 @@ def stub(*args, **kwargs):
     pass
 
 
-class StubClass:
-    pass
-
-
-class StubClass2:
-    pass
-
-
-TYPE_HINT_LOC_MAP = LocMap(
-    TypeHintLoc(
-        type=StubClass,
-    ),
-)
-
-
 @dataclass
 class Stub:
     pass
@@ -107,7 +92,6 @@ class Stub:
 
 def make_layouts(
     *fields_or_providers: Union[TestField, Provider],
-    loc_map: LocMap = TYPE_HINT_LOC_MAP,
 ) -> Layouts:
     fields = [element for element in fields_or_providers if isinstance(element, TestField)]
     providers = [element for element in fields_or_providers if isinstance(element, Provider)]
@@ -174,24 +158,27 @@ def make_layouts(
     )
     retort.get_loader(Stub)
     retort.get_dumper(Stub)
+    loc = TypeHintLoc(
+        type=Stub,
+    )
     inp_request = InputNameLayoutRequest(
-        loc_stack=LocStack(loc_map),
+        loc_stack=LocStack(loc),
         shape=input_shape,
     )
     out_request = OutputNameLayoutRequest(
-        loc_stack=LocStack(loc_map),
+        loc_stack=LocStack(loc),
         shape=output_shape,
     )
     inp_name_layout = retort.provide(inp_request)
     out_name_layout = retort.provide(out_request)
     retort.provide(
         LoaderRequest(
-            loc_stack=LocStack(loc_map),
+            loc_stack=LocStack(loc),
         ),
     )
     retort.provide(
         DumperRequest(
-            loc_stack=LocStack(loc_map),
+            loc_stack=LocStack(loc),
         ),
     )
     return Layouts(inp_name_layout, out_name_layout)
@@ -946,7 +933,6 @@ def test_extra_at_list():
                 extra_out="b",
             ),
             DEFAULT_NAME_MAPPING,
-            loc_map=TYPE_HINT_LOC_MAP,
         ),
     )
 
@@ -981,7 +967,6 @@ def test_required_field_skip():
                 skip=["a"],
             ),
             DEFAULT_NAME_MAPPING,
-            loc_map=TYPE_HINT_LOC_MAP,
         ),
     )
 
@@ -1019,7 +1004,6 @@ def test_inconsistent_path_elements():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc_map=TYPE_HINT_LOC_MAP,
         ),
     )
 
@@ -1057,7 +1041,6 @@ def test_duplicated_path():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc_map=TYPE_HINT_LOC_MAP,
         ),
     )
 
@@ -1095,7 +1078,6 @@ def test_optional_field_at_list():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc_map=TYPE_HINT_LOC_MAP,
         ),
     )
 
@@ -1136,7 +1118,6 @@ def test_one_path_is_prefix_of_another():
                 },
             ),
             DEFAULT_NAME_MAPPING,
-            loc_map=TYPE_HINT_LOC_MAP,
         ),
     )
 

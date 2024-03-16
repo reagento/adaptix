@@ -13,8 +13,6 @@ from ..provider.request_cls import (
     DebugTrailRequest,
     GenericParamLoc,
     LocatedRequest,
-    LocMap,
-    TypeHintLoc,
     get_type_from_request,
     try_normalize_type,
 )
@@ -38,9 +36,9 @@ class DictProvider(LoaderProvider, DumperProvider):
         key_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=key.source),
-                        GenericParamLoc(generic_pos=0),
+                    GenericParamLoc(
+                        type=key.source,
+                        generic_pos=0,
                     ),
                 ),
             ),
@@ -49,9 +47,9 @@ class DictProvider(LoaderProvider, DumperProvider):
         value_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=value.source),
-                        GenericParamLoc(generic_pos=1),
+                    GenericParamLoc(
+                        type=value.source,
+                        generic_pos=1,
                     ),
                 ),
             ),
@@ -167,9 +165,9 @@ class DictProvider(LoaderProvider, DumperProvider):
         key_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=key.source),
-                        GenericParamLoc(generic_pos=0),
+                    GenericParamLoc(
+                        type=key.source,
+                        generic_pos=0,
                     ),
                 ),
             ),
@@ -178,9 +176,9 @@ class DictProvider(LoaderProvider, DumperProvider):
         value_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=value.source),
-                        GenericParamLoc(generic_pos=1),
+                    GenericParamLoc(
+                        type=value.source,
+                        generic_pos=1,
                     ),
                 ),
             ),

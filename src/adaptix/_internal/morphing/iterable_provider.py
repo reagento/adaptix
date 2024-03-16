@@ -13,9 +13,7 @@ from ..provider.request_cls import (
     DebugTrailRequest,
     GenericParamLoc,
     LocatedRequest,
-    LocMap,
     StrictCoercionRequest,
-    TypeHintLoc,
     get_type_from_request,
     try_normalize_type,
 )
@@ -75,9 +73,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
         arg_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=arg),
-                        GenericParamLoc(generic_pos=0),
+                    GenericParamLoc(
+                        type=arg,
+                        generic_pos=0,
                     ),
                 ),
             ),
@@ -216,9 +214,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
         arg_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=arg),
-                        GenericParamLoc(generic_pos=0),
+                    GenericParamLoc(
+                        type=arg,
+                        generic_pos=0,
                     ),
                 ),
             ),

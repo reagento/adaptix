@@ -5,7 +5,6 @@ from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import ExactOriginLSC
 from ..provider.provider_template import ProviderWithAttachableLSC
-from ..provider.request_cls import TypeHintLoc
 from ..provider.static_provider import static_provision_action
 from ..type_tools import normalize_type
 from .request_cls import DumperRequest, LoaderRequest

@@ -8,7 +8,7 @@ from ...common import Loader
 from ...definitions import DebugTrail
 from ...model_tools.definitions import InputShape
 from ...provider.essential import Mediator
-from ...provider.request_cls import DebugTrailRequest, StrictCoercionRequest, TypeHintLoc
+from ...provider.request_cls import DebugTrailRequest, StrictCoercionRequest
 from ...provider.shape_provider import InputShapeRequest, provide_generic_resolved_shape
 from ..model.loader_gen import BuiltinModelLoaderGen, ModelLoaderProps
 from ..provider_template import LoaderProvider
@@ -75,11 +75,7 @@ class ModelLoaderProvider(LoaderProvider):
         shape: InputShape,
         name_layout: InputNameLayout,
     ) -> str:
-        return (
-            repr(request.last_map[TypeHintLoc].type)
-            if request.last_map.has(TypeHintLoc) else
-            repr(shape.constructor)
-        )
+        return repr(request.last_loc.type)
 
     def _create_model_loader_gen(
         self,
@@ -104,12 +100,10 @@ class ModelLoaderProvider(LoaderProvider):
         )
 
     def _request_to_view_string(self, request: LoaderRequest) -> str:
-        if request.last_map.has(TypeHintLoc):
-            tp = request.last_map[TypeHintLoc].type
-            if isinstance(tp, type):
-                return tp.__name__
-            return str(tp)
-        return ""
+        tp = request.last_loc.type
+        if isinstance(tp, type):
+            return tp.__name__
+        return str(tp)
 
     def _merge_view_string(self, *fragments: str) -> str:
         return "_".join(filter(None, fragments))

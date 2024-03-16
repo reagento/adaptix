@@ -8,7 +8,7 @@ from ...common import Dumper
 from ...definitions import DebugTrail
 from ...model_tools.definitions import OutputShape
 from ...provider.essential import Mediator
-from ...provider.request_cls import DebugTrailRequest, TypeHintLoc
+from ...provider.request_cls import DebugTrailRequest
 from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
 from ..provider_template import DumperProvider
 from ..request_cls import DumperRequest
@@ -63,11 +63,7 @@ class ModelDumperProvider(DumperProvider):
         shape: OutputShape,
         name_layout: OutputNameLayout,
     ) -> str:
-        return (
-            repr(request.last_map[TypeHintLoc].type)
-            if request.last_map.has(TypeHintLoc) else
-            "<unknown model>"
-        )
+        return repr(request.last_loc.type)
 
     def _create_model_dumper_gen(
         self,
@@ -86,12 +82,10 @@ class ModelDumperProvider(DumperProvider):
         )
 
     def _request_to_view_string(self, request: DumperRequest) -> str:
-        if request.last_map.has(TypeHintLoc):
-            tp = request.last_map[TypeHintLoc].type
-            if isinstance(tp, type):
-                return tp.__name__
-            return str(tp)
-        return ""
+        tp = request.last_loc.type
+        if isinstance(tp, type):
+            return tp.__name__
+        return str(tp)
 
     def _merge_view_string(self, *fragments: str) -> str:
         return "_".join(filter(None, fragments))

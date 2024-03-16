@@ -31,7 +31,7 @@ from ..model_tools.definitions import BaseField, DefaultValue, InputField, Input
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import base_field_to_loc_map, input_field_to_loc_map
-from ..provider.request_cls import LocMap, LocStack, TypeHintLoc
+from ..provider.request_cls import LocStack, TypeHintLoc
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..provider.static_provider import StaticProvider, static_provision_action
 from ..utils import add_note
@@ -96,7 +96,7 @@ class BuiltinConverterProvider(ConverterProvider):
             closure_name=closure_name,
             stub_function=request.stub_function,
         )
-        code_gen_loc_stack = LocStack(LocMap(TypeHintLoc(self._get_type_from_annotation(signature.return_annotation))))
+        code_gen_loc_stack = LocStack(TypeHintLoc(self._get_type_from_annotation(signature.return_annotation)))
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
             code_gen_hook=fetch_code_gen_hook(mediator, code_gen_loc_stack),

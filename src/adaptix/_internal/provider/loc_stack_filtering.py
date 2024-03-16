@@ -21,7 +21,7 @@ from ..type_tools import (
 )
 from ..type_tools.normalize_type import NotSubscribedError
 from .essential import CannotProvide, Request
-from .request_cls import FieldLoc, GenericParamLoc, Location, LocStack, TypeHintLoc
+from .request_cls import FieldLoc, GenericParamLoc, LocStack, TypeHintLoc
 
 T = TypeVar("T")
 
@@ -119,7 +119,7 @@ class XorLocStackChecker(BinOperatorLSC):
 
 
 class LastLocMapChecker(LocStackChecker, ABC):
-    _expected_location: ClassVar[Type[Location]]
+    _expected_location: ClassVar[type]
 
     def __init_subclass__(cls, **kwargs):
         param_list = list(inspect.signature(cls._check_location).parameters.values())
@@ -127,9 +127,9 @@ class LastLocMapChecker(LocStackChecker, ABC):
 
     @final
     def check_loc_stack(self, mediator: DirectMediator, loc_stack: LocStack) -> bool:
-        loc_map = loc_stack.last
-        if loc_map.has(self._expected_location):
-            return self._check_location(mediator, loc_map[self._expected_location])
+        last_loc = loc_stack.last
+        if last_loc.is_castable(self._expected_location):
+            return self._check_location(mediator, last_loc)
         return False
 
     @abstractmethod

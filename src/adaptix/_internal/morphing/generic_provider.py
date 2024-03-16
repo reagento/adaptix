@@ -16,7 +16,6 @@ from ..provider.request_cls import (
     DebugTrailRequest,
     GenericParamLoc,
     LocatedRequest,
-    LocMap,
     LocStack,
     StrictCoercionRequest,
     TypeHintLoc,
@@ -35,7 +34,7 @@ from .request_cls import DumperRequest, LoaderRequest
 class NewTypeUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
 
         if not is_new_type(loc.type):
             raise CannotProvide
@@ -51,7 +50,7 @@ class NewTypeUnwrappingProvider(StaticProvider):
 class TypeHintTagsUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
         norm = try_normalize_type(loc.type)
         unwrapped = strip_tags(norm)
         if unwrapped.source == loc.type:  # type has not changed, continue search
@@ -68,7 +67,7 @@ class TypeHintTagsUnwrappingProvider(StaticProvider):
 class TypeAliasUnwrappingProvider(StaticProvider):
     @static_provision_action
     def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
         norm = try_normalize_type(loc.type)
         if not isinstance(norm, NormTypeAlias):
             raise CannotProvide
@@ -120,9 +119,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         requests = [
             LoaderRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=enum_cls),
-                    ),
+                    TypeHintLoc(type=enum_cls),
                 ),
             ) for enum_cls in enum_classes
         ]
@@ -137,9 +134,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         requests = [
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=enum_cls),
-                    ),
+                    TypeHintLoc(type=enum_cls),
                 ),
             ) for enum_cls in enum_classes
         ]
@@ -259,9 +254,9 @@ class UnionProvider(LoaderProvider, DumperProvider):
             not_none_loader = mediator.mandatory_provide(
                 LoaderRequest(
                     loc_stack=request.loc_stack.append_with(
-                        LocMap(
-                            TypeHintLoc(type=not_none.source),
-                            GenericParamLoc(generic_pos=0),
+                        GenericParamLoc(
+                            type=not_none.source,
+                            generic_pos=0,
                         ),
                     ),
                 ),
@@ -277,9 +272,9 @@ class UnionProvider(LoaderProvider, DumperProvider):
             [
                 LoaderRequest(
                     loc_stack=request.loc_stack.append_with(
-                        LocMap(
-                            TypeHintLoc(type=tp.source),
-                            GenericParamLoc(generic_pos=i),
+                        GenericParamLoc(
+                            type=tp.source,
+                            generic_pos=i,
                         ),
                     ),
                 )
@@ -375,9 +370,9 @@ class UnionProvider(LoaderProvider, DumperProvider):
             not_none_dumper = mediator.mandatory_provide(
                 DumperRequest(
                     loc_stack=request.loc_stack.append_with(
-                        LocMap(
-                            TypeHintLoc(type=not_none.source),
-                            GenericParamLoc(generic_pos=0),
+                        GenericParamLoc(
+                            type=not_none.source,
+                            generic_pos=0,
                         ),
                     ),
                 ),
@@ -399,9 +394,9 @@ class UnionProvider(LoaderProvider, DumperProvider):
             [
                 DumperRequest(
                     loc_stack=request.loc_stack.append_with(
-                        LocMap(
-                            TypeHintLoc(type=tp.source),
-                            GenericParamLoc(generic_pos=i),
+                        GenericParamLoc(
+                            type=tp.source,
+                            generic_pos=i,
                         ),
                     ),
                 )

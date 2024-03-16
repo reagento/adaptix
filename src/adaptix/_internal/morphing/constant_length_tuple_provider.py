@@ -12,9 +12,7 @@ from ..provider.provider_template import for_predicate
 from ..provider.request_cls import (
     DebugTrailRequest,
     GenericParamLoc,
-    LocMap,
     StrictCoercionRequest,
-    TypeHintLoc,
     get_type_from_request,
     try_normalize_type,
 )
@@ -50,9 +48,9 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             [
                 LoaderRequest(
                     loc_stack=request.loc_stack.append_with(
-                        LocMap(
-                            TypeHintLoc(type=tp.source),
-                            GenericParamLoc(generic_pos=i),
+                        GenericParamLoc(
+                            type=tp.source,
+                            generic_pos=i,
                         ),
                     ),
                 )
@@ -235,9 +233,9 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             [
                 DumperRequest(
                     loc_stack=request.loc_stack.append_with(
-                        LocMap(
-                            TypeHintLoc(type=tp.source),
-                            GenericParamLoc(generic_pos=i),
+                        GenericParamLoc(
+                            type=tp.source,
+                            generic_pos=i,
                         ),
                     ),
                 )

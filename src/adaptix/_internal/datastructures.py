@@ -182,7 +182,7 @@ class ClassMap(Generic[H]):
         try:
             return self._mapping[key]  # type: ignore[index,return-value]
         except KeyError:
-            raise exception_factory() from None  # noqa: RSE102
+            raise exception_factory() from None
 
     def keys(self) -> KeysView[Type[H]]:
         return self._mapping.keys()

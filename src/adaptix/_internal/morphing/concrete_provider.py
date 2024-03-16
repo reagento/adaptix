@@ -143,7 +143,7 @@ class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
     _BYTES_PROVIDER = BytesBase64Provider()
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        request.last_map.get_or_raise(TypeHintLoc, lambda: CannotProvide)
+        request.last_loc.cast_or_raise(TypeHintLoc, lambda: CannotProvide)
         bytes_loader = self._BYTES_PROVIDER.apply_provider(
             mediator,
             replace(request, loc_stack=request.loc_stack.replace_last_type(bytes)),
@@ -371,7 +371,7 @@ class SelfTypeProvider(ProviderWithAttachableLSC):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.replace_last_type(owner_loc_map[TypeHintLoc].type),
+                loc_stack=request.loc_stack.replace_last_type(owner_loc_map.type),
             ),
         )
 
