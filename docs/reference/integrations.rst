@@ -46,7 +46,7 @@ Known limitations:
   - Only mapping to ``Table`` is supported,
     implementations for ``FromClause`` instances such as ``Subquery`` and ``Join`` are not provided.
 
-  - Mapping to ``dataclass`` and ``attrs`` are not supported.
+  - ``dataclass`` and ``attrs`` mapped by sqlalchemy are not supported for introspection.
 
   - It does not support registering order of mapped fields by design,
     so you should use manual mapping to list instead automatic ``as_list=True``.
