@@ -17,6 +17,7 @@ from ..coercer_provider import (
     OptionalCoercerProvider,
     SameTypeCoercerProvider,
     SubclassCoercerProvider,
+    TypeHintTagsUnwrappingProvider,
     UnionSubcaseCoercerProvider,
 )
 from ..converter_provider import BuiltinConverterProvider
@@ -36,14 +37,14 @@ class FilledConversionRetort(OperatingRetort):
         SameNameLinkingProvider(is_default=True),
 
         ModelCoercerProvider(),
+        IterableCoercerProvider(),
+
         SameTypeCoercerProvider(),
         DstAnyCoercerProvider(),
         SubclassCoercerProvider(),
         UnionSubcaseCoercerProvider(),
         OptionalCoercerProvider(),
-        IterableCoercerProvider(
-            {set, list, tuple},
-        ),
+        TypeHintTagsUnwrappingProvider(),
 
         forbid_unlinked_optional(P.ANY),
     ]

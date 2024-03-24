@@ -1,8 +1,10 @@
-from typing import Any, Optional, Union
+from typing import Any, Iterable, List, Optional, Set, Tuple, Union, Annotated
 
 import pytest
 
+from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix.conversion import coercer, impl_converter
+from tests_helpers import cond_list
 
 
 @pytest.mark.parametrize(
@@ -142,6 +144,15 @@ def test_union_subcase(src_model_spec, dst_model_spec, src_tp, dst_tp):
         pytest.param(Optional[str], Optional[str], None, None),
         pytest.param(Optional[bool], Optional[int], True, True),
         pytest.param(Optional[str], Optional[int], "123", 123),
+        *cond_list(
+            HAS_ANNOTATED,
+            [
+                pytest.param(Optional[Annotated[int, 'meta']], Optional[int], 123, 123),
+                pytest.param(Optional[int], Optional[Annotated[int, 'meta']], 123, 123),
+                pytest.param(Annotated[Optional[int], 'meta'], Optional[int], 123, 123),
+                pytest.param(Optional[int], Annotated[Optional[int], 'meta'], 123, 123),
+            ]
+        )
     ],
 )
 def test_optional(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst_value):
@@ -161,3 +172,180 @@ def test_optional(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst
 
     assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
 
+
+def test_optional_with_model(src_model_spec, dst_model_spec):
+    @src_model_spec.decorator
+    class SourceModelInner(*src_model_spec.bases):
+        data: int
+
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: int
+        field2: Optional[SourceModelInner]
+
+    @dst_model_spec.decorator
+    class DestModelInner(*dst_model_spec.bases):
+        data: int
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: int
+        field2: Optional[DestModelInner]
+
+    @impl_converter
+    def convert(a: SourceModel) -> DestModel:
+        ...
+
+    assert (
+        convert(SourceModel(field1=1, field2=SourceModelInner(data=2)))
+        ==
+        DestModel(field1=1, field2=DestModelInner(data=2))
+    )
+    assert convert(SourceModel(field1=1, field2=None)) == DestModel(field1=1, field2=None)
+
+
+def test_optional_with_model_and_ctx(src_model_spec, dst_model_spec):
+    @src_model_spec.decorator
+    class SourceModelInner(*src_model_spec.bases):
+        data: int
+
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: int
+        field2: Optional[SourceModelInner]
+
+    @dst_model_spec.decorator
+    class DestModelInner(*dst_model_spec.bases):
+        data: int
+        extra1: str
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: int
+        field2: Optional[DestModelInner]
+
+    @impl_converter
+    def convert(a: SourceModel, extra1: str) -> DestModel:
+        ...
+
+    assert (
+        convert(SourceModel(field1=1, field2=SourceModelInner(data=2)), "e1")
+        ==
+        DestModel(field1=1, field2=DestModelInner(data=2, extra1="e1"))
+    )
+    assert convert(SourceModel(field1=1, field2=None), "e1") == DestModel(field1=1, field2=None)
+
+
+@pytest.mark.parametrize(
+    ["src_tp", "dst_tp", "src_value", "dst_value"],
+    [
+        pytest.param(List[int], List[int], [1, 2, 3], [1, 2, 3]),
+        pytest.param(List[str], List[int], ["1", "2", "3"], [1, 2, 3]),
+        pytest.param(List[int], Tuple[int, ...], [1, 2, 3], (1, 2, 3)),
+        pytest.param(List[str], Tuple[int, ...], ["1", "2", "3"], (1, 2, 3)),
+        pytest.param(Set[int], Tuple[int, ...], {1, 2, 3}, (1, 2, 3)),
+        pytest.param(List[int], Iterable[int], [1, 2, 3], (1, 2, 3)),
+        pytest.param(Iterable[int], Iterable[int], [1, 2, 3], (1, 2, 3)),
+    ],
+)
+def test_iterable(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst_value):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: int
+        field2: src_tp
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: int
+        field2: dst_tp
+
+    @impl_converter(recipe=[coercer(str, int, func=int)])
+    def convert(a: SourceModel) -> DestModel:
+        ...
+
+    assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
+
+
+def test_iterable_with_model(src_model_spec, dst_model_spec):
+    @src_model_spec.decorator
+    class SourceModelInner(*src_model_spec.bases):
+        data: int
+
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: int
+        field2: List[SourceModelInner]
+
+    @dst_model_spec.decorator
+    class DestModelInner(*dst_model_spec.bases):
+        data: int
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: int
+        field2: List[DestModelInner]
+
+    @impl_converter
+    def convert(a: SourceModel) -> DestModel:
+        ...
+
+    assert (
+        convert(SourceModel(field1=1, field2=[SourceModelInner(data=1), SourceModelInner(data=2)]))
+        ==
+        DestModel(field1=1, field2=[DestModelInner(data=1), DestModelInner(data=2)])
+    )
+
+
+def test_iterable_with_model_and_ctx(src_model_spec, dst_model_spec):
+    @src_model_spec.decorator
+    class SourceModelInner(*src_model_spec.bases):
+        data: int
+
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: int
+        field2: List[SourceModelInner]
+
+    @dst_model_spec.decorator
+    class DestModelInner(*dst_model_spec.bases):
+        data: int
+        extra1: str
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: int
+        field2: List[DestModelInner]
+
+    @impl_converter
+    def convert(a: SourceModel, extra1: str) -> DestModel:
+        ...
+
+    assert (
+        convert(SourceModel(field1=1, field2=[SourceModelInner(data=1), SourceModelInner(data=2)]), "e1")
+        ==
+        DestModel(field1=1, field2=[DestModelInner(data=1, extra1="e1"), DestModelInner(data=2, extra1="e1")])
+    )
+
+
+def test_iterable_on_top_level():
+    @impl_converter(recipe=[coercer(str, int, func=int)])
+    def convert(a: List[str]) -> List[int]:
+        ...
+
+    assert convert(["1", "2", "3"]) == [1, 2, 3]
+
+
+def test_iterable_of_models_on_top_level(src_model_spec, dst_model_spec):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        v: int
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        v: int
+
+    @impl_converter(recipe=[coercer(str, int, func=int)])
+    def convert(a: List[SourceModel]) -> List[DestModel]:
+        ...
+
+    assert convert([SourceModel(v=1), SourceModel(v=2)]) == [DestModel(v=1), DestModel(v=2)]
