@@ -1,22 +1,17 @@
+import collections.abc
 from abc import ABC, abstractmethod
 from dataclasses import replace
-from typing import Any, Union
+from typing import Any, Container, Union
 
-from ..common import Coercer
+from ..common import Coercer, OneArgCoercer, TypeHint
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStackChecker
+from ..provider.location import GenericParamLoc
 from ..provider.request_cls import try_normalize_type
-from ..provider.static_provider import StaticProvider, static_provision_action
-from ..special_cases_optimization import as_is_stub
+from ..special_cases_optimization import as_is_stub_with_ctx
 from ..type_tools import BaseNormType, is_generic, is_parametrized, is_subclass_soft, strip_tags
+from .provider_template import CoercerProvider
 from .request_cls import CoercerRequest
-
-
-class CoercerProvider(StaticProvider, ABC):
-    @static_provision_action
-    @abstractmethod
-    def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        ...
 
 
 class SameTypeCoercerProvider(CoercerProvider):
@@ -25,12 +20,12 @@ class SameTypeCoercerProvider(CoercerProvider):
         dst_tp = request.dst.last.type
 
         if src_tp == dst_tp:
-            return as_is_stub
+            return as_is_stub_with_ctx
 
         norm_src = try_normalize_type(src_tp)
         norm_dst = try_normalize_type(dst_tp)
         if strip_tags(norm_src) == strip_tags(norm_dst):
-            return as_is_stub
+            return as_is_stub_with_ctx
         raise CannotProvide
 
 
@@ -39,7 +34,7 @@ class DstAnyCoercerProvider(CoercerProvider):
         dst_tp = request.dst.last.type
         norm_dst = strip_tags(try_normalize_type(dst_tp))
         if norm_dst.origin == Any:
-            return as_is_stub
+            return as_is_stub_with_ctx
         raise CannotProvide
 
 
@@ -80,22 +75,23 @@ class SubclassCoercerProvider(StrippedTypeCoercerProvider):
         ):
             raise CannotProvide
         if is_subclass_soft(stripped_src.origin, stripped_dst.origin):
-            return as_is_stub
+            return as_is_stub_with_ctx
         raise CannotProvide
 
 
 class MatchingCoercerProvider(CoercerProvider):
-    def __init__(self, src_lsc: LocStackChecker, dst_lsc: LocStackChecker, coercer: Coercer):
+    def __init__(self, src_lsc: LocStackChecker, dst_lsc: LocStackChecker, coercer: OneArgCoercer):
         self._src_lsc = src_lsc
         self._dst_lsc = dst_lsc
-        self._coercer = coercer
+        self._one_arg_coercer = coercer
 
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
         if (
             self._src_lsc.check_loc_stack(mediator, request.src)
             and self._dst_lsc.check_loc_stack(mediator, request.dst)
         ):
-            return self._coercer
+            one_arg_coercer = self._one_arg_coercer
+            return lambda x, ctx: one_arg_coercer(x)
         raise CannotProvide
 
 
@@ -114,9 +110,9 @@ class UnionSubcaseCoercerProvider(StrippedTypeCoercerProvider):
             src_args_set = set(map(strip_tags, stripped_src.args))
             dst_args_set = set(map(strip_tags, stripped_dst.args))
             if src_args_set.issubset(dst_args_set):
-                return as_is_stub
+                return as_is_stub_with_ctx
         elif stripped_src.origin in [strip_tags(arg).origin for arg in stripped_dst.args]:
-            return as_is_stub
+            return as_is_stub_with_ctx
         raise CannotProvide
 
 
@@ -140,10 +136,10 @@ class OptionalCoercerProvider(StrippedTypeCoercerProvider):
         )
         not_none_coercer = mediator.delegating_provide(not_none_request)
 
-        def optional_coercer(data):
+        def optional_coercer(data, ctx):
             if data is None:
                 return None
-            return not_none_coercer(data)
+            return not_none_coercer(data, ctx)
 
         return optional_coercer
 
@@ -152,3 +148,45 @@ class OptionalCoercerProvider(StrippedTypeCoercerProvider):
 
     def _get_not_none(self, norm: BaseNormType) -> BaseNormType:
         return next(case.origin for case in norm.args if case.origin is not None)
+
+
+class IterableCoercerProvider(StrippedTypeCoercerProvider):
+    def __init__(self, dst_origins: Container[TypeHint]):
+        self._dst_origins = dst_origins
+
+    def _provide_coercer_stripped_types(
+        self,
+        mediator: Mediator,
+        request: CoercerRequest,
+        stripped_src: BaseNormType,
+        stripped_dst: BaseNormType,
+    ) -> Coercer:
+        if not is_subclass_soft(stripped_src.origin, collections.abc.Iterable):
+            raise CannotProvide
+        if stripped_dst.origin not in self._dst_origins:
+            raise CannotProvide
+
+        dst_factory = stripped_dst.origin
+        element_coercer = mediator.mandatory_provide(
+            CoercerRequest(
+                src=request.src.append_with(
+                    GenericParamLoc(
+                        type=stripped_src.args[0].source,
+                        generic_pos=0,
+                    ),
+                ),
+                ctx=request.ctx,
+                dst=request.dst.append_with(
+                    GenericParamLoc(
+                        type=stripped_dst.args[0].source,
+                        generic_pos=0,
+                    ),
+                ),
+            ),
+            lambda x: "Cannot create coercer for iterable. Coercer for element cannot be created",
+        )
+
+        def iterable_coercer(data, ctx):
+            return dst_factory(element_coercer(element, ctx) for element in data)
+
+        return iterable_coercer

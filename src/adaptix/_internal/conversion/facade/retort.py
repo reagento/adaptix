@@ -13,6 +13,7 @@ from ...retort.operating_retort import OperatingRetort
 from ...type_tools import is_generic_class
 from ..coercer_provider import (
     DstAnyCoercerProvider,
+    IterableCoercerProvider,
     OptionalCoercerProvider,
     SameTypeCoercerProvider,
     SubclassCoercerProvider,
@@ -20,6 +21,7 @@ from ..coercer_provider import (
 )
 from ..converter_provider import BuiltinConverterProvider
 from ..linking_provider import SameNameLinkingProvider
+from ..model_coercer_provider import ModelCoercerProvider
 from ..request_cls import ConverterRequest
 from .checker import ensure_function_is_stub
 from .provider import forbid_unlinked_optional
@@ -33,11 +35,15 @@ class FilledConversionRetort(OperatingRetort):
 
         SameNameLinkingProvider(is_default=True),
 
+        ModelCoercerProvider(),
         SameTypeCoercerProvider(),
         DstAnyCoercerProvider(),
         SubclassCoercerProvider(),
         UnionSubcaseCoercerProvider(),
         OptionalCoercerProvider(),
+        IterableCoercerProvider(
+            {set, list, tuple},
+        ),
 
         forbid_unlinked_optional(P.ANY),
     ]

@@ -1,11 +1,11 @@
 from abc import ABC
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Type
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, Type
 
 from ..common import TypeHint, VarTuple
 from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from ..provider.location import AnyLoc
+from ..provider.location import AnyLoc, FieldLoc, TypeHintLoc
 from ..provider.request_cls import LocatedRequest, LocStack, find_owner_with_field
 from ..type_tools import is_parametrized
 from ..utils import copy_exception_dunders, with_module
@@ -61,33 +61,35 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         DumperRequest: "There is no provider that can create specified dumper",
     }
 
+    def _get_owner_with_field(self, loc_stack: LocStack) -> Tuple[TypeHintLoc, FieldLoc]:
+        return loc_stack[-2], loc_stack.last.cast(FieldLoc)
+
     def _get_linking_request_description(self, request: LinkingRequest) -> str:
         try:
-            dst_owner_loc, dst_field_loc = find_owner_with_field(request.destination)
-        except ValueError:
-            return "Cannot find coercer"
+            dst_owner_loc, dst_field_loc = self._get_owner_with_field(request.destination)
+        except (IndexError, TypeError):
+            return "Cannot find linking"
 
         dst_owner = self._get_type_desc(dst_owner_loc.type)
         dst_field = dst_field_loc.field_id
         return f"Cannot find paired field of `{dst_owner}.{dst_field}` for linking"
 
     def _get_coercer_request_description(self, request: CoercerRequest) -> str:
-        try:
-            src_owner_loc, src_field_loc = find_owner_with_field(request.src)
-        except ValueError:
-            return "Cannot find coercer"
+        src_tp = self._get_type_desc(request.src.last.type)
+        dst_tp = self._get_type_desc(request.dst.last.type)
 
         try:
-            dst_owner_loc, dst_field_loc = find_owner_with_field(request.dst)
-        except ValueError:
-            return "Cannot find coercer"
+            src_owner_loc = request.src[-2]
+            src_field_loc = request.src.last.cast(FieldLoc)
+            dst_owner_loc = request.dst[-2]
+            dst_field_loc = request.dst.last.cast(FieldLoc)
+        except (TypeError, IndexError):
+            return f"Cannot find coercer for `{src_tp} -> {dst_tp}`"
 
         src_owner = self._get_type_desc(src_owner_loc.type)
         src_field = src_field_loc.field_id
-        src_tp = self._get_type_desc(src_field_loc.type)
         dst_owner = self._get_type_desc(dst_owner_loc.type)
         dst_field = dst_field_loc.field_id
-        dst_tp = self._get_type_desc(dst_field_loc.type)
         return (
             f"Cannot find coercer for linking"
             f" `{src_owner}.{src_field}: {src_tp} -> {dst_owner}.{dst_field}: {dst_tp}`"

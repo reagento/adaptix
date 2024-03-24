@@ -1,52 +1,21 @@
-from abc import ABC, abstractmethod
-from functools import reduce
+import itertools
+from functools import update_wrapper
 from inspect import Parameter, Signature
-from typing import Any, Iterable, List, Mapping, Optional, Sequence, Tuple, cast, final
+from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
 
+from ..code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
+from ..code_tools.code_builder import CodeBuilder
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
 from ..common import Coercer, Converter, TypeHint
-from ..conversion.broaching.code_generator import BroachingCodeGenerator, BroachingPlan, BuiltinBroachingCodeGenerator
-from ..conversion.broaching.definitions import (
-    AccessorElement,
-    ConstantElement,
-    FuncCallArg,
-    FunctionElement,
-    KeywordArg,
-    ParameterElement,
-    PositionalArg,
-)
-from ..conversion.request_cls import (
-    CoercerRequest,
-    ConstantLinking,
-    ConverterRequest,
-    FieldLinking,
-    LinkingDest,
-    LinkingRequest,
-    LinkingResult,
-    LinkingSource,
-    UnlinkedOptionalPolicyRequest,
-)
-from ..model_tools.definitions import DefaultValue, InputField, InputShape, NoDefault, OutputShape, ParamKind
+from ..conversion.request_cls import CoercerRequest, ConversionContext, ConverterRequest
+from ..model_tools.definitions import DefaultValue, NoDefault
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
-from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
-from ..provider.fields import input_field_to_loc, output_field_to_loc
+from ..provider.essential import CannotProvide, Mediator
 from ..provider.location import FieldLoc
 from ..provider.request_cls import LocStack, TypeHintLoc
-from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
-from ..provider.static_provider import StaticProvider, static_provision_action
-from ..utils import add_note
-
-
-class ConverterProvider(StaticProvider, ABC):
-    @final
-    @static_provision_action
-    def _outer_provide_converter(self, mediator: Mediator, request: ConverterRequest):
-        return self._provide_converter(mediator, request)
-
-    @abstractmethod
-    def _provide_converter(self, mediator: Mediator, request: ConverterRequest) -> Converter:
-        ...
+from ..type_tools import is_parametrized
+from .provider_template import ConverterProvider
 
 
 class BuiltinConverterProvider(ConverterProvider):
@@ -69,43 +38,102 @@ class BuiltinConverterProvider(ConverterProvider):
                 is_demonstrative=True,
             )
 
-        source_model_loc, *extra_params = map(self._param_to_loc, signature.parameters.values())
-        dst_model_loc = self._get_dst_field(signature.return_annotation)
-        dst_shape = self._fetch_dst_shape(mediator, dst_model_loc)
-        src_shape = self._fetch_src_shape(mediator, source_model_loc)
-        broaching_plan = self._make_broaching_plan(
-            mediator=mediator,
-            dst_shape=dst_shape,
-            src_shape=src_shape,
-            owner_linking_src=LinkingSource(source_model_loc),
-            owner_linking_dst=LinkingDest(dst_model_loc),
-            extra_params=tuple(map(LinkingSource, extra_params)),
-        )
-        return self._make_converter(mediator, request, broaching_plan, signature)
+        return self._make_converter(mediator, request)
 
-    def _make_converter(
-        self,
-        mediator: Mediator,
-        request: ConverterRequest,
-        broaching_plan: BroachingPlan,
-        signature: Signature,
-    ):
-        code_gen = self._create_broaching_code_gen(broaching_plan)
+    def _get_type_desc(self, tp: TypeHint) -> str:
+        if isinstance(tp, type) and not is_parametrized(tp):
+            return tp.__qualname__
+        str_tp = str(tp)
+        if str_tp.startswith("typing."):
+            return str_tp[7:]
+        return str_tp
+
+    def _make_converter(self, mediator: Mediator, request: ConverterRequest):
+        src_loc, *extra_params_locs = map(self._param_to_loc, request.signature.parameters.values())
+        dst_loc = self._get_dst_field(request.signature.return_annotation)
+
+        coercer = mediator.mandatory_provide(
+            CoercerRequest(
+                src=LocStack(src_loc),
+                ctx=ConversionContext(tuple(extra_params_locs)),
+                dst=LocStack(dst_loc),
+            ),
+            lambda x: self._get_no_coercer_error_description(src_loc, dst_loc),
+        )
+
         closure_name = self._get_closure_name(request)
-        dumper_code, dumper_namespace = code_gen.produce_code(
+        dumper_code, dumper_namespace = self._produce_code(
             signature=request.signature,
             closure_name=closure_name,
             stub_function=request.stub_function,
+            coercer=coercer,
         )
-        code_gen_loc_stack = LocStack(TypeHintLoc(self._get_type_from_annotation(signature.return_annotation)))
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
-            code_gen_hook=fetch_code_gen_hook(mediator, code_gen_loc_stack),
+            code_gen_hook=fetch_code_gen_hook(mediator, LocStack(dst_loc)),
             namespace=dumper_namespace,
             closure_code=dumper_code,
             closure_name=closure_name,
             file_name=self._get_file_name(request),
         )
+
+    def _get_no_coercer_error_description(self, src_loc: FieldLoc, dst_loc: TypeHintLoc) -> str:
+        src_tp = self._get_type_desc(src_loc.type)
+        dst_tp = self._get_type_desc(dst_loc.type)
+        return f"Cannot create coercer for `{src_loc.field_id}: {src_tp} -> {dst_tp}`"
+
+    def register_mangled(self, namespace: CascadeNamespace, base: str, obj: object) -> str:
+        base = self._name_sanitizer.sanitize(base)
+        if namespace.try_add_constant(base, obj):
+            return base
+
+        for i in itertools.count(1):
+            name = f"{base}_{i}"
+            if namespace.try_add_constant(name, obj):
+                return name
+        raise RuntimeError
+
+    def _produce_code(
+        self,
+        signature: Signature,
+        stub_function: Optional[Callable],
+        closure_name: str,
+        coercer: Coercer,
+    ) -> Tuple[str, Mapping[str, object]]:
+        builder = CodeBuilder()
+        namespace = BuiltinCascadeNamespace(occupied=signature.parameters.keys())
+        namespace.add_outer_constant("_closure_signature", signature)
+        namespace.add_outer_constant("_stub_function", stub_function)
+        namespace.add_outer_constant("_update_wrapper", update_wrapper)
+        coercer_var = self.register_mangled(namespace, "coercer", coercer)
+
+        no_types_signature = signature.replace(
+            parameters=[param.replace(annotation=Signature.empty) for param in signature.parameters.values()],
+            return_annotation=Signature.empty,
+        )
+        parameters = tuple(signature.parameters.values())
+        ctx_passing = self._get_ctx_passing(parameters[1:])
+        builder(
+            f"""
+            def {closure_name}{no_types_signature}:
+                return {coercer_var}({parameters[0].name}, {ctx_passing})
+            """,
+        )
+        if stub_function is not None:
+            builder += f"_update_wrapper({closure_name}, _stub_function)"
+        builder += f"{closure_name}.__signature__ = _closure_signature"
+        builder += f"{closure_name}.__name__ = {closure_name!r}"
+        return builder.string(), namespace.all_constants
+
+    def _get_ctx_passing(self, ctx_parameters: Sequence[Parameter]) -> str:
+        if len(ctx_parameters) == 0:
+            return "None"
+        if len(ctx_parameters) == 1:
+            return ctx_parameters[0].name
+        return "(" + ", ".join(param.name for param in ctx_parameters) + ")"
+
+    def _get_compiler(self) -> ClosureCompiler:
+        return BasicClosureCompiler()
 
     def _get_closure_name(self, request: ConverterRequest) -> str:
         if request.function_name is not None:
@@ -125,7 +153,7 @@ class BuiltinConverterProvider(ConverterProvider):
             return stub_function_name
         src = next(iter(request.signature.parameters.values()))
         dst = self._get_type_from_annotation(request.signature.return_annotation)
-        return f"convert_{src}_to_{dst}"
+        return self._name_sanitizer.sanitize(f"convert_{src}_to_{dst}")
 
     def _get_type_from_annotation(self, annotation: Any) -> TypeHint:
         return Any if annotation == Signature.empty else annotation
@@ -141,257 +169,4 @@ class BuiltinConverterProvider(ConverterProvider):
     def _get_dst_field(self, return_annotation: Any) -> TypeHintLoc:
         return TypeHintLoc(
             self._get_type_from_annotation(return_annotation),
-        )
-
-    def _fetch_dst_shape(self, mediator: Mediator, model_dst_loc: TypeHintLoc) -> InputShape:
-        return provide_generic_resolved_shape(
-            mediator,
-            InputShapeRequest(loc_stack=LocStack(model_dst_loc)),
-        )
-
-    def _fetch_src_shape(self, mediator: Mediator, source_model_loc: FieldLoc) -> OutputShape:
-        return provide_generic_resolved_shape(
-            mediator,
-            OutputShapeRequest(loc_stack=LocStack(source_model_loc)),
-        )
-
-    def _get_compiler(self) -> ClosureCompiler:
-        return BasicClosureCompiler()
-
-    def _create_broaching_code_gen(self, plan: BroachingPlan) -> BroachingCodeGenerator:
-        return BuiltinBroachingCodeGenerator(plan=plan, name_sanitizer=self._name_sanitizer)
-
-    def _fetch_linkings(
-        self,
-        mediator: Mediator,
-        dst_shape: InputShape,
-        src_shape: OutputShape,
-        owner_linking_src: LinkingSource,
-        owner_linking_dst: LinkingDest,
-        extra_params: Sequence[LinkingSource],
-    ) -> Iterable[Tuple[InputField, Optional[LinkingResult]]]:
-        model_linking_sources = tuple(
-            owner_linking_src.append_with(output_field_to_loc(src_field))
-            for src_field in src_shape.fields
-        )
-        sources = (model_linking_sources, *extra_params)
-
-        def fetch_field_linking(dst_field: InputField) -> Tuple[InputField, Optional[LinkingResult]]:
-            destination = owner_linking_dst.append_with(input_field_to_loc(dst_field))
-            try:
-                linking = mediator.provide(
-                    LinkingRequest(
-                        sources=sources,  # type: ignore[arg-type]
-                        destination=destination,
-                    ),
-                )
-            except CannotProvide as e:
-                if dst_field.is_required:
-                    add_note(e, "Note: This is a required filed, so it must take value")
-                    raise
-
-                policy = mediator.mandatory_provide(
-                    UnlinkedOptionalPolicyRequest(loc_stack=destination),
-                )
-                if policy.is_allowed:
-                    return dst_field, None
-                add_note(
-                    e,
-                    "Note: Current policy forbids unlinked optional fields,"
-                    " so you need to link it to another field"
-                    " or explicitly confirm the desire to skipping using `allow_unlinked_optional`",
-                )
-                raise
-            return dst_field, linking
-
-        return mandatory_apply_by_iterable(
-            fetch_field_linking,
-            zip(dst_shape.fields),
-            lambda: "Linkings for some fields are not found",
-        )
-
-    def _get_nested_models_sub_plan(
-        self,
-        mediator: Mediator,
-        linking_src: LinkingSource,
-        linking_dst: LinkingDest,
-        extra_params: Sequence[LinkingSource],
-    ) -> Optional[BroachingPlan]:
-        try:
-            dst_shape = provide_generic_resolved_shape(
-                mediator,
-                InputShapeRequest(loc_stack=linking_dst),
-            )
-            src_shape = provide_generic_resolved_shape(
-                mediator,
-                OutputShapeRequest(loc_stack=linking_src),
-            )
-        except CannotProvide:
-            return None
-
-        return self._make_broaching_plan(
-            mediator=mediator,
-            dst_shape=dst_shape,
-            src_shape=src_shape,
-            extra_params=extra_params,
-            owner_linking_src=linking_src,
-            owner_linking_dst=linking_dst,
-        )
-
-    def _linking_source_to_plan(self, linking_src: LinkingSource) -> BroachingPlan:
-        return reduce(
-            lambda plan, item: (
-                AccessorElement(
-                    target=plan,
-                    accessor=item.accessor,
-                )
-            ),
-            linking_src.tail,
-            cast(BroachingPlan, ParameterElement(linking_src.head.field_id)),
-        )
-
-    def _get_coercer_sub_plan(self, coercer: Coercer, linking_src: LinkingSource) -> BroachingPlan:
-        return FunctionElement(
-            func=coercer,
-            args=(
-                PositionalArg(
-                    self._linking_source_to_plan(linking_src),
-                ),
-            ),
-        )
-
-    def _generate_field_linking_to_sub_plan(
-        self,
-        mediator: Mediator,
-        extra_params: Sequence[LinkingSource],
-        owner_linking_dst: LinkingDest,
-        input_field: InputField,
-        linking: FieldLinking,
-    ) -> BroachingPlan:
-        if linking.coercer is not None:
-            return self._get_coercer_sub_plan(linking.coercer, linking.source)
-
-        linking_dst = owner_linking_dst.append_with(input_field_to_loc(input_field))
-        try:
-            coercer = mediator.provide(
-                CoercerRequest(
-                    src=linking.source,
-                    dst=linking_dst,
-                ),
-            )
-        except CannotProvide as e:
-            result = self._get_nested_models_sub_plan(
-                mediator=mediator,
-                linking_src=linking.source,
-                linking_dst=linking_dst,
-                extra_params=extra_params,
-            )
-            if result is not None:
-                return result
-            raise e
-        return self._get_coercer_sub_plan(coercer, linking.source)
-
-    def _generate_constant_linking_to_sub_plan(
-        self,
-        mediator: Mediator,
-        linking: ConstantLinking,
-    ) -> BroachingPlan:
-        if isinstance(linking.constant, DefaultValue):
-            return ConstantElement(value=linking.constant.value)
-        return FunctionElement(func=linking.constant.factory, args=())
-
-    def _generate_field_to_sub_plan(
-        self,
-        mediator: Mediator,
-        extra_params: Sequence[LinkingSource],
-        field_linkings: Iterable[Tuple[InputField, LinkingResult]],
-        owner_linking_dst: LinkingDest,
-    ) -> Mapping[InputField, BroachingPlan]:
-        def generate_sub_plan(input_field: InputField, linking_result: LinkingResult):
-            if isinstance(linking_result.linking, ConstantLinking):
-                return self._generate_constant_linking_to_sub_plan(
-                    mediator=mediator,
-                    linking=linking_result.linking,
-                )
-            return self._generate_field_linking_to_sub_plan(
-                mediator=mediator,
-                extra_params=extra_params,
-                owner_linking_dst=owner_linking_dst,
-                input_field=input_field,
-                linking=linking_result.linking,
-            )
-
-        coercers = mandatory_apply_by_iterable(
-            generate_sub_plan,
-            field_linkings,
-            lambda: "Coercers for some linkings are not found",
-        )
-        return {
-            dst_field: coercer
-            for (dst_field, linking), coercer in zip(field_linkings, coercers)
-        }
-
-    def _make_broaching_plan(
-        self,
-        mediator: Mediator,
-        dst_shape: InputShape,
-        src_shape: OutputShape,
-        extra_params: Sequence[LinkingSource],
-        owner_linking_src: LinkingSource,
-        owner_linking_dst: LinkingDest,
-    ) -> BroachingPlan:
-        field_linkings = self._fetch_linkings(
-            mediator=mediator,
-            dst_shape=dst_shape,
-            src_shape=src_shape,
-            extra_params=extra_params,
-            owner_linking_src=owner_linking_src,
-            owner_linking_dst=owner_linking_dst,
-        )
-        field_to_sub_plan = self._generate_field_to_sub_plan(
-            mediator=mediator,
-            field_linkings=[
-                (dst_field, linking)
-                for dst_field, linking in field_linkings
-                if linking is not None
-            ],
-            extra_params=extra_params,
-            owner_linking_dst=owner_linking_dst,
-        )
-        return self._make_constructor_call(
-            dst_shape=dst_shape,
-            field_to_linking=dict(field_linkings),
-            field_to_sub_plan=field_to_sub_plan,
-        )
-
-    def _make_constructor_call(
-        self,
-        dst_shape: InputShape,
-        field_to_linking: Mapping[InputField, Optional[LinkingResult]],
-        field_to_sub_plan: Mapping[InputField, BroachingPlan],
-    ) -> BroachingPlan:
-        args: List[FuncCallArg[BroachingPlan]] = []
-        has_skipped_params = False
-        for param in dst_shape.params:
-            field = dst_shape.fields_dict[param.field_id]
-
-            if field_to_linking[field] is None:
-                has_skipped_params = True
-                continue
-
-            sub_plan = field_to_sub_plan[field]
-            if param.kind == ParamKind.KW_ONLY or has_skipped_params:
-                args.append(KeywordArg(param.name, sub_plan))
-            elif param.kind == ParamKind.POS_ONLY and has_skipped_params:
-                raise CannotProvide(
-                    "Can not generate consistent constructor call,"
-                    " positional-only parameter is skipped",
-                    is_demonstrative=True,
-                )
-            else:
-                args.append(PositionalArg(sub_plan))
-
-        return FunctionElement(
-            func=dst_shape.constructor,
-            args=tuple(args),
         )

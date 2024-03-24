@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import List
 
-from tests_helpers import raises_exc, requires, with_cause, with_notes
+import pytest
+from tests_helpers import cond_list, raises_exc, with_cause, with_notes
 
 from adaptix import AggregateCannotProvide, CannotProvide, NoSuitableProvider, Retort
 from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
@@ -124,15 +125,22 @@ def test_cannot_produce_converter_no_linking_required():
                 f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                "Linkings for some fields are not found",
+                f"Cannot create coercer for `src: {Book.__qualname__} -> {BookDTO.__qualname__}`",
                 [
-                    with_notes(
-                        CannotProvide(
-                            f"Cannot find paired field of `{BookDTO.__qualname__}.author` for linking",
-                            is_terminal=False,
-                            is_demonstrative=True,
-                        ),
-                        "Note: This is a required filed, so it must take value",
+                    AggregateCannotProvide(
+                        "Linkings for some fields are not found",
+                        [
+                            with_notes(
+                                CannotProvide(
+                                    f"Cannot find paired field of `{BookDTO.__qualname__}.author` for linking",
+                                    is_terminal=False,
+                                    is_demonstrative=True,
+                                ),
+                                "Note: This is a required filed, so it must take value",
+                            ),
+                        ],
+                        is_terminal=True,
+                        is_demonstrative=True,
                     ),
                 ],
                 is_terminal=True,
@@ -163,17 +171,24 @@ def test_cannot_produce_converter_no_linking_optional():
                 f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                "Linkings for some fields are not found",
+                f"Cannot create coercer for `src: {Book.__qualname__} -> {BookDTO.__qualname__}`",
                 [
-                    with_notes(
-                        CannotProvide(
-                            f"Cannot find paired field of `{BookDTO.__qualname__}.author` for linking",
-                            is_terminal=False,
-                            is_demonstrative=True,
-                        ),
-                        "Note: Current policy forbids unlinked optional fields,"
-                        " so you need to link it to another field"
-                        " or explicitly confirm the desire to skipping using `allow_unlinked_optional`",
+                    AggregateCannotProvide(
+                        "Linkings for some fields are not found",
+                        [
+                            with_notes(
+                                CannotProvide(
+                                    f"Cannot find paired field of `{BookDTO.__qualname__}.author` for linking",
+                                    is_terminal=False,
+                                    is_demonstrative=True,
+                                ),
+                                "Note: Current policy forbids unlinked optional fields,"
+                                " so you need to link it to another field"
+                                " or explicitly confirm the desire to skipping using `allow_unlinked_optional`",
+                            ),
+                        ],
+                        is_terminal=True,
+                        is_demonstrative=True,
                     ),
                 ],
                 is_terminal=True,
@@ -205,12 +220,19 @@ def test_cannot_produce_converter_no_coercer():
                 f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                "Coercers for some linkings are not found",
+                f"Cannot create coercer for `src: {Book.__qualname__} -> {BookDTO.__qualname__}`",
                 [
-                    CannotProvide(
-                        f"Cannot find coercer for linking"
-                        f" `{Book.__qualname__}.author: int -> {BookDTO.__qualname__}.author: str`",
-                        is_terminal=False,
+                    AggregateCannotProvide(
+                        "Coercers for some linkings are not found",
+                        [
+                            CannotProvide(
+                                f"Cannot find coercer for linking"
+                                f" `{Book.__qualname__}.author: int -> {BookDTO.__qualname__}.author: str`",
+                                is_terminal=False,
+                                is_demonstrative=True,
+                            ),
+                        ],
+                        is_terminal=True,
                         is_demonstrative=True,
                     ),
                 ],
@@ -222,7 +244,14 @@ def test_cannot_produce_converter_no_coercer():
     )
 
 
-def test_cannot_produce_converter_no_coercer_complex_type():
+@pytest.mark.parametrize(
+    "list_tp",
+    [
+        List,
+        *cond_list(HAS_STD_CLASSES_GENERICS, [list]),
+    ],
+)
+def test_cannot_produce_converter_no_coercer_complex_type(list_tp):
     @dataclass
     class Book:
         title: str
@@ -243,51 +272,25 @@ def test_cannot_produce_converter_no_coercer_complex_type():
                 f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                "Coercers for some linkings are not found",
+                f"Cannot create coercer for `src: {Book.__qualname__} -> {BookDTO.__qualname__}`",
                 [
-                    CannotProvide(
-                        f"Cannot find coercer for linking"
-                        f" `{Book.__qualname__}.authors: List[str] -> {BookDTO.__qualname__}.authors: List[int]`",
-                        is_terminal=False,
-                        is_demonstrative=True,
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
-        lambda: get_converter(Book, BookDTO),
-    )
-
-
-@requires(HAS_STD_CLASSES_GENERICS)
-def test_cannot_produce_converter_no_coercer_complex_builtin_type():
-    @dataclass
-    class Book:
-        title: str
-        price: int
-        authors: list[str]
-
-    @dataclass
-    class BookDTO:
-        title: str
-        price: int
-        authors: list[int]
-
-    raises_exc(
-        with_cause(
-            NoSuitableProvider(
-                f"Cannot produce converter for"
-                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
-            ),
-            AggregateCannotProvide(
-                "Coercers for some linkings are not found",
-                [
-                    CannotProvide(
-                        f"Cannot find coercer for linking"
-                        f" `{Book.__qualname__}.authors: list[str] -> {BookDTO.__qualname__}.authors: list[int]`",
-                        is_terminal=False,
+                    AggregateCannotProvide(
+                        "Coercers for some linkings are not found",
+                        [
+                            AggregateCannotProvide(
+                                "Cannot create coercer for iterable. Coercer for element cannot be created",
+                                [
+                                    CannotProvide(
+                                        "Cannot find coercer for `str -> int`",
+                                        is_terminal=False,
+                                        is_demonstrative=True,
+                                    ),
+                                ],
+                                is_terminal=True,
+                                is_demonstrative=True,
+                            ),
+                        ],
+                        is_terminal=True,
                         is_demonstrative=True,
                     ),
                 ],
