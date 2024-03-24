@@ -1,10 +1,10 @@
-from typing import Any, Iterable, List, Optional, Set, Tuple, Union, Annotated
+from typing import Annotated, Any, Iterable, List, Optional, Set, Tuple, Union
 
 import pytest
+from tests_helpers import cond_list
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix.conversion import coercer, impl_converter
-from tests_helpers import cond_list
 
 
 @pytest.mark.parametrize(
@@ -147,12 +147,12 @@ def test_union_subcase(src_model_spec, dst_model_spec, src_tp, dst_tp):
         *cond_list(
             HAS_ANNOTATED,
             [
-                pytest.param(Optional[Annotated[int, 'meta']], Optional[int], 123, 123),
-                pytest.param(Optional[int], Optional[Annotated[int, 'meta']], 123, 123),
-                pytest.param(Annotated[Optional[int], 'meta'], Optional[int], 123, 123),
-                pytest.param(Optional[int], Annotated[Optional[int], 'meta'], 123, 123),
-            ]
-        )
+                pytest.param(Optional[Annotated[int, "meta"]], Optional[int], 123, 123),
+                pytest.param(Optional[int], Optional[Annotated[int, "meta"]], 123, 123),
+                pytest.param(Annotated[Optional[int], "meta"], Optional[int], 123, 123),
+                pytest.param(Optional[int], Annotated[Optional[int], "meta"], 123, 123),
+            ],
+        ),
     ],
 )
 def test_optional(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst_value):
