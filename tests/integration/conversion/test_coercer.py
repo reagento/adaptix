@@ -1,4 +1,5 @@
-from typing import Annotated, Any, Iterable, List, Optional, Set, Tuple, Union
+import typing
+from typing import Any, Iterable, List, Optional, Set, Tuple, Union
 
 import pytest
 from tests_helpers import cond_list
@@ -146,11 +147,11 @@ def test_union_subcase(src_model_spec, dst_model_spec, src_tp, dst_tp):
         pytest.param(Optional[str], Optional[int], "123", 123),
         *cond_list(
             HAS_ANNOTATED,
-            [
-                pytest.param(Optional[Annotated[int, "meta"]], Optional[int], 123, 123),
-                pytest.param(Optional[int], Optional[Annotated[int, "meta"]], 123, 123),
-                pytest.param(Annotated[Optional[int], "meta"], Optional[int], 123, 123),
-                pytest.param(Optional[int], Annotated[Optional[int], "meta"], 123, 123),
+            lambda: [
+                pytest.param(Optional[typing.Annotated[int, "meta"]], Optional[int], 123, 123),
+                pytest.param(Optional[int], Optional[typing.Annotated[int, "meta"]], 123, 123),
+                pytest.param(typing.Annotated[Optional[int], "meta"], Optional[int], 123, 123),
+                pytest.param(Optional[int], typing.Annotated[Optional[int], "meta"], 123, 123),
             ],
         ),
     ],
