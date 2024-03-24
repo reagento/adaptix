@@ -2,9 +2,7 @@ from typing import Any, Optional, Union
 
 import pytest
 
-from adaptix.conversion import coercer, get_converter, impl_converter
-
-from .local_helpers import FactoryWay
+from adaptix.conversion import coercer, impl_converter
 
 
 @pytest.mark.parametrize(
@@ -14,7 +12,7 @@ from .local_helpers import FactoryWay
         pytest.param(lambda x: int(x), id="lambda"),
     ],
 )
-def test_simple(src_model_spec, dst_model_spec, factory_way, func):
+def test_simple(src_model_spec, dst_model_spec, func):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: str
@@ -25,17 +23,14 @@ def test_simple(src_model_spec, dst_model_spec, factory_way, func):
         field1: int
         field2: int
 
-    if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter(recipe=[coercer(str, int, func=func)])
-        def convert(a: SourceModel) -> DestModel:
-            ...
-    else:
-        convert = get_converter(SourceModel, DestModel, recipe=[coercer(str, int, func=func)])
+    @impl_converter(recipe=[coercer(str, int, func=func)])
+    def convert(a: SourceModel) -> DestModel:
+        ...
 
     assert convert(SourceModel(field1="1", field2="2")) == DestModel(field1=1, field2=2)
 
 
-def test_model_priority(src_model_spec, dst_model_spec, factory_way):
+def test_model_priority(src_model_spec, dst_model_spec):
     @src_model_spec.decorator
     class SourceModelNested(*src_model_spec.bases):
         field1: Any
@@ -59,16 +54,9 @@ def test_model_priority(src_model_spec, dst_model_spec, factory_way):
     def my_coercer(a: SourceModelNested) -> DestModelNested:
         return DestModelNested(field1=src_model_spec.get_field(a, "field1") + 10)
 
-    if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter(recipe=[coercer(SourceModelNested, DestModelNested, func=my_coercer)])
-        def convert(a: SourceModel) -> DestModel:
-            ...
-    else:
-        convert = get_converter(
-            SourceModel,
-            DestModel,
-            recipe=[coercer(SourceModelNested, DestModelNested, func=my_coercer)],
-        )
+    @impl_converter(recipe=[coercer(SourceModelNested, DestModelNested, func=my_coercer)])
+    def convert(a: SourceModel) -> DestModel:
+        ...
 
     assert convert(
         SourceModel(
@@ -83,7 +71,7 @@ def test_model_priority(src_model_spec, dst_model_spec, factory_way):
     )
 
 
-def test_any_dest(src_model_spec, dst_model_spec, factory_way):
+def test_any_dest(src_model_spec, dst_model_spec):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: str
@@ -94,17 +82,14 @@ def test_any_dest(src_model_spec, dst_model_spec, factory_way):
         field1: Any
         field2: Any
 
-    if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter
-        def convert(a: SourceModel) -> DestModel:
-            ...
-    else:
-        convert = get_converter(SourceModel, DestModel)
+    @impl_converter
+    def convert(a: SourceModel) -> DestModel:
+        ...
 
     assert convert(SourceModel(field1="1", field2="2")) == DestModel(field1="1", field2="2")
 
 
-def test_subclass_builtin(src_model_spec, dst_model_spec, factory_way):
+def test_subclass_builtin(src_model_spec, dst_model_spec):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: bool
@@ -115,12 +100,9 @@ def test_subclass_builtin(src_model_spec, dst_model_spec, factory_way):
         field1: int
         field2: int
 
-    if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter
-        def convert(a: SourceModel) -> DestModel:
-            ...
-    else:
-        convert = get_converter(SourceModel, DestModel)
+    @impl_converter
+    def convert(a: SourceModel) -> DestModel:
+        ...
 
     assert convert(SourceModel(field1=False, field2=True)) == DestModel(field1=False, field2=True)
 
@@ -133,7 +115,7 @@ def test_subclass_builtin(src_model_spec, dst_model_spec, factory_way):
         pytest.param(Union[int, str], Union[int, str, None]),
     ],
 )
-def test_union_subcase(src_model_spec, dst_model_spec, factory_way, src_tp, dst_tp):
+def test_union_subcase(src_model_spec, dst_model_spec, src_tp, dst_tp):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: int
@@ -144,12 +126,9 @@ def test_union_subcase(src_model_spec, dst_model_spec, factory_way, src_tp, dst_
         field1: int
         field2: dst_tp
 
-    if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter
-        def convert(a: SourceModel) -> DestModel:
-            ...
-    else:
-        convert = get_converter(SourceModel, DestModel)
+    @impl_converter
+    def convert(a: SourceModel) -> DestModel:
+        ...
 
     assert convert(SourceModel(field1=1, field2=2)) == DestModel(field1=1, field2=2)
 
@@ -165,7 +144,7 @@ def test_union_subcase(src_model_spec, dst_model_spec, factory_way, src_tp, dst_
         pytest.param(Optional[str], Optional[int], "123", 123),
     ],
 )
-def test_optional(src_model_spec, dst_model_spec, factory_way, src_tp, dst_tp, src_value, dst_value):
+def test_optional(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst_value):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: int
@@ -176,13 +155,9 @@ def test_optional(src_model_spec, dst_model_spec, factory_way, src_tp, dst_tp, s
         field1: int
         field2: dst_tp
 
-    recipe = [coercer(str, int, func=int)]
-    if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter(recipe=recipe)
-        def convert(a: SourceModel) -> DestModel:
-            ...
-    else:
-        convert = get_converter(SourceModel, DestModel, recipe=recipe)
+    @impl_converter(recipe=[coercer(str, int, func=int)])
+    def convert(a: SourceModel) -> DestModel:
+        ...
 
     assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
 
