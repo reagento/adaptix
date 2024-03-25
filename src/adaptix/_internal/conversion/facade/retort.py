@@ -12,6 +12,7 @@ from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...retort.operating_retort import OperatingRetort
 from ...type_tools import is_generic_class
 from ..coercer_provider import (
+    DictCoercerProvider,
     DstAnyCoercerProvider,
     IterableCoercerProvider,
     OptionalCoercerProvider,
@@ -38,6 +39,7 @@ class FilledConversionRetort(OperatingRetort):
 
         ModelCoercerProvider(),
         IterableCoercerProvider(),
+        DictCoercerProvider(),
 
         SameTypeCoercerProvider(),
         DstAnyCoercerProvider(),

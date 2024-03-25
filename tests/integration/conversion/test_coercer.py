@@ -1,5 +1,5 @@
 import typing
-from typing import Any, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Set, Tuple, Union
 
 import pytest
 from tests_helpers import cond_list
@@ -350,3 +350,91 @@ def test_iterable_of_models_on_top_level(src_model_spec, dst_model_spec):
         ...
 
     assert convert([SourceModel(v=1), SourceModel(v=2)]) == [DestModel(v=1), DestModel(v=2)]
+
+
+@pytest.mark.parametrize(
+    ["src_tp", "dst_tp", "src_value", "dst_value"],
+    [
+        pytest.param(Dict[int, int], Dict[int, int], {1: 1, 2: 2, 3: 3}, {1: 1, 2: 2, 3: 3}),
+        pytest.param(Dict[str, str], Dict[int, int], {"1": "1", "2": "2", "3": "3"}, {1: 1, 2: 2, 3: 3}),
+        pytest.param(Mapping[str, str], Dict[int, int], {"1": "1", "2": "2", "3": "3"}, {1: 1, 2: 2, 3: 3}),
+        pytest.param(Mapping[str, str], MutableMapping[int, int], {"1": "1", "2": "2", "3": "3"}, {1: 1, 2: 2, 3: 3}),
+    ],
+)
+def test_dict(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst_value):
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: int
+        field2: src_tp
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: int
+        field2: dst_tp
+
+    @impl_converter(recipe=[coercer(str, int, func=int)])
+    def convert(a: SourceModel) -> DestModel:
+        ...
+
+    assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
+
+
+def test_dict_with_model(src_model_spec, dst_model_spec):
+    @src_model_spec.decorator
+    class SourceModelInner(*src_model_spec.bases):
+        data: int
+
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: int
+        field2: Dict[str, SourceModelInner]
+
+    @dst_model_spec.decorator
+    class DestModelInner(*dst_model_spec.bases):
+        data: int
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: int
+        field2: Dict[str, DestModelInner]
+
+    @impl_converter
+    def convert(a: SourceModel) -> DestModel:
+        ...
+
+    assert (
+        convert(SourceModel(field1=1, field2={"a": SourceModelInner(data=1), "b": SourceModelInner(data=2)}))
+        ==
+        DestModel(field1=1, field2={"a": DestModelInner(data=1), "b": DestModelInner(data=2)})
+    )
+
+
+def test_dict_with_model_and_ctx(src_model_spec, dst_model_spec):
+    @src_model_spec.decorator
+    class SourceModelInner(*src_model_spec.bases):
+        data: int
+
+    @src_model_spec.decorator
+    class SourceModel(*src_model_spec.bases):
+        field1: int
+        field2: Dict[str, SourceModelInner]
+
+    @dst_model_spec.decorator
+    class DestModelInner(*dst_model_spec.bases):
+        data: int
+        extra1: str
+
+    @dst_model_spec.decorator
+    class DestModel(*dst_model_spec.bases):
+        field1: int
+        field2: Dict[str, DestModelInner]
+
+    @impl_converter
+    def convert(a: SourceModel, extra1: str) -> DestModel:
+        ...
+
+    assert (
+        convert(SourceModel(field1=1, field2={"a": SourceModelInner(data=1), "b": SourceModelInner(data=2)}), "e1")
+        ==
+        DestModel(field1=1, field2={"a": DestModelInner(data=1, extra1="e1"), "b": DestModelInner(data=2, extra1="e1")})
+    )

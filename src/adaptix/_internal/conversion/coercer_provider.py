@@ -196,8 +196,8 @@ class IterableCoercerProvider(NormTypeCoercerProvider):
         norm_src: BaseNormType,
         norm_dst: BaseNormType,
     ) -> Coercer:
-        src_arg_tp = self._get_source_arg_type(norm_src)
-        dst_factory, dst_arg_tp = self._get_dst_arg_type_and_factory(norm_dst)
+        src_arg_tp = self._parse_source(norm_src)
+        dst_factory, dst_arg_tp = self._parse_destination(norm_dst)
         element_coercer = mediator.mandatory_provide(
             CoercerRequest(
                 src=request.src.append_with(
@@ -216,18 +216,69 @@ class IterableCoercerProvider(NormTypeCoercerProvider):
 
         return iterable_coercer
 
-    def _get_source_arg_type(self, norm: BaseNormType) -> TypeHint:
+    def _parse_source(self, norm: BaseNormType) -> TypeHint:
         if norm.origin == tuple and norm.args[-1] != Ellipsis:
             raise CannotProvide("Constant-length tuple is not suppoerted yet", is_demonstrative=True)
         if norm.origin in self.CONCRETE_ORIGINS or norm.origin in self.ABC_TO_IMPL:
             return norm.args[0].source
         raise CannotProvide
 
-    def _get_dst_arg_type_and_factory(self, norm: BaseNormType) -> Tuple[Callable, TypeHint]:
+    def _parse_destination(self, norm: BaseNormType) -> Tuple[Callable, TypeHint]:
         if norm.origin == tuple and norm.args[-1] != Ellipsis:
             raise CannotProvide("Constant-length tuple is not suppoerted yet", is_demonstrative=True)
         if norm.origin in self.CONCRETE_ORIGINS:
             return norm.origin, norm.args[0].source
         if norm.origin in self.ABC_TO_IMPL:
             return self.ABC_TO_IMPL[norm.origin], norm.args[0].source
+        raise CannotProvide
+
+
+class DictCoercerProvider(NormTypeCoercerProvider):
+    def _provide_coercer_norm_types(
+        self,
+        mediator: Mediator,
+        request: CoercerRequest,
+        norm_src: BaseNormType,
+        norm_dst: BaseNormType,
+    ) -> Coercer:
+        src_key_tp, src_value_tp = self._parse_source(norm_src)
+        dst_key_tp, dst_value_tp = self._parse_destination(norm_dst)
+        key_coercer = mediator.mandatory_provide(
+            CoercerRequest(
+                src=request.src.append_with(
+                    GenericParamLoc(type=src_key_tp, generic_pos=0),
+                ),
+                ctx=request.ctx,
+                dst=request.dst.append_with(
+                    GenericParamLoc(type=dst_key_tp, generic_pos=0),
+                ),
+            ),
+            lambda x: "Cannot create coercer for dict. Coercer for key cannot be created",
+        )
+        value_coercer = mediator.mandatory_provide(
+            CoercerRequest(
+                src=request.src.append_with(
+                    GenericParamLoc(type=src_value_tp, generic_pos=1),
+                ),
+                ctx=request.ctx,
+                dst=request.dst.append_with(
+                    GenericParamLoc(type=dst_value_tp, generic_pos=1),
+                ),
+            ),
+            lambda x: "Cannot create coercer for dict. Coercer for value cannot be created",
+        )
+
+        def dict_coercer(data, ctx):
+            return {key_coercer(key, ctx): value_coercer(value, ctx) for key, value in data.items()}
+
+        return dict_coercer
+
+    def _parse_source(self, norm: BaseNormType) -> Tuple[TypeHint, TypeHint]:
+        if norm.origin in (dict, collections.abc.Mapping, collections.abc.MutableMapping):
+            return norm.args[0].source, norm.args[1].source
+        raise CannotProvide
+
+    def _parse_destination(self, norm: BaseNormType) -> Tuple[TypeHint, TypeHint]:
+        if norm.origin in (dict, collections.abc.Mapping, collections.abc.MutableMapping):
+            return norm.args[0].source, norm.args[1].source
         raise CannotProvide
