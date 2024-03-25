@@ -1,6 +1,6 @@
 from typing import Any, Callable, Optional, overload
 
-from ...common import Coercer
+from ...common import OneArgCoercer
 from ...model_tools.definitions import DefaultFactory, DefaultValue
 from ...provider.essential import Provider
 from ...provider.facade.provider import bound_by_any
@@ -10,7 +10,7 @@ from ..linking_provider import ConstantLinkingProvider, MatchingLinkingProvider
 from ..policy_provider import UnlinkedOptionalPolicyProvider
 
 
-def link(src: Pred, dst: Pred, *, coercer: Optional[Coercer] = None) -> Provider:
+def link(src: Pred, dst: Pred, *, coercer: Optional[OneArgCoercer] = None) -> Provider:
     """Basic provider to define custom linking between fields.
 
     :param src: Predicate specifying source point of linking. See :ref:`predicate-system` for details.
@@ -50,7 +50,7 @@ def link_constant(dst: Pred, *, value: Any = None, factory: Any = None) -> Provi
     )
 
 
-def coercer(src: Pred, dst: Pred, func: Coercer) -> Provider:
+def coercer(src: Pred, dst: Pred, func: OneArgCoercer) -> Provider:
     """Basic provider to define custom coercer.
 
     :param src: Predicate specifying source point of linking. See :ref:`predicate-system` for details.

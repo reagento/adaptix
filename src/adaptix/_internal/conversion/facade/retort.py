@@ -12,14 +12,18 @@ from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...retort.operating_retort import OperatingRetort
 from ...type_tools import is_generic_class
 from ..coercer_provider import (
+    DictCoercerProvider,
     DstAnyCoercerProvider,
+    IterableCoercerProvider,
     OptionalCoercerProvider,
     SameTypeCoercerProvider,
     SubclassCoercerProvider,
+    TypeHintTagsUnwrappingProvider,
     UnionSubcaseCoercerProvider,
 )
 from ..converter_provider import BuiltinConverterProvider
 from ..linking_provider import SameNameLinkingProvider
+from ..model_coercer_provider import ModelCoercerProvider
 from ..request_cls import ConverterRequest
 from .checker import ensure_function_is_stub
 from .provider import forbid_unlinked_optional
@@ -33,11 +37,16 @@ class FilledConversionRetort(OperatingRetort):
 
         SameNameLinkingProvider(is_default=True),
 
+        ModelCoercerProvider(),
+        IterableCoercerProvider(),
+        DictCoercerProvider(),
+
         SameTypeCoercerProvider(),
         DstAnyCoercerProvider(),
         SubclassCoercerProvider(),
         UnionSubcaseCoercerProvider(),
         OptionalCoercerProvider(),
+        TypeHintTagsUnwrappingProvider(),
 
         forbid_unlinked_optional(P.ANY),
     ]

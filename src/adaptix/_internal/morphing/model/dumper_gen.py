@@ -163,7 +163,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         builder = CodeBuilder()
         with builder(f"def {closure_name}(data):"):
             builder.extend(body_builder)
-        return builder.string(), namespace.constants
+        return builder.string(), namespace.all_constants
 
     def _is_extra_target(self, field: OutputField) -> bool:
         return field.id in self._extra_targets

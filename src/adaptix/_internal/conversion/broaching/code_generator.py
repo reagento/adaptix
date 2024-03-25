@@ -3,9 +3,8 @@ import itertools
 from abc import ABC, abstractmethod
 from ast import AST
 from collections import defaultdict
-from functools import update_wrapper
 from inspect import Signature
-from typing import Callable, DefaultDict, Mapping, Optional, Tuple, Union
+from typing import DefaultDict, Mapping, Tuple, Union
 
 from ...code_tools.ast_templater import ast_substitute
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
@@ -14,7 +13,7 @@ from ...code_tools.name_sanitizer import NameSanitizer
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory
 from ...compat import compat_ast_unparse
 from ...model_tools.definitions import DescriptorAccessor, ItemAccessor
-from ...special_cases_optimization import as_is_stub
+from ...special_cases_optimization import as_is_stub, as_is_stub_with_ctx
 from .definitions import (
     AccessorElement,
     ConstantElement,
@@ -60,12 +59,7 @@ class GenState:
 
 class BroachingCodeGenerator(ABC):
     @abstractmethod
-    def produce_code(
-        self,
-        signature: Signature,
-        closure_name: str,
-        stub_function: Optional[Callable],
-    ) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, signature: Signature, closure_name: str) -> Tuple[str, Mapping[str, object]]:
         ...
 
 
@@ -80,19 +74,12 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
             name_sanitizer=self._name_sanitizer,
         )
 
-    def produce_code(
-        self,
-        signature: Signature,
-        closure_name: str,
-        stub_function: Optional[Callable],
-    ) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, signature: Signature, closure_name: str) -> Tuple[str, Mapping[str, object]]:
         builder = CodeBuilder()
         namespace = BuiltinCascadeNamespace(occupied=signature.parameters.keys())
         state = self._create_state(namespace=namespace)
 
-        namespace.add_constant("_closure_signature", signature)
-        namespace.add_constant("_stub_function", stub_function)
-        namespace.add_constant("_update_wrapper", update_wrapper)
+        namespace.add_outer_constant("_closure_signature", signature)
         no_types_signature = signature.replace(
             parameters=[param.replace(annotation=Signature.empty) for param in signature.parameters.values()],
             return_annotation=Signature.empty,
@@ -101,12 +88,9 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
             body = self._gen_plan_element_dispatch(state, self._plan)
             builder += "return " + compat_ast_unparse(body)
 
-        if stub_function is not None:
-            builder += f"_update_wrapper({closure_name}, _stub_function)"
-
         builder += f"{closure_name}.__signature__ = _closure_signature"
         builder += f"{closure_name}.__name__ = {closure_name!r}"
-        return builder.string(), namespace.constants
+        return builder.string(), namespace.all_constants
 
     def _gen_plan_element_dispatch(self, state: GenState, element: BroachingPlan) -> AST:
         if isinstance(element, ParameterElement):
@@ -138,6 +122,14 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
         ):
             return self._gen_plan_element_dispatch(state, element.args[0].element)
 
+        if (
+            element.func == as_is_stub_with_ctx
+            and len(element.args) == 2  # noqa: PLR2004
+            and isinstance(element.args[0], PositionalArg)
+            and isinstance(element.args[1], PositionalArg)
+        ):
+            return self._gen_plan_element_dispatch(state, element.args[0].element)
+
         if not element.args:
             literal = get_literal_from_factory(element.func)
             if literal is not None:
@@ -148,6 +140,9 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
         else:
             name = state.register_next_id("func", element.func)
 
+        return self._gen_function_call(state, element, name)
+
+    def _gen_function_call(self, state: GenState, element: FunctionElement[BroachingPlan], name: str) -> AST:
         args = []
         keywords = []
         for arg in element.args:
