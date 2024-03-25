@@ -4,7 +4,7 @@ from adaptix.conversion import allow_unlinked_optional, impl_converter
 
 
 @exclude_model_spec(ModelSpec.TYPED_DICT)
-def test_unbound_optional(src_model_spec, dst_model_spec):
+def test_unlinked_optional(src_model_spec, dst_model_spec):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: str
