@@ -15,14 +15,14 @@ from adaptix.conversion import coercer, impl_converter
         pytest.param(lambda x: int(x), id="lambda"),
     ],
 )
-def test_simple(src_model_spec, dst_model_spec, func):
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+def test_simple(model_spec, func):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: str
         field2: str
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: int
 
@@ -33,29 +33,29 @@ def test_simple(src_model_spec, dst_model_spec, func):
     assert convert(SourceModel(field1="1", field2="2")) == DestModel(field1=1, field2=2)
 
 
-def test_model_priority(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModelNested(*src_model_spec.bases):
+def test_model_priority(model_spec):
+    @model_spec.decorator
+    class SourceModelNested(*model_spec.bases):
         field1: Any
 
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: Any
         field2: Any
         nested: SourceModelNested
 
-    @dst_model_spec.decorator
-    class DestModelNested(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModelNested(*model_spec.bases):
         field1: Any
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: Any
         field2: Any
         nested: DestModelNested
 
     def my_coercer(a: SourceModelNested) -> DestModelNested:
-        return DestModelNested(field1=src_model_spec.get_field(a, "field1") + 10)
+        return DestModelNested(field1=model_spec.get_field(a, "field1") + 10)
 
     @impl_converter(recipe=[coercer(SourceModelNested, DestModelNested, func=my_coercer)])
     def convert(a: SourceModel) -> DestModel:
@@ -74,14 +74,14 @@ def test_model_priority(src_model_spec, dst_model_spec):
     )
 
 
-def test_any_dest(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+def test_any_dest(model_spec):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: str
         field2: str
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: Any
         field2: Any
 
@@ -92,14 +92,14 @@ def test_any_dest(src_model_spec, dst_model_spec):
     assert convert(SourceModel(field1="1", field2="2")) == DestModel(field1="1", field2="2")
 
 
-def test_subclass_builtin(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+def test_subclass_builtin(model_spec):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: bool
         field2: bool
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: int
 
@@ -118,14 +118,14 @@ def test_subclass_builtin(src_model_spec, dst_model_spec):
         pytest.param(Union[int, str], Union[int, str, None]),
     ],
 )
-def test_union_subcase(src_model_spec, dst_model_spec, src_tp, dst_tp):
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+def test_union_subcase(model_spec, src_tp, dst_tp):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: src_tp
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: dst_tp
 
@@ -156,14 +156,14 @@ def test_union_subcase(src_model_spec, dst_model_spec, src_tp, dst_tp):
         ),
     ],
 )
-def test_optional(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst_value):
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+def test_optional(model_spec, src_tp, dst_tp, src_value, dst_value):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: src_tp
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: dst_tp
 
@@ -174,22 +174,22 @@ def test_optional(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst
     assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
 
 
-def test_optional_with_model(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModelInner(*src_model_spec.bases):
+def test_optional_with_model(model_spec):
+    @model_spec.decorator
+    class SourceModelInner(*model_spec.bases):
         data: int
 
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: Optional[SourceModelInner]
 
-    @dst_model_spec.decorator
-    class DestModelInner(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModelInner(*model_spec.bases):
         data: int
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: Optional[DestModelInner]
 
@@ -205,23 +205,23 @@ def test_optional_with_model(src_model_spec, dst_model_spec):
     assert convert(SourceModel(field1=1, field2=None)) == DestModel(field1=1, field2=None)
 
 
-def test_optional_with_model_and_ctx(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModelInner(*src_model_spec.bases):
+def test_optional_with_model_and_ctx(model_spec):
+    @model_spec.decorator
+    class SourceModelInner(*model_spec.bases):
         data: int
 
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: Optional[SourceModelInner]
 
-    @dst_model_spec.decorator
-    class DestModelInner(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModelInner(*model_spec.bases):
         data: int
         extra1: str
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: Optional[DestModelInner]
 
@@ -249,14 +249,14 @@ def test_optional_with_model_and_ctx(src_model_spec, dst_model_spec):
         pytest.param(Iterable[int], Iterable[int], [1, 2, 3], (1, 2, 3)),
     ],
 )
-def test_iterable(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst_value):
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+def test_iterable(model_spec, src_tp, dst_tp, src_value, dst_value):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: src_tp
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: dst_tp
 
@@ -267,22 +267,22 @@ def test_iterable(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst
     assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
 
 
-def test_iterable_with_model(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModelInner(*src_model_spec.bases):
+def test_iterable_with_model(model_spec):
+    @model_spec.decorator
+    class SourceModelInner(*model_spec.bases):
         data: int
 
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: List[SourceModelInner]
 
-    @dst_model_spec.decorator
-    class DestModelInner(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModelInner(*model_spec.bases):
         data: int
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: List[DestModelInner]
 
@@ -297,23 +297,23 @@ def test_iterable_with_model(src_model_spec, dst_model_spec):
     )
 
 
-def test_iterable_with_model_and_ctx(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModelInner(*src_model_spec.bases):
+def test_iterable_with_model_and_ctx(model_spec):
+    @model_spec.decorator
+    class SourceModelInner(*model_spec.bases):
         data: int
 
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: List[SourceModelInner]
 
-    @dst_model_spec.decorator
-    class DestModelInner(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModelInner(*model_spec.bases):
         data: int
         extra1: str
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: List[DestModelInner]
 
@@ -336,13 +336,13 @@ def test_iterable_on_top_level():
     assert convert(["1", "2", "3"]) == [1, 2, 3]
 
 
-def test_iterable_of_models_on_top_level(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+def test_iterable_of_models_on_top_level(model_spec):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         v: int
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         v: int
 
     @impl_converter(recipe=[coercer(str, int, func=int)])
@@ -361,14 +361,14 @@ def test_iterable_of_models_on_top_level(src_model_spec, dst_model_spec):
         pytest.param(Mapping[str, str], MutableMapping[int, int], {"1": "1", "2": "2", "3": "3"}, {1: 1, 2: 2, 3: 3}),
     ],
 )
-def test_dict(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst_value):
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+def test_dict(model_spec, src_tp, dst_tp, src_value, dst_value):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: src_tp
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: dst_tp
 
@@ -379,22 +379,22 @@ def test_dict(src_model_spec, dst_model_spec, src_tp, dst_tp, src_value, dst_val
     assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
 
 
-def test_dict_with_model(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModelInner(*src_model_spec.bases):
+def test_dict_with_model(model_spec):
+    @model_spec.decorator
+    class SourceModelInner(*model_spec.bases):
         data: int
 
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: Dict[str, SourceModelInner]
 
-    @dst_model_spec.decorator
-    class DestModelInner(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModelInner(*model_spec.bases):
         data: int
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: Dict[str, DestModelInner]
 
@@ -409,23 +409,23 @@ def test_dict_with_model(src_model_spec, dst_model_spec):
     )
 
 
-def test_dict_with_model_and_ctx(src_model_spec, dst_model_spec):
-    @src_model_spec.decorator
-    class SourceModelInner(*src_model_spec.bases):
+def test_dict_with_model_and_ctx(model_spec):
+    @model_spec.decorator
+    class SourceModelInner(*model_spec.bases):
         data: int
 
-    @src_model_spec.decorator
-    class SourceModel(*src_model_spec.bases):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
         field1: int
         field2: Dict[str, SourceModelInner]
 
-    @dst_model_spec.decorator
-    class DestModelInner(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModelInner(*model_spec.bases):
         data: int
         extra1: str
 
-    @dst_model_spec.decorator
-    class DestModel(*dst_model_spec.bases):
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
         field1: int
         field2: Dict[str, DestModelInner]
 
