@@ -128,7 +128,7 @@ class ModelCoercerProvider(CoercerProvider):
                 )
             except CannotProvide as e:
                 if dst_field.is_required:
-                    add_note(e, "Note: This is a required filed, so it must take value")
+                    add_note(e, "Note: This is a required field, so it must take value")
                     raise
 
                 policy = mediator.mandatory_provide(
@@ -226,7 +226,7 @@ class ModelCoercerProvider(CoercerProvider):
         field_sub_plans = mandatory_apply_by_iterable(
             generate_sub_plan,
             field_linkings,
-            lambda: "Coercers for some linkings are not found",
+            lambda: "Cannot create coercer for models. Coercers for some linkings are not found",
         )
         return {
             dst_field: sub_plan

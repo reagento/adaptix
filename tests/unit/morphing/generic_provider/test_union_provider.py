@@ -206,7 +206,7 @@ def test_bad_optional_dumping(retort, debug_trail):
                     is_demonstrative=True,
                     is_terminal=True,
                 ),
-                f"Location: type={Union[int, Callable[[int], str]]}",
+                f"Location: `{str(Union[int, Callable[[int], str]]).replace('typing.', '', 1)}`",
             ),
         ),
         func=lambda: (

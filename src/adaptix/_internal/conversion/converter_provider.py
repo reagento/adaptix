@@ -14,7 +14,6 @@ from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, f
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.location import FieldLoc
 from ..provider.request_cls import LocStack, TypeHintLoc
-from ..type_tools import is_parametrized
 from .provider_template import ConverterProvider
 
 
@@ -40,14 +39,6 @@ class BuiltinConverterProvider(ConverterProvider):
 
         return self._make_converter(mediator, request)
 
-    def _get_type_desc(self, tp: TypeHint) -> str:
-        if isinstance(tp, type) and not is_parametrized(tp):
-            return tp.__qualname__
-        str_tp = str(tp)
-        if str_tp.startswith("typing."):
-            return str_tp[7:]
-        return str_tp
-
     def _make_converter(self, mediator: Mediator, request: ConverterRequest):
         src_loc, *extra_params_locs = map(self._param_to_loc, request.signature.parameters.values())
         dst_loc = self._get_dst_field(request.signature.return_annotation)
@@ -58,9 +49,8 @@ class BuiltinConverterProvider(ConverterProvider):
                 ctx=ConversionContext(tuple(extra_params_locs)),
                 dst=LocStack(dst_loc),
             ),
-            lambda x: self._get_no_coercer_error_description(src_loc, dst_loc),
+            lambda x: "Cannot create top-level coercer",
         )
-
         closure_name = self._get_closure_name(request)
         dumper_code, dumper_namespace = self._produce_code(
             signature=request.signature,
@@ -76,11 +66,6 @@ class BuiltinConverterProvider(ConverterProvider):
             closure_name=closure_name,
             file_name=self._get_file_name(request),
         )
-
-    def _get_no_coercer_error_description(self, src_loc: FieldLoc, dst_loc: TypeHintLoc) -> str:
-        src_tp = self._get_type_desc(src_loc.type)
-        dst_tp = self._get_type_desc(dst_loc.type)
-        return f"Cannot create coercer for `{src_loc.field_id}: {src_tp} -> {dst_tp}`"
 
     def register_mangled(self, namespace: CascadeNamespace, base: str, obj: object) -> str:
         base = self._name_sanitizer.sanitize(base)
