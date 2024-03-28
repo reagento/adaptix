@@ -1,149 +1,150 @@
+import collections.abc
 from abc import ABC, abstractmethod
+from collections import deque
 from dataclasses import replace
-from typing import Any, Union
+from typing import Any, Callable, Tuple, Union, final
 
-from ..common import Coercer
+from ..common import Coercer, OneArgCoercer, TypeHint
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStackChecker
+from ..provider.location import GenericParamLoc
 from ..provider.request_cls import try_normalize_type
-from ..provider.static_provider import StaticProvider, static_provision_action
-from ..special_cases_optimization import as_is_stub
-from ..type_tools import BaseNormType, is_generic, is_parametrized, is_subclass_soft, strip_tags
+from ..special_cases_optimization import as_is_stub, as_is_stub_with_ctx
+from ..type_tools import BaseNormType, is_generic, is_parametrized, is_subclass_soft, normalize_type, strip_tags
+from .provider_template import CoercerProvider
 from .request_cls import CoercerRequest
 
 
-class CoercerProvider(StaticProvider, ABC):
-    @static_provision_action
-    @abstractmethod
+class NormTypeCoercerProvider(CoercerProvider, ABC):
+    @final
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        ...
-
-
-class SameTypeCoercerProvider(CoercerProvider):
-    def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        src_tp = request.src.last.type
-        dst_tp = request.dst.last.type
-
-        if src_tp == dst_tp:
-            return as_is_stub
-
-        norm_src = try_normalize_type(src_tp)
-        norm_dst = try_normalize_type(dst_tp)
-        if strip_tags(norm_src) == strip_tags(norm_dst):
-            return as_is_stub
-        raise CannotProvide
-
-
-class DstAnyCoercerProvider(CoercerProvider):
-    def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        dst_tp = request.dst.last.type
-        norm_dst = strip_tags(try_normalize_type(dst_tp))
-        if norm_dst.origin == Any:
-            return as_is_stub
-        raise CannotProvide
-
-
-class StrippedTypeCoercerProvider(CoercerProvider, ABC):
-    def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        src_tp = request.src.last.type
-        dst_tp = request.dst.last.type
-        norm_src = try_normalize_type(src_tp)
-        norm_dst = try_normalize_type(dst_tp)
-        stripped_src = strip_tags(norm_src)
-        stripped_dst = strip_tags(norm_dst)
-        return self._provide_coercer_stripped_types(mediator, request, stripped_src, stripped_dst)
+        norm_src = try_normalize_type(request.src.last.type)
+        norm_dst = try_normalize_type(request.dst.last.type)
+        return self._provide_coercer_norm_types(mediator, request, norm_src, norm_dst)
 
     @abstractmethod
-    def _provide_coercer_stripped_types(
+    def _provide_coercer_norm_types(
         self,
         mediator: Mediator,
         request: CoercerRequest,
-        stripped_src: BaseNormType,
-        stripped_dst: BaseNormType,
+        norm_src: BaseNormType,
+        norm_dst: BaseNormType,
     ) -> Coercer:
         ...
 
 
-class SubclassCoercerProvider(StrippedTypeCoercerProvider):
-    def _provide_coercer_stripped_types(
+class SameTypeCoercerProvider(NormTypeCoercerProvider):
+    def _provide_coercer_norm_types(
         self,
         mediator: Mediator,
         request: CoercerRequest,
-        stripped_src: BaseNormType,
-        stripped_dst: BaseNormType,
+        norm_src: BaseNormType,
+        norm_dst: BaseNormType,
+    ) -> Coercer:
+        if norm_src == norm_dst:
+            return as_is_stub_with_ctx
+        raise CannotProvide
+
+
+class DstAnyCoercerProvider(NormTypeCoercerProvider):
+    def _provide_coercer_norm_types(
+        self,
+        mediator: Mediator,
+        request: CoercerRequest,
+        norm_src: BaseNormType,
+        norm_dst: BaseNormType,
+    ) -> Coercer:
+        if norm_dst.origin == Any:
+            return as_is_stub_with_ctx
+        raise CannotProvide
+
+
+class SubclassCoercerProvider(NormTypeCoercerProvider):
+    def _provide_coercer_norm_types(
+        self,
+        mediator: Mediator,
+        request: CoercerRequest,
+        norm_src: BaseNormType,
+        norm_dst: BaseNormType,
     ) -> Coercer:
         if (
-            is_generic(stripped_src.source)
-            or is_parametrized(stripped_src.source)
-            or is_generic(stripped_dst.source)
-            or is_parametrized(stripped_dst.source)
+            is_generic(norm_src.source)
+            or is_parametrized(norm_src.source)
+            or is_generic(norm_dst.source)
+            or is_parametrized(norm_dst.source)
         ):
             raise CannotProvide
-        if is_subclass_soft(stripped_src.origin, stripped_dst.origin):
-            return as_is_stub
+        if is_subclass_soft(norm_src.origin, norm_dst.origin):
+            return as_is_stub_with_ctx
         raise CannotProvide
 
 
 class MatchingCoercerProvider(CoercerProvider):
-    def __init__(self, src_lsc: LocStackChecker, dst_lsc: LocStackChecker, coercer: Coercer):
+    def __init__(self, src_lsc: LocStackChecker, dst_lsc: LocStackChecker, coercer: OneArgCoercer):
         self._src_lsc = src_lsc
         self._dst_lsc = dst_lsc
-        self._coercer = coercer
+        self._one_arg_coercer = coercer
 
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
         if (
             self._src_lsc.check_loc_stack(mediator, request.src)
             and self._dst_lsc.check_loc_stack(mediator, request.dst)
         ):
-            return self._coercer
+            if self._one_arg_coercer == as_is_stub:
+                return as_is_stub_with_ctx
+            one_arg_coercer = self._one_arg_coercer
+            return lambda x, ctx: one_arg_coercer(x)
         raise CannotProvide
 
 
-class UnionSubcaseCoercerProvider(StrippedTypeCoercerProvider):
-    def _provide_coercer_stripped_types(
+class UnionSubcaseCoercerProvider(NormTypeCoercerProvider):
+    def _provide_coercer_norm_types(
         self,
         mediator: Mediator,
         request: CoercerRequest,
-        stripped_src: BaseNormType,
-        stripped_dst: BaseNormType,
+        norm_src: BaseNormType,
+        norm_dst: BaseNormType,
     ) -> Coercer:
-        if stripped_dst.origin != Union:
+        if norm_dst.origin != Union:
             raise CannotProvide
 
-        if stripped_src.origin == Union:
-            src_args_set = set(map(strip_tags, stripped_src.args))
-            dst_args_set = set(map(strip_tags, stripped_dst.args))
+        if norm_src.origin == Union:
+            src_args_set = set(map(strip_tags, norm_src.args))
+            dst_args_set = set(map(strip_tags, norm_dst.args))
             if src_args_set.issubset(dst_args_set):
-                return as_is_stub
-        elif stripped_src.origin in [strip_tags(arg).origin for arg in stripped_dst.args]:
-            return as_is_stub
+                return as_is_stub_with_ctx
+        elif norm_src.origin in [strip_tags(arg).origin for arg in norm_dst.args]:
+            return as_is_stub_with_ctx
         raise CannotProvide
 
 
-class OptionalCoercerProvider(StrippedTypeCoercerProvider):
-    def _provide_coercer_stripped_types(
+class OptionalCoercerProvider(NormTypeCoercerProvider):
+    def _provide_coercer_norm_types(
         self,
         mediator: Mediator,
         request: CoercerRequest,
-        stripped_src: BaseNormType,
-        stripped_dst: BaseNormType,
+        norm_src: BaseNormType,
+        norm_dst: BaseNormType,
     ) -> Coercer:
-        if not (self._is_optional(stripped_dst) and self._is_optional(stripped_src)):
+        if not (self._is_optional(norm_dst) and self._is_optional(norm_src)):
             raise CannotProvide
 
-        not_none_src = self._get_not_none(stripped_src)
-        not_none_dst = self._get_not_none(stripped_dst)
+        not_none_src = self._get_not_none(norm_src)
+        not_none_dst = self._get_not_none(norm_dst)
         not_none_request = replace(
             request,
             src=request.src.replace_last_type(not_none_src),
             dst=request.dst.replace_last_type(not_none_dst),
         )
-        not_none_coercer = mediator.delegating_provide(not_none_request)
+        not_none_coercer = mediator.mandatory_provide(
+            not_none_request,
+            lambda x: "Cannot create coercer for optionals. Coercer for wrapped value cannot be created",
+        )
 
-        def optional_coercer(data):
+        def optional_coercer(data, ctx):
             if data is None:
                 return None
-            return not_none_coercer(data)
+            return not_none_coercer(data, ctx)
 
         return optional_coercer
 
@@ -152,3 +153,135 @@ class OptionalCoercerProvider(StrippedTypeCoercerProvider):
 
     def _get_not_none(self, norm: BaseNormType) -> BaseNormType:
         return next(case.origin for case in norm.args if case.origin is not None)
+
+
+class TypeHintTagsUnwrappingProvider(CoercerProvider):
+    def _unwrap_type(self, tp: TypeHint) -> TypeHint:
+        try:
+            norm = normalize_type(tp)
+        except ValueError:
+            return tp
+        return strip_tags(norm).source
+
+    def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
+        src_tp = request.src.last.type
+        dst_tp = request.dst.last.type
+        unwrapped_src_tp = self._unwrap_type(src_tp)
+        unwrapped_dst_tp = self._unwrap_type(dst_tp)
+        if unwrapped_src_tp == src_tp and unwrapped_dst_tp == dst_tp:
+            raise CannotProvide
+        return mediator.delegating_provide(
+            replace(
+                request,
+                src=request.src.replace_last_type(unwrapped_src_tp),
+                dst=request.dst.replace_last_type(unwrapped_dst_tp),
+            ),
+        )
+
+
+class IterableCoercerProvider(NormTypeCoercerProvider):
+    CONCRETE_ORIGINS = {set, list, tuple, deque}
+    ABC_TO_IMPL = {
+        collections.abc.Iterable: tuple,
+        collections.abc.Reversible: tuple,
+        collections.abc.Collection: tuple,
+        collections.abc.Sequence: tuple,
+        collections.abc.MutableSequence: list,
+        # exclude ByteString, because it does not process as Iterable
+        collections.abc.Set: frozenset,
+        collections.abc.MutableSet: set,
+    }
+
+    def _provide_coercer_norm_types(
+        self,
+        mediator: Mediator,
+        request: CoercerRequest,
+        norm_src: BaseNormType,
+        norm_dst: BaseNormType,
+    ) -> Coercer:
+        src_arg_tp = self._parse_source(norm_src)
+        dst_factory, dst_arg_tp = self._parse_destination(norm_dst)
+        element_coercer = mediator.mandatory_provide(
+            CoercerRequest(
+                src=request.src.append_with(
+                    GenericParamLoc(type=src_arg_tp, generic_pos=0),
+                ),
+                ctx=request.ctx,
+                dst=request.dst.append_with(
+                    GenericParamLoc(type=dst_arg_tp, generic_pos=0),
+                ),
+            ),
+            lambda x: "Cannot create coercer for iterables. Coercer for element cannot be created",
+        )
+
+        def iterable_coercer(data, ctx):
+            return dst_factory(element_coercer(element, ctx) for element in data)
+
+        return iterable_coercer
+
+    def _parse_source(self, norm: BaseNormType) -> TypeHint:
+        if norm.origin == tuple and norm.args[-1] != Ellipsis:
+            raise CannotProvide("Constant-length tuple is not suppoerted yet", is_demonstrative=True)
+        if norm.origin in self.CONCRETE_ORIGINS or norm.origin in self.ABC_TO_IMPL:
+            return norm.args[0].source
+        raise CannotProvide
+
+    def _parse_destination(self, norm: BaseNormType) -> Tuple[Callable, TypeHint]:
+        if norm.origin == tuple and norm.args[-1] != Ellipsis:
+            raise CannotProvide("Constant-length tuple is not suppoerted yet", is_demonstrative=True)
+        if norm.origin in self.CONCRETE_ORIGINS:
+            return norm.origin, norm.args[0].source
+        if norm.origin in self.ABC_TO_IMPL:
+            return self.ABC_TO_IMPL[norm.origin], norm.args[0].source
+        raise CannotProvide
+
+
+class DictCoercerProvider(NormTypeCoercerProvider):
+    def _provide_coercer_norm_types(
+        self,
+        mediator: Mediator,
+        request: CoercerRequest,
+        norm_src: BaseNormType,
+        norm_dst: BaseNormType,
+    ) -> Coercer:
+        src_key_tp, src_value_tp = self._parse_source(norm_src)
+        dst_key_tp, dst_value_tp = self._parse_destination(norm_dst)
+        key_coercer = mediator.mandatory_provide(
+            CoercerRequest(
+                src=request.src.append_with(
+                    GenericParamLoc(type=src_key_tp, generic_pos=0),
+                ),
+                ctx=request.ctx,
+                dst=request.dst.append_with(
+                    GenericParamLoc(type=dst_key_tp, generic_pos=0),
+                ),
+            ),
+            lambda x: "Cannot create coercer for dicts. Coercer for key cannot be created",
+        )
+        value_coercer = mediator.mandatory_provide(
+            CoercerRequest(
+                src=request.src.append_with(
+                    GenericParamLoc(type=src_value_tp, generic_pos=1),
+                ),
+                ctx=request.ctx,
+                dst=request.dst.append_with(
+                    GenericParamLoc(type=dst_value_tp, generic_pos=1),
+                ),
+            ),
+            lambda x: "Cannot create coercer for dicts. Coercer for value cannot be created",
+        )
+
+        def dict_coercer(data, ctx):
+            return {key_coercer(key, ctx): value_coercer(value, ctx) for key, value in data.items()}
+
+        return dict_coercer
+
+    def _parse_source(self, norm: BaseNormType) -> Tuple[TypeHint, TypeHint]:
+        if norm.origin in (dict, collections.abc.Mapping, collections.abc.MutableMapping):
+            return norm.args[0].source, norm.args[1].source
+        raise CannotProvide
+
+    def _parse_destination(self, norm: BaseNormType) -> Tuple[TypeHint, TypeHint]:
+        if norm.origin in (dict, collections.abc.Mapping, collections.abc.MutableMapping):
+            return norm.args[0].source, norm.args[1].source
+        raise CannotProvide

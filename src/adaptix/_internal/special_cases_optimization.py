@@ -4,7 +4,7 @@ from .model_tools.definitions import DefaultFactory, DefaultFactoryWithSelf, Def
 from .morphing.model.crown_definitions import Sieve
 
 as_is_stub = lambda x: x  # noqa: E731
-
+as_is_stub_with_ctx = lambda x, ctx: x  # noqa: E731
 
 S = TypeVar("S", bound=Sieve)
 

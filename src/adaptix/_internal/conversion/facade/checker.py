@@ -10,7 +10,10 @@ def ensure_function_is_stub(func):
         return
 
     source = dedent(raw_source)
-    ast_module = ast.parse(source)
+    try:
+        ast_module = ast.parse(source)
+    except SyntaxError:
+        return
     func_body = ast_module.body[0].body
     if len(func_body) == 1:
         body_element = func_body[0]

@@ -241,6 +241,9 @@ class ImmutableStack(Reversible[T_co], Hashable, Sized, Generic[T_co]):
     def last(self) -> T_co:
         return self._tuple[-1]
 
+    def __getitem__(self, item: int) -> T_co:
+        return self._tuple[item]
+
     def __repr__(self):
         return f"{type(self).__name__}{self._tuple!r}"
 

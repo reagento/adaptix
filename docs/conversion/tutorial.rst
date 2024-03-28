@@ -99,11 +99,14 @@ By default, there are no implicit coercions.
 
 However, there are cases where type casting involves passing the data as is and adaptix detects its:
 
-* source type and destination type are the same
-* destination type is ``Any``
-* source type is a subclass of destination type (excluding generics)
-* source union is subset of destination union (simple ``==`` check is using)
-* source type and destination type is ``Optional`` and inner types are coercible
+- source type and destination type are the same
+- destination type is ``Any``
+- source type is a subclass of destination type (excluding generics)
+- source union is subset of destination union (simple ``==`` check is using)
+- source type and destination type are ``Optional`` and inner types are coercible
+- source type and destination type are one of builtin iterable and inner types are coercible
+- source type and destination type are dict and inner types are coercible
+- source type and destination type are models
 
 You can define your own coercion rule.
 

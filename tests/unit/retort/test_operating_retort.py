@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import List
 
-from tests_helpers import raises_exc, requires, with_cause, with_notes
+import pytest
+from tests_helpers import cond_list, raises_exc, with_cause, with_notes
 
 from adaptix import AggregateCannotProvide, CannotProvide, NoSuitableProvider, Retort
 from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
@@ -26,29 +27,25 @@ def test_cannot_produce_loader():
                     [
                         with_notes(
                             CannotProvide(
-                                "There is no provider that can create specified loader",
+                                "Cannot find loader",
                                 is_terminal=False,
                                 is_demonstrative=True,
                             ),
-                            f"Exception was raised while processing field 'f2' of {Stub}",
-                            "Location: type=<class 'memoryview'>, field_id='f2',"
-                            " default=NoDefault(), metadata=mappingproxy({}), is_required=True",
+                            f"Location: `{Stub.__qualname__}.f2: memoryview`",
                         ),
                         with_notes(
                             CannotProvide(
-                                "There is no provider that can create specified loader",
+                                "Cannot find loader",
                                 is_terminal=False,
                                 is_demonstrative=True,
                             ),
-                            f"Exception was raised while processing field 'f3' of {Stub}",
-                            "Location: type=<class 'memoryview'>, field_id='f3',"
-                            " default=NoDefault(), metadata=mappingproxy({}), is_required=True",
+                            f"Location: `{Stub.__qualname__}.f3: memoryview`",
                         ),
                     ],
                     is_terminal=True,
                     is_demonstrative=True,
                 ),
-                f"Location: type={Stub}",
+                f"Location: `{Stub.__qualname__}`",
             ),
         ),
         lambda: retort.get_loader(Stub),
@@ -73,31 +70,25 @@ def test_cannot_produce_dumper():
                     [
                         with_notes(
                             CannotProvide(
-                                "There is no provider that can create specified dumper",
+                                "Cannot find dumper",
                                 is_terminal=False,
                                 is_demonstrative=True,
                             ),
-                            f"Exception was raised while processing field 'f2' of {Stub}",
-                            "Location: type=<class 'memoryview'>, field_id='f2',"
-                            " default=NoDefault(), metadata=mappingproxy({}),"
-                            " accessor=DescriptorAccessor(attr_name='f2', access_error=None)",
+                            f"Location: `{Stub.__qualname__}.f2: memoryview`",
                         ),
                         with_notes(
                             CannotProvide(
-                                "There is no provider that can create specified dumper",
+                                "Cannot find dumper",
                                 is_terminal=False,
                                 is_demonstrative=True,
                             ),
-                            f"Exception was raised while processing field 'f3' of {Stub}",
-                            "Location: type=<class 'memoryview'>, field_id='f3',"
-                            " default=NoDefault(), metadata=mappingproxy({}),"
-                            " accessor=DescriptorAccessor(attr_name='f3', access_error=None)",
+                            f"Location: `{Stub.__qualname__}.f3: memoryview`",
                         ),
                     ],
                     is_terminal=True,
                     is_demonstrative=True,
                 ),
-                f"Location: type={Stub}",
+                f"Location: `{Stub.__qualname__}`",
             ),
         ),
         lambda: retort.get_dumper(Stub),
@@ -124,15 +115,25 @@ def test_cannot_produce_converter_no_linking_required():
                 f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                "Linkings for some fields are not found",
+                "Cannot create top-level coercer",
                 [
                     with_notes(
-                        CannotProvide(
-                            f"Cannot find paired field of `{BookDTO.__qualname__}.author` for linking",
-                            is_terminal=False,
+                        AggregateCannotProvide(
+                            "Linkings for some fields are not found",
+                            [
+                                with_notes(
+                                    CannotProvide(
+                                        f"Cannot find paired field of `{BookDTO.__qualname__}.author: str` for linking",
+                                        is_terminal=False,
+                                        is_demonstrative=True,
+                                    ),
+                                    "Note: This is a required field, so it must take value",
+                                ),
+                            ],
+                            is_terminal=True,
                             is_demonstrative=True,
                         ),
-                        "Note: This is a required filed, so it must take value",
+                        f"Linking: `{Book.__qualname__} -> {BookDTO.__qualname__}`",
                     ),
                 ],
                 is_terminal=True,
@@ -163,17 +164,27 @@ def test_cannot_produce_converter_no_linking_optional():
                 f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                "Linkings for some fields are not found",
+                "Cannot create top-level coercer",
                 [
                     with_notes(
-                        CannotProvide(
-                            f"Cannot find paired field of `{BookDTO.__qualname__}.author` for linking",
-                            is_terminal=False,
+                        AggregateCannotProvide(
+                            "Linkings for some fields are not found",
+                            [
+                                with_notes(
+                                    CannotProvide(
+                                        f"Cannot find paired field of `{BookDTO.__qualname__}.author: str` for linking",
+                                        is_terminal=False,
+                                        is_demonstrative=True,
+                                    ),
+                                    "Note: Current policy forbids unlinked optional fields,"
+                                    " so you need to link it to another field"
+                                    " or explicitly confirm the desire to skipping using `allow_unlinked_optional`",
+                                ),
+                            ],
+                            is_terminal=True,
                             is_demonstrative=True,
                         ),
-                        "Note: Current policy forbids unlinked optional fields,"
-                        " so you need to link it to another field"
-                        " or explicitly confirm the desire to skipping using `allow_unlinked_optional`",
+                        f"Linking: `{Book.__qualname__} -> {BookDTO.__qualname__}`",
                     ),
                 ],
                 is_terminal=True,
@@ -205,13 +216,25 @@ def test_cannot_produce_converter_no_coercer():
                 f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                "Coercers for some linkings are not found",
+                "Cannot create top-level coercer",
                 [
-                    CannotProvide(
-                        f"Cannot find coercer for linking"
-                        f" `{Book.__qualname__}.author: int -> {BookDTO.__qualname__}.author: str`",
-                        is_terminal=False,
-                        is_demonstrative=True,
+                    with_notes(
+                        AggregateCannotProvide(
+                            "Cannot create coercer for models. Coercers for some linkings are not found",
+                            [
+                                with_notes(
+                                    CannotProvide(
+                                        "Cannot find coercer",
+                                        is_terminal=False,
+                                        is_demonstrative=True,
+                                    ),
+                                    f"Linking: `{Book.__qualname__}.author: int -> {BookDTO.__qualname__}.author: str`",
+                                ),
+                            ],
+                            is_terminal=True,
+                            is_demonstrative=True,
+                        ),
+                        f"Linking: `{Book.__qualname__} -> {BookDTO.__qualname__}`",
                     ),
                 ],
                 is_terminal=True,
@@ -222,18 +245,25 @@ def test_cannot_produce_converter_no_coercer():
     )
 
 
-def test_cannot_produce_converter_no_coercer_complex_type():
+@pytest.mark.parametrize(
+    ["list_tp", "list_tp_name"],
+    [
+        pytest.param(List, "List"),
+        *cond_list(HAS_STD_CLASSES_GENERICS, [pytest.param(list, "list")]),
+    ],
+)
+def test_cannot_produce_converter_no_coercer_complex_type(list_tp, list_tp_name):
     @dataclass
     class Book:
         title: str
         price: int
-        authors: List[str]
+        authors: list_tp[str]
 
     @dataclass
     class BookDTO:
         title: str
         price: int
-        authors: List[int]
+        authors: list_tp[int]
 
     raises_exc(
         with_cause(
@@ -243,52 +273,37 @@ def test_cannot_produce_converter_no_coercer_complex_type():
                 f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
             ),
             AggregateCannotProvide(
-                "Coercers for some linkings are not found",
+                "Cannot create top-level coercer",
                 [
-                    CannotProvide(
-                        f"Cannot find coercer for linking"
-                        f" `{Book.__qualname__}.authors: List[str] -> {BookDTO.__qualname__}.authors: List[int]`",
-                        is_terminal=False,
-                        is_demonstrative=True,
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
-        lambda: get_converter(Book, BookDTO),
-    )
-
-
-@requires(HAS_STD_CLASSES_GENERICS)
-def test_cannot_produce_converter_no_coercer_complex_builtin_type():
-    @dataclass
-    class Book:
-        title: str
-        price: int
-        authors: list[str]
-
-    @dataclass
-    class BookDTO:
-        title: str
-        price: int
-        authors: list[int]
-
-    raises_exc(
-        with_cause(
-            NoSuitableProvider(
-                f"Cannot produce converter for"
-                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
-            ),
-            AggregateCannotProvide(
-                "Coercers for some linkings are not found",
-                [
-                    CannotProvide(
-                        f"Cannot find coercer for linking"
-                        f" `{Book.__qualname__}.authors: list[str] -> {BookDTO.__qualname__}.authors: list[int]`",
-                        is_terminal=False,
-                        is_demonstrative=True,
+                    with_notes(
+                        AggregateCannotProvide(
+                            "Cannot create coercer for models. Coercers for some linkings are not found",
+                            [
+                                with_notes(
+                                    AggregateCannotProvide(
+                                        "Cannot create coercer for iterables. Coercer for element cannot be created",
+                                        [
+                                            with_notes(
+                                                CannotProvide(
+                                                    "Cannot find coercer",
+                                                    is_terminal=False,
+                                                    is_demonstrative=True,
+                                                ),
+                                                "Linking: `str -> int`",
+                                            ),
+                                        ],
+                                        is_terminal=True,
+                                        is_demonstrative=True,
+                                    ),
+                                    f"Linking:"
+                                    f" `{Book.__qualname__}.authors: {list_tp_name}[str]"
+                                    f" -> {BookDTO.__qualname__}.authors: {list_tp_name}[int]`",
+                                ),
+                            ],
+                            is_terminal=True,
+                            is_demonstrative=True,
+                        ),
+                        f"Linking: `{Book.__qualname__} -> {BookDTO.__qualname__}`",
                     ),
                 ],
                 is_terminal=True,

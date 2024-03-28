@@ -168,7 +168,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         def iter_loader_dt_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Iterable, Mapping, data)
-            if type(data) is str: # noqa: E721
+            if type(data) is str:  # noqa: E721
                 raise ExcludedTypeLoadError(Iterable, str, data)
 
             try:

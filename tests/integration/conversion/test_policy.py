@@ -1,12 +1,10 @@
 from tests_helpers import ModelSpec, exclude_model_spec
 
-from adaptix.conversion import allow_unlinked_optional, get_converter, impl_converter
-
-from .local_helpers import FactoryWay
+from adaptix.conversion import allow_unlinked_optional, impl_converter
 
 
 @exclude_model_spec(ModelSpec.TYPED_DICT)
-def test_unbound_optional(src_model_spec, dst_model_spec, factory_way):
+def test_unlinked_optional(src_model_spec, dst_model_spec):
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: str
@@ -18,12 +16,9 @@ def test_unbound_optional(src_model_spec, dst_model_spec, factory_way):
         field2: str
         wild: str = ""
 
-    if factory_way == FactoryWay.IMPL_CONVERTER:
-        @impl_converter(recipe=[allow_unlinked_optional("wild")])
-        def convert(a: SourceModel) -> DestModel:
-            ...
-    else:
-        convert = get_converter(SourceModel, DestModel, recipe=[allow_unlinked_optional("wild")])
+    @impl_converter(recipe=[allow_unlinked_optional("wild")])
+    def convert(a: SourceModel) -> DestModel:
+        ...
 
     if dst_model_spec.kind == ModelSpec.SQLALCHEMY:
         # sqlalchemy set default after flush
