@@ -11,7 +11,7 @@ from adaptix._internal.model_tools.definitions import (
     DefaultValue,
     InputField,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     NoDefault,
     Param,
     ParamKind,
@@ -22,7 +22,7 @@ from adaptix._internal.model_tools.introspection.callable import get_callable_sh
 
 
 def test_introspection_impossible():
-    pytest.raises(IntrospectionImpossible, lambda: get_callable_shape(Tuple))
+    pytest.raises(IntrospectionError, lambda: get_callable_shape(Tuple))
 
 
 def test_simple():

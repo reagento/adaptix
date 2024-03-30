@@ -3,7 +3,7 @@ from functools import total_ordering
 from typing import Union
 
 
-class TooPreciseAmount(Exception):
+class TooPreciseAmountError(Exception):
     pass
 
 
@@ -34,7 +34,7 @@ class Money:
     def from_decimal_rubles(cls, rubles_: Decimal):
         kopek = rubles_ * 100
         if kopek % 1 != 0:
-            raise TooPreciseAmount
+            raise TooPreciseAmountError
         return cls(int(kopek))
 
 

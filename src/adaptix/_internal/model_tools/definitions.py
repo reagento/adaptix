@@ -326,20 +326,20 @@ FullShape = Shape[InputShape, OutputShape]
 ShapeIntrospector = Callable[[Any], Shape]
 
 
-class IntrospectionImpossible(Exception):
+class IntrospectionError(Exception):
     pass
 
 
-class NoTargetPackage(IntrospectionImpossible):
+class NoTargetPackageError(IntrospectionError):
     def __init__(self, requirement: DistributionRequirement):
         self.requirement = requirement
 
 
-class PackageIsTooOld(IntrospectionImpossible):
+class TooOldPackageError(IntrospectionError):
     def __init__(self, requirement: DistributionVersionRequirement):
         self.requirement = requirement
 
 
-class ClarifiedIntrospectionImpossible(IntrospectionImpossible):
+class ClarifiedIntrospectionError(IntrospectionError):
     def __init__(self, description: str):
         self.description = description

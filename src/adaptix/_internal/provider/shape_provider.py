@@ -4,15 +4,15 @@ from typing import Any, Container, Generic, Iterable, Optional, TypeVar, Union, 
 
 from ..common import TypeHint
 from ..model_tools.definitions import (
-    ClarifiedIntrospectionImpossible,
+    ClarifiedIntrospectionError,
     DescriptorAccessor,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     OutputField,
     OutputShape,
-    PackageIsTooOld,
     Shape,
     ShapeIntrospector,
+    TooOldPackageError,
 )
 from ..model_tools.introspection.attrs import get_attrs_shape
 from ..model_tools.introspection.class_init import get_class_init_shape
@@ -49,11 +49,11 @@ class ShapeProvider(StaticProvider):
     def _get_shape(self, tp) -> Shape:
         try:
             return self._introspector(tp)
-        except PackageIsTooOld as e:
+        except TooOldPackageError as e:
             raise CannotProvide(message=e.requirement.fail_reason, is_demonstrative=True) from e
-        except ClarifiedIntrospectionImpossible as e:
+        except ClarifiedIntrospectionError as e:
             raise CannotProvide(message=e.description, is_demonstrative=True) from e
-        except IntrospectionImpossible as e:
+        except IntrospectionError as e:
             raise CannotProvide from e
 
     @static_provision_action

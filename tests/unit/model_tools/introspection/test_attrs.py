@@ -14,7 +14,7 @@ from adaptix._internal.model_tools.definitions import (
     DefaultValue,
     InputField,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     NoDefault,
     OutputField,
     OutputShape,
@@ -796,10 +796,10 @@ def test_not_attrs():
     class IAmDataclass:
         foo: int
 
-    with pytest.raises(IntrospectionImpossible):
+    with pytest.raises(IntrospectionError):
         get_attrs_shape(IAmDataclass)
 
-    with pytest.raises(IntrospectionImpossible):
+    with pytest.raises(IntrospectionError):
         get_attrs_shape(Tuple[IAmDataclass, int])
 
 

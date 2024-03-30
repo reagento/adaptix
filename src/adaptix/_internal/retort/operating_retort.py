@@ -50,6 +50,9 @@ class NoSuitableProvider(Exception):
     def __init__(self, message: str):
         self.message = message
 
+    def __str__(self):
+        return self.message
+
 
 class BuiltinErrorRepresentor(ErrorRepresentor):
     _NO_PROVIDER_DESCRIPTION_METHOD: Mapping[Type[Request], str] = {

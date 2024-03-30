@@ -29,7 +29,7 @@ except AggregateLoadError as e:
     assert e.exceptions[0].msg == "value must be greater or equal 0"
 
 
-class BelowZero(LoadError):
+class BelowZeroError(LoadError):
     def __init__(self, actual_value: int):
         self.actual_value = actual_value
 
@@ -39,7 +39,7 @@ class BelowZero(LoadError):
 
 retort = Retort(
     recipe=[
-        validator(P[Book].price, lambda x: x >= 0, lambda x: BelowZero(x)),
+        validator(P[Book].price, lambda x: x >= 0, lambda x: BelowZeroError(x)),
     ],
 )
 
@@ -47,5 +47,5 @@ try:
     retort.load(data, Book)
 except AggregateLoadError as e:
     assert len(e.exceptions) == 1
-    assert isinstance(e.exceptions[0], BelowZero)
+    assert isinstance(e.exceptions[0], BelowZeroError)
     assert e.exceptions[0].actual_value == -10

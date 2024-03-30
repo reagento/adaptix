@@ -7,7 +7,7 @@ from ..definitions import (
     FullShape,
     InputField,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     NoDefault,
     OutputField,
     OutputShape,
@@ -20,7 +20,7 @@ from ..definitions import (
 
 def get_named_tuple_shape(tp) -> FullShape:
     if not is_named_tuple_class(tp):
-        raise IntrospectionImpossible
+        raise IntrospectionError
 
     type_hints = get_all_type_hints(tp)
     if tuple in tp.__bases__:
