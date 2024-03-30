@@ -46,7 +46,6 @@ class ConstantLinking:
 @dataclass(frozen=True)
 class LinkingResult:
     linking: Union[FieldLinking, ConstantLinking]
-    is_default: bool = False
 
 
 @dataclass(frozen=True)

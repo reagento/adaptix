@@ -4,7 +4,7 @@ from ...common import OneArgCoercer
 from ...model_tools.definitions import DefaultFactory, DefaultValue
 from ...provider.essential import Provider
 from ...provider.facade.provider import bound_by_any
-from ...provider.loc_stack_filtering import Pred, create_loc_stack_checker
+from ...provider.loc_stack_filtering import LocStackChecker, LocStackSizeChecker, Pred, create_loc_stack_checker
 from ..coercer_provider import MatchingCoercerProvider
 from ..linking_provider import ConstantLinkingProvider, MatchingLinkingProvider
 from ..policy_provider import UnlinkedOptionalPolicyProvider
@@ -85,3 +85,10 @@ def forbid_unlinked_optional(*preds: Pred) -> Provider:
     :return: Desired provider.
     """
     return bound_by_any(preds, UnlinkedOptionalPolicyProvider(is_allowed=False))
+
+
+def from_param(param_name: str) -> LocStackChecker:
+    """The special predicate form matching only top-level parameters by name"""
+    if not param_name.isidentifier():
+        raise ValueError("param_name must be a valid python identifier to exactly match parameter")
+    return LocStackSizeChecker(1) & create_loc_stack_checker(param_name)

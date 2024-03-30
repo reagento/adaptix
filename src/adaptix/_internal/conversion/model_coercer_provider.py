@@ -148,7 +148,7 @@ class ModelCoercerProvider(CoercerProvider):
         return mandatory_apply_by_iterable(
             fetch_field_linking,
             zip(dst_shape.fields),
-            lambda: "Linkings for some fields are not found",
+            lambda: "Cannot create coercer for models. Linkings for some fields are not found",
         )
 
     def _field_linking_to_sub_plan(

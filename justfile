@@ -60,6 +60,9 @@ doc_target := "docs-build"
     sphinx-build -M clean {{ doc_source }} {{ doc_target }}
 
 
+@changelog:
+    towncrier build --keep --version Preview
+
 # Continious integration
 
 [private]

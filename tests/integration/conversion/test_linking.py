@@ -1,6 +1,7 @@
 from typing import Any
 
-from adaptix._internal.conversion.facade.provider import link_constant
+from adaptix import P
+from adaptix._internal.conversion.facade.provider import from_param, link_constant
 from adaptix.conversion import coercer, impl_converter, link
 
 
@@ -208,3 +209,40 @@ def test_link_to_constant_factory(model_spec):
         ...
 
     assert convert(SourceModel(field1=1)) == DestModel(field1=1, field2=[])
+
+
+def test_from_param(model_spec):
+    @model_spec.decorator
+    class SourceModelNested(*model_spec.bases):
+        a: Any
+        b: Any
+
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
+        nested: SourceModelNested
+
+    @model_spec.decorator
+    class DestModelNested(*model_spec.bases):
+        a: Any
+        b: Any
+
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
+        nested: DestModelNested
+        b: Any
+
+    @impl_converter(
+        recipe=[
+            link(from_param("a"), P[DestModel].b),
+            link(P[SourceModel].a, P[DestModel].a),
+        ],
+    )
+    def convert(m: SourceModel, a: Any) -> DestModel:
+        ...
+
+    assert (
+        convert(SourceModel(nested=SourceModelNested(a=1, b=2)), a=3)
+        ==
+        DestModel(nested=DestModelNested(a=1, b=2), b=3)
+    )
+

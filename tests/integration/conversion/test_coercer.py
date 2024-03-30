@@ -4,6 +4,8 @@ from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional,
 import pytest
 from tests_helpers import cond_list
 
+from adaptix import P
+from adaptix._internal.conversion.facade.provider import from_param, link
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix.conversion import coercer, impl_converter
 
@@ -225,7 +227,7 @@ def test_optional_with_model_and_ctx(model_spec):
         field1: int
         field2: Optional[DestModelInner]
 
-    @impl_converter
+    @impl_converter(recipe=[link(from_param("extra1"), P[DestModelInner].extra1)])
     def convert(a: SourceModel, extra1: str) -> DestModel:
         ...
 
@@ -317,7 +319,7 @@ def test_iterable_with_model_and_ctx(model_spec):
         field1: int
         field2: List[DestModelInner]
 
-    @impl_converter
+    @impl_converter(recipe=[link(from_param("extra1"), P[DestModelInner].extra1)])
     def convert(a: SourceModel, extra1: str) -> DestModel:
         ...
 
@@ -429,7 +431,7 @@ def test_dict_with_model_and_ctx(model_spec):
         field1: int
         field2: Dict[str, DestModelInner]
 
-    @impl_converter
+    @impl_converter(recipe=[link(from_param("extra1"), P[DestModelInner].extra1)])
     def convert(a: SourceModel, extra1: str) -> DestModel:
         ...
 

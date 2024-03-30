@@ -1,27 +1,30 @@
-from typing import Optional, Union
+import itertools
+from typing import Iterable, Optional, Union
 
 from ..common import Coercer, OneArgCoercer
 from ..model_tools.definitions import DefaultFactory, DefaultValue
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStackChecker
 from ..provider.location import FieldLoc
-from .provider_template import LinkingProvider, iterate_source_candidates
-from .request_cls import ConstantLinking, FieldLinking, LinkingRequest, LinkingResult
+from .provider_template import LinkingProvider
+from .request_cls import ConstantLinking, FieldLinking, LinkingRequest, LinkingResult, LinkingSource
 
 
-class SameNameLinkingProvider(LinkingProvider):
-    def __init__(self, *, is_default: bool):
-        self._is_default = is_default
-
+class DefaultLinkingProvider(LinkingProvider):
     def _provide_linking(self, mediator: Mediator, request: LinkingRequest) -> LinkingResult:
         target_field_id = request.destination.last.cast(FieldLoc).field_id
-        for source in iterate_source_candidates(request):
+
+        for source in self._iterate_sources(request):
             if source.last.cast(FieldLoc).field_id == target_field_id:
                 return LinkingResult(
                     linking=FieldLinking(source=source, coercer=None),
-                    is_default=self._is_default,
                 )
         raise CannotProvide
+
+    def _iterate_sources(self, request: LinkingRequest) -> Iterable[LinkingSource]:
+        if len(request.destination) == 2:  # noqa: PLR2004
+            yield from reversed(request.context.loc_stacks)
+        yield from request.sources
 
 
 class MatchingLinkingProvider(LinkingProvider):
@@ -40,7 +43,7 @@ class MatchingLinkingProvider(LinkingProvider):
         if not self._dst_lsc.check_loc_stack(mediator, request.destination):
             raise CannotProvide
 
-        for source in iterate_source_candidates(request):
+        for source in itertools.chain(request.sources, reversed(request.context.loc_stacks)):
             if self._src_lsc.check_loc_stack(mediator, source):
                 return LinkingResult(linking=FieldLinking(source=source, coercer=self._get_coercer()))
         raise CannotProvide

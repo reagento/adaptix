@@ -119,7 +119,7 @@ def test_cannot_produce_converter_no_linking_required():
                 [
                     with_notes(
                         AggregateCannotProvide(
-                            "Linkings for some fields are not found",
+                            "Cannot create coercer for models. Linkings for some fields are not found",
                             [
                                 with_notes(
                                     CannotProvide(
@@ -168,7 +168,7 @@ def test_cannot_produce_converter_no_linking_optional():
                 [
                     with_notes(
                         AggregateCannotProvide(
-                            "Linkings for some fields are not found",
+                            "Cannot create coercer for models. Linkings for some fields are not found",
                             [
                                 with_notes(
                                     CannotProvide(

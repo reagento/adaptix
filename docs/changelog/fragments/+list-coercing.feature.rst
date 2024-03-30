@@ -1,1 +1,1 @@
-Add coercer for builtin iterables and dict
+Add coercer for builtin iterables and dict.

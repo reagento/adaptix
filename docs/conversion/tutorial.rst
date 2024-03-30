@@ -26,7 +26,7 @@ Adaptix can transform between any of the supported models, see :ref:`supported-m
 for exact list of models and known limitations.
 
 How it works? Adaptix scans each field of the destination model and matches it with the field of the source model.
-By default, only fields with the same name are matched. You can :ref:`override <field-linking>` this behavior.
+By default, only fields with the same name are matched. You can :ref:`override <fields-linking>` this behavior.
 
 Also, it works for nested models.
 
@@ -44,14 +44,14 @@ Upcasting
 
 All source model additional fields not found in the destination model are simply ignored.
 
-.. literalinclude:: /examples/conversion/tutorial/downcasting.py
+.. literalinclude:: /examples/conversion/tutorial/upcasting.py
 
 Downcasting
 =============
 
 Sometimes you need to add extra data to the source model. For this, you can use a special decorator.
 
-.. literalinclude:: /examples/conversion/tutorial/upcasting.py
+.. literalinclude:: /examples/conversion/tutorial/downcasting.py
 
 :func:`.conversion.impl_converter` takes an empty function and generates its body by signature.
 
@@ -60,7 +60,7 @@ because mypy forbids functions without body.
 Also, you can set this option at `mypy config <https://mypy.readthedocs.io/en/stable/config_file.html#example-mypy-ini>`_
 or supress each error individually via ``# type: ignore[empty-body]``.
 
-.. _field-linking:
+.. _fields-linking:
 
 Fields linking
 ================
@@ -78,6 +78,13 @@ will be linked with the field ``writer`` of class ``BookDTO``.
 You can use simple strings instead of ``P`` construct,
 but it will match any field with the same name despite of owner class.
 
+By default, additional parameters can replace fields only on the top-level model.
+If you want to pass this data to a nested model, you should use :func:`.conversion.from_param` predicate factory.
+
+.. literalinclude:: /examples/conversion/tutorial/nested_from_param.py
+
+If the field name differs from the parameter name, you also can use :func:`.conversion.from_param` to link them.
+
 Linking algorithm
 ===================
 
@@ -87,7 +94,8 @@ For each field of the destination model, adaptix searches a corresponding field.
 Additional parameters are checked (from right to left) before the fields.
 So, your custom linking looks among the additional parameters too.
 
-By default, fields are matched by exact name equivalence.
+By default, fields are matched by exact name equivalence,
+parameters are matched only for top-level destination model fields.
 
 After fields are matched adaptix tries to create a coercer
 that transforms data from the source field to the destination type.
@@ -95,18 +103,22 @@ that transforms data from the source field to the destination type.
 Type coercion
 ================
 
-By default, there are no implicit coercions.
+By default, there are no implicit coercions between scalar types.
 
 However, there are cases where type casting involves passing the data as is and adaptix detects its:
 
 - source type and destination type are the same
 - destination type is ``Any``
 - source type is a subclass of destination type (excluding generics)
-- source union is subset of destination union (simple ``==`` check is using)
-- source type and destination type are ``Optional`` and inner types are coercible
-- source type and destination type are one of builtin iterable and inner types are coercible
-- source type and destination type are dict and inner types are coercible
-- source type and destination type are models
+- source union is a subset of destination union (simple ``==`` check is using)
+
+Also, some compound types can be coerced if corresponding inner types are coercible:
+
+- source and destination types are models (conversion like top-level models)
+- source and destination types are ``Optional``
+- source and destination types are one of the builtin iterable
+- source and destination types are ``dict``
+
 
 You can define your own coercion rule.
 

@@ -1,1 +1,1 @@
-Fix unexpected error with type vars getting from ``UnionType``
+Fix unexpected error with type vars getting from ``UnionType``.

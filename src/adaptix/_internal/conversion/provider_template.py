@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, final
+from typing import final
 
 from ..common import Coercer, Converter
 from ..provider.essential import Mediator
 from ..provider.static_provider import StaticProvider, static_provision_action
-from .request_cls import CoercerRequest, ConverterRequest, LinkingRequest, LinkingResult, LinkingSource
+from .request_cls import CoercerRequest, ConverterRequest, LinkingRequest, LinkingResult
 
 
 class ConverterProvider(StaticProvider, ABC):
@@ -30,8 +30,3 @@ class LinkingProvider(StaticProvider, ABC):
     @abstractmethod
     def _provide_linking(self, mediator: Mediator, request: LinkingRequest) -> LinkingResult:
         ...
-
-
-def iterate_source_candidates(request: LinkingRequest) -> Iterable[LinkingSource]:
-    yield from reversed(request.context.loc_stacks)
-    yield from request.sources

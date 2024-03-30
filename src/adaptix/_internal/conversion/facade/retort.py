@@ -22,7 +22,7 @@ from ..coercer_provider import (
     UnionSubcaseCoercerProvider,
 )
 from ..converter_provider import BuiltinConverterProvider
-from ..linking_provider import SameNameLinkingProvider
+from ..linking_provider import DefaultLinkingProvider
 from ..model_coercer_provider import ModelCoercerProvider
 from ..request_cls import ConverterRequest
 from .checker import ensure_function_is_stub
@@ -35,7 +35,7 @@ class FilledConversionRetort(OperatingRetort):
 
         BuiltinConverterProvider(),
 
-        SameNameLinkingProvider(is_default=True),
+        DefaultLinkingProvider(),
 
         ModelCoercerProvider(),
         IterableCoercerProvider(),
