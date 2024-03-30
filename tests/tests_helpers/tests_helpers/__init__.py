@@ -18,4 +18,11 @@ from .misc import (
     with_notes,
     with_trail,
 )
-from .model_spec import ModelSpec, ModelSpecSchema, exclude_model_spec, only_generic_models, parametrize_model_spec, GENERIC_MODELS_REQUIREMENTS, sqlalchemy_equals
+from .model_spec import (
+    ModelSpec,
+    ModelSpecSchema,
+    exclude_model_spec,
+    only_generic_models,
+    parametrize_model_spec,
+    sqlalchemy_equals,
+)

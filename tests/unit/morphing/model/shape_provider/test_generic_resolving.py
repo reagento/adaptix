@@ -1,14 +1,9 @@
+import sys
 from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import pytest
-from tests_helpers import (
-    GENERIC_MODELS_REQUIREMENTS,
-    ModelSpec,
-    cond_list,
-    exclude_model_spec,
-    load_namespace_keeping_module,
-    requires,
-)
+from tests_helpers import ModelSpec, cond_list, exclude_model_spec, load_namespace_keeping_module, requires
+from tests_helpers.model_spec import only_generic_models
 
 from adaptix import CannotProvide, Retort
 from adaptix._internal.feature_requirement import (
@@ -34,7 +29,7 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 
-adaptix_model_spec_requirements = GENERIC_MODELS_REQUIREMENTS
+only_generic_models(sys.modules[__name__])
 
 
 @pytest.fixture(

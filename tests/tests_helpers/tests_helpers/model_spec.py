@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 from enum import Enum
 from operator import getitem
-from typing import Any, Callable, Mapping, NamedTuple, TypedDict
+from types import ModuleType
+from typing import Any, Callable, Mapping, NamedTuple, TypedDict, Union
 
 import pytest
 from _pytest.python import Metafunc
 
-from adaptix._internal.feature_requirement import HAS_ATTRS_PKG, HAS_PY_311, Requirement
+from adaptix._internal.feature_requirement import HAS_ATTRS_PKG, HAS_PY_311, HAS_SQLALCHEMY_PKG, Requirement
 from adaptix._internal.type_tools import get_all_type_hints
 
 from .misc import FailedRequirement
@@ -34,6 +35,7 @@ class ModelSpec(Enum):
     def default_requirements(cls):
         return {
             cls.ATTRS: HAS_ATTRS_PKG,
+            cls.SQLALCHEMY: HAS_SQLALCHEMY_PKG,
         }
 
 
@@ -107,8 +109,9 @@ GENERIC_MODELS_REQUIREMENTS: Mapping[ModelSpec, Requirement] = {
 }
 
 
-def only_generic_models(test_func):
-    test_func.adaptix_model_spec_requirements = GENERIC_MODELS_REQUIREMENTS
+def only_generic_models(obj: Union[Callable, ModuleType]):
+    obj.adaptix_model_spec_requirements = GENERIC_MODELS_REQUIREMENTS
+    return obj
 
 
 def parametrize_model_spec(fixture_name: str, metafunc: Metafunc) -> None:
