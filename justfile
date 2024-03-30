@@ -60,8 +60,8 @@ doc_target := "docs-build"
     sphinx-build -M clean {{ doc_source }} {{ doc_target }}
 
 
-@changelog:
-    towncrier build --keep --version Preview
+@changelog version='Preview':
+    towncrier build --keep --version {{ version }}
 
 # Continious integration
 

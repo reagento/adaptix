@@ -1,6 +1,46 @@
 ----------------------------------------------------
 
 
+.. _v3.0.0b4:
+
+`3.0.0b4 <https://github.com/reagento/adaptix/tree/v3.0.0b4>`_ -- 2024-03-30
+============================================================================
+
+.. _v3.0.0b4-Features:
+
+Features
+--------
+
+- Add coercer for builtin iterables and dict.
+- Models can be automatically converted inside compound types like ``Optional``, ``list``, ``dict`` etc.
+- Add :func:`.conversion.from_param` predicate factory to match only parameters
+- An error of loader, dumper, and converter generation contains a much more readable location.
+
+  For example:
+
+  - ``Linking: `Book.author_ids: list[int] -> BookDTO.author_ids: list[str]```
+  - ``Location: `Stub.f3: memoryview```
+
+.. _v3.0.0b4-Breaking Changes:
+
+Breaking Changes
+----------------
+
+- Now, parameters are automatically linked only to top-level model fields.
+  For manual linking, you can use the new :func:`adaptix.conversion.from_param` predicate factory.
+
+.. _v3.0.0b4-Bug Fixes:
+
+Bug Fixes
+---------
+
+- Fix fail to import adaptix package on python 3.8-3.10 when ``-OO`` is used.
+- Fix unexpected error on creating coercer between fields with ``Optional`` type.
+- Fix unexpected error with type vars getting from ``UnionType``.
+
+----------------------------------------------------
+
+
 .. _v3.0.0b3:
 
 `3.0.0b3 <https://github.com/reagento/adaptix/tree/v3.0.0b3>`_ -- 2024-03-08
