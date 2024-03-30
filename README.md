@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/reagento/adaptix/blob/v3.0.0b2/docs/logo/adaptix-with-title-dark.png?raw=true">
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/reagento/adaptix/blob/v3.0.0b2/docs/logo/adaptix-with-title-light.png?raw=true">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/reagento/adaptix/blob/v3.0.0b4/docs/logo/adaptix-with-title-dark.png?raw=true">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/reagento/adaptix/blob/v3.0.0b4/docs/logo/adaptix-with-title-light.png?raw=true">
     <img alt="adaptix logo" src="https://raw.githubusercontent.com/reagento/adaptix/v3.0.0b2/docs/logo/adaptix-with-title-light.png?raw=true">
   </picture>
 
