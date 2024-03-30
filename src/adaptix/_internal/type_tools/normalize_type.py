@@ -1,4 +1,3 @@
-# pylint: disable=inconsistent-return-statements,comparison-with-callable
 # ruff: noqa: RET503
 import dataclasses
 import sys
@@ -220,7 +219,7 @@ class Constraints:
     value: VarTuple[BaseNormType]
 
 
-TypeVarLimit = Union[Bound, Constraints]  # pylint: disable=invalid-name
+TypeVarLimit = Union[Bound, Constraints]
 
 
 class NormTV(BaseNormType):
@@ -507,7 +506,6 @@ class TypeNormalizer:
         self._namespace: Optional[Dict[str, Any]] = None
 
     def _with_namespace(self: TN, namespace: Dict[str, Any]) -> TN:
-        # pylint: disable=protected-access
         self_copy = copy(self)
         self_copy._namespace = namespace
         return self_copy
@@ -603,7 +601,6 @@ class TypeNormalizer:
 
     @_aspect_storage.add
     def _norm_type_var(self, tp, origin, args):
-        # pylint: disable=protected-access
         if isinstance(origin, TypeVar):
             namespaced = self._with_module_namespace(origin.__module__)
             limit = (
@@ -636,13 +633,13 @@ class TypeNormalizer:
             namespaced = self._with_module_namespace(origin.__module__)
             return NormTV(
                 var=origin,
-                limit=namespaced._get_bound(origin),  # pylint: disable=protected-access
+                limit=namespaced._get_bound(origin),
                 source=tp,
             )
 
     @_aspect_storage.add(condition=HAS_TV_SYNTAX)
     def _norm_type_alias_type(self, tp, origin, args):
-        if isinstance(origin, typing.TypeAliasType):  # pylint: disable=no-member
+        if isinstance(origin, typing.TypeAliasType):
             return NormTypeAlias(
                 origin,
                 self._norm_iter(args),

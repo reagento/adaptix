@@ -2,16 +2,13 @@
 -r _bench-orchestrate.txt
 -r doc.txt
 
-pre-commit==3.6.0
-bandit==1.7.6
+pre-commit==3.6.2
 
-mypy==1.7.1
+mypy==1.9.0
 
 vulture==2.10
 
-pylint==3.0.3
-
-ruff==0.3.0
+ruff==0.3.3
 
 radon==6.0.1
 dlint==0.14.1

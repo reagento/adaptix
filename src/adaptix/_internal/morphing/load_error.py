@@ -5,14 +5,14 @@ from typing import Any, Iterable, Optional, Union
 
 from ..common import TypeHint, VarTuple
 from ..compat import CompatExceptionGroup
-from ..utils import with_module
+from ..utils import fix_dataclass_from_builtin, with_module
 
 
 def _str_by_fields(cls):
     template = ", ".join("%s={self.%s!r}" % (fld.name, fld.name) for fld in dataclasses.fields(cls))  # noqa: UP031
     body = f'def __str__(self):\n    return f"{template}"'
     ns = {}
-    exec(body, ns, ns)  # noqa: S102  # pylint: disable=exec-used
+    exec(body, ns, ns)  # noqa: S102
     cls.__str__ = ns["__str__"]
     return cls
 
@@ -34,6 +34,7 @@ def custom_exception(cls=None, /, *, str_by_fields: bool = True, public_module: 
 
 @custom_exception(str_by_fields=False)
 @dataclass(eq=False, init=False)
+@fix_dataclass_from_builtin
 class LoadError(Exception):
     """The base class for the exceptions that are raised
     when the loader gets invalid input data

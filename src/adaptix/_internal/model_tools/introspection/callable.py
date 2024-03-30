@@ -11,7 +11,7 @@ from ..definitions import (
     DefaultValue,
     InputField,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     NoDefault,
     Param,
     ParamKind,
@@ -47,7 +47,7 @@ def _upack_typed_dict_kwargs(
 
     try:
         shape = get_typed_dict_shape(norm.args[0].source)
-    except IntrospectionImpossible:
+    except IntrospectionError:
         return (), (), param_kwargs
 
     return shape.input.fields, shape.input.params, shape.input.kwargs
@@ -57,13 +57,13 @@ def get_callable_shape(func, params_slice=slice(0, None)) -> Shape[InputShape, N
     try:
         signature = inspect.signature(func)
     except TypeError:
-        raise IntrospectionImpossible
+        raise IntrospectionError
 
     params = list(signature.parameters.values())[params_slice]
     kinds = [p.kind for p in params]
 
     if Parameter.VAR_POSITIONAL in kinds:
-        raise IntrospectionImpossible(
+        raise IntrospectionError(
             f"Can not create InputShape"
             f" from the function that has {Parameter.VAR_POSITIONAL}"
             f" parameter",

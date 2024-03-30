@@ -17,7 +17,6 @@ class _CannotBeRenderedError(Exception):
 
 
 def get_literal_expr(obj: object) -> Optional[str]:
-    # pylint: disable=unidiomatic-typecheck,too-many-return-statements
     if type(obj) in (int, str, bytes, bytearray):
         return repr(obj)
     if type(obj) is float:
@@ -55,7 +54,6 @@ def _try_sort(iterable):
 
 
 def _get_complex_literal_expr(obj: object) -> Optional[str]:  # noqa: PLR0911
-    # pylint: disable=unidiomatic-typecheck,too-many-return-statements
     if type(obj) is list:
         return _parenthesize("[]", obj)
 

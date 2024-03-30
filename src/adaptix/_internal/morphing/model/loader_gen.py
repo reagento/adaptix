@@ -286,7 +286,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         builder = CodeBuilder()
         with builder(f"def {closure_name}(data):"):
             builder.extend(state.builder)
-        return builder.string(), namespace.constants
+        return builder.string(), namespace.all_constants
 
     def _gen_header(self, state: GenState):
         header_builder = CodeBuilder()

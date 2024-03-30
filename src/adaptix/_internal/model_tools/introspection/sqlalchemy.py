@@ -22,21 +22,21 @@ except ImportError:
 from ...feature_requirement import HAS_SQLALCHEMY_PKG, HAS_SUPPORTED_SQLALCHEMY_PKG
 from ...type_tools import get_all_type_hints
 from ..definitions import (
-    ClarifiedIntrospectionImpossible,
+    ClarifiedIntrospectionError,
     DefaultFactory,
     DefaultValue,
     FullShape,
     InputField,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     NoDefault,
-    NoTargetPackage,
+    NoTargetPackageError,
     OutputField,
     OutputShape,
-    PackageIsTooOld,
     Param,
     ParamKind,
     Shape,
+    TooOldPackageError,
     create_attr_accessor,
 )
 
@@ -116,7 +116,7 @@ def _get_autoincrement_column(table: "Table"):
         return table.autoincrement_column
     except AttributeError:
         # for old sqlalchemy
-        return table._autoincrement_column  # pylint: disable=protected-access
+        return table._autoincrement_column
 
 
 def _get_input_shape(
@@ -227,19 +227,19 @@ def _get_output_shape(
 def get_sqlalchemy_shape(tp) -> FullShape:
     if not HAS_SUPPORTED_SQLALCHEMY_PKG:
         if not HAS_SQLALCHEMY_PKG:
-            raise NoTargetPackage(HAS_SQLALCHEMY_PKG)
-        raise PackageIsTooOld(HAS_SUPPORTED_SQLALCHEMY_PKG)
+            raise NoTargetPackageError(HAS_SQLALCHEMY_PKG)
+        raise TooOldPackageError(HAS_SUPPORTED_SQLALCHEMY_PKG)
 
     try:
         mapper = sqlalchemy.inspect(tp)
     except NoInspectionAvailable:
-        raise IntrospectionImpossible
+        raise IntrospectionError
 
     if not isinstance(mapper, Mapper):
-        raise IntrospectionImpossible
+        raise IntrospectionError
 
     if not isinstance(mapper.local_table, Table):
-        raise ClarifiedIntrospectionImpossible(
+        raise ClarifiedIntrospectionError(
             "Only sqlalchemy mapping to Table is supported",
         )
 

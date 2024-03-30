@@ -11,7 +11,7 @@ from ..definitions import (
     FullShape,
     InputField,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     NoDefault,
     OutputField,
     OutputShape,
@@ -70,7 +70,7 @@ def get_dataclass_shape(tp) -> FullShape:
     """
 
     if not is_dataclass(tp):
-        raise IntrospectionImpossible
+        raise IntrospectionError
 
     name_to_dc_field = all_dc_fields(tp)
     dc_fields_public = dc_fields(tp)

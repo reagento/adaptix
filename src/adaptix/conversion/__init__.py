@@ -3,6 +3,7 @@ from adaptix._internal.conversion.facade.provider import (
     allow_unlinked_optional,
     coercer,
     forbid_unlinked_optional,
+    from_param,
     link,
     link_constant,
 )
@@ -17,6 +18,7 @@ __all__ = (
     "coercer",
     "allow_unlinked_optional",
     "forbid_unlinked_optional",
+    "from_param",
     "AdornedConversionRetort",
     "FilledConversionRetort",
     "ConversionRetort",

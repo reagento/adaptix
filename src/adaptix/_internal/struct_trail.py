@@ -40,7 +40,6 @@ def append_trail(obj: T, trail_element: TrailElement) -> T:
     if an object does not allow adding 3rd-party attributes, do nothing.
     Element inserting to start of the path (it is built in reverse order)
     """
-    # pylint: disable=protected-access
     try:
         # noinspection PyProtectedMember
         trail = obj._adaptix_struct_trail  # type: ignore[attr-defined]
@@ -56,7 +55,6 @@ def extend_trail(obj: T, sub_trail: Reversible[TrailElement]) -> T:
     if an object does not allow adding 3rd-party attributes, do nothing.
     Sub path inserting to start (it is built in reverse order)
     """
-    # pylint: disable=protected-access
     try:
         # noinspection PyProtectedMember
         trail = obj._adaptix_struct_trail  # type: ignore[attr-defined]
@@ -71,7 +69,7 @@ def get_trail(obj: object) -> Trail:
     """Retrieve trail from an object. Trail stores in special private attribute that never be accessed directly"""
     try:
         # noinspection PyProtectedMember
-        return obj._adaptix_struct_trail  # type: ignore[attr-defined]  # pylint: disable=protected-access
+        return obj._adaptix_struct_trail  # type: ignore[attr-defined]
     except AttributeError:
         return deque()
 

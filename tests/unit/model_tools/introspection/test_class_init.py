@@ -11,7 +11,7 @@ from adaptix._internal.model_tools.definitions import (
     DefaultValue,
     InputField,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     NoDefault,
     Param,
     ParamKind,
@@ -261,7 +261,7 @@ def test_var_arg():
             self.b = b
             self.args = args
 
-    with pytest.raises(IntrospectionImpossible):
+    with pytest.raises(IntrospectionError):
         get_class_init_shape(HasVarArg)
 
 

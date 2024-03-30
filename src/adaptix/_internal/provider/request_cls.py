@@ -1,57 +1,24 @@
-from dataclasses import dataclass, field
-from typing import Any, Mapping, Tuple, TypeVar
+from dataclasses import dataclass, replace
+from typing import Tuple, TypeVar
 
 from ..common import TypeHint
-from ..datastructures import ClassMap, ImmutableStack
+from ..datastructures import ImmutableStack
 from ..definitions import DebugTrail
-from ..model_tools.definitions import Accessor, Default
 from ..type_tools import BaseNormType, normalize_type
 from ..utils import pairs
 from .essential import CannotProvide, Request
+from .location import AnyLoc, FieldLoc, TypeHintLoc
+
+LocStackT = TypeVar("LocStackT", bound="LocStack")
+AnyLocT_co = TypeVar("AnyLocT_co", bound=AnyLoc, covariant=True)
+
+
+class LocStack(ImmutableStack[AnyLocT_co]):
+    def replace_last_type(self: LocStackT, tp: TypeHint, /) -> LocStackT:
+        return self.replace_last(replace(self.last, type=tp))
+
 
 T = TypeVar("T")
-
-
-@dataclass(frozen=True)
-class Location:
-    pass
-
-
-@dataclass(frozen=True)
-class TypeHintLoc(Location):
-    type: TypeHint
-
-
-@dataclass(frozen=True)
-class FieldLoc(Location):
-    field_id: str
-    default: Default
-    metadata: Mapping[Any, Any] = field(hash=False)
-
-
-@dataclass(frozen=True)
-class InputFieldLoc(Location):
-    is_required: bool
-
-
-@dataclass(frozen=True)
-class OutputFieldLoc(Location):
-    accessor: Accessor
-
-
-@dataclass(frozen=True)
-class GenericParamLoc(Location):
-    generic_pos: int
-
-
-LocMap = ClassMap[Location]
-LR = TypeVar("LR", bound="LocatedRequest")
-LocStackT = TypeVar("LocStackT", bound="LocStack")
-
-
-class LocStack(ImmutableStack[LocMap]):
-    def add_to_last_map(self: LocStackT, *locs: Location) -> LocStackT:
-        return self.replace_last(self[-1].add(*locs))
 
 
 @dataclass(frozen=True)
@@ -59,12 +26,12 @@ class LocatedRequest(Request[T]):
     loc_stack: LocStack
 
     @property
-    def last_map(self) -> LocMap:
-        return self.loc_stack[-1]
+    def last_loc(self) -> AnyLoc:
+        return self.loc_stack.last
 
 
 def get_type_from_request(request: LocatedRequest) -> TypeHint:
-    return request.last_map.get_or_raise(TypeHintLoc, CannotProvide).type
+    return request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide).type
 
 
 def try_normalize_type(tp: TypeHint) -> BaseNormType:
@@ -82,8 +49,8 @@ class DebugTrailRequest(LocatedRequest[DebugTrail]):
     pass
 
 
-def find_owner_with_field(stack: LocStack) -> Tuple[LocMap, LocMap]:
-    for next_loc_map, prev_loc_map in pairs(reversed(stack)):
-        if next_loc_map.has(FieldLoc):
-            return prev_loc_map, next_loc_map
+def find_owner_with_field(stack: LocStack) -> Tuple[TypeHintLoc, FieldLoc]:
+    for next_loc, prev_loc in pairs(reversed(stack)):
+        if next_loc.is_castable(FieldLoc):
+            return prev_loc, next_loc
     raise ValueError

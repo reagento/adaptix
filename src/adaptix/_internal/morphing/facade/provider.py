@@ -417,7 +417,6 @@ def validator(
     error: Union[str, Callable[[Any], LoadError], None] = None,
     chain: Chain = Chain.LAST,
 ) -> Provider:
-    # pylint: disable=C3001
     exception_factory = (
         (lambda x: ValidationLoadError(error, x))
         if error is None or isinstance(error, str) else

@@ -1,11 +1,12 @@
 from abc import ABC
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Type
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Type, Union
 
 from ..common import TypeHint, VarTuple
-from ..conversion.request_cls import CoercerRequest, LinkingRequest
+from ..conversion.request_cls import CoercerRequest, ConversionDestItem, ConversionSourceItem, LinkingRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from ..provider.request_cls import FieldLoc, LocatedRequest, LocMap, LocStack, TypeHintLoc, find_owner_with_field
+from ..provider.location import AnyLoc, FieldLoc
+from ..provider.request_cls import LocatedRequest, LocStack
 from ..type_tools import is_parametrized
 from ..utils import copy_exception_dunders, with_module
 from .base_retort import BaseRetort
@@ -26,22 +27,22 @@ class MorphingRecursionResolver(RecursionResolver):
     REQUEST_CLASSES: VarTuple[Type[LocatedRequest]] = (LoaderRequest, DumperRequest)
 
     def __init__(self) -> None:
-        self._loc_map_to_stub: Dict[LocMap, FuncWrapper] = {}
+        self._loc_to_stub: Dict[AnyLoc, FuncWrapper] = {}
 
     def track_recursion(self, request: Request[T]) -> Optional[Any]:
         if not isinstance(request, self.REQUEST_CLASSES):
             return None
 
-        if request.loc_stack.count(request.last_map) == 1:
+        if request.loc_stack.count(request.last_loc) == 1:
             return None
 
         stub = FuncWrapper()
-        self._loc_map_to_stub[request.last_map] = stub
+        self._loc_to_stub[request.last_loc] = stub
         return stub
 
     def process_request_result(self, request: Request[T], result: T) -> None:
-        if isinstance(request, self.REQUEST_CLASSES) and request.last_map in self._loc_map_to_stub:
-            self._loc_map_to_stub.pop(request.last_map).set_func(result)
+        if isinstance(request, self.REQUEST_CLASSES) and request.last_loc in self._loc_to_stub:
+            self._loc_to_stub.pop(request.last_loc).set_func(result)
 
 
 @with_module("adaptix")
@@ -49,48 +50,23 @@ class NoSuitableProvider(Exception):
     def __init__(self, message: str):
         self.message = message
 
+    def __str__(self):
+        return self.message
+
 
 class BuiltinErrorRepresentor(ErrorRepresentor):
     _NO_PROVIDER_DESCRIPTION_METHOD: Mapping[Type[Request], str] = {
         LinkingRequest: "_get_linking_request_description",
-        CoercerRequest: "_get_coercer_request_description",
     }
     _NO_PROVIDER_DESCRIPTION_CONST: Mapping[Type[Request], str] = {
-        LoaderRequest: "There is no provider that can create specified loader",
-        DumperRequest: "There is no provider that can create specified dumper",
+        LoaderRequest: "Cannot find loader",
+        DumperRequest: "Cannot find dumper",
+        CoercerRequest: "Cannot find coercer",
     }
 
     def _get_linking_request_description(self, request: LinkingRequest) -> str:
-        try:
-            dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.destination.to_loc_stack())
-        except ValueError:
-            return "Cannot find coercer"
-
-        dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
-        dst_field = dst_field_loc_map[FieldLoc].field_id
-        return f"Cannot find paired field of `{dst_owner}.{dst_field}` for linking"
-
-    def _get_coercer_request_description(self, request: CoercerRequest) -> str:
-        try:
-            src_owner_loc_map, src_field_loc_map = find_owner_with_field(request.src.to_loc_stack())
-        except ValueError:
-            return "Cannot find coercer"
-
-        try:
-            dst_owner_loc_map, dst_field_loc_map = find_owner_with_field(request.dst.to_loc_stack())
-        except ValueError:
-            return "Cannot find coercer"
-
-        src_owner = self._get_type_desc(src_owner_loc_map[TypeHintLoc].type)
-        src_field = src_field_loc_map[FieldLoc].field_id
-        src_tp = self._get_type_desc(src_field_loc_map[TypeHintLoc].type)
-        dst_owner = self._get_type_desc(dst_owner_loc_map[TypeHintLoc].type)
-        dst_field = dst_field_loc_map[FieldLoc].field_id
-        dst_tp = self._get_type_desc(dst_field_loc_map[TypeHintLoc].type)
-        return (
-            f"Cannot find coercer for linking"
-            f" `{src_owner}.{src_field}: {src_tp} -> {dst_owner}.{dst_field}: {dst_tp}`"
-        )
+        dst_desc = self._get_loc_stack_desc(request.destination)
+        return f"Cannot find paired field of `{dst_desc}` for linking"
 
     def _get_type_desc(self, tp: TypeHint) -> str:
         if isinstance(tp, type) and not is_parametrized(tp):
@@ -108,39 +84,38 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
             return self._NO_PROVIDER_DESCRIPTION_CONST[request_cls]
         return f"There is no provider that can process {request}"
 
-    _LOC_KEYS_ORDER = {fld: idx for idx, fld in enumerate(["type", "field_id"])}
+    def _get_loc_stack_desc(
+        self,
+        loc_stack: LocStack[Union[ConversionSourceItem, ConversionDestItem]],
+    ) -> str:
+        tp_desc = self._get_type_desc(loc_stack.last.type)
 
-    def _get_loc_stack_context_notes(self, loc_desc: str, field_desc: str, loc_stack: LocStack) -> Iterable[str]:
         try:
-            owner_loc_map, field_loc_map = find_owner_with_field(loc_stack)
-        except ValueError:
-            pass
-        else:
-            owner_type = owner_loc_map[TypeHintLoc].type
-            field_id = field_loc_map[FieldLoc].field_id
-            yield f"Exception was raised while processing {field_desc} {field_id!r} of {owner_type}"
+            owner_loc = loc_stack[-2]
+        except (TypeError, IndexError):
+            return tp_desc
 
-        location_desc = ", ".join(
-            f"{key}={value!r}"
-            for key, value in sorted(
-                (
-                    (key, value)
-                    for loc in loc_stack.last.values()
-                    for key, value in vars(loc).items()
-                ),
-                key=lambda item: self._LOC_KEYS_ORDER.get(item[0], 1000),
-            )
-        )
-        if location_desc:
-            yield f"{loc_desc}: {location_desc}"
+        try:
+            field_loc = loc_stack.last.cast(FieldLoc)
+        except TypeError:
+            return tp_desc
+        src_owner = self._get_type_desc(owner_loc.type)
+        return f"{src_owner}.{field_loc.field_id}: {tp_desc}"
+
+    def _get_located_request_context_notes(self, request: LocatedRequest) -> Iterable[str]:
+        loc_stack_desc = self._get_loc_stack_desc(request.loc_stack)
+        yield f"Location: `{loc_stack_desc}`"
+
+    def _get_coercer_request_context_notes(self, request: CoercerRequest) -> Iterable[str]:
+        src_desc = self._get_loc_stack_desc(request.src)
+        dst_desc = self._get_loc_stack_desc(request.dst)
+        yield f"Linking: `{src_desc} -> {dst_desc}`"
 
     def get_request_context_notes(self, request: Request) -> Iterable[str]:
         if isinstance(request, LocatedRequest):
-            yield from self._get_loc_stack_context_notes(
-                loc_desc="Location",
-                field_desc="field",
-                loc_stack=request.loc_stack,
-            )
+            yield from self._get_located_request_context_notes(request)
+        elif isinstance(request, CoercerRequest):
+            yield from self._get_coercer_request_context_notes(request)
 
 
 class OperatingRetort(BaseRetort, Provider, ABC):

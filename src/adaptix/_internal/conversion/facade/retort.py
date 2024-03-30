@@ -1,4 +1,3 @@
-# pylint: disable=protected-access, not-callable
 import inspect
 from functools import partial
 from inspect import Parameter, Signature
@@ -13,14 +12,18 @@ from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...retort.operating_retort import OperatingRetort
 from ...type_tools import is_generic_class
 from ..coercer_provider import (
+    DictCoercerProvider,
     DstAnyCoercerProvider,
+    IterableCoercerProvider,
     OptionalCoercerProvider,
     SameTypeCoercerProvider,
     SubclassCoercerProvider,
+    TypeHintTagsUnwrappingProvider,
     UnionSubcaseCoercerProvider,
 )
 from ..converter_provider import BuiltinConverterProvider
-from ..linking_provider import SameNameLinkingProvider
+from ..linking_provider import DefaultLinkingProvider
+from ..model_coercer_provider import ModelCoercerProvider
 from ..request_cls import ConverterRequest
 from .checker import ensure_function_is_stub
 from .provider import forbid_unlinked_optional
@@ -32,13 +35,18 @@ class FilledConversionRetort(OperatingRetort):
 
         BuiltinConverterProvider(),
 
-        SameNameLinkingProvider(is_default=True),
+        DefaultLinkingProvider(),
+
+        ModelCoercerProvider(),
+        IterableCoercerProvider(),
+        DictCoercerProvider(),
 
         SameTypeCoercerProvider(),
         DstAnyCoercerProvider(),
         SubclassCoercerProvider(),
         UnionSubcaseCoercerProvider(),
         OptionalCoercerProvider(),
+        TypeHintTagsUnwrappingProvider(),
 
         forbid_unlinked_optional(P.ANY),
     ]
@@ -56,7 +64,6 @@ class AdornedConversionRetort(OperatingRetort):
         self._simple_converter_cache: Dict[Tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
-        # pylint: disable=protected-access
         with self._clone() as clone:
             clone._inc_instance_recipe = (
                 tuple(recipe) + clone._inc_instance_recipe

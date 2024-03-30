@@ -8,7 +8,7 @@ from adaptix import Chain, ExtraForbid, ExtraSkip, P, Retort, dumper, enum_by_na
 from adaptix.load_error import ExtraFieldsLoadError, ValueLoadError
 
 from .models import Receipt, ReceiptType, RecItem
-from .money import Money, TooPreciseAmount
+from .money import Money, TooPreciseAmountError
 
 
 def load_phone_number(num_obj: PhoneNumber):
@@ -45,7 +45,7 @@ def outer_phonenumber_loader(data: str):
 def money_loader(data):
     try:
         return Money.from_decimal_rubles(data)
-    except TooPreciseAmount:
+    except TooPreciseAmountError:
         raise ValueLoadError("Rubles cannot have more than 2 decimal places", data)
 
 

@@ -1,39 +1,35 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from inspect import Signature
-from itertools import chain, islice
-from typing import Callable, Iterator, Optional, Union
+from typing import Callable, Optional, Union
 
 from ..common import Coercer, VarTuple
-from ..datastructures import ImmutableStack
-from ..model_tools.definitions import BaseField, DefaultFactory, DefaultValue, InputField, OutputField
+from ..model_tools.definitions import DefaultFactory, DefaultValue
 from ..provider.essential import Request
-from ..provider.fields import base_field_to_loc_map, input_field_to_loc_map, output_field_to_loc_map
+from ..provider.location import FieldLoc, GenericParamLoc, InputFieldLoc, OutputFieldLoc, TypeHintLoc
 from ..provider.request_cls import LocatedRequest, LocStack
 
-LinkingSourceItem = Union[OutputField, BaseField]
+
+@dataclass(frozen=True)
+class ConverterRequest(Request):
+    signature: Signature
+    function_name: Optional[str]
+    stub_function: Optional[Callable]
 
 
-class LinkingSource(ImmutableStack[LinkingSourceItem]):
-    def to_loc_stack(self) -> LocStack:
-        return LocStack.from_iter(
-            chain(
-                (base_field_to_loc_map(self.head), ),
-                map(output_field_to_loc_map, self.tail),
-            ),
-        )
-
-    @property
-    def head(self) -> BaseField:
-        return self[0]
-
-    @property
-    def tail(self) -> Iterator[OutputField]:
-        return islice(self, 1, None)  # type: ignore[arg-type]
+ConversionSourceItem = Union[FieldLoc, OutputFieldLoc, GenericParamLoc]
+ConversionDestItem = Union[TypeHintLoc, InputFieldLoc, GenericParamLoc]
 
 
-class LinkingDest(ImmutableStack[InputField]):
-    def to_loc_stack(self) -> LocStack:
-        return LocStack.from_iter(map(input_field_to_loc_map, self))
+@dataclass(frozen=True)
+class ConversionContext:
+    params: VarTuple[FieldLoc]
+    loc_stacks: VarTuple[LocStack[FieldLoc]] = field(init=False, hash=False, repr=False, compare=False)
+
+    def __post_init__(self):
+        super().__setattr__("loc_stacks", tuple(LocStack(param) for param in self.params))
+
+
+LinkingSource = LocStack[ConversionSourceItem]
 
 
 @dataclass(frozen=True)
@@ -50,22 +46,20 @@ class ConstantLinking:
 @dataclass(frozen=True)
 class LinkingResult:
     linking: Union[FieldLinking, ConstantLinking]
-    is_default: bool = False
-
-
-SourceCandidates = VarTuple[Union[LinkingSource, VarTuple[LinkingSource]]]
 
 
 @dataclass(frozen=True)
 class LinkingRequest(Request[LinkingResult]):
-    sources: SourceCandidates
-    destination: LinkingDest
+    sources: VarTuple[LinkingSource]
+    context: ConversionContext
+    destination: LocStack[ConversionDestItem]
 
 
 @dataclass(frozen=True)
 class CoercerRequest(Request[Coercer]):
-    src: LinkingSource
-    dst: LinkingDest
+    src: LocStack[ConversionSourceItem]
+    ctx: ConversionContext
+    dst: LocStack[ConversionDestItem]
 
 
 @dataclass(frozen=True)
@@ -76,10 +70,3 @@ class UnlinkedOptionalPolicy:
 @dataclass(frozen=True)
 class UnlinkedOptionalPolicyRequest(LocatedRequest[UnlinkedOptionalPolicy]):
     pass
-
-
-@dataclass(frozen=True)
-class ConverterRequest(Request):
-    signature: Signature
-    function_name: Optional[str]
-    stub_function: Optional[Callable]

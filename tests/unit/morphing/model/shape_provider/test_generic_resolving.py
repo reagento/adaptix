@@ -1,14 +1,9 @@
+import sys
 from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import pytest
-from tests_helpers import (
-    GENERIC_MODELS_REQUIREMENTS,
-    ModelSpec,
-    cond_list,
-    exclude_model_spec,
-    load_namespace_keeping_module,
-    requires,
-)
+from tests_helpers import ModelSpec, cond_list, exclude_model_spec, load_namespace_keeping_module, requires
+from tests_helpers.model_spec import only_generic_models
 
 from adaptix import CannotProvide, Retort
 from adaptix._internal.feature_requirement import (
@@ -20,7 +15,7 @@ from adaptix._internal.feature_requirement import (
     HAS_TV_TUPLE,
     IS_PYPY,
 )
-from adaptix._internal.provider.request_cls import LocMap, LocStack, TypeHintLoc
+from adaptix._internal.provider.request_cls import LocStack, TypeHintLoc
 from adaptix._internal.provider.shape_provider import (
     InputShapeRequest,
     OutputShapeRequest,
@@ -34,7 +29,7 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 
-adaptix_model_spec_requirements = GENERIC_MODELS_REQUIREMENTS
+only_generic_models(sys.modules[__name__])
 
 
 @pytest.fixture(
@@ -270,13 +265,13 @@ def test_not_a_model(tp):
     with pytest.raises(CannotProvide):
         provide_generic_resolved_shape(
             mediator,
-            InputShapeRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
+            InputShapeRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
         )
 
     with pytest.raises(CannotProvide):
         provide_generic_resolved_shape(
             mediator,
-            OutputShapeRequest(loc_stack=LocStack(LocMap(TypeHintLoc(type=tp)))),
+            OutputShapeRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
         )
 
 

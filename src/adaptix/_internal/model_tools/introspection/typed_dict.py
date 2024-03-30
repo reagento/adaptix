@@ -9,7 +9,7 @@ from ..definitions import (
     FullShape,
     InputField,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     NoDefault,
     OutputField,
     OutputShape,
@@ -79,7 +79,7 @@ def get_typed_dict_shape(tp) -> FullShape:
     # __annotations__ of TypedDict contain also parents' type hints unlike any other classes,
     # so overriden_types always is empty
     if not is_typed_dict_class(tp):
-        raise IntrospectionImpossible
+        raise IntrospectionError
 
     type_hints = _get_td_hints(tp)
 

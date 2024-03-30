@@ -8,14 +8,12 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.location import GenericParamLoc
 from ..provider.provider_template import for_predicate
 from ..provider.request_cls import (
     DebugTrailRequest,
-    GenericParamLoc,
     LocatedRequest,
-    LocMap,
     StrictCoercionRequest,
-    TypeHintLoc,
     get_type_from_request,
     try_normalize_type,
 )
@@ -75,9 +73,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
         arg_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=arg),
-                        GenericParamLoc(generic_pos=0),
+                    GenericParamLoc(
+                        type=arg,
+                        generic_pos=0,
                     ),
                 ),
             ),
@@ -119,7 +117,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
                     yield loader(el)
                 except LoadError as e:
                     errors.append(append_trail(e, idx))
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, idx))
                     has_unexpected_error = True
 
@@ -170,7 +168,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         def iter_loader_dt_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Iterable, Mapping, data)
-            if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
+            if type(data) is str:  # noqa: E721
                 raise ExcludedTypeLoadError(Iterable, str, data)
 
             try:
@@ -186,7 +184,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         def iter_loader_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Iterable, Mapping, data)
-            if type(data) is str:  # pylint: disable=unidiomatic-typecheck # noqa: E721
+            if type(data) is str:  # noqa: E721
                 raise ExcludedTypeLoadError(Iterable, str, data)
 
             try:
@@ -216,9 +214,9 @@ class IterableProvider(LoaderProvider, DumperProvider):
         arg_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
-                    LocMap(
-                        TypeHintLoc(type=arg),
-                        GenericParamLoc(generic_pos=0),
+                    GenericParamLoc(
+                        type=arg,
+                        generic_pos=0,
                     ),
                 ),
             ),
@@ -264,7 +262,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
             for el in iterable:
                 try:
                     yield dumper(el)
-                except Exception as e:  # pylint: disable=broad-exception-caught
+                except Exception as e:
                     errors.append(append_trail(e, idx))
 
                 idx += 1

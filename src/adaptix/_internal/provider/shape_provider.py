@@ -4,15 +4,15 @@ from typing import Any, Container, Generic, Iterable, Optional, TypeVar, Union, 
 
 from ..common import TypeHint
 from ..model_tools.definitions import (
-    ClarifiedIntrospectionImpossible,
+    ClarifiedIntrospectionError,
     DescriptorAccessor,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     OutputField,
     OutputShape,
-    PackageIsTooOld,
     Shape,
     ShapeIntrospector,
+    TooOldPackageError,
 )
 from ..model_tools.introspection.attrs import get_attrs_shape
 from ..model_tools.introspection.class_init import get_class_init_shape
@@ -49,16 +49,16 @@ class ShapeProvider(StaticProvider):
     def _get_shape(self, tp) -> Shape:
         try:
             return self._introspector(tp)
-        except PackageIsTooOld as e:
+        except TooOldPackageError as e:
             raise CannotProvide(message=e.requirement.fail_reason, is_demonstrative=True) from e
-        except ClarifiedIntrospectionImpossible as e:
+        except ClarifiedIntrospectionError as e:
             raise CannotProvide(message=e.description, is_demonstrative=True) from e
-        except IntrospectionImpossible as e:
+        except IntrospectionError as e:
             raise CannotProvide from e
 
     @static_provision_action
     def _provide_input_shape(self, mediator: Mediator, request: InputShapeRequest) -> InputShape:
-        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
         shape = self._get_shape(loc.type)
         if shape.input is None:
             raise CannotProvide
@@ -66,7 +66,7 @@ class ShapeProvider(StaticProvider):
 
     @static_provision_action
     def _provide_output_shape(self, mediator: Mediator, request: OutputShapeRequest) -> OutputShape:
-        loc = request.last_map.get_or_raise(TypeHintLoc, CannotProvide)
+        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
         shape = self._get_shape(loc.type)
         if shape.output is None:
             raise CannotProvide
@@ -104,7 +104,7 @@ class PropertyExtender(StaticProvider):
 
     @static_provision_action
     def _provide_output_shape(self, mediator: Mediator[OutputShape], request: OutputShapeRequest) -> OutputShape:
-        tp = request.last_map.get_or_raise(TypeHintLoc, CannotProvide).type
+        tp = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide).type
         shape = mediator.provide_from_next()
 
         additional_fields = tuple(
@@ -145,7 +145,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
     def provide(self) -> ShapeT:
         resolver = GenericResolver(self._get_members)
         members_storage = resolver.get_resolved_members(
-            self._initial_request.last_map[TypeHintLoc].type,
+            self._initial_request.last_loc.type,
         )
         if members_storage.meta is None:
             raise CannotProvide
@@ -162,7 +162,7 @@ class ShapeGenericResolver(Generic[ShapeT]):
             shape = self._mediator.delegating_provide(
                 replace(
                     self._initial_request,
-                    loc_stack=self._initial_request.loc_stack.add_to_last_map(TypeHintLoc(type=tp)),
+                    loc_stack=self._initial_request.loc_stack.replace_last_type(tp),
                 ),
             )
         except CannotProvide:
@@ -179,8 +179,6 @@ class ShapeGenericResolver(Generic[ShapeT]):
 
 
 def provide_generic_resolved_shape(mediator: Mediator, request: LocatedRequest[ShapeT]) -> ShapeT:
-    if not request.last_map.has(TypeHintLoc):
-        return mediator.delegating_provide(request)
     return ShapeGenericResolver(mediator, request).provide()
 
 
@@ -204,7 +202,7 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
         shape = mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(self._prototype)),
+                loc_stack=request.loc_stack.replace_last_type(self._prototype),
             ),
         )
         return replace(shape, constructor=self._target)
@@ -218,6 +216,6 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
         return mediator.delegating_provide(
             replace(
                 request,
-                loc_stack=request.loc_stack.add_to_last_map(TypeHintLoc(self._prototype)),
+                loc_stack=request.loc_stack.replace_last_type(self._prototype),
             ),
         )

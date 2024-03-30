@@ -4,6 +4,7 @@ from datetime import date
 from uuid import UUID
 
 from adaptix import P
+from adaptix._internal.conversion.facade.provider import from_param
 from adaptix.conversion import coercer, impl_converter, link
 
 
@@ -40,7 +41,7 @@ class BookDTO:
 
 @impl_converter(
     recipe=[
-        link("pages_len", "page_count"),
+        link(from_param("pages_len"), P[BookDTO].page_count),
         link(P[Book].author, P[BookDTO].writer),
         coercer(UUID, str, func=str),
         coercer(P[Author].birthday, P[AuthorDTO].birthday, date.isoformat),

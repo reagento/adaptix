@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   testing:
-    name: Run tests
+    name: Testing (${{ matrix.python_version.tox }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -39,7 +39,7 @@ jobs:
           python-version: ${{ matrix.python_version.setup }}
 
       - name: Install Just
-        uses: extractions/setup-just@v1
+        uses: extractions/setup-just@dd310ad5a97d8e7b41793f8ef055398d51ad4de6
         with:
           just-version: 1.14.0
 
@@ -49,4 +49,6 @@ jobs:
 
       - name: Run tests
         run:
-          just test-on ${{ matrix.python_version.tox }}
+          just inv test-on-ci
+            --py-target ${{ matrix.python_version.tox }}
+            --cov-output .coverage.${{ matrix.python_version.tox }}

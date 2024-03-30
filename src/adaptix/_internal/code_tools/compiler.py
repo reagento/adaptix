@@ -1,4 +1,3 @@
-# pylint: disable=exec-used
 import linecache
 from abc import ABC, abstractmethod
 from collections import defaultdict

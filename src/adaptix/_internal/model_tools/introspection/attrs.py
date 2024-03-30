@@ -10,14 +10,14 @@ from ..definitions import (
     FullShape,
     InputField,
     InputShape,
-    IntrospectionImpossible,
+    IntrospectionError,
     NoDefault,
-    NoTargetPackage,
+    NoTargetPackageError,
     OutputField,
     OutputShape,
-    PackageIsTooOld,
     Param,
     Shape,
+    TooOldPackageError,
     create_attr_accessor,
 )
 from .class_init import get_class_init_shape
@@ -144,20 +144,20 @@ def _get_output_shape(attrs_fields, type_hints) -> OutputShape:
 def get_attrs_shape(tp) -> FullShape:
     if not HAS_SUPPORTED_ATTRS_PKG:
         if not HAS_ATTRS_PKG:
-            raise NoTargetPackage(HAS_ATTRS_PKG)
-        raise PackageIsTooOld(HAS_SUPPORTED_ATTRS_PKG)
+            raise NoTargetPackageError(HAS_ATTRS_PKG)
+        raise TooOldPackageError(HAS_SUPPORTED_ATTRS_PKG)
 
     try:
         is_attrs = attrs.has(tp)
     except TypeError:
-        raise IntrospectionImpossible
+        raise IntrospectionError
     if not is_attrs:
-        raise IntrospectionImpossible
+        raise IntrospectionError
 
     try:
         attrs_fields = attrs.fields(tp)
     except (TypeError, attrs.exceptions.NotAnAttrsClassError):
-        raise IntrospectionImpossible
+        raise IntrospectionError
 
     type_hints = get_all_type_hints(tp)
     return Shape(
