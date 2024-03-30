@@ -24,7 +24,7 @@ the second (strict) additionally checks that the version same or older than the 
    * - ``sqlalchemy``
      - ``sqlalchemy >= 2.0.0``
    * - ``sqlalchemy-strict``
-     - ``sqlalchemy >= 2.0.0, <= 2.0.27``
+     - ``sqlalchemy >= 2.0.0, <= 2.0.29``
 
 
 Extras are specified inside square brackets, separating by comma.
