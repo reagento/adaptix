@@ -54,7 +54,7 @@ if HAS_PY_310:
     def _get_param_kind(dc_field: DCField) -> ParamKind:
         return ParamKind.KW_ONLY if dc_field.kw_only else ParamKind.POS_OR_KW
 else:
-    def _get_param_kind(_dc_field: DCField) -> ParamKind:
+    def _get_param_kind(dc_field: DCField) -> ParamKind:
         return ParamKind.POS_OR_KW
 
 
