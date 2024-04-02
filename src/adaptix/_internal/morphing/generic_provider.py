@@ -448,11 +448,11 @@ class UnionProvider(LoaderProvider, DumperProvider):
         dumpers: Iterable[Any],
         dumper_type_dispatcher: ClassDispatcher[Any, Dumper],
     ) -> Optional[Dumper]:
-        literal_type, literal_dumper = [
+        literal_type, literal_dumper = next(
             (union_case, dumper) for union_case, dumper
             in zip(norm.args, dumpers)
             if union_case.origin is Literal
-        ][0]
+        )
 
         if not literal_type:
             return None
