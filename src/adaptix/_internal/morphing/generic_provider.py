@@ -1,10 +1,9 @@
 import collections.abc
-import typing
 from dataclasses import dataclass, replace
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, Collection, Dict, Iterable, Literal, Sequence, Set, Type, Union
+from typing import Any, Collection, Dict, Iterable, Literal, Optional, Sequence, Set, Type, Union
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -360,9 +359,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
         return len(norm.args) == 2 and None in [case.origin for case in norm.args]  # noqa: PLR2004
 
     def _is_class_origin(self, origin) -> bool:
-        return (
-            origin is None or isinstance(origin, type) or origin is typing.Literal
-        ) and not is_subclass_soft(origin, collections.abc.Callable)
+        return (origin is None or isinstance(origin, type)) and not is_subclass_soft(origin, collections.abc.Callable)
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         request_type = get_type_from_request(request)
@@ -385,10 +382,15 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 return as_is_stub
             return self._get_single_optional_dumper(not_none_dumper)
 
-        non_class_origins = [case.source for case in norm.args if not self._is_class_origin(case.origin)]
-        if non_class_origins:
+        forbidden_origins = [
+            case.source
+            for case in norm.args
+            if not self._is_class_origin(case.origin) and case.origin != Literal
+        ]
+
+        if forbidden_origins:
             raise CannotProvide(
-                f"All cases of union must be class, but found {non_class_origins}",
+                f"All cases of union must be class, but found {forbidden_origins}",
                 is_terminal=True,
                 is_demonstrative=True,
             )
@@ -410,33 +412,27 @@ class UnionProvider(LoaderProvider, DumperProvider):
         if all(dumper == as_is_stub for dumper in dumpers):
             return as_is_stub
 
-        case_dumpers = {}
-        literal_type, literal_dumper = None, None
+        dumper_type_dispatcher = ClassDispatcher(
+            {type(None) if case.origin is None else case.origin: dumper for case, dumper in zip(norm.args, dumpers)},
+        )
 
-        for case, dumper in zip(norm.args, dumpers):
-            if case.origin is Literal:
-                literal_type, literal_dumper = case, dumper
-            key = type(None) if case.origin is None else case.origin
-            case_dumpers[key] = dumper
+        literal_dumper = self._get_dumper_for_literal(norm, dumpers, dumper_type_dispatcher)
 
-        dumper_type_dispatcher = ClassDispatcher(case_dumpers)
+        if literal_dumper:
+            return literal_dumper
 
-        if literal_type:
-            literal_cases = literal_type.args
-            return self._get_dumper_for_literal(dumper_type_dispatcher, literal_dumper, literal_cases)
+        return self._produce_dumper(dumper_type_dispatcher)
 
-        return self._get_dumper(dumper_type_dispatcher)
-
-    def _get_dumper(self, dumper_type_dispatcher: ClassDispatcher[Any, Dumper]) -> Dumper:
+    def _produce_dumper(self, dumper_type_dispatcher: ClassDispatcher[Any, Dumper]) -> Dumper:
         def union_dumper(data):
             return dumper_type_dispatcher.dispatch(type(data))(data)
 
         return union_dumper
 
-    def _get_dumper_for_literal(
+    def _produce_dumper_for_literal(
         self,
         dumper_type_dispatcher: ClassDispatcher[Any, Dumper],
-        literal_dumper: Any,
+        literal_dumper: Dumper,
         literal_cases: Sequence[Any],
     ) -> Dumper:
         def union_dumper_with_literal(data):
@@ -445,6 +441,24 @@ class UnionProvider(LoaderProvider, DumperProvider):
             return dumper_type_dispatcher.dispatch(type(data))(data)
 
         return union_dumper_with_literal
+
+    def _get_dumper_for_literal(
+        self,
+        norm: BaseNormType,
+        dumpers: Iterable[Any],
+        dumper_type_dispatcher: ClassDispatcher[Any, Dumper],
+    ) -> Optional[Dumper]:
+        literal_type, literal_dumper = [
+            (union_case, dumper) for union_case, dumper
+            in zip(norm.args, dumpers)
+            if union_case.origin is Literal
+        ][0]
+
+        if not literal_type:
+            return None
+
+        literal_cases = literal_type.args
+        return self._produce_dumper_for_literal(dumper_type_dispatcher, literal_dumper, literal_cases)
 
     def _get_single_optional_dumper(self, dumper: Dumper) -> Dumper:
         def optional_dumper(data):
