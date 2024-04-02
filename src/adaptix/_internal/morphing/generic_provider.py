@@ -410,9 +410,21 @@ class UnionProvider(LoaderProvider, DumperProvider):
         if all(dumper == as_is_stub for dumper in dumpers):
             return as_is_stub
 
-        dumper_type_dispatcher = ClassDispatcher(
-            {type(None) if case.origin is None else case.origin: dumper for case, dumper in zip(norm.args, dumpers)},
-        )
+        case_dumpers = {}
+        literal_type, literal_dumper = None, None
+
+        for case, dumper in zip(norm.args, dumpers):
+            if case.origin is Literal:
+                literal_type, literal_dumper = case, dumper
+            key = type(None) if case.origin is None else case.origin
+            case_dumpers[key] = dumper
+
+        dumper_type_dispatcher = ClassDispatcher(case_dumpers)
+
+        if literal_type:
+            literal_cases = literal_type.args
+            return self._get_dumper_for_literal(dumper_type_dispatcher, literal_dumper, literal_cases)
+
         return self._get_dumper(dumper_type_dispatcher)
 
     def _get_dumper(self, dumper_type_dispatcher: ClassDispatcher[Any, Dumper]) -> Dumper:
@@ -420,6 +432,19 @@ class UnionProvider(LoaderProvider, DumperProvider):
             return dumper_type_dispatcher.dispatch(type(data))(data)
 
         return union_dumper
+
+    def _get_dumper_for_literal(
+        self,
+        dumper_type_dispatcher: ClassDispatcher[Any, Dumper],
+        literal_dumper: Any,
+        literal_cases: Sequence[Any],
+    ) -> Dumper:
+        def union_dumper_with_literal(data):
+            if data in literal_cases:
+                return literal_dumper(data)
+            return dumper_type_dispatcher.dispatch(type(data))(data)
+
+        return union_dumper_with_literal
 
     def _get_single_optional_dumper(self, dumper: Dumper) -> Dumper:
         def optional_dumper(data):
