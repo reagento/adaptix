@@ -1,5 +1,4 @@
 import collections.abc
-import typing
 from dataclasses import dataclass, replace
 from enum import Enum
 from os import PathLike
@@ -360,9 +359,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
         return len(norm.args) == 2 and None in [case.origin for case in norm.args]  # noqa: PLR2004
 
     def _is_class_origin(self, origin) -> bool:
-        return (
-            origin is None or isinstance(origin, type) or origin is typing.Literal
-        ) and not is_subclass_soft(origin, collections.abc.Callable)
+        return (origin is None or isinstance(origin, type)) and not is_subclass_soft(origin, collections.abc.Callable)
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         request_type = get_type_from_request(request)
