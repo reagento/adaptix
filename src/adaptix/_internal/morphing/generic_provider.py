@@ -448,11 +448,14 @@ class UnionProvider(LoaderProvider, DumperProvider):
         dumpers: Iterable[Any],
         dumper_type_dispatcher: ClassDispatcher[Any, Dumper],
     ) -> Optional[Dumper]:
-        literal_type, literal_dumper = next(
-            (union_case, dumper) for union_case, dumper
-            in zip(norm.args, dumpers)
-            if union_case.origin is Literal
-        )
+        try:
+            literal_type, literal_dumper = next(
+                (union_case, dumper) for union_case, dumper
+                in zip(norm.args, dumpers)
+                if union_case.origin is Literal
+            )
+        except StopIteration:
+            literal_type, literal_dumper = None, None
 
         if not literal_type:
             return None
