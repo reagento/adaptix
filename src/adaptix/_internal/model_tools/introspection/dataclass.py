@@ -38,7 +38,7 @@ def _get_default(field: DCField) -> Default:
     return NoDefault()
 
 
-def _create_inp_field_from_dc_fields(dc_field: DCField, type_hints):
+def _create_inp_field_from_dc_field(dc_field: DCField, type_hints):
     default = _get_default(dc_field)
     return InputField(
         type=type_hints[dc_field.name],
@@ -54,7 +54,7 @@ if HAS_PY_310:
     def _get_param_kind(dc_field: DCField) -> ParamKind:
         return ParamKind.KW_ONLY if dc_field.kw_only else ParamKind.POS_OR_KW
 else:
-    def _get_param_kind(dc_field: DCField) -> ParamKind:
+    def _get_param_kind(_dc_field: DCField) -> ParamKind:
         return ParamKind.POS_OR_KW
 
 
@@ -83,7 +83,7 @@ def get_dataclass_shape(tp) -> FullShape:
         input=InputShape(
             constructor=tp,
             fields=tuple(
-                _create_inp_field_from_dc_fields(dc_field, type_hints)
+                _create_inp_field_from_dc_field(dc_field, type_hints)
                 for dc_field in name_to_dc_field.values()
                 if dc_field.init and not is_class_var(normalize_type(type_hints[dc_field.name]))
             ),
