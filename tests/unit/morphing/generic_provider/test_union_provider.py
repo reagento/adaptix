@@ -272,7 +272,7 @@ def test_literal(strict_coercion, debug_trail):
          Decimal, Decimal(200.5), "200.5", [1, 2, 3],
         ),
         (
-         str | Decimal, "some string", "some string", [1, 2, 3],
+         Union[str, Decimal], "some string", "some string", [1, 2, 3],
         ),
     ],
 )
@@ -289,7 +289,7 @@ def test_dump_literal_in_union(
     dumper_ = retort.replace(
         debug_trail=debug_trail,
     ).get_dumper(
-        Literal[200, 300] | other_type,
+        Union[Literal[200, 300], other_type],
     )
 
     assert dumper_(200) == 200
