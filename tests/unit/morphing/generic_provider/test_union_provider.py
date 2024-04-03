@@ -203,7 +203,7 @@ def test_bad_optional_dumping(retort, debug_trail):
             ),
             with_notes(
                 CannotProvide(
-                    message=f"All cases of union must be class, but found {[Callable[[int], str]]}",
+                    message=f"All cases of union must be class or Literal, but found {[Callable[[int], str]]}",
                     is_demonstrative=True,
                     is_terminal=True,
                 ),

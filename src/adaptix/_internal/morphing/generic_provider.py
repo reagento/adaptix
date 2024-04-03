@@ -390,7 +390,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
         if forbidden_origins:
             raise CannotProvide(
-                f"All cases of union must be class, but found {forbidden_origins}",
+                f"All cases of union must be class or Literal, but found {forbidden_origins}",
                 is_terminal=True,
                 is_demonstrative=True,
             )
