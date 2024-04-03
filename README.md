@@ -40,7 +40,6 @@ from adaptix import Retort
 class Book:
     title: str
     price: int
-    author: str = "Unknown author"
 
 
 data = {

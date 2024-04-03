@@ -23,7 +23,6 @@ Example
 ==================
 
 .. literalinclude:: /examples/loading-and-dumping/tutorial/tldr.py
-   :lines: 2-
    :caption: Model loading and dumping
    :name: loading-and-dumping-example
 

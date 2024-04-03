@@ -1,4 +1,3 @@
-# mypy: disable-error-code="arg-type"
 from dataclasses import dataclass
 
 from adaptix import Retort
@@ -8,7 +7,6 @@ from adaptix import Retort
 class Book:
     title: str
     price: int
-    author: str = "Unknown author"
 
 
 data = {
@@ -21,4 +19,4 @@ retort = Retort()
 
 book = retort.load(data, Book)
 assert book == Book(title="Fahrenheit 451", price=100)
-assert retort.dump(book) == {**data, "author": "Unknown author"}
+assert retort.dump(book) == data
