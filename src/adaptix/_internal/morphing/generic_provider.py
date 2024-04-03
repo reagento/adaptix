@@ -455,12 +455,9 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 if union_case.origin is Literal
             )
         except StopIteration:
-            literal_type, literal_dumper = None, None
-
-        if not literal_type:
             return None
 
-        literal_cases = literal_type.args
+        literal_cases = [strip_annotated(arg) for arg in literal_type.args]
         return self._produce_dumper_for_literal(dumper_type_dispatcher, literal_dumper, literal_cases)
 
     def _get_single_optional_dumper(self, dumper: Dumper) -> Dumper:
