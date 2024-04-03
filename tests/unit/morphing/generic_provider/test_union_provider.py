@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Callable, List, Literal, Optional, Union
 
 import pytest
@@ -202,7 +203,7 @@ def test_bad_optional_dumping(retort, debug_trail):
             ),
             with_notes(
                 CannotProvide(
-                    message=f"All cases of union must be class, but found {[Callable[[int], str]]}",
+                    message=f"All cases of union must be class or Literal, but found {[Callable[[int], str]]}",
                     is_demonstrative=True,
                     is_terminal=True,
                 ),
@@ -262,3 +263,38 @@ def test_literal(strict_coercion, debug_trail):
     assert dumper_("a") == "a"
     assert dumper_(None) is None
     assert dumper_("b") == "b"
+
+
+@pytest.mark.parametrize(
+    ["other_type", "value", "expected", "wrong_value"],
+    [
+        (
+         Decimal, Decimal(200.5), "200.5", [1, 2, 3],
+        ),
+        (
+         Union[str, Decimal], "some string", "some string", [1, 2, 3],
+        ),
+    ],
+)
+def test_dump_literal_in_union(
+    strict_coercion,
+    debug_trail,
+    other_type,
+    value,
+    expected,
+    wrong_value,
+):
+    retort = Retort()
+
+    dumper_ = retort.replace(
+        debug_trail=debug_trail,
+    ).get_dumper(
+        Union[Literal[200, 300], other_type],
+    )
+
+    assert dumper_(200) == 200
+    assert dumper_(300) == 300
+    assert dumper_(value) == expected
+
+    with pytest.raises(KeyError):
+        dumper_(wrong_value)

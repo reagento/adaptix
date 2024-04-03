@@ -202,8 +202,8 @@ For objects of types that are not listed in the union,
 but which are a subclass of some union case, the base class dumper is used.
 If there are several parents, it will be the selected class that appears first in ``.mro()`` list.
 
-Also, builtin dumper can not work
-with union containing non-class type hints like ``Union[Literal['foo', 'bar'], int]``.
+Also, builtin dumper can work only with class type hints and ``Literal``.
+For example, type hints like ``LiteralString | int`` can not be dumped.
 
 Iterable subclasses
 '''''''''''''''''''''
