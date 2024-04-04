@@ -3,11 +3,10 @@ from decimal import Decimal
 from typing import Callable, List, Literal, Optional, Union
 
 import pytest
-from tests_helpers import TestRetort, raises_exc, with_cause, with_notes
+from tests_helpers import raises_exc, with_cause, with_notes
 
 from adaptix import CannotProvide, DebugTrail, NoSuitableProvider, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.morphing.generic_provider import LiteralProvider, UnionProvider
 from adaptix._internal.morphing.load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 
 
@@ -37,9 +36,8 @@ def make_dumper(tp: type):
 
 @pytest.fixture()
 def retort():
-    return TestRetort(
+    return Retort(
         recipe=[
-            UnionProvider(),
             make_loader(str),
             make_loader(int),
             make_dumper(str),
@@ -221,14 +219,7 @@ def test_bad_optional_dumping(retort, debug_trail):
 
 
 def test_literal(strict_coercion, debug_trail):
-    retort = TestRetort(
-        recipe=[
-            LiteralProvider(),
-            UnionProvider(),
-            make_loader(type(None)),
-            make_dumper(type(None)),
-        ],
-    )
+    retort = Retort()
 
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
