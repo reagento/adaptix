@@ -1,9 +1,9 @@
 import dataclasses
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Iterable, Optional, Sequence, Union
+from typing import Any, Iterable, Optional, Union
 
-from ..common import TypeHint
+from ..common import TypeHint, VarTuple
 from ..compat import CompatExceptionGroup
 from ..utils import fix_dataclass_from_builtin, with_module
 
@@ -47,10 +47,10 @@ class LoadExceptionGroup(CompatExceptionGroup[LoadError], LoadError):
     """The base class integrating ``ExceptionGroup`` into the ``LoadError`` hierarchy"""
 
     message: str
-    exceptions: Sequence[LoadError]
+    exceptions: VarTuple[LoadError]
 
     # stub `__init__` is required for right introspection
-    def __init__(self, message: str, exceptions: Sequence[LoadError]):
+    def __init__(self, message: str, exceptions: VarTuple[LoadError]):
         pass
 
 
