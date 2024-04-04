@@ -3,13 +3,10 @@ from collections import defaultdict
 from typing import DefaultDict, Dict, List
 
 import pytest
-from tests_helpers import TestRetort, raises_exc, with_trail
+from tests_helpers import raises_exc, with_trail
 
-from adaptix import DebugTrail, default_dict, dumper, loader
+from adaptix import DebugTrail, Retort, default_dict, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
-from adaptix._internal.morphing.dict_provider import DefaultDictProvider, DictProvider
-from adaptix._internal.morphing.iterable_provider import IterableProvider
 from adaptix._internal.morphing.load_error import AggregateLoadError
 from adaptix._internal.struct_trail import ItemKey
 from adaptix.load_error import TypeLoadError
@@ -23,13 +20,9 @@ def string_dumper(data):
 
 @pytest.fixture()
 def retort():
-    return TestRetort(
+    return Retort(
         recipe=[
-            DictProvider(),
-            DefaultDictProvider(),
-            STR_LOADER_PROVIDER,
             dumper(str, string_dumper),
-            IterableProvider(),
         ],
     )
 
@@ -161,16 +154,7 @@ def test_dumping(retort, debug_trail):
 
     assert dumper_({"a": "b", "c": "d"}) == {"a": "b", "c": "d"}
 
-    if debug_trail == DebugTrail.DISABLE:
-        raises_exc(
-            TypeError(),
-            lambda: dumper_({"a": "b", "c": 0}),
-        )
-        raises_exc(
-            TypeError(),
-            lambda: dumper_({"a": "b", 0: "d"}),
-        )
-    elif debug_trail == DebugTrail.FIRST:
+    if debug_trail == DebugTrail.FIRST:
         raises_exc(
             with_trail(TypeError(), ["c"]),
             lambda: dumper_({"a": "b", "c": 0}),

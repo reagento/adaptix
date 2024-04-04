@@ -19,9 +19,9 @@ from typing import (
 )
 
 import pytest
-from tests_helpers import TestRetort, raises_exc, with_trail
+from tests_helpers import raises_exc, with_trail
 
-from adaptix import DebugTrail, NoSuitableProvider, dumper, loader
+from adaptix import AdornedRetort, DebugTrail, NoSuitableProvider, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.morphing.iterable_provider import IterableProvider
@@ -37,7 +37,7 @@ def string_dumper(data):
 
 @pytest.fixture()
 def retort():
-    return TestRetort(
+    return AdornedRetort(
         recipe=[
             IterableProvider(),
             STR_LOADER_PROVIDER,
@@ -46,23 +46,23 @@ def retort():
     )
 
 
-def test_mapping_providing(retort, strict_coercion, debug_trail):
+@pytest.mark.parametrize(
+    ["mapping_type"],
+    [
+        (dict,),
+        (Dict,),
+        (Mapping,),
+        (collections.Counter,),
+    ],
+)
+def test_mapping_providing(retort, strict_coercion, debug_trail, mapping_type):
     retort = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     )
 
     with pytest.raises(NoSuitableProvider):
-        retort.get_loader(dict)
-
-    with pytest.raises(NoSuitableProvider):
-        retort.get_loader(Dict)
-
-    with pytest.raises(NoSuitableProvider):
-        retort.get_loader(Mapping)
-
-    with pytest.raises(NoSuitableProvider):
-        retort.get_loader(collections.Counter)
+        retort.get_loader(mapping_type)
 
 
 def test_loading(retort, strict_coercion, debug_trail):

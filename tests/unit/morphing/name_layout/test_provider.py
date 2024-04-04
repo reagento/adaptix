@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Union
 
 import pytest
 from dirty_equals import IsInstance
-from tests_helpers import TestRetort, raises_exc, with_cause, with_notes
+from tests_helpers import raises_exc, with_cause, with_notes
 
 from adaptix import (
     AggregateCannotProvide,
@@ -13,6 +13,7 @@ from adaptix import (
     NameStyle,
     NoSuitableProvider,
     Provider,
+    Retort,
     bound,
     name_mapping,
 )
@@ -136,21 +137,11 @@ def make_layouts(
         ),
         overriden_types=frozenset(fld.id for fld in fields),
     )
-    retort = TestRetort(
+    retort = Retort(
         recipe=[
             *providers,
-            BuiltinNameLayoutProvider(
-                structure_maker=BuiltinStructureMaker(),
-                sieves_maker=BuiltinSievesMaker(),
-                extra_move_maker=BuiltinExtraMoveAndPoliciesMaker(),
-                extra_policies_maker=BuiltinExtraMoveAndPoliciesMaker(),
-            ),
-            bound(Any, ValueProvider(DumperRequest, stub)),
-            bound(Any, ValueProvider(LoaderRequest, stub)),
             ValueProvider(InputShapeRequest, input_shape),
             ValueProvider(OutputShapeRequest, output_shape),
-            ModelLoaderProvider(),
-            ModelDumperProvider(),
         ],
     ).replace(
         strict_coercion=True,
@@ -169,18 +160,16 @@ def make_layouts(
         loc_stack=LocStack(loc),
         shape=output_shape,
     )
-    inp_name_layout = retort.provide(inp_request)
-    out_name_layout = retort.provide(out_request)
-    retort.provide(
-        LoaderRequest(
-            loc_stack=LocStack(loc),
-        ),
-    )
-    retort.provide(
-        DumperRequest(
-            loc_stack=LocStack(loc),
-        ),
-    )
+
+    cannot_provide_text = "cannot provide {}"
+    inp_name_layout = retort._facade_provide(inp_request, error_message=cannot_provide_text.format(inp_request))  # noqa
+    out_name_layout = retort._facade_provide(out_request, error_message=cannot_provide_text.format(out_request))  # noqa
+
+    loader_request = LoaderRequest(loc_stack=LocStack(loc))
+    retort._facade_provide(loader_request, error_message=cannot_provide_text.format(loader_request))  # noqa
+
+    dumper_request = DumperRequest(loc_stack=LocStack(loc))
+    retort._facade_provide(dumper_request, error_message=cannot_provide_text.format(dumper_request))  # noqa
     return Layouts(inp_name_layout, out_name_layout)
 
 

@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from typing import Callable, Iterable
 
 import pytest
-from tests_helpers import TestRetort, full_match
+from tests_helpers import full_match
 
-from adaptix import Chain, Mediator, Omittable, Omitted, Provider, Request, bound
+from adaptix import AdornedRetort, Chain, Mediator, Omittable, Omitted, Provider, Request, bound
 from adaptix._internal.common import VarTuple
 from adaptix._internal.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
 from adaptix._internal.provider.request_cls import LocStack, TypeHintLoc
@@ -41,13 +41,15 @@ class SampleRequestProvider(StaticProvider):
 
 
 def provide_overlay_schema(recipe: Iterable[Provider], provide_action: Callable[[Mediator], MySchema]) -> MySchema:
-    retort = TestRetort(
+    retort = AdornedRetort(
         recipe=[
             *recipe,
             SampleRequestProvider(provide_action),
         ],
     )
-    return retort.provide(SampleRequest())
+
+    request = SampleRequest()
+    return retort._facade_provide(request, error_message=f"cannot provide {request}")  # noqa
 
 
 class MyClass1:

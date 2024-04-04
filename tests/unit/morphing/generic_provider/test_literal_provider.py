@@ -4,22 +4,15 @@ from typing import Literal
 from uuid import uuid4
 
 import pytest
-from tests_helpers import TestRetort, raises_exc
+from tests_helpers import raises_exc
 
-from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
-from adaptix._internal.morphing.generic_provider import LiteralProvider, UnionProvider
+from adaptix import Retort
 from adaptix._internal.morphing.load_error import BadVariantLoadError
 
 
 @pytest.fixture()
 def retort():
-    return TestRetort(
-        recipe=[
-            LiteralProvider(),
-            EnumExactValueProvider(),
-            UnionProvider(),
-        ],
-    )
+    return Retort()
 
 
 def test_loader_base(retort, strict_coercion, debug_trail):

@@ -4,9 +4,9 @@ import typing
 from typing import Mapping, Tuple
 
 import pytest
-from tests_helpers import TestRetort, raises_exc, requires, with_trail
+from tests_helpers import raises_exc, requires, with_trail
 
-from adaptix import DebugTrail, NoSuitableProvider, dumper, loader
+from adaptix import AdornedRetort, DebugTrail, NoSuitableProvider, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import HAS_UNPACK
 from adaptix._internal.morphing.concrete_provider import INT_LOADER_PROVIDER, STR_LOADER_PROVIDER
@@ -29,7 +29,7 @@ def int_dumper(data):
 
 @pytest.fixture()
 def retort():
-    return TestRetort(
+    return AdornedRetort(
         recipe=[
             ConstantLengthTupleProvider(),
             STR_LOADER_PROVIDER,
