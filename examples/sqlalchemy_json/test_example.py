@@ -1,4 +1,3 @@
-# pylint: disable=redefined-outer-name
 import pytest
 from sqlalchemy import insert, select, update
 from sqlalchemy.orm import sessionmaker

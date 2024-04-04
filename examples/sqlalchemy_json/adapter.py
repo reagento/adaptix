@@ -3,7 +3,6 @@ from sqlalchemy import JSON, TypeDecorator
 from adaptix import AdornedRetort, TypeHint
 
 
-# pylint: disable=abstract-method
 # SQLAlchemy does not require to implement process_literal_param and python_type
 class ModelJSON(TypeDecorator):
     impl = JSON
