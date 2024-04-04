@@ -47,7 +47,7 @@ def retort():
 
 
 @pytest.mark.parametrize(
-    ["mapping_type"],
+    "mapping_type",
     [
         (dict,),
         (Dict,),

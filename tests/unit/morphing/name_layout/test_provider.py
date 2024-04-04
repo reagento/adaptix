@@ -14,7 +14,6 @@ from adaptix import (
     NoSuitableProvider,
     Provider,
     Retort,
-    bound,
     name_mapping,
 )
 from adaptix._internal.model_tools.definitions import (
@@ -54,14 +53,6 @@ from adaptix._internal.morphing.model.crown_definitions import (
     OutputNameLayout,
     OutputNameLayoutRequest,
 )
-from adaptix._internal.morphing.model.dumper_provider import ModelDumperProvider
-from adaptix._internal.morphing.model.loader_provider import ModelLoaderProvider
-from adaptix._internal.morphing.name_layout.component import (
-    BuiltinExtraMoveAndPoliciesMaker,
-    BuiltinSievesMaker,
-    BuiltinStructureMaker,
-)
-from adaptix._internal.morphing.name_layout.provider import BuiltinNameLayoutProvider
 from adaptix._internal.morphing.request_cls import DumperRequest, LoaderRequest
 from adaptix._internal.provider.loc_stack_filtering import P
 from adaptix._internal.provider.provider_template import ValueProvider
@@ -162,14 +153,14 @@ def make_layouts(
     )
 
     cannot_provide_text = "cannot provide {}"
-    inp_name_layout = retort._facade_provide(inp_request, error_message=cannot_provide_text.format(inp_request))  # noqa
-    out_name_layout = retort._facade_provide(out_request, error_message=cannot_provide_text.format(out_request))  # noqa
+    inp_name_layout = retort._facade_provide(inp_request, error_message=cannot_provide_text.format(inp_request))
+    out_name_layout = retort._facade_provide(out_request, error_message=cannot_provide_text.format(out_request))
 
     loader_request = LoaderRequest(loc_stack=LocStack(loc))
-    retort._facade_provide(loader_request, error_message=cannot_provide_text.format(loader_request))  # noqa
+    retort._facade_provide(loader_request, error_message=cannot_provide_text.format(loader_request))
 
     dumper_request = DumperRequest(loc_stack=LocStack(loc))
-    retort._facade_provide(dumper_request, error_message=cannot_provide_text.format(dumper_request))  # noqa
+    retort._facade_provide(dumper_request, error_message=cannot_provide_text.format(dumper_request))
     return Layouts(inp_name_layout, out_name_layout)
 
 

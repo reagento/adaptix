@@ -13,7 +13,6 @@ from adaptix import (
     enum_by_name,
     enum_by_value,
     flag_by_member_names,
-    loader,
 )
 from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
 from adaptix._internal.morphing.load_error import (

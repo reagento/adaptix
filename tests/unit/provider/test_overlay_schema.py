@@ -49,7 +49,7 @@ def provide_overlay_schema(recipe: Iterable[Provider], provide_action: Callable[
     )
 
     request = SampleRequest()
-    return retort._facade_provide(request, error_message=f"cannot provide {request}")  # noqa
+    return retort._facade_provide(request, error_message=f"cannot provide {request}")
 
 
 class MyClass1:
