@@ -291,7 +291,7 @@ class LocStackPattern:
         self._stack = stack
 
     @property
-    def ANY(self) -> AnyLocStackChecker:
+    def ANY(self) -> AnyLocStackChecker:  # noqa: N802
         if self._stack:
             raise AttributeError("You must access to ANY only via `P.ANY`, other usage is misleading")
         return _ANY
