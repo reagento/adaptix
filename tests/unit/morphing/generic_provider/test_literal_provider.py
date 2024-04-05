@@ -3,19 +3,14 @@ from enum import Enum
 from typing import Literal
 from uuid import uuid4
 
-import pytest
 from tests_helpers import raises_exc
 
 from adaptix import Retort
 from adaptix._internal.morphing.load_error import BadVariantLoadError
 
 
-@pytest.fixture()
-def retort():
-    return Retort()
-
-
-def test_loader_base(retort, strict_coercion, debug_trail):
+def test_loader_base(strict_coercion, debug_trail):
+    retort = Retort()
     loader = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
@@ -41,12 +36,14 @@ def _is_exact_one(arg):
     return type(arg) is int and arg == 1  # noqa: E721
 
 
-def test_strict_coercion(retort, debug_trail):
+def test_strict_coercion(debug_trail):
     # Literal definition could have very strange behavior
     # due to type cache and 0 == False, 1 == True,
     # so Literal[0, 1] sometimes returns Literal[False, True]
     # and vice versa.
     # We add a random string at the end to suppress caching
+
+    retort = Retort()
     rnd_val1 = uuid4().hex
     literal_loader = retort.replace(
         strict_coercion=True,
@@ -88,7 +85,9 @@ def test_strict_coercion(retort, debug_trail):
     )
 
 
-def test_loader_with_enums(retort, strict_coercion, debug_trail):
+def test_loader_with_enums(strict_coercion, debug_trail):
+    retort = Retort()
+
     class Enum1(Enum):
         CASE1 = 1
         CASE2 = 2
@@ -125,7 +124,9 @@ def test_loader_with_enums(retort, strict_coercion, debug_trail):
     )
 
 
-def test_dumper_with_enums(retort, strict_coercion, debug_trail):
+def test_dumper_with_enums(strict_coercion, debug_trail):
+    retort = Retort()
+
     class Enum1(Enum):
         CASE1 = 1
         CASE2 = 2

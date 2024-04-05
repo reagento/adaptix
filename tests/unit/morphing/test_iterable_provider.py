@@ -21,9 +21,8 @@ from typing import (
 import pytest
 from tests_helpers import raises_exc, with_trail
 
-from adaptix import AdornedRetort, DebugTrail, NoSuitableProvider, dumper, loader
+from adaptix import AdornedRetort, DebugTrail, NoSuitableProvider, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.morphing.concrete_provider import STR_LOADER_PROVIDER
 from adaptix._internal.morphing.iterable_provider import IterableProvider
 from adaptix._internal.morphing.load_error import AggregateLoadError
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
@@ -37,26 +36,20 @@ def string_dumper(data):
 
 @pytest.fixture()
 def retort():
-    return AdornedRetort(
+    return Retort(
         recipe=[
-            IterableProvider(),
-            STR_LOADER_PROVIDER,
             dumper(str, string_dumper),
         ],
     )
 
 
-@pytest.mark.parametrize(
-    "mapping_type",
-    [
-        (dict,),
-        (Dict,),
-        (Mapping,),
-        (collections.Counter,),
-    ],
-)
+@pytest.mark.parametrize("mapping_type", [dict, Dict, Mapping, collections.Counter])
 def test_mapping_providing(retort, strict_coercion, debug_trail, mapping_type):
-    retort = retort.replace(
+    retort = AdornedRetort(
+        recipe=[
+            IterableProvider(),
+        ],
+    ).replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     )
