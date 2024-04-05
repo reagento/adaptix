@@ -5,9 +5,9 @@ from typing import Any, Callable, Dict, Optional, Type
 from unittest.mock import ANY
 
 import pytest
-from tests_helpers import DebugCtx, TestRetort, full_match, parametrize_bool, raises_exc, with_trail
+from tests_helpers import DebugCtx, full_match, parametrize_bool, raises_exc, with_trail
 
-from adaptix import DebugTrail, Dumper, bound
+from adaptix import DebugTrail, Dumper, Retort, bound
 from adaptix._internal.common import Catchable
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.model_tools.definitions import (
@@ -92,7 +92,7 @@ def make_dumper_getter(
     debug_ctx: DebugCtx,
 ) -> Callable[[], Dumper]:
     def getter():
-        retort = TestRetort(
+        retort = Retort(
             recipe=[
                 ValueProvider(OutputShapeRequest, shape),
                 ValueProvider(OutputNameLayoutRequest, name_layout),

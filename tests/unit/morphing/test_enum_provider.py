@@ -2,7 +2,7 @@ from enum import Enum, Flag, IntEnum, auto
 from typing import Iterable, Mapping, Union
 
 import pytest
-from tests_helpers import TestRetort, parametrize_bool, raises_exc, with_cause, with_notes
+from tests_helpers import parametrize_bool, raises_exc, with_cause, with_notes
 
 from adaptix import (
     CannotProvide,
@@ -13,7 +13,6 @@ from adaptix import (
     enum_by_name,
     enum_by_value,
     flag_by_member_names,
-    loader,
 )
 from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
 from adaptix._internal.morphing.load_error import (
@@ -115,12 +114,9 @@ def test_name_provider_with_mapping(strict_coercion, debug_trail, mapping_option
 
 @pytest.mark.parametrize("enum_cls", [MyEnum, MyEnumWithMissingHook])
 def test_exact_value_provider(strict_coercion, debug_trail, enum_cls):
-    retort = TestRetort(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
-        recipe=[
-            EnumExactValueProvider(),
-        ],
     )
 
     loader = retort.get_loader(enum_cls)
@@ -148,12 +144,9 @@ def test_exact_value_provider(strict_coercion, debug_trail, enum_cls):
 
 
 def test_exact_value_provider_int_enum(strict_coercion, debug_trail):
-    retort = TestRetort(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
-        recipe=[
-            EnumExactValueProvider(),
-        ],
     )
     int_enum_loader = retort.get_loader(MyIntEnum)
 
@@ -180,12 +173,11 @@ def custom_string_dumper(value: str):
 
 
 def test_value_provider(strict_coercion, debug_trail):
-    retort = TestRetort(
+    retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
         recipe=[
             enum_by_value(MyEnum, tp=str),
-            loader(str, str),
             dumper(str, custom_string_dumper),
         ],
     )
@@ -193,16 +185,18 @@ def test_value_provider(strict_coercion, debug_trail):
     enum_loader = retort.get_loader(MyEnum)
 
     assert enum_loader("1") == MyEnum.V1
-    assert enum_loader(1) == MyEnum.V1
+
+    if not strict_coercion:
+        assert enum_loader(1) == MyEnum.V1
+
+        raises_exc(
+            MsgLoadError("Bad enum value", MyEnum.V1),
+            lambda: enum_loader(MyEnum.V1),
+        )
 
     raises_exc(
         MsgLoadError("Bad enum value", "V1"),
         lambda: enum_loader("V1"),
-    )
-
-    raises_exc(
-        MsgLoadError("Bad enum value", MyEnum.V1),
-        lambda: enum_loader(MyEnum.V1),
     )
 
     enum_dumper = retort.get_dumper(MyEnum)
