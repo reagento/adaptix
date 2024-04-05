@@ -44,7 +44,7 @@ def retort():
 
 
 @pytest.mark.parametrize("mapping_type", [dict, Dict, Mapping, collections.Counter])
-def test_mapping_providing(retort, strict_coercion, debug_trail, mapping_type):
+def test_mapping_providing(strict_coercion, debug_trail, mapping_type):
     retort = AdornedRetort(
         recipe=[
             IterableProvider(),
