@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
+from io import BytesIO
 from typing import Generic, Type, TypeVar, Union
 
 from ..common import Dumper, Loader
@@ -136,6 +137,35 @@ class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
                 raise ValueLoadError(str(e), data)
 
         return bytes_base64_loader
+
+
+@for_predicate(BytesIO)
+class BytesIOBase64Provider(BytesBase64Provider):
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        bytes_base64_loader = super()._provide_loader(mediator, request)
+
+        def bytes_io_base64_loader(data):
+            return BytesIO(bytes_base64_loader(data))
+
+        return bytes_io_base64_loader
+
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        def bytes_io_base64_dumper(data: BytesIO):
+            return b2a_base64(data.getvalue(), newline=False).decode("ascii")
+
+        return bytes_io_base64_dumper
+
+
+@for_predicate(typing.IO[bytes])
+class IOBytesBase64Provider(BytesIOBase64Provider):
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        def io_bytes_base64_dumper(data: typing.IO[bytes]):
+            if data.seekable():
+                data.seek(0)
+
+            return b2a_base64(data.read(), newline=False).decode("ascii")
+
+        return io_bytes_base64_dumper
 
 
 @for_predicate(bytearray)

@@ -67,6 +67,11 @@ Exact list: ``bytes``, ``bytearray``, ``ByteString``.
 
 Value is represented as base64 encoded string.
 
+BytesIO and IO[bytes]
+'''''''''''''''''''''''''''''''''''''
+
+Value is represented as base64 encoded string.
+
 re.Pattern
 ''''''''''''
 
