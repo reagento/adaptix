@@ -4,7 +4,9 @@ from types import MappingProxyType
 from typing import Any, Tuple
 from unittest.mock import ANY
 
+import attr
 import pytest
+from attrs import Factory, define, field
 from tests_helpers import ATTRS_WITH_ALIAS, requires
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
@@ -25,11 +27,6 @@ from adaptix._internal.model_tools.definitions import (
     create_attr_accessor,
 )
 from adaptix._internal.model_tools.introspection.attrs import get_attrs_shape
-
-pytest.importorskip("attrs")
-
-import attr  # noqa: E402
-from attrs import Factory, define, field  # noqa: E402
 
 
 def int_factory_with_self(x):

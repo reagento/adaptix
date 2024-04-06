@@ -25,6 +25,10 @@ the second (strict) additionally checks that the version same or older than the 
      - ``sqlalchemy >= 2.0.0``
    * - ``sqlalchemy-strict``
      - ``sqlalchemy >= 2.0.0, <= 2.0.29``
+   * - ``pydantic``
+     - ``pydantic >= 2.0.0``
+   * - ``pydantic-strict``
+     - ``pydantic >= 2.0.0, <= 2.6.4``
 
 
 Extras are specified inside square brackets, separating by comma.

@@ -11,9 +11,7 @@ coverage==7.4.3
 dirty-equals==0.7.1.post0
     # via -r requirements/raw/test_extra_none.txt
 greenlet==3.0.2
-    # via
-    #   -r requirements/raw/test_extra_none.txt
-    #   sqlalchemy
+    # via sqlalchemy
 iniconfig==2.0.0
     # via pytest
 packaging==23.2
@@ -29,6 +27,4 @@ pytz==2023.3.post1
 sqlalchemy==2.0.23
     # via -r requirements/raw/test_extra_none.txt
 typing-extensions==4.9.0
-    # via
-    #   -r requirements/raw/test_extra_none.txt
-    #   sqlalchemy
+    # via sqlalchemy

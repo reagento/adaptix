@@ -86,9 +86,7 @@ gitdb==4.0.11
 gitpython==3.1.40
     # via -r requirements/raw/doc.txt
 greenlet==3.0.2
-    # via
-    #   -r requirements/raw/test_extra_none.txt
-    #   sqlalchemy
+    # via sqlalchemy
 identify==2.5.33
     # via pre-commit
 idna==3.6
@@ -182,9 +180,11 @@ psutil==5.9.5
     #   pyperf
 pycodestyle==2.11.1
     # via flake8
-pydantic==2.4.2
-    # via -r requirements/raw/bench.txt
-pydantic-core==2.10.1
+pydantic==2.6.4
+    # via
+    #   -r requirements/raw/bench.txt
+    #   -r requirements/raw/test_extra_new.txt
+pydantic-core==2.16.3
     # via pydantic
 pyflakes==3.1.0
     # via flake8
@@ -289,7 +289,6 @@ tox==4.11.4
     # via -r requirements/raw/runner.txt
 typing-extensions==4.9.0
     # via
-    #   -r requirements/raw/test_extra_none.txt
     #   mashumaro
     #   mypy
     #   pydantic
