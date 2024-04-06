@@ -1,5 +1,8 @@
+import tomllib
 from abc import ABC, abstractmethod
+from pathlib import Path
 from textwrap import dedent, indent
+from typing import Iterable
 
 from docutils.statemachine import StringList
 from sphinx.util import docutils
@@ -21,27 +24,56 @@ class SphinxMacroDirective(SphinxDirective, ABC):
         return node.children
 
 
+def directive(header: str, contents: Iterable[str] = ()) -> str:
+    return dedent(header) + "\n" + "\n".join(indent(dedent(content), "   ") for content in contents)
+
+
 class CustomNonGuaranteedBehavior(SphinxMacroDirective):
     required_arguments = 0
     has_content = True
 
     def generate_string(self) -> str:
-        result = dedent(
+        return directive(
             """
-            .. admonition:: Non-guaranteed behavior
-              :class: caution
-
+                .. admonition:: Non-guaranteed behavior
+                   :class: caution
             """,
+            self.content,
         )
-        content = indent(
-            "\n".join(self.content),
-            "  ",
+
+
+ADAPTIX_PYPROJECT = tomllib.loads(Path(__file__).parent.parent.parent.joinpath("pyproject.toml").read_text())
+
+
+class CustomAdaptixExtrasTable(SphinxMacroDirective):
+    required_arguments = 0
+    has_content = False
+
+    def generate_string(self) -> str:
+        return directive(
+            """
+                .. list-table::
+                   :header-rows: 1
+            """,
+            [
+                """
+                    * - Extras
+                      - Versions bound
+                """,
+                *[
+                    f"""
+                    * - ``{extras}``
+                      - ``{'; '.join(deps)}``
+                    """
+                    for extras, deps in ADAPTIX_PYPROJECT["project"]["optional-dependencies"].items()
+                ],
+            ],
         )
-        return result + content
 
 
 def setup(app):
     app.add_directive("custom-non-guaranteed-behavior", CustomNonGuaranteedBehavior)
+    app.add_directive("custom-adaptix-extras-table", CustomAdaptixExtrasTable)
 
     return {
         "version": file_ascii_hash(__file__),
