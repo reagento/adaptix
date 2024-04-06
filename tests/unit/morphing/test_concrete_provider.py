@@ -4,6 +4,7 @@ import typing
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from fractions import Fraction
+from io import BytesIO
 from typing import Union
 
 import pytest
@@ -198,6 +199,49 @@ def test_bytes_provider(strict_coercion, debug_trail):
 
     dumper = retort.get_dumper(bytes)
     assert dumper(b"abcd") == "YWJjZA=="
+
+
+def test_bytes_io_provider(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    )
+
+    loader = retort.get_loader(BytesIO)
+    string = "abcd"
+    b64_string = b"YWJjZA=="
+
+    loaded = loader(b64_string.decode("utf-8"))
+
+    assert isinstance(loaded, BytesIO)
+    assert loaded.getvalue().decode("utf-8") == string
+
+    raises_exc(
+        ValueLoadError("Bad base64 string", "Hello, world"),
+        lambda: loader("Hello, world"),
+    )
+
+    raises_exc(
+        ValueLoadError(
+            msg="Invalid base64-encoded string: number of data characters (5)"
+            " cannot be 1 more than a multiple of 4",
+            input_value="aaaaa=",
+        ),
+        lambda: loader("aaaaa="),
+    )
+
+    raises_exc(
+        ValueLoadError("Incorrect padding", "YWJjZA"),
+        lambda: loader("YWJjZA"),
+    )
+
+    raises_exc(
+        TypeLoadError(str, 108),
+        lambda: loader(108),
+    )
+
+    dumper = retort.get_dumper(BytesIO)
+    assert dumper(BytesIO(string.encode())) == b64_string.decode("utf-8")
 
 
 def test_bytearray_provider(strict_coercion, debug_trail):
