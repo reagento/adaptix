@@ -140,7 +140,7 @@ class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
 
 
 @for_predicate(BytesIO)
-class BytesIOBase64Provider(LoaderProvider, Base64DumperMixin):
+class BytesIOBase64Provider(LoaderProvider, DumperProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         def bytes_io_base64_loader(data):
             try:
@@ -152,11 +152,17 @@ class BytesIOBase64Provider(LoaderProvider, Base64DumperMixin):
                 raise ValueLoadError("Bad base64 string", data)
 
             try:
-                return a2b_base64(encoded)
+                return BytesIO(a2b_base64(encoded))
             except binascii.Error as e:
                 raise ValueLoadError(str(e), data)
 
         return bytes_io_base64_loader
+
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        def bytes_io_base64_dumper(data: BytesIO):
+            return b2a_base64(data.getvalue(), newline=False).decode("ascii")
+
+        return bytes_io_base64_dumper
 
 
 @for_predicate(bytearray)
