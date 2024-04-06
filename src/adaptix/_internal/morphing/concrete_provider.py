@@ -140,23 +140,10 @@ class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
 
 
 @for_predicate(BytesIO)
-class BytesIOBase64Provider(LoaderProvider, DumperProvider):
+class BytesIOBase64Provider(BytesBase64Provider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        def bytes_io_base64_loader(data):
-            try:
-                encoded = data.encode("ascii")
-            except AttributeError:
-                raise TypeLoadError(str, data)
-
-            if not B64_PATTERN.fullmatch(encoded):
-                raise ValueLoadError("Bad base64 string", data)
-
-            try:
-                return BytesIO(a2b_base64(encoded))
-            except binascii.Error as e:
-                raise ValueLoadError(str(e), data)
-
-        return bytes_io_base64_loader
+        bytes_io_base64_loader = super()._provide_loader(mediator, request)
+        return lambda x: BytesIO(bytes_io_base64_loader(x))
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def bytes_io_base64_dumper(data: BytesIO):
