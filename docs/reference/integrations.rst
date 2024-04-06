@@ -20,6 +20,7 @@ Models that are supported out of the box:
 - `TypedDict <https://docs.python.org/3/library/typing.html#typing.TypedDict>`_
 - `attrs <https://www.attrs.org/en/stable/>`_ (only from ``>=21.3.0``)
 - `sqlalchemy <https://docs.sqlalchemy.org/en/20/>`_ (only from ``>=2.0.0``)
+- `pydantic <https://docs.pydantic.dev/latest/>`_ (only from ``>=2.0.0``)
 
 Arbitrary types also are supported to be loaded by introspection of ``__init__`` method,
 but it can not be dumped.
@@ -55,6 +56,18 @@ Known limitations:
 
   - All input fields of foreign keys and relationships are considered as optional
     due to user can pass only relationship instance or only foreign key value.
+
+- pydantic
+
+  - Custom ``__init__`` function must have only one parameter
+    accepting arbitrary keyword arguments (like ``**kwargs`` or ``**data``).
+
+  - There are 3 category of fields: regular fields, private attributes, computed fields (marked properties).
+    Pydantic tracks order inside one category, but does not track between categories.
+
+    Therefore, during the dumping of fields, regular fields will come first,
+    followed by private attributes, and then computed fields.
+    You can use use manual mapping to list instead automatic ``as_list=True`` to control the order.
 
 
 Due to the way Python works with annotations, there is a `bug <https://github.com/python/cpython/issues/97727>`_,
