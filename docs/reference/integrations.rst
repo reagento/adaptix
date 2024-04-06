@@ -13,23 +13,23 @@ Models are classes that have a predefined set of fields. Adaptix process models 
 
 Models that are supported out of the box:
 
-- `dataclass <https://docs.python.org/3/library/dataclasses>`_
-- `NamedTuple <https://docs.python.org/3/library/typing.html#typing.NamedTuple>`_
-  (`namedtuple <https://docs.python.org/3/library/collections.html#collections.namedtuple>`_
+- `dataclass <https://docs.python.org/3/library/dataclasses>`__
+- `NamedTuple <https://docs.python.org/3/library/typing.html#typing.NamedTuple>`__
+  (`namedtuple <https://docs.python.org/3/library/collections.html#collections.namedtuple>`__
   also is supported, but types of all fields will be ``Any``)
-- `TypedDict <https://docs.python.org/3/library/typing.html#typing.TypedDict>`_
-- `attrs <https://www.attrs.org/en/stable/>`_ (only from ``>=21.3.0``)
-- `sqlalchemy <https://docs.sqlalchemy.org/en/20/>`_ (only from ``>=2.0.0``)
-- `pydantic <https://docs.pydantic.dev/latest/>`_ (only from ``>=2.0.0``)
+- `TypedDict <https://docs.python.org/3/library/typing.html#typing.TypedDict>`__
+- `attrs <https://www.attrs.org/en/stable/>`__ (only from ``>=21.3.0``)
+- `sqlalchemy <https://docs.sqlalchemy.org/en/20/>`__ (only from ``>=2.0.0``)
+- `pydantic <https://docs.pydantic.dev/latest/>`__ (only from ``>=2.0.0``)
 
 Arbitrary types also are supported to be loaded by introspection of ``__init__`` method,
 but it can not be dumped.
 
 You do not need to do anything to enable support for models from a third-party library.
-Everything just works. But you can install adaptix with certain `extras <https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras>`_
+Everything just works. But you can install adaptix with certain `extras <https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras>`__
 to ensure version compatibility.
 
-Due to the way Python works with annotations, there is a `bug <https://github.com/python/cpython/issues/97727>`_,
+Due to the way Python works with annotations, there is a `bug <https://github.com/python/cpython/issues/97727>`__,
 when field annotation of ``TypedDict`` is stringified or ``from __future__ import annotations`` is placed
 in file ``Required`` and ``NotRequired`` specifiers is ignored
 when ``required_keys`` and ``optional_keys`` is calculated.

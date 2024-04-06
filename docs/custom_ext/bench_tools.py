@@ -67,7 +67,7 @@ class CustomBenchUsedDistributions(SphinxMacroDirective):
             """,
             [
                 f"""
-                   * - `{dist} <https://pypi.org/project/{dist}/>`_
+                   * - `{dist} <https://pypi.org/project/{dist}/>`__
                      - ``{distributions[dist]}``
                      - .. image:: https://img.shields.io/pypi/v/{dist}?logo=pypi&label=%20&color=white&style=flat
                           :target: https://pypi.org/project/{dist}/

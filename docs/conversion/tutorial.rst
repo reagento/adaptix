@@ -57,7 +57,7 @@ Sometimes you need to add extra data to the source model. For this, you can use 
 
 ``# mypy: disable-error-code="empty-body"`` on the top of the file is needed
 because mypy forbids functions without body.
-Also, you can set this option at `mypy config <https://mypy.readthedocs.io/en/stable/config_file.html#example-mypy-ini>`_
+Also, you can set this option at `mypy config <https://mypy.readthedocs.io/en/stable/config_file.html#example-mypy-ini>`__
 or supress each error individually via ``# type: ignore[empty-body]``.
 
 .. _fields-linking:

@@ -191,7 +191,7 @@ parametrize-names-type = "list"
 package = 'adaptix'
 filename = 'docs/changelog/changelog_body.rst'
 template = 'docs/changelog/template.rst.jinja2'
-issue_format = '`#{issue} <https://github.com/reagento/adaptix/issues/{issue}>`_'
+issue_format = '`#{issue} <https://github.com/reagento/adaptix/issues/{issue}>`__'
 directory = 'docs/changelog/fragments'
 
 type = [

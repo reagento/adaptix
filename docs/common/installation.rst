@@ -6,7 +6,7 @@ Just use pip to install the library
 
 
 Integrations with 3-rd party libraries are turned on automatically,
-but you can install adaptix with `extras <https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras>`_
+but you can install adaptix with `extras <https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras>`__
 to check that versions are compatible.
 
 There are two variants of extras. The first one checks that the version is the same or newer than the last supported,

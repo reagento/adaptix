@@ -85,7 +85,7 @@ therefore disabling it can improve performance.
 Retort recipe
 ----------------
 Retort also supports a more powerful and more flexible configuration system via `recipe`.
-It implements `chain-of-responsibility <https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern>`_
+It implements `chain-of-responsibility <https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern>`__
 design pattern.
 The recipe consists of `providers`, each of which can precisely override one of the retort's behavior aspects.
 
@@ -132,7 +132,7 @@ Basic rules:
 
 #. If you pass a class, the provider will be applied to all same types.
 #. If you pass an abstract class, the provider will be applied to all subclasses.
-#. If you pass a `runtime checkable protocol <https://docs.python.org/3/library/typing.html#typing.runtime_checkable>`_,
+#. If you pass a `runtime checkable protocol <https://docs.python.org/3/library/typing.html#typing.runtime_checkable>`__,
    the provider will be applied to all protocol implementations.
 #. If you pass a string, it will be interpreted as a regex
    and the provider will be applied to all fields with id matched by the regex.
@@ -218,6 +218,7 @@ that returns the actual exception or pass the string to raise :class:`~.load_err
 
   .. literalinclude:: /examples/loading-and-dumping/tutorial/validators_2.pytb
 
+.. _Error handling:
 
 Error handling
 ==================
@@ -236,13 +237,13 @@ and designed to produce machine-readable structured errors.
 By default, all thrown errors are collected into :class:`~.load_error.AggregateLoadError`,
 each exception has an additional note describing path of place where the error is caused.
 This path is called a ``Struct trail`` and acts like
-`JSONPath <https://www.ietf.org/archive/id/draft-ietf-jsonpath-base-09.txt>`_
+`JSONPath <https://www.ietf.org/archive/id/draft-ietf-jsonpath-base-09.txt>`__
 pointing to location inside the input data.
 
 For Python versions less than 3.11, an extra package ``exceptiongroup`` is used.
 This package patch some functions from ``traceback``
 during import to backport ``ExceptionGroup`` rendering to early versions.
-More details at `documentation <https://pypi.org/project/exceptiongroup/>`_.
+More details at `documentation <https://pypi.org/project/exceptiongroup/>`__.
 
 By default, all collection-like and model-like loaders wrap all errors into :class:`~.load_error.AggregateLoadError`.
 Each sub-exception contains a trail relative to the parent exception.
@@ -265,7 +266,7 @@ Changing ``debug_trail`` to ``DebugTrail.DISABLE`` make the raised exception act
   .. literalinclude:: /examples/loading-and-dumping/tutorial/load_error_dt_disable.pytb
 
 If there is at least one unexpected error :class:`~.load_error.AggregateLoadError`
-is replaced by standard `ExceptionGroup <https://docs.python.org/3/library/exceptions.html#ExceptionGroup>`_.
+is replaced by standard `ExceptionGroup <https://docs.python.org/3/library/exceptions.html#ExceptionGroup>`__.
 For the dumping process any exception is unexpected, so it always will be wrapped with ``ExceptionGroup``
 
 .. literalinclude:: /examples/loading-and-dumping/tutorial/unexpected_error.py
