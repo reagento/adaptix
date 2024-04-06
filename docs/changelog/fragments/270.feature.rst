@@ -1,0 +1,1 @@
+Add provider for ``BytesIO`` and ``IO[bytes]``.
