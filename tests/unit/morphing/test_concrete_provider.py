@@ -163,58 +163,32 @@ def test_none_provider(strict_coercion, debug_trail):
     assert dumper(None) is None
 
 
-def test_bytes_provider(strict_coercion, debug_trail):
+@pytest.mark.parametrize(
+    ["provider_type", "get_string", "get_bytes"],
+    [
+        (bytes, lambda x: x.decode(), lambda x: x.encode()),
+        (bytearray, lambda x: x.decode(), lambda x: bytearray(x.encode())),
+        (BytesIO, lambda x: x.getvalue().decode(), lambda x: BytesIO(x.encode())),
+        (typing.IO[bytes], lambda x: x.read().decode(), lambda x: BytesIO(x.encode())),
+    ],
+)
+def test_bytes_like_provider(
+    strict_coercion,
+    debug_trail,
+    provider_type,
+    get_string,
+    get_bytes,
+):
     retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     )
 
-    loader = retort.get_loader(bytes)
-
-    assert loader("YWJjZA==") == b"abcd"
-
-    raises_exc(
-        ValueLoadError("Bad base64 string", "Hello, world"),
-        lambda: loader("Hello, world"),
-    )
-
-    raises_exc(
-        ValueLoadError(
-            msg="Invalid base64-encoded string: number of data characters (5)"
-            " cannot be 1 more than a multiple of 4",
-            input_value="aaaaa=",
-        ),
-        lambda: loader("aaaaa="),
-    )
-
-    raises_exc(
-        ValueLoadError("Incorrect padding", "YWJjZA"),
-        lambda: loader("YWJjZA"),
-    )
-
-    raises_exc(
-        TypeLoadError(str, 108),
-        lambda: loader(108),
-    )
-
-    dumper = retort.get_dumper(bytes)
-    assert dumper(b"abcd") == "YWJjZA=="
-
-
-def test_bytes_io_provider(strict_coercion, debug_trail):
-    retort = Retort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-    )
-
-    loader = retort.get_loader(BytesIO)
+    loader = retort.get_loader(provider_type)
     string = "abcd"
     b64_string = b"YWJjZA=="
 
-    loaded = loader(b64_string.decode("utf-8"))
-
-    assert isinstance(loaded, BytesIO)
-    assert loaded.getvalue().decode("utf-8") == string
+    assert get_string(loader(b64_string.decode())) == string
 
     raises_exc(
         ValueLoadError("Bad base64 string", "Hello, world"),
@@ -224,7 +198,7 @@ def test_bytes_io_provider(strict_coercion, debug_trail):
     raises_exc(
         ValueLoadError(
             msg="Invalid base64-encoded string: number of data characters (5)"
-            " cannot be 1 more than a multiple of 4",
+                " cannot be 1 more than a multiple of 4",
             input_value="aaaaa=",
         ),
         lambda: loader("aaaaa="),
@@ -240,46 +214,8 @@ def test_bytes_io_provider(strict_coercion, debug_trail):
         lambda: loader(108),
     )
 
-    dumper = retort.get_dumper(BytesIO)
-    assert dumper(BytesIO(string.encode())) == b64_string.decode("utf-8")
-
-
-def test_bytearray_provider(strict_coercion, debug_trail):
-    retort = Retort(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-    )
-
-    loader = retort.get_loader(bytearray)
-
-    assert loader("YWJjZA==") == bytearray(b"abcd")
-
-    raises_exc(
-        ValueLoadError("Bad base64 string", "Hello, world"),
-        lambda: loader("Hello, world"),
-    )
-
-    raises_exc(
-        ValueLoadError(
-            msg="Invalid base64-encoded string: number of data characters (5)"
-            " cannot be 1 more than a multiple of 4",
-            input_value="aaaaa=",
-        ),
-        lambda: loader("aaaaa="),
-    )
-
-    raises_exc(
-        ValueLoadError("Incorrect padding", "YWJjZA"),
-        lambda: loader("YWJjZA"),
-    )
-
-    raises_exc(
-        TypeLoadError(str, 108),
-        lambda: loader(108),
-    )
-
-    dumper = retort.get_dumper(bytearray)
-    assert dumper(bytearray(b"abcd")) == "YWJjZA=="
+    dumper = retort.get_dumper(provider_type)
+    assert dumper(get_bytes(string)) == b64_string.decode()
 
 
 def test_regex_provider(strict_coercion, debug_trail):
