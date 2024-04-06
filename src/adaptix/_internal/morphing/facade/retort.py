@@ -28,6 +28,7 @@ from ..concrete_provider import (
     STR_LOADER_PROVIDER,
     BytearrayBase64Provider,
     BytesBase64Provider,
+    BytesIOBase64Provider,
     IsoFormatProvider,
     LiteralStringProvider,
     NoneProvider,
@@ -97,6 +98,7 @@ class FilledRetort(OperatingRetort, ABC):
         dumper(complex, complex.__str__),
 
         BytesBase64Provider(),
+        BytesIOBase64Provider(),
         BytearrayBase64Provider(),
 
         *chain.from_iterable(
