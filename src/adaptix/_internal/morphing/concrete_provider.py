@@ -156,7 +156,7 @@ class BytesIOBase64Provider(BytesBase64Provider):
         return bytes_io_base64_dumper
 
 
-@for_predicate(P[typing.IO[bytes]])
+@for_predicate(typing.IO[bytes])
 class IOBytesBase64Provider(BytesIOBase64Provider):
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def io_bytes_base64_dumper(data: typing.IO[bytes]):

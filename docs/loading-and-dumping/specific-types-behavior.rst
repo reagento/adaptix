@@ -63,7 +63,12 @@ Loader accepts only ``None``, dumper produces no conversion.
 
 bytes-like
 '''''''''''''''''''''''''''''''''''''
-Exact list: ``bytes``, ``bytearray``, ``ByteString``, ``io.BytesIO``, ``typing.IO[bytes]``.
+Exact list: ``bytes``, ``bytearray``, ``ByteString``.
+
+Value is represented as base64 encoded string.
+
+BytesIO and IO[bytes]
+'''''''''''''''''''''''''''''''''''''
 
 Value is represented as base64 encoded string.
 
