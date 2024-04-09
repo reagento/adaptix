@@ -1,5 +1,7 @@
 import inspect
 import itertools
+import typing
+from functools import cached_property
 from inspect import Parameter, Signature
 from typing import Any, Callable, Optional, Protocol, Sequence, Type
 
@@ -9,7 +11,7 @@ from pydantic_core import PydanticUndefined
 
 from adaptix import TypeHint
 
-from ...feature_requirement import HAS_PYDANTIC_PKG, HAS_SUPPORTED_PYDANTIC_PKG
+from ...feature_requirement import HAS_ANNOTATED, HAS_PYDANTIC_PKG, HAS_SUPPORTED_PYDANTIC_PKG
 from ...type_tools import get_all_type_hints, is_subclass_soft
 from ..definitions import (
     ClarifiedIntrospectionError,
@@ -46,9 +48,24 @@ def _get_default(field: WithDefaults) -> Default:
     return DefaultValue(field.default)
 
 
+_config_defaults = {
+    "populate_by_name": False,
+    "extra": "ignore",
+}
+
+
+def _get_config_value(tp: "Type[BaseModel]", key: str) -> Any:
+    try:
+        return tp.model_config[key]  # type: ignore[literal-required]
+    except KeyError:
+        pass
+
+    return _config_defaults[key]
+
+
 def _get_field_parameters(tp: "Type[BaseModel]", field_name: str, field_info: "FieldInfo") -> Sequence[str]:
     # AliasPath is ignored
-    parameters = [field_name] if tp.model_config["populate_by_name"] else []
+    parameters = [field_name] if _get_config_value(tp, "populate_by_name") else []
 
     if field_info.validation_alias is None:
         parameters.append(field_name)
@@ -59,17 +76,29 @@ def _get_field_parameters(tp: "Type[BaseModel]", field_name: str, field_info: "F
     return parameters
 
 
-def _signature_is_kwargs_only(init_signature: Signature) -> bool:
-    if len(init_signature.parameters) > 1:
+def _signature_is_self_with_kwargs_only(init_signature: Signature) -> bool:
+    if len(init_signature.parameters) > 2:  # noqa: PLR2004
         return False
-    param = next(iter(init_signature.parameters.values()))
-    return param.kind != Parameter.VAR_KEYWORD
+    try:
+        self, kwargs = init_signature.parameters.values()
+    except ValueError:
+        return False
+    return (
+        self.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD)
+        and kwargs.kind == Parameter.VAR_KEYWORD
+    )
+
+
+def _get_field_type(field_info: "FieldInfo") -> TypeHint:
+    if field_info.metadata and HAS_ANNOTATED:
+        return typing.Annotated[(field_info.annotation, *field_info.metadata)]
+    return field_info.annotation
 
 
 def _get_input_shape(tp: "Type[BaseModel]") -> InputShape:
-    if not _signature_is_kwargs_only(inspect.signature(tp.__init__)):
+    if not _signature_is_self_with_kwargs_only(inspect.signature(tp.__init__)):
         raise ClarifiedIntrospectionError(
-            "Pydantic model `__init__` must have only one variable keyword parameter",
+            "Pydantic model `__init__` must takes only self and one variable keyword parameter",
         )
 
     return InputShape(
@@ -77,7 +106,7 @@ def _get_input_shape(tp: "Type[BaseModel]") -> InputShape:
         fields=tuple(
             InputField(
                 id=field_id,
-                type=field_info.annotation,
+                type=_get_field_type(field_info),
                 default=_get_default(field_info),
                 metadata={},  # pydantic metadata is the list
                 original=field_info,
@@ -97,17 +126,26 @@ def _get_input_shape(tp: "Type[BaseModel]") -> InputShape:
             )
             for field_id, field_info in tp.model_fields.items()
         ),
-        kwargs=None if tp.model_config["extra"] == "forbid" else ParamKwargs(Any),
+        kwargs=None if _get_config_value(tp, "extra") == "forbid" else ParamKwargs(Any),
     )
 
 
-def _get_computed_field_type(field_id: str, computed_field_info: "ComputedFieldInfo") -> TypeHint:
-    # computed_field_info.return_type is always equals PydanticUndefined
-    prop = computed_field_info.wrapped_property
-    if prop.fget is None:
-        raise ClarifiedIntrospectionError(f"Computed field {field_id!r} has no getter")
+def _unwrap_getter_function(descriptor, field_id: str):
+    if isinstance(descriptor, property):
+        if descriptor.fget is None:
+            raise ClarifiedIntrospectionError(f"Computed field {field_id!r} has no getter")
+        return descriptor.fget
+    if isinstance(descriptor, cached_property):
+        return descriptor.func
+    raise ClarifiedIntrospectionError(f"Computed field {field_id!r} has unknown descriptor {descriptor}")
 
-    signature = inspect.signature(prop.fget)
+
+def _get_computed_field_type(field_id: str, computed_field_info: "ComputedFieldInfo") -> TypeHint:
+    if computed_field_info.return_type is not PydanticUndefined:
+        return computed_field_info.return_type
+
+    getter_function = _unwrap_getter_function(computed_field_info.wrapped_property, field_id)
+    signature = inspect.signature(getter_function)
     if signature.return_annotation is inspect.Signature.empty:
         return Any
     return signature.return_annotation
@@ -119,7 +157,7 @@ def _get_output_shape(tp: "Type[BaseModel]") -> OutputShape:
         (
             OutputField(
                 id=field_id,
-                type=field_info.annotation,
+                type=_get_field_type(field_info),
                 default=_get_default(field_info),
                 metadata={},  # pydantic metadata is the list
                 original=field_info,
@@ -133,7 +171,7 @@ def _get_output_shape(tp: "Type[BaseModel]") -> OutputShape:
                 type=_get_computed_field_type(field_id, computed_field_dec.info),
                 default=NoDefault(),
                 metadata={},
-                original=computed_field_dec,
+                original=computed_field_dec.info,
                 accessor=create_attr_accessor(field_id, is_required=True),
             )
             for field_id, computed_field_dec in tp.__pydantic_decorators__.computed_fields.items()
@@ -141,7 +179,7 @@ def _get_output_shape(tp: "Type[BaseModel]") -> OutputShape:
         (
             OutputField(
                 id=field_id,
-                type=type_hints[field_id],
+                type=type_hints.get(field_id, Any),
                 default=_get_default(private_attr),
                 metadata={},
                 original=private_attr,
@@ -155,12 +193,16 @@ def _get_output_shape(tp: "Type[BaseModel]") -> OutputShape:
         overriden_types=frozenset(
             itertools.chain(
                 (
-                    field_id for field_id in itertools.chain(tp.model_fields, tp.__private_attributes__)
+                    field_id for field_id in tp.model_fields
                     if field_id in tp.__annotations__
                 ),
                 (
                     field_id for field_id in tp.__pydantic_decorators__.computed_fields
                     if field_id in tp.__dict__
+                ),
+                (
+                    field_id for field_id in tp.__private_attributes__
+                    if field_id in tp.__annotations__ or field_id not in type_hints
                 ),
             ),
         ),

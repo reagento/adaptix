@@ -72,9 +72,10 @@ pydantic
 - Custom ``__init__`` function must have only one parameter
   accepting arbitrary keyword arguments (like ``**kwargs`` or ``**data``).
 
-- There are 3 category of fields: regular fields, private attributes, computed fields (marked properties).
+- There are 3 category of fields: regular fields, computed fields (marked properties) and private attributes.
   Pydantic tracks order inside one category, but does not track between categories.
+  Also, pydantic does not keep right order inside private attributes.
 
   Therefore, during the dumping of fields, regular fields will come first,
-  followed by private attributes, and then computed fields.
+  followed by computed fields, and then private attributes.
   You can use use manual mapping to list instead automatic ``as_list=True`` to control the order.
