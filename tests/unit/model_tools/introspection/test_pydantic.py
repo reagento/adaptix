@@ -3,10 +3,11 @@ from typing import Any
 from unittest.mock import ANY
 
 import pytest
+from annotated_types import Ge, Gt
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, computed_field
 from pydantic.fields import ModelPrivateAttr
 from pydantic_core import PydanticUndefined
-from tests_helpers import raises_exc, requires
+from tests_helpers import parametrize_bool, raises_exc, requires
 
 from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
@@ -691,5 +692,218 @@ def test_annotated():
                 ),
             ),
             overriden_types=frozenset({"f3", "_f4", "f1", "f2"}),
+        ),
+    )
+
+
+@requires(HAS_ANNOTATED)
+def test_field_constraints():
+    from typing import Annotated
+
+    class MyModel(BaseModel):
+        f1: int = Field(gt=1, ge=10)
+
+    assert get_pydantic_shape(MyModel) == Shape(
+        input=InputShape(
+            fields=(
+                InputField(
+                    id="f1",
+                    type=Annotated[int, Gt(gt=1), Ge(ge=10)],
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    is_required=True,
+                ),
+            ),
+            overriden_types=frozenset({"f1"}),
+            params=(Param(field_id="f1", name="f1", kind=ParamKind.KW_ONLY),),
+            kwargs=ParamKwargs(type=Any),
+            constructor=MyModel,
+        ),
+        output=OutputShape(
+            fields=(
+                OutputField(
+                    id="f1",
+                    type=Annotated[int, Gt(gt=1), Ge(ge=10)],
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f1", is_required=True),
+                ),
+            ),
+            overriden_types=frozenset({"f1"}),
+        ),
+    )
+
+
+@parametrize_bool("populate_by_name")
+def test_simple_aliases(populate_by_name):
+    class MyModel(BaseModel):
+        f1: int
+        f2: int = Field(alias="a2")
+        f3: int = Field(validation_alias="a3")
+        f4: int = Field(serialization_alias="a4")
+
+        model_config = ConfigDict(populate_by_name=populate_by_name)
+
+    assert get_pydantic_shape(MyModel) == Shape(
+        input=InputShape(
+            fields=(
+                InputField(
+                    id="f1",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    is_required=True,
+                ),
+                InputField(
+                    id="f2",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    is_required=True,
+                ),
+                InputField(
+                    id="f3",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    is_required=True,
+                ),
+                InputField(
+                    id="f4",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    is_required=True,
+                ),
+            ),
+            overriden_types=frozenset({"f3", "f2", "f4", "f1"}),
+            params=(
+                Param(field_id="f1", name="f1", kind=ParamKind.KW_ONLY),
+                Param(field_id="f2", name="f2" if populate_by_name else "a2", kind=ParamKind.KW_ONLY),
+                Param(field_id="f3", name="f3" if populate_by_name else "a3", kind=ParamKind.KW_ONLY),
+                Param(field_id="f4", name="f4", kind=ParamKind.KW_ONLY),
+            ),
+            kwargs=ParamKwargs(type=Any),
+            constructor=MyModel,
+        ),
+        output=OutputShape(
+            fields=(
+                OutputField(
+                    id="f1",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f1", is_required=True),
+                ),
+                OutputField(
+                    id="f2",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f2", is_required=True),
+                ),
+                OutputField(
+                    id="f3",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f3", is_required=True),
+                ),
+                OutputField(
+                    id="f4",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f4", is_required=True),
+                ),
+            ),
+            overriden_types=frozenset({"f3", "f2", "f4", "f1"}),
+        ),
+    )
+
+
+def test_alias_generator_is_resolved_by_pydantic():
+    class MyModel(BaseModel):
+        f1: int
+        f2: int = Field(alias="a2", validation_alias="va2")
+        f3: int = Field(alias="a3", serialization_alias="sa3")
+
+        model_config = ConfigDict(alias_generator=lambda x: f"{x}_gen")
+
+    assert get_pydantic_shape(MyModel) == Shape(
+        input=InputShape(
+            fields=(
+                InputField(
+                    id="f1",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    is_required=True,
+                ),
+                InputField(
+                    id="f2",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    is_required=True,
+                ),
+                InputField(
+                    id="f3",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    is_required=True,
+                ),
+            ),
+            overriden_types=frozenset({"f3", "f1", "f2"}),
+            params=(
+                Param(field_id="f1", name="f1_gen", kind=ParamKind.KW_ONLY),
+                Param(field_id="f2", name="va2", kind=ParamKind.KW_ONLY),
+                Param(field_id="f3", name="a3", kind=ParamKind.KW_ONLY),
+            ),
+            kwargs=ParamKwargs(type=Any),
+            constructor=MyModel,
+        ),
+        output=OutputShape(
+            fields=(
+                OutputField(
+                    id="f1",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f1", is_required=True),
+                ),
+                OutputField(
+                    id="f2",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f2", is_required=True),
+                ),
+                OutputField(
+                    id="f3",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f3", is_required=True),
+                ),
+            ),
+            overriden_types=frozenset({"f3", "f1", "f2"}),
         ),
     )

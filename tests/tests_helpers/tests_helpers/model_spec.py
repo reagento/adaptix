@@ -7,7 +7,13 @@ from typing import Any, Callable, Mapping, NamedTuple, TypedDict, Union
 import pytest
 from _pytest.python import Metafunc
 
-from adaptix._internal.feature_requirement import HAS_ATTRS_PKG, HAS_PY_311, HAS_SQLALCHEMY_PKG, Requirement
+from adaptix._internal.feature_requirement import (
+    HAS_ATTRS_PKG,
+    HAS_PY_311,
+    HAS_PYDANTIC_PKG,
+    HAS_SQLALCHEMY_PKG,
+    Requirement,
+)
 from adaptix._internal.type_tools import get_all_type_hints
 
 from .misc import FailedRequirement
@@ -30,12 +36,14 @@ class ModelSpec(Enum):
     NAMED_TUPLE = "named_tuple"
     ATTRS = "attrs"
     SQLALCHEMY = "sqlalchemy"
+    PYDANTIC = "pydantic"
 
     @classmethod
     def default_requirements(cls):
         return {
             cls.ATTRS: HAS_ATTRS_PKG,
             cls.SQLALCHEMY: HAS_SQLALCHEMY_PKG,
+            cls.PYDANTIC: HAS_PYDANTIC_PKG,
         }
 
 
@@ -89,6 +97,13 @@ def model_spec_to_schema(spec: ModelSpec):
         return ModelSpecSchema(decorator=define, bases=(), get_field=getattr, kind=spec)
     if spec == ModelSpec.SQLALCHEMY:
         return ModelSpecSchema(decorator=create_sqlalchemy_decorator(), bases=(), get_field=getattr, kind=spec)
+    if spec == ModelSpec.PYDANTIC:
+        from pydantic import BaseModel, ConfigDict
+
+        class CustomBaseModel(BaseModel):
+            model_config = ConfigDict(arbitrary_types_allowed=True)
+
+        return ModelSpecSchema(decorator=lambda x: x, bases=(CustomBaseModel, ), get_field=getattr, kind=spec)
     raise ValueError
 
 
@@ -98,6 +113,18 @@ def exclude_model_spec(first_spec: ModelSpec, *other_specs: ModelSpec):
     def decorator(func):
         func.adaptix_exclude_model_spec = specs
         return func
+
+    return decorator
+
+
+def only_model_spec(first_spec: ModelSpec, *other_specs: ModelSpec):
+    specs = [first_spec, *other_specs]
+    return exclude_model_spec(*[model_spec for model_spec in ModelSpec if model_spec not in specs])
+
+
+def with_model_spec_requirement(requirements: Mapping[ModelSpec, Requirement]):
+    def decorator(func):
+        func.adaptix_model_spec_requirements = requirements
 
     return decorator
 

@@ -18,6 +18,7 @@ from ..model_tools.introspection.attrs import get_attrs_shape
 from ..model_tools.introspection.class_init import get_class_init_shape
 from ..model_tools.introspection.dataclass import get_dataclass_shape
 from ..model_tools.introspection.named_tuple import get_named_tuple_shape
+from ..model_tools.introspection.pydantic import get_pydantic_shape
 from ..model_tools.introspection.sqlalchemy import get_sqlalchemy_shape
 from ..model_tools.introspection.typed_dict import get_typed_dict_shape
 from ..provider.essential import CannotProvide, Mediator
@@ -79,6 +80,7 @@ BUILTIN_SHAPE_PROVIDER = ConcatProvider(
     ShapeProvider(get_dataclass_shape),
     ShapeProvider(get_attrs_shape),
     ShapeProvider(get_sqlalchemy_shape),
+    ShapeProvider(get_pydantic_shape),
     # class init introspection must be the last
     ShapeProvider(get_class_init_shape),
 )

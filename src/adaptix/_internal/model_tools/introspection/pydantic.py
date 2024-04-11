@@ -5,9 +5,12 @@ from functools import cached_property
 from inspect import Parameter, Signature
 from typing import Any, Callable, Optional, Protocol, Sequence, Type
 
-from pydantic import AliasChoices, BaseModel
-from pydantic.fields import ComputedFieldInfo, FieldInfo
-from pydantic_core import PydanticUndefined
+try:
+    from pydantic import AliasChoices, BaseModel
+    from pydantic.fields import ComputedFieldInfo, FieldInfo
+    from pydantic_core import PydanticUndefined
+except ImportError:
+    pass
 
 from adaptix import TypeHint
 
