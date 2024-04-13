@@ -65,13 +65,19 @@ email = '17@itishka.org'
 
 [tool.pytest.ini_options]
 python_classes = 'WeDoNotUseClassTestCase'
-python_files = ['test_*.py', '*_test.py', 'bench_[!nexus]*.py', 'tests_helpers.py', 'local_helpers.py']
+python_files = [
+  'test_*.py',
+  '*_test.py',
+  'bench_[!nexus]*.py',
+  'tests/tests_helpers/tests_helpers/*.py',
+  'local_helpers.py',
+]
 testpaths = ['tests', 'examples']
 filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
 
 [tool.coverage.run]
 branch = true
-relative_files = true
+# relative_files = true
 include = ["src/**"]
 
 #   ┌             ┐

@@ -79,9 +79,17 @@ def _get_field_parameters(tp: "Type[BaseModel]", field_name: str, field_info: "F
     return parameters
 
 
+def _get_field_parameter_name(tp: "Type[BaseModel]", field_name: str, field_info: "FieldInfo") -> str:
+    parameters = _get_field_parameters(tp, field_name, field_info)
+    if not parameters:
+        raise ClarifiedIntrospectionError(
+            f"Can not fetch parameter name for field {field_name!r}."
+            f" This means that field has only AliasPath aliases and populate_by_name is disabled"
+        )
+    return parameters[0]
+
+
 def _signature_is_self_with_kwargs_only(init_signature: Signature) -> bool:
-    if len(init_signature.parameters) > 2:  # noqa: PLR2004
-        return False
     try:
         self, kwargs = init_signature.parameters.values()
     except ValueError:
@@ -125,7 +133,7 @@ def _get_input_shape(tp: "Type[BaseModel]") -> InputShape:
             Param(
                 field_id=field_id,
                 kind=ParamKind.KW_ONLY,
-                name=_get_field_parameters(tp, field_id, field_info)[0],
+                name=_get_field_parameter_name(tp, field_id, field_info),
             )
             for field_id, field_info in tp.model_fields.items()
         ),

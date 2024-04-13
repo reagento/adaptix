@@ -5,7 +5,7 @@ from unittest.mock import ANY
 import pytest
 from annotated_types import Ge, Gt
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, computed_field
-from pydantic.fields import ModelPrivateAttr
+from pydantic.fields import ModelPrivateAttr, AliasChoices, AliasPath
 from pydantic_core import PydanticUndefined
 from tests_helpers import parametrize_bool, raises_exc, requires
 
@@ -829,6 +829,117 @@ def test_simple_aliases(populate_by_name):
             ),
             overriden_types=frozenset({"f3", "f2", "f4", "f1"}),
         ),
+    )
+
+
+def test_alias_choices():
+    class MyModel(BaseModel):
+        f1: int
+        f2: int = Field(validation_alias=AliasChoices("a2", "a3"))
+        f3: int = Field(validation_alias=AliasChoices("a3", "a2"))
+
+    assert get_pydantic_shape(MyModel) == Shape(
+        input=InputShape(
+            fields=(
+                InputField(id="f1", type=int, default=NoDefault(), metadata={}, original=ANY, is_required=True),
+                InputField(id="f2", type=int, default=NoDefault(), metadata={}, original=ANY, is_required=True),
+                InputField(id="f3", type=int, default=NoDefault(), metadata={}, original=ANY, is_required=True),
+            ),
+            overriden_types=frozenset({"f1", "f3", "f2"}),
+            params=(
+                Param(field_id="f1", name="f1", kind=ParamKind.KW_ONLY),
+                Param(field_id="f2", name="a2", kind=ParamKind.KW_ONLY),
+                Param(field_id="f3", name="a3", kind=ParamKind.KW_ONLY),
+            ),
+            kwargs=ParamKwargs(type=Any),
+            constructor=MyModel,
+        ),
+        output=OutputShape(
+            fields=(
+                OutputField(
+                    id="f1",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f1", is_required=True),
+                ),
+                OutputField(
+                    id="f2",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f2", is_required=True),
+                ),
+                OutputField(
+                    id="f3",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f3", is_required=True),
+                ),
+            ),
+            overriden_types=frozenset({"f1", "f3", "f2"}),
+        ),
+    )
+
+
+def test_alias_choices_with_alias_path():
+    class MyModel(BaseModel):
+        f1: int
+        f2: int = Field(validation_alias=AliasChoices(AliasPath("b", 0), "a2"))
+
+    assert get_pydantic_shape(MyModel) == Shape(
+        input=InputShape(
+            fields=(
+                InputField(id="f1", type=int, default=NoDefault(), metadata={}, original=ANY, is_required=True),
+                InputField(id="f2", type=int, default=NoDefault(), metadata={}, original=ANY, is_required=True),
+            ),
+            overriden_types=frozenset({"f1", "f2"}),
+            params=(
+                Param(field_id="f1", name="f1", kind=ParamKind.KW_ONLY),
+                Param(field_id="f2", name="a2", kind=ParamKind.KW_ONLY),
+            ),
+            kwargs=ParamKwargs(type=Any),
+            constructor=MyModel,
+        ),
+        output=OutputShape(
+            fields=(
+                OutputField(
+                    id="f1",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f1", is_required=True),
+                ),
+                OutputField(
+                    id="f2",
+                    type=int,
+                    default=NoDefault(),
+                    metadata={},
+                    original=ANY,
+                    accessor=create_attr_accessor(attr_name="f2", is_required=True),
+                ),
+            ),
+            overriden_types=frozenset({"f1", "f2"}),
+        ),
+    )
+
+
+def test_no_parameter_name_for_field():
+    class MyModel(BaseModel):
+        f1: int
+        f2: int = Field(validation_alias=AliasPath("b", 0))
+
+    raises_exc(
+        ClarifiedIntrospectionError(
+            "Can not fetch parameter name for field 'f2'."
+            " This means that field has only AliasPath aliases and populate_by_name is disabled"
+        ),
+        lambda: get_pydantic_shape(MyModel),
     )
 
 
