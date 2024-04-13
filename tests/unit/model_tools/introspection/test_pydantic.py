@@ -620,6 +620,21 @@ def test_forbidden_custom_init():
     )
 
 
+def test_forbidden_custom_init_with_extra_arg():
+    class MyModel(BaseModel):
+        f1: str
+
+        def __init__(self, f1: int, **kwargs):
+            super().__init__(self, f1=str(f1), **kwargs)
+
+    raises_exc(
+        ClarifiedIntrospectionError(
+            "Pydantic model `__init__` must takes only self and one variable keyword parameter",
+        ),
+        lambda: get_pydantic_shape(MyModel),
+    )
+
+
 @requires(HAS_ANNOTATED)
 def test_annotated():
     from typing import Annotated

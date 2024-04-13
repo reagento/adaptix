@@ -48,7 +48,7 @@ colorama==0.4.6
     #   tox
 contourpy==1.2.0
     # via matplotlib
-coverage==7.4.3
+coverage==7.4.4
     # via
     #   -r requirements/raw/runner.txt
     #   -r requirements/raw/test_extra_none.txt

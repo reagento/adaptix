@@ -125,6 +125,7 @@ def only_model_spec(first_spec: ModelSpec, *other_specs: ModelSpec):
 def with_model_spec_requirement(requirements: Mapping[ModelSpec, Requirement]):
     def decorator(func):
         func.adaptix_model_spec_requirements = requirements
+        return func
 
     return decorator
 
