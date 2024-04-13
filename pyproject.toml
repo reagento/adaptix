@@ -77,7 +77,7 @@ filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
 
 [tool.coverage.run]
 branch = true
-# relative_files = true
+relative_files = true
 include = ["src/**"]
 
 #   ┌             ┐
