@@ -5,7 +5,7 @@ from unittest.mock import ANY
 import pytest
 from annotated_types import Ge, Gt
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, computed_field
-from pydantic.fields import ModelPrivateAttr, AliasChoices, AliasPath
+from pydantic.fields import AliasChoices, AliasPath, ModelPrivateAttr
 from pydantic_core import PydanticUndefined
 from tests_helpers import parametrize_bool, raises_exc, requires
 
@@ -937,7 +937,7 @@ def test_no_parameter_name_for_field():
     raises_exc(
         ClarifiedIntrospectionError(
             "Can not fetch parameter name for field 'f2'."
-            " This means that field has only AliasPath aliases and populate_by_name is disabled"
+            " This means that field has only AliasPath aliases and populate_by_name is disabled",
         ),
         lambda: get_pydantic_shape(MyModel),
     )

@@ -84,7 +84,7 @@ def _get_field_parameter_name(tp: "Type[BaseModel]", field_name: str, field_info
     if not parameters:
         raise ClarifiedIntrospectionError(
             f"Can not fetch parameter name for field {field_name!r}."
-            f" This means that field has only AliasPath aliases and populate_by_name is disabled"
+            f" This means that field has only AliasPath aliases and populate_by_name is disabled",
         )
     return parameters[0]
 
