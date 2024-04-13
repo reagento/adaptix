@@ -15,7 +15,7 @@ except ImportError:
 from adaptix import TypeHint
 
 from ...feature_requirement import HAS_ANNOTATED, HAS_PYDANTIC_PKG, HAS_SUPPORTED_PYDANTIC_PKG
-from ...type_tools import get_all_type_hints, is_subclass_soft
+from ...type_tools import get_all_type_hints, is_pydantic_class
 from ..definitions import (
     ClarifiedIntrospectionError,
     Default,
@@ -218,7 +218,7 @@ def get_pydantic_shape(tp) -> FullShape:
             raise NoTargetPackageError(HAS_PYDANTIC_PKG)
         raise TooOldPackageError(HAS_SUPPORTED_PYDANTIC_PKG)
 
-    if not is_subclass_soft(tp, BaseModel):
+    if not is_pydantic_class(tp):
         raise IntrospectionError
 
     return Shape(

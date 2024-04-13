@@ -22,6 +22,7 @@ from .model_spec import (
     ModelSpecSchema,
     exclude_model_spec,
     only_generic_models,
+    only_model_spec,
     parametrize_model_spec,
     sqlalchemy_equals,
 )
