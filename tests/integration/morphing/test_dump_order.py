@@ -16,7 +16,7 @@ def test_simple(accum):
     assert list(dumper(Example(c=1, a=2, b=3)).items()) == [("c", 1), ("a", 2), ("b", 3)]
 
 
-def test_name_flatenning(accum):
+def test_name_flattening(accum):
     @dataclass
     class Example:
         c: int

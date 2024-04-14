@@ -68,15 +68,15 @@ def _get_config_value(tp: "Type[BaseModel]", key: str) -> Any:
 
 def _get_field_parameters(tp: "Type[BaseModel]", field_name: str, field_info: "FieldInfo") -> Sequence[str]:
     # AliasPath is ignored
-    parameters = [field_name] if _get_config_value(tp, "populate_by_name") else []
-
     if field_info.validation_alias is None:
-        parameters.append(field_name)
-    elif isinstance(field_info.validation_alias, str):
-        parameters.append(field_info.validation_alias)
-    elif isinstance(field_info.validation_alias, AliasChoices):
-        parameters.extend(alias for alias in field_info.validation_alias.choices if isinstance(alias, str))
-    return parameters
+        parameters = [field_name]
+    else:
+        parameters = [field_name] if _get_config_value(tp, "populate_by_name") else []
+        if isinstance(field_info.validation_alias, str):
+            parameters.append(field_info.validation_alias)
+        elif isinstance(field_info.validation_alias, AliasChoices):
+            parameters.extend(alias for alias in field_info.validation_alias.choices if isinstance(alias, str))
+    return [param for param in parameters if param.isidentifier()]
 
 
 def _get_field_parameter_name(tp: "Type[BaseModel]", field_name: str, field_info: "FieldInfo") -> str:
@@ -84,7 +84,8 @@ def _get_field_parameter_name(tp: "Type[BaseModel]", field_name: str, field_info
     if not parameters:
         raise ClarifiedIntrospectionError(
             f"Can not fetch parameter name for field {field_name!r}."
-            f" This means that field has only AliasPath aliases and populate_by_name is disabled",
+            f" This means that field has only AliasPath aliases or non-python-identifier aliases"
+            f" and populate_by_name is disabled",
         )
     return parameters[0]
 

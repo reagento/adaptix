@@ -93,3 +93,7 @@ pydantic
   Also, there are some bugs in generic resolving inside pydantic itself.
 
 - Pydantic does not support variadic generics.
+
+- ``pydantic.dataclasses`` is not supported.
+
+- ``pydantic.v1`` is not supported.

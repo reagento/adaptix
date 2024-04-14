@@ -952,7 +952,8 @@ def test_no_parameter_name_for_field():
     raises_exc(
         ClarifiedIntrospectionError(
             "Can not fetch parameter name for field 'f2'."
-            " This means that field has only AliasPath aliases and populate_by_name is disabled",
+            " This means that field has only AliasPath aliases or non-python-identifier aliases"
+            " and populate_by_name is disabled",
         ),
         lambda: get_pydantic_shape(MyModel),
     )
