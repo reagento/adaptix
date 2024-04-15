@@ -1,4 +1,4 @@
 -r test_extra_none.txt
 attrs==23.2.0
 sqlalchemy==2.0.29
-pydantic==2.6.4
+pydantic==2.7.0

@@ -180,11 +180,11 @@ psutil==5.9.5
     #   pyperf
 pycodestyle==2.11.1
     # via flake8
-pydantic==2.6.4
+pydantic==2.7.0
     # via
     #   -r requirements/raw/bench.txt
     #   -r requirements/raw/test_extra_new.txt
-pydantic-core==2.16.3
+pydantic-core==2.18.1
     # via pydantic
 pyflakes==3.1.0
     # via flake8
