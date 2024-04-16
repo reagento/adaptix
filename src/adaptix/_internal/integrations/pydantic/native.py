@@ -22,7 +22,7 @@ T = TypeVar("T")
 class NativePydanticProvider(LoaderProvider, DumperProvider):
     def __init__(
         self,
-        config: Optional[ConfigDict],
+        config: Optional["ConfigDict"],
         validation_params: Mapping[str, Omittable[Any]],
         serialization_params: Mapping[str, Omittable[Any]],
     ):
@@ -86,10 +86,11 @@ def native_pydantic(
     serialize_as_any: Omittable[bool] = Omitted(),
     # common parameters
     context: Omittable[Optional[Dict[str, Any]]] = Omitted(),
-    config: Optional[ConfigDict] = None,
+    config: Optional["ConfigDict"] = None,
 ) -> Provider:
     """Provider that represents value via pydantic.
     You can use this function to validate or serialize pydantic models via pydantic itself.
+    Provider constructs ``TypeAdapter`` for a type to load and dump data.
 
     :param preds: Predicates specifying where the provider should be used.
         The provider will be applied if any predicates meet the conditions,
@@ -99,19 +100,19 @@ def native_pydantic(
     :param strict: Parameter passed directly to ``.validate_python()`` method
     :param from_attributes: Parameter passed directly to ``.validate_python()`` method
 
-    :param mode: Parameter passed directly to ``.dump_python()`` method
-    :param include: Parameter passed directly to ``.dump_python()`` method
-    :param exclude: Parameter passed directly to ``.dump_python()`` method
-    :param by_alias: Parameter passed directly to ``.dump_python()`` method
-    :param exclude_unset: Parameter passed directly to ``.dump_python()`` method
-    :param exclude_defaults: Parameter passed directly to ``.dump_python()`` method
-    :param exclude_none: Parameter passed directly to ``.dump_python()`` method
-    :param round_trip: Parameter passed directly to ``.dump_python()`` method
-    :param warnings: Parameter passed directly to ``.dump_python()`` method
-    :param fallback: Parameter passed directly to ``.dump_python()`` method
-    :param serialize_as_any: Parameter passed directly to ``.dump_python()`` method
+    :param mode: Parameter passed directly to ``.to_python()`` method
+    :param include: Parameter passed directly to ``.to_python()`` method
+    :param exclude: Parameter passed directly to ``.to_python()`` method
+    :param by_alias: Parameter passed directly to ``.to_python()`` method
+    :param exclude_unset: Parameter passed directly to ``.to_python()`` method
+    :param exclude_defaults: Parameter passed directly to ``.to_python()`` method
+    :param exclude_none: Parameter passed directly to ``.to_python()`` method
+    :param round_trip: Parameter passed directly to ``.to_python()`` method
+    :param warnings: Parameter passed directly to ``.to_python()`` method
+    :param fallback: Parameter passed directly to ``.to_python()`` method
+    :param serialize_as_any: Parameter passed directly to ``.to_python()`` method
 
-    :param context: Parameter passed directly to ``.validate_python()`` and ``.dump_python()`` methods
+    :param context: Parameter passed directly to ``.validate_python()`` and ``.to_python()`` methods
     :param config: Parameter passed directly to ``config`` parameter of ``TypeAdapter`` constructor
 
     :return: Desired provider
