@@ -299,7 +299,7 @@ Mapping to list
 
 Some APIs store structures as lists or arrays rather than dict for optimization purposes.
 For example, Binance uses it to represent
-`historical market data <https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data>`_.
+`historical market data <https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data>`__.
 
 There is :paramref:`.name_mapping.as_list` that converts the model to a list.
 Position at the list is determined by order of field definition.
@@ -385,7 +385,7 @@ The mapping result is union of 5 types:
    So the field will be skipped despite the match by :paramref:`.name_mapping.only`.
 
 Name mapping reuses concepts of recipe inside retort and also implements
-`chain-of-responsibility <https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern>`_ design pattern.
+`chain-of-responsibility <https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern>`__ design pattern.
 
 Only the first element matched by its predicate is used to determine the mapping result.
 

@@ -173,7 +173,7 @@ they will be processed via the corresponding dumper.
 
 Be careful when you use a ``0``, ``1``, ``False`` and ``True`` as ``Literal`` members.
 Due to type hint caching ``Literal[0, 1]`` sometimes returns ``Literal[False, True]``.
-It was fixed only at `Python 3.9.1 <https://docs.python.org/3/whatsnew/3.9.html#id4>`_.
+It was fixed only at `Python 3.9.1 <https://docs.python.org/3/whatsnew/3.9.html#id4>`__.
 
 Union
 '''''''''''''''''

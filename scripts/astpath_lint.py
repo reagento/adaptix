@@ -64,13 +64,25 @@ RULES = [
         module="typing",
         variable="get_type_hints",
         error_msg="Use type_tools.get_all_type_hints() instead of typing.get_type_hints()",
-        exclude=["src/adaptix/_internal/type_tools/basic_utils.py"],
+        exclude=["src/adaptix/_internal/type_tools/fundamentals.py"],
     ),
     ImportRule(
         module="_decimal",
         variable="Decimal",
         error_msg='Import Decimal from public module "decimal"',
         exclude=[],
+    ),
+    ImportRule(
+        module="typing",
+        variable="get_args",
+        error_msg="Use type_tools.get_generic_args() instead of typing.get_args()",
+        exclude=["src/adaptix/_internal/type_tools/fundamentals.py"],
+    ),
+    ImportRule(
+        module="typing",
+        variable="get_origin",
+        error_msg="Use type_tools.strip_alias() instead of typing.get_origin()",
+        exclude=["src/adaptix/_internal/type_tools/fundamentals.py"],
     ),
 ]
 

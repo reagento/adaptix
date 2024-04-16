@@ -3,7 +3,7 @@ from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import pytest
 from tests_helpers import ModelSpec, cond_list, exclude_model_spec, load_namespace_keeping_module, requires
-from tests_helpers.model_spec import only_generic_models
+from tests_helpers.model_spec import only_generic_models, with_model_spec_requirement
 
 from adaptix import CannotProvide, Retort
 from adaptix._internal.feature_requirement import (
@@ -12,8 +12,10 @@ from adaptix._internal.feature_requirement import (
     HAS_PY_312,
     HAS_SELF_TYPE,
     HAS_STD_CLASSES_GENERICS,
+    HAS_SUPPORTED_PYDANTIC_PKG,
     HAS_TV_TUPLE,
     IS_PYPY,
+    DistributionVersionRequirement,
 )
 from adaptix._internal.provider.request_cls import LocStack, TypeHintLoc
 from adaptix._internal.provider.shape_provider import (
@@ -22,12 +24,13 @@ from adaptix._internal.provider.shape_provider import (
     provide_generic_resolved_shape,
 )
 
-from .local_helpers import assert_fields_types
+from .local_helpers import assert_distinct_fields_types, assert_fields_types
 
 T = TypeVar("T")
 K = TypeVar("K")
 V = TypeVar("V")
-
+K2 = TypeVar("K2")
+V2 = TypeVar("V2")
 
 only_generic_models(sys.modules[__name__])
 
@@ -73,7 +76,8 @@ def test_gen_field(model_spec, tp):
 
     assert_fields_types(WithGenField, {"a": int, "b": tp[Any]})
     assert_fields_types(WithGenField[str], {"a": int, "b": tp[str]})
-    assert_fields_types(WithGenField[T], {"a": int, "b": tp[T]})
+    assert_fields_types(WithGenField[K], {"a": int, "b": tp[K]})
+    assert_fields_types(WithGenField[T], {"a": int, "b": tp[T]}, pydantic={"a": int, "b": tp[Any]})
 
 
 @pytest.mark.parametrize("tp1", [List, list] if HAS_STD_CLASSES_GENERICS else [List])
@@ -94,8 +98,13 @@ def test_two_params(model_spec, tp1, tp2):
         {"a": int, "b": tp1[str], "c": tp2[str, int]},
     )
     assert_fields_types(
+        WithStdGenField[K2, V2],
+        {"a": int, "b": tp1[K2], "c": tp2[K2, V2]},
+    )
+    assert_fields_types(
         WithStdGenField[K, V],
         {"a": int, "b": tp1[K], "c": tp2[K, V]},
+        pydantic={"a": int, "b": tp1[Any], "c": tp2[Any, Any]},
     )
 
 
@@ -160,8 +169,13 @@ def test_single_inheritance_generic_child(model_spec):
         {"a": int, "b": str, "c": Any},
     )
     assert_fields_types(
+        Child[K],
+        {"a": int, "b": str, "c": K},
+    )
+    assert_fields_types(
         Child[T],
         {"a": int, "b": str, "c": T},
+        pydantic={"a": int, "b": str, "c": Any},
     )
 
 
@@ -185,12 +199,17 @@ def test_multiple_inheritance(model_spec):
         {"a": int, "b": str, "c": bool},
     )
     assert_fields_types(
-        Child[T],
-        {"a": int, "b": str, "c": T},
-    )
-    assert_fields_types(
         Child,
         {"a": int, "b": str, "c": Any},
+    )
+    assert_fields_types(
+        Child[K],
+        {"a": int, "b": str, "c": K},
+    )
+    assert_fields_types(
+        Child[T],
+        {"a": int, "b": str, "c": T},
+        pydantic={"a": int, "b": str, "c": Any},
     )
 
 
@@ -336,16 +355,22 @@ def test_generic_parents_with_type_override_generic(model_spec):
         {"a": bool, "b": Any},
     )
     assert_fields_types(
-        Child[T],
-        {"a": bool, "b": T},
-    )
-    assert_fields_types(
         Child[str],
         {"a": bool, "b": str},
+    )
+    assert_fields_types(
+        Child[K],
+        {"a": bool, "b": K},
+    )
+    assert_fields_types(
+        Child[T],
+        {"a": bool, "b": T},
+        pydantic={"a": bool, "b": Any},
     )
 
 
 @requires(HAS_SELF_TYPE)
+@with_model_spec_requirement({ModelSpec.PYDANTIC: DistributionVersionRequirement("pydantic", "2.0.3")})
 def test_self_type(model_spec):
     from typing import Self
 
@@ -360,6 +385,7 @@ def test_self_type(model_spec):
 
 
 @requires(HAS_TV_TUPLE)
+@exclude_model_spec(ModelSpec.PYDANTIC)
 def test_type_var_tuple_begin(model_spec, gen_models_ns):
     from typing import Unpack
 
@@ -403,6 +429,7 @@ def test_type_var_tuple_begin(model_spec, gen_models_ns):
 
 
 @requires(HAS_TV_TUPLE)
+@exclude_model_spec(ModelSpec.PYDANTIC)
 def test_type_var_tuple_end(model_spec, gen_models_ns):
     from typing import Unpack
 
@@ -446,6 +473,7 @@ def test_type_var_tuple_end(model_spec, gen_models_ns):
 
 
 @requires(HAS_TV_TUPLE)
+@exclude_model_spec(ModelSpec.PYDANTIC)
 def test_type_var_tuple_middle(model_spec, gen_models_ns):
     from typing import Unpack
 
@@ -515,3 +543,25 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
             "c": int,
         },
     )
+
+
+@requires(HAS_SUPPORTED_PYDANTIC_PKG)
+def test_pydantic():
+    from pydantic import BaseModel, computed_field
+
+    class MyModel(BaseModel, Generic[T]):
+        a: T
+
+        @computed_field
+        @property
+        def b(self) -> T:
+            return ""
+
+        _c: T
+
+    assert_distinct_fields_types(MyModel, input={"a": Any}, output={"a": Any, "b": Any, "_c": Any})
+    assert_distinct_fields_types(MyModel[str], input={"a": str}, output={"a": str, "b": str, "_c": str})
+    assert_distinct_fields_types(MyModel[K], input={"a": K}, output={"a": K, "b": K, "_c": K})
+
+    # a limitation of pydantic implementation
+    assert_distinct_fields_types(MyModel[T], input={"a": Any}, output={"a": Any, "b": Any, "_c": Any})

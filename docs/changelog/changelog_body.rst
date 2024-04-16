@@ -3,8 +3,8 @@
 
 .. _v3.0.0b4:
 
-`3.0.0b4 <https://github.com/reagento/adaptix/tree/v3.0.0b4>`_ -- 2024-03-30
-============================================================================
+`3.0.0b4 <https://github.com/reagento/adaptix/tree/v3.0.0b4>`__ -- 2024-03-30
+=============================================================================
 
 .. _v3.0.0b4-Features:
 
@@ -43,18 +43,18 @@ Bug Fixes
 
 .. _v3.0.0b3:
 
-`3.0.0b3 <https://github.com/reagento/adaptix/tree/v3.0.0b3>`_ -- 2024-03-08
-============================================================================
+`3.0.0b3 <https://github.com/reagento/adaptix/tree/v3.0.0b3>`__ -- 2024-03-08
+=============================================================================
 
 .. _v3.0.0b3-Features:
 
 Features
 --------
 
-- :func:`.conversion.link` accepts ``coercer`` parameter. `#256 <https://github.com/reagento/adaptix/issues/256>`_
-- Add :func:`.conversion.link_constant` to link constant values and constant factories. `#258 <https://github.com/reagento/adaptix/issues/258>`_
-- Add coercer for case when source union is subset of destination union (simple ``==`` check is using). `#242 <https://github.com/reagento/adaptix/issues/242>`_
-- No coercer error now contains type information. `#252 <https://github.com/reagento/adaptix/issues/252>`_
+- :func:`.conversion.link` accepts ``coercer`` parameter. `#256 <https://github.com/reagento/adaptix/issues/256>`__
+- Add :func:`.conversion.link_constant` to link constant values and constant factories. `#258 <https://github.com/reagento/adaptix/issues/258>`__
+- Add coercer for case when source union is subset of destination union (simple ``==`` check is using). `#242 <https://github.com/reagento/adaptix/issues/242>`__
+- No coercer error now contains type information. `#252 <https://github.com/reagento/adaptix/issues/252>`__
 - Add coercer for ``Optional[S] -> Optional[D]`` if ``S`` is coercible to ``D``. `#254 <https://github.com/reagento/adaptix/issues/254>`_
 
 .. _v3.0.0b3-Bug Fixes:
@@ -62,17 +62,17 @@ Features
 Bug Fixes
 ---------
 
-- Fix ``SyntaxError`` with lambda in :func:`.coercer`. `#243 <https://github.com/reagento/adaptix/issues/243>`_
-- Model dumping now trying to save the original order of fields inside the dict. `#247 <https://github.com/reagento/adaptix/issues/247>`_
-- Fix introspection of sqlalchemy models with ``column_property`` (all ColumnElement is ignored excepting Column itself). `#250 <https://github.com/reagento/adaptix/issues/250>`_
+- Fix ``SyntaxError`` with lambda in :func:`.coercer`. `#243 <https://github.com/reagento/adaptix/issues/243>`__
+- Model dumping now trying to save the original order of fields inside the dict. `#247 <https://github.com/reagento/adaptix/issues/247>`__
+- Fix introspection of sqlalchemy models with ``column_property`` (all ColumnElement is ignored excepting Column itself). `#250 <https://github.com/reagento/adaptix/issues/250>`__
 
 ----------------------------------------------------
 
 
 .. _v3.0.0b2:
 
-`3.0.0b2 <https://github.com/reagento/adaptix/tree/v3.0.0b2>`_ -- 2024-02-16
-============================================================================
+`3.0.0b2 <https://github.com/reagento/adaptix/tree/v3.0.0b2>`__ -- 2024-02-16
+=============================================================================
 
 .. _v3.0.0b2-Features:
 
@@ -84,15 +84,15 @@ Features
   Now, you can generate boilerplate converter function by adaptix.
   See :ref:`conversion tutorial <conversion-tutorial>` for details.
 - Basic support for sqlalchemy models are added!
-- Added enum support inside Literal. `#178 <https://github.com/reagento/adaptix/issues/178>`_
+- Added enum support inside Literal. `#178 <https://github.com/reagento/adaptix/issues/178>`__
 - Added flags support.
 
   Now adaptix has two different ways to process flags: :func:`.flag_by_exact_value` (by default)
-  and :func:`.flag_by_member_names`. `#197 <https://github.com/reagento/adaptix/issues/197>`_
-- Added defaultdict support. `#216 <https://github.com/reagento/adaptix/issues/216>`_
-- Added support of mapping for :func:`.enum_by_name` provider. `#223 <https://github.com/reagento/adaptix/issues/223>`_
+  and :func:`.flag_by_member_names`. `#197 <https://github.com/reagento/adaptix/issues/197>`__
+- Added defaultdict support. `#216 <https://github.com/reagento/adaptix/issues/216>`__
+- Added support of mapping for :func:`.enum_by_name` provider. `#223 <https://github.com/reagento/adaptix/issues/223>`__
 - Created the correct path (fixing python bug) for processing ``Required`` and ``NotRequired`` with stringified annotations
-  or ``from __future__ import annotations``. `#227 <https://github.com/reagento/adaptix/issues/227>`_
+  or ``from __future__ import annotations``. `#227 <https://github.com/reagento/adaptix/issues/227>`__
 
 .. _v3.0.0b2-Breaking Changes:
 
@@ -139,14 +139,14 @@ Deprecations
 Bug Fixes
 ---------
 
-- Fixed parameter shuffling on skipping optional field. `#229 <https://github.com/reagento/adaptix/issues/229>`_
+- Fixed parameter shuffling on skipping optional field. `#229 <https://github.com/reagento/adaptix/issues/229>`__
 
 ----------------------------------------------------
 
 
 .. _v3.0.0b1:
 
-`3.0.0b1 <https://github.com/reagento/adaptix/tree/v3.0.0b1>`_ -- 2023-12-16
-============================================================================
+`3.0.0b1 <https://github.com/reagento/adaptix/tree/v3.0.0b1>`__ -- 2023-12-16
+=============================================================================
 
 Start of changelog.

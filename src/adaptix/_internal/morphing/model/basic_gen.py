@@ -85,9 +85,8 @@ class CodeGenAccumulator(StaticProvider):
     @property
     def code_pairs(self):
         return [
-            (request.loc_stack[-2].loc.type, hook_data.source)
+            (request.last_loc.type, hook_data.source)
             for request, hook_data in self.list
-            if len(request.loc_stack) >= 2  # noqa: PLR2004
         ]
 
     @property
