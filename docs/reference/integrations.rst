@@ -97,3 +97,13 @@ pydantic
 - ``pydantic.dataclasses`` is not supported.
 
 - ``pydantic.v1`` is not supported.
+
+
+Working with Pydantic
+=======================
+
+By default, any pydantic model is loaded and dumped like any other model.
+For example, any aliases or config parameters defined inside the model are ignored.
+You can override this behavior to use a native pydantic validation/serialization mechanism.
+
+.. literalinclude:: /examples/reference/integrations/native_pydantic.py
