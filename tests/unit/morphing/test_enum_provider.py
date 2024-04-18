@@ -245,32 +245,34 @@ def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce loader for type {FlagEnumWithSkippedBit}"),
             with_notes(
-                with_notes(
-                    CannotProvide(
-                        "Cannot create a loader for flag with skipped bits",
-                        is_terminal=True,
-                        is_demonstrative=True,
-                    ),
-                    f"Location: `{FlagEnumWithSkippedBit.__name__}`",
+                NoSuitableProvider(f"Cannot produce loader for type {FlagEnumWithSkippedBit}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
+            with_notes(
+                CannotProvide(
+                    "Cannot create a loader for flag with skipped bits",
+                    is_terminal=True,
+                    is_demonstrative=True,
                 ),
+                f"Location: `{FlagEnumWithSkippedBit.__name__}`",
             ),
         ),
         lambda: retort.get_loader(FlagEnumWithSkippedBit),
     )
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce loader for type {FlagEnumWithNegativeValue}"),
             with_notes(
-                with_notes(
-                    CannotProvide(
-                        "Cannot create a loader for flag with negative values",
-                        is_terminal=True,
-                        is_demonstrative=True,
-                    ),
-                    f"Location: `{FlagEnumWithNegativeValue.__name__}`",
+                NoSuitableProvider(f"Cannot produce loader for type {FlagEnumWithNegativeValue}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
+            with_notes(
+                CannotProvide(
+                    "Cannot create a loader for flag with negative values",
+                    is_terminal=True,
+                    is_demonstrative=True,
                 ),
+                f"Location: `{FlagEnumWithNegativeValue.__name__}`",
             ),
         ),
         lambda: retort.get_loader(FlagEnumWithNegativeValue),

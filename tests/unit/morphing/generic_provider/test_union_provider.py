@@ -159,8 +159,11 @@ def test_bad_optional_dumping(debug_trail):
     retort = Retort()
     raises_exc(
         with_cause(
-            NoSuitableProvider(
-                f"Cannot produce dumper for type {Union[int, Callable[[int], str]]}",
+            with_notes(
+                NoSuitableProvider(
+                    f"Cannot produce dumper for type {Union[int, Callable[[int], str]]}",
+                ),
+                "Note: The attached exception above contains verbose description of the problem",
             ),
             with_notes(
                 CannotProvide(

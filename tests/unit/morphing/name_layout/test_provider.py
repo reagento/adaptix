@@ -882,7 +882,10 @@ def test_extra_at_list():
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+            with_notes(
+                NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
             with_notes(
                 AggregateCannotProvide(
                     "Cannot create loader for model. Cannot fetch InputNameLayout",
@@ -920,7 +923,10 @@ def test_extra_at_list():
 def test_required_field_skip():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+            with_notes(
+                NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
             with_notes(
                 AggregateCannotProvide(
                     "Cannot create loader for model. Cannot fetch InputNameLayout",
@@ -954,7 +960,10 @@ def test_required_field_skip():
 def test_inconsistent_path_elements():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+            with_notes(
+                NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
             with_notes(
                 AggregateCannotProvide(
                     "Cannot create loader for model. Cannot fetch InputNameLayout",
@@ -991,7 +1000,10 @@ def test_inconsistent_path_elements():
 def test_duplicated_path():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+            with_notes(
+                NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
             with_notes(
                 AggregateCannotProvide(
                     "Cannot create loader for model. Cannot fetch InputNameLayout",
@@ -1028,7 +1040,10 @@ def test_duplicated_path():
 def test_optional_field_at_list():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+            with_notes(
+                NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
             with_notes(
                 AggregateCannotProvide(
                     "Cannot create loader for model. Cannot fetch InputNameLayout",
@@ -1065,7 +1080,10 @@ def test_optional_field_at_list():
 def test_one_path_is_prefix_of_another():
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+            with_notes(
+                NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
             with_notes(
                 AggregateCannotProvide(
                     "Cannot create loader for model. Cannot fetch InputNameLayout",

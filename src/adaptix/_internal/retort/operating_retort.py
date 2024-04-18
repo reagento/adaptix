@@ -8,7 +8,7 @@ from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator
 from ..provider.location import AnyLoc, FieldLoc
 from ..provider.request_cls import LocatedRequest, LocStack
 from ..type_tools import is_parametrized
-from ..utils import copy_exception_dunders, with_module
+from ..utils import add_note, copy_exception_dunders, with_module
 from .base_retort import BaseRetort
 from .mediator import ErrorRepresentor, RecursionResolver, T
 
@@ -129,7 +129,10 @@ class OperatingRetort(BaseRetort, Provider, ABC):
             return self._provide_from_recipe(request)
         except CannotProvide as e:
             cause = self._get_exception_cause(e)
-            raise NoSuitableProvider(error_message) from cause
+            exception = NoSuitableProvider(error_message)
+            if cause is not None:
+                add_note(exception, "Note: The attached exception above contains verbose description of the problem")
+            raise exception from cause
 
     def _get_exception_cause(self, exc: CannotProvide) -> Optional[CannotProvide]:
         if isinstance(exc, AggregateCannotProvide):
