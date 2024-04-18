@@ -7,7 +7,7 @@
 * Support [dozens](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/specific-types-behavior.html) of types,
   including different model kinds:
   ``@dataclass``, ``TypedDict``, ``NamedTuple``,
-  [``attrs``](https://www.attrs.org/en/stable/) and [``sqlalchemy``](https://docs.sqlalchemy.org/en/20/)
+  [``attrs``](https://www.attrs.org/en/stable/), [``sqlalchemy``](https://docs.sqlalchemy.org/en/20/) and [``pydantic``](https://docs.pydantic.dev/latest/).
 * Working with self-referenced data types (such as linked lists or trees).
 * Saving [path](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/tutorial.html#error-handling)
   where an exception is raised (including unexpected errors).
