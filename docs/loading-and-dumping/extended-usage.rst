@@ -353,6 +353,26 @@ The first provider override parameters of next providers.
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/chaining_overriding.py
 
 
+.. _private_fields_dumping:
+
+Private fields dumping
+-----------------------------------
+
+By default, adaptix skips private fields (any field starting with underscore) at dumping.
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/private_fields_skipping_pydantic.py
+
+You can include this fields by setting alias.
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/private_fields_including_pydantic.py
+
+Alias can be equal to field name (field id) and field will be included.
+
+.. dropdown:: Including private field without renaming
+
+    .. literalinclude:: /examples/loading-and-dumping/extended_usage/private_fields_including_no_rename_pydantic.py
+
+
 .. _advanced-mapping:
 
 Advanced mapping

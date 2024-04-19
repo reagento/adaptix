@@ -36,6 +36,9 @@ def pytest_generate_tests(metafunc):
 CASES_REQUIREMENTS = {
     "loading-and-dumping/tutorial/unexpected_error": HAS_PY_311,
     "reference/integrations/native_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
+    "loading-and-dumping/extended_usage/private_fields_including_no_rename_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
+    "loading-and-dumping/extended_usage/private_fields_including_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
+    "loading-and-dumping/extended_usage/private_fields_skipping_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
 }
 
 

@@ -30,4 +30,4 @@ def test_all_field_kinds(accum):
 
     retort = Retort(recipe=[accum])
     assert retort.load({"a": 0}, MyModel) == MyModel(a=0)
-    assert retort.dump(MyModel(a=0)) == {"a": 0, "b": "b_value", "_c": 2}
+    assert retort.dump(MyModel(a=0)) == {"a": 0, "b": "b_value"}
