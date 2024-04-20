@@ -1,6 +1,39 @@
 ----------------------------------------------------
 
 
+.. _v3.0.0b5:
+
+`3.0.0b5 <https://github.com/reagento/adaptix/tree/v3.0.0b5>`__ -- 2024-04-20
+=============================================================================
+
+.. _v3.0.0b5-Features:
+
+Features
+--------
+
+- Add support for Pydantic models!
+
+  Now you can work with pydantic models like any other:
+  construct from dict, serialize to dict, convert to any other model, and convert it to any other model.
+
+  Also, you can use :func:`.integrations.pydantic.native_pydantic` to delegate loading and dumping to pydantic itself.
+
+- Add support for dumping ``Literal`` inside ``Union``. `#237 <https://github.com/reagento/adaptix/issues/237>`__
+- Add support for ``BytesIO`` and ``IO[bytes]``. `#270 <https://github.com/reagento/adaptix/issues/270>`__
+- Error messages are more obvious.
+
+.. _v3.0.0b5-Breaking Changes:
+
+Breaking Changes
+----------------
+
+- Forbid use of constructs like ``P[SomeClass].ANY`` because it is misleading (you have to use ``P.ANY`` directly).
+- Private fields (any field starting with underscore) are skipped at dumping.
+  See :ref:`private_fields_dumping` for details.
+
+----------------------------------------------------
+
+
 .. _v3.0.0b4:
 
 `3.0.0b4 <https://github.com/reagento/adaptix/tree/v3.0.0b4>`__ -- 2024-03-30
