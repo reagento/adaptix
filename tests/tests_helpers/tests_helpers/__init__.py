@@ -4,7 +4,6 @@ from .misc import (
     DebugCtx,
     FailedRequirement,
     PlaceholderProvider,
-    TestRetort,
     cond_list,
     create_sa_engine,
     full_match,
@@ -23,6 +22,7 @@ from .model_spec import (
     ModelSpecSchema,
     exclude_model_spec,
     only_generic_models,
+    only_model_spec,
     parametrize_model_spec,
     sqlalchemy_equals,
 )

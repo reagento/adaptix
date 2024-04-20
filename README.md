@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/reagento/adaptix/blob/v3.0.0b4/docs/logo/adaptix-with-title-dark.png?raw=true">
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/reagento/adaptix/blob/v3.0.0b4/docs/logo/adaptix-with-title-light.png?raw=true">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/reagento/adaptix/blob/v3.0.0b5/docs/logo/adaptix-with-title-dark.png?raw=true">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/reagento/adaptix/blob/v3.0.0b5/docs/logo/adaptix-with-title-light.png?raw=true">
     <img alt="adaptix logo" src="https://raw.githubusercontent.com/reagento/adaptix/v3.0.0b2/docs/logo/adaptix-with-title-light.png?raw=true">
   </picture>
 
@@ -25,7 +25,7 @@ An extremely flexible and configurable data model conversion library.
 
 Install
 ```bash
-pip install adaptix==3.0.0b4
+pip install adaptix==3.0.0b5
 ```
 
 Use for model loading and dumping.
@@ -114,7 +114,7 @@ assert (
 * Support [dozens](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/specific-types-behavior.html) of types,
   including different model kinds:
   ``@dataclass``, ``TypedDict``, ``NamedTuple``,
-  [``attrs``](https://www.attrs.org/en/stable/) and [``sqlalchemy``](https://docs.sqlalchemy.org/en/20/)
+  [``attrs``](https://www.attrs.org/en/stable/), [``sqlalchemy``](https://docs.sqlalchemy.org/en/20/) and [``pydantic``](https://docs.pydantic.dev/latest/).
 * Working with self-referenced data types (such as linked lists or trees).
 * Saving [path](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/tutorial.html#error-handling)
   where an exception is raised (including unexpected errors).

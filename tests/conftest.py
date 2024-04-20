@@ -1,8 +1,8 @@
 import pytest
-from tests_helpers import ByTrailSelector, ModelSpecSchema, parametrize_model_spec
+from tests_helpers import ByTrailSelector, ModelSpecSchema, cond_list, parametrize_model_spec
 
 from adaptix import DebugTrail
-from adaptix._internal.feature_requirement import HAS_PY_312
+from adaptix._internal.feature_requirement import HAS_ATTRS_PKG, HAS_PY_312, HAS_PYDANTIC_PKG
 
 
 @pytest.fixture(params=[False, True], ids=lambda x: f"strict_coercion={x}")
@@ -41,4 +41,8 @@ def pytest_generate_tests(metafunc):
     parametrize_model_spec("dst_model_spec", metafunc)
 
 
-collect_ignore_glob = [] if HAS_PY_312 else ["*_312.py"]
+collect_ignore_glob = [
+    *cond_list(not HAS_PY_312, ["*_312.py"]),
+    *cond_list(not HAS_ATTRS_PKG, ["*_attrs.py", "*_attrs_*.py"]),
+    *cond_list(not HAS_PYDANTIC_PKG, ["*_pydantic.py", "*_pydantic_*.py", "**/pydantic/**"]),
+]

@@ -10,7 +10,7 @@ How to setup the repository
     You have to use WSL to develop the project on Windows.
 
 
-#. Install `Just <https://github.com/casey/just?tab=readme-ov-file#packages>`_
+#. Install `Just <https://github.com/casey/just?tab=readme-ov-file#packages>`__
 
    Just is a command runner that is used here instead of ``make``.
 
@@ -35,7 +35,7 @@ How to setup the repository
    directory ``benchmarks/release_data`` will be empty.
    You can fix it executing ``git submodule update --init --recursive``.
 
-#. Create `venv <https://docs.python.org/3/library/venv.html>`_ and run
+#. Create `venv <https://docs.python.org/3/library/venv.html>`__ and run
 
    .. code-block:: bash
 
@@ -77,7 +77,7 @@ Compile dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Compile raw dependencies (``requirements/raw/*``)
-into file with locked versions via `pip-tools <https://github.com/jazzband/pip-tools>`_.
+into file with locked versions via `pip-tools <https://github.com/jazzband/pip-tools>`__.
 
 .. code-block:: bash
 
@@ -138,7 +138,7 @@ Produce coverage report
 
 Create coverage report. All coverage reports will be merged into ``coverage.xml`` file at working directory.
 You can import it to IDE. Instruction for
-`PyCharm <https://www.jetbrains.com/help/pycharm/switching-between-code-coverage-suites.html#add-remove-coverage-suite>`_.
+`PyCharm <https://www.jetbrains.com/help/pycharm/switching-between-code-coverage-suites.html#add-remove-coverage-suite>`__.
 
 .. code-block:: bash
 

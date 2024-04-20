@@ -283,11 +283,18 @@ def create_loc_stack_checker(pred: Pred) -> LocStackChecker:
 Pat = TypeVar("Pat", bound="LocStackPattern")
 
 
-class LocStackPattern:
-    ANY = AnyLocStackChecker()
+_ANY = AnyLocStackChecker()
 
+
+class LocStackPattern:
     def __init__(self, stack: VarTuple[LocStackChecker]):
         self._stack = stack
+
+    @property
+    def ANY(self) -> AnyLocStackChecker:  # noqa: N802
+        if self._stack:
+            raise AttributeError("You must access to ANY only via `P.ANY`, other usage is misleading")
+        return _ANY
 
     @classmethod
     def _from_lsc(cls: Type[Pat], lsc: LocStackChecker) -> Pat:

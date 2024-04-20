@@ -29,7 +29,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    get_args,
     overload,
 )
 
@@ -49,6 +48,7 @@ from ..feature_requirement import (
     HAS_UNPACK,
 )
 from .basic_utils import create_union, eval_forward_ref, is_new_type, is_subclass_soft, strip_alias
+from .fundamentals import get_generic_args
 from .implicit_params import ImplicitParamsGetter
 
 
@@ -527,7 +527,7 @@ class TypeNormalizer:
 
     def normalize(self, tp: TypeHint) -> BaseNormType:
         origin = strip_alias(tp)
-        args = get_args(tp)
+        args = get_generic_args(tp)
 
         result = self._norm_forward_ref(tp)
         if result is not None:

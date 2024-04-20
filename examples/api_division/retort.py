@@ -23,7 +23,7 @@ def string_cp866_mutator(data: str):
     try:
         t_data.encode("cp866", "strict")
     except UnicodeEncodeError as e:
-        bad_char = e.object[e.start: e.end]  # pylint: disable=unsubscriptable-object
+        bad_char = e.object[e.start: e.end]
         raise ValueLoadError(f"Char {bad_char!r} can not be represented at CP866", data)
     return t_data
 

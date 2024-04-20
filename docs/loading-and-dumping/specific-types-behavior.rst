@@ -67,6 +67,11 @@ Exact list: ``bytes``, ``bytearray``, ``ByteString``.
 
 Value is represented as base64 encoded string.
 
+BytesIO and IO[bytes]
+'''''''''''''''''''''''''''''''''''''
+
+Value is represented as base64 encoded string.
+
 re.Pattern
 ''''''''''''
 
@@ -168,7 +173,7 @@ they will be processed via the corresponding dumper.
 
 Be careful when you use a ``0``, ``1``, ``False`` and ``True`` as ``Literal`` members.
 Due to type hint caching ``Literal[0, 1]`` sometimes returns ``Literal[False, True]``.
-It was fixed only at `Python 3.9.1 <https://docs.python.org/3/whatsnew/3.9.html#id4>`_.
+It was fixed only at `Python 3.9.1 <https://docs.python.org/3/whatsnew/3.9.html#id4>`__.
 
 Union
 '''''''''''''''''
@@ -202,8 +207,8 @@ For objects of types that are not listed in the union,
 but which are a subclass of some union case, the base class dumper is used.
 If there are several parents, it will be the selected class that appears first in ``.mro()`` list.
 
-Also, builtin dumper can not work
-with union containing non-class type hints like ``Union[Literal['foo', 'bar'], int]``.
+Also, builtin dumper can work only with class type hints and ``Literal``.
+For example, type hints like ``LiteralString | int`` can not be dumped.
 
 Iterable subclasses
 '''''''''''''''''''''

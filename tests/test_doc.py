@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from adaptix._internal.feature_requirement import HAS_PY_311
+from adaptix._internal.feature_requirement import HAS_PY_311, HAS_SUPPORTED_PYDANTIC_PKG
 
 REPO_ROOT = Path(__file__).parent.parent
 DOCS_EXAMPLES_ROOT = REPO_ROOT / "docs" / "examples"
@@ -33,9 +33,20 @@ def pytest_generate_tests(metafunc):
     )
 
 
+CASES_REQUIREMENTS = {
+    "loading-and-dumping/tutorial/unexpected_error": HAS_PY_311,
+    "reference/integrations/native_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
+    "loading-and-dumping/extended_usage/private_fields_including_no_rename_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
+    "loading-and-dumping/extended_usage/private_fields_including_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
+    "loading-and-dumping/extended_usage/private_fields_skipping_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
+}
+
+
 def test_example(import_path: str, case_id: str):
-    if case_id == "loading-and-dumping/tutorial/unexpected_error" and not HAS_PY_311:
-        pytest.skip("Need Python >= 3.11")
+    if case_id in CASES_REQUIREMENTS:
+        requirement = CASES_REQUIREMENTS[case_id]
+        if not requirement:
+            pytest.skip(requirement.fail_reason)
 
     pytest.register_assert_rewrite(import_path)
     importlib.import_module(import_path)

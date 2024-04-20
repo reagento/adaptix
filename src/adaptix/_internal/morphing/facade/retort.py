@@ -28,6 +28,8 @@ from ..concrete_provider import (
     STR_LOADER_PROVIDER,
     BytearrayBase64Provider,
     BytesBase64Provider,
+    BytesIOBase64Provider,
+    IOBytesBase64Provider,
     IsoFormatProvider,
     LiteralStringProvider,
     NoneProvider,
@@ -50,6 +52,7 @@ from ..model.crown_definitions import ExtraSkip
 from ..model.dumper_provider import ModelDumperProvider
 from ..model.loader_provider import ModelLoaderProvider
 from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
+from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
 from ..provider_template import ABCProxy
 from ..request_cls import DumperRequest, LoaderRequest
@@ -97,6 +100,8 @@ class FilledRetort(OperatingRetort, ABC):
         dumper(complex, complex.__str__),
 
         BytesBase64Provider(),
+        BytesIOBase64Provider(),
+        IOBytesBase64Provider(),
         BytearrayBase64Provider(),
 
         *chain.from_iterable(
@@ -142,7 +147,9 @@ class FilledRetort(OperatingRetort, ABC):
             chain=None,
             skip=(),
             only=P.ANY,
-            map={},
+            map=[
+                SkipPrivateFieldsNameMappingProvider(),
+            ],
             trim_trailing_underscore=True,
             name_style=None,
             as_list=False,

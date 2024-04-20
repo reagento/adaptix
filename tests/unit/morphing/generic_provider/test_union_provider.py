@@ -1,12 +1,12 @@
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Callable, List, Literal, Optional, Union
 
 import pytest
-from tests_helpers import TestRetort, raises_exc, with_cause, with_notes
+from tests_helpers import raises_exc, with_cause, with_notes
 
-from adaptix import CannotProvide, DebugTrail, NoSuitableProvider, Retort, dumper, loader
+from adaptix import CannotProvide, DebugTrail, NoSuitableProvider, Retort, loader
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.morphing.generic_provider import LiteralProvider, UnionProvider
 from adaptix._internal.morphing.load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 
 
@@ -16,39 +16,8 @@ class Book:
     author: Union[str, List[str]]
 
 
-def make_loader(tp: type):
-    def tp_loader(data):
-        if isinstance(data, tp):
-            return data
-        raise TypeLoadError(tp, data)
-
-    return loader(tp, tp_loader)
-
-
-def make_dumper(tp: type):
-    def tp_dumper(data):
-        if isinstance(data, tp):
-            return data
-        raise TypeError(type(data))
-
-    return dumper(tp, tp_dumper)
-
-
-@pytest.fixture()
-def retort():
-    return TestRetort(
-        recipe=[
-            UnionProvider(),
-            make_loader(str),
-            make_loader(int),
-            make_dumper(str),
-            make_dumper(int),
-            make_dumper(type(None)),
-        ],
-    )
-
-
-def test_loading(retort, strict_coercion, debug_trail):
+def test_loading(strict_coercion, debug_trail):
+    retort = Retort()
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
@@ -58,6 +27,9 @@ def test_loading(retort, strict_coercion, debug_trail):
 
     assert loader_(1) == 1
     assert loader_("a") == "a"
+
+    if not strict_coercion:
+        return
 
     if debug_trail == DebugTrail.DISABLE:
         raises_exc(
@@ -89,7 +61,8 @@ def bad_int_loader(data):
     raise TypeError  # must raise LoadError instance (TypeLoadError)
 
 
-def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
+def test_loading_unexpected_error(strict_coercion, debug_trail):
+    retort = Retort()
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
@@ -120,7 +93,8 @@ def test_loading_unexpected_error(retort, strict_coercion, debug_trail):
         )
 
 
-def test_dumping(retort, debug_trail):
+def test_dumping(debug_trail):
+    retort = Retort()
     dumper_ = retort.replace(
         debug_trail=debug_trail,
     ).get_dumper(
@@ -130,13 +104,9 @@ def test_dumping(retort, debug_trail):
     assert dumper_(1) == 1
     assert dumper_("a") == "a"
 
-    raises_exc(
-        KeyError(list),
-        lambda: dumper_([]),
-    )
 
-
-def test_dumping_of_none(retort, debug_trail):
+def test_dumping_of_none(debug_trail):
+    retort = Retort()
     dumper_ = retort.replace(
         debug_trail=debug_trail,
     ).get_dumper(
@@ -147,13 +117,8 @@ def test_dumping_of_none(retort, debug_trail):
     assert dumper_("a") == "a"
     assert dumper_(None) is None
 
-    raises_exc(
-        KeyError(list),
-        lambda: dumper_([]),
-    )
 
-
-def test_dumping_subclass(retort, debug_trail):
+def test_dumping_subclass(debug_trail):
     @dataclass
     class Parent:
         foo: int
@@ -178,7 +143,8 @@ def test_dumping_subclass(retort, debug_trail):
     )
 
 
-def test_optional_dumping(retort, debug_trail):
+def test_optional_dumping(debug_trail):
+    retort = Retort()
     opt_dumper = retort.replace(
         debug_trail=debug_trail,
     ).get_dumper(
@@ -188,21 +154,20 @@ def test_optional_dumping(retort, debug_trail):
     assert opt_dumper("a") == "a"
     assert opt_dumper(None) is None
 
-    raises_exc(
-        TypeError(list),
-        lambda: opt_dumper([]),
-    )
 
-
-def test_bad_optional_dumping(retort, debug_trail):
+def test_bad_optional_dumping(debug_trail):
+    retort = Retort()
     raises_exc(
         with_cause(
-            NoSuitableProvider(
-                f"Cannot produce dumper for type {Union[int, Callable[[int], str]]}",
+            with_notes(
+                NoSuitableProvider(
+                    f"Cannot produce dumper for type {Union[int, Callable[[int], str]]}",
+                ),
+                "Note: The attached exception above contains verbose description of the problem",
             ),
             with_notes(
                 CannotProvide(
-                    message=f"All cases of union must be class, but found {[Callable[[int], str]]}",
+                    message=f"All cases of union must be class or Literal, but found {[Callable[[int], str]]}",
                     is_demonstrative=True,
                     is_terminal=True,
                 ),
@@ -220,14 +185,7 @@ def test_bad_optional_dumping(retort, debug_trail):
 
 
 def test_literal(strict_coercion, debug_trail):
-    retort = TestRetort(
-        recipe=[
-            LiteralProvider(),
-            UnionProvider(),
-            make_loader(type(None)),
-            make_dumper(type(None)),
-        ],
-    )
+    retort = Retort()
 
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
@@ -262,3 +220,38 @@ def test_literal(strict_coercion, debug_trail):
     assert dumper_("a") == "a"
     assert dumper_(None) is None
     assert dumper_("b") == "b"
+
+
+@pytest.mark.parametrize(
+    ["other_type", "value", "expected", "wrong_value"],
+    [
+        (
+         Decimal, Decimal(200.5), "200.5", [1, 2, 3],
+        ),
+        (
+         Union[str, Decimal], "some string", "some string", [1, 2, 3],
+        ),
+    ],
+)
+def test_dump_literal_in_union(
+    strict_coercion,
+    debug_trail,
+    other_type,
+    value,
+    expected,
+    wrong_value,
+):
+    retort = Retort()
+
+    dumper_ = retort.replace(
+        debug_trail=debug_trail,
+    ).get_dumper(
+        Union[Literal[200, 300], other_type],
+    )
+
+    assert dumper_(200) == 200
+    assert dumper_(300) == 300
+    assert dumper_(value) == expected
+
+    with pytest.raises(KeyError):
+        dumper_(wrong_value)

@@ -81,7 +81,7 @@ jobs:
           just setup-runner
 
       - name: Run tests with coverage
-        if: ${{ matrix.python_version.cov }}
+        if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}
         run:
           just inv test-on-ci
             --py-target ${{ matrix.python_version.tox }}

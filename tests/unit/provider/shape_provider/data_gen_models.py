@@ -1,6 +1,8 @@
 # mypy: disable-error-code="name-defined, misc"
 from typing import Generic, Tuple, TypeVar
 
+from tests_helpers import ModelSpec
+
 from adaptix._internal.feature_requirement import HAS_TV_TUPLE
 
 _T = TypeVar("_T")
@@ -12,7 +14,7 @@ class WithTVField(*model_spec.bases, Generic[_T]):
     b: _T
 
 
-if HAS_TV_TUPLE:
+if HAS_TV_TUPLE and model_spec.kind != ModelSpec.PYDANTIC:
     from typing import TypeVarTuple, Unpack
 
     ShapeT = TypeVarTuple("ShapeT")

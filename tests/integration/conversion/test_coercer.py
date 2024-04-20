@@ -3,6 +3,7 @@ from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional,
 
 import pytest
 from tests_helpers import cond_list
+from tests_helpers.model_spec import ModelSpec
 
 from adaptix import P
 from adaptix._internal.conversion.facade.provider import from_param, link
@@ -266,7 +267,18 @@ def test_iterable(model_spec, src_tp, dst_tp, src_value, dst_value):
     def convert(a: SourceModel) -> DestModel:
         ...
 
-    assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
+    if model_spec.kind == ModelSpec.PYDANTIC:
+        def mutate_iterable_field(model):
+            model.field2 = type(dst_value)(model.field2)
+            return model
+
+        assert (
+            mutate_iterable_field(convert(SourceModel(field1=1, field2=src_value)))
+            ==
+            mutate_iterable_field(DestModel(field1=1, field2=dst_value))
+        )
+    else:
+        assert convert(SourceModel(field1=1, field2=src_value)) == DestModel(field1=1, field2=dst_value)
 
 
 def test_iterable_with_model(model_spec):

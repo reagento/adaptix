@@ -1,16 +1,14 @@
 import json
-from textwrap import dedent
 from typing import Dict
 from zipfile import ZipFile
 
 import plotly
 from docutils import nodes
-from docutils.statemachine import StringList
-from sphinx.util import docutils
 from sphinx.util.docutils import SphinxDirective
 
 from benchmarks.bench_nexus import BENCHMARK_HUBS, KEY_TO_HUB, RELEASE_DATA, Renderer, pyperf_bench_to_measure
 
+from .macros import SphinxMacroDirective, directive
 from .utils import file_ascii_hash
 
 
@@ -43,10 +41,10 @@ class CustomBenchChart(SphinxDirective):
         ]
 
 
-class CustomBenchUsedDistributions(SphinxDirective):
+class CustomBenchUsedDistributions(SphinxMacroDirective):
     required_arguments = 0
 
-    def get_list_table(self) -> str:
+    def generate_string(self) -> str:
         distributions: Dict[str, str] = {}
 
         for hub_description in BENCHMARK_HUBS:
@@ -58,7 +56,7 @@ class CustomBenchUsedDistributions(SphinxDirective):
                             pyperf_bench_to_measure(release_zip.read(file)).distributions,
                         )
 
-        result = dedent(
+        return directive(
             """
             .. list-table::
                :header-rows: 1
@@ -67,29 +65,20 @@ class CustomBenchUsedDistributions(SphinxDirective):
                  - Used version
                  - Last version
             """,
-        )
-        for dist in sorted(distributions.keys()):
-            version = distributions[dist]
-            result += dedent(
+            [
                 f"""
-                   * - `{dist} <https://pypi.org/project/{dist}/>`_
-                     - ``{version}``
+                   * - `{dist} <https://pypi.org/project/{dist}/>`__
+                     - ``{distributions[dist]}``
                      - .. image:: https://img.shields.io/pypi/v/{dist}?logo=pypi&label=%20&color=white&style=flat
                           :target: https://pypi.org/project/{dist}/
                           :class: only-light
                        .. image:: https://img.shields.io/pypi/v/{dist}?logo=pypi&label=%20&color=%23242424&style=flat
                           :target: https://pypi.org/project/{dist}/
                           :class: only-dark
-                """,
-            ).replace("\n", "\n   ")
-        return result
-
-    def run(self):
-        list_table = self.get_list_table()
-        rst = StringList(list_table.split("\n"), source="fake.rst")
-        node = docutils.nodes.paragraph()
-        self.state.nested_parse(rst, 0, node)
-        return node.children
+                """
+                for dist in sorted(distributions.keys())
+            ],
+        )
 
 
 def setup(app):

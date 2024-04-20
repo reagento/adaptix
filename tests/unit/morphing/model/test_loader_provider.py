@@ -5,9 +5,9 @@ from types import MappingProxyType
 from typing import Any, Callable, Dict, Optional
 
 import pytest
-from tests_helpers import DebugCtx, TestRetort, full_match, parametrize_bool, raises_exc, with_trail
+from tests_helpers import DebugCtx, full_match, parametrize_bool, raises_exc, with_trail
 
-from adaptix import DebugTrail, ExtraKwargs, Loader, bound
+from adaptix import DebugTrail, ExtraKwargs, Loader, Retort, bound
 from adaptix._internal.common import VarTuple
 from adaptix._internal.model_tools.definitions import (
     Default,
@@ -33,7 +33,6 @@ from adaptix._internal.morphing.model.crown_definitions import (
     InputNameLayout,
     InputNameLayoutRequest,
 )
-from adaptix._internal.morphing.model.loader_provider import ModelLoaderProvider
 from adaptix._internal.morphing.request_cls import LoaderRequest
 from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.shape_provider import InputShapeRequest
@@ -115,13 +114,11 @@ def make_loader_getter(
     debug_ctx: DebugCtx,
 ) -> Callable[[], Loader]:
     def getter():
-        retort = TestRetort(
+        retort = Retort(
             recipe=[
                 ValueProvider(InputShapeRequest, shape),
                 ValueProvider(InputNameLayoutRequest, name_layout),
                 bound(int, ValueProvider(LoaderRequest, int_loader)),
-                ModelLoaderProvider(),
-                debug_ctx.accum,
             ],
         )
         return retort.replace(

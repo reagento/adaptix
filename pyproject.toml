@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'adaptix'
-version = '3.0.0b4'
+version = '3.0.0b5'
 description = 'An extremely flexible and configurable data model conversion library'
 readme = 'README.md'
 requires-python = '>=3.8'
@@ -38,6 +38,8 @@ attrs = ['attrs >= 21.3.0']
 attrs-strict = ['attrs >= 21.3.0, <= 23.2.0']
 sqlalchemy = ['sqlalchemy >= 2.0.0']
 sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.29']
+pydantic = ['pydantic >= 2.0.0']
+pydantic-strict = ['pydantic >= 2.0.0, <= 2.7.0']
 
 [project.urls]
 'Homepage' = 'https://github.com/reagento/adaptix'
@@ -63,7 +65,13 @@ email = '17@itishka.org'
 
 [tool.pytest.ini_options]
 python_classes = 'WeDoNotUseClassTestCase'
-python_files = ['test_*.py', '*_test.py', 'bench_[!nexus]*.py', 'tests_helpers.py', 'local_helpers.py']
+python_files = [
+  'test_*.py',
+  '*_test.py',
+  'bench_[!nexus]*.py',
+  'tests/tests_helpers/tests_helpers/*.py',
+  'local_helpers.py',
+]
 testpaths = ['tests', 'examples']
 filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
 
@@ -189,7 +197,7 @@ parametrize-names-type = "list"
 package = 'adaptix'
 filename = 'docs/changelog/changelog_body.rst'
 template = 'docs/changelog/template.rst.jinja2'
-issue_format = '`#{issue} <https://github.com/reagento/adaptix/issues/{issue}>`_'
+issue_format = '`#{issue} <https://github.com/reagento/adaptix/issues/{issue}>`__'
 directory = 'docs/changelog/fragments'
 
 type = [

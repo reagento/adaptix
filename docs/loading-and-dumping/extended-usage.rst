@@ -299,7 +299,7 @@ Mapping to list
 
 Some APIs store structures as lists or arrays rather than dict for optimization purposes.
 For example, Binance uses it to represent
-`historical market data <https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data>`_.
+`historical market data <https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#klinecandlestick-data>`__.
 
 There is :paramref:`.name_mapping.as_list` that converts the model to a list.
 Position at the list is determined by order of field definition.
@@ -353,6 +353,26 @@ The first provider override parameters of next providers.
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/chaining_overriding.py
 
 
+.. _private_fields_dumping:
+
+Private fields dumping
+-----------------------------------
+
+By default, adaptix skips private fields (any field starting with underscore) at dumping.
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/private_fields_skipping_pydantic.py
+
+You can include this fields by setting alias.
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/private_fields_including_pydantic.py
+
+Alias can be equal to field name (field id) and field will be included.
+
+.. dropdown:: Including private field without renaming
+
+    .. literalinclude:: /examples/loading-and-dumping/extended_usage/private_fields_including_no_rename_pydantic.py
+
+
 .. _advanced-mapping:
 
 Advanced mapping
@@ -385,7 +405,7 @@ The mapping result is union of 5 types:
    So the field will be skipped despite the match by :paramref:`.name_mapping.only`.
 
 Name mapping reuses concepts of recipe inside retort and also implements
-`chain-of-responsibility <https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern>`_ design pattern.
+`chain-of-responsibility <https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern>`__ design pattern.
 
 Only the first element matched by its predicate is used to determine the mapping result.
 

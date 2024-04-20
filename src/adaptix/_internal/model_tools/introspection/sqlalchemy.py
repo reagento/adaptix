@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Generic, List, Mapping, Optional, TypeVar, get_args, get_origin
+from typing import Any, Generic, List, Mapping, Optional, TypeVar
 
 from ...common import TypeHint
 
@@ -20,7 +20,7 @@ except ImportError:
     pass
 
 from ...feature_requirement import HAS_SQLALCHEMY_PKG, HAS_SUPPORTED_SQLALCHEMY_PKG
-from ...type_tools import get_all_type_hints
+from ...type_tools import get_all_type_hints, get_generic_args, strip_alias
 from ..definitions import (
     ClarifiedIntrospectionError,
     DefaultFactory,
@@ -67,8 +67,8 @@ def _is_context_sensitive(default: "CallableColumnDefault"):
 
 
 def _unwrap_mapped_annotation(type_hint: TypeHint) -> TypeHint:
-    if get_origin(type_hint) == Mapped:
-        return get_args(type_hint)[0]
+    if strip_alias(type_hint) == Mapped:
+        return get_generic_args(type_hint)[0]
     return type_hint
 
 

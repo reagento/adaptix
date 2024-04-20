@@ -20,7 +20,10 @@ def test_cannot_produce_loader():
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+            with_notes(
+                NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
             with_notes(
                 AggregateCannotProvide(
                     "Cannot create loader for model. Loaders for some fields cannot be created",
@@ -63,7 +66,10 @@ def test_cannot_produce_dumper():
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(f"Cannot produce dumper for type {Stub}"),
+            with_notes(
+                NoSuitableProvider(f"Cannot produce dumper for type {Stub}"),
+                "Note: The attached exception above contains verbose description of the problem",
+            ),
             with_notes(
                 AggregateCannotProvide(
                     "Cannot create dumper for model. Dumpers for some fields cannot be created",
@@ -109,10 +115,13 @@ def test_cannot_produce_converter_no_linking_required():
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(
-                f"Cannot produce converter for"
-                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+            with_notes(
+                NoSuitableProvider(
+                    f"Cannot produce converter for"
+                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
+                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+                ),
+                "Note: The attached exception above contains verbose description of the problem",
             ),
             AggregateCannotProvide(
                 "Cannot create top-level coercer",
@@ -158,10 +167,13 @@ def test_cannot_produce_converter_no_linking_optional():
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(
-                f"Cannot produce converter for"
-                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+            with_notes(
+                NoSuitableProvider(
+                    f"Cannot produce converter for"
+                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
+                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+                ),
+                "Note: The attached exception above contains verbose description of the problem",
             ),
             AggregateCannotProvide(
                 "Cannot create top-level coercer",
@@ -210,10 +222,13 @@ def test_cannot_produce_converter_no_coercer():
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(
-                f"Cannot produce converter for"
-                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+            with_notes(
+                NoSuitableProvider(
+                    f"Cannot produce converter for"
+                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
+                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+                ),
+                "Note: The attached exception above contains verbose description of the problem",
             ),
             AggregateCannotProvide(
                 "Cannot create top-level coercer",
@@ -267,10 +282,13 @@ def test_cannot_produce_converter_no_coercer_complex_type(list_tp, list_tp_name)
 
     raises_exc(
         with_cause(
-            NoSuitableProvider(
-                f"Cannot produce converter for"
-                f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+            with_notes(
+                NoSuitableProvider(
+                    f"Cannot produce converter for"
+                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
+                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
+                ),
+                "Note: The attached exception above contains verbose description of the problem",
             ),
             AggregateCannotProvide(
                 "Cannot create top-level coercer",

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Callable, Iterable, Mapping, Optional, Tuple, Union
 
 from ...common import EllipsisType
-from ...model_tools.definitions import BaseField, BaseShape, is_valid_field_id
+from ...model_tools.definitions import BaseField, BaseShape, OutputField, is_valid_field_id
 from ...provider.essential import CannotProvide, Mediator, Provider
 from ...provider.loc_stack_filtering import LocStackChecker, Pred
 from ...provider.provider_wrapper import ProviderWithLSC
@@ -59,7 +59,7 @@ class DictNameMappingProvider(StaticProvider):
             )
 
     @static_provision_action
-    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
+    def _provide_name_mapping(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
         try:
             map_result = self._name_map[request.field.id]
         except KeyError:
@@ -76,7 +76,7 @@ class ConstNameMappingProvider(StaticProvider, ProviderWithLSC):
         return self._loc_stack_checker
 
     @static_provision_action
-    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
+    def _provide_name_mapping(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
         self._apply_loc_stack_checker(mediator, request)
         return resolve_map_result(request.generated_key, self._result)
 
@@ -90,7 +90,17 @@ class FuncNameMappingProvider(StaticProvider, ProviderWithLSC):
         return self._loc_stack_checker
 
     @static_provision_action
-    def _provide_input_name_layout(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
+    def _provide_name_mapping(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
         self._apply_loc_stack_checker(mediator, request)
         result = self._func(request.shape, request.field)
         return resolve_map_result(request.generated_key, result)
+
+
+class SkipPrivateFieldsNameMappingProvider(StaticProvider):
+    @static_provision_action
+    def _provide_name_mapping(self, mediator: Mediator, request: NameMappingRequest) -> Optional[KeyPath]:
+        if not isinstance(request.field, OutputField):
+            raise CannotProvide
+        if request.field.id.startswith("_"):
+            return None
+        raise CannotProvide

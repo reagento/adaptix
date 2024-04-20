@@ -4,8 +4,8 @@
 
 .. _v{{ versiondata.version }}:
 
-`{{ versiondata.version }} <https://github.com/reagento/adaptix/tree/v{{ versiondata.version }}>`_ -- {{ versiondata.date }}
-{{ top_underline * ((versiondata.version * 2 + versiondata.date)|length + 52) }}
+`{{ versiondata.version }} <https://github.com/reagento/adaptix/tree/v{{ versiondata.version }}>`__ -- {{ versiondata.date }}
+{{ top_underline * ((versiondata.version * 2 + versiondata.date)|length + 53) }}
 {% endif %}
 {% for section, _ in sections.items() %}
 {% set underline = underlines[0] %}{% if section %}{{section}}

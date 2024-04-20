@@ -13,7 +13,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import Engine, create_engine
 
-from adaptix import AdornedRetort, CannotProvide, DebugTrail, Mediator, NoSuitableProvider, Provider, Request
+from adaptix import CannotProvide, DebugTrail, Mediator, NoSuitableProvider, Provider, Request
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
@@ -35,11 +35,6 @@ def requires(requirement: Requirement):
         )(func)
 
     return wrapper
-
-
-class TestRetort(AdornedRetort):
-    def provide(self, request: Request[T]) -> T:
-        return self._facade_provide(request, error_message=f"cannot provide {request}")
 
 
 E = TypeVar("E", bound=Exception)
