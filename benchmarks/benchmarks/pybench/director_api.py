@@ -45,7 +45,7 @@ class BenchSchema:
     kwargs: Mapping[str, Any]
     used_distributions: Sequence[str]
     skip_if: Optional[Callable[[EnvSpec], bool]] = None
-    check_params: Callable[[EnvSpec], CheckParams] = lambda env_spec: CheckParams()  # noqa: E731
+    check_params: Callable[[EnvSpec], CheckParams] = lambda env_spec: CheckParams()
 
 
 @dataclass(frozen=True)

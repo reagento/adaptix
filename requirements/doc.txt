@@ -33,11 +33,11 @@ docutils==0.20.1
     #   sphinx-paramlinks
 docutils-stubs==0.0.22
     # via -r requirements/raw/doc.txt
-furo==2023.9.10
+furo==2024.1.29
     # via -r requirements/raw/doc.txt
 gitdb==4.0.11
     # via gitpython
-gitpython==3.1.40
+gitpython==3.1.43
     # via -r requirements/raw/doc.txt
 idna==3.7
     # via requests
@@ -75,9 +75,9 @@ packaging==24.0
     #   sphinx
 pbr==6.0.0
     # via sphinxcontrib-apidoc
-plotly==5.18.0
+plotly==5.21.0
     # via -r requirements/raw/doc.txt
-pluggy==1.4.0
+pluggy==1.5.0
     # via pytest
 psutil==5.9.5
     # via
@@ -107,7 +107,7 @@ snowballstemmer==2.2.0
     # via sphinx
 soupsieve==2.5
     # via beautifulsoup4
-sphinx==7.2.6
+sphinx==7.3.7
     # via
     #   -r requirements/raw/doc.txt
     #   furo
