@@ -57,7 +57,7 @@ class UnrewritableDict(Dict[K, V], Generic[K, V]):
                 for k, v in obj:
                     self[k] = v
 
-        if len(args) != 0:
+        elif len(args) != 0:
             raise ValueError
 
         for k, v in kwargs.items():
