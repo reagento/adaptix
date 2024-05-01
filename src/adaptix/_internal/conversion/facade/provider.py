@@ -1,13 +1,14 @@
-from typing import Any, Callable, Optional, overload
+from typing import AbstractSet, Any, Callable, Iterable, Optional, Union, overload
 
 from ...common import OneArgCoercer
 from ...model_tools.definitions import DefaultFactory, DefaultValue
 from ...provider.essential import Provider
 from ...provider.facade.provider import bound_by_any
-from ...provider.loc_stack_filtering import LocStackChecker, LocStackSizeChecker, Pred, create_loc_stack_checker
+from ...provider.loc_stack_filtering import LocStackChecker, Pred, create_loc_stack_checker
 from ..coercer_provider import MatchingCoercerProvider
-from ..linking_provider import ConstantLinkingProvider, MatchingLinkingProvider
+from ..linking_provider import ConstantLinkingProvider, FunctionLinkingProvider, MatchingLinkingProvider
 from ..policy_provider import UnlinkedOptionalPolicyProvider
+from ..request_filtering import FromCtxParam
 
 
 def link(src: Pred, dst: Pred, *, coercer: Optional[OneArgCoercer] = None) -> Provider:
@@ -50,6 +51,37 @@ def link_constant(dst: Pred, *, value: Any = None, factory: Any = None) -> Provi
     )
 
 
+def _ensure_str_set(value: Union[str, Iterable[str]]) -> AbstractSet[str]:
+    if isinstance(value, str):
+        return frozenset([value])
+    return frozenset(value)
+
+
+def link_function(
+    func: Callable,
+    dst: Pred,
+    *,
+    pass_model: Union[str, Iterable[str]] = (),
+    pass_params: Union[str, Iterable[str]] = (),
+) -> Provider:
+    """Provider that uses function to produce value of destination field.
+    Each parameter of the function is linked to the source model field by name.
+    You can link the model entirely via `pass_model` or link converter parameters via `pass_params`.
+
+    :param func: A function using to process several fields of source model.
+    :param dst: Predicate specifying destination point of linking. See :ref:`predicate-system` for details.
+    :param pass_model: Mark function parameters to take model entirely.
+    :param pass_params: Mark function parameters to take parameters from converter.
+    :return: Desired provider
+    """
+    return FunctionLinkingProvider(
+        func=func,
+        dst_lsc=create_loc_stack_checker(dst),
+        pass_model=_ensure_str_set(pass_model),
+        pass_params=_ensure_str_set(pass_params),
+    )
+
+
 def coercer(src: Pred, dst: Pred, func: OneArgCoercer) -> Provider:
     """Basic provider to define custom coercer.
 
@@ -89,6 +121,4 @@ def forbid_unlinked_optional(*preds: Pred) -> Provider:
 
 def from_param(param_name: str) -> LocStackChecker:
     """The special predicate form matching only top-level parameters by name"""
-    if not param_name.isidentifier():
-        raise ValueError("param_name must be a valid python identifier to exactly match parameter")
-    return LocStackSizeChecker(1) & create_loc_stack_checker(param_name)
+    return FromCtxParam(param_name)

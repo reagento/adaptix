@@ -20,8 +20,10 @@ from ..conversion.request_cls import (
     ConversionDestItem,
     ConversionSourceItem,
     FieldLinking,
+    FunctionLinking,
     LinkingRequest,
     LinkingResult,
+    ModelLinking,
     UnlinkedOptionalPolicyRequest,
 )
 from ..model_tools.definitions import DefaultValue, InputField, InputShape, OutputShape, ParamKind, create_key_accessor
@@ -151,7 +153,7 @@ class ModelCoercerProvider(CoercerProvider):
             lambda: "Cannot create coercer for models. Linkings for some fields are not found",
         )
 
-    def _field_linking_to_sub_plan(
+    def _generate_field_linking_to_sub_plan(
         self,
         mediator: Mediator,
         request: CoercerRequest,
@@ -204,7 +206,38 @@ class ModelCoercerProvider(CoercerProvider):
             return ConstantElement(value=linking.constant.value)
         return FunctionElement(func=linking.constant.factory, args=())
 
-    def _generate_field_to_sub_plan(
+    def _generate_model_linking_to_sub_plan(
+        self,
+        mediator: Mediator,
+        linking: ModelLinking,
+    ) -> BroachingPlan:
+        return ParameterElement("data")
+
+    def _generate_function_linking_to_sub_plan(
+        self,
+        mediator: Mediator,
+        request: CoercerRequest,
+        linking: FunctionLinking,
+    ) -> BroachingPlan:
+        args: List[FuncCallArg[BroachingPlan]] = []
+        field_to_sub_plan = self._generate_sub_plan(
+            mediator,
+            request,
+            [(param_spec.field, param_spec.linking) for param_spec in linking.param_specs],
+        )
+        for param_spec in linking.param_specs:
+            sub_plan = field_to_sub_plan[param_spec.field]
+            if param_spec.param_kind == ParamKind.KW_ONLY:
+                args.append(KeywordArg(param_spec.field.id, sub_plan))
+            else:
+                args.append(PositionalArg(sub_plan))
+
+        return FunctionElement(
+            func=linking.func,
+            args=tuple(args),
+        )
+
+    def _generate_sub_plan(
         self,
         mediator: Mediator,
         request: CoercerRequest,
@@ -216,12 +249,25 @@ class ModelCoercerProvider(CoercerProvider):
                     mediator=mediator,
                     linking=linking_result.linking,
                 )
-            return self._field_linking_to_sub_plan(
-                mediator=mediator,
-                request=request,
-                input_field=input_field,
-                linking=linking_result.linking,
-            )
+            if isinstance(linking_result.linking, FunctionLinking):
+                return self._generate_function_linking_to_sub_plan(
+                    mediator=mediator,
+                    request=request,
+                    linking=linking_result.linking,
+                )
+            if isinstance(linking_result.linking, ModelLinking):
+                return self._generate_model_linking_to_sub_plan(
+                    mediator=mediator,
+                    linking=linking_result.linking,
+                )
+            if isinstance(linking_result.linking, FieldLinking):
+                return self._generate_field_linking_to_sub_plan(
+                    mediator=mediator,
+                    request=request,
+                    input_field=input_field,
+                    linking=linking_result.linking,
+                )
+            raise TypeError
 
         field_sub_plans = mandatory_apply_by_iterable(
             generate_sub_plan,
@@ -246,7 +292,7 @@ class ModelCoercerProvider(CoercerProvider):
             dst_shape=dst_shape,
             src_shape=src_shape,
         )
-        field_to_sub_plan = self._generate_field_to_sub_plan(
+        field_to_sub_plan = self._generate_sub_plan(
             mediator=mediator,
             request=request,
             field_linkings=[

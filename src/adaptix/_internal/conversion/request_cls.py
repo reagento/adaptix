@@ -3,7 +3,7 @@ from inspect import Signature
 from typing import Callable, Optional, Union
 
 from ..common import Coercer, VarTuple
-from ..model_tools.definitions import DefaultFactory, DefaultValue
+from ..model_tools.definitions import DefaultFactory, DefaultValue, InputField, ParamKind
 from ..provider.essential import Request
 from ..provider.location import FieldLoc, GenericParamLoc, InputFieldLoc, OutputFieldLoc, TypeHintLoc
 from ..provider.request_cls import LocatedRequest, LocStack
@@ -44,8 +44,25 @@ class ConstantLinking:
 
 
 @dataclass(frozen=True)
+class ModelLinking:
+    pass
+
+
+@dataclass(frozen=True)
+class FunctionLinking:
+    @dataclass(frozen=True)
+    class ParamSpec:
+        field: InputField
+        param_kind: ParamKind
+        linking: "LinkingResult"
+
+    func: Callable
+    param_specs: VarTuple[ParamSpec]
+
+
+@dataclass(frozen=True)
 class LinkingResult:
-    linking: Union[FieldLinking, ConstantLinking]
+    linking: Union[FieldLinking, ConstantLinking, ModelLinking, FunctionLinking]
 
 
 @dataclass(frozen=True)

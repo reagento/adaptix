@@ -67,7 +67,7 @@ class BuiltinConverterProvider(ConverterProvider):
             file_name=self._get_file_name(request),
         )
 
-    def register_mangled(self, namespace: CascadeNamespace, base: str, obj: object) -> str:
+    def _register_mangled(self, namespace: CascadeNamespace, base: str, obj: object) -> str:
         base = self._name_sanitizer.sanitize(base)
         if namespace.try_add_constant(base, obj):
             return base
@@ -90,7 +90,7 @@ class BuiltinConverterProvider(ConverterProvider):
         namespace.add_outer_constant("_closure_signature", signature)
         namespace.add_outer_constant("_stub_function", stub_function)
         namespace.add_outer_constant("_update_wrapper", update_wrapper)
-        coercer_var = self.register_mangled(namespace, "coercer", coercer)
+        coercer_var = self._register_mangled(namespace, "coercer", coercer)
 
         no_types_signature = signature.replace(
             parameters=[param.replace(annotation=Signature.empty) for param in signature.parameters.values()],
