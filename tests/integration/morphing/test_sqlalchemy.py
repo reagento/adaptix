@@ -1,10 +1,12 @@
-from typing import Optional
+from typing import List, Optional
 
+import pytest
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
-from tests_helpers import sqlalchemy_equals
+from tests_helpers import cond_list, sqlalchemy_equals
 
 from adaptix import Retort
+from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
 
 
 def test_simple(accum):
@@ -29,7 +31,7 @@ def test_simple(accum):
     assert dumper(Book(id=1, title="abc", price=100)) == {"id": 1, "title": "abc", "price": 100}
 
 
-def test_relationship(accum):
+def test_o2o_relationship(accum):
     mapper_registry = registry()
 
     @mapper_registry.mapped
@@ -86,4 +88,54 @@ def test_relationship(accum):
         dumper(Declarative2(id=1, text="abc", parent_id=100, parent=Declarative1(id=100)))
         ==
         {"id": 1, "text": "abc", "parent_id": 100, "parent": {"id": 100}}
+    )
+
+
+@pytest.mark.parametrize(
+    "list_tp",
+    [
+        List,
+        *cond_list(
+            HAS_STD_CLASSES_GENERICS,
+            [list],
+        ),
+    ],
+)
+def test_o2m_relationship(accum, list_tp):
+    mapper_registry = registry()
+
+    @mapper_registry.mapped
+    class Declarative1:
+        __tablename__ = "DeclarativeModel1"
+
+        id: Mapped[int] = mapped_column(primary_key=True)
+        parent_id: Mapped[int] = mapped_column(ForeignKey("DeclarativeModel2.id"))
+
+        __eq__ = sqlalchemy_equals
+
+    @mapper_registry.mapped
+    class Declarative2:
+        __tablename__ = "DeclarativeModel2"
+
+        id: Mapped[int] = mapped_column(primary_key=True)
+        text: Mapped[str]
+
+        children: Mapped[list_tp[Declarative1]] = relationship()
+
+        __eq__ = sqlalchemy_equals
+
+    retort = Retort(recipe=[accum])
+
+    loader = retort.get_loader(Declarative2)
+    assert (
+        loader({"id": 1, "text": "abc", "children": [{"id": 2}]})
+        ==
+        Declarative2(id=1, text="abc", children=[Declarative1(id=2)])
+    )
+
+    dumper = retort.get_dumper(Declarative2)
+    assert (
+        dumper(Declarative2(id=1, text="abc", children=[Declarative1(id=2)]))
+        ==
+        {"id": 1, "text": "abc", "children": [{"id": 2, "parent_id": None}]}
     )
