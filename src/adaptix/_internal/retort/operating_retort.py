@@ -5,7 +5,7 @@ from ..common import TypeHint, VarTuple
 from ..conversion.request_cls import CoercerRequest, ConversionDestItem, ConversionSourceItem, LinkingRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from ..provider.location import AnyLoc, FieldLoc
+from ..provider.location import AnyLoc, FieldLoc, InputFuncFieldLoc
 from ..provider.request_cls import LocatedRequest, LocStack
 from ..type_tools import is_parametrized
 from ..utils import add_note, copy_exception_dunders, with_module
@@ -95,6 +95,11 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         except (TypeError, IndexError):
             return tp_desc
 
+        if loc_stack.last.is_castable(InputFuncFieldLoc):
+            func_field_loc = loc_stack.last.cast(InputFuncFieldLoc)
+            func_name = getattr(func_field_loc.func, "__qualname__", None) or repr(func_field_loc.func)
+            return f"{func_name}({func_field_loc.field_id}: {tp_desc})"
+
         try:
             field_loc = loc_stack.last.cast(FieldLoc)
         except TypeError:
@@ -109,7 +114,7 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
     def _get_coercer_request_context_notes(self, request: CoercerRequest) -> Iterable[str]:
         src_desc = self._get_loc_stack_desc(request.src)
         dst_desc = self._get_loc_stack_desc(request.dst)
-        yield f"Linking: `{src_desc} -> {dst_desc}`"
+        yield f"Linking: `{src_desc} => {dst_desc}`"
 
     def get_request_context_notes(self, request: Request) -> Iterable[str]:
         if isinstance(request, LocatedRequest):

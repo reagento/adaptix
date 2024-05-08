@@ -1,10 +1,10 @@
 import itertools
-from typing import AbstractSet, Callable, Iterable, Optional, Union
+from typing import Callable, Iterable, Optional, Union
 
 from ..common import Coercer, OneArgCoercer
-from ..model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape
+from ..model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
 from ..model_tools.introspection.callable import get_callable_shape
-from ..provider.essential import CannotProvide, Mediator, Provider
+from ..provider.essential import CannotProvide, Mediator, Provider, mandatory_apply_by_iterable
 from ..provider.fields import input_field_to_loc
 from ..provider.loc_stack_filtering import LocStackChecker, create_loc_stack_checker
 from ..provider.location import FieldLoc
@@ -83,81 +83,62 @@ class ModelLinkingProvider(LinkingProvider):
 
 
 class FunctionLinkingProvider(LinkingProvider):
-    def __init__(
-        self,
-        func: Callable,
-        dst_lsc: LocStackChecker,
-        pass_model: AbstractSet[str],
-        pass_params: AbstractSet[str],
-    ):
+    def __init__(self, func: Callable, dst_lsc: LocStackChecker):
         self._func = func
         self._dst_lsc = dst_lsc
-        self._pass_model = pass_model
-        self._pass_params = pass_params
         self._input_shape = self._get_input_shape()
         self._retort = self._build_retort()
-        self._validate()
 
     def _get_input_shape(self) -> InputShape:
         return get_callable_shape(self._func).input
 
-    def _validate(self) -> None:
-        duplicated = self._pass_params & self._pass_model
-        if duplicated:
-            raise ValueError(f"Markers {duplicated} presented in `pass_params` and `pass_model`")
-
-        all_params = self._pass_params | self._pass_model
-
-        non_identifier_params = [param for param in all_params if not param.isidentifier()]
-        if non_identifier_params:
-            raise ValueError("All markers must be a valid python identifier to exactly match parameter")
-
-        wild_params = {field.id for field in self._input_shape.fields} - all_params
-        if wild_params:
-            raise ValueError(f"Markers {duplicated} does not match with any function parameters")
-
     def _build_retort(self) -> OperatingRetort:
         return OperatingRetort(
             recipe=[
-                self._get_field_provider(field)
-                for field in self._input_shape.fields
+                self._get_field_provider(field, param, idx)
+                for idx, (field, param) in enumerate(zip(self._input_shape.fields, self._input_shape.params))
             ],
         )
 
-    def _get_field_provider(self, field: InputField) -> Provider:
-        if field.id in self._pass_model:
-            return ModelLinkingProvider(dst_lsc=create_loc_stack_checker(field.id))
-        if field.id in self._pass_params:
+    def _get_field_provider(self, field: InputField, param: Param, idx: int) -> Provider:
+        if param.kind == ParamKind.KW_ONLY:
             return MatchingLinkingProvider(
-                src_lsc=FromCtxParam(field.id),
+                src_lsc=create_loc_stack_checker(field.id),
                 dst_lsc=create_loc_stack_checker(field.id),
                 coercer=None,
             )
+        if idx == 0:
+            return ModelLinkingProvider(dst_lsc=create_loc_stack_checker(field.id))
         return MatchingLinkingProvider(
-            src_lsc=create_loc_stack_checker(field.id),
+            src_lsc=FromCtxParam(field.id),
             dst_lsc=create_loc_stack_checker(field.id),
             coercer=None,
         )
 
     def _get_linking(self, mediator: Mediator, request: LinkingRequest, input_field: InputField) -> LinkingResult:
+        dest = request.destination.append_with(input_field_to_loc(input_field).complement_with_func(self._func))
         return self._retort.apply_provider(
             mediator,
             LinkingRequest(
                 sources=request.sources,
                 context=request.context,
-                destination=request.destination.append_with(input_field_to_loc(input_field)),
+                destination=dest,
             ),
         )
 
     def _provide_linking(self, mediator: Mediator, request: LinkingRequest) -> LinkingResult:
-        if self._dst_lsc.check_loc_stack(mediator, request.destination):
-            param_specs = tuple(
-                FunctionLinking.ParamSpec(
-                    field=self._input_shape.fields_dict[param.field_id],
-                    linking=self._get_linking(mediator, request, self._input_shape.fields_dict[param.field_id]),
-                    param_kind=param.kind,
-                )
-                for param in self._input_shape.params
-            )
-            return LinkingResult(linking=FunctionLinking(func=self._func, param_specs=param_specs))
-        raise CannotProvide
+        if not self._dst_lsc.check_loc_stack(mediator, request.destination):
+            raise CannotProvide
+
+        param_specs = mandatory_apply_by_iterable(
+            lambda field, param: FunctionLinking.ParamSpec(
+                field=field,
+                linking=self._get_linking(mediator, request, field),
+                param_kind=param.kind,
+            ),
+            zip(self._input_shape.fields, self._input_shape.params),
+            lambda: "Cannot create linking for function. Linkings for some parameters are not found",
+        )
+        return LinkingResult(
+            linking=FunctionLinking(func=self._func, param_specs=tuple(param_specs)),
+        )

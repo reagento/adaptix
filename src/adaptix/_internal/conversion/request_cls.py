@@ -5,7 +5,7 @@ from typing import Callable, Optional, Union
 from ..common import Coercer, VarTuple
 from ..model_tools.definitions import DefaultFactory, DefaultValue, InputField, ParamKind
 from ..provider.essential import Request
-from ..provider.location import FieldLoc, GenericParamLoc, InputFieldLoc, OutputFieldLoc, TypeHintLoc
+from ..provider.location import FieldLoc, GenericParamLoc, InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc, TypeHintLoc
 from ..provider.request_cls import LocatedRequest, LocStack
 
 
@@ -17,7 +17,7 @@ class ConverterRequest(Request):
 
 
 ConversionSourceItem = Union[FieldLoc, OutputFieldLoc, GenericParamLoc]
-ConversionDestItem = Union[TypeHintLoc, InputFieldLoc, GenericParamLoc]
+ConversionDestItem = Union[TypeHintLoc, InputFieldLoc, InputFuncFieldLoc, GenericParamLoc]
 
 
 @dataclass(frozen=True)

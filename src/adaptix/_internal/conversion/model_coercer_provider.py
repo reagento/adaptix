@@ -1,5 +1,5 @@
 from inspect import Parameter, Signature
-from typing import Iterable, List, Mapping, Optional, Tuple
+from typing import Callable, Iterable, List, Mapping, Optional, Tuple, Union
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
@@ -30,7 +30,7 @@ from ..model_tools.definitions import DefaultValue, InputField, InputShape, Outp
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import input_field_to_loc, output_field_to_loc
-from ..provider.location import OutputFieldLoc
+from ..provider.location import InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc
 from ..provider.request_cls import LocStack, TypeHintLoc
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..utils import add_note
@@ -130,7 +130,8 @@ class ModelCoercerProvider(CoercerProvider):
                 )
             except CannotProvide as e:
                 if dst_field.is_required:
-                    add_note(e, "Note: This is a required field, so it must take value")
+                    if not e.is_terminal:
+                        add_note(e, "Note: This is a required field, so it must take value")
                     raise
 
                 policy = mediator.mandatory_provide(
@@ -157,7 +158,7 @@ class ModelCoercerProvider(CoercerProvider):
         self,
         mediator: Mediator,
         request: CoercerRequest,
-        input_field: InputField,
+        loc: Union[InputFieldLoc, InputFuncFieldLoc],
         linking: FieldLinking,
     ) -> BroachingPlan:
         if linking.coercer is not None:
@@ -167,7 +168,7 @@ class ModelCoercerProvider(CoercerProvider):
                 CoercerRequest(
                     src=linking.source,
                     ctx=request.ctx,
-                    dst=request.dst.append_with(input_field_to_loc(input_field)),
+                    dst=request.dst.append_with(loc),
                 ),
             )
 
@@ -224,6 +225,7 @@ class ModelCoercerProvider(CoercerProvider):
             mediator,
             request,
             [(param_spec.field, param_spec.linking) for param_spec in linking.param_specs],
+            parent_func=linking.func,
         )
         for param_spec in linking.param_specs:
             sub_plan = field_to_sub_plan[param_spec.field]
@@ -242,6 +244,7 @@ class ModelCoercerProvider(CoercerProvider):
         mediator: Mediator,
         request: CoercerRequest,
         field_linkings: Iterable[Tuple[InputField, LinkingResult]],
+        parent_func: Optional[Callable],
     ) -> Mapping[InputField, BroachingPlan]:
         def generate_sub_plan(input_field: InputField, linking_result: LinkingResult):
             if isinstance(linking_result.linking, ConstantLinking):
@@ -261,10 +264,11 @@ class ModelCoercerProvider(CoercerProvider):
                     linking=linking_result.linking,
                 )
             if isinstance(linking_result.linking, FieldLinking):
+                field_loc = input_field_to_loc(input_field)
                 return self._generate_field_linking_to_sub_plan(
                     mediator=mediator,
                     request=request,
-                    input_field=input_field,
+                    loc=field_loc.complement_with_func(parent_func) if parent_func is not None else field_loc,
                     linking=linking_result.linking,
                 )
             raise TypeError
@@ -300,6 +304,7 @@ class ModelCoercerProvider(CoercerProvider):
                 for dst_field, linking in field_linkings
                 if linking is not None
             ],
+            parent_func=None,
         )
         return self._make_constructor_call(
             dst_shape=dst_shape,

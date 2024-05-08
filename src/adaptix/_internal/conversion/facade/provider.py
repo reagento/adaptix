@@ -57,28 +57,16 @@ def _ensure_str_set(value: Union[str, Iterable[str]]) -> AbstractSet[str]:
     return frozenset(value)
 
 
-def link_function(
-    func: Callable,
-    dst: Pred,
-    *,
-    pass_model: Union[str, Iterable[str]] = (),
-    pass_params: Union[str, Iterable[str]] = (),
-) -> Provider:
+def link_function(func: Callable, dst: Pred) -> Provider:
     """Provider that uses function to produce value of destination field.
-    Each parameter of the function is linked to the source model field by name.
-    You can link the model entirely via `pass_model` or link converter parameters via `pass_params`.
 
-    :param func: A function using to process several fields of source model.
+    :param func: A function used to process several fields of source model.
     :param dst: Predicate specifying destination point of linking. See :ref:`predicate-system` for details.
-    :param pass_model: Mark function parameters to take model entirely.
-    :param pass_params: Mark function parameters to take parameters from converter.
     :return: Desired provider
     """
     return FunctionLinkingProvider(
         func=func,
         dst_lsc=create_loc_stack_checker(dst),
-        pass_model=_ensure_str_set(pass_model),
-        pass_params=_ensure_str_set(pass_params),
     )
 
 
