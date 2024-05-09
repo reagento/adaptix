@@ -72,16 +72,6 @@ class ConstantLinkingProvider(LinkingProvider):
         raise CannotProvide
 
 
-class ModelLinkingProvider(LinkingProvider):
-    def __init__(self, dst_lsc: LocStackChecker):
-        self._dst_lsc = dst_lsc
-
-    def _provide_linking(self, mediator: Mediator, request: LinkingRequest) -> LinkingResult:
-        if self._dst_lsc.check_loc_stack(mediator, request.destination):
-            return LinkingResult(linking=ModelLinking())
-        raise CannotProvide
-
-
 T = TypeVar("T")
 
 

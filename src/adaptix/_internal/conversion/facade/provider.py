@@ -1,4 +1,4 @@
-from typing import AbstractSet, Any, Callable, Iterable, Optional, Union, overload
+from typing import Any, Callable, Optional, overload
 
 from ...common import OneArgCoercer
 from ...model_tools.definitions import DefaultFactory, DefaultValue
@@ -51,14 +51,9 @@ def link_constant(dst: Pred, *, value: Any = None, factory: Any = None) -> Provi
     )
 
 
-def _ensure_str_set(value: Union[str, Iterable[str]]) -> AbstractSet[str]:
-    if isinstance(value, str):
-        return frozenset([value])
-    return frozenset(value)
-
-
 def link_function(func: Callable, dst: Pred) -> Provider:
     """Provider that uses function to produce value of destination field.
+    The entire model is passed to the first parameter of the function.
 
     :param func: A function used to process several fields of source model.
     :param dst: Predicate specifying destination point of linking. See :ref:`predicate-system` for details.
