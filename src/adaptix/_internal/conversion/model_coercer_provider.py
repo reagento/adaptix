@@ -276,7 +276,11 @@ class ModelCoercerProvider(CoercerProvider):
         field_sub_plans = mandatory_apply_by_iterable(
             generate_sub_plan,
             field_linkings,
-            lambda: "Cannot create coercer for models. Coercers for some linkings are not found",
+            lambda: (
+                "Cannot create coercer for models. Coercers for some linkings are not found"
+                if parent_func is None else
+                "Cannot create coercer for model and function. Coercers for some linkings are not found"
+            ),
         )
         return {
             dst_field: sub_plan
