@@ -94,15 +94,15 @@ class FunctionLinkingProvider(LinkingProvider):
         param: Param,
         idx: int,
     ) -> LinkingResult:
-        if idx == 0:
-            return LinkingResult(linking=ModelLinking())
-
         if param.kind == ParamKind.KW_ONLY:
             try:
                 source = name_to_field_source[param.name]
             except KeyError:
                 self._raise_link_error(request, input_field, "Cannot match `{}` with model field")
         else:
+            if idx == 0:
+                return LinkingResult(linking=ModelLinking())
+
             try:
                 source = name_to_context_source[param.name]
             except KeyError:

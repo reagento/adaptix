@@ -74,6 +74,31 @@ def test_model_field(model_spec):
     assert convert(SourceModel(field1=1, field2=10)) == DestModel(field1=1, field3="10")
 
 
+def test_only_keyword_only_parameters(model_spec):
+    @model_spec.decorator
+    class SourceModel(*model_spec.bases):
+        field1: int
+        field2: int
+
+    @model_spec.decorator
+    class DestModel(*model_spec.bases):
+        field1: int
+        field3: int
+
+    def my_function(*, field1: int, field2: int):
+        return field1 + field2
+
+    @impl_converter(
+        recipe=[
+            link_function(my_function, "field3"),
+        ],
+    )
+    def convert(a: SourceModel) -> DestModel:
+        ...
+
+    assert convert(SourceModel(field1=1, field2=10)) == DestModel(field1=1, field3=11)
+
+
 def test_linking_error(model_spec):
     @model_spec.decorator
     class SourceModel(*model_spec.bases):
