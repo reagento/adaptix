@@ -52,8 +52,9 @@ def link_constant(dst: Pred, *, value: Any = None, factory: Any = None) -> Provi
 
 
 def link_function(func: Callable, dst: Pred) -> Provider:
-    """The entire model is passed to the first parameter of the function.
+    """Provider that uses function to produce value of destination field.
 
+    The entire model is passed to the first parameter of the function.
     The type of result and first parameter are not checked, you must ensure type compatibility yourself.
 
     Keyword-only parameters link to model fields and other parameters link to extra converter parameters.
