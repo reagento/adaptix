@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Callable, Mapping, Type, TypeVar, Union
+from typing import Any, Callable, Container, Dict, Mapping, Type, TypeVar, Union
 
 from ..common import TypeHint
 from ..model_tools.definitions import Accessor, Default
@@ -42,6 +42,11 @@ class _InputFieldLoc(_FieldLoc):
 
 
 @dataclass(frozen=True)
+class _InputFuncFieldLoc(_FieldLoc):
+    func: Callable
+
+
+@dataclass(frozen=True)
 class _OutputFieldLoc(_FieldLoc):
     accessor: Accessor
 
@@ -60,6 +65,17 @@ class FieldLoc(_FieldLoc):
 
 
 class InputFieldLoc(_InputFieldLoc):
+    def complement_with_func(self, func: Callable) -> "InputFuncFieldLoc":
+        return InputFuncFieldLoc(
+            type=self.type,
+            field_id=self.field_id,
+            default=self.default,
+            metadata=self.metadata,
+            func=func,
+        )
+
+
+class InputFuncFieldLoc(_InputFuncFieldLoc):
     pass
 
 
@@ -71,12 +87,13 @@ class GenericParamLoc(_GenericParamLoc):
     pass
 
 
-_CAST_SOURCES = {
-    TypeHintLoc: {TypeHintLoc, FieldLoc, InputFieldLoc, OutputFieldLoc, GenericParamLoc},
-    FieldLoc: {FieldLoc, InputFieldLoc, OutputFieldLoc},
-    InputFieldLoc: (InputFieldLoc, ),
-    OutputFieldLoc: (OutputFieldLoc, ),
-    GenericParamLoc: (GenericParamLoc, ),
+_CAST_SOURCES: Dict[Any, Container[Any]] = {
+    TypeHintLoc: {TypeHintLoc, FieldLoc, InputFieldLoc, OutputFieldLoc, GenericParamLoc, InputFuncFieldLoc},
+    FieldLoc: {FieldLoc, InputFieldLoc, OutputFieldLoc, InputFuncFieldLoc},
+    InputFieldLoc: {InputFieldLoc, InputFuncFieldLoc},
+    InputFuncFieldLoc: {InputFuncFieldLoc},
+    OutputFieldLoc: {OutputFieldLoc},
+    GenericParamLoc: {GenericParamLoc},
 }
 
-AnyLoc = Union[TypeHintLoc, FieldLoc, InputFieldLoc, OutputFieldLoc, GenericParamLoc]
+AnyLoc = Union[TypeHintLoc, FieldLoc, InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc, GenericParamLoc]

@@ -1,13 +1,12 @@
 from abc import ABC
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Type, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Type
 
-from ..common import TypeHint, VarTuple
-from ..conversion.request_cls import CoercerRequest, ConversionDestItem, ConversionSourceItem, LinkingRequest
+from ..common import VarTuple
+from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
-from ..provider.location import AnyLoc, FieldLoc
-from ..provider.request_cls import LocatedRequest, LocStack
-from ..type_tools import is_parametrized
+from ..provider.location import AnyLoc
+from ..provider.request_cls import LocatedRequest, LocStack, format_loc_stack
 from ..utils import add_note, copy_exception_dunders, with_module
 from .base_retort import BaseRetort
 from .mediator import ErrorRepresentor, RecursionResolver, T
@@ -68,14 +67,6 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
         dst_desc = self._get_loc_stack_desc(request.destination)
         return f"Cannot find paired field of `{dst_desc}` for linking"
 
-    def _get_type_desc(self, tp: TypeHint) -> str:
-        if isinstance(tp, type) and not is_parametrized(tp):
-            return tp.__qualname__
-        str_tp = str(tp)
-        if str_tp.startswith("typing."):
-            return str_tp[7:]
-        return str_tp
-
     def get_no_provider_description(self, request: Request) -> str:
         request_cls = type(request)
         if request_cls in self._NO_PROVIDER_DESCRIPTION_METHOD:
@@ -84,23 +75,8 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
             return self._NO_PROVIDER_DESCRIPTION_CONST[request_cls]
         return f"There is no provider that can process {request}"
 
-    def _get_loc_stack_desc(
-        self,
-        loc_stack: LocStack[Union[ConversionSourceItem, ConversionDestItem]],
-    ) -> str:
-        tp_desc = self._get_type_desc(loc_stack.last.type)
-
-        try:
-            owner_loc = loc_stack[-2]
-        except (TypeError, IndexError):
-            return tp_desc
-
-        try:
-            field_loc = loc_stack.last.cast(FieldLoc)
-        except TypeError:
-            return tp_desc
-        src_owner = self._get_type_desc(owner_loc.type)
-        return f"{src_owner}.{field_loc.field_id}: {tp_desc}"
+    def _get_loc_stack_desc(self, loc_stack: LocStack[AnyLoc]) -> str:
+        return format_loc_stack(loc_stack)
 
     def _get_located_request_context_notes(self, request: LocatedRequest) -> Iterable[str]:
         loc_stack_desc = self._get_loc_stack_desc(request.loc_stack)
@@ -109,7 +85,7 @@ class BuiltinErrorRepresentor(ErrorRepresentor):
     def _get_coercer_request_context_notes(self, request: CoercerRequest) -> Iterable[str]:
         src_desc = self._get_loc_stack_desc(request.src)
         dst_desc = self._get_loc_stack_desc(request.dst)
-        yield f"Linking: `{src_desc} -> {dst_desc}`"
+        yield f"Linking: `{src_desc} => {dst_desc}`"
 
     def get_request_context_notes(self, request: Request) -> Iterable[str]:
         if isinstance(request, LocatedRequest):
