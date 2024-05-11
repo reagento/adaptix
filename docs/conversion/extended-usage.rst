@@ -47,6 +47,14 @@ All keyword-only are linked to the model field followed by common type coercing 
 If the first parameter is keyword-only, it will be matched with the model field.
 
 
+.. hint::
+
+   :func:`.conversion.link_function` can not call a function with zero arguments
+   if the function has more than zero parameters.
+   So, it can not be used with callables like ``list`` or ``dict`` natively.
+   You should use :func:`.conversion.link_constant` with ``factory`` parameter for this case.
+
+
 Link constant
 ========================
 
@@ -63,6 +71,12 @@ Using default value for fields
 By default, all fields of the destination model must be linked to something
 even field is not required (has a default value).
 
+.. hint::
+
+   Such policy prevents bugs in converters.
+   If forget to link two same fields with different names, an error will occur.
+
+
 You can control this policy
 via :func:`.conversion.allow_unlinked_optional` and :func:`.conversion.forbid_unlinked_optional`.
 
@@ -70,6 +84,10 @@ via :func:`.conversion.allow_unlinked_optional` and :func:`.conversion.forbid_un
 
 Each parameter of these functions are predicate defining the target scope of the policy.
 You can use them without arguments to apply new policies to all fields.
+
+.. dropdown:: Redefine policy globally (for all fields)
+
+  .. literalinclude:: /examples/conversion/extended_usage/global_allow_unlinked_optional.py
 
 
 What is a recipe really?
@@ -82,10 +100,10 @@ Each of these objects is called a `provider`.
 Recipe system implements `chain-of-responsibility <https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern>`__
 design pattern.
 
-Let's consider the case of creating linking for the destination field.
-Firstly, adaptix filter providers that can create linking.
-Secondly, adaptix scans the remaining recipe and applies the predicates of each provider.
-The first match will be used, so begging providers overlap subsequent ones.
+Let's explore the scenario of creating links for the destination field.
+Initially, adaptix filters providers skipping that can't make linking.
+Subsequently, adaptix scans the remaining recipe and applies the predicates of each provider.
+The first match will be used, causing initial providers to potentially overlap with subsequent ones.
 
 
 Eliminating recipe duplication via ``ConversionRetort``
