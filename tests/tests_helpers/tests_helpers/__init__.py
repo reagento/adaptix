@@ -5,7 +5,6 @@ from .misc import (
     FailedRequirement,
     PlaceholderProvider,
     cond_list,
-    create_sa_engine,
     full_match,
     load_namespace,
     load_namespace_keeping_module,

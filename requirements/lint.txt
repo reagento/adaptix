@@ -13,9 +13,7 @@ alabaster==0.7.16
 annotated-types==0.6.0
     # via pydantic
 astpath==0.9.1
-    # via
-    #   -r requirements/raw/lint.txt
-    #   astpath
+    # via -r requirements/raw/lint.txt
 attrs==23.2.0
     # via
     #   -r requirements/raw/test_extra_new.txt
@@ -237,9 +235,7 @@ sphinxcontrib-serializinghtml==1.1.10
 sphinxext-opengraph==0.9.1
     # via -r requirements/raw/doc.txt
 sqlalchemy==2.0.29
-    # via
-    #   -r requirements/raw/test_extra_new.txt
-    #   -r requirements/raw/test_extra_none.txt
+    # via -r requirements/raw/test_extra_new.txt
 tenacity==8.2.3
     # via plotly
 toml==0.10.2

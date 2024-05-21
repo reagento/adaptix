@@ -1,15 +1,19 @@
 from typing import Any, Optional, Type, Union
 
-from sqlalchemy import JSON, Dialect, TypeDecorator, null
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.dialects.postgresql.base import PGDialect
-from sqlalchemy.sql.type_api import TypeEngine, to_instance
-
 from ...common import TypeHint
 from ...morphing.facade.retort import AdornedRetort
 
-_SQL_NULL = null()
-_JSON_NULL = JSON.NULL
+try:
+    from sqlalchemy import JSON, Dialect, TypeDecorator, null
+    from sqlalchemy.dialects import postgresql
+    from sqlalchemy.dialects.postgresql.base import PGDialect
+    from sqlalchemy.sql.type_api import TypeEngine, to_instance
+
+    _SQL_NULL = null()
+    _JSON_NULL = JSON.NULL
+except ImportError:
+    TypeDecorator = object  # type: ignore[assignment, misc]
+    JSON = None  # type: ignore[assignment, misc]
 
 
 class AdaptixJSON(TypeDecorator):
@@ -21,7 +25,7 @@ class AdaptixJSON(TypeDecorator):
         retort: AdornedRetort,
         tp: TypeHint,
         *,
-        impl: Optional[TypeEngine] = None,
+        impl: Optional["TypeEngine"] = None,
     ):
         super().__init__()
         self.retort = retort
@@ -32,12 +36,12 @@ class AdaptixJSON(TypeDecorator):
         if impl is not None:
             self.impl = impl  # type: ignore[assignment]
 
-    def load_dialect_impl(self, dialect: Dialect) -> TypeEngine[Any]:
+    def load_dialect_impl(self, dialect: "Dialect") -> "TypeEngine[Any]":
         if self._custom_impl is not None:
             return self._custom_impl
         return to_instance(self._load_default_dialect_impl(dialect))
 
-    def _load_default_dialect_impl(self, dialect: Dialect) -> Union[TypeEngine[Any], Type[TypeEngine[Any]]]:
+    def _load_default_dialect_impl(self, dialect: "Dialect") -> "Union[TypeEngine[Any], Type[TypeEngine[Any]]]":
         if isinstance(dialect, PGDialect):
             return postgresql.JSONB
         return JSON

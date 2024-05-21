@@ -11,7 +11,6 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Reversible, T
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import Engine, create_engine
 
 from adaptix import CannotProvide, DebugTrail, Mediator, NoSuitableProvider, Provider, Request
 from adaptix._internal.compat import CompatExceptionGroup
@@ -148,10 +147,6 @@ def pretty_typehint_test_id(config, val, argname):
             return val._name
         except AttributeError:
             return None
-
-
-def create_sa_engine(**kwargs) -> Engine:
-    return create_engine("sqlite://", **kwargs)
 
 
 T1 = TypeVar("T1")

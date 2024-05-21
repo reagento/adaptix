@@ -33,9 +33,7 @@ pytest==7.4.2
 pytz==2024.1
     # via dirty-equals
 sqlalchemy==2.0.29
-    # via
-    #   -r requirements/raw/test_extra_new.txt
-    #   -r requirements/raw/test_extra_none.txt
+    # via -r requirements/raw/test_extra_new.txt
 typing-extensions==4.11.0
     # via
     #   pydantic
