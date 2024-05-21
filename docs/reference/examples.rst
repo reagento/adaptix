@@ -11,11 +11,6 @@ The behavior of each example is illustrated via included tests.
 
 :octicon:`mark-github` :adaptix-view-repo:`Source Code <examples/simple_api_processing>`
 
-.. include:: /../examples/sqlalchemy_json/README.md
-   :parser: myst_parser.sphinx_
-
-:octicon:`mark-github` :adaptix-view-repo:`Source Code <examples/sqlalchemy_json>`
-
 
 .. include:: /../examples/api_division/README.md
    :parser: myst_parser.sphinx_

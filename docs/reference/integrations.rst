@@ -108,6 +108,7 @@ You can override this behavior to use a native pydantic validation/serialization
 
 .. literalinclude:: /examples/reference/integrations/native_pydantic.py
 
+.. _sqlalchemy_json:
 
 SQLAlchemy JSON
 =======================
