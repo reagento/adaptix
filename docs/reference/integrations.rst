@@ -2,14 +2,14 @@
 Integrations
 *******************
 
-This article describes how adaptix is workings with other packages and systems.
+This article describes how adaptix works with other packages and systems.
 
 .. _supported-model-kinds:
 
 Supported model kinds
 =======================
 
-Models are classes that have a predefined set of fields. Adaptix process models in the same, consistent way.
+Models are classes that have a predefined set of fields. Adaptix processes models in the same, consistent way.
 
 Models that are supported out of the box:
 
@@ -58,13 +58,13 @@ sqlalchemy
 
 - ``dataclass`` and ``attrs`` mapped by sqlalchemy are not supported for introspection.
 
-- It does not support registering order of mapped fields by design,
-  so you should use manual mapping to list instead automatic ``as_list=True``.
+- It does not support registering the order of mapped fields by design,
+  so you should use manual mapping to list instead of automatic ``as_list=True``.
 
 - Relationships with custom ``collection_class`` are not supported.
 
 - All input fields of foreign keys and relationships are considered as optional
-  due to user can pass only relationship instance or only foreign key value.
+  due to a user can pass only relationship instances or only foreign key values.
 
 pydantic
 ^^^^^^^^^^^^^^^^^
@@ -72,13 +72,13 @@ pydantic
 - Custom ``__init__`` function must have only one parameter
   accepting arbitrary keyword arguments (like ``**kwargs`` or ``**data``).
 
-- There are 3 category of fields: regular fields, computed fields (marked properties) and private attributes.
-  Pydantic tracks order inside one category, but does not track between categories.
-  Also, pydantic does not keep right order inside private attributes.
+- There are 3 categories of fields: regular fields, computed fields (marked properties), and private attributes.
+  Pydantic tracks order inside one category but does not track between categories.
+  Also, pydantic does not keep the right order inside private attributes.
 
   Therefore, during the dumping of fields, regular fields will come first,
   followed by computed fields, and then private attributes.
-  You can use use manual mapping to list instead automatic ``as_list=True`` to control the order.
+  You can use manual mapping to list instead of automatic ``as_list=True`` to control the order.
 
 - Fields with constraints defined by parameters (like ``f1: int = Field(gt=1, ge=10)``)
   are translated to ``Annotated`` with corresponding metadata.
@@ -113,20 +113,20 @@ You can override this behavior to use a native pydantic validation/serialization
 SQLAlchemy JSON
 =======================
 
-You can use adaptix to store structured JSON data inside relational database.
+You can use adaptix to store structured JSON data inside a relational database.
 SQLAlchemy will automatically map JSON to your model using adaptix.
 
 Let's see how you can define database schema.
 
 .. literalinclude:: /examples/reference/integrations/sqlalchemy_json/preamble.py
 
-Constructor of ``AdaptixJSON`` takes two parameters: retort and type of data.
-Also you can pass custom JSON column type via ``impl`` keyword parameter.
+The constructor of ``AdaptixJSON`` takes two parameters: retort and type of data.
+Also, you can pass a custom JSON column type via ``impl`` keyword parameter.
 
 Basic usage
 ----------------
 
-You can pass your model to any place where SQLAlchemy expects instance of data.
+You can pass your model to any place where SQLAlchemy expects an instance of data.
 
 .. literalinclude:: /examples/reference/integrations/sqlalchemy_json/basic_usage.py
    :pyobject: example
@@ -148,15 +148,15 @@ Querying and filtering
 
 .. caution::
 
-  ``name_mapping`` is not applied to query builder. Your query will use json representation of model.
+  ``name_mapping`` is not applied to the query builder. Your query will use json representation of model.
 
 
 Mutation tracking
 ---------------------
 
-SQLAlchemy flushes object only if there are some that are marked as modified (dirty).
+SQLAlchemy flushes objects only if some are marked as modified (dirty).
 The instance becomes dirty when ``__setattr__`` is invoked.
-So, SQLAlchemy cannot track the mutation of object associated with attribute.
+So, SQLAlchemy cannot track the mutation of the object associated with the attribute.
 
 .. literalinclude:: /examples/reference/integrations/sqlalchemy_json/mutation_tracking.py
    :pyobject: example
@@ -184,7 +184,7 @@ because more likely it means that you should not store JSON in RDBMS.
 Redefining ``none_as_null`` parameter
 ----------------------------------------
 
-To override parameters of ``JSON`` type itself, you can pass custom SQLAlchemy type.
+To override the parameters of ``JSON`` type itself, you can pass a custom SQLAlchemy type.
 
 .. literalinclude:: /examples/reference/integrations/sqlalchemy_json/redefined_impl.py
    :pyobject: example
