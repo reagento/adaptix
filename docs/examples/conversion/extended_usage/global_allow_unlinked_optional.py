@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import List, Optional
 
-from adaptix import P
 from adaptix.conversion import allow_unlinked_optional, get_converter
 
 

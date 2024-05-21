@@ -107,3 +107,85 @@ For example, any aliases or config parameters defined inside the model are ignor
 You can override this behavior to use a native pydantic validation/serialization mechanism.
 
 .. literalinclude:: /examples/reference/integrations/native_pydantic.py
+
+
+SQLAlchemy JSON
+=======================
+
+You can use adaptix to store structured JSON data inside relational database.
+SQLAlchemy will automatically map JSON to your model using adaptix.
+
+Let's see how you can define database schema.
+
+.. literalinclude:: /examples/reference/integrations/sqlalchemy_json/preamble.py
+
+Constructor of ``AdaptixJSON`` takes two parameters: retort and type of data.
+Also you can pass custom JSON column type via ``impl`` keyword parameter.
+
+Basic usage
+----------------
+
+You can pass your model to any place where SQLAlchemy expects instance of data.
+
+.. literalinclude:: /examples/reference/integrations/sqlalchemy_json/basic_usage.py
+   :pyobject: example
+   :lines: 2-
+   :dedent:
+
+
+Querying and filtering
+--------------------------
+
+``AdaptixJSON`` is ``TypeDecorator`` of ``JSON`` type, so you can use any method of ``JSON`` type to produce query.
+
+
+.. literalinclude:: /examples/reference/integrations/sqlalchemy_json/querying_and_filtering.py
+   :pyobject: example
+   :lines: 2-
+   :dedent:
+
+
+.. caution::
+
+  ``name_mapping`` is not applied to query builder. Your query will use json representation of model.
+
+
+Mutation tracking
+---------------------
+
+SQLAlchemy flushes object only if there are some that are marked as modified (dirty).
+The instance becomes dirty when ``__setattr__`` is invoked.
+So, SQLAlchemy cannot track the mutation of object associated with attribute.
+
+.. literalinclude:: /examples/reference/integrations/sqlalchemy_json/mutation_tracking.py
+   :pyobject: example
+   :lines: 2-
+   :dedent:
+
+
+.. dropdown:: Workaround for mutation tracking
+
+  1. Modify the entire object graph to track mutation at any edge.
+     See for details `mutable extension <https://docs.sqlalchemy.org/en/20/orm/extensions/mutable.html>`__.
+
+  2. Save a copy of the dataclass at the 'after_attach' event
+     and compares it with an actual object at 'before_flush'.
+     If it differs, mark the instance as dirty via ``flag_modified``.
+     This will work only if ``session.flush()`` is called directly.
+     Other methods may skip calling flush (and invoking its events) if there are no dirty objects.
+
+  3. Call ``flag_modified`` directly after dataclass mutation.
+
+Finally, it is not recommended to mutate a model that will be persistent to JSON,
+because more likely it means that you should not store JSON in RDBMS.
+
+
+Redefining ``none_as_null`` parameter
+----------------------------------------
+
+To override parameters of ``JSON`` type itself, you can pass custom SQLAlchemy type.
+
+.. literalinclude:: /examples/reference/integrations/sqlalchemy_json/redefined_impl.py
+   :pyobject: example
+   :lines: 2-
+   :dedent:
