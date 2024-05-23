@@ -30,8 +30,8 @@ from ..model_tools.definitions import DefaultValue, InputField, InputShape, Outp
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import input_field_to_loc, output_field_to_loc
-from ..provider.location import InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc, AnyLoc
-from ..provider.request_cls import LocStack, TypeHintLoc
+from ..provider.location import AnyLoc, InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc
+from ..provider.request_cls import LocStack
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..utils import add_note
 from .provider_template import CoercerProvider
