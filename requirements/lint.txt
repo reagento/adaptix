@@ -148,11 +148,11 @@ psutil==5.9.5
     #   pyperf
 pycodestyle==2.11.1
     # via flake8
-pydantic==2.7.0
+pydantic==2.7.1
     # via
     #   -r requirements/raw/bench.txt
     #   -r requirements/raw/test_extra_new.txt
-pydantic-core==2.18.1
+pydantic-core==2.18.2
     # via pydantic
 pyflakes==3.2.0
     # via flake8
@@ -234,7 +234,7 @@ sphinxcontrib-serializinghtml==1.1.10
     # via sphinx
 sphinxext-opengraph==0.9.1
     # via -r requirements/raw/doc.txt
-sqlalchemy==2.0.29
+sqlalchemy==2.0.30
     # via -r requirements/raw/test_extra_new.txt
 tenacity==8.2.3
     # via plotly

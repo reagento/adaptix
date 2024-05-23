@@ -6,7 +6,7 @@ pyperf==2.6.1
 psutil==5.9.5
 
 mashumaro==3.10
-pydantic==2.7.0
+pydantic==2.7.1
 cattrs==23.1.2
 schematics==2.1.1
 dataclass-factory==2.16

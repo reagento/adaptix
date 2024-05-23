@@ -24,15 +24,15 @@ phonenumberslite==8.13.26
     # via -r requirements/raw/test_extra_none.txt
 pluggy==1.5.0
     # via pytest
-pydantic==2.7.0
+pydantic==2.7.1
     # via -r requirements/raw/test_extra_new.txt
-pydantic-core==2.18.1
+pydantic-core==2.18.2
     # via pydantic
 pytest==7.4.2
     # via -r requirements/raw/test_extra_none.txt
 pytz==2024.1
     # via dirty-equals
-sqlalchemy==2.0.29
+sqlalchemy==2.0.30
     # via -r requirements/raw/test_extra_new.txt
 typing-extensions==4.11.0
     # via

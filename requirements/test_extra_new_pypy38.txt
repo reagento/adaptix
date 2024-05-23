@@ -32,7 +32,7 @@ pytest==7.4.2
     # via -r requirements/raw/test_extra_none.txt
 pytz==2024.1
     # via dirty-equals
-sqlalchemy==2.0.29
+sqlalchemy==2.0.30
     # via -r requirements/raw/test_extra_new_pypy38.txt
 typing-extensions==4.11.0
     # via

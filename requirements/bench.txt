@@ -32,9 +32,9 @@ psutil==5.9.5
     # via
     #   -r requirements/raw/bench.txt
     #   pyperf
-pydantic==2.7.0
+pydantic==2.7.1
     # via -r requirements/raw/bench.txt
-pydantic-core==2.18.1
+pydantic-core==2.18.2
     # via pydantic
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
