@@ -14,7 +14,7 @@ from adaptix._internal.feature_requirement import (
 
 REPO_ROOT = Path(__file__).parent.parent
 DOCS_EXAMPLES_ROOT = REPO_ROOT / "docs" / "examples"
-EXCLUDE = ["__init__.py"]
+EXCLUDE = ["__init__.py", "helpers.py"]
 GLOB = "*.py"
 
 

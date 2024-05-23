@@ -43,7 +43,7 @@ def pytest_generate_tests(metafunc):
 
 collect_ignore_glob = [
     *cond_list(not HAS_PY_312, ["*_312.py"]),
-    *cond_list(not HAS_ATTRS_PKG, ["*_attrs.py", "*_attrs_*.py"]),
+    *cond_list(not HAS_ATTRS_PKG, ["*_attrs.py", "*_attrs_*.py", "**/attrs/**"]),
     *cond_list(not HAS_PYDANTIC_PKG, ["*_pydantic.py", "*_pydantic_*.py", "**/pydantic/**"]),
     *cond_list(not HAS_SQLALCHEMY_PKG, ["*_sqlalchemy.py", "*_sqlalchemy_*.py", "**/sqlalchemy/**"]),
 ]

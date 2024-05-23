@@ -5,13 +5,14 @@ from .preamble import AuditLogRecord, UserCreated
 
 def example(session_factory: SessionFactory) -> None:
     with session_factory() as session:
-        record = AuditLogRecord(
-            data=UserCreated(
-                id=1,
-                name="Example",
+        session.add(
+            AuditLogRecord(
+                data=UserCreated(
+                    id=1,
+                    name="Example",
+                ),
             ),
         )
-        session.add(record)
         session.commit()
 
     with session_factory() as session:
