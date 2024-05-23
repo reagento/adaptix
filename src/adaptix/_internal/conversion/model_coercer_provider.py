@@ -1,5 +1,5 @@
 from inspect import Parameter, Signature
-from typing import Iterable, List, Mapping, Optional, Tuple
+from typing import Callable, Iterable, List, Mapping, Optional, Tuple, Union
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
@@ -20,16 +20,18 @@ from ..conversion.request_cls import (
     ConversionDestItem,
     ConversionSourceItem,
     FieldLinking,
+    FunctionLinking,
     LinkingRequest,
     LinkingResult,
+    ModelLinking,
     UnlinkedOptionalPolicyRequest,
 )
 from ..model_tools.definitions import DefaultValue, InputField, InputShape, OutputShape, ParamKind, create_key_accessor
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import input_field_to_loc, output_field_to_loc
-from ..provider.location import OutputFieldLoc
-from ..provider.request_cls import LocStack, TypeHintLoc
+from ..provider.location import AnyLoc, InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc
+from ..provider.request_cls import LocStack
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..utils import add_note
 from .provider_template import CoercerProvider
@@ -76,14 +78,20 @@ class ModelCoercerProvider(CoercerProvider):
             file_name=self._get_file_name(request),
         )
 
+    def _loc_stack_to_view_string(self, lock_stack: LocStack[AnyLoc]) -> str:
+        tp = lock_stack.last.type
+        if isinstance(tp, type):
+            return tp.__name__
+        return str(tp)
+
     def _get_closure_name(self, request: CoercerRequest) -> str:
-        src = request.src.last.cast(TypeHintLoc).type
-        dst = request.dst.last.cast(TypeHintLoc).type
+        src = self._loc_stack_to_view_string(request.src)
+        dst = self._loc_stack_to_view_string(request.dst)
         return self._name_sanitizer.sanitize(f"coerce_{src}_to_{dst}")
 
     def _get_file_name(self, request: CoercerRequest) -> str:
-        src = request.src.last.cast(TypeHintLoc).type
-        dst = request.dst.last.cast(TypeHintLoc).type
+        src = self._loc_stack_to_view_string(request.src)
+        dst = self._loc_stack_to_view_string(request.dst)
         return self._name_sanitizer.sanitize(f"coerce_{src}_to_{dst}")
 
     def _fetch_dst_shape(self, mediator: Mediator, loc_stack: LocStack[ConversionDestItem]) -> InputShape:
@@ -128,7 +136,8 @@ class ModelCoercerProvider(CoercerProvider):
                 )
             except CannotProvide as e:
                 if dst_field.is_required:
-                    add_note(e, "Note: This is a required field, so it must take value")
+                    if not e.is_terminal:
+                        add_note(e, "Note: This is a required field, so it must take value")
                     raise
 
                 policy = mediator.mandatory_provide(
@@ -151,11 +160,11 @@ class ModelCoercerProvider(CoercerProvider):
             lambda: "Cannot create coercer for models. Linkings for some fields are not found",
         )
 
-    def _field_linking_to_sub_plan(
+    def _generate_field_linking_to_sub_plan(
         self,
         mediator: Mediator,
         request: CoercerRequest,
-        input_field: InputField,
+        loc: Union[InputFieldLoc, InputFuncFieldLoc],
         linking: FieldLinking,
     ) -> BroachingPlan:
         if linking.coercer is not None:
@@ -165,7 +174,7 @@ class ModelCoercerProvider(CoercerProvider):
                 CoercerRequest(
                     src=linking.source,
                     ctx=request.ctx,
-                    dst=request.dst.append_with(input_field_to_loc(input_field)),
+                    dst=request.dst.append_with(loc),
                 ),
             )
 
@@ -204,11 +213,44 @@ class ModelCoercerProvider(CoercerProvider):
             return ConstantElement(value=linking.constant.value)
         return FunctionElement(func=linking.constant.factory, args=())
 
-    def _generate_field_to_sub_plan(
+    def _generate_model_linking_to_sub_plan(
+        self,
+        mediator: Mediator,
+        linking: ModelLinking,
+    ) -> BroachingPlan:
+        return ParameterElement("data")
+
+    def _generate_function_linking_to_sub_plan(
+        self,
+        mediator: Mediator,
+        request: CoercerRequest,
+        linking: FunctionLinking,
+    ) -> BroachingPlan:
+        args: List[FuncCallArg[BroachingPlan]] = []
+        field_to_sub_plan = self._generate_sub_plan(
+            mediator,
+            request,
+            [(param_spec.field, param_spec.linking) for param_spec in linking.param_specs],
+            parent_func=linking.func,
+        )
+        for param_spec in linking.param_specs:
+            sub_plan = field_to_sub_plan[param_spec.field]
+            if param_spec.param_kind == ParamKind.KW_ONLY:
+                args.append(KeywordArg(param_spec.field.id, sub_plan))
+            else:
+                args.append(PositionalArg(sub_plan))
+
+        return FunctionElement(
+            func=linking.func,
+            args=tuple(args),
+        )
+
+    def _generate_sub_plan(
         self,
         mediator: Mediator,
         request: CoercerRequest,
         field_linkings: Iterable[Tuple[InputField, LinkingResult]],
+        parent_func: Optional[Callable],
     ) -> Mapping[InputField, BroachingPlan]:
         def generate_sub_plan(input_field: InputField, linking_result: LinkingResult):
             if isinstance(linking_result.linking, ConstantLinking):
@@ -216,17 +258,35 @@ class ModelCoercerProvider(CoercerProvider):
                     mediator=mediator,
                     linking=linking_result.linking,
                 )
-            return self._field_linking_to_sub_plan(
-                mediator=mediator,
-                request=request,
-                input_field=input_field,
-                linking=linking_result.linking,
-            )
+            if isinstance(linking_result.linking, FunctionLinking):
+                return self._generate_function_linking_to_sub_plan(
+                    mediator=mediator,
+                    request=request,
+                    linking=linking_result.linking,
+                )
+            if isinstance(linking_result.linking, ModelLinking):
+                return self._generate_model_linking_to_sub_plan(
+                    mediator=mediator,
+                    linking=linking_result.linking,
+                )
+            if isinstance(linking_result.linking, FieldLinking):
+                field_loc = input_field_to_loc(input_field)
+                return self._generate_field_linking_to_sub_plan(
+                    mediator=mediator,
+                    request=request,
+                    loc=field_loc.complement_with_func(parent_func) if parent_func is not None else field_loc,
+                    linking=linking_result.linking,
+                )
+            raise TypeError
 
         field_sub_plans = mandatory_apply_by_iterable(
             generate_sub_plan,
             field_linkings,
-            lambda: "Cannot create coercer for models. Coercers for some linkings are not found",
+            lambda: (
+                "Cannot create coercer for models. Coercers for some linkings are not found"
+                if parent_func is None else
+                "Cannot create coercer for model and function. Coercers for some linkings are not found"
+            ),
         )
         return {
             dst_field: sub_plan
@@ -246,7 +306,7 @@ class ModelCoercerProvider(CoercerProvider):
             dst_shape=dst_shape,
             src_shape=src_shape,
         )
-        field_to_sub_plan = self._generate_field_to_sub_plan(
+        field_to_sub_plan = self._generate_sub_plan(
             mediator=mediator,
             request=request,
             field_linkings=[
@@ -254,6 +314,7 @@ class ModelCoercerProvider(CoercerProvider):
                 for dst_field, linking in field_linkings
                 if linking is not None
             ],
+            parent_func=None,
         )
         return self._make_constructor_call(
             dst_shape=dst_shape,

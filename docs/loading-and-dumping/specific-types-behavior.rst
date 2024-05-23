@@ -229,13 +229,14 @@ This doesn't applies for tuples like ``*tuple[int, str]`` (constant length tuple
 Dict and Mapping
 '''''''''''''''''''''
 
-Loader accepts any other ``Mapping`` and makes ``dict`` instances.
+Loader accepts any ``Mapping`` and makes ``dict`` instances.
 Dumper also constructs dict with converted keys and values.
 
 DefaultDict
 '''''''''''''''''''''
-Loader makes instances of ``defaultdict`` with the ``default_factory`` parameter set to ``None``.
-To customize this behavior, there are factory :func:`.default_dict` that have :paramref:`.default_dict.default_factory` parameter that can be overridden.
+Loader takes any ``Mapping`` and produces ``defaultdict`` with the ``default_factory`` parameter set to ``None``.
+To customize this behavior, there are factory :func:`.default_dict`
+that have :paramref:`.default_dict.default_factory` parameter that can be overridden.
 
 Models
 ''''''''''

@@ -396,7 +396,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 f"raise {namer.with_trail(bad_type_load_error)}",
             )
 
-    def _gen_assigment_from_parent_data(
+    def _gen_assignment_from_parent_data(
         self,
         state: GenState,
         *,
@@ -498,7 +498,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         state.namespace.add_constant(state.v_required_keys, self._get_dict_crown_required_keys(crown))
 
         if state.path:
-            self._gen_assigment_from_parent_data(state, assign_to=state.v_data)
+            self._gen_assignment_from_parent_data(state, assign_to=state.v_data)
             state.builder.empty_line()
 
         if self._can_collect_extra:
@@ -539,7 +539,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
 
     def _gen_list_crown(self, state: GenState, crown: InpListCrown):
         if state.path:
-            self._gen_assigment_from_parent_data(state, assign_to=state.v_data)
+            self._gen_assignment_from_parent_data(state, assign_to=state.v_data)
             state.builder.empty_line()
 
         if self._can_collect_extra:
@@ -598,7 +598,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
     def _gen_field_crown(self, state: GenState, crown: InpFieldCrown):
         field = state.get_field(crown)
         if field.is_required:
-            self._gen_assigment_from_parent_data(
+            self._gen_assignment_from_parent_data(
                 state=state,
                 assign_to=state.v_raw_field(field),
             )
@@ -619,7 +619,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 on_lookup_error = f"{state.v_field(field)} = {self._get_default_clause_expr(state, field)}"
 
             if isinstance(state.path[-1], int):
-                self._gen_assigment_from_parent_data(
+                self._gen_assignment_from_parent_data(
                     state=state,
                     assign_to=state.v_raw_field(field),
                     on_lookup_error=on_lookup_error,
@@ -681,16 +681,10 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
 
         self._gen_unexpected_exc_catching(state)
         with state.builder("else:"):
-            state.builder(
-                f"""
-                try:
-                    value = getter({state.path[-1]!r}, sentinel)
-                """,
-            )
-            self._gen_unexpected_exc_catching(state)
-            with state.builder("else:"):  # noqa: SIM117
+            if self._debug_trail == DebugTrail.DISABLE:
                 with state.builder(
                     f"""
+                    value = getter({state.path[-1]!r}, sentinel)
                     if value is sentinel:
                         {on_lookup_error}
                     else:
@@ -702,6 +696,28 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                         loader_arg="value",
                         state=state,
                     )
+            else:
+                state.builder(
+                    f"""
+                    try:
+                        value = getter({state.path[-1]!r}, sentinel)
+                    """,
+                )
+                self._gen_unexpected_exc_catching(state)
+                with state.builder("else:"):  # noqa: SIM117
+                    with state.builder(
+                        f"""
+                        if value is sentinel:
+                            {on_lookup_error}
+                        else:
+                        """,
+                    ):
+                        self._gen_field_assigment(
+                            assign_to=assign_to,
+                            field_id=field.id,
+                            loader_arg="value",
+                            state=state,
+                        )
 
     def _gen_field_assigment(
         self,

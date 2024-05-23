@@ -26,7 +26,7 @@ packaging==24.0
     # via
     #   marshmallow
     #   pytest
-pluggy==1.4.0
+pluggy==1.5.0
     # via pytest
 psutil==5.9.5
     # via

@@ -22,7 +22,7 @@ packaging==24.0
     # via pytest
 phonenumberslite==8.13.26
     # via -r requirements/raw/test_extra_none.txt
-pluggy==1.4.0
+pluggy==1.5.0
     # via pytest
 pydantic==2.5.3
     # via -r requirements/raw/test_extra_new_pypy38.txt
@@ -32,10 +32,8 @@ pytest==7.4.2
     # via -r requirements/raw/test_extra_none.txt
 pytz==2024.1
     # via dirty-equals
-sqlalchemy==2.0.29
-    # via
-    #   -r requirements/raw/test_extra_new_pypy38.txt
-    #   -r requirements/raw/test_extra_none.txt
+sqlalchemy==2.0.30
+    # via -r requirements/raw/test_extra_new_pypy38.txt
 typing-extensions==4.11.0
     # via
     #   pydantic

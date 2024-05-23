@@ -37,9 +37,9 @@ classifiers = [
 attrs = ['attrs >= 21.3.0']
 attrs-strict = ['attrs >= 21.3.0, <= 23.2.0']
 sqlalchemy = ['sqlalchemy >= 2.0.0']
-sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.29']
+sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.30']
 pydantic = ['pydantic >= 2.0.0']
-pydantic-strict = ['pydantic >= 2.0.0, <= 2.7.0']
+pydantic-strict = ['pydantic >= 2.0.0, <= 2.7.1']
 
 [project.urls]
 'Homepage' = 'https://github.com/reagento/adaptix'

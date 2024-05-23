@@ -21,6 +21,7 @@ Adaptix
    :caption: Conversion:
 
    conversion/tutorial
+   conversion/extended-usage
 
 
 .. toctree::

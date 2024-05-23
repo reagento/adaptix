@@ -1,13 +1,20 @@
 import importlib
+from fnmatch import fnmatch
 from pathlib import Path
+from typing import Optional
 
 import pytest
 
-from adaptix._internal.feature_requirement import HAS_PY_311, HAS_SUPPORTED_PYDANTIC_PKG
+from adaptix._internal.feature_requirement import (
+    HAS_PY_311,
+    HAS_SUPPORTED_PYDANTIC_PKG,
+    HAS_SUPPORTED_SQLALCHEMY_PKG,
+    Requirement,
+)
 
 REPO_ROOT = Path(__file__).parent.parent
 DOCS_EXAMPLES_ROOT = REPO_ROOT / "docs" / "examples"
-EXCLUDE = ["__init__.py"]
+EXCLUDE = ["__init__.py", "helpers.py"]
 GLOB = "*.py"
 
 
@@ -33,20 +40,28 @@ def pytest_generate_tests(metafunc):
     )
 
 
-CASES_REQUIREMENTS = {
+GLOB_REQUIREMENTS = {
     "loading-and-dumping/tutorial/unexpected_error": HAS_PY_311,
     "reference/integrations/native_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
     "loading-and-dumping/extended_usage/private_fields_including_no_rename_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
     "loading-and-dumping/extended_usage/private_fields_including_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
     "loading-and-dumping/extended_usage/private_fields_skipping_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
+    "reference/integrations/sqlalchemy_json/*": HAS_SUPPORTED_SQLALCHEMY_PKG,
+    "conversion/tutorial/tldr": HAS_SUPPORTED_SQLALCHEMY_PKG,
 }
 
 
+def _find_requirement(case_id: str) -> Optional[Requirement]:
+    for glob, requirement in GLOB_REQUIREMENTS.items():
+        if fnmatch(case_id, glob):
+            return requirement
+    return None
+
+
 def test_example(import_path: str, case_id: str):
-    if case_id in CASES_REQUIREMENTS:
-        requirement = CASES_REQUIREMENTS[case_id]
-        if not requirement:
-            pytest.skip(requirement.fail_reason)
+    requirement = _find_requirement(case_id)
+    if requirement is not None and not requirement:
+        pytest.skip(requirement.fail_reason)
 
     pytest.register_assert_rewrite(import_path)
     importlib.import_module(import_path)

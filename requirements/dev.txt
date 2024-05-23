@@ -8,29 +8,27 @@
     # via -r requirements/raw/bench.txt
 -e ./tests/tests_helpers
     # via -r requirements/raw/test_extra_none.txt
-alabaster==0.7.13
+alabaster==0.7.16
     # via sphinx
 annotated-types==0.6.0
     # via pydantic
 astpath==0.9.1
-    # via
-    #   -r requirements/raw/lint.txt
-    #   astpath
+    # via -r requirements/raw/lint.txt
 attrs==23.2.0
     # via
     #   -r requirements/raw/test_extra_new.txt
     #   cattrs
 babel==2.14.0
     # via sphinx
-beautifulsoup4==4.12.2
+beautifulsoup4==4.12.3
     # via furo
-build==1.0.3
+build==1.2.1
     # via pip-tools
-cachetools==5.3.2
+cachetools==5.3.3
     # via tox
 cattrs==23.1.2
     # via -r requirements/raw/bench.txt
-certifi==2023.11.17
+certifi==2024.2.2
     # via requests
 cfgv==3.4.0
     # via pre-commit
@@ -46,7 +44,7 @@ colorama==0.4.6
     # via
     #   radon
     #   tox
-contourpy==1.2.0
+contourpy==1.2.1
     # via matplotlib
 coverage==7.4.4
     # via
@@ -71,25 +69,25 @@ docutils==0.20.1
     #   sphinx-paramlinks
 docutils-stubs==0.0.22
     # via -r requirements/raw/doc.txt
-filelock==3.13.1
+filelock==3.13.4
     # via
     #   tox
     #   virtualenv
-flake8==6.1.0
+flake8==7.0.0
     # via dlint
-fonttools==4.47.0
+fonttools==4.51.0
     # via matplotlib
-furo==2023.9.10
+furo==2024.1.29
     # via -r requirements/raw/doc.txt
 gitdb==4.0.11
     # via gitpython
-gitpython==3.1.40
+gitpython==3.1.43
     # via -r requirements/raw/doc.txt
-greenlet==3.0.2
+greenlet==3.0.3
     # via sqlalchemy
-identify==2.5.33
+identify==2.5.36
     # via pre-commit
-idna==3.6
+idna==3.7
     # via requests
 imagesize==1.4.1
     # via sphinx
@@ -99,14 +97,14 @@ iniconfig==2.0.0
     # via pytest
 invoke==2.2.0
     # via -r requirements/raw/runner.txt
-jinja2==3.1.2
+jinja2==3.1.3
     # via
     #   myst-parser
     #   sphinx
     #   towncrier
 kiwisolver==1.4.5
     # via matplotlib
-lxml==5.0.0
+lxml==5.2.1
     # via astpath
 mando==0.7.1
     # via radon
@@ -114,7 +112,7 @@ markdown-it-py==3.0.0
     # via
     #   mdit-py-plugins
     #   myst-parser
-markupsafe==2.1.3
+markupsafe==2.1.5
     # via jinja2
 marshmallow==3.20.1
     # via -r requirements/raw/bench.txt
@@ -138,11 +136,11 @@ myst-parser==2.0.0
     # via -r requirements/raw/doc.txt
 nodeenv==1.8.0
     # via pre-commit
-numpy==1.26.3
+numpy==1.26.4
     # via
     #   contourpy
     #   matplotlib
-packaging==23.2
+packaging==24.0
     # via
     #   build
     #   marshmallow
@@ -156,23 +154,23 @@ pbr==6.0.0
     # via sphinxcontrib-apidoc
 phonenumberslite==8.13.26
     # via -r requirements/raw/test_extra_none.txt
-pillow==10.2.0
+pillow==10.3.0
     # via matplotlib
-pip-tools==7.3.0
+pip-tools==7.4.1
     # via -r requirements/raw/dev.txt
-platformdirs==4.1.0
+platformdirs==4.2.0
     # via
     #   tox
     #   virtualenv
-plotly==5.18.0
+plotly==5.21.0
     # via
     #   -r requirements/raw/_bench-orchestrate.txt
     #   -r requirements/raw/doc.txt
-pluggy==1.3.0
+pluggy==1.5.0
     # via
     #   pytest
     #   tox
-pre-commit==3.6.2
+pre-commit==3.7.0
     # via -r requirements/raw/lint.txt
 psutil==5.9.5
     # via
@@ -180,33 +178,35 @@ psutil==5.9.5
     #   pyperf
 pycodestyle==2.11.1
     # via flake8
-pydantic==2.7.0
+pydantic==2.7.1
     # via
     #   -r requirements/raw/bench.txt
     #   -r requirements/raw/test_extra_new.txt
-pydantic-core==2.18.1
+pydantic-core==2.18.2
     # via pydantic
-pyflakes==3.1.0
+pyflakes==3.2.0
     # via flake8
 pygments==2.17.2
     # via
     #   furo
     #   sphinx
-pyparsing==3.1.1
+pyparsing==3.1.2
     # via matplotlib
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
 pyproject-api==1.6.1
     # via tox
 pyproject-hooks==1.0.0
-    # via build
+    # via
+    #   build
+    #   pip-tools
 pytest==7.4.2
     # via
     #   -r requirements/raw/bench.txt
     #   -r requirements/raw/test_extra_none.txt
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
     # via matplotlib
-pytz==2023.3.post1
+pytz==2024.1
     # via dirty-equals
 pyyaml==6.0.1
     # via
@@ -216,7 +216,7 @@ radon==6.0.1
     # via -r requirements/raw/lint.txt
 requests==2.31.0
     # via sphinx
-ruff==0.3.3
+ruff==0.4.1
     # via -r requirements/raw/lint.txt
 schematics==2.1.1
     # via -r requirements/raw/bench.txt
@@ -230,7 +230,7 @@ snowballstemmer==2.2.0
     # via sphinx
 soupsieve==2.5
     # via beautifulsoup4
-sphinx==7.2.6
+sphinx==7.3.7
     # via
     #   -r requirements/raw/doc.txt
     #   furo
@@ -241,11 +241,6 @@ sphinx==7.2.6
     #   sphinx-paramlinks
     #   sphinx-reredirects
     #   sphinxcontrib-apidoc
-    #   sphinxcontrib-applehelp
-    #   sphinxcontrib-devhelp
-    #   sphinxcontrib-htmlhelp
-    #   sphinxcontrib-qthelp
-    #   sphinxcontrib-serializinghtml
     #   sphinxext-opengraph
 sphinx-basic-ng==1.0.0b2
     # via furo
@@ -261,58 +256,56 @@ sphinx-reredirects==0.1.3
     # via -r requirements/raw/doc.txt
 sphinxcontrib-apidoc==0.4.0
     # via -r requirements/raw/doc.txt
-sphinxcontrib-applehelp==1.0.7
+sphinxcontrib-applehelp==1.0.8
     # via sphinx
-sphinxcontrib-devhelp==1.0.5
+sphinxcontrib-devhelp==1.0.6
     # via sphinx
-sphinxcontrib-htmlhelp==2.0.4
+sphinxcontrib-htmlhelp==2.0.5
     # via sphinx
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
-sphinxcontrib-qthelp==1.0.6
+sphinxcontrib-qthelp==1.0.7
     # via sphinx
-sphinxcontrib-serializinghtml==1.1.9
+sphinxcontrib-serializinghtml==1.1.10
     # via sphinx
 sphinxext-opengraph==0.9.1
     # via -r requirements/raw/doc.txt
-sqlalchemy==2.0.29
-    # via
-    #   -r requirements/raw/test_extra_new.txt
-    #   -r requirements/raw/test_extra_none.txt
+sqlalchemy==2.0.30
+    # via -r requirements/raw/test_extra_new.txt
 tenacity==8.2.3
     # via plotly
 toml==0.10.2
     # via vulture
 towncrier==23.11.0
     # via -r requirements/raw/dev.txt
-tox==4.11.4
+tox==4.14.2
     # via -r requirements/raw/runner.txt
-typing-extensions==4.9.0
+typing-extensions==4.11.0
     # via
     #   mashumaro
     #   mypy
     #   pydantic
     #   pydantic-core
     #   sqlalchemy
-urllib3==2.1.0
+urllib3==2.2.1
     # via requests
-virtualenv==20.25.0
+virtualenv==20.25.3
     # via
     #   pre-commit
     #   tox
 vulture==2.10
     # via -r requirements/raw/lint.txt
-wheel==0.42.0
+wheel==0.43.0
     # via
     #   -r requirements/raw/pre.txt
     #   pip-tools
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==23.3.1
+pip==24.0
     # via
     #   -r requirements/raw/pre.txt
     #   pip-tools
-setuptools==69.0.0
+setuptools==69.5.1
     # via
     #   -r requirements/raw/dev.txt
     #   nodeenv

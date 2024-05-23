@@ -170,10 +170,6 @@ class EnumValueProvider(BaseEnumProvider):
         return enum_dumper
 
 
-def _enum_exact_value_dumper(data):
-    return data.value
-
-
 class EnumExactValueProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world
     by their value without any processing
@@ -211,7 +207,7 @@ class EnumExactValueProvider(BaseEnumProvider):
 
     def _get_exact_value_to_member(self, enum: Type[Enum]) -> Optional[Mapping[Any, Any]]:
         try:
-            value_to_member = {case.value: case for case in enum}
+            value_to_member = {member.value: member for member in enum}
         except TypeError:
             return None
 
@@ -221,7 +217,12 @@ class EnumExactValueProvider(BaseEnumProvider):
         return value_to_member
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return _enum_exact_value_dumper
+        member_to_value = {member: member.value for member in get_type_from_request(request)}
+
+        def enum_exact_value_dumper(data):
+            return member_to_value[data]
+
+        return enum_exact_value_dumper
 
 
 class FlagByExactValueProvider(BaseFlagProvider):
@@ -245,7 +246,7 @@ class FlagByExactValueProvider(BaseFlagProvider):
             )
 
         def flag_loader(data):
-            if type(data) is not int: # noqa: E721
+            if type(data) is not int:  # noqa: E721
                 raise TypeLoadError(int, data)
 
             if data < 0 or data > flag_mask:
@@ -258,7 +259,10 @@ class FlagByExactValueProvider(BaseFlagProvider):
         return flag_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return _enum_exact_value_dumper
+        def flag_exact_value_dumper(data):
+            return data.value
+
+        return flag_exact_value_dumper
 
 
 def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Sequence[FlagT]:

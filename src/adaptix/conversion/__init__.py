@@ -6,6 +6,7 @@ from adaptix._internal.conversion.facade.provider import (
     from_param,
     link,
     link_constant,
+    link_function,
 )
 from adaptix._internal.conversion.facade.retort import AdornedConversionRetort, ConversionRetort, FilledConversionRetort
 
@@ -15,6 +16,7 @@ __all__ = (
     "impl_converter",
     "link",
     "link_constant",
+    "link_function",
     "coercer",
     "allow_unlinked_optional",
     "forbid_unlinked_optional",

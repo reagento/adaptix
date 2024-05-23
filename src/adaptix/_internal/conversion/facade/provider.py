@@ -4,10 +4,11 @@ from ...common import OneArgCoercer
 from ...model_tools.definitions import DefaultFactory, DefaultValue
 from ...provider.essential import Provider
 from ...provider.facade.provider import bound_by_any
-from ...provider.loc_stack_filtering import LocStackChecker, LocStackSizeChecker, Pred, create_loc_stack_checker
+from ...provider.loc_stack_filtering import LocStackChecker, Pred, create_loc_stack_checker
 from ..coercer_provider import MatchingCoercerProvider
-from ..linking_provider import ConstantLinkingProvider, MatchingLinkingProvider
+from ..linking_provider import ConstantLinkingProvider, FunctionLinkingProvider, MatchingLinkingProvider
 from ..policy_provider import UnlinkedOptionalPolicyProvider
+from ..request_filtering import FromCtxParam
 
 
 def link(src: Pred, dst: Pred, *, coercer: Optional[OneArgCoercer] = None) -> Provider:
@@ -50,6 +51,25 @@ def link_constant(dst: Pred, *, value: Any = None, factory: Any = None) -> Provi
     )
 
 
+def link_function(func: Callable, dst: Pred) -> Provider:
+    """Provider that uses function to produce value of destination field.
+
+    The entire model is passed to the first parameter of the function.
+    The type of result and first parameter are not checked, you must ensure type compatibility yourself.
+
+    Keyword-only parameters link to model fields and other parameters link to extra converter parameters.
+    After linking, the default type coercing mechanism is applied.
+
+    :param func: A function used to process several fields of source model.
+    :param dst: Predicate specifying destination point of linking. See :ref:`predicate-system` for details.
+    :return: Desired provider
+    """
+    return FunctionLinkingProvider(
+        func=func,
+        dst_lsc=create_loc_stack_checker(dst),
+    )
+
+
 def coercer(src: Pred, dst: Pred, func: OneArgCoercer) -> Provider:
     """Basic provider to define custom coercer.
 
@@ -89,6 +109,4 @@ def forbid_unlinked_optional(*preds: Pred) -> Provider:
 
 def from_param(param_name: str) -> LocStackChecker:
     """The special predicate form matching only top-level parameters by name"""
-    if not param_name.isidentifier():
-        raise ValueError("param_name must be a valid python identifier to exactly match parameter")
-    return LocStackSizeChecker(1) & create_loc_stack_checker(param_name)
+    return FromCtxParam(param_name)
