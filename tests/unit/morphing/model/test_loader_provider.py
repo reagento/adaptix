@@ -219,6 +219,76 @@ def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
     )
 
 
+def test_direct_all_optional_kw(debug_ctx, debug_trail, extra_policy, trail_select):
+    loader_getter = make_loader_getter(
+        shape=shape(
+            TestField("a", ParamKind.KW_ONLY, is_required=False, default=DefaultValue(0)),
+            TestField("b", ParamKind.KW_ONLY, is_required=False, default=DefaultValue(1)),
+        ),
+        name_layout=InputNameLayout(
+            crown=InpDictCrown(
+                {
+                    "a": InpFieldCrown("a"),
+                    "b": InpFieldCrown("b"),
+                },
+                extra_policy=extra_policy,
+            ),
+            extra_move=None,
+        ),
+        debug_trail=debug_trail,
+        debug_ctx=debug_ctx,
+    )
+
+    if extra_policy == ExtraCollect():
+        pytest.raises(ValueError, loader_getter).match(
+            "Cannot create loader that collect extra data if InputShape does not take extra data",
+        )
+        return
+
+    loader = loader_getter()
+    assert loader({"a": 1, "b": 2}) == gauge(a=1, b=2)
+
+    if extra_policy == ExtraSkip():
+        assert loader({"a": 1, "b": 2, "c": 3}) == gauge(a=1, b=2)
+    if extra_policy == ExtraForbid():
+        data = {"a": 1, "b": 2, "c": 3}
+        raises_exc(
+            trail_select(
+                disable=ExtraFieldsLoadError({"c"}, data),
+                first=ExtraFieldsLoadError({"c"}, data),
+                all=AggregateLoadError(
+                    f"while loading model {Gauge}",
+                    [ExtraFieldsLoadError({"c"}, data)],
+                ),
+            ),
+            lambda: loader(data),
+        )
+
+    raises_exc(
+        trail_select(
+            disable=LoadError(),
+            first=with_trail(LoadError(), ["b"]),
+            all=AggregateLoadError(
+                f"while loading model {Gauge}",
+                [with_trail(LoadError(), ["b"])],
+            ),
+        ),
+        lambda: loader({"a": 1, "b": LoadError()}),
+    )
+
+    raises_exc(
+        trail_select(
+            disable=TypeLoadError(CollectionsMapping, "bad input value"),
+            first=TypeLoadError(CollectionsMapping, "bad input value"),
+            all=AggregateLoadError(
+                f"while loading model {Gauge}",
+                [TypeLoadError(CollectionsMapping, "bad input value")],
+            ),
+        ),
+        lambda: loader("bad input value"),
+    )
+
+
 @pytest.mark.parametrize("extra_policy", [ExtraSkip(), ExtraForbid()])
 def test_direct_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_coercion):
     loader_getter = make_loader_getter(
