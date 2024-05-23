@@ -1,6 +1,38 @@
 ----------------------------------------------------
 
 
+.. _v3.0.0b6:
+
+`3.0.0b6 <https://github.com/reagento/adaptix/tree/v3.0.0b6>`__ -- 2024-05-23
+=============================================================================
+
+.. _v3.0.0b6-Features:
+
+Features
+--------
+
+- Now, you can merge several fields or access the model directly via :func:`.conversion.link_function`.
+
+  See :ref:`link_function` for details.
+
+- Add a special column type for serializing and deserializing JSON inside SQLAlchemy.
+
+  See :ref:`sqlalchemy_json` for details.
+
+- Add ``Extended Usage`` article for model conversion and other documentation updates.
+
+.. _v3.0.0b6-Bug Fixes:
+
+Bug Fixes
+---------
+
+- Fix processing of list relationships in SQLAlchemy.
+
+- Fix model loader generation with non-required field and ``DebugTrail.DISABLE``.
+
+----------------------------------------------------
+
+
 .. _v3.0.0b5:
 
 `3.0.0b5 <https://github.com/reagento/adaptix/tree/v3.0.0b5>`__ -- 2024-04-20
