@@ -30,7 +30,7 @@ from ..model_tools.definitions import DefaultValue, InputField, InputShape, Outp
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import input_field_to_loc, output_field_to_loc
-from ..provider.location import InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc
+from ..provider.location import InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc, AnyLoc
 from ..provider.request_cls import LocStack, TypeHintLoc
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..utils import add_note
@@ -78,14 +78,20 @@ class ModelCoercerProvider(CoercerProvider):
             file_name=self._get_file_name(request),
         )
 
+    def _loc_stack_to_view_string(self, lock_stack: LocStack[AnyLoc]) -> str:
+        tp = lock_stack.last.type
+        if isinstance(tp, type):
+            return tp.__name__
+        return str(tp)
+
     def _get_closure_name(self, request: CoercerRequest) -> str:
-        src = request.src.last.cast(TypeHintLoc).type
-        dst = request.dst.last.cast(TypeHintLoc).type
+        src = self._loc_stack_to_view_string(request.src)
+        dst = self._loc_stack_to_view_string(request.dst)
         return self._name_sanitizer.sanitize(f"coerce_{src}_to_{dst}")
 
     def _get_file_name(self, request: CoercerRequest) -> str:
-        src = request.src.last.cast(TypeHintLoc).type
-        dst = request.dst.last.cast(TypeHintLoc).type
+        src = self._loc_stack_to_view_string(request.src)
+        dst = self._loc_stack_to_view_string(request.dst)
         return self._name_sanitizer.sanitize(f"coerce_{src}_to_{dst}")
 
     def _fetch_dst_shape(self, mediator: Mediator, loc_stack: LocStack[ConversionDestItem]) -> InputShape:
