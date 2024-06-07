@@ -3,7 +3,7 @@ import re
 import typing
 from binascii import a2b_base64, b2a_base64
 from dataclasses import dataclass, replace
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from io import BytesIO
@@ -73,6 +73,51 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
             return data.strftime(fmt)
 
         return datetime_format_dumper
+
+
+@dataclass
+@for_predicate(datetime)
+class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
+    tz: timezone = timezone.utc
+
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        tz = self.tz
+
+        def datetime_timestamp_loader(data):
+            try:
+                return datetime.fromtimestamp(data, tz=tz)
+            except TypeError:
+                raise TypeLoadError(float, data)
+            except OverflowError:
+                raise ValueLoadError(
+                    "Timestamp is out of the range of values supported by the platform",
+                    data,
+                )
+
+        return datetime_timestamp_loader
+
+    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        def datetime_timestamp_dumper(data: datetime):
+            return data.timestamp()
+
+        return datetime_timestamp_dumper
+
+
+@for_predicate(date)
+class DateTimestampProvider(LoaderProvider):
+    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        def datetime_timestamp_loader(data):
+            try:
+                return date.fromtimestamp(data) # noqa: DTZ012
+            except TypeError:
+                raise TypeLoadError(float, data)
+            except OverflowError:
+                raise ValueLoadError(
+                    "Timestamp is out of the range of values supported by the platform",
+                    data,
+                )
+
+        return datetime_timestamp_loader
 
 
 @for_predicate(timedelta)
