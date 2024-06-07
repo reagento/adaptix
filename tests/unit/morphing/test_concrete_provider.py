@@ -12,31 +12,26 @@ from tests_helpers import cond_list, raises_exc
 
 from adaptix import Retort
 from adaptix._internal.feature_requirement import HAS_PY_311, IS_PYPY
-from adaptix._internal.morphing.concrete_provider import DatetimeFormatProvider
+from adaptix._internal.morphing.concrete_provider import (
+    DatetimeFormatProvider,
+    DateTimestampProvider,
+    DatetimeTimestampProvider,
+)
 from adaptix.load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 
 
-def check_any_dt(loader):
-    raises_exc(
-        TypeLoadError(str, None),
-        lambda: loader(None),
-    )
-    raises_exc(
-        TypeLoadError(str, 10),
-        lambda: loader(10),
-    )
-    raises_exc(
-        TypeLoadError(str, datetime(2011, 11, 4, 0, 0)),
-        lambda: loader(datetime(2011, 11, 4, 0, 0)),
-    )
-    raises_exc(
-        TypeLoadError(str, date(2019, 12, 4)),
-        lambda: loader(date(2019, 12, 4)),
-    )
-    raises_exc(
-        TypeLoadError(str, time(4, 23, 1)),
-        lambda: loader(time(4, 23, 1)),
-    )
+def check_any_dt(loader, expected_type: type = str, invalid_objects: tuple[typing.Any, ...] = (
+    None,
+    10,
+    datetime(2011, 11, 4, 0, 0),
+    date(2019, 12, 4),
+    time(4, 23, 1),
+)):
+    for obj in invalid_objects:
+        raises_exc(
+            TypeLoadError(expected_type, obj),
+            lambda: loader(obj),  # noqa: B023
+        )
 
 
 def test_iso_format_provider_datetime(strict_coercion, debug_trail):
@@ -127,6 +122,79 @@ def test_datetime_format_provider(strict_coercion, debug_trail):
 
     dumper = retort.get_dumper(datetime)
     assert dumper(datetime(year=3045, month=2, day=13)) == "3045-02-13"
+
+
+@pytest.mark.parametrize(
+    "tz",
+    [
+        None,
+        timezone(timedelta(hours=3)),
+    ],
+)
+def test_datetime_timestamp_provider(strict_coercion, debug_trail, tz):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            DatetimeTimestampProvider(tz=tz),
+        ],
+    )
+
+    loader = retort.get_loader(datetime)
+
+    dt = datetime.now(tz=tz)
+    ts = dt.timestamp()
+
+    assert loader(ts) == dt
+
+    check_any_dt(loader, float, invalid_objects=(
+        None,
+        datetime(2011, 11, 4, 0, 0),
+        date(2019, 12, 4),
+        time(4, 23, 1),
+    ))
+
+    overflow_ts = ts + 100 ** 10
+
+    raises_exc(
+        ValueLoadError("Timestamp is out of the range of values supported by the platform", overflow_ts),
+        lambda: loader(overflow_ts),
+    )
+
+    dumper = retort.get_dumper(datetime)
+    assert dumper(dt) == ts
+
+
+def test_date_timestamp_provider(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            DateTimestampProvider(),
+        ],
+    )
+
+    loader = retort.get_loader(date)
+    dt = datetime.now()  # noqa: DTZ005
+    today = dt.date()
+
+    ts = dt.timestamp()
+
+    assert loader(ts) == today
+
+    check_any_dt(loader, float, invalid_objects=(
+        None,
+        datetime(2011, 11, 4, 0, 0),
+        date(2019, 12, 4),
+        time(4, 23, 1),
+    ))
+
+    overflow_ts = ts + 100 ** 10
+
+    raises_exc(
+        ValueLoadError("Timestamp is out of the range of values supported by the platform", overflow_ts),
+        lambda: loader(overflow_ts),
+    )
 
 
 def test_seconds_timedelta_provider(strict_coercion, debug_trail):

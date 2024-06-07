@@ -78,7 +78,7 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
 @dataclass
 @for_predicate(datetime)
 class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
-    tz: timezone = timezone.utc
+    tz: typing.Optional[timezone] = None
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         tz = self.tz
@@ -106,9 +106,9 @@ class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
 @for_predicate(date)
 class DateTimestampProvider(LoaderProvider):
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        def datetime_timestamp_loader(data):
+        def date_timestamp_loader(data):
             try:
-                return date.fromtimestamp(data) # noqa: DTZ012
+                return date.fromtimestamp(data)  # noqa: DTZ012
             except TypeError:
                 raise TypeLoadError(float, data)
             except OverflowError:
@@ -117,7 +117,7 @@ class DateTimestampProvider(LoaderProvider):
                     data,
                 )
 
-        return datetime_timestamp_loader
+        return date_timestamp_loader
 
 
 @for_predicate(timedelta)
