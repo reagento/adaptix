@@ -154,10 +154,10 @@ def test_datetime_timestamp_provider(strict_coercion, debug_trail, tz):
         time(4, 23, 1),
     ))
 
-    overflow_ts = ts + 100 ** 10
+    overflow_ts = float("inf")
 
     raises_exc(
-        ValueLoadError("Timestamp is out of the range of values supported by the platform", overflow_ts),
+        ValueLoadError("Timestamp is out of the range of values supported", overflow_ts),
         lambda: loader(overflow_ts),
     )
 
@@ -189,10 +189,10 @@ def test_date_timestamp_provider(strict_coercion, debug_trail):
         time(4, 23, 1),
     ))
 
-    overflow_ts = ts + 100 ** 10
+    overflow_ts = float("inf")
 
     raises_exc(
-        ValueLoadError("Timestamp is out of the range of values supported by the platform", overflow_ts),
+        ValueLoadError("Timestamp is out of the range of values supported", overflow_ts),
         lambda: loader(overflow_ts),
     )
 

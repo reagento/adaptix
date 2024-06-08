@@ -93,7 +93,7 @@ class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
                 raise TypeLoadError(float, data)
             except OverflowError:
                 raise ValueLoadError(
-                    "Timestamp is out of the range of values supported by the platform",
+                    "Timestamp is out of the range of values supported",
                     data,
                 )
 
@@ -119,7 +119,7 @@ class DateTimestampProvider(LoaderProvider):
                 raise TypeLoadError(float, data)
             except OverflowError:
                 raise ValueLoadError(
-                    "Timestamp is out of the range of values supported by the platform",
+                    "Timestamp is out of the range of values supported",
                     data,
                 )
 
