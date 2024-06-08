@@ -78,7 +78,7 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
 @dataclass
 @for_predicate(datetime)
 class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
-    tz: typing.Optional[timezone] = timezone.utc
+    tz: typing.Optional[timezone] = None
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         tz = self.tz
@@ -93,7 +93,7 @@ class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
                 raise TypeLoadError(float, data)
             except OverflowError:
                 raise ValueLoadError(
-                    "Timestamp is out of the range of values supported",
+                    "Timestamp is out of the range of supported values",
                     data,
                 )
 
@@ -119,7 +119,7 @@ class DateTimestampProvider(LoaderProvider):
                 raise TypeLoadError(float, data)
             except OverflowError:
                 raise ValueLoadError(
-                    "Timestamp is out of the range of values supported",
+                    "Timestamp is out of the range of supported values",
                     data,
                 )
 

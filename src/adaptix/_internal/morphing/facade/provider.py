@@ -451,8 +451,7 @@ def datetime_timestamp_provider(pred: Pred, tz: Optional[timezone] = None) -> Pr
     :param tz: tz parameter which will be passed to the datetime.fromtimestamp method.
     """
 
-    provider = DatetimeTimestampProvider(tz) if tz else DatetimeTimestampProvider()
-    return bound(pred, provider)
+    return bound(pred, DatetimeTimestampProvider(tz))
 
 
 def datetime_format_provider(pred: Pred, fmt: str) -> Provider:
