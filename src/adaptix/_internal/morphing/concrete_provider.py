@@ -10,7 +10,7 @@ from io import BytesIO
 from typing import Generic, Type, TypeVar, Union
 
 from ..common import Dumper, Loader
-from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
+from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE, IS_PYPY
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import P, create_loc_stack_checker
 from ..provider.provider_template import for_predicate
@@ -94,6 +94,15 @@ class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
                     data,
                 )
 
+        def pypy_loader(data):
+            if data is None:
+                raise TypeLoadError(float, data)
+
+            return datetime_timestamp_loader(data)
+
+        if IS_PYPY:
+            return pypy_loader
+
         return datetime_timestamp_loader
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
@@ -116,6 +125,15 @@ class DateTimestampProvider(LoaderProvider):
                     "Timestamp is out of the range of values supported by the platform",
                     data,
                 )
+
+        def pypy_loader(data):
+            if data is None:
+                raise TypeLoadError(float, data)
+
+            return date_timestamp_loader(data)
+
+        if IS_PYPY:
+            return pypy_loader
 
         return date_timestamp_loader
 
