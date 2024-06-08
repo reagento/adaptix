@@ -78,7 +78,7 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
 @dataclass
 @for_predicate(datetime)
 class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
-    tz: typing.Optional[timezone] = None
+    tz: typing.Optional[timezone] = timezone.utc
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         tz = self.tz

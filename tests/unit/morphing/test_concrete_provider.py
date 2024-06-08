@@ -20,7 +20,7 @@ from adaptix._internal.morphing.concrete_provider import (
 from adaptix.load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 
 
-def check_any_dt(loader, expected_type: type = str, invalid_objects: tuple[typing.Any, ...] = (
+def check_any_dt(loader, expected_type: type = str, invalid_objects: typing.Tuple[typing.Any, ...] = (
     None,
     10,
     datetime(2011, 11, 4, 0, 0),

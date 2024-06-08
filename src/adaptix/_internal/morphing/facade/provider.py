@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import timezone
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Callable, Iterable, List, Mapping, Optional, TypeVar, Union
+from typing import Any, Callable, Iterable, List, Mapping, Optional, TypeVar, Union
 
 from ...common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
@@ -45,9 +46,6 @@ from ..name_layout.name_mapping import (
     NameMap,
 )
 from ..request_cls import DumperRequest, LoaderRequest
-
-if TYPE_CHECKING:
-    from datetime import timezone
 
 T = TypeVar("T")
 
@@ -452,7 +450,9 @@ def datetime_timestamp_provider(pred: Pred, tz: Optional[timezone] = None) -> Pr
         See :ref:`predicate-system` for details.
     :param tz: tz parameter which will be passed to the datetime.fromtimestamp method.
     """
-    return bound(pred, DatetimeTimestampProvider(tz))
+
+    provider = DatetimeTimestampProvider(tz) if tz else DatetimeTimestampProvider()
+    return bound(pred, provider)
 
 
 def datetime_format_provider(pred: Pred, fmt: str) -> Provider:
