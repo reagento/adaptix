@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from adaptix import NoSuitableProvider, Retort, name_mapping
+from adaptix import ProviderNotFoundError, Retort, name_mapping
 
 
 @dataclass
@@ -33,5 +33,5 @@ assert retort.dump(user) == data
 
 try:
     retort.get_loader(User)
-except NoSuitableProvider:
+except ProviderNotFoundError:
     pass

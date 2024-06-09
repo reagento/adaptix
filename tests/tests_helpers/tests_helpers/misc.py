@@ -12,7 +12,7 @@ from uuid import uuid4
 
 import pytest
 
-from adaptix import CannotProvide, DebugTrail, Mediator, NoSuitableProvider, Provider, Request
+from adaptix import CannotProvide, DebugTrail, Mediator, Provider, ProviderNotFoundError, Request
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
@@ -58,7 +58,7 @@ def _repr_value(obj: Any) -> Dict[str, Any]:
         result["message"] = obj.message
         result["is_terminal"] = obj.is_terminal
         result["is_demonstrative"] = obj.is_demonstrative
-    if isinstance(obj, NoSuitableProvider):
+    if isinstance(obj, ProviderNotFoundError):
         result["message"] = obj.message
     if not result:
         result["args"] = [_repr_value(arg) for arg in obj.args]

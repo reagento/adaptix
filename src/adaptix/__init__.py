@@ -42,7 +42,7 @@ from .provider import (
     Request,
     create_loc_stack_checker,
 )
-from .retort import NoSuitableProvider
+from .retort import ProviderNotFoundError
 
 __all__ = (
     "Dumper",
@@ -89,7 +89,7 @@ __all__ = (
     "create_loc_stack_checker",
     "retort",
     "Provider",
-    "NoSuitableProvider",
+    "ProviderNotFoundError",
     "Request",
     "load",
     "dump",

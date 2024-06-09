@@ -5,7 +5,7 @@ from typing import Callable, List, Literal, Optional, Union
 import pytest
 from tests_helpers import raises_exc, with_cause, with_notes
 
-from adaptix import CannotProvide, DebugTrail, NoSuitableProvider, Retort, loader
+from adaptix import CannotProvide, DebugTrail, ProviderNotFoundError, Retort, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 
@@ -160,7 +160,7 @@ def test_bad_optional_dumping(debug_trail):
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(
+                ProviderNotFoundError(
                     f"Cannot produce dumper for type {Union[int, Callable[[int], str]]}",
                 ),
                 "Note: The attached exception above contains verbose description of the problem",

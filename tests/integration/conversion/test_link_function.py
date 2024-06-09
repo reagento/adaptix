@@ -1,6 +1,6 @@
 from tests_helpers import raises_exc, with_cause, with_notes
 
-from adaptix import AggregateCannotProvide, CannotProvide, NoSuitableProvider
+from adaptix import AggregateCannotProvide, CannotProvide, ProviderNotFoundError
 from adaptix._internal.conversion.facade.func import get_converter
 from adaptix._internal.conversion.facade.provider import coercer
 from adaptix.conversion import impl_converter, link_function
@@ -116,7 +116,7 @@ def test_linking_error(model_spec):
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(
+                ProviderNotFoundError(
                     f"Cannot produce converter for"
                     f" <Signature (src: {SourceModel.__module__}.{SourceModel.__qualname__}, /)"
                     f" -> {DestModel.__module__}.{DestModel.__qualname__}>",
@@ -194,7 +194,7 @@ def test_cannot_find_coercer_error(model_spec):
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(
+                ProviderNotFoundError(
                     f"Cannot produce converter for"
                     f" <Signature (src: {SourceModel.__module__}.{SourceModel.__qualname__}, p1: int)"
                     f" -> {DestModel.__module__}.{DestModel.__qualname__}>",

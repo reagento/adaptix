@@ -7,7 +7,7 @@ from tests_helpers import parametrize_bool, raises_exc, with_cause, with_notes
 from adaptix import (
     CannotProvide,
     NameStyle,
-    NoSuitableProvider,
+    ProviderNotFoundError,
     Retort,
     dumper,
     enum_by_name,
@@ -246,7 +246,7 @@ def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(f"Cannot produce loader for type {FlagEnumWithSkippedBit}"),
+                ProviderNotFoundError(f"Cannot produce loader for type {FlagEnumWithSkippedBit}"),
                 "Note: The attached exception above contains verbose description of the problem",
             ),
             with_notes(
@@ -263,7 +263,7 @@ def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(f"Cannot produce loader for type {FlagEnumWithNegativeValue}"),
+                ProviderNotFoundError(f"Cannot produce loader for type {FlagEnumWithNegativeValue}"),
                 "Note: The attached exception above contains verbose description of the problem",
             ),
             with_notes(
