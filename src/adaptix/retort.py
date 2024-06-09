@@ -1,8 +1,16 @@
 from adaptix._internal.retort.base_retort import BaseRetort
 from adaptix._internal.retort.operating_retort import OperatingRetort, ProviderNotFoundError
+from adaptix._internal.utils import create_deprecated_alias_getter
 
 __all__ = (
     "BaseRetort",
     "ProviderNotFoundError",
     "OperatingRetort",
+)
+
+__getattr__ = create_deprecated_alias_getter(
+    __name__,
+    {
+        "NoSuitableProvider": "ProviderNotFoundError",
+    },
 )
