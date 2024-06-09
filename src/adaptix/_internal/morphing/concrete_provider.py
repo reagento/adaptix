@@ -7,7 +7,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from io import BytesIO
-from typing import Generic, Type, TypeVar, Union
+from typing import Generic, Optional, Type, TypeVar, Union
 
 from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
@@ -78,19 +78,18 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
 @dataclass
 @for_predicate(datetime)
 class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
-    tz: typing.Optional[timezone] = None
+    tz: Optional[timezone]
 
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         tz = self.tz
 
         def datetime_timestamp_loader(data):
             try:
-                if data is None:
-                    raise TypeLoadError(float, data)
-
                 return datetime.fromtimestamp(data, tz=tz)
             except TypeError:
-                raise TypeLoadError(float, data)
+                raise TypeLoadError(Union[int, float], data)
+            except ValueError:
+                raise ValueLoadError("Unexpected value", data)
             except OverflowError:
                 raise ValueLoadError(
                     "Timestamp is out of the range of supported values",
@@ -108,22 +107,52 @@ class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
 
 @for_predicate(date)
 class DateTimestampProvider(LoaderProvider):
+    def _is_pydatetime(self) -> bool:
+        try:
+            import _pydatetime
+        except ImportError:
+            return False
+        else:
+            if datetime is _pydatetime:
+                return True
+
+        return False
+
     def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        is_pydatetime = self._is_pydatetime()
+
         def date_timestamp_loader(data):
             try:
+                # Pure-Python implementation and C-extension implementation
+                # of datetime.date.fromtimestamp module works differently with a None arg.
+                # See https://github.com/python/cpython/issues/120268 for more details.
+
                 if data is None:
-                    raise TypeLoadError(float, data)
+                    raise TypeLoadError(Union[int, float], data)
 
                 return date.fromtimestamp(data)  # noqa: DTZ012
             except TypeError:
-                raise TypeLoadError(float, data)
+                raise TypeLoadError(Union[int, float], data)
+            except ValueError:
+                raise ValueLoadError("Unexpected value", data)
             except OverflowError:
                 raise ValueLoadError(
                     "Timestamp is out of the range of supported values",
                     data,
                 )
 
-        return date_timestamp_loader
+        def pydate_timestamp_loader(data):
+            try:
+                return date.fromtimestamp(data)  # noqa: DTZ012
+            except TypeError:
+                raise TypeLoadError(Union[int, float], data)
+            except OverflowError:
+                raise ValueLoadError(
+                    "Timestamp is out of the range of supported values",
+                    data,
+                )
+
+        return date_timestamp_loader if not is_pydatetime else pydate_timestamp_loader
 
 
 @for_predicate(timedelta)

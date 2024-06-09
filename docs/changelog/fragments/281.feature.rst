@@ -1,2 +1,2 @@
-Add new :func:`.datetime_timestamp_provider` and :func:`.date_timestamp_provider`.
+Add new :func:`.datetime_by_timestamp` and :func:`.date_by_timestamp`.
 `#286 <https://github.com/reagento/adaptix/issues/286>`_
