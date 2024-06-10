@@ -1,1 +1,0 @@
-`NoSuitableProvider` exception was renamed to `ProviderNotFoundError`

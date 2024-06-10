@@ -1,6 +1,29 @@
 ----------------------------------------------------
 
 
+.. _v3.0.0b7:
+
+`3.0.0b7 <https://github.com/reagento/adaptix/tree/v3.0.0b7>`__ -- 2024-06-10
+=============================================================================
+
+.. _v3.0.0b7-Deprecations:
+
+Deprecations
+------------
+
+- ``NoSuitableProvider`` exception was renamed to ``ProviderNotFoundError``. `#245 <https://github.com/reagento/adaptix/issues/245>`__
+
+.. _v3.0.0b7-Bug Fixes:
+
+Bug Fixes
+---------
+
+- Allow redefining coercer inside ``Optional`` using an inner type if source and destination types are same. `#279 <https://github.com/reagento/adaptix/issues/279>`__
+- Fix ``ForwardRef`` evaluation inside bound of ``TypeVar`` for ``Python 3.12.4``. `#312 <https://github.com/reagento/adaptix/issues/312>`__
+
+----------------------------------------------------
+
+
 .. _v3.0.0b6:
 
 `3.0.0b6 <https://github.com/reagento/adaptix/tree/v3.0.0b6>`__ -- 2024-05-23

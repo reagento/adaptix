@@ -1,1 +1,0 @@
-Allow redefining coercer inside `Optional` using an inner type if source and destination types are same
