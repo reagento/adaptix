@@ -1,4 +1,5 @@
 import typing
+from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Set, Tuple, Union
 
 import pytest
@@ -139,12 +140,17 @@ def test_union_subcase(model_spec, src_tp, dst_tp):
     assert convert(SourceModel(field1=1, field2=2)) == DestModel(field1=1, field2=2)
 
 
+SOME_DATETIME_NAIVE = datetime(year=1048, month=3, day=4, tzinfo=None)  # noqa: DTZ001
+SOME_DATETIME_UTC = SOME_DATETIME_NAIVE.replace(tzinfo=timezone.utc)
+
+
 @pytest.mark.parametrize(
     ["src_tp", "dst_tp", "src_value", "dst_value"],
     [
         pytest.param(Optional[int], Optional[int], 10, 10),
         pytest.param(Optional[int], Optional[int], None, None),
         pytest.param(Optional[str], Optional[str], "abc", "abc"),
+        pytest.param(Optional[datetime], Optional[datetime], SOME_DATETIME_NAIVE, SOME_DATETIME_UTC),
         pytest.param(Optional[str], Optional[str], None, None),
         pytest.param(Optional[bool], Optional[int], True, True),
         pytest.param(Optional[str], Optional[int], "123", 123),
@@ -170,7 +176,12 @@ def test_optional(model_spec, src_tp, dst_tp, src_value, dst_value):
         field1: int
         field2: dst_tp
 
-    @impl_converter(recipe=[coercer(str, int, func=int)])
+    @impl_converter(
+        recipe=[
+            coercer(str, int, func=int),
+            coercer(datetime, datetime, lambda x: x.replace(tzinfo=timezone.utc)),
+        ],
+    )
     def convert(a: SourceModel) -> DestModel:
         ...
 

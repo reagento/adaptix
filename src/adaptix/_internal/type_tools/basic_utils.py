@@ -139,7 +139,7 @@ def get_type_vars_of_parametrized(tp: TypeHint) -> VarTuple[TypeVar]:
 
 if HAS_PY_39:
     def eval_forward_ref(namespace: Dict[str, Any], forward_ref: ForwardRef):
-        return forward_ref._evaluate(namespace, None, frozenset())
+        return forward_ref._evaluate(namespace, None, recursive_guard=frozenset())
 else:
     def eval_forward_ref(namespace: Dict[str, Any], forward_ref: ForwardRef):
         return forward_ref._evaluate(namespace, None)  # type: ignore[call-arg]

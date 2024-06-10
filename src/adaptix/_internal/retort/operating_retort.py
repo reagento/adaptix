@@ -45,7 +45,7 @@ class MorphingRecursionResolver(RecursionResolver):
 
 
 @with_module("adaptix")
-class NoSuitableProvider(Exception):
+class ProviderNotFoundError(Exception):
     def __init__(self, message: str):
         self.message = message
 
@@ -105,7 +105,7 @@ class OperatingRetort(BaseRetort, Provider, ABC):
             return self._provide_from_recipe(request)
         except CannotProvide as e:
             cause = self._get_exception_cause(e)
-            exception = NoSuitableProvider(error_message)
+            exception = ProviderNotFoundError(error_message)
             if cause is not None:
                 add_note(exception, "Note: The attached exception above contains verbose description of the problem")
             raise exception from cause

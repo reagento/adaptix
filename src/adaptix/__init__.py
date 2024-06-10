@@ -30,7 +30,7 @@ from ._internal.morphing.model.crown_definitions import (
 from ._internal.morphing.name_layout.base import ExtraIn, ExtraOut
 from ._internal.name_style import NameStyle
 from ._internal.provider.facade.provider import bound
-from ._internal.utils import Omittable, Omitted
+from ._internal.utils import Omittable, Omitted, create_deprecated_alias_getter
 from .provider import (
     AggregateCannotProvide,
     CannotProvide,
@@ -42,7 +42,7 @@ from .provider import (
     Request,
     create_loc_stack_checker,
 )
-from .retort import NoSuitableProvider
+from .retort import ProviderNotFoundError
 
 __all__ = (
     "Dumper",
@@ -89,8 +89,15 @@ __all__ = (
     "create_loc_stack_checker",
     "retort",
     "Provider",
-    "NoSuitableProvider",
+    "ProviderNotFoundError",
     "Request",
     "load",
     "dump",
+)
+
+__getattr__ = create_deprecated_alias_getter(
+    __name__,
+    {
+        "NoSuitableProvider": "ProviderNotFoundError",
+    },
 )

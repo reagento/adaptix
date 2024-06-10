@@ -40,13 +40,13 @@ class FilledConversionRetort(OperatingRetort):
         ModelCoercerProvider(),
         IterableCoercerProvider(),
         DictCoercerProvider(),
+        OptionalCoercerProvider(),
+        TypeHintTagsUnwrappingProvider(),
 
         SameTypeCoercerProvider(),
         DstAnyCoercerProvider(),
-        SubclassCoercerProvider(),
         UnionSubcaseCoercerProvider(),
-        OptionalCoercerProvider(),
-        TypeHintTagsUnwrappingProvider(),
+        SubclassCoercerProvider(),
 
         forbid_unlinked_optional(P.ANY),
     ]
