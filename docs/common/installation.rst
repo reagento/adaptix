@@ -2,7 +2,7 @@ Just use pip to install the library
 
 .. code-block:: text
 
-    pip install adaptix==3.0.0b6
+    pip install adaptix==3.0.0b7
 
 
 Integrations with 3-rd party libraries are turned on automatically,

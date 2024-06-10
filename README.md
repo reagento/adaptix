@@ -25,7 +25,7 @@ An extremely flexible and configurable data model conversion library.
 
 Install
 ```bash
-pip install adaptix==3.0.0b6
+pip install adaptix==3.0.0b7
 ```
 
 Use for model loading and dumping.
