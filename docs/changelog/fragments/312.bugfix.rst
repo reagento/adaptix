@@ -1,0 +1,1 @@
+Fix ``ForwardRef`` evaluation inside ``__bound__`` of ``TypeVar`` for Python 3.12.4
