@@ -1,7 +1,8 @@
 from typing import Mapping, Optional
 
 from adaptix import Retort, TypeHint
-from adaptix._internal.provider.request_cls import LocStack, TypeHintLoc
+from adaptix._internal.provider.loc_stack_filtering import LocStack
+from adaptix._internal.provider.request_cls import TypeHintLoc
 from adaptix._internal.provider.shape_provider import (
     InputShapeRequest,
     OutputShapeRequest,

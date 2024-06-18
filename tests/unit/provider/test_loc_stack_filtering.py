@@ -15,12 +15,12 @@ from adaptix._internal.model_tools.definitions import NoDefault
 from adaptix._internal.provider.loc_stack_filtering import (
     ExactOriginLSC,
     ExactTypeLSC,
+    LocStack,
     LocStackEndChecker,
     OriginSubclassLSC,
     create_loc_stack_checker,
 )
 from adaptix._internal.provider.location import FieldLoc, GenericParamLoc, TypeHintLoc
-from adaptix._internal.provider.request_cls import LocStack
 from adaptix._internal.type_tools import normalize_type
 
 

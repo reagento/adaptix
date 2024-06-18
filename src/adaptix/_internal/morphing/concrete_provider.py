@@ -12,14 +12,13 @@ from typing import Generic, Type, TypeVar, Union
 from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.loc_stack_basis import LocatedRequest, for_predicate
 from ..provider.loc_stack_filtering import P, create_loc_stack_checker
-from ..provider.provider_template import for_predicate
-from ..provider.request_cls import LocatedRequest, StrictCoercionRequest, find_owner_with_field
-from ..provider.static_provider import static_provision_action
+from ..provider.loc_stack_tools import find_owner_with_field
 from ..special_cases_optimization import as_is_stub
 from .load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
-from .provider_template import DumperProvider, LoaderProvider, ProviderWithAttachableLSC
-from .request_cls import DumperRequest, LoaderRequest
+from .provider_template import DumperProvider, LoaderProvider
+from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest
 
 T = TypeVar("T")
 
@@ -31,7 +30,7 @@ class IsoFormatProvider(LoaderProvider, DumperProvider):
     def __post_init__(self):
         self._loc_stack_checker = create_loc_stack_checker(self.cls)
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         raw_loader = self.cls.fromisoformat
 
         def isoformat_loader(data):
@@ -44,7 +43,7 @@ class IsoFormatProvider(LoaderProvider, DumperProvider):
 
         return isoformat_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return self.cls.isoformat
 
 
@@ -53,7 +52,7 @@ class IsoFormatProvider(LoaderProvider, DumperProvider):
 class DatetimeFormatProvider(LoaderProvider, DumperProvider):
     format: str
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         fmt = self.format
 
         def datetime_format_loader(data):
@@ -66,7 +65,7 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
 
         return datetime_format_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         fmt = self.format
 
         def datetime_format_dumper(data: datetime):
@@ -79,7 +78,7 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
 class SecondsTimedeltaProvider(LoaderProvider, DumperProvider):
     _OK_TYPES = (int, float, Decimal)
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         ok_types = self._OK_TYPES
 
         def timedelta_loader(data):
@@ -89,7 +88,7 @@ class SecondsTimedeltaProvider(LoaderProvider, DumperProvider):
 
         return timedelta_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return timedelta.total_seconds
 
 
@@ -101,15 +100,15 @@ def none_loader(data):
 
 @for_predicate(None)
 class NoneProvider(LoaderProvider, DumperProvider):
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return none_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return as_is_stub
 
 
 class Base64DumperMixin(DumperProvider):
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def bytes_base64_dumper(data):
             return b2a_base64(data, newline=False).decode("ascii")
 
@@ -121,7 +120,7 @@ B64_PATTERN = re.compile(b"[A-Za-z0-9+/]*={0,2}")
 
 @for_predicate(bytes)
 class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         def bytes_base64_loader(data):
             try:
                 encoded = data.encode("ascii")
@@ -141,15 +140,15 @@ class BytesBase64Provider(LoaderProvider, Base64DumperMixin):
 
 @for_predicate(BytesIO)
 class BytesIOBase64Provider(BytesBase64Provider):
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        bytes_base64_loader = super()._provide_loader(mediator, request)
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        bytes_base64_loader = super().provide_loader(mediator, request)
 
         def bytes_io_base64_loader(data):
             return BytesIO(bytes_base64_loader(data))
 
         return bytes_io_base64_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def bytes_io_base64_dumper(data: BytesIO):
             return b2a_base64(data.getvalue(), newline=False).decode("ascii")
 
@@ -158,7 +157,7 @@ class BytesIOBase64Provider(BytesBase64Provider):
 
 @for_predicate(typing.IO[bytes])
 class IOBytesBase64Provider(BytesIOBase64Provider):
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def io_bytes_base64_dumper(data: typing.IO[bytes]):
             if data.seekable():
                 data.seek(0)
@@ -172,8 +171,8 @@ class IOBytesBase64Provider(BytesIOBase64Provider):
 class BytearrayBase64Provider(LoaderProvider, Base64DumperMixin):
     _BYTES_PROVIDER = BytesBase64Provider()
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        bytes_loader = self._BYTES_PROVIDER.apply_provider(
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        bytes_loader = self._BYTES_PROVIDER.provide_loader(
             mediator,
             replace(request, loc_stack=request.loc_stack.replace_last_type(bytes)),
         )
@@ -193,7 +192,7 @@ class RegexPatternProvider(LoaderProvider, DumperProvider):
     def __init__(self, flags: re.RegexFlag = re.RegexFlag(0)):
         self.flags = flags
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         flags = self.flags
         re_compile = re.compile
 
@@ -208,7 +207,7 @@ class RegexPatternProvider(LoaderProvider, DumperProvider):
 
         return regex_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return _regex_dumper
 
 
@@ -219,7 +218,7 @@ class ScalarLoaderProvider(LoaderProvider, Generic[T]):
         self._strict_coercion_loader = strict_coercion_loader
         self._lax_coercion_loader = lax_coercion_loader
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         return self._strict_coercion_loader if strict_coercion else self._lax_coercion_loader
 
@@ -383,11 +382,8 @@ COMPLEX_LOADER_PROVIDER = ScalarLoaderProvider(
 
 
 @for_predicate(typing.Self if HAS_SELF_TYPE else ~P.ANY)
-class SelfTypeProvider(ProviderWithAttachableLSC):
-    @static_provision_action
-    def _provide_substitute(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        self._apply_loc_stack_checker(mediator, request)
-
+class SelfTypeProvider(LoaderProvider, DumperProvider):
+    def _substituting_provide(self, mediator: Mediator, request: LocatedRequest) -> Loader:
         try:
             owner_loc, _field_loc = find_owner_with_field(request.loc_stack)
         except ValueError:
@@ -404,12 +400,18 @@ class SelfTypeProvider(ProviderWithAttachableLSC):
             ),
         )
 
+    def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
+        return self._substituting_provide(mediator, request)
+
+    def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
+        return self._substituting_provide(mediator, request)
+
 
 @for_predicate(typing.LiteralString if HAS_PY_311 else ~P.ANY)
 class LiteralStringProvider(LoaderProvider, DumperProvider):
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         return str_strict_coercion_loader if strict_coercion else str  # type: ignore[return-value]
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return as_is_stub

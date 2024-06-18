@@ -24,10 +24,10 @@ from ..model_tools.introspection.typed_dict import get_typed_dict_shape
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import create_loc_stack_checker
 from ..type_tools.generic_resolver import GenericResolver, MembersStorage
-from .provider_template import ProviderWithAttachableLSC
+from .essential import RequestChecker
+from .loc_stack_basis import LocatedRequest, LocatedRequestChecker
+from .methods_provider import MethodsProvider, method_handler
 from .provider_wrapper import ConcatProvider
-from .request_cls import LocatedRequest, TypeHintLoc
-from .static_provider import StaticProvider, static_provision_action
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ class OutputShapeRequest(LocatedRequest[OutputShape]):
     pass
 
 
-class ShapeProvider(StaticProvider):
+class ShapeProvider(MethodsProvider):
     def __init__(self, introspector: ShapeIntrospector):
         self._introspector = introspector
 
@@ -57,18 +57,16 @@ class ShapeProvider(StaticProvider):
         except IntrospectionError as e:
             raise CannotProvide from e
 
-    @static_provision_action
+    @method_handler
     def _provide_input_shape(self, mediator: Mediator, request: InputShapeRequest) -> InputShape:
-        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
-        shape = self._get_shape(loc.type)
+        shape = self._get_shape(request.last_loc.type)
         if shape.input is None:
             raise CannotProvide
         return shape.input
 
-    @static_provision_action
+    @method_handler
     def _provide_output_shape(self, mediator: Mediator, request: OutputShapeRequest) -> OutputShape:
-        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
-        shape = self._get_shape(loc.type)
+        shape = self._get_shape(request.last_loc.type)
         if shape.output is None:
             raise CannotProvide
         return shape.output
@@ -86,7 +84,7 @@ BUILTIN_SHAPE_PROVIDER = ConcatProvider(
 )
 
 
-class PropertyExtender(StaticProvider):
+class PropertyExtender(MethodsProvider):
     def __init__(
         self,
         output_fields: Iterable[OutputField],
@@ -104,9 +102,9 @@ class PropertyExtender(StaticProvider):
                 f" all fields must use DescriptorAccessor",
             )
 
-    @static_provision_action
+    @method_handler
     def _provide_output_shape(self, mediator: Mediator[OutputShape], request: OutputShapeRequest) -> OutputShape:
-        tp = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide).type
+        tp = request.last_loc.type
         shape = mediator.provide_from_next()
 
         additional_fields = tuple(
@@ -187,7 +185,7 @@ def provide_generic_resolved_shape(mediator: Mediator, request: LocatedRequest[S
 T = TypeVar("T")
 
 
-class SimilarShapeProvider(ProviderWithAttachableLSC):
+class SimilarShapeProvider(MethodsProvider):
     def __init__(self, target: TypeHint, prototype: TypeHint, *, for_input: bool = True, for_output: bool = True):
         self._target = target
         self._prototype = prototype
@@ -195,12 +193,14 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
         self._for_input = for_input
         self._for_output = for_output
 
-    @static_provision_action
+    def _get_request_checker(self) -> RequestChecker:
+        return LocatedRequestChecker(self._loc_stack_checker)
+
+    @method_handler
     def _provide_input_shape(self, mediator: Mediator, request: InputShapeRequest) -> InputShape:
         if not self._for_input:
             raise CannotProvide
 
-        self._apply_loc_stack_checker(mediator, request)
         shape = mediator.delegating_provide(
             replace(
                 request,
@@ -209,12 +209,11 @@ class SimilarShapeProvider(ProviderWithAttachableLSC):
         )
         return replace(shape, constructor=self._target)
 
-    @static_provision_action
+    @method_handler
     def _provide_output_shape(self, mediator: Mediator, request: OutputShapeRequest) -> OutputShape:
         if not self._for_output:
             raise CannotProvide
 
-        self._apply_loc_stack_checker(mediator, request)
         return mediator.delegating_provide(
             replace(
                 request,

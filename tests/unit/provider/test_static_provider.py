@@ -4,7 +4,7 @@ import pytest
 from tests_helpers import full_match
 
 from adaptix import Mediator, Request
-from adaptix._internal.provider.static_provider import RequestDispatcher, StaticProvider, static_provision_action
+from adaptix._internal.provider.methods_provider import MethodsProvider, RequestDispatcher, method_handler
 
 
 class SampleRequest(Request):
@@ -12,8 +12,8 @@ class SampleRequest(Request):
 
 
 def test_simple():
-    class TestSimple1(StaticProvider):
-        @static_provision_action(SampleRequest)
+    class TestSimple1(MethodsProvider):
+        @method_handler(SampleRequest)
         def _provide_sample(self, mediator: Mediator, request: SampleRequest):
             pass
 
@@ -23,8 +23,8 @@ def test_simple():
         RequestDispatcher({SampleRequest: "_provide_sample"})
     )
 
-    class TestSimple2(StaticProvider):
-        @static_provision_action()
+    class TestSimple2(MethodsProvider):
+        @method_handler()
         def _provide_sample(self, mediator: Mediator, request: SampleRequest):
             pass
 
@@ -34,8 +34,8 @@ def test_simple():
         RequestDispatcher({SampleRequest: "_provide_sample"})
     )
 
-    class TestSimple3(StaticProvider):
-        @static_provision_action
+    class TestSimple3(MethodsProvider):
+        @method_handler
         def _provide_sample(self, mediator: Mediator, request: SampleRequest):
             pass
 
@@ -45,8 +45,8 @@ def test_simple():
         RequestDispatcher({SampleRequest: "_provide_sample"})
     )
 
-    class TestSimple4(StaticProvider):
-        @static_provision_action(SampleRequest)
+    class TestSimple4(MethodsProvider):
+        @method_handler(SampleRequest)
         def _provide_sample(self, mediator: Mediator, request):
             pass
 
@@ -59,8 +59,8 @@ def test_simple():
     class NotASampleRequest(Request):
         pass
 
-    class TestSimple5(StaticProvider):
-        @static_provision_action(SampleRequest)
+    class TestSimple5(MethodsProvider):
+        @method_handler(SampleRequest)
         def _provide_sample(self, mediator: Mediator, request: NotASampleRequest):
             pass
 
@@ -72,9 +72,9 @@ def test_simple():
 
 
 def test_abstract_method():
-    class Base(StaticProvider, ABC):
+    class Base(MethodsProvider, ABC):
         @abstractmethod
-        @static_provision_action
+        @method_handler
         def _provide_sample(self, mediator: Mediator, request: SampleRequest):
             pass
 
@@ -91,8 +91,8 @@ def test_abstract_method():
 
 def test_error_raising_with_one_class():
     with pytest.raises(TypeError):
-        class BadDecoratorArg(StaticProvider):
-            @static_provision_action
+        class BadDecoratorArg(MethodsProvider):
+            @method_handler
             def _provide(self, mediator: Mediator, request: int):
                 pass
 
@@ -100,31 +100,31 @@ def test_error_raising_with_one_class():
         ValueError,
         match=full_match("@static_provision_action decorator cannot be applied twice"),
     ):
-        class DoubleDecoration(StaticProvider):
-            @static_provision_action
-            @static_provision_action
+        class DoubleDecoration(MethodsProvider):
+            @method_handler
+            @method_handler
             def _provide(self, mediator: Mediator, request: Request):
                 pass
 
     with pytest.raises(TypeError):
-        class SeveralSPA(StaticProvider):
-            @static_provision_action
+        class SeveralSPA(MethodsProvider):
+            @method_handler
             def _provide_one(self, mediator: Mediator, request: Request):
                 pass
 
-            @static_provision_action
+            @method_handler
             def _provide_two(self, mediator: Mediator, request: Request):
                 pass
 
 
-class Base1(StaticProvider):
-    @static_provision_action
+class Base1(MethodsProvider):
+    @method_handler
     def _provide_one(self, mediator: Mediator, request: Request):
         pass
 
 
-class Base2(StaticProvider):
-    @static_provision_action
+class Base2(MethodsProvider):
+    @method_handler
     def _provide_two(self, mediator: Mediator, request: Request):
         pass
 
@@ -132,7 +132,7 @@ class Base2(StaticProvider):
 def test_inheritance_redefine_spa():
     with pytest.raises(TypeError):
         class RedefineSPAChild(Base1):
-            @static_provision_action
+            @method_handler
             def _provide_one(self, mediator: Mediator, request: Request):
                 pass
 
@@ -140,7 +140,7 @@ def test_inheritance_redefine_spa():
 def test_inheritance_several_spa():
     with pytest.raises(TypeError):
         class SeveralSPAChild(Base1):
-            @static_provision_action
+            @method_handler
             def _provide_two(self, mediator: Mediator, request: Request):
                 pass
 
@@ -154,8 +154,8 @@ def test_inheritance_several_spa():
 
 
 def test_inheritance_several_rc():
-    class Base3(StaticProvider):
-        @static_provision_action
+    class Base3(MethodsProvider):
+        @method_handler
         def _provide_one(self, mediator: Mediator, request: SampleRequest):
             pass
 
@@ -165,6 +165,6 @@ def test_inheritance_several_rc():
 
     with pytest.raises(TypeError):
         class Child1(Base1):
-            @static_provision_action
+            @method_handler
             def _provide_one(self, mediator: Mediator, request: SampleRequest):
                 pass

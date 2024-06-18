@@ -8,18 +8,13 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.loc_stack_basis import LocatedRequest, for_predicate
+from ..provider.loc_stack_tools import get_type_from_request
 from ..provider.location import GenericParamLoc
-from ..provider.provider_template import for_predicate
-from ..provider.request_cls import (
-    DebugTrailRequest,
-    LocatedRequest,
-    StrictCoercionRequest,
-    get_type_from_request,
-    try_normalize_type,
-)
 from ..struct_trail import append_trail, render_trail_as_note
 from .load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
-from .request_cls import DumperRequest, LoaderRequest
+from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
+from .utils import try_normalize_type
 
 CollectionsMapping = collections.abc.Mapping
 
@@ -66,7 +61,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
         return norm, arg
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
@@ -207,7 +202,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
         return iter_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)

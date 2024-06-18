@@ -16,9 +16,9 @@ from ...model_tools.definitions import (
 from ...name_style import NameStyle, convert_snake_style
 from ...provider.essential import CannotProvide, Mediator, Provider
 from ...provider.fields import field_to_loc
+from ...provider.loc_stack_basis import LocatedRequest
 from ...provider.loc_stack_filtering import LocStackChecker
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
-from ...provider.request_cls import LocatedRequest
 from ...retort.operating_retort import OperatingRetort
 from ...special_cases_optimization import with_default_clause
 from ...utils import Omittable, get_prefix_groups
@@ -102,6 +102,11 @@ def apply_lsc(
     return loc_stack_checker.check_loc_stack(mediator, loc_stack)
 
 
+class NameMappingRetort(OperatingRetort):
+    def provide_name_mapping(self, request: NameMappingRequest) -> Optional[KeyPath]:
+        return self._facade_provide(request, error_message="")
+
+
 class BuiltinStructureMaker(StructureMaker):
     def _generate_key(self, schema: StructureSchema, shape: BaseShape, field: BaseField) -> Key:
         if schema.as_list:
@@ -114,8 +119,8 @@ class BuiltinStructureMaker(StructureMaker):
             name = convert_snake_style(name, schema.name_style)
         return name
 
-    def _create_map_provider(self, schema: StructureSchema) -> Provider:
-        return OperatingRetort(recipe=schema.map)
+    def _create_name_mapping_retort(self, schema: StructureSchema) -> NameMappingRetort:
+        return NameMappingRetort(recipe=schema.map)
 
     def _map_fields(
         self,
@@ -125,15 +130,14 @@ class BuiltinStructureMaker(StructureMaker):
         extra_move: Union[InpExtraMove, OutExtraMove],
     ) -> Iterable[FieldAndPath]:
         extra_targets = extra_move.fields if isinstance(extra_move, ExtraTargets) else ()
-        map_provider = self._create_map_provider(schema)
+        retort = self._create_name_mapping_retort(schema)
         for field in request.shape.fields:
             if field.id in extra_targets:
                 continue
 
             generated_key = self._generate_key(schema, request.shape, field)
             try:
-                path = map_provider.apply_provider(
-                    mediator,
+                path = retort.provide_name_mapping(
                     NameMappingRequest(
                         shape=request.shape,
                         field=field,

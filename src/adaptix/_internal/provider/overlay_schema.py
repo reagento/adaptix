@@ -5,9 +5,10 @@ from ..datastructures import ClassMap
 from ..type_tools import strip_alias
 from ..utils import Omitted
 from .essential import CannotProvide, Mediator
+from .loc_stack_basis import LocatedRequest
+from .loc_stack_filtering import LocStack
+from .methods_provider import MethodsProvider, method_handler
 from .provider_wrapper import Chain
-from .request_cls import LocatedRequest, LocStack
-from .static_provider import StaticProvider, static_provision_action
 
 
 @dataclass(frozen=True)
@@ -106,12 +107,12 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: Lo
     return stacked_overlay.to_schema()
 
 
-class OverlayProvider(StaticProvider):
+class OverlayProvider(MethodsProvider):
     def __init__(self, overlays: Iterable[Overlay], chain: Optional[Chain]):
         self._chain = chain
         self._overlays = ClassMap(*overlays)
 
-    @static_provision_action
+    @method_handler
     def _provide_overlay(self, mediator: Mediator, request: OverlayRequest):
         try:
             overlay = self._overlays[request.overlay_cls]

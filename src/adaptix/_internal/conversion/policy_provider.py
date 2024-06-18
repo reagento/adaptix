@@ -1,13 +1,13 @@
 from ..provider.essential import Mediator
-from ..provider.static_provider import StaticProvider, static_provision_action
+from ..provider.methods_provider import MethodsProvider, method_handler
 from .request_cls import UnlinkedOptionalPolicy, UnlinkedOptionalPolicyRequest
 
 
-class UnlinkedOptionalPolicyProvider(StaticProvider):
+class UnlinkedOptionalPolicyProvider(MethodsProvider):
     def __init__(self, *, is_allowed: bool):
         self._is_allowed = is_allowed
 
-    @static_provision_action
+    @method_handler
     def _unlinked_optional_policy(
         self,
         mediator: Mediator,

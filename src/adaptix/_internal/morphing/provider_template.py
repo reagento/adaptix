@@ -1,36 +1,25 @@
 from abc import ABC, abstractmethod
-from typing import final
 
 from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.loc_stack_basis import LocatedRequestMethodsProvider
 from ..provider.loc_stack_filtering import ExactOriginLSC
-from ..provider.provider_template import ProviderWithAttachableLSC
-from ..provider.static_provider import static_provision_action
+from ..provider.methods_provider import method_handler
 from ..type_tools import normalize_type
 from .request_cls import DumperRequest, LoaderRequest
 
 
-class LoaderProvider(ProviderWithAttachableLSC, ABC):
-    @final
-    @static_provision_action
-    def _outer_provide_loader(self, mediator: Mediator, request: LoaderRequest):
-        self._apply_loc_stack_checker(mediator, request)
-        return self._provide_loader(mediator, request)
-
+class LoaderProvider(LocatedRequestMethodsProvider, ABC):
+    @method_handler
     @abstractmethod
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
         ...
 
 
-class DumperProvider(ProviderWithAttachableLSC, ABC):
-    @final
-    @static_provision_action
-    def _outer_provide_dumper(self, mediator: Mediator, request: DumperRequest):
-        self._apply_loc_stack_checker(mediator, request)
-        return self._provide_dumper(mediator, request)
-
+class DumperProvider(LocatedRequestMethodsProvider, ABC):
+    @method_handler
     @abstractmethod
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
         ...
 
 
@@ -42,7 +31,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
         self._for_loader = for_loader
         self._for_dumper = for_dumper
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         if not self._for_loader:
             raise CannotProvide
 
@@ -53,7 +42,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
             lambda x: f"Cannot create loader for union. Loader for {self._impl} cannot be created",
         )
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         if not self._for_dumper:
             raise CannotProvide
 

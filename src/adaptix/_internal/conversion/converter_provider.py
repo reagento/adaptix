@@ -12,8 +12,8 @@ from ..conversion.request_cls import CoercerRequest, ConversionContext, Converte
 from ..model_tools.definitions import DefaultValue, NoDefault
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.location import FieldLoc
-from ..provider.request_cls import LocStack, TypeHintLoc
+from ..provider.loc_stack_filtering import LocStack
+from ..provider.location import FieldLoc, TypeHintLoc
 from .provider_template import ConverterProvider
 
 

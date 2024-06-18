@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, Iterable, Optional, Sequence, TypeVar, final
+from typing import Any, Callable, Generic, Iterable, Optional, Sequence, Tuple, Type, TypeVar, final
 
 from ..common import VarTuple
 from ..compat import CompatExceptionGroup
@@ -106,10 +106,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         )
 
 
-V = TypeVar("V")
-
-
-class Mediator(ABC, Generic[V]):
+class DirectMediator(ABC):
     """Mediator is an object that gives provider access to other providers
     and that stores the state of the current search.
 
@@ -123,12 +120,6 @@ class Mediator(ABC, Generic[V]):
         :param request: A request instance
         :return: Result of the request processing
         :raise CannotProvide: A provider able to process the request does not be found
-        """
-
-    @abstractmethod
-    def provide_from_next(self) -> V:
-        """Forward current request to providers
-        that placed after current provider at the recipe.
         """
 
     @final
@@ -212,13 +203,36 @@ def mandatory_apply_by_iterable(
     return results
 
 
+ResponseT = TypeVar("ResponseT")
+
+
+class Mediator(DirectMediator, ABC, Generic[ResponseT]):
+    """Mediator is an object that gives provider access to other providers
+    and that stores the state of the current search.
+
+    Mediator is a proxy to providers of retort.
+    """
+
+    @abstractmethod
+    def provide_from_next(self) -> ResponseT:
+        """Forward current request to providers
+        that placed after current provider at the recipe.
+        """
+
+
+RequestT = TypeVar("RequestT", bound=Request)
+RequestHandler = Callable[[Mediator[ResponseT], RequestT], ResponseT]
+
+
+class RequestChecker(ABC, Generic[RequestT]):
+    @abstractmethod
+    def check_request(self, mediator: DirectMediator, request: RequestT, /) -> bool:
+        ...
+
+
 class Provider(ABC):
     """An object that can process Request instances"""
 
     @abstractmethod
-    def apply_provider(self, mediator: Mediator[T], request: Request[T]) -> T:
-        """Handle request instance and return a value of type required by request.
-        Behavior must be the same during the provider object lifetime
-
-        :raise CannotProvide: provider cannot process passed request
-        """
+    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+        ...
