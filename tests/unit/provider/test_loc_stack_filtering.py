@@ -57,7 +57,7 @@ def param_result(*values, result=None, raises=None, exact_match=None, match=None
 
 
 def create_mediator():
-    return Retort()._create_mediator()
+    return None
 
 
 @pytest.mark.parametrize(

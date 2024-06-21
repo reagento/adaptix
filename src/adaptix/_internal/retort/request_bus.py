@@ -18,7 +18,7 @@ ResponseT = TypeVar("ResponseT")
 
 class ErrorRepresentor(ABC, Generic[RequestT]):
     @abstractmethod
-    def get_no_provider_description(self, request: RequestT) -> str:
+    def get_provider_not_found_description(self, request: RequestT) -> str:
         ...
 
     @abstractmethod
@@ -68,34 +68,34 @@ class BasicRequestBus(RequestBus[RequestT, ResponseT], Generic[RequestT, Respons
         return self._send_inner(request, search_offset)
 
     def _send_inner(self, request: RequestT, search_offset: int) -> Any:
-        next_offset = search_offset
         exceptions: List[CannotProvide] = []
+        next_offset = search_offset
+        mediator = self._mediator_factory(request, next_offset)
         while True:
-            mediator = self._mediator_factory(request, search_offset)
-
             try:
                 handler, next_offset = self._router.route_handler(mediator, request, next_offset)
             except StopIteration:
-                raise self._attach_request_context_note(
+                raise self._attach_request_context_notes(
                     AggregateCannotProvide.make(
-                        self._error_representor.get_no_provider_description(request),
+                        self._error_representor.get_provider_not_found_description(request),
                         exceptions,
                         is_demonstrative=True,
                     ),
                     request,
                 ) from None
 
+            mediator = self._mediator_factory(request, next_offset)
             try:
-                result = handler(mediator, request)
+                response = handler(mediator, request)
             except CannotProvide as e:
                 if e.is_terminal:
-                    raise self._attach_request_context_note(e, request)
+                    raise self._attach_request_context_notes(e, request)
                 exceptions.append(e)
                 continue
 
-            return result
+            return response
 
-    def _attach_request_context_note(self, exc: E, request: RequestT) -> E:
+    def _attach_request_context_notes(self, exc: E, request: RequestT) -> E:
         notes = self._error_representor.get_request_context_notes(request)
         for note in notes:
             add_note(exc, note)

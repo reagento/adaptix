@@ -18,7 +18,7 @@ from adaptix._internal.feature_requirement import (
     DistributionVersionRequirement,
 )
 from adaptix._internal.provider.loc_stack_filtering import LocStack
-from adaptix._internal.provider.request_cls import TypeHintLoc
+from adaptix._internal.provider.location import TypeHintLoc
 from adaptix._internal.provider.shape_provider import (
     InputShapeRequest,
     OutputShapeRequest,

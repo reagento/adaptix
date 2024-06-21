@@ -34,14 +34,7 @@ from ..provider.request_checkers import AlwaysTrueRequestChecker
 from ..utils import add_note, copy_exception_dunders, with_module
 from .base_retort import BaseRetort
 from .builtin_mediator import BuiltinMediator, RequestBus, T
-from .request_bus import (
-    BasicRequestBus,
-    ErrorRepresentor,
-    RecursionResolver,
-    RecursiveRequestBus,
-    RequestRouter,
-    RequestT,
-)
+from .request_bus import BasicRequestBus, ErrorRepresentor, RecursionResolver, RecursiveRequestBus, RequestRouter
 from .routers import CheckerAndHandler, SimpleRouter, create_router_for_located_request
 
 
@@ -75,38 +68,41 @@ class LocatedRequestCallableRecursionResolver(RecursionResolver[LocatedRequest, 
             self._loc_to_stub.pop(request.last_loc).set_func(response)
 
 
+RequestT = TypeVar("RequestT", bound=Request)
 LocatedRequestT = TypeVar("LocatedRequestT", bound=LocatedRequest)
 
 
-class LocatedRequestErrorRepresentor(ErrorRepresentor[LocatedRequestT]):
+class BaseRequestErrorRepresentor(ErrorRepresentor[RequestT], Generic[RequestT]):
     def __init__(self, not_found_desc: str):
         self._not_found_desc = not_found_desc
 
+    def get_request_context_notes(self, request: RequestT) -> Iterable[str]:
+        return ()
+
+    def get_provider_not_found_description(self, request: RequestT) -> str:
+        return self._not_found_desc
+
+
+class LocatedRequestErrorRepresentor(BaseRequestErrorRepresentor[LocatedRequestT], Generic[LocatedRequestT]):
     def get_request_context_notes(self, request: LocatedRequestT) -> Iterable[str]:
         loc_stack_desc = format_loc_stack(request.loc_stack)
         yield f"Location: `{loc_stack_desc}`"
-
-    def get_no_provider_description(self, request: LocatedRequestT) -> str:
-        return self._not_found_desc
 
 
 class LinkingRequestErrorRepresentor(ErrorRepresentor[LinkingRequest]):
     def get_request_context_notes(self, request: RequestT) -> Iterable[str]:
         return ()
 
-    def get_no_provider_description(self, request: LinkingRequest) -> str:
+    def get_provider_not_found_description(self, request: LinkingRequest) -> str:
         dst_desc = format_loc_stack(request.destination)
         return f"Cannot find paired field of `{dst_desc}` for linking"
 
 
-class CoercerRequestErrorRepresentor(ErrorRepresentor[CoercerRequest]):
+class CoercerRequestErrorRepresentor(BaseRequestErrorRepresentor[CoercerRequest]):
     def get_request_context_notes(self, request: CoercerRequest) -> Iterable[str]:
         src_desc = format_loc_stack(request.src)
         dst_desc = format_loc_stack(request.dst)
         yield f"Linking: `{src_desc} => {dst_desc}`"
-
-    def get_no_provider_description(self, request: CoercerRequest) -> str:
-        return "Cannot find coercer"
 
 
 @with_module("adaptix")
@@ -169,12 +165,19 @@ class OperatingRetort(BaseRetort, Provider, ABC):
         copy_exception_dunders(source=exc, target=new_exc)
         return new_exc
 
+    def _calculate_derived(self) -> None:
+        super()._calculate_derived()
+        self._request_cls_to_router = self._create_request_cls_to_router(self._full_recipe)
+        self._request_cls_to_error_representor = {
+            request_cls: self._create_error_representor(request_cls)
+            for request_cls in self._request_cls_to_router
+        }
+
     def _create_request_cls_to_router(self, full_recipe: Sequence[Provider]) -> Mapping[Type[Request], RequestRouter]:
         request_cls_to_checkers_and_handlers: DefaultDict[Type[Request], List[CheckerAndHandler]] = defaultdict(list)
         for provider in full_recipe:
             for request_cls, checker, handler in provider.get_request_handlers():
                 request_cls_to_checkers_and_handlers[request_cls].append((checker, handler))
-        request_cls_to_checkers_and_handlers.default_factory = None
 
         return {
             request_cls: self._create_router(request_cls, checkers_and_handlers)
@@ -190,11 +193,6 @@ class OperatingRetort(BaseRetort, Provider, ABC):
             return create_router_for_located_request(checkers_and_handlers)  # type: ignore[return-value]
         return SimpleRouter(checkers_and_handlers)
 
-    def _create_recursion_resolver(self, request_cls: Type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
-        if issubclass(request_cls, (LoaderRequest, DumperRequest)):
-            return LocatedRequestCallableRecursionResolver()  # type: ignore[return-value]
-        return None
-
     def _create_error_representor(self, request_cls: Type[RequestT]) -> ErrorRepresentor[RequestT]:
         if issubclass(request_cls, LoaderRequest):
             return LocatedRequestErrorRepresentor("Cannot find loader")
@@ -203,10 +201,15 @@ class OperatingRetort(BaseRetort, Provider, ABC):
         if issubclass(request_cls, LocatedRequest):
             return LocatedRequestErrorRepresentor(f"Can not satisfy {request_cls}")
         if issubclass(request_cls, CoercerRequest):
-            return CoercerRequestErrorRepresentor()  # type: ignore[return-value]
+            return CoercerRequestErrorRepresentor("Cannot find coercer")  # type: ignore[return-value]
         if issubclass(request_cls, LinkingRequest):
             return LinkingRequestErrorRepresentor()  # type: ignore[return-value]
-        raise TypeError(f"Can not create error representor for {request_cls}")
+        return BaseRequestErrorRepresentor(f"Can not satisfy {request_cls}")
+
+    def _create_recursion_resolver(self, request_cls: Type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
+        if issubclass(request_cls, (LoaderRequest, DumperRequest)):
+            return LocatedRequestCallableRecursionResolver()  # type: ignore[return-value]
+        return None
 
     def _create_request_bus(
         self,
@@ -214,7 +217,7 @@ class OperatingRetort(BaseRetort, Provider, ABC):
         router: RequestRouter[RequestT],
         mediator_factory: Callable[[Request, int], Mediator],
     ) -> RequestBus:
-        error_representor = self._create_error_representor(request_cls)
+        error_representor = self._request_cls_to_error_representor[request_cls]
         recursion_resolver = self._create_recursion_resolver(request_cls)
         if recursion_resolver is not None:
             return RecursiveRequestBus(
@@ -232,7 +235,7 @@ class OperatingRetort(BaseRetort, Provider, ABC):
     def _create_mediator(self, init_request: Request[T]) -> Mediator[T]:
         request_buses: Mapping[Type[Request], RequestBus]
 
-        def mediator_factory(request: Request[T], search_offset: int) -> Mediator[T]:
+        def mediator_factory(request, search_offset):
             return BuiltinMediator(
                 request_buses=request_buses,
                 request=request,

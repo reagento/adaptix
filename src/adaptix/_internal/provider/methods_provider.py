@@ -1,5 +1,5 @@
 import inspect
-from typing import Callable, ClassVar, Dict, Iterable, Mapping, Sequence, Tuple, Type, TypeVar, final
+from typing import Any, Callable, ClassVar, Dict, Iterable, Mapping, Sequence, Tuple, Type, TypeVar, final
 
 from ..type_tools import get_all_type_hints, is_subclass_soft, normalize_type, strip_tags
 from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler
@@ -8,7 +8,7 @@ from .request_checkers import AlwaysTrueRequestChecker
 __all__ = ("MethodsProvider", "method_handler")
 
 
-P = TypeVar("P", bound=Provider)
+P = TypeVar("P", bound=Any)
 R = TypeVar("R", bound=Request)
 T = TypeVar("T")
 MethodHandler = Callable[[P, Mediator[T], R], T]

@@ -3,7 +3,7 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, Collection, Dict, Iterable, Literal, Optional, Sequence, Set, Type, Union
+from typing import Any, Collection, Dict, Iterable, Literal, Optional, Sequence, Set, Type, TypeVar, Union
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -15,7 +15,6 @@ from ..provider.loc_stack_basis import LocatedRequest, for_predicate
 from ..provider.loc_stack_filtering import LocStack
 from ..provider.loc_stack_tools import get_type_from_request
 from ..provider.location import GenericParamLoc, TypeHintLoc
-from ..provider.methods_provider import MethodsProvider, method_handler
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
 from .load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
@@ -23,10 +22,11 @@ from .provider_template import DumperProvider, LoaderProvider
 from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from .utils import try_normalize_type
 
+ResponseT = TypeVar("ResponseT")
 
-class NewTypeUnwrappingProvider(MethodsProvider):
-    @method_handler
-    def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
+
+class NewTypeUnwrappingProvider(LoaderProvider, DumperProvider):
+    def _unwrapping_provide(self, mediator: Mediator, request: LocatedRequest[ResponseT]) -> ResponseT:
         loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
 
         if not is_new_type(loc.type):
@@ -39,14 +39,19 @@ class NewTypeUnwrappingProvider(MethodsProvider):
             ),
         )
 
+    def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
+        return self._unwrapping_provide(mediator, request)
 
-class TypeHintTagsUnwrappingProvider(MethodsProvider):
-    @method_handler
-    def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
-        norm = try_normalize_type(loc.type)
+    def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
+        return self._unwrapping_provide(mediator, request)
+
+
+class TypeHintTagsUnwrappingProvider(LoaderProvider, DumperProvider):
+    def _unwrapping_provide(self, mediator: Mediator, request: LocatedRequest[ResponseT]) -> ResponseT:
+        tp = request.last_loc.type
+        norm = try_normalize_type(tp)
         unwrapped = strip_tags(norm)
-        if unwrapped.source == loc.type:  # type has not changed, continue search
+        if unwrapped.source == tp:  # type has not changed, continue search
             raise CannotProvide
 
         return mediator.delegating_provide(
@@ -56,12 +61,16 @@ class TypeHintTagsUnwrappingProvider(MethodsProvider):
             ),
         )
 
+    def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
+        return self._unwrapping_provide(mediator, request)
 
-class TypeAliasUnwrappingProvider(MethodsProvider):
-    @method_handler
-    def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
-        norm = try_normalize_type(loc.type)
+    def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
+        return self._unwrapping_provide(mediator, request)
+
+
+class TypeAliasUnwrappingProvider(LoaderProvider, DumperProvider):
+    def _unwrapping_provide(self, mediator: Mediator, request: LocatedRequest[ResponseT]) -> ResponseT:
+        norm = try_normalize_type(request.last_loc.type)
         if not isinstance(norm, NormTypeAlias):
             raise CannotProvide
 
@@ -72,6 +81,12 @@ class TypeAliasUnwrappingProvider(MethodsProvider):
                 loc_stack=request.loc_stack.replace_last_type(unwrapped),
             ),
         )
+
+    def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
+        return self._unwrapping_provide(mediator, request)
+
+    def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
+        return self._unwrapping_provide(mediator, request)
 
 
 def _is_exact_zero_or_one(arg):

@@ -1,10 +1,9 @@
-from abc import ABC, ABCMeta, abstractmethod
-from typing import ClassVar, Iterable, Mapping, Sequence, Type, TypeVar
+from abc import ABC, ABCMeta
+from typing import ClassVar, Iterable, Sequence, TypeVar
 
 from ..common import VarTuple
-from ..provider.essential import Provider, Request
+from ..provider.essential import Provider
 from ..utils import Cloneable, ForbiddingDescriptor
-from .request_bus import RequestRouter
 
 
 class RetortMeta(ABCMeta):  # inherits from ABCMeta to be compatible with ABC
@@ -61,8 +60,3 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
             + self._get_config_recipe()
             + self._full_class_recipe
         )
-        self._request_cls_to_router = self._create_request_cls_to_router(self._full_recipe)
-
-    @abstractmethod
-    def _create_request_cls_to_router(self, full_recipe: Sequence[Provider]) -> Mapping[Type[Request], RequestRouter]:
-        ...

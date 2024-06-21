@@ -4,7 +4,7 @@ import pytest
 from tests_helpers import full_match
 
 from adaptix import Mediator, Request
-from adaptix._internal.provider.methods_provider import MethodsProvider, RequestDispatcher, method_handler
+from adaptix._internal.provider.methods_provider import MethodsProvider, method_handler
 
 
 class SampleRequest(Request):

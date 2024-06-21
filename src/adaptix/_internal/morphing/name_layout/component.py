@@ -19,7 +19,7 @@ from ...provider.fields import field_to_loc
 from ...provider.loc_stack_basis import LocatedRequest
 from ...provider.loc_stack_filtering import LocStackChecker
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
-from ...retort.operating_retort import OperatingRetort
+from ...retort.operating_retort import OperatingRetort, ProviderNotFoundError
 from ...special_cases_optimization import with_default_clause
 from ...utils import Omittable, get_prefix_groups
 from ..model.crown_definitions import (
@@ -145,7 +145,7 @@ class BuiltinStructureMaker(StructureMaker):
                         loc_stack=request.loc_stack.append_with(field_to_loc(field)),
                     ),
                 )
-            except CannotProvide:
+            except ProviderNotFoundError:
                 path = (generated_key, )
 
             if path is None:

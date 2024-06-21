@@ -7,9 +7,9 @@ from tests_helpers import full_match
 from adaptix import AdornedRetort, Chain, Mediator, Omittable, Omitted, Provider, Request, bound
 from adaptix._internal.common import VarTuple
 from adaptix._internal.provider.loc_stack_filtering import LocStack
+from adaptix._internal.provider.location import TypeHintLoc
 from adaptix._internal.provider.methods_provider import MethodsProvider, method_handler
 from adaptix._internal.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
-from adaptix._internal.provider.request_cls import TypeHintLoc
 
 
 @dataclass(frozen=True)
