@@ -200,10 +200,12 @@ class OperatingRetort(BaseRetort, Provider, ABC):
             return LocatedRequestErrorRepresentor("Cannot find dumper")
         if issubclass(request_cls, LocatedRequest):
             return LocatedRequestErrorRepresentor(f"Can not satisfy {request_cls}")
+
         if issubclass(request_cls, CoercerRequest):
             return CoercerRequestErrorRepresentor("Cannot find coercer")  # type: ignore[return-value]
         if issubclass(request_cls, LinkingRequest):
             return LinkingRequestErrorRepresentor()  # type: ignore[return-value]
+
         return BaseRequestErrorRepresentor(f"Can not satisfy {request_cls}")
 
     def _create_recursion_resolver(self, request_cls: Type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
@@ -232,14 +234,22 @@ class OperatingRetort(BaseRetort, Provider, ABC):
             mediator_factory=mediator_factory,
         )
 
+    def _create_no_request_bus_error_maker(self) -> Callable[[Request], CannotProvide]:
+        def no_request_bus_error_maker(request: Request) -> CannotProvide:
+            return CannotProvide(f"Can not satisfy {type(request)}")
+
+        return no_request_bus_error_maker
+
     def _create_mediator(self, init_request: Request[T]) -> Mediator[T]:
         request_buses: Mapping[Type[Request], RequestBus]
+        no_request_bus_error_maker = self._create_no_request_bus_error_maker()
 
         def mediator_factory(request, search_offset):
             return BuiltinMediator(
                 request_buses=request_buses,
                 request=request,
                 search_offset=search_offset,
+                no_request_bus_error_maker=no_request_bus_error_maker,
             )
 
         request_buses = {

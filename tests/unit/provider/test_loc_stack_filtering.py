@@ -7,6 +7,7 @@ from typing import Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar, 
 
 import pytest
 from tests_helpers import cond_list, full_match
+from tests_helpers.misc import create_mediator
 
 from adaptix import Chain, P, Retort, loader
 from adaptix._internal.common import TypeHint
@@ -54,10 +55,6 @@ def param_result(*values, result=None, raises=None, exact_match=None, match=None
     if id is None:
         id = str(values[0]) if len(values) == 1 else str(values)
     return pytest.param(*values, result, context, id=id)
-
-
-def create_mediator():
-    return None
 
 
 @pytest.mark.parametrize(

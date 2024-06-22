@@ -3,9 +3,10 @@ from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import pytest
 from tests_helpers import ModelSpec, cond_list, exclude_model_spec, load_namespace_keeping_module, requires
+from tests_helpers.misc import create_mediator
 from tests_helpers.model_spec import only_generic_models, with_model_spec_requirement
 
-from adaptix import CannotProvide, Retort
+from adaptix import CannotProvide
 from adaptix._internal.feature_requirement import (
     HAS_PY_39,
     HAS_PY_310,
@@ -257,40 +258,33 @@ def test_generic_multiple_inheritance(model_spec, tp) -> None:
     )
 
 
-# TODO: fix it  # noqa: TD003
-skip_if_pypy_39_or_310 = pytest.mark.skipif(
-    IS_PYPY and (HAS_PY_39 or HAS_PY_310),
-    reason="At this python version and implementation list has __init__ that allow to generate Shape",
-)
-
-
 @pytest.mark.parametrize(
     "tp",
     [
         int,
-        pytest.param(list, id="list", marks=skip_if_pypy_39_or_310),
-        pytest.param(List, id="List", marks=skip_if_pypy_39_or_310),
-        pytest.param(List[T], id="List[T]", marks=skip_if_pypy_39_or_310),
-        pytest.param(List[int], id="List[int]", marks=skip_if_pypy_39_or_310),
+        list,
+        List,
+        List[T],
+        List[int],
         *cond_list(
             HAS_STD_CLASSES_GENERICS,
-            lambda: [pytest.param(list[T], id="list[T]", marks=skip_if_pypy_39_or_310)],
+            lambda: [list[T]],
         ),
     ],
 )
 def test_not_a_model(tp):
-    retort = Retort()
-    mediator = retort._create_mediator()
+    # TODO: fix it  # noqa: TD003
+    # At this python versions and implementation list has __init__ that allow to generate Shape
+    if not (IS_PYPY and (HAS_PY_39 or HAS_PY_310)):
+        with pytest.raises(CannotProvide):
+            provide_generic_resolved_shape(
+                create_mediator(),
+                InputShapeRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
+            )
 
     with pytest.raises(CannotProvide):
         provide_generic_resolved_shape(
-            mediator,
-            InputShapeRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
-        )
-
-    with pytest.raises(CannotProvide):
-        provide_generic_resolved_shape(
-            mediator,
+            create_mediator(),
             OutputShapeRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
         )
 

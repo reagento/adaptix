@@ -83,6 +83,8 @@ class BasicRequestBus(RequestBus[RequestT, ResponseT], Generic[RequestT, Respons
                     ),
                     request,
                 ) from None
+            except CannotProvide:
+                raise RuntimeError("RequestChecker raises CannotProvide")
 
             mediator = self._mediator_factory(request, next_offset)
             try:

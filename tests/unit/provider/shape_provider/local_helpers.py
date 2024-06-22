@@ -1,6 +1,8 @@
 from typing import Mapping, Optional
 
-from adaptix import Retort, TypeHint
+from tests_helpers.misc import create_mediator
+
+from adaptix import TypeHint
 from adaptix._internal.provider.loc_stack_filtering import LocStack
 from adaptix._internal.provider.location import TypeHintLoc
 from adaptix._internal.provider.shape_provider import (
@@ -17,21 +19,17 @@ def assert_distinct_fields_types(
     input: Mapping[str, TypeHint],  # noqa: A002
     output: Mapping[str, TypeHint],
 ) -> None:
-    retort = Retort()
-    mediator = retort._create_mediator()
-
     input_shape = provide_generic_resolved_shape(
-        mediator,
+        create_mediator(),
         InputShapeRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
     )
-    input_field_types = {field.id: field.type for field in input_shape.fields}
-    assert input_field_types == input
-
     output_shape = provide_generic_resolved_shape(
-        mediator,
+        create_mediator(),
         OutputShapeRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
     )
+    input_field_types = {field.id: field.type for field in input_shape.fields}
     output_field_types = {field.id: field.type for field in output_shape.fields}
+    assert input_field_types == input
     assert output_field_types == output
 
 

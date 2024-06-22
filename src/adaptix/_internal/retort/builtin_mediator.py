@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, Mapping, Type, TypeVar
+from typing import Callable, Generic, Mapping, Type, TypeVar
 
 from ..provider.essential import CannotProvide, Mediator, Request
 
@@ -21,19 +21,25 @@ class RequestBus(ABC, Generic[RequestT, ResponseT]):
 
 
 class BuiltinMediator(Mediator[ResponseT], Generic[ResponseT]):
-    __slots__ = ("_request_buses", "_request", "_search_offset")
+    __slots__ = ("_request_buses", "_request", "_search_offset", "_no_request_bus_error_maker")
 
-    def __init__(self, request_buses: Mapping[Type[Request], RequestBus], request: Request, search_offset: int):
+    def __init__(
+        self,
+        request_buses: Mapping[Type[Request], RequestBus],
+        request: Request,
+        search_offset: int,
+        no_request_bus_error_maker: Callable[[Request], CannotProvide],
+    ):
         self._request_buses = request_buses
         self._request = request
         self._search_offset = search_offset
+        self._no_request_bus_error_maker = no_request_bus_error_maker
 
     def provide(self, request: Request[T]) -> T:
         try:
             request_bus = self._request_buses[type(request)]
         except KeyError:
-            # TODO: add description
-            raise CannotProvide() from None
+            raise self._no_request_bus_error_maker(request) from None
 
         return request_bus.send(request)
 
