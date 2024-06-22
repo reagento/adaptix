@@ -1,7 +1,7 @@
 from itertools import islice
 from typing import Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
-from ... import TypeHint
+from ..common import TypeHint
 from ..provider.essential import DirectMediator, Request, RequestChecker, RequestHandler
 from ..provider.loc_stack_filtering import ExactOriginLSC
 from ..provider.located_request import LocatedRequest, LocatedRequestChecker
