@@ -5,8 +5,8 @@ from typing import Callable, Optional, Union
 from ..common import Coercer, VarTuple
 from ..model_tools.definitions import DefaultFactory, DefaultValue, InputField, ParamKind
 from ..provider.essential import Request
-from ..provider.located_request import LocatedRequest
 from ..provider.loc_stack_filtering import LocStack
+from ..provider.located_request import LocatedRequest
 from ..provider.location import FieldLoc, GenericParamLoc, InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc, TypeHintLoc
 
 

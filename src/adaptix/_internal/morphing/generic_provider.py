@@ -11,8 +11,8 @@ from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
 from ..feature_requirement import HAS_PY_39
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.loc_stack_filtering import LocStack
+from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc, TypeHintLoc
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags

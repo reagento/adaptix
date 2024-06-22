@@ -16,8 +16,8 @@ from ...model_tools.definitions import (
 from ...name_style import NameStyle, convert_snake_style
 from ...provider.essential import CannotProvide, Mediator, Provider
 from ...provider.fields import field_to_loc
-from ...provider.located_request import LocatedRequest
 from ...provider.loc_stack_filtering import LocStackChecker
+from ...provider.located_request import LocatedRequest
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
 from ...retort.operating_retort import OperatingRetort, ProviderNotFoundError
 from ...special_cases_optimization import with_default_clause

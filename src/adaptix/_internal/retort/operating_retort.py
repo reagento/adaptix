@@ -27,8 +27,8 @@ from ..provider.essential import (
     RequestChecker,
     RequestHandler,
 )
-from ..provider.located_request import LocatedRequest
 from ..provider.loc_stack_tools import format_loc_stack
+from ..provider.located_request import LocatedRequest
 from ..provider.location import AnyLoc
 from ..provider.request_checkers import AlwaysTrueRequestChecker
 from ..utils import add_note, copy_exception_dunders, with_module

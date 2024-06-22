@@ -10,8 +10,8 @@ from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..name_style import NameStyle, convert_snake_style
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.located_request import for_predicate
 from ..provider.loc_stack_filtering import DirectMediator, LastLocChecker
+from ..provider.located_request import for_predicate
 from ..provider.location import TypeHintLoc
 from ..type_tools import is_subclass_soft, normalize_type
 from .load_error import (

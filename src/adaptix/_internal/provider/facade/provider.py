@@ -2,8 +2,8 @@ from typing import Sequence
 
 from ...utils import Omitted
 from ..essential import Provider
-from ..located_request import LocStackBoundingProvider
 from ..loc_stack_filtering import OrLocStackChecker, Pred, create_loc_stack_checker
+from ..located_request import LocStackBoundingProvider
 
 
 def bound_by_any(preds: Sequence[Pred], provider: Provider) -> Provider:

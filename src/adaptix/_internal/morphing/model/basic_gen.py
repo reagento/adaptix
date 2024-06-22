@@ -22,8 +22,8 @@ from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
 from ...model_tools.definitions import InputField, OutputField
 from ...provider.essential import CannotProvide, Mediator
-from ...provider.located_request import LocatedRequest
 from ...provider.loc_stack_filtering import LocStack
+from ...provider.located_request import LocatedRequest
 from ...provider.methods_provider import MethodsProvider, method_handler
 from .crown_definitions import (
     BaseCrown,

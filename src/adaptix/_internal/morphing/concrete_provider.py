@@ -12,9 +12,9 @@ from typing import Generic, Type, TypeVar, Union
 from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.loc_stack_filtering import P, create_loc_stack_checker
 from ..provider.loc_stack_tools import find_owner_with_field
+from ..provider.located_request import LocatedRequest, for_predicate
 from ..special_cases_optimization import as_is_stub
 from .load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 from .provider_template import DumperProvider, LoaderProvider
