@@ -1,18 +1,18 @@
 import collections.abc
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from enum import Enum
 from os import PathLike
 from pathlib import Path
 from typing import Any, Collection, Dict, Iterable, Literal, Optional, Sequence, Set, Type, TypeVar, Union
 
-from ..common import Dumper, Loader
+from ..common import Dumper, Loader, TypeHint
 from ..compat import CompatExceptionGroup
 from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
 from ..feature_requirement import HAS_PY_39
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStack
-from ..provider.located_request import LocatedRequest, for_predicate
+from ..provider.located_request import LocatedRequestDelegatingProvider, LocatedRequestT, for_predicate
 from ..provider.location import GenericParamLoc, TypeHintLoc
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
@@ -24,68 +24,38 @@ from .utils import try_normalize_type
 ResponseT = TypeVar("ResponseT")
 
 
-class NewTypeUnwrappingProvider(LoaderProvider, DumperProvider):
-    def _unwrapping_provide(self, mediator: Mediator, request: LocatedRequest[ResponseT]) -> ResponseT:
-        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
+class NewTypeUnwrappingProvider(LocatedRequestDelegatingProvider):
+    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
 
-        if not is_new_type(loc.type):
+    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
+        if not is_new_type(request.last_loc.type):
             raise CannotProvide
 
-        return mediator.delegating_provide(
-            replace(
-                request,
-                loc_stack=request.loc_stack.replace_last_type(loc.type.__supertype__),
-            ),
-        )
-
-    def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
-        return self._unwrapping_provide(mediator, request)
-
-    def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
-        return self._unwrapping_provide(mediator, request)
+        return request.last_loc.type.__supertype__
 
 
-class TypeHintTagsUnwrappingProvider(LoaderProvider, DumperProvider):
-    def _unwrapping_provide(self, mediator: Mediator, request: LocatedRequest[ResponseT]) -> ResponseT:
+class TypeHintTagsUnwrappingProvider(LocatedRequestDelegatingProvider):
+    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
+
+    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
         tp = request.last_loc.type
         norm = try_normalize_type(tp)
         unwrapped = strip_tags(norm)
         if unwrapped.source == tp:  # type has not changed, continue search
             raise CannotProvide
 
-        return mediator.delegating_provide(
-            replace(
-                request,
-                loc_stack=request.loc_stack.replace_last_type(unwrapped.source),
-            ),
-        )
-
-    def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
-        return self._unwrapping_provide(mediator, request)
-
-    def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
-        return self._unwrapping_provide(mediator, request)
+        return unwrapped.source
 
 
-class TypeAliasUnwrappingProvider(LoaderProvider, DumperProvider):
-    def _unwrapping_provide(self, mediator: Mediator, request: LocatedRequest[ResponseT]) -> ResponseT:
+class TypeAliasUnwrappingProvider(LocatedRequestDelegatingProvider):
+    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
+
+    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
         norm = try_normalize_type(request.last_loc.type)
         if not isinstance(norm, NormTypeAlias):
             raise CannotProvide
 
-        unwrapped = norm.value[tuple(arg.source for arg in norm.args)] if norm.args else norm.value
-        return mediator.delegating_provide(
-            replace(
-                request,
-                loc_stack=request.loc_stack.replace_last_type(unwrapped),
-            ),
-        )
-
-    def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
-        return self._unwrapping_provide(mediator, request)
-
-    def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
-        return self._unwrapping_provide(mediator, request)
+        return norm.value[tuple(arg.source for arg in norm.args)] if norm.args else norm.value
 
 
 def _is_exact_zero_or_one(arg):
