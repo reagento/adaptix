@@ -56,11 +56,12 @@ jobs:
           - { setup: '3.9',      tox: 'py39',    cov: true  }
           - { setup: '3.10',     tox: 'py310',   cov: true  }
           - { setup: '3.11',     tox: 'py311',   cov: true  }
-          - { setup: '3.12',     tox: 'py312',   cov: true  }
+          - { setup: '3.12.3',   tox: 'py312',   cov: true  }  # (1)
           - { setup: 'pypy3.8',  tox: 'pypy38',  cov: false }
           - { setup: 'pypy3.9',  tox: 'pypy39',  cov: false }
           - { setup: 'pypy3.10', tox: 'pypy310', cov: false }
 
+        # (1): 3.12.4 contains backwards-incompatible changes of ForwardRef._evaluate()
         os: ['ubuntu-latest']
 
     steps:
