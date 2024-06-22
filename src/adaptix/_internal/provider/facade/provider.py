@@ -2,7 +2,7 @@ from typing import Sequence
 
 from ...utils import Omitted
 from ..essential import Provider
-from ..loc_stack_basis import LocStackBoundingProvider
+from ..located_request import LocStackBoundingProvider
 from ..loc_stack_filtering import OrLocStackChecker, Pred, create_loc_stack_checker
 
 

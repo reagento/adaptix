@@ -3,7 +3,6 @@ from typing import Tuple
 from ..common import TypeHint
 from ..type_tools import is_parametrized
 from ..utils import pairs
-from .loc_stack_basis import LocatedRequest
 from .loc_stack_filtering import LocStack
 from .location import AnyLoc, FieldLoc, InputFuncFieldLoc, TypeHintLoc
 
@@ -36,10 +35,6 @@ def format_loc_stack(loc_stack: LocStack[AnyLoc]) -> str:
         src_owner = _format_type(loc_stack[-2].type)
         return f"{src_owner}.{fmt_field}"
     return fmt_tp
-
-
-def get_type_from_request(request: LocatedRequest) -> TypeHint:
-    return request.last_loc.type
 
 
 def find_owner_with_field(stack: LocStack) -> Tuple[TypeHintLoc, FieldLoc]:

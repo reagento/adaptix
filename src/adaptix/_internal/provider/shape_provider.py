@@ -25,7 +25,7 @@ from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import create_loc_stack_checker
 from ..type_tools.generic_resolver import GenericResolver, MembersStorage
 from .essential import RequestChecker
-from .loc_stack_basis import LocatedRequest, LocatedRequestChecker
+from .located_request import LocatedRequest, LocatedRequestChecker
 from .methods_provider import MethodsProvider, method_handler
 from .provider_wrapper import ConcatProvider
 

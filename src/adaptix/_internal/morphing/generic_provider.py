@@ -11,9 +11,8 @@ from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
 from ..feature_requirement import HAS_PY_39
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.loc_stack_basis import LocatedRequest, for_predicate
+from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.loc_stack_filtering import LocStack
-from ..provider.loc_stack_tools import get_type_from_request
 from ..provider.location import GenericParamLoc, TypeHintLoc
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
@@ -187,7 +186,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return wrapped_loader_with_enums
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
 
         enum_cases = [arg for arg in norm.args if isinstance(arg, Enum)]
@@ -222,7 +221,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return self._get_literal_loader_with_enum(literal_loader, enum_loaders, allowed_values)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
         enum_cases = [arg for arg in norm.args if isinstance(arg, Enum)]
 
         if not enum_cases:
@@ -251,7 +250,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 @for_predicate(Union)
 class UnionProvider(LoaderProvider, DumperProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
 
         if self._is_single_optional(norm):
@@ -367,7 +366,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
         return (origin is None or isinstance(origin, type)) and not is_subclass_soft(origin, collections.abc.Callable)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        request_type = get_type_from_request(request)
+        request_type = request.last_loc.type
         norm = try_normalize_type(request_type)
 
         if self._is_single_optional(norm):

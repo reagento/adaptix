@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from ... import DebugTrail
 from ..common import Dumper, Loader
-from ..provider.loc_stack_basis import LocatedRequest
+from ..provider.located_request import LocatedRequest
 
 
 @dataclass(frozen=True)

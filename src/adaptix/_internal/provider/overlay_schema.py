@@ -5,7 +5,7 @@ from ..datastructures import ClassMap
 from ..type_tools import strip_alias
 from ..utils import Omitted
 from .essential import CannotProvide, Mediator
-from .loc_stack_basis import LocatedRequest
+from .located_request import LocatedRequest
 from .loc_stack_filtering import LocStack
 from .methods_provider import MethodsProvider, method_handler
 from .provider_wrapper import Chain

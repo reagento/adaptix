@@ -8,8 +8,7 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.loc_stack_basis import LocatedRequest, for_predicate
-from ..provider.loc_stack_tools import get_type_from_request
+from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
 from ..struct_trail import append_trail, render_trail_as_note
 from .load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
@@ -46,7 +45,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         raise CannotProvide
 
     def _fetch_norm_and_arg(self, request: LocatedRequest):
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
 
         if len(norm.args) != 1 and not (norm.origin == tuple and norm.args[-1] == Ellipsis):
             raise CannotProvide

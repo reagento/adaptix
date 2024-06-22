@@ -97,7 +97,7 @@ class XorLocStackChecker(BinOperatorLSC):
         return reduce(operator.xor, elements)
 
 
-class LastLocMapChecker(LocStackChecker, ABC):
+class LastLocChecker(LocStackChecker, ABC):
     _expected_location: ClassVar[type]
 
     def __init_subclass__(cls, **kwargs):
@@ -117,7 +117,7 @@ class LastLocMapChecker(LocStackChecker, ABC):
 
 
 @dataclass(frozen=True)
-class ExactFieldNameLSC(LastLocMapChecker):
+class ExactFieldNameLSC(LastLocChecker):
     field_id: str
 
     def _check_location(self, mediator: DirectMediator, loc: FieldLoc) -> bool:
@@ -125,7 +125,7 @@ class ExactFieldNameLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class ReFieldNameLSC(LastLocMapChecker):
+class ReFieldNameLSC(LastLocChecker):
     pattern: Pattern[str]
 
     def _check_location(self, mediator: DirectMediator, loc: FieldLoc) -> bool:
@@ -133,7 +133,7 @@ class ReFieldNameLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class ExactTypeLSC(LastLocMapChecker):
+class ExactTypeLSC(LastLocChecker):
     norm: BaseNormType
 
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
@@ -145,7 +145,7 @@ class ExactTypeLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class OriginSubclassLSC(LastLocMapChecker):
+class OriginSubclassLSC(LastLocChecker):
     type_: type
 
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
@@ -157,7 +157,7 @@ class OriginSubclassLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class ExactOriginLSC(LastLocMapChecker):
+class ExactOriginLSC(LastLocChecker):
     origin: Any
 
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
@@ -169,7 +169,7 @@ class ExactOriginLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class GenericParamLSC(LastLocMapChecker):
+class GenericParamLSC(LastLocChecker):
     pos: int
 
     def _check_location(self, mediator: DirectMediator, loc: GenericParamLoc) -> bool:

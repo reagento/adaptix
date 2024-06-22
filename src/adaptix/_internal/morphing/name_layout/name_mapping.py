@@ -7,7 +7,7 @@ from typing import Callable, Iterable, Mapping, Optional, Tuple, Union
 from ...common import EllipsisType
 from ...model_tools.definitions import BaseField, BaseShape, OutputField, is_valid_field_id
 from ...provider.essential import CannotProvide, Mediator, Provider
-from ...provider.loc_stack_basis import LocatedRequest
+from ...provider.located_request import LocatedRequest
 from ...provider.loc_stack_filtering import Pred
 from ...provider.methods_provider import MethodsProvider, method_handler
 from .base import Key, KeyPath

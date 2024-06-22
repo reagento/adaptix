@@ -8,8 +8,7 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import Mediator
-from ..provider.loc_stack_basis import LocatedRequest, for_predicate
-from ..provider.loc_stack_tools import get_type_from_request
+from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
 from ..struct_trail import ItemKey, append_trail, render_trail_as_note
 from ..type_tools import BaseNormType
@@ -23,7 +22,7 @@ CollectionsMapping = collections.abc.Mapping
 @for_predicate(Dict)
 class DictProvider(LoaderProvider, DumperProvider):
     def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
         return norm.args
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
@@ -275,7 +274,7 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
         self.default_factory = default_factory
 
     def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
         return norm.args
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:

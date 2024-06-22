@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Sequence, Tuple, TypeVar, Union
 
 from ... import TypeHint
 from ..provider.essential import DirectMediator, Request, RequestChecker, RequestHandler
-from ..provider.loc_stack_basis import LocatedRequest, LocatedRequestChecker
+from ..provider.located_request import LocatedRequest, LocatedRequestChecker
 from ..provider.loc_stack_filtering import ExactOriginLSC
 from ..type_tools import normalize_type
 from .request_bus import RequestRouter
