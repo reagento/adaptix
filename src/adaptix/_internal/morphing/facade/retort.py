@@ -11,10 +11,10 @@ from uuid import UUID
 from ...common import Dumper, Loader, TypeHint, VarTuple
 from ...definitions import DebugTrail
 from ...provider.essential import Provider, Request
-from ...provider.loc_stack_filtering import P
-from ...provider.provider_template import ValueProvider
-from ...provider.request_cls import DebugTrailRequest, LocStack, StrictCoercionRequest, TypeHintLoc
+from ...provider.loc_stack_filtering import LocStack, P
+from ...provider.location import TypeHintLoc
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
+from ...provider.value_provider import ValueProvider
 from ...retort.operating_retort import OperatingRetort
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
@@ -55,7 +55,7 @@ from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSie
 from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
 from ..provider_template import ABCProxy
-from ..request_cls import DumperRequest, LoaderRequest
+from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from .provider import as_is_dumper, as_is_loader, dumper, enum_by_exact_value, flag_by_exact_value, loader, name_mapping
 
 

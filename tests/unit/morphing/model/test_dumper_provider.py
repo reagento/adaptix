@@ -32,8 +32,8 @@ from adaptix._internal.morphing.model.crown_definitions import (
 )
 from adaptix._internal.morphing.model.dumper_provider import ModelDumperProvider
 from adaptix._internal.morphing.request_cls import DumperRequest
-from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.shape_provider import OutputShapeRequest
+from adaptix._internal.provider.value_provider import ValueProvider
 from adaptix._internal.struct_trail import Attr, TrailElement, TrailElementMarker
 from adaptix._internal.utils import SingletonMeta
 

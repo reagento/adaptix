@@ -8,10 +8,9 @@ from ...common import Dumper
 from ...definitions import DebugTrail
 from ...model_tools.definitions import OutputShape
 from ...provider.essential import Mediator
-from ...provider.request_cls import DebugTrailRequest
 from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
 from ..provider_template import DumperProvider
-from ..request_cls import DumperRequest
+from ..request_cls import DebugTrailRequest, DumperRequest
 from .basic_gen import (
     ModelDumperGen,
     compile_closure_with_globals_capturing,
@@ -28,7 +27,7 @@ class ModelDumperProvider(DumperProvider):
     def __init__(self, *, name_sanitizer: NameSanitizer = BuiltinNameSanitizer()):
         self._name_sanitizer = name_sanitizer
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         dumper_gen = self._fetch_model_dumper_gen(mediator, request)
         closure_name = self._get_closure_name(request)
         dumper_code, dumper_namespace = dumper_gen.produce_code(closure_name=closure_name)

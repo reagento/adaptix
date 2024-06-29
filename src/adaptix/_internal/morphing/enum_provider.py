@@ -10,9 +10,9 @@ from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..name_style import NameStyle, convert_snake_style
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.loc_stack_filtering import DirectMediator, LastLocMapChecker
-from ..provider.provider_template import for_predicate
-from ..provider.request_cls import StrictCoercionRequest, TypeHintLoc, get_type_from_request
+from ..provider.loc_stack_filtering import DirectMediator, LastLocChecker
+from ..provider.located_request import for_predicate
+from ..provider.location import TypeHintLoc
 from ..type_tools import is_subclass_soft, normalize_type
 from .load_error import (
     BadVariantLoadError,
@@ -23,7 +23,7 @@ from .load_error import (
     OutOfRangeLoadError,
     TypeLoadError,
 )
-from .request_cls import DumperRequest, LoaderRequest
+from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest
 
 EnumT = TypeVar("EnumT", bound=Enum)
 FlagT = TypeVar("FlagT", bound=Flag)
@@ -73,7 +73,7 @@ class ByNameEnumMappingGenerator(BaseEnumMappingGenerator):
         return result
 
 
-class AnyEnumLSC(LastLocMapChecker):
+class AnyEnumLSC(LastLocChecker):
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
         try:
             norm = normalize_type(loc.type)
@@ -83,7 +83,7 @@ class AnyEnumLSC(LastLocMapChecker):
         return isinstance(origin, EnumMeta) and not is_subclass_soft(origin, Flag)
 
 
-class FlagEnumLSC(LastLocMapChecker):
+class FlagEnumLSC(LastLocChecker):
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
         try:
             norm = normalize_type(loc.type)
@@ -107,8 +107,8 @@ class EnumNameProvider(BaseEnumProvider):
     def __init__(self, mapping_generator: BaseEnumMappingGenerator):
         self._mapping_generator = mapping_generator
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = get_type_from_request(request)
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        enum = request.last_loc.type
         mapping = self._mapping_generator.generate_for_loading(enum.__members__.values())
         variants = list(mapping.keys())
 
@@ -122,8 +122,8 @@ class EnumNameProvider(BaseEnumProvider):
 
         return enum_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        enum = get_type_from_request(request)
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        enum = request.last_loc.type
         mapping = self._mapping_generator.generate_for_dumping(enum.__members__.values())
 
         def enum_dumper(data: Enum) -> str:
@@ -136,8 +136,8 @@ class EnumValueProvider(BaseEnumProvider):
     def __init__(self, value_type: TypeHint):
         self._value_type = value_type
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = get_type_from_request(request)
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        enum = request.last_loc.type
         value_loader = mediator.mandatory_provide(
             LoaderRequest(
                 loc_stack=request.loc_stack.append_with(
@@ -155,7 +155,7 @@ class EnumValueProvider(BaseEnumProvider):
 
         return enum_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         value_dumper = mediator.mandatory_provide(
             DumperRequest(
                 loc_stack=request.loc_stack.append_with(
@@ -175,8 +175,8 @@ class EnumExactValueProvider(BaseEnumProvider):
     by their value without any processing
     """
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        return self._make_loader(get_type_from_request(request))
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return self._make_loader(request.last_loc.type)
 
     def _make_loader(self, enum):
         variants = [case.value for case in enum]
@@ -216,8 +216,8 @@ class EnumExactValueProvider(BaseEnumProvider):
 
         return value_to_member
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        member_to_value = {member: member.value for member in get_type_from_request(request)}
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        member_to_value = {member: member.value for member in request.last_loc.type}
 
         def enum_exact_value_dumper(data):
             return member_to_value[data]
@@ -226,8 +226,8 @@ class EnumExactValueProvider(BaseEnumProvider):
 
 
 class FlagByExactValueProvider(BaseFlagProvider):
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = get_type_from_request(request)
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        enum = request.last_loc.type
         flag_mask = reduce(or_, enum.__members__.values()).value
 
         if flag_mask < 0:
@@ -258,7 +258,7 @@ class FlagByExactValueProvider(BaseFlagProvider):
 
         return flag_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def flag_exact_value_dumper(data):
             return data.value
 
@@ -288,8 +288,8 @@ class FlagByListProvider(BaseFlagProvider):
             return list(enum.__members__.values())
         return _extract_non_compound_cases_from_flag(enum)
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = get_type_from_request(request)
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        enum = request.last_loc.type
 
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         allow_single_value = self._allow_single_value
@@ -338,8 +338,8 @@ class FlagByListProvider(BaseFlagProvider):
 
         return flag_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        enum = get_type_from_request(request)
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        enum = request.last_loc.type
 
         cases = self._get_cases(enum)
         need_to_reverse = self._allow_compound and cases != _extract_non_compound_cases_from_flag(enum)

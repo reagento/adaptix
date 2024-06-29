@@ -5,10 +5,10 @@ from dataclasses import replace
 from typing import Any, Callable, Tuple, Union, final
 
 from ..common import Coercer, OneArgCoercer, TypeHint
+from ..morphing.utils import try_normalize_type
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStackChecker
 from ..provider.location import GenericParamLoc
-from ..provider.request_cls import try_normalize_type
 from ..special_cases_optimization import as_is_stub, as_is_stub_with_ctx
 from ..type_tools import BaseNormType, is_generic, is_parametrized, is_subclass_soft, normalize_type, strip_tags
 from .provider_template import CoercerProvider

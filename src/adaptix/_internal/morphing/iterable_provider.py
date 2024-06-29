@@ -8,18 +8,12 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import CannotProvide, Mediator
+from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
-from ..provider.provider_template import for_predicate
-from ..provider.request_cls import (
-    DebugTrailRequest,
-    LocatedRequest,
-    StrictCoercionRequest,
-    get_type_from_request,
-    try_normalize_type,
-)
 from ..struct_trail import append_trail, render_trail_as_note
 from .load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
-from .request_cls import DumperRequest, LoaderRequest
+from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
+from .utils import try_normalize_type
 
 CollectionsMapping = collections.abc.Mapping
 
@@ -51,7 +45,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
         raise CannotProvide
 
     def _fetch_norm_and_arg(self, request: LocatedRequest):
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
 
         if len(norm.args) != 1 and not (norm.origin == tuple and norm.args[-1] == Ellipsis):
             raise CannotProvide
@@ -66,7 +60,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
         return norm, arg
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)
@@ -207,7 +201,7 @@ class IterableProvider(LoaderProvider, DumperProvider):
 
         return iter_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm, arg = self._fetch_norm_and_arg(request)
 
         iter_factory = self._get_iter_factory(norm.origin)

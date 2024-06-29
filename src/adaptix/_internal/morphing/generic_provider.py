@@ -1,83 +1,61 @@
 import collections.abc
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, Collection, Dict, Iterable, Literal, Optional, Sequence, Set, Type, Union
+from typing import Any, Collection, Dict, Iterable, Literal, Optional, Sequence, Set, Type, TypeVar, Union
 
-from ..common import Dumper, Loader
+from ..common import Dumper, Loader, TypeHint
 from ..compat import CompatExceptionGroup
 from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
 from ..feature_requirement import HAS_PY_39
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.location import GenericParamLoc
-from ..provider.provider_template import for_predicate
-from ..provider.request_cls import (
-    DebugTrailRequest,
-    LocatedRequest,
-    LocStack,
-    StrictCoercionRequest,
-    TypeHintLoc,
-    get_type_from_request,
-    try_normalize_type,
-)
-from ..provider.static_provider import StaticProvider, static_provision_action
+from ..provider.loc_stack_filtering import LocStack
+from ..provider.located_request import LocatedRequestDelegatingProvider, LocatedRequestT, for_predicate
+from ..provider.location import GenericParamLoc, TypeHintLoc
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
 from .load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider
-from .request_cls import DumperRequest, LoaderRequest
+from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
+from .utils import try_normalize_type
+
+ResponseT = TypeVar("ResponseT")
 
 
-class NewTypeUnwrappingProvider(StaticProvider):
-    @static_provision_action
-    def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
+class NewTypeUnwrappingProvider(LocatedRequestDelegatingProvider):
+    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
 
-        if not is_new_type(loc.type):
+    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
+        if not is_new_type(request.last_loc.type):
             raise CannotProvide
 
-        return mediator.delegating_provide(
-            replace(
-                request,
-                loc_stack=request.loc_stack.replace_last_type(loc.type.__supertype__),
-            ),
-        )
+        return request.last_loc.type.__supertype__
 
 
-class TypeHintTagsUnwrappingProvider(StaticProvider):
-    @static_provision_action
-    def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
-        norm = try_normalize_type(loc.type)
+class TypeHintTagsUnwrappingProvider(LocatedRequestDelegatingProvider):
+    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
+
+    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
+        tp = request.last_loc.type
+        norm = try_normalize_type(tp)
         unwrapped = strip_tags(norm)
-        if unwrapped.source == loc.type:  # type has not changed, continue search
+        if unwrapped.source == tp:  # type has not changed, continue search
             raise CannotProvide
 
-        return mediator.delegating_provide(
-            replace(
-                request,
-                loc_stack=request.loc_stack.replace_last_type(unwrapped.source),
-            ),
-        )
+        return unwrapped.source
 
 
-class TypeAliasUnwrappingProvider(StaticProvider):
-    @static_provision_action
-    def _provide_unwrapping(self, mediator: Mediator, request: LocatedRequest) -> Loader:
-        loc = request.last_loc.cast_or_raise(TypeHintLoc, CannotProvide)
-        norm = try_normalize_type(loc.type)
+class TypeAliasUnwrappingProvider(LocatedRequestDelegatingProvider):
+    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
+
+    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
+        norm = try_normalize_type(request.last_loc.type)
         if not isinstance(norm, NormTypeAlias):
             raise CannotProvide
 
-        unwrapped = norm.value[tuple(arg.source for arg in norm.args)] if norm.args else norm.value
-        return mediator.delegating_provide(
-            replace(
-                request,
-                loc_stack=request.loc_stack.replace_last_type(unwrapped),
-            ),
-        )
+        return norm.value[tuple(arg.source for arg in norm.args)] if norm.args else norm.value
 
 
 def _is_exact_zero_or_one(arg):
@@ -99,7 +77,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         if not enum_cases:
             return set(args)
 
-        literal_dumper = self._provide_dumper(mediator, DumperRequest(loc_stack))
+        literal_dumper = self.provide_dumper(mediator, DumperRequest(loc_stack))
         return {literal_dumper(arg) if isinstance(arg, Enum) else arg for arg in args}
 
     def _get_enum_types(self, cases: Collection) -> Collection:
@@ -177,8 +155,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
         return wrapped_loader_with_enums
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = try_normalize_type(get_type_from_request(request))
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        norm = try_normalize_type(request.last_loc.type)
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
 
         enum_cases = [arg for arg in norm.args if isinstance(arg, Enum)]
@@ -212,8 +190,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
         return self._get_literal_loader_with_enum(literal_loader, enum_loaders, allowed_values)
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        norm = try_normalize_type(get_type_from_request(request))
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        norm = try_normalize_type(request.last_loc.type)
         enum_cases = [arg for arg in norm.args if isinstance(arg, Enum)]
 
         if not enum_cases:
@@ -241,8 +219,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
 @for_predicate(Union)
 class UnionProvider(LoaderProvider, DumperProvider):
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = try_normalize_type(get_type_from_request(request))
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        norm = try_normalize_type(request.last_loc.type)
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
 
         if self._is_single_optional(norm):
@@ -357,8 +335,8 @@ class UnionProvider(LoaderProvider, DumperProvider):
     def _is_class_origin(self, origin) -> bool:
         return (origin is None or isinstance(origin, type)) and not is_subclass_soft(origin, collections.abc.Callable)
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        request_type = get_type_from_request(request)
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        request_type = request.last_loc.type
         norm = try_normalize_type(request_type)
 
         if self._is_single_optional(norm):
@@ -472,7 +450,7 @@ def path_like_dumper(data):
 class PathLikeProvider(LoaderProvider, DumperProvider):
     _impl = Path
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return mediator.mandatory_provide(
             LoaderRequest(
                 loc_stack=request.loc_stack.replace_last_type(self._impl),
@@ -480,5 +458,5 @@ class PathLikeProvider(LoaderProvider, DumperProvider):
             lambda x: f"Cannot create loader for {PathLike}. Loader for {Path} cannot be created",
         )
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return path_like_dumper

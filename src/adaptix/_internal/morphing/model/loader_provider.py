@@ -8,11 +8,10 @@ from ...common import Loader
 from ...definitions import DebugTrail
 from ...model_tools.definitions import InputShape
 from ...provider.essential import Mediator
-from ...provider.request_cls import DebugTrailRequest, StrictCoercionRequest
 from ...provider.shape_provider import InputShapeRequest, provide_generic_resolved_shape
 from ..model.loader_gen import BuiltinModelLoaderGen, ModelLoaderProps
 from ..provider_template import LoaderProvider
-from ..request_cls import LoaderRequest
+from ..request_cls import DebugTrailRequest, LoaderRequest, StrictCoercionRequest
 from .basic_gen import (
     ModelLoaderGen,
     compile_closure_with_globals_capturing,
@@ -36,7 +35,7 @@ class ModelLoaderProvider(LoaderProvider):
         self._name_sanitizer = name_sanitizer
         self._props = props
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         loader_gen = self._fetch_model_loader_gen(mediator, request)
         closure_name = self._get_closure_name(request)
         loader_code, loader_namespace = loader_gen.produce_code(closure_name=closure_name)

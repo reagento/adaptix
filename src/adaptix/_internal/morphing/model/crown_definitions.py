@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Generic, Mapping, Sequence, TypeVar, Uni
 
 from ...common import VarTuple
 from ...model_tools.definitions import BaseShape, DefaultFactory, DefaultValue, InputShape, OutputShape
-from ...provider.request_cls import LocatedRequest
+from ...provider.located_request import LocatedRequest
 from ...utils import SingletonMeta
 
 T = TypeVar("T")

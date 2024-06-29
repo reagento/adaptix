@@ -22,8 +22,9 @@ from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
 from ...model_tools.definitions import InputField, OutputField
 from ...provider.essential import CannotProvide, Mediator
-from ...provider.request_cls import LocatedRequest, LocStack
-from ...provider.static_provider import StaticProvider, static_provision_action
+from ...provider.loc_stack_filtering import LocStack
+from ...provider.located_request import LocatedRequest
+from ...provider.methods_provider import MethodsProvider, method_handler
 from .crown_definitions import (
     BaseCrown,
     BaseDictCrown,
@@ -69,13 +70,13 @@ def fetch_code_gen_hook(mediator: Mediator, loc_stack: LocStack) -> CodeGenHook:
         return stub_code_gen_hook
 
 
-class CodeGenAccumulator(StaticProvider):
+class CodeGenAccumulator(MethodsProvider):
     """Accumulates all generated code. It may be useful for debugging"""
 
     def __init__(self) -> None:
         self.list: List[Tuple[CodeGenHookRequest, CodeGenHookData]] = []
 
-    @static_provision_action
+    @method_handler
     def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
         def hook(data: CodeGenHookData):
             self.list.append((request, data))

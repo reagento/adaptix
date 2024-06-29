@@ -1,6 +1,5 @@
 from ...provider.essential import CannotProvide
-from ...provider.loc_stack_filtering import DirectMediator, LocStackChecker
-from ...provider.request_cls import LocStack
+from ...provider.loc_stack_filtering import DirectMediator, LocStack, LocStackChecker
 from ...provider.shape_provider import InputShapeRequest, OutputShapeRequest
 
 

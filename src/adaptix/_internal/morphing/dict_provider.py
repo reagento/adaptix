@@ -8,13 +8,13 @@ from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
 from ..morphing.provider_template import DumperProvider, LoaderProvider
 from ..provider.essential import Mediator
+from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
-from ..provider.provider_template import for_predicate
-from ..provider.request_cls import DebugTrailRequest, LocatedRequest, get_type_from_request, try_normalize_type
 from ..struct_trail import ItemKey, append_trail, render_trail_as_note
 from ..type_tools import BaseNormType
 from .load_error import AggregateLoadError, LoadError, TypeLoadError
-from .request_cls import DumperRequest, LoaderRequest
+from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest
+from .utils import try_normalize_type
 
 CollectionsMapping = collections.abc.Mapping
 
@@ -22,10 +22,10 @@ CollectionsMapping = collections.abc.Mapping
 @for_predicate(Dict)
 class DictProvider(LoaderProvider, DumperProvider):
     def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
         return norm.args
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         key, value = self._extract_key_value(request)
 
         key_loader = mediator.mandatory_provide(
@@ -154,7 +154,7 @@ class DictProvider(LoaderProvider, DumperProvider):
 
         return dict_loader_dt_all
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
 
         key_dumper = mediator.mandatory_provide(
@@ -274,13 +274,13 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
         self.default_factory = default_factory
 
     def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
-        norm = try_normalize_type(get_type_from_request(request))
+        norm = try_normalize_type(request.last_loc.type)
         return norm.args
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         key, value = self._extract_key_value(request)
         dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
-        dict_loader = self._DICT_PROVIDER.apply_provider(
+        dict_loader = self._DICT_PROVIDER.provide_loader(
             mediator,
             replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )
@@ -291,11 +291,11 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
 
         return defaultdict_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
         dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
 
-        return self._DICT_PROVIDER.apply_provider(
+        return self._DICT_PROVIDER.provide_dumper(
             mediator,
             replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )
