@@ -1,7 +1,7 @@
 # ruff: noqa: DTZ001
 import re
 import typing
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from fractions import Fraction
 from io import BytesIO
@@ -10,7 +10,7 @@ from typing import Union
 import pytest
 from tests_helpers import cond_list, raises_exc
 
-from adaptix import Provider, Retort
+from adaptix import Retort
 from adaptix._internal.feature_requirement import HAS_PY_311, IS_PYPY
 from adaptix._internal.morphing.concrete_provider import (
     DatetimeFormatProvider,
@@ -19,58 +19,106 @@ from adaptix._internal.morphing.concrete_provider import (
 )
 from adaptix.load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 
+INVALID_INPUT_ISO_FORMAT = (
+    None,
+    10,
+    datetime(2011, 11, 4, 0, 0),
+    date(2019, 12, 4),
+    time(4, 23, 1),
+)
+
+INVALID_INPUT_TIMESTAMP = (
+    None,
+    datetime(2011, 11, 4, 0, 0),
+    date(2019, 12, 4),
+    time(4, 23, 1),
+)
+
 
 @pytest.mark.parametrize(
-    ["expected_type", "invalid_objects", "loader_type", "extra_providers"],
-    [
-        (str, None, datetime, None),
-        (str, None, date, None),
-        (str, None, time, None),
-        (str, None, datetime, [DatetimeFormatProvider("%Y-%m-%d")]),
-        (Union[float, int], (
-            None,
-            datetime(2011, 11, 4, 0, 0),
-            date(2019, 12, 4),
-            time(4, 23, 1),
-        ), datetime, [DatetimeTimestampProvider(tz=timezone.utc)]),
-        (Union[float, int], (
-            None,
-            datetime(2011, 11, 4, 0, 0),
-            date(2019, 12, 4),
-            time(4, 23, 1),
-        ), date, [DateTimestampProvider()]),
-    ],
+    "tp",
+    [datetime, date, time],
 )
-def test_any_dt(
-    expected_type: typing.Type,
-    invalid_objects: typing.Tuple[typing.Any, ...],
-    loader_type: typing.Type,
-    extra_providers: typing.List[Provider],
+@pytest.mark.parametrize(
+    "value",
+    INVALID_INPUT_ISO_FORMAT,
+)
+def test_invalid_input_iso_format(
     strict_coercion,
     debug_trail,
+    value,
+    tp,
 ):
     retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
-        recipe=extra_providers if extra_providers else [],
     )
 
-    if not invalid_objects:
-        invalid_objects = (
-            None,
-            10,
-            datetime(2011, 11, 4, 0, 0),
-            date(2019, 12, 4),
-            time(4, 23, 1),
-        )
+    loader = retort.get_loader(tp)
 
-    loader = retort.get_loader(loader_type)
+    raises_exc(
+        TypeLoadError(str, value),
+        lambda: loader(value),
+    )
 
-    for obj in invalid_objects:
-        raises_exc(
-            TypeLoadError(expected_type, obj),
-            lambda: loader(obj),  # noqa: B023
-        )
+
+@pytest.mark.parametrize(
+    "value",
+    INVALID_INPUT_ISO_FORMAT,
+)
+def test_invalid_input_datetime_format(
+    strict_coercion,
+    debug_trail,
+    value,
+):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            DatetimeFormatProvider("%Y-%m-%d"),
+        ],
+    )
+
+    loader = retort.get_loader(datetime)
+
+    raises_exc(
+        TypeLoadError(str, value),
+        lambda: loader(value),
+    )
+
+
+@pytest.mark.parametrize(
+    ["tp", "loader"],
+    [
+        (datetime, DatetimeTimestampProvider(tz=timezone.utc)),
+        (date, DateTimestampProvider()),
+    ],
+)
+@pytest.mark.parametrize(
+    "value",
+    INVALID_INPUT_TIMESTAMP,
+)
+def test_invalid_input_timestamp(
+    strict_coercion,
+    debug_trail,
+    value,
+    tp,
+    loader,
+):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+        recipe=[
+            loader,
+        ],
+    )
+
+    loader = retort.get_loader(tp)
+
+    raises_exc(
+        TypeLoadError(Union[float, int], value),
+        lambda: loader(value),
+    )
 
 
 def test_iso_format_provider_datetime(strict_coercion, debug_trail):
@@ -181,13 +229,12 @@ def test_datetime_timestamp_provider(strict_coercion, debug_trail, tz: timezone)
     assert loader(ts) == dt
 
     overflow_ts = float("inf")
-    nan = float("nan")
-
     raises_exc(
         ValueLoadError("Timestamp is out of the range of supported values", overflow_ts),
         lambda: loader(overflow_ts),
     )
 
+    nan = float("nan")
     raises_exc(
         ValueLoadError("Unexpected value", nan),
         lambda: loader(nan),
@@ -207,7 +254,7 @@ def test_date_timestamp_provider(strict_coercion, debug_trail):
     )
 
     loader = retort.get_loader(date)
-    dt = datetime(2011, 11, 4, 6, 38)
+    dt = datetime(2011, 11, 4, tzinfo=UTC)
     today = dt.date()
 
     ts = dt.timestamp()
@@ -215,17 +262,19 @@ def test_date_timestamp_provider(strict_coercion, debug_trail):
     assert loader(ts) == today
 
     overflow_ts = float("inf")
-    nan = float("nan")
-
     raises_exc(
         ValueLoadError("Timestamp is out of the range of supported values", overflow_ts),
         lambda: loader(overflow_ts),
     )
 
+    nan = float("nan")
     raises_exc(
         ValueLoadError("Unexpected value", nan),
         lambda: loader(nan),
     )
+
+    dumper = retort.get_dumper(date)
+    assert dumper(dt) == ts
 
 
 def test_seconds_timedelta_provider(strict_coercion, debug_trail):

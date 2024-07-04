@@ -1,2 +1,1 @@
 Add public api for :func:`.datetime_by_format`.
-`#286 <https://github.com/reagento/adaptix/issues/286>`_

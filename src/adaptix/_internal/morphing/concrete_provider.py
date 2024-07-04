@@ -3,7 +3,7 @@ import re
 import typing
 from binascii import a2b_base64, b2a_base64
 from dataclasses import dataclass, replace
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from io import BytesIO
@@ -79,7 +79,7 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
 class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
     tz: Optional[timezone]
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         tz = self.tz
 
         def datetime_timestamp_loader(data):
@@ -97,7 +97,7 @@ class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
 
         return datetime_timestamp_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def datetime_timestamp_dumper(data: datetime):
             return data.timestamp()
 
@@ -105,7 +105,7 @@ class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
 
 
 @for_predicate(date)
-class DateTimestampProvider(LoaderProvider):
+class DateTimestampProvider(LoaderProvider, DumperProvider):
     def _is_pydatetime(self) -> bool:
         try:
             import _pydatetime
@@ -117,15 +117,12 @@ class DateTimestampProvider(LoaderProvider):
 
         return False
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        is_pydatetime = self._is_pydatetime()
-
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         def date_timestamp_loader(data):
             try:
                 # Pure-Python implementation and C-extension implementation
                 # of datetime.date.fromtimestamp module works differently with a None arg.
                 # See https://github.com/python/cpython/issues/120268 for more details.
-
                 if data is None:
                     raise TypeLoadError(Union[int, float], data)
 
@@ -151,7 +148,19 @@ class DateTimestampProvider(LoaderProvider):
                     data,
                 )
 
-        return date_timestamp_loader if not is_pydatetime else pydate_timestamp_loader
+        return pydate_timestamp_loader if self._is_pydatetime() else date_timestamp_loader
+
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        def date_timestamp_dumper(data: date):
+            dt = datetime(
+                year=data.year,
+                month=data.month,
+                day=data.day,
+                tzinfo=UTC,
+            )
+            return dt.timestamp()
+
+        return date_timestamp_dumper
 
 
 @for_predicate(timedelta)

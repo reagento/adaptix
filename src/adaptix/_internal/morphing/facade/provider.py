@@ -443,7 +443,7 @@ def default_dict(pred: Pred, default_factory: Callable) -> Provider:
     return bound(pred, DefaultDictProvider(default_factory))
 
 
-def datetime_by_timestamp(pred: Pred, tz: Optional[timezone] = timezone.utc) -> Provider:
+def datetime_by_timestamp(pred: Pred, *, tz: Optional[timezone] = timezone.utc) -> Provider:
     """Provider that can load/dump datetime object from/to UNIX timestamp.
 
     :param pred: Predicate specifying where the provider should be used.
