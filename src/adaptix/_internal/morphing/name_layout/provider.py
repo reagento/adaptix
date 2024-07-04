@@ -2,7 +2,7 @@ from typing import TypeVar
 
 from ...model_tools.definitions import InputShape, OutputShape
 from ...provider.essential import Mediator
-from ...provider.static_provider import StaticProvider, static_provision_action
+from ...provider.methods_provider import MethodsProvider, method_handler
 from ..model.crown_definitions import (
     BranchInpCrown,
     BranchOutCrown,
@@ -21,7 +21,7 @@ from .crown_builder import InpCrownBuilder, OutCrownBuilder
 T = TypeVar("T")
 
 
-class BuiltinNameLayoutProvider(StaticProvider):
+class BuiltinNameLayoutProvider(MethodsProvider):
     def __init__(
         self,
         structure_maker: StructureMaker,
@@ -34,7 +34,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
         self._extra_policies_maker = extra_policies_maker
         self._extra_move_maker = extra_move_maker
 
-    @static_provision_action
+    @method_handler
     def _provide_input_name_layout(self, mediator: Mediator, request: InputNameLayoutRequest) -> InputNameLayout:
         extra_move = self._extra_move_maker.make_inp_extra_move(mediator, request)
         paths_to_leaves = self._structure_maker.make_inp_structure(mediator, request, extra_move)
@@ -74,7 +74,7 @@ class BuiltinNameLayoutProvider(StaticProvider):
     ) -> BranchInpCrown:
         return InpCrownBuilder(extra_policies, {}).build_empty_crown(as_list=as_list)
 
-    @static_provision_action
+    @method_handler
     def _provide_output_name_layout(self, mediator: Mediator, request: OutputNameLayoutRequest) -> OutputNameLayout:
         extra_move = self._extra_move_maker.make_out_extra_move(mediator, request)
         paths_to_leaves = self._structure_maker.make_out_structure(mediator, request, extra_move)

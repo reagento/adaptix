@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timezone
 from enum import Enum, EnumMeta
 from types import MappingProxyType
 from typing import Any, Callable, Iterable, List, Mapping, Optional, TypeVar, Union
@@ -19,11 +20,12 @@ from ...provider.loc_stack_filtering import (
     create_loc_stack_checker,
 )
 from ...provider.overlay_schema import OverlayProvider
-from ...provider.provider_template import ValueProvider
 from ...provider.provider_wrapper import Chain, ChainingProvider
 from ...provider.shape_provider import PropertyExtender
+from ...provider.value_provider import ValueProvider
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
+from ..concrete_provider import DatetimeFormatProvider, DateTimestampProvider, DatetimeTimestampProvider
 from ..dict_provider import DefaultDictProvider
 from ..enum_provider import (
     ByNameEnumMappingGenerator,
@@ -151,9 +153,9 @@ def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider
         else:
             pred, value = element
             result.append(
-                FuncNameMappingProvider(create_loc_stack_checker(pred), value)
+                bound(pred, FuncNameMappingProvider(value))
                 if callable(value) else
-                ConstNameMappingProvider(create_loc_stack_checker(pred), value),
+                bound(pred, ConstNameMappingProvider(value)),
             )
     return tuple(result)
 
@@ -439,3 +441,35 @@ def default_dict(pred: Pred, default_factory: Callable) -> Provider:
     :param default_factory: default_factory parameter of the ``defaultdict`` instance to be created by the loader
     """
     return bound(pred, DefaultDictProvider(default_factory))
+
+
+def datetime_by_timestamp(pred: Pred, tz: Optional[timezone] = timezone.utc) -> Provider:
+    """Provider that can load/dump datetime object from/to UNIX timestamp.
+
+    :param pred: Predicate specifying where the provider should be used.
+        See :ref:`predicate-system` for details.
+    :param tz: tz parameter which will be passed to the datetime.fromtimestamp method.
+    """
+
+    return bound(pred, DatetimeTimestampProvider(tz))
+
+
+def datetime_by_format(pred: Pred, fmt: str) -> Provider:
+    """Provider that can load/dump datetime object from/to format string e.g "%d/%m/%y %H:%M"
+
+    :param pred: Predicate specifying where the provider should be used.
+        See :ref:`predicate-system` for details.
+    :param fmt: format parameter which will be passed to datetime.strptime method.
+    """
+    return bound(pred, DatetimeFormatProvider(fmt))
+
+
+def date_by_timestamp(pred: Pred) -> Provider:
+    """Provider that can load date object from UNIX timestamp.
+    Note that date objects can`t be dumped to the UNIX timestamp
+
+    :param pred: Predicate specifying where the provider should be used.
+        See :ref:`predicate-system` for details.
+    """
+    return bound(pred, DateTimestampProvider())
+

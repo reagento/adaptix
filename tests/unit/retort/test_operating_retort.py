@@ -4,7 +4,7 @@ from typing import List
 import pytest
 from tests_helpers import cond_list, raises_exc, with_cause, with_notes
 
-from adaptix import AggregateCannotProvide, CannotProvide, NoSuitableProvider, Retort
+from adaptix import AggregateCannotProvide, CannotProvide, ProviderNotFoundError, Retort
 from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
 from adaptix.conversion import get_converter
 
@@ -21,7 +21,7 @@ def test_cannot_produce_loader():
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(f"Cannot produce loader for type {Stub}"),
+                ProviderNotFoundError(f"Cannot produce loader for type {Stub}"),
                 "Note: The attached exception above contains verbose description of the problem",
             ),
             with_notes(
@@ -67,7 +67,7 @@ def test_cannot_produce_dumper():
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(f"Cannot produce dumper for type {Stub}"),
+                ProviderNotFoundError(f"Cannot produce dumper for type {Stub}"),
                 "Note: The attached exception above contains verbose description of the problem",
             ),
             with_notes(
@@ -116,7 +116,7 @@ def test_cannot_produce_converter_no_linking_required():
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(
+                ProviderNotFoundError(
                     f"Cannot produce converter for"
                     f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
                     f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
@@ -168,7 +168,7 @@ def test_cannot_produce_converter_no_linking_optional():
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(
+                ProviderNotFoundError(
                     f"Cannot produce converter for"
                     f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
                     f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
@@ -223,7 +223,7 @@ def test_cannot_produce_converter_no_coercer():
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(
+                ProviderNotFoundError(
                     f"Cannot produce converter for"
                     f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
                     f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
@@ -283,7 +283,7 @@ def test_cannot_produce_converter_no_coercer_complex_type(list_tp, list_tp_name)
     raises_exc(
         with_cause(
             with_notes(
-                NoSuitableProvider(
+                ProviderNotFoundError(
                     f"Cannot produce converter for"
                     f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
                     f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",

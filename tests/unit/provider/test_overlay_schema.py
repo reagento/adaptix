@@ -6,9 +6,10 @@ from tests_helpers import full_match
 
 from adaptix import AdornedRetort, Chain, Mediator, Omittable, Omitted, Provider, Request, bound
 from adaptix._internal.common import VarTuple
+from adaptix._internal.provider.loc_stack_filtering import LocStack
+from adaptix._internal.provider.location import TypeHintLoc
+from adaptix._internal.provider.methods_provider import MethodsProvider, method_handler
 from adaptix._internal.provider.overlay_schema import Overlay, OverlayProvider, Schema, provide_schema
-from adaptix._internal.provider.request_cls import LocStack, TypeHintLoc
-from adaptix._internal.provider.static_provider import StaticProvider, static_provision_action
 
 
 @dataclass(frozen=True)
@@ -31,11 +32,11 @@ class SampleRequest(Request):
     pass
 
 
-class SampleRequestProvider(StaticProvider):
+class SampleRequestProvider(MethodsProvider):
     def __init__(self, provide_action: Callable[[Mediator], MySchema]):
         self.provide_action = provide_action
 
-    @static_provision_action
+    @method_handler
     def _provide_overlay(self, mediator: Mediator, request: SampleRequest):
         return self.provide_action(mediator)
 

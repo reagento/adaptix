@@ -1,0 +1,2 @@
+Add new :func:`.datetime_by_timestamp` and :func:`.date_by_timestamp`.
+`#286 <https://github.com/reagento/adaptix/issues/286>`_

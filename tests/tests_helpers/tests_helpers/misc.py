@@ -7,15 +7,17 @@ from contextlib import contextmanager
 from dataclasses import dataclass, is_dataclass
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any, Callable, Dict, Generator, List, Optional, Reversible, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Reversible, Sequence, Tuple, Type, TypeVar, Union
 from uuid import uuid4
 
 import pytest
 
-from adaptix import CannotProvide, DebugTrail, Mediator, NoSuitableProvider, Provider, Request
+from adaptix import CannotProvide, DebugTrail, Provider, ProviderNotFoundError, Request, Retort
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
+from adaptix._internal.provider.essential import Mediator, RequestChecker, RequestHandler
+from adaptix._internal.retort.operating_retort import OperatingRetort
 from adaptix._internal.struct_trail import TrailElement, extend_trail, render_trail_as_note
 from adaptix._internal.type_tools import is_parametrized
 from adaptix._internal.utils import add_note
@@ -58,7 +60,7 @@ def _repr_value(obj: Any) -> Dict[str, Any]:
         result["message"] = obj.message
         result["is_terminal"] = obj.is_terminal
         result["is_demonstrative"] = obj.is_demonstrative
-    if isinstance(obj, NoSuitableProvider):
+    if isinstance(obj, ProviderNotFoundError):
         result["message"] = obj.message
     if not result:
         result["args"] = [_repr_value(arg) for arg in obj.args]
@@ -129,8 +131,8 @@ class DebugCtx:
 class PlaceholderProvider(Provider):
     value: int
 
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        raise CannotProvide
+    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+        return []
 
 
 def full_match(string_to_match: str) -> str:
@@ -231,3 +233,14 @@ class FailedRequirement(Requirement):
     @property
     def fail_reason(self) -> str:
         return self._fail_reason
+
+
+class StubRequest(Request):
+    pass
+
+
+stub_retort = Retort()
+
+
+def create_mediator(retort: OperatingRetort = stub_retort) -> Mediator:
+    return retort._create_mediator(StubRequest())

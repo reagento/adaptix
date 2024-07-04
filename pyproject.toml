@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'adaptix'
-version = '3.0.0b6'
+version = '3.0.0b7'
 description = 'An extremely flexible and configurable data model conversion library'
 readme = 'README.md'
 requires-python = '>=3.8'
@@ -79,6 +79,11 @@ filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
 branch = true
 relative_files = true
 include = ["src/**"]
+
+[tool.coverage.report]
+exclude_also = [
+    "^\\s*\\.\\.\\.\\s*(:?#.*)?$",
+]
 
 #   ┌             ┐
 #   │   LINTING   │
@@ -159,6 +164,7 @@ ignore = [
   'TD002',
   'PTH201',
   'RSE102',
+  'TCH003',
 
   # Rules conflictin with other tools
   'I001',

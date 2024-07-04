@@ -1,11 +1,9 @@
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, ABCMeta
 from typing import ClassVar, Iterable, Sequence, TypeVar
 
 from ..common import VarTuple
-from ..provider.essential import Mediator, Provider, Request
+from ..provider.essential import Provider
 from ..utils import Cloneable, ForbiddingDescriptor
-from .mediator import BuiltinMediator, ErrorRepresentor, RecursionResolver
-from .routing import IntrospectingRecipeSearcher, RecipeSearcher
 
 
 class RetortMeta(ABCMeta):  # inherits from ABCMeta to be compatible with ABC
@@ -62,33 +60,3 @@ class BaseRetort(Cloneable, ABC, metaclass=RetortMeta):
             + self._get_config_recipe()
             + self._full_class_recipe
         )
-        self._searcher = self._create_searcher(self._full_recipe)
-
-    def _create_searcher(self, full_recipe: Sequence[Provider]) -> RecipeSearcher:
-        return IntrospectingRecipeSearcher(full_recipe)
-
-    @abstractmethod
-    def _create_recursion_resolver(self) -> RecursionResolver:
-        ...
-
-    @abstractmethod
-    def _get_error_representor(self) -> ErrorRepresentor:
-        ...
-
-    def _create_mediator(self) -> Mediator:
-        recursion_resolver = self._create_recursion_resolver()
-        error_representor = self._get_error_representor()
-        return BuiltinMediator(
-            self._searcher,
-            recursion_resolver,
-            error_representor,
-        )
-
-    def _provide_from_recipe(self, request: Request[T]) -> T:
-        """Process request iterating over the result of _get_full_recipe()
-        :param request:
-        :return: request result
-        :raise CannotProvide: request was not processed
-        """
-        mediator = self._create_mediator()
-        return mediator.provide(request)
