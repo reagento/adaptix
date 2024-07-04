@@ -54,10 +54,10 @@ from adaptix._internal.morphing.model.crown_definitions import (
     OutputNameLayoutRequest,
 )
 from adaptix._internal.morphing.request_cls import DumperRequest, LoaderRequest
-from adaptix._internal.provider.loc_stack_filtering import P
-from adaptix._internal.provider.provider_template import ValueProvider
-from adaptix._internal.provider.request_cls import LocStack, TypeHintLoc
+from adaptix._internal.provider.loc_stack_filtering import LocStack, P
+from adaptix._internal.provider.location import TypeHintLoc
 from adaptix._internal.provider.shape_provider import InputShapeRequest, OutputShapeRequest
+from adaptix._internal.provider.value_provider import ValueProvider
 
 
 @dataclass

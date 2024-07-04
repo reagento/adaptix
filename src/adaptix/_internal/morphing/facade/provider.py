@@ -20,9 +20,9 @@ from ...provider.loc_stack_filtering import (
     create_loc_stack_checker,
 )
 from ...provider.overlay_schema import OverlayProvider
-from ...provider.provider_template import ValueProvider
 from ...provider.provider_wrapper import Chain, ChainingProvider
 from ...provider.shape_provider import PropertyExtender
+from ...provider.value_provider import ValueProvider
 from ...special_cases_optimization import as_is_stub
 from ...utils import Omittable, Omitted
 from ..concrete_provider import DatetimeFormatProvider, DateTimestampProvider, DatetimeTimestampProvider
@@ -153,9 +153,9 @@ def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider
         else:
             pred, value = element
             result.append(
-                FuncNameMappingProvider(create_loc_stack_checker(pred), value)
+                bound(pred, FuncNameMappingProvider(value))
                 if callable(value) else
-                ConstNameMappingProvider(create_loc_stack_checker(pred), value),
+                bound(pred, ConstNameMappingProvider(value)),
             )
     return tuple(result)
 

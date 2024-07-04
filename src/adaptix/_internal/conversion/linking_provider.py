@@ -7,8 +7,8 @@ from ..model_tools.introspection.callable import get_callable_shape
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import input_field_to_loc
 from ..provider.loc_stack_filtering import LocStackChecker
+from ..provider.loc_stack_tools import format_loc_stack
 from ..provider.location import FieldLoc
-from ..provider.request_cls import format_loc_stack
 from ..utils import add_note
 from .provider_template import LinkingProvider
 from .request_cls import (

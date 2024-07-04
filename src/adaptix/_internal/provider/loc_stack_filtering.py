@@ -3,12 +3,13 @@ import operator
 import re
 from abc import ABC, abstractmethod
 from copy import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import reduce
 from inspect import isabstract, isgenerator
-from typing import Any, Callable, ClassVar, Iterable, Optional, Pattern, Protocol, Sequence, Type, TypeVar, Union, final
+from typing import Any, ClassVar, Iterable, Optional, Pattern, Sequence, Type, TypeVar, Union, final
 
 from ..common import TypeHint, VarTuple
+from ..datastructures import ImmutableStack
 from ..type_tools import (
     BaseNormType,
     NormTV,
@@ -20,39 +21,16 @@ from ..type_tools import (
     normalize_type,
 )
 from ..type_tools.normalize_type import NotSubscribedError
-from .essential import CannotProvide, Request
-from .location import FieldLoc, GenericParamLoc, TypeHintLoc
-from .request_cls import LocStack
+from .essential import DirectMediator
+from .location import AnyLoc, FieldLoc, GenericParamLoc, TypeHintLoc
 
-T = TypeVar("T")
+LocStackT = TypeVar("LocStackT", bound="LocStack")
+AnyLocT_co = TypeVar("AnyLocT_co", bound=AnyLoc, covariant=True)
 
 
-class DirectMediator(Protocol):
-    """This is a copy of Mediator protocol but without provide_from_next() method"""
-
-    def provide(self, request: Request[T]) -> T:
-        ...
-
-    def delegating_provide(
-        self,
-        request: Request[T],
-        error_describer: Optional[Callable[[CannotProvide], str]] = None,
-    ) -> T:
-        ...
-
-    def mandatory_provide(
-        self,
-        request: Request[T],
-        error_describer: Optional[Callable[[CannotProvide], str]] = None,
-    ) -> T:
-        ...
-
-    def mandatory_provide_by_iterable(
-        self,
-        requests: Iterable[Request[T]],
-        error_describer: Optional[Callable[[], str]] = None,
-    ) -> Iterable[T]:
-        ...
+class LocStack(ImmutableStack[AnyLocT_co]):
+    def replace_last_type(self: LocStackT, tp: TypeHint, /) -> LocStackT:
+        return self.replace_last(replace(self.last, type=tp))
 
 
 class LocStackChecker(ABC):
@@ -119,7 +97,7 @@ class XorLocStackChecker(BinOperatorLSC):
         return reduce(operator.xor, elements)
 
 
-class LastLocMapChecker(LocStackChecker, ABC):
+class LastLocChecker(LocStackChecker, ABC):
     _expected_location: ClassVar[type]
 
     def __init_subclass__(cls, **kwargs):
@@ -139,7 +117,7 @@ class LastLocMapChecker(LocStackChecker, ABC):
 
 
 @dataclass(frozen=True)
-class ExactFieldNameLSC(LastLocMapChecker):
+class ExactFieldNameLSC(LastLocChecker):
     field_id: str
 
     def _check_location(self, mediator: DirectMediator, loc: FieldLoc) -> bool:
@@ -147,7 +125,7 @@ class ExactFieldNameLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class ReFieldNameLSC(LastLocMapChecker):
+class ReFieldNameLSC(LastLocChecker):
     pattern: Pattern[str]
 
     def _check_location(self, mediator: DirectMediator, loc: FieldLoc) -> bool:
@@ -155,7 +133,7 @@ class ReFieldNameLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class ExactTypeLSC(LastLocMapChecker):
+class ExactTypeLSC(LastLocChecker):
     norm: BaseNormType
 
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
@@ -167,7 +145,7 @@ class ExactTypeLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class OriginSubclassLSC(LastLocMapChecker):
+class OriginSubclassLSC(LastLocChecker):
     type_: type
 
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
@@ -179,7 +157,7 @@ class OriginSubclassLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class ExactOriginLSC(LastLocMapChecker):
+class ExactOriginLSC(LastLocChecker):
     origin: Any
 
     def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
@@ -191,7 +169,7 @@ class ExactOriginLSC(LastLocMapChecker):
 
 
 @dataclass(frozen=True)
-class GenericParamLSC(LastLocMapChecker):
+class GenericParamLSC(LastLocChecker):
     pos: int
 
     def _check_location(self, mediator: DirectMediator, loc: GenericParamLoc) -> bool:

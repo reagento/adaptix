@@ -80,6 +80,11 @@ branch = true
 relative_files = true
 include = ["src/**"]
 
+[tool.coverage.report]
+exclude_also = [
+    "^\\s*\\.\\.\\.\\s*(:?#.*)?$",
+]
+
 #   ┌             ┐
 #   │   LINTING   │
 #   └             ┘

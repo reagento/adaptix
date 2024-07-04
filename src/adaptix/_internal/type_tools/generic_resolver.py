@@ -5,8 +5,8 @@ from typing import Callable, Collection, Dict, Generic, Hashable, Mapping, TypeV
 
 from ..common import TypeHint
 from ..feature_requirement import HAS_TV_TUPLE, HAS_UNPACK
-from . import get_generic_args
 from .basic_utils import get_type_vars, get_type_vars_of_parametrized, is_generic, is_parametrized, strip_alias
+from .fundamentals import get_generic_args
 from .implicit_params import fill_implicit_params
 from .normalize_type import normalize_type
 

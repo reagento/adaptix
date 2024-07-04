@@ -1,5 +1,4 @@
-from adaptix._internal.provider.loc_stack_filtering import DirectMediator, LocStackChecker
-from adaptix._internal.provider.request_cls import LocStack
+from adaptix._internal.provider.loc_stack_filtering import DirectMediator, LocStack, LocStackChecker
 
 
 class FromCtxParam(LocStackChecker):

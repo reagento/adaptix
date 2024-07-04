@@ -34,8 +34,8 @@ from adaptix._internal.morphing.model.crown_definitions import (
     InputNameLayoutRequest,
 )
 from adaptix._internal.morphing.request_cls import LoaderRequest
-from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.shape_provider import InputShapeRequest
+from adaptix._internal.provider.value_provider import ValueProvider
 from adaptix.load_error import (
     ExtraFieldsLoadError,
     ExtraItemsLoadError,

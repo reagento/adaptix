@@ -7,6 +7,7 @@ from typing import Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar, 
 
 import pytest
 from tests_helpers import cond_list, full_match
+from tests_helpers.misc import create_mediator
 
 from adaptix import Chain, P, Retort, loader
 from adaptix._internal.common import TypeHint
@@ -15,12 +16,12 @@ from adaptix._internal.model_tools.definitions import NoDefault
 from adaptix._internal.provider.loc_stack_filtering import (
     ExactOriginLSC,
     ExactTypeLSC,
+    LocStack,
     LocStackEndChecker,
     OriginSubclassLSC,
     create_loc_stack_checker,
 )
 from adaptix._internal.provider.location import FieldLoc, GenericParamLoc, TypeHintLoc
-from adaptix._internal.provider.request_cls import LocStack
 from adaptix._internal.type_tools import normalize_type
 
 
@@ -54,10 +55,6 @@ def param_result(*values, result=None, raises=None, exact_match=None, match=None
     if id is None:
         id = str(values[0]) if len(values) == 1 else str(values)
     return pytest.param(*values, result, context, id=id)
-
-
-def create_mediator():
-    return Retort()._create_mediator()
 
 
 @pytest.mark.parametrize(
