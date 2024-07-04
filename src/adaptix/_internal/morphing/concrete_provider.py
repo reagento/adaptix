@@ -3,7 +3,7 @@ import re
 import typing
 from binascii import a2b_base64, b2a_base64
 from dataclasses import dataclass, replace
-from datetime import UTC, date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from io import BytesIO
@@ -156,7 +156,7 @@ class DateTimestampProvider(LoaderProvider, DumperProvider):
                 year=data.year,
                 month=data.month,
                 day=data.day,
-                tzinfo=UTC,
+                tzinfo=timezone.utc,
             )
             return dt.timestamp()
 

@@ -1,7 +1,7 @@
 # ruff: noqa: DTZ001
 import re
 import typing
-from datetime import UTC, date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from fractions import Fraction
 from io import BytesIO
@@ -254,7 +254,7 @@ def test_date_timestamp_provider(strict_coercion, debug_trail):
     )
 
     loader = retort.get_loader(date)
-    dt = datetime(2011, 11, 4, tzinfo=UTC)
+    dt = datetime(2011, 11, 4, tzinfo=timezone.utc)
     today = dt.date()
 
     ts = dt.timestamp()
