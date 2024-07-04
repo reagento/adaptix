@@ -21,7 +21,7 @@ from typing import (
 import pytest
 from tests_helpers import raises_exc, with_trail
 
-from adaptix import AdornedRetort, DebugTrail, NoSuitableProvider, Retort, dumper, loader
+from adaptix import AdornedRetort, DebugTrail, ProviderNotFoundError, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.iterable_provider import IterableProvider
 from adaptix._internal.morphing.load_error import AggregateLoadError
@@ -54,7 +54,7 @@ def test_mapping_providing(strict_coercion, debug_trail, mapping_type):
         debug_trail=debug_trail,
     )
 
-    with pytest.raises(NoSuitableProvider):
+    with pytest.raises(ProviderNotFoundError):
         retort.get_loader(mapping_type)
 
 

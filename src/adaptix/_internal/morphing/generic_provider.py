@@ -25,7 +25,6 @@ from ..provider.request_cls import (
 from ..provider.static_provider import StaticProvider, static_provision_action
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
-from ..type_tools.norm_utils import strip_annotated
 from .load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider
 from .request_cls import DumperRequest, LoaderRequest
@@ -182,18 +181,16 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         norm = try_normalize_type(get_type_from_request(request))
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
 
-        cleaned_args = [strip_annotated(arg) for arg in norm.args]
-
-        enum_cases = [arg for arg in cleaned_args if isinstance(arg, Enum)]
+        enum_cases = [arg for arg in norm.args if isinstance(arg, Enum)]
         enum_loaders = list(self._fetch_enum_loaders(mediator, request, self._get_enum_types(enum_cases)))
-        allowed_values_repr = self._get_allowed_values_repr(cleaned_args, mediator, request.loc_stack)
+        allowed_values_repr = self._get_allowed_values_repr(norm.args, mediator, request.loc_stack)
 
         if strict_coercion and any(
             isinstance(arg, bool) or _is_exact_zero_or_one(arg)
-            for arg in cleaned_args
+            for arg in norm.args
         ):
             allowed_values_with_types = self._get_allowed_values_collection(
-                [(type(el), el) for el in cleaned_args],
+                [(type(el), el) for el in norm.args],
             )
 
             # since True == 1 and False == 0
@@ -206,7 +203,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
                 literal_loader_sc, enum_loaders, allowed_values_with_types,
             )
 
-        allowed_values = self._get_allowed_values_collection(cleaned_args)
+        allowed_values = self._get_allowed_values_collection(norm.args)
 
         def literal_loader(data):
             if data in allowed_values:
@@ -217,8 +214,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
     def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm = try_normalize_type(get_type_from_request(request))
-        cleaned_args = [strip_annotated(arg) for arg in norm.args]
-        enum_cases = [arg for arg in cleaned_args if isinstance(arg, Enum)]
+        enum_cases = [arg for arg in norm.args if isinstance(arg, Enum)]
 
         if not enum_cases:
             return as_is_stub
@@ -457,8 +453,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
         except StopIteration:
             return None
 
-        literal_cases = [strip_annotated(arg) for arg in literal_type.args]
-        return self._produce_dumper_for_literal(dumper_type_dispatcher, literal_dumper, literal_cases)
+        return self._produce_dumper_for_literal(dumper_type_dispatcher, literal_dumper, literal_type.args)
 
     def _get_single_optional_dumper(self, dumper: Dumper) -> Dumper:
         def optional_dumper(data):

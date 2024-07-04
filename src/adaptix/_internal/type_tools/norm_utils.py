@@ -26,12 +26,6 @@ def strip_tags(norm: BaseNormType) -> BaseNormType:
 N = TypeVar("N", bound=BaseNormType)
 
 
-def strip_annotated(value: N) -> N:
-    if HAS_ANNOTATED and isinstance(value, BaseNormType) and value.origin == typing.Annotated:
-        return strip_annotated(value)
-    return value
-
-
 def is_class_var(norm: BaseNormType) -> bool:
     if norm.origin == ClassVar:
         return True

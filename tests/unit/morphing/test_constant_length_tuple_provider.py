@@ -6,7 +6,7 @@ from typing import Mapping, Tuple
 import pytest
 from tests_helpers import raises_exc, requires, with_trail
 
-from adaptix import AdornedRetort, DebugTrail, NoSuitableProvider, dumper, loader
+from adaptix import AdornedRetort, DebugTrail, ProviderNotFoundError, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import HAS_UNPACK
 from adaptix._internal.morphing.concrete_provider import INT_LOADER_PROVIDER, STR_LOADER_PROVIDER
@@ -43,7 +43,7 @@ def test_dynamic_tuple_providing(retort, strict_coercion, debug_trail):
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     )
-    with pytest.raises(NoSuitableProvider):
+    with pytest.raises(ProviderNotFoundError):
         retort.get_loader(Tuple[str, ...])
 
 
@@ -261,7 +261,7 @@ def test_unpack_loading(retort):
             INT_LOADER_PROVIDER,
         ],
     )
-    with pytest.raises(NoSuitableProvider):
+    with pytest.raises(ProviderNotFoundError):
         retort.get_loader(Tuple[int, typing.Unpack[Tuple[str, ...]], int])
 
     loader_ = retort.get_loader(Tuple[int, typing.Unpack[Tuple[str]], int])
@@ -276,7 +276,7 @@ def test_unpack_dumping(retort):
         ],
     )
 
-    with pytest.raises(NoSuitableProvider):
+    with pytest.raises(ProviderNotFoundError):
         retort.get_loader(Tuple[int, typing.Unpack[Tuple[str, ...]], int])
 
     dumper_ = retort.get_dumper(Tuple[int, typing.Unpack[Tuple[str]], int])

@@ -133,13 +133,25 @@ class OptionalCoercerProvider(NormTypeCoercerProvider):
         not_none_dst = self._get_not_none(norm_dst)
         not_none_request = replace(
             request,
-            src=request.src.replace_last_type(not_none_src),
-            dst=request.dst.replace_last_type(not_none_dst),
+            src=request.src.append_with(
+                GenericParamLoc(
+                    type=not_none_src.source,
+                    generic_pos=0,
+                ),
+            ),
+            dst=request.dst.append_with(
+                GenericParamLoc(
+                    type=not_none_dst.source,
+                    generic_pos=0,
+                ),
+            ),
         )
         not_none_coercer = mediator.mandatory_provide(
             not_none_request,
             lambda x: "Cannot create coercer for optionals. Coercer for wrapped value cannot be created",
         )
+        if not_none_coercer == as_is_stub_with_ctx:
+            return as_is_stub_with_ctx
 
         def optional_coercer(data, ctx):
             if data is None:
@@ -152,7 +164,7 @@ class OptionalCoercerProvider(NormTypeCoercerProvider):
         return norm.origin == Union and None in [case.origin for case in norm.args]
 
     def _get_not_none(self, norm: BaseNormType) -> BaseNormType:
-        return next(case.origin for case in norm.args if case.origin is not None)
+        return next(case for case in norm.args if case.origin is not None)
 
 
 class TypeHintTagsUnwrappingProvider(CoercerProvider):
