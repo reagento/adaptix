@@ -164,6 +164,7 @@ ignore = [
   'TD002',
   'PTH201',
   'RSE102',
+  'TCH003',
 
   # Rules conflictin with other tools
   'I001',

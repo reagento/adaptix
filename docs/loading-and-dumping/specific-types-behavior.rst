@@ -109,7 +109,13 @@ dumper serialize value via ``__str__`` method.
 date, time and datetime
 '''''''''''''''''''''''''''
 
-Value is represented as an isoformat string.
+By default value is represented as an isoformat string.
+
+But you can override this behaviour with other providers:
+
+- To load and dump ``datetime`` to / from specific format, you can use :func:`.datetime_by_format`
+- To load and dump ``datetime`` to / from UNIX timestamp, you can use :func:`.datetime_by_timestamp`
+- To load and dump ``date`` from UNIX timestamp, you can use :func:`.date_by_timestamp`
 
 timedelta
 '''''''''''''''''''''''''''

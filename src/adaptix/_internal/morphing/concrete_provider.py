@@ -3,11 +3,11 @@ import re
 import typing
 from binascii import a2b_base64, b2a_base64
 from dataclasses import dataclass, replace
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from io import BytesIO
-from typing import Generic, Type, TypeVar, Union
+from typing import Generic, Optional, Type, TypeVar, Union
 
 from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
@@ -72,6 +72,95 @@ class DatetimeFormatProvider(LoaderProvider, DumperProvider):
             return data.strftime(fmt)
 
         return datetime_format_dumper
+
+
+@dataclass
+@for_predicate(datetime)
+class DatetimeTimestampProvider(LoaderProvider, DumperProvider):
+    tz: Optional[timezone]
+
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        tz = self.tz
+
+        def datetime_timestamp_loader(data):
+            try:
+                return datetime.fromtimestamp(data, tz=tz)
+            except TypeError:
+                raise TypeLoadError(Union[int, float], data)
+            except ValueError:
+                raise ValueLoadError("Unexpected value", data)
+            except OverflowError:
+                raise ValueLoadError(
+                    "Timestamp is out of the range of supported values",
+                    data,
+                )
+
+        return datetime_timestamp_loader
+
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        def datetime_timestamp_dumper(data: datetime):
+            return data.timestamp()
+
+        return datetime_timestamp_dumper
+
+
+@for_predicate(date)
+class DateTimestampProvider(LoaderProvider, DumperProvider):
+    def _is_pydatetime(self) -> bool:
+        try:
+            import _pydatetime
+        except ImportError:
+            return False
+        else:
+            if datetime is _pydatetime:
+                return True
+
+        return False
+
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        def date_timestamp_loader(data):
+            try:
+                # Pure-Python implementation and C-extension implementation
+                # of datetime.date.fromtimestamp module works differently with a None arg.
+                # See https://github.com/python/cpython/issues/120268 for more details.
+                if data is None:
+                    raise TypeLoadError(Union[int, float], data)
+
+                return date.fromtimestamp(data)  # noqa: DTZ012
+            except TypeError:
+                raise TypeLoadError(Union[int, float], data)
+            except ValueError:
+                raise ValueLoadError("Unexpected value", data)
+            except OverflowError:
+                raise ValueLoadError(
+                    "Timestamp is out of the range of supported values",
+                    data,
+                )
+
+        def pydate_timestamp_loader(data):
+            try:
+                return date.fromtimestamp(data)  # noqa: DTZ012
+            except TypeError:
+                raise TypeLoadError(Union[int, float], data)
+            except OverflowError:
+                raise ValueLoadError(
+                    "Timestamp is out of the range of supported values",
+                    data,
+                )
+
+        return pydate_timestamp_loader if self._is_pydatetime() else date_timestamp_loader
+
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        def date_timestamp_dumper(data: date):
+            dt = datetime(
+                year=data.year,
+                month=data.month,
+                day=data.day,
+                tzinfo=timezone.utc,
+            )
+            return dt.timestamp()
+
+        return date_timestamp_dumper
 
 
 @for_predicate(timedelta)
