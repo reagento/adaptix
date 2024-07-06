@@ -27,6 +27,6 @@ This was occurring due to the usage of the ``time.localtime(t)`` function.
 By default, the ``C``-version of module is used, but you can disable it via ``Modules/Setup.local`` file.
 Also PyPy uses pure-python version of datetime module that reveals this bug.
 
-``date_by_timestamp`` works the same on any python version.
+:func:`.date_by_timestamp` works the same on any python version.
 
 :octicon:`mark-github` `Issue #120268 <https://github.com/python/cpython/issues/120268>`__
