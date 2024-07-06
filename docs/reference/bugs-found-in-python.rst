@@ -18,7 +18,7 @@ Therefore adaptix couldn't even be imported. The next Python patch fixes this.
 ``date.fromtimestamp(None)`` returns current date
 ======================================================
 
-CPython has two implementations of ``datatime`` module:
+CPython has two implementations of ``datetime`` module:
 the pure python ``_pydatetime`` and optimized ``_datetime`` written in ``C``.
 
 The ``_pydatetime.date.fromtimestamp`` accepts ``None`` instead of ``int`` and returns current date.
