@@ -33,6 +33,7 @@ Adaptix
    API <reference/api/modules>
    reference/changelog
    reference/contributing
+   reference/bugs-found-in-python
 
 .. toctree::
    :maxdepth: 2
