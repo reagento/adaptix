@@ -121,7 +121,7 @@ class ModelDumperProvider(DumperProvider):
     ) -> Mapping[str, Dumper]:
         dumpers = mediator.mandatory_provide_by_iterable(
             [
-                DumperRequest(loc_stack=request.loc_stack.append_with(output_field_to_loc(field)))
+                request.append_loc(output_field_to_loc(field))
                 for field in shape.fields
             ],
             lambda: "Cannot create dumper for model. Dumpers for some fields cannot be created",

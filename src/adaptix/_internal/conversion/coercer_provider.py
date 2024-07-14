@@ -131,23 +131,11 @@ class OptionalCoercerProvider(NormTypeCoercerProvider):
 
         not_none_src = self._get_not_none(norm_src)
         not_none_dst = self._get_not_none(norm_dst)
-        not_none_request = replace(
-            request,
-            src=request.src.append_with(
-                GenericParamLoc(
-                    type=not_none_src.source,
-                    generic_pos=0,
-                ),
-            ),
-            dst=request.dst.append_with(
-                GenericParamLoc(
-                    type=not_none_dst.source,
-                    generic_pos=0,
-                ),
-            ),
-        )
         not_none_coercer = mediator.mandatory_provide(
-            not_none_request,
+            request.append_loc(
+                src_loc=GenericParamLoc(type=not_none_src.source, generic_pos=0),
+                dst_loc=GenericParamLoc(type=not_none_dst.source, generic_pos=0),
+            ),
             lambda x: "Cannot create coercer for optionals. Coercer for wrapped value cannot be created",
         )
         if not_none_coercer == as_is_stub_with_ctx:
@@ -214,14 +202,9 @@ class IterableCoercerProvider(NormTypeCoercerProvider):
         src_arg_tp = self._parse_source(norm_src)
         dst_factory, dst_arg_tp = self._parse_destination(norm_dst)
         element_coercer = mediator.mandatory_provide(
-            CoercerRequest(
-                src=request.src.append_with(
-                    GenericParamLoc(type=src_arg_tp, generic_pos=0),
-                ),
-                ctx=request.ctx,
-                dst=request.dst.append_with(
-                    GenericParamLoc(type=dst_arg_tp, generic_pos=0),
-                ),
+            request.append_loc(
+                src_loc=GenericParamLoc(type=src_arg_tp, generic_pos=0),
+                dst_loc=GenericParamLoc(type=dst_arg_tp, generic_pos=0),
             ),
             lambda x: "Cannot create coercer for iterables. Coercer for element cannot be created",
         )
@@ -259,26 +242,16 @@ class DictCoercerProvider(NormTypeCoercerProvider):
         src_key_tp, src_value_tp = self._parse_source(norm_src)
         dst_key_tp, dst_value_tp = self._parse_destination(norm_dst)
         key_coercer = mediator.mandatory_provide(
-            CoercerRequest(
-                src=request.src.append_with(
-                    GenericParamLoc(type=src_key_tp, generic_pos=0),
-                ),
-                ctx=request.ctx,
-                dst=request.dst.append_with(
-                    GenericParamLoc(type=dst_key_tp, generic_pos=0),
-                ),
+            request.append_loc(
+                src_loc=GenericParamLoc(type=src_key_tp, generic_pos=0),
+                dst_loc=GenericParamLoc(type=dst_key_tp, generic_pos=0),
             ),
             lambda x: "Cannot create coercer for dicts. Coercer for key cannot be created",
         )
         value_coercer = mediator.mandatory_provide(
-            CoercerRequest(
-                src=request.src.append_with(
-                    GenericParamLoc(type=src_value_tp, generic_pos=1),
-                ),
-                ctx=request.ctx,
-                dst=request.dst.append_with(
-                    GenericParamLoc(type=dst_value_tp, generic_pos=1),
-                ),
+            request.append_loc(
+                src_loc=GenericParamLoc(type=src_value_tp, generic_pos=1),
+                dst_loc=GenericParamLoc(type=dst_value_tp, generic_pos=1),
             ),
             lambda x: "Cannot create coercer for dicts. Coercer for value cannot be created",
         )

@@ -27,7 +27,7 @@ class DumperProvider(LocatedRequestMethodsProvider, ABC):
         ...
 
 
-class JSONSchemaGeneratorProvider(LocatedRequestMethodsProvider, ABC):
+class JSONSchemaProvider(LocatedRequestMethodsProvider, ABC):
     SUPPORTED_JSON_SCHEMA_DIALECTS: Container[str] = (JSONSchemaDialect.DRAFT_2020_12, )
 
     @final
@@ -45,7 +45,7 @@ class JSONSchemaGeneratorProvider(LocatedRequestMethodsProvider, ABC):
 class MorphingProvider(
     LoaderProvider,
     DumperProvider,
-    JSONSchemaGeneratorProvider,
+    JSONSchemaProvider,
     ABC,
 ):
     pass

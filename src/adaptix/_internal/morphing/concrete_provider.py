@@ -20,7 +20,7 @@ from .json_schema.definitions import JSONSchema
 from .json_schema.request_cls import GenerateJSONSchemaRequest
 from .json_schema.schema_model import JSONSchemaBuiltinFormat, JSONSchemaType
 from .load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
-from .provider_template import DumperProvider, JSONSchemaGeneratorProvider, MorphingProvider
+from .provider_template import DumperProvider, JSONSchemaProvider, MorphingProvider
 from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest
 
 
@@ -233,7 +233,7 @@ class _Base64DumperMixin(DumperProvider):
         return bytes_base64_dumper
 
 
-class _Base64JSONSchemaMixin(JSONSchemaGeneratorProvider):
+class _Base64JSONSchemaMixin(JSONSchemaProvider):
     def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING, content_encoding="base64")
 

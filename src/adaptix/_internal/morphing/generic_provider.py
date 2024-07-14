@@ -94,11 +94,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         self, mediator: Mediator, request: LoaderRequest, enum_classes: Iterable[Type[Enum]],
     ) -> Iterable[Loader[Enum]]:
         requests = [
-            LoaderRequest(
-                loc_stack=request.loc_stack.append_with(
-                    TypeHintLoc(type=enum_cls),
-                ),
-            ) for enum_cls in enum_classes
+            request.append_loc(TypeHintLoc(type=enum_cls))
+            for enum_cls in enum_classes
         ]
         return mediator.mandatory_provide_by_iterable(
             requests,
@@ -109,11 +106,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         self, mediator: Mediator, request: DumperRequest, enum_classes: Iterable[Type[Enum]],
     ) -> Dict[Type[Enum], Dumper[Enum]]:
         requests = [
-            DumperRequest(
-                loc_stack=request.loc_stack.append_with(
-                    TypeHintLoc(type=enum_cls),
-                ),
-            ) for enum_cls in enum_classes
+            request.append_loc(TypeHintLoc(type=enum_cls))
+            for enum_cls in enum_classes
         ]
         dumpers = mediator.mandatory_provide_by_iterable(
             requests,
@@ -226,12 +220,10 @@ class UnionProvider(LoaderProvider, DumperProvider):
         if self._is_single_optional(norm):
             not_none = next(case for case in norm.args if case.origin is not None)
             not_none_loader = mediator.mandatory_provide(
-                LoaderRequest(
-                    loc_stack=request.loc_stack.append_with(
-                        GenericParamLoc(
-                            type=not_none.source,
-                            generic_pos=0,
-                        ),
+                request.append_loc(
+                    GenericParamLoc(
+                        type=not_none.source,
+                        generic_pos=0,
                     ),
                 ),
                 lambda x: "Cannot create loader for union. Loaders for some union cases cannot be created",
@@ -244,12 +236,10 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
         loaders = mediator.mandatory_provide_by_iterable(
             [
-                LoaderRequest(
-                    loc_stack=request.loc_stack.append_with(
-                        GenericParamLoc(
-                            type=tp.source,
-                            generic_pos=i,
-                        ),
+                request.append_loc(
+                    GenericParamLoc(
+                        type=tp.source,
+                        generic_pos=i,
                     ),
                 )
                 for i, tp in enumerate(norm.args)
@@ -342,12 +332,10 @@ class UnionProvider(LoaderProvider, DumperProvider):
         if self._is_single_optional(norm):
             not_none = next(case for case in norm.args if case.origin is not None)
             not_none_dumper = mediator.mandatory_provide(
-                DumperRequest(
-                    loc_stack=request.loc_stack.append_with(
-                        GenericParamLoc(
-                            type=not_none.source,
-                            generic_pos=0,
-                        ),
+                request.append_loc(
+                    GenericParamLoc(
+                        type=not_none.source,
+                        generic_pos=0,
                     ),
                 ),
                 lambda x: "Cannot create dumper for union. Dumpers for some union cases cannot be created",
@@ -371,12 +359,10 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
         dumpers = mediator.mandatory_provide_by_iterable(
             [
-                DumperRequest(
-                    loc_stack=request.loc_stack.append_with(
-                        GenericParamLoc(
-                            type=tp.source,
-                            generic_pos=i,
-                        ),
+                request.append_loc(
+                    GenericParamLoc(
+                        type=tp.source,
+                        generic_pos=i,
                     ),
                 )
                 for i, tp in enumerate(norm.args)

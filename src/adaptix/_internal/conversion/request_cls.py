@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from inspect import Signature
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, TypeVar, Union
 
 from ..common import Coercer, VarTuple
 from ..model_tools.definitions import DefaultFactory, DefaultValue, InputField, ParamKind
@@ -73,11 +73,17 @@ class LinkingRequest(Request[LinkingResult]):
     destination: LocStack[ConversionDestItem]
 
 
+CR = TypeVar("CR", bound="CoercerRequest")
+
+
 @dataclass(frozen=True)
 class CoercerRequest(Request[Coercer]):
     src: LocStack[ConversionSourceItem]
     ctx: ConversionContext
     dst: LocStack[ConversionDestItem]
+
+    def append_loc(self: CR, *, src_loc: ConversionSourceItem, dst_loc: ConversionDestItem) -> CR:
+        return replace(self, src=self.src.append_with(src_loc), dst=self.dst.append_with(dst_loc))
 
 
 @dataclass(frozen=True)

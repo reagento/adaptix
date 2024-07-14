@@ -41,14 +41,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
 
         loaders = mediator.mandatory_provide_by_iterable(
             [
-                LoaderRequest(
-                    loc_stack=request.loc_stack.append_with(
-                        GenericParamLoc(
-                            type=tp.source,
-                            generic_pos=i,
-                        ),
-                    ),
-                )
+                request.append_loc(GenericParamLoc(type=tp.source, generic_pos=i))
                 for i, tp in enumerate(norm.args)
             ],
             lambda: "Cannot create loader for tuple. Loaders for some elements cannot be created",
@@ -226,14 +219,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             )
         dumpers = mediator.mandatory_provide_by_iterable(
             [
-                DumperRequest(
-                    loc_stack=request.loc_stack.append_with(
-                        GenericParamLoc(
-                            type=tp.source,
-                            generic_pos=i,
-                        ),
-                    ),
-                )
+                request.append_loc(GenericParamLoc(type=tp.source, generic_pos=i))
                 for i, tp in enumerate(norm.args)
             ],
             lambda: "Cannot create dumper for tuple. Dumpers for some elements cannot be created",

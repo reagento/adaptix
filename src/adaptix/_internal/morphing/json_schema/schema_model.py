@@ -55,7 +55,7 @@ RefT = TypeVar("RefT")
 
 
 @dataclass
-class JSONSchemaCore(Generic[RefT, JSONSchemaT]):
+class _JSONSchemaCore(Generic[RefT, JSONSchemaT]):
     schema: Omittable[str] = Omitted()
     vocabulary: Omittable[JSONObject[bool]] = Omitted()
     id: Omittable[str] = Omitted()
@@ -68,7 +68,7 @@ class JSONSchemaCore(Generic[RefT, JSONSchemaT]):
 
 
 @dataclass
-class JSONSchemaSubschemas(Generic[JSONSchemaT]):
+class _JSONSchemaSubschemas(Generic[JSONSchemaT]):
     # combinators
     all_of: Omittable[Sequence[JSONSchemaT]] = Omitted()
     any_of: Omittable[Sequence[JSONSchemaT]] = Omitted()
@@ -98,13 +98,13 @@ class JSONSchemaSubschemas(Generic[JSONSchemaT]):
 
 
 @dataclass
-class JSONSchemaValidation(Generic[JSONSchemaT]):
+class _JSONSchemaValidation(Generic[JSONSchemaT]):
     # common
     type: Omittable[Union[JSONSchemaType, Sequence[JSONSchemaType]]] = Omitted()
     enum: Omittable[Sequence[JSONValue]] = Omitted()
     const: Omittable[JSONValue] = Omitted()
 
-    format: Omittable[Union[JSONSchemaBuiltinFormat, str]] = Omitted()  # builtin formats can be found in
+    format: Omittable[Union[JSONSchemaBuiltinFormat, str]] = Omitted()
 
     # numeric
     multiple_of: Omittable[JSONNumeric] = Omitted()
@@ -137,7 +137,7 @@ class JSONSchemaValidation(Generic[JSONSchemaT]):
 
 
 @dataclass
-class JSONSchemaAnnotations:
+class _JSONSchemaAnnotations:
     title: Omittable[str] = Omitted()
     description: Omittable[str] = Omitted()
     default: Omittable[JSONValue] = Omitted()
@@ -149,10 +149,10 @@ class JSONSchemaAnnotations:
 
 @dataclass
 class BaseJSONSchema(
-    JSONSchemaCore[RefT, JSONSchemaT],
-    JSONSchemaSubschemas[JSONSchemaT],
-    JSONSchemaValidation[JSONSchemaT],
-    JSONSchemaAnnotations,
+    _JSONSchemaCore[RefT, JSONSchemaT],
+    _JSONSchemaSubschemas[JSONSchemaT],
+    _JSONSchemaValidation[JSONSchemaT],
+    _JSONSchemaAnnotations,
     Generic[RefT, JSONSchemaT],
 ):
     extra_keywords: JSONObject[JSONValue] = field(default_factory=dict)
