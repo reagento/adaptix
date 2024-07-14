@@ -132,7 +132,7 @@ def _merge_request_cls_dicts(cls: type, dict_iter: Iterable[_RequestClsToMethodN
     request_cls_to_name: _RequestClsToMethodName = {}
     for dct in dict_iter:
         for request_cls, name in dct.items():
-            if request_cls in request_cls_to_name:
+            if request_cls in request_cls_to_name and request_cls_to_name[request_cls] != name:
                 raise _request_cls_attached_to_several_method_handlers(
                     cls,
                     request_cls_to_name[request_cls],

@@ -74,14 +74,6 @@ class Base2(MethodsProvider):
         pass
 
 
-def test_inheritance_redefine_spa():
-    with pytest.raises(TypeError):
-        class RedefineSPAChild(Base1):
-            @method_handler
-            def provide_one(self, mediator: Mediator, request: Request):
-                pass
-
-
 def test_inheritance_several_spa():
     with pytest.raises(TypeError):
         class SeveralSPAChild(Base1):

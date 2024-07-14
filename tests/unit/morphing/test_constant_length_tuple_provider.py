@@ -9,7 +9,7 @@ from tests_helpers import raises_exc, requires, with_trail
 from adaptix import AdornedRetort, DebugTrail, ProviderNotFoundError, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import HAS_UNPACK
-from adaptix._internal.morphing.concrete_provider import INT_LOADER_PROVIDER, STR_LOADER_PROVIDER
+from adaptix._internal.morphing.concrete_provider import INT_PROVIDER, STR_PROVIDER
 from adaptix._internal.morphing.constant_length_tuple_provider import ConstantLengthTupleProvider
 from adaptix._internal.morphing.load_error import AggregateLoadError
 from adaptix.load_error import ExcludedTypeLoadError, ExtraItemsLoadError, NoRequiredItemsLoadError, TypeLoadError
@@ -32,7 +32,7 @@ def retort():
     return AdornedRetort(
         recipe=[
             ConstantLengthTupleProvider(),
-            STR_LOADER_PROVIDER,
+            STR_PROVIDER,
             dumper(str, string_dumper),
         ],
     )
@@ -188,7 +188,7 @@ def test_dumping(retort, debug_trail):
         )
     elif debug_trail == DebugTrail.FIRST:
         raises_exc(
-            with_trail(TypeError(), [0]),
+            with_trail(TypeError(), [1]),
             lambda: second_dumper([10, "20"]),
         )
         raises_exc(
@@ -200,7 +200,6 @@ def test_dumping(retort, debug_trail):
             CompatExceptionGroup(
                 "while dumping tuple",
                 [
-                    with_trail(TypeError(), [0]),
                     with_trail(TypeError(), [1]),
                 ],
             ),
@@ -211,7 +210,6 @@ def test_dumping(retort, debug_trail):
                 "while dumping tuple",
                 [
                     with_trail(TypeError(), [0]),
-                    with_trail(TypeError(), [1]),
                 ],
             ),
             lambda: third_dumper(["10", 20]),
@@ -221,7 +219,7 @@ def test_dumping(retort, debug_trail):
 def test_loading_not_enough_fields(retort):
     retort = retort.extend(
         recipe=[
-            INT_LOADER_PROVIDER,
+            INT_PROVIDER,
         ],
     )
 
@@ -258,7 +256,7 @@ def test_dumping_not_enough_fields(retort):
 def test_unpack_loading(retort):
     retort = retort.extend(
         recipe=[
-            INT_LOADER_PROVIDER,
+            INT_PROVIDER,
         ],
     )
     with pytest.raises(ProviderNotFoundError):

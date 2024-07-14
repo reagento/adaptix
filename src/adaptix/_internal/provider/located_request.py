@@ -11,6 +11,8 @@ from .request_checkers import AlwaysTrueRequestChecker
 
 T = TypeVar("T")
 
+LR = TypeVar("LR", bound="LocatedRequest")
+
 
 @dataclass(frozen=True)
 class LocatedRequest(Request[T]):
