@@ -83,7 +83,7 @@ There are more complex and more powerful use cases of ``map``, which will be des
 Name style
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sometimes JSON keys are quite normal but do fit PEP8 recommendations of variable naming.
+Sometimes JSON keys are quite normal but do not fit PEP8 recommendations of variable naming.
 You can rename each field individually, but library can automatically translate such names.
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/name_style.py
