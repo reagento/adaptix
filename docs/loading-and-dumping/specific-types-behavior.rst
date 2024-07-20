@@ -137,7 +137,7 @@ Enum members are represented by their value without any conversion.
 LiteralString
 '''''''''''''''''''''''
 
-Loader and dumper have same behaviour as builtin one's of ``str`` type
+Loader and dumper have same behavior as builtin one's of ``str`` type
 
 Compound types
 ================
@@ -248,4 +248,4 @@ Also, the model could be loaded from the list.
 
 Dumper works similarly and produces dict (or list).
 
-See :ref:`supported-model-kinds` for exact list of supported model.
+See :ref:`supported-model-kinds` for exact list of supported models.

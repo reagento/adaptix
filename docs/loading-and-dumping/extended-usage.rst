@@ -179,7 +179,7 @@ Parameter :paramref:`.name_mapping.extra_in` controls policy how extra data is s
 :obj:`.ExtraSkip`
 """""""""""""""""""""""
 
-Default behaviour. All extra data is ignored.
+Default behavior. All extra data is ignored.
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/unknown_fields_processing/on_loading_extra_skip.py
 
@@ -251,7 +251,7 @@ Parameter :paramref:`.name_mapping.extra_in` controls policy how extra data is e
 :obj:`.ExtraSkip`
 """""""""""""""""""""""
 
-Default behaviour. All extra data is ignored.
+Default behavior. All extra data is ignored.
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/unknown_fields_processing/on_dumping_extra_skip.py
 

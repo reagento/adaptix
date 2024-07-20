@@ -33,7 +33,7 @@ Also, it works for nested models.
 .. literalinclude:: /examples/conversion/tutorial/nested.py
 
 Furthermore, there is :func:`.conversion.convert` that can directly convert one model to another,
-but it is quite limited and can not configured, so it won't be considered onwards.
+but it is quite limited and can not be configured, so it won't be considered onwards.
 
 .. dropdown:: Usage of :func:`.conversion.convert`
 
