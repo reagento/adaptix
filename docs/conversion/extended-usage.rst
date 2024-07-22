@@ -69,7 +69,7 @@ Using default value for fields
 ================================
 
 By default, all fields of the destination model must be linked to something
-even field is not required (has a default value).
+even if field is not required (has a default value).
 
 .. hint::
 
@@ -82,7 +82,7 @@ via :func:`.conversion.allow_unlinked_optional` and :func:`.conversion.forbid_un
 
 .. literalinclude:: /examples/conversion/extended_usage/using_default_value_for_fields.py
 
-Each parameter of these functions are predicate defining the target scope of the policy.
+Each parameter of these functions is predicate defining the target scope of the policy.
 You can use them without arguments to apply new policies to all fields.
 
 .. dropdown:: Redefine policy globally (for all fields)

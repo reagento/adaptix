@@ -12,7 +12,7 @@ After that, breaking changes will only be introduced in major versions.
 
 .. custom-non-guaranteed-behavior::
 
-  Some aspects is behavior are not guaranteed and could be changed at any release without any mention in the changelog
+  Some aspects of behavior are not guaranteed and could be changed at any release without any mention in the changelog
   (or even vary in different environments or different runs).
 
   Such details are highlighted in the documentation via this admonition.
