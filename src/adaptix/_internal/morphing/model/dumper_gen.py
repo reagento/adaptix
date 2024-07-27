@@ -1,7 +1,7 @@
 import contextlib
 from dataclasses import replace
 from string import Template
-from typing import Any, Callable, Dict, Mapping, NamedTuple, Optional, Tuple
+from typing import Any, Callable, Dict, Mapping, NamedTuple, Tuple
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -679,17 +679,13 @@ class ModelOutputJSONSchemaGen:
                 if self._is_required_crown(value)
             ],
             properties={
-                key: value
-                for key, value in (
-                    (key, self.convert_crown(value))
-                    for key, value in crown.map.items()
-                )
-                if value is not None
+                key: self.convert_crown(value)
+                for key, value in crown.map.items()
             },
             additional_properties=self._extra_move is not None,
         )
 
-    def _convert_list_crown(self, crown: OutListCrown) -> Optional[JSONSchema]:
+    def _convert_list_crown(self, crown: OutListCrown) -> JSONSchema:
         items = [
             self.convert_crown(sub_crown)
             for sub_crown in crown.map
@@ -701,27 +697,27 @@ class ModelOutputJSONSchemaGen:
             min_items=len(items),
         )
 
-    def _convert_field_crown(self, crown: OutFieldCrown) -> Optional[JSONSchema]:
+    def _convert_field_crown(self, crown: OutFieldCrown) -> JSONSchema:
         field = self._shape.fields_dict[crown.id]
         json_schema = self._field_json_schema_getter(field)
         if field.default == NoDefault():
             return json_schema
         return replace(json_schema, default=self._field_default_dumper(field))
 
-    def _convert_none_crown(self, crown: OutNoneCrown) -> Optional[JSONSchema]:
+    def _convert_none_crown(self, crown: OutNoneCrown) -> JSONSchema:
         value = (
             crown.placeholder.factory()
             if isinstance(crown.placeholder, DefaultFactory) else
             crown.placeholder.value
         )
-        return self._placeholder_dumper(value)
+        return JSONSchema(const=self._placeholder_dumper(value))
 
     def _is_required_crown(self, crown: OutCrown) -> bool:
         if isinstance(crown, OutFieldCrown):
             return self._shape.fields_dict[crown.id].is_required
         return True
 
-    def convert_crown(self, crown: OutCrown) -> Optional[JSONSchema]:
+    def convert_crown(self, crown: OutCrown) -> JSONSchema:
         if isinstance(crown, OutDictCrown):
             return self._convert_dict_crown(crown)
         if isinstance(crown, OutListCrown):

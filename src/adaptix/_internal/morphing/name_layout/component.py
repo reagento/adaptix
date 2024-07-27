@@ -2,8 +2,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
 
-from adaptix import ProviderNotFoundError
-
 from ...common import VarTuple
 from ...model_tools.definitions import (
     BaseField,
@@ -22,6 +20,7 @@ from ...provider.loc_stack_filtering import LocStackChecker
 from ...provider.located_request import LocatedRequest
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
 from ...retort.operating_retort import OperatingRetort
+from ...retort.searching_retort import ProviderNotFoundError
 from ...special_cases_optimization import with_default_clause
 from ...utils import Omittable, get_prefix_groups
 from ..model.crown_definitions import (

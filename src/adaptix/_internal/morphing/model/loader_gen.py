@@ -804,17 +804,13 @@ class ModelInputJSONSchemaGen:
                 if self._is_required_crown(value)
             ],
             properties={
-                key: value
-                for key, value in (
-                    (key, self.convert_crown(value))
-                    for key, value in crown.map.items()
-                )
-                if value is not None
+                key: self.convert_crown(value)
+                for key, value in crown.map.items()
             },
             additional_properties=crown.extra_policy != ExtraForbid(),
         )
 
-    def _convert_list_crown(self, crown: InpListCrown) -> Optional[JSONSchema]:
+    def _convert_list_crown(self, crown: InpListCrown) -> JSONSchema:
         items = [
             self.convert_crown(sub_crown)
             for sub_crown in crown.map
@@ -826,15 +822,15 @@ class ModelInputJSONSchemaGen:
             min_items=len(items),
         )
 
-    def _convert_field_crown(self, crown: InpFieldCrown) -> Optional[JSONSchema]:
+    def _convert_field_crown(self, crown: InpFieldCrown) -> JSONSchema:
         field = self._shape.fields_dict[crown.id]
         json_schema = self._field_json_schema_getter(field)
         if field.default == NoDefault():
             return json_schema
         return replace(json_schema, default=self._field_default_dumper(field))
 
-    def _convert_none_crown(self, crown: InpNoneCrown) -> Optional[JSONSchema]:
-        return None
+    def _convert_none_crown(self, crown: InpNoneCrown) -> JSONSchema:
+        return JSONSchema()
 
     def _is_required_crown(self, crown: InpCrown) -> bool:
         if isinstance(crown, InpFieldCrown):
@@ -843,7 +839,7 @@ class ModelInputJSONSchemaGen:
             return False
         return True
 
-    def convert_crown(self, crown: InpCrown) -> Optional[JSONSchema]:
+    def convert_crown(self, crown: InpCrown) -> JSONSchema:
         if isinstance(crown, InpDictCrown):
             return self._convert_dict_crown(crown)
         if isinstance(crown, InpListCrown):
