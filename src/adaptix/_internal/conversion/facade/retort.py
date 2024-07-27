@@ -65,8 +65,8 @@ class AdornedConversionRetort(OperatingRetort):
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         with self._clone() as clone:
-            clone._inc_instance_recipe = (
-                tuple(recipe) + clone._inc_instance_recipe
+            clone._instance_recipe = (
+                tuple(recipe) + clone._instance_recipe
             )
 
         return clone

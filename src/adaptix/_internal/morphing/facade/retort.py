@@ -200,13 +200,13 @@ class AdornedRetort(OperatingRetort):
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         with self._clone() as clone:
-            clone._inc_instance_recipe = (
-                tuple(recipe) + clone._inc_instance_recipe
+            clone._instance_recipe = (
+                tuple(recipe) + clone._instance_recipe
             )
 
         return clone
 
-    def _get_config_recipe(self) -> VarTuple[Provider]:
+    def _get_recipe_tail(self) -> VarTuple[Provider]:
         return (
             ValueProvider(StrictCoercionRequest, self._strict_coercion),
             ValueProvider(DebugTrailRequest, self._debug_trail),

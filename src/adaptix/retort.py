@@ -1,5 +1,6 @@
 from adaptix._internal.retort.base_retort import BaseRetort
-from adaptix._internal.retort.operating_retort import OperatingRetort, ProviderNotFoundError
+from adaptix._internal.retort.operating_retort import OperatingRetort
+from adaptix._internal.retort.searching_retort import ProviderNotFoundError
 from adaptix._internal.utils import create_deprecated_alias_getter
 
 __all__ = (
