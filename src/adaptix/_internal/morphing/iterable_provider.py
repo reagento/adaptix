@@ -12,7 +12,7 @@ from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
 from ..struct_trail import append_trail, render_trail_as_note
 from .json_schema.definitions import JSONSchema
-from .json_schema.request_cls import GenerateJSONSchemaRequest, GetJSONSchemaRequest
+from .json_schema.request_cls import JSONSchemaRequest
 from .json_schema.schema_model import JSONSchemaType
 from .load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
 from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
@@ -270,16 +270,13 @@ class IterableProvider(MorphingProvider):
 
         return iter_dumper
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         norm, arg = self._fetch_norm_and_arg(request)
         item_schema = mediator.mandatory_provide(
-            GetJSONSchemaRequest(
-                ctx=request.ctx,
-                loc_stack=request.loc_stack.append_with(
-                    GenericParamLoc(
-                        type=arg,
-                        generic_pos=0,
-                    ),
+            request.append_loc(
+                GenericParamLoc(
+                    type=arg,
+                    generic_pos=0,
                 ),
             ),
             lambda x: "Cannot create JSONSchema for iterable. JSONSchema for element cannot be created",

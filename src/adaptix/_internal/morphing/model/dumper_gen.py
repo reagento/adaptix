@@ -1,6 +1,7 @@
 import contextlib
+from dataclasses import replace
 from string import Template
-from typing import Dict, Mapping, NamedTuple, Tuple
+from typing import Any, Callable, Dict, Mapping, NamedTuple, Optional, Tuple
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -14,11 +15,14 @@ from ...model_tools.definitions import (
     DefaultValue,
     DescriptorAccessor,
     ItemAccessor,
+    NoDefault,
     OutputField,
     OutputShape,
 )
 from ...special_cases_optimization import as_is_stub, get_default_clause
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
+from ..json_schema.definitions import JSONSchema
+from ..json_schema.schema_model import JSONSchemaType, JSONValue
 from .basic_gen import ModelDumperGen, get_skipped_fields
 from .crown_definitions import (
     CrownPath,
@@ -27,6 +31,7 @@ from .crown_definitions import (
     ExtraTargets,
     OutCrown,
     OutDictCrown,
+    OutExtraMove,
     OutFieldCrown,
     OutListCrown,
     OutNoneCrown,
@@ -648,3 +653,81 @@ class BuiltinModelDumperGen(ModelDumperGen):
 
     def _gen_none_crown(self, state: GenState, crown: OutNoneCrown):
         pass
+
+
+class ModelOutputJSONSchemaGen:
+    def __init__(
+        self,
+        shape: OutputShape,
+        extra_move: OutExtraMove,
+        field_json_schema_getter: Callable[[OutputField], JSONSchema],
+        field_default_dumper: Callable[[OutputField], JSONValue],
+        placeholder_dumper: Callable[[Any], JSONValue],
+    ):
+        self._shape = shape
+        self._extra_move = extra_move
+        self._field_json_schema_getter = field_json_schema_getter
+        self._field_default_dumper = field_default_dumper
+        self._placeholder_dumper = placeholder_dumper
+
+    def _convert_dict_crown(self, crown: OutDictCrown) -> JSONSchema:
+        return JSONSchema(
+            type=JSONSchemaType.OBJECT,
+            required=[
+                key
+                for key, value in crown.map.items()
+                if self._is_required_crown(value)
+            ],
+            properties={
+                key: value
+                for key, value in (
+                    (key, self.convert_crown(value))
+                    for key, value in crown.map.items()
+                )
+                if value is not None
+            },
+            additional_properties=self._extra_move is not None,
+        )
+
+    def _convert_list_crown(self, crown: OutListCrown) -> Optional[JSONSchema]:
+        items = [
+            self.convert_crown(sub_crown)
+            for sub_crown in crown.map
+        ]
+        return JSONSchema(
+            type=JSONSchemaType.ARRAY,
+            prefix_items=items,
+            max_items=len(items),
+            min_items=len(items),
+        )
+
+    def _convert_field_crown(self, crown: OutFieldCrown) -> Optional[JSONSchema]:
+        field = self._shape.fields_dict[crown.id]
+        json_schema = self._field_json_schema_getter(field)
+        if field.default == NoDefault():
+            return json_schema
+        return replace(json_schema, default=self._field_default_dumper(field))
+
+    def _convert_none_crown(self, crown: OutNoneCrown) -> Optional[JSONSchema]:
+        value = (
+            crown.placeholder.factory()
+            if isinstance(crown.placeholder, DefaultFactory) else
+            crown.placeholder.value
+        )
+        return self._placeholder_dumper(value)
+
+    def _is_required_crown(self, crown: OutCrown) -> bool:
+        if isinstance(crown, OutFieldCrown):
+            return self._shape.fields_dict[crown.id].is_required
+        return True
+
+    def convert_crown(self, crown: OutCrown) -> Optional[JSONSchema]:
+        if isinstance(crown, OutDictCrown):
+            return self._convert_dict_crown(crown)
+        if isinstance(crown, OutListCrown):
+            return self._convert_list_crown(crown)
+        if isinstance(crown, OutFieldCrown):
+            return self._convert_field_crown(crown)
+        if isinstance(crown, OutNoneCrown):
+            return self._convert_none_crown(crown)
+        raise TypeError

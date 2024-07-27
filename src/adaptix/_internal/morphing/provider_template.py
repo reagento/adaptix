@@ -8,7 +8,7 @@ from ..provider.located_request import LocatedRequestMethodsProvider
 from ..provider.methods_provider import method_handler
 from ..type_tools import normalize_type
 from .json_schema.definitions import JSONSchema
-from .json_schema.request_cls import GenerateJSONSchemaRequest
+from .json_schema.request_cls import JSONSchemaRequest
 from .json_schema.schema_model import JSONSchemaDialect
 from .request_cls import DumperRequest, LoaderRequest
 
@@ -32,13 +32,13 @@ class JSONSchemaProvider(LocatedRequestMethodsProvider, ABC):
 
     @final
     @method_handler
-    def generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         if request.ctx.dialect not in self.SUPPORTED_JSON_SCHEMA_DIALECTS:
             raise CannotProvide(f"Dialect {request.ctx.dialect} is not supported for this type")
         return self._generate_json_schema(mediator, request)
 
     @abstractmethod
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         ...
 
 

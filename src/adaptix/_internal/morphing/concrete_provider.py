@@ -17,7 +17,7 @@ from ..provider.loc_stack_tools import find_owner_with_field
 from ..provider.located_request import LocatedRequest, for_predicate
 from ..special_cases_optimization import as_is_stub
 from .json_schema.definitions import JSONSchema
-from .json_schema.request_cls import GenerateJSONSchemaRequest
+from .json_schema.request_cls import JSONSchemaRequest
 from .json_schema.schema_model import JSONSchemaBuiltinFormat, JSONSchemaType
 from .load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 from .provider_template import DumperProvider, JSONSchemaProvider, MorphingProvider
@@ -54,7 +54,7 @@ class IsoFormatProvider(MorphingProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return self._cls.isoformat
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING, format=self._CLS_TO_JSON_FORMAT[self._cls])
 
 
@@ -87,7 +87,7 @@ class DatetimeFormatProvider(MorphingProvider):
 
         return datetime_format_dumper
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING)
 
 
@@ -120,7 +120,7 @@ class DatetimeTimestampProvider(MorphingProvider):
 
         return datetime_timestamp_dumper
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.NUMBER)
 
 
@@ -182,7 +182,7 @@ class DateTimestampProvider(MorphingProvider):
 
         return date_timestamp_dumper
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.NUMBER)
 
 
@@ -203,7 +203,7 @@ class SecondsTimedeltaProvider(MorphingProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return timedelta.total_seconds
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.NUMBER)
 
 
@@ -221,7 +221,7 @@ class NoneProvider(MorphingProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return as_is_stub
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.NULL)
 
 
@@ -234,7 +234,7 @@ class _Base64DumperMixin(DumperProvider):
 
 
 class _Base64JSONSchemaMixin(JSONSchemaProvider):
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING, content_encoding="base64")
 
 
@@ -335,7 +335,7 @@ class RegexPatternProvider(MorphingProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return _regex_dumper
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING, format=JSONSchemaBuiltinFormat.REGEX)
 
 
@@ -345,14 +345,14 @@ T = TypeVar("T")
 class ScalarProvider(MorphingProvider, Generic[T]):
     def __init__(
         self,
-        pred: Type[T],
+        target: Type[T],
         strict_coercion_loader: Loader[T],
         lax_coercion_loader: Loader[T],
         dumper: Dumper[T],
         json_schema: JSONSchema,
     ):
-        self._pred = pred
-        self._loc_stack_checker = create_loc_stack_checker(pred)
+        self._target = target
+        self._loc_stack_checker = create_loc_stack_checker(target)
         self._strict_coercion_loader = strict_coercion_loader
         self._lax_coercion_loader = lax_coercion_loader
         self._dumper = dumper
@@ -365,7 +365,7 @@ class ScalarProvider(MorphingProvider, Generic[T]):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return self._dumper
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return self._json_schema
 
 
@@ -388,7 +388,7 @@ def int_lax_coercion_loader(data):
 
 
 INT_PROVIDER = ScalarProvider(
-    pred=int,
+    target=int,
     strict_coercion_loader=int_strict_coercion_loader,
     lax_coercion_loader=int_lax_coercion_loader,
     dumper=as_is_stub,
@@ -415,7 +415,7 @@ def float_lax_coercion_loader(data):
 
 
 FLOAT_PROVIDER = ScalarProvider(
-    pred=float,
+    target=float,
     strict_coercion_loader=float_strict_coercion_loader,
     lax_coercion_loader=float_lax_coercion_loader,
     dumper=as_is_stub,
@@ -430,7 +430,7 @@ def str_strict_coercion_loader(data):
 
 
 STR_PROVIDER = ScalarProvider(
-    pred=str,
+    target=str,
     strict_coercion_loader=str_strict_coercion_loader,
     lax_coercion_loader=str,
     dumper=as_is_stub,
@@ -445,7 +445,7 @@ def bool_strict_coercion_loader(data):
 
 
 BOOL_PROVIDER = ScalarProvider(
-    pred=bool,
+    target=bool,
     strict_coercion_loader=bool_strict_coercion_loader,
     lax_coercion_loader=bool,
     dumper=as_is_stub,
@@ -476,7 +476,7 @@ def decimal_lax_coercion_loader(data):
 
 
 DECIMAL_PROVIDER = ScalarProvider(
-    pred=Decimal,
+    target=Decimal,
     strict_coercion_loader=decimal_strict_coercion_loader,
     lax_coercion_loader=decimal_lax_coercion_loader,
     dumper=Decimal.__str__,
@@ -506,7 +506,7 @@ def fraction_lax_coercion_loader(data):
 
 
 FRACTION_PROVIDER = ScalarProvider(
-    pred=Fraction,
+    target=Fraction,
     strict_coercion_loader=fraction_strict_coercion_loader,
     lax_coercion_loader=fraction_lax_coercion_loader,
     dumper=Fraction.__str__,
@@ -533,7 +533,7 @@ def complex_lax_coercion_loader(data):
 
 
 COMPLEX_PROVIDER = ScalarProvider(
-    pred=complex,
+    target=complex,
     strict_coercion_loader=complex_strict_coercion_loader,
     lax_coercion_loader=complex_lax_coercion_loader,
     dumper=complex.__str__,
@@ -566,7 +566,7 @@ class SelfTypeProvider(MorphingProvider):
     def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
         return self._substituting_provide(mediator, request)
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return self._substituting_provide(mediator, request)
 
 
@@ -579,5 +579,5 @@ class LiteralStringProvider(MorphingProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return as_is_stub
 
-    def _generate_json_schema(self, mediator: Mediator, request: GenerateJSONSchemaRequest) -> JSONSchema:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING)

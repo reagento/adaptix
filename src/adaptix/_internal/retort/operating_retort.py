@@ -55,7 +55,7 @@ class LocatedRequestCallableRecursionResolver(RecursionResolver[LocatedRequest, 
     def __init__(self) -> None:
         self._loc_to_stub: Dict[AnyLoc, FuncWrapper] = {}
 
-    def track_recursion(self, request: LocatedRequest) -> Optional[Any]:
+    def track_request(self, request: LocatedRequest) -> Optional[Any]:
         if request.loc_stack.count(request.last_loc) == 1:
             return None
 
