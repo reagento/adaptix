@@ -95,6 +95,7 @@ __all__ = (
     "create_loc_stack_checker",
     "retort",
     "Provider",
+    "ProviderNotFoundError",
     "Request",
     "load",
     "dump",
