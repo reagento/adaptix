@@ -9,10 +9,10 @@ from ...code_tools.utils import get_literal_expr, get_literal_from_factory
 from ...common import Loader
 from ...compat import CompatExceptionGroup
 from ...definitions import DebugTrail
-from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, NoDefault, Param, ParamKind
+from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
 from ...special_cases_optimization import as_is_stub
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
-from ...utils import Omitted
+from ...utils import Omittable, Omitted
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.schema_model import JSONSchemaType, JSONValue
 from ..load_error import (
@@ -789,7 +789,7 @@ class ModelInputJSONSchemaGen:
         self,
         shape: InputShape,
         field_json_schema_getter: Callable[[InputField], JSONSchema],
-        field_default_dumper: Callable[[InputField], JSONValue],
+        field_default_dumper: Callable[[InputField], Omittable[JSONValue]],
     ):
         self._shape = shape
         self._field_json_schema_getter = field_json_schema_getter
@@ -825,9 +825,10 @@ class ModelInputJSONSchemaGen:
     def _convert_field_crown(self, crown: InpFieldCrown) -> JSONSchema:
         field = self._shape.fields_dict[crown.id]
         json_schema = self._field_json_schema_getter(field)
-        if field.default == NoDefault():
-            return json_schema
-        return replace(json_schema, default=self._field_default_dumper(field))
+        default = self._field_default_dumper(field)
+        if default != Omitted():
+            return replace(json_schema, default=default)
+        return json_schema
 
     def _convert_none_crown(self, crown: InpNoneCrown) -> JSONSchema:
         return JSONSchema()

@@ -3,6 +3,8 @@ from dataclasses import replace
 from string import Template
 from typing import Any, Callable, Dict, Mapping, NamedTuple, Tuple
 
+from ...utils import Omittable, Omitted
+
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
@@ -15,7 +17,6 @@ from ...model_tools.definitions import (
     DefaultValue,
     DescriptorAccessor,
     ItemAccessor,
-    NoDefault,
     OutputField,
     OutputShape,
 )
@@ -661,7 +662,7 @@ class ModelOutputJSONSchemaGen:
         shape: OutputShape,
         extra_move: OutExtraMove,
         field_json_schema_getter: Callable[[OutputField], JSONSchema],
-        field_default_dumper: Callable[[OutputField], JSONValue],
+        field_default_dumper: Callable[[OutputField], Omittable[JSONValue]],
         placeholder_dumper: Callable[[Any], JSONValue],
     ):
         self._shape = shape
@@ -700,9 +701,10 @@ class ModelOutputJSONSchemaGen:
     def _convert_field_crown(self, crown: OutFieldCrown) -> JSONSchema:
         field = self._shape.fields_dict[crown.id]
         json_schema = self._field_json_schema_getter(field)
-        if field.default == NoDefault():
-            return json_schema
-        return replace(json_schema, default=self._field_default_dumper(field))
+        default = self._field_default_dumper(field)
+        if default != Omitted():
+            return replace(json_schema, default=default)
+        return json_schema
 
     def _convert_none_crown(self, crown: OutNoneCrown) -> JSONSchema:
         value = (

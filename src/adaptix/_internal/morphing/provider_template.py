@@ -32,7 +32,7 @@ class JSONSchemaProvider(LocatedRequestMethodsProvider, ABC):
 
     @final
     @method_handler
-    def generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
+    def provide_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         if request.ctx.dialect not in self.SUPPORTED_JSON_SCHEMA_DIALECTS:
             raise CannotProvide(f"Dialect {request.ctx.dialect} is not supported for this type")
         return self._generate_json_schema(mediator, request)

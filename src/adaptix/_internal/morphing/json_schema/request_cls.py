@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from ...definitions import Direction
 from ...provider.located_request import LocatedRequest
 from .definitions import JSONSchema, JSONSchemaRef
 
@@ -7,6 +8,7 @@ from .definitions import JSONSchema, JSONSchemaRef
 @dataclass(frozen=True)
 class JSONSchemaContext:
     dialect: str
+    direction: Direction
 
 
 @dataclass(frozen=True)
