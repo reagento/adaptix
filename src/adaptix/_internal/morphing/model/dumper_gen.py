@@ -3,8 +3,6 @@ from dataclasses import replace
 from string import Template
 from typing import Any, Callable, Dict, Mapping, NamedTuple, Tuple
 
-from ...utils import Omittable, Omitted
-
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
@@ -22,6 +20,7 @@ from ...model_tools.definitions import (
 )
 from ...special_cases_optimization import as_is_stub, get_default_clause
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
+from ...utils import Omittable, Omitted
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.schema_model import JSONSchemaType, JSONValue
 from .basic_gen import ModelDumperGen, get_skipped_fields
