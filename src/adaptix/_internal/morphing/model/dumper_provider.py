@@ -1,15 +1,20 @@
-from typing import Mapping
-
-from adaptix._internal.provider.fields import output_field_to_loc
+from functools import partial
+from typing import Any, Mapping, Sequence
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
 from ...common import Dumper
-from ...definitions import DebugTrail
-from ...model_tools.definitions import OutputShape
-from ...provider.essential import Mediator
+from ...definitions import DebugTrail, Direction
+from ...model_tools.definitions import DefaultFactory, DefaultValue, OutputField, OutputShape
+from ...provider.essential import CannotProvide, Mediator
+from ...provider.fields import output_field_to_loc
+from ...provider.located_request import LocatedRequest
 from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
-from ..provider_template import DumperProvider
+from ...utils import Omittable, Omitted
+from ..json_schema.definitions import JSONSchema
+from ..json_schema.request_cls import JSONSchemaRequest
+from ..json_schema.schema_model import JSONValue
+from ..provider_template import DumperProvider, JSONSchemaProvider
 from ..request_cls import DebugTrailRequest, DumperRequest
 from .basic_gen import (
     ModelDumperGen,
@@ -19,11 +24,11 @@ from .basic_gen import (
     get_optional_fields_at_list_crown,
     get_wild_extra_targets,
 )
-from .crown_definitions import OutputNameLayout, OutputNameLayoutRequest
-from .dumper_gen import BuiltinModelDumperGen
+from .crown_definitions import OutExtraMove, OutputNameLayout, OutputNameLayoutRequest
+from .dumper_gen import BuiltinModelDumperGen, ModelOutputJSONSchemaGen
 
 
-class ModelDumperProvider(DumperProvider):
+class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
     def __init__(self, *, name_sanitizer: NameSanitizer = BuiltinNameSanitizer()):
         self._name_sanitizer = name_sanitizer
 
@@ -40,7 +45,68 @@ class ModelDumperProvider(DumperProvider):
             file_name=self._get_file_name(request),
         )
 
-    def _fetch_model_dumper_gen(self, mediator: Mediator, request: DumperRequest) -> ModelDumperGen:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
+        if request.ctx.direction != Direction.OUTPUT:
+            raise CannotProvide
+
+        shape = self._fetch_shape(mediator, request)
+        name_layout = self._fetch_name_layout(mediator, request, shape)
+        self._validate_params(shape, name_layout)
+
+        schema_gen = self._get_schema_gen(mediator, request, shape, name_layout.extra_move)
+        return schema_gen.convert_crown(name_layout.crown)
+
+    def _get_schema_gen(
+        self,
+        mediator: Mediator,
+        request: JSONSchemaRequest,
+        shape: OutputShape,
+        extra_move: OutExtraMove,
+    ) -> ModelOutputJSONSchemaGen:
+        return ModelOutputJSONSchemaGen(
+            shape=shape,
+            field_default_dumper=partial(self._dump_field_default, mediator, request),
+            field_json_schema_getter=partial(self._get_field_json_schema, mediator, request),
+            extra_move=extra_move,
+            placeholder_dumper=self._dump_placeholder,
+        )
+
+    def _dump_field_default(
+        self,
+        mediator: Mediator,
+        request: JSONSchemaRequest,
+        field: OutputField,
+    ) -> Omittable[JSONValue]:
+        if isinstance(field.default, DefaultValue):
+            default_value = field.default.value
+        elif isinstance(field.default, DefaultFactory):
+            default_value = field.default.factory()
+        else:
+            return Omitted()
+
+        dumper = mediator.mandatory_provide(
+            DumperRequest(loc_stack=request.loc_stack.append_with(output_field_to_loc(field))),
+        )
+        return dumper(default_value)
+
+    def _dump_placeholder(self, data: Any) -> JSONValue:
+        if isinstance(data, Mapping):
+            return {str(self._dump_placeholder(key)): self._dump_placeholder(value) for key, value in data.items()}
+        if isinstance(data, Sequence):
+            return [self._dump_placeholder(element) for element in data]
+        if isinstance(data, (str, int, float, bool)) or data is None:
+            return data
+        raise TypeError(f"Can not dump placeholder {data}")
+
+    def _get_field_json_schema(
+        self,
+        mediator: Mediator,
+        request: JSONSchemaRequest,
+        field: OutputField,
+    ) -> JSONSchema:
+        return mediator.mandatory_provide(request.append_loc(output_field_to_loc(field)))
+
+    def _fetch_model_dumper_gen(self, mediator: Mediator, request: LocatedRequest) -> ModelDumperGen:
         shape = self._fetch_shape(mediator, request)
         name_layout = self._fetch_name_layout(mediator, request, shape)
         self._validate_params(shape, name_layout)
@@ -58,7 +124,7 @@ class ModelDumperProvider(DumperProvider):
     def _fetch_model_identity(
         self,
         mediator: Mediator,
-        request: DumperRequest,
+        request: LocatedRequest,
         shape: OutputShape,
         name_layout: OutputNameLayout,
     ) -> str:
@@ -102,10 +168,10 @@ class ModelDumperProvider(DumperProvider):
     def _get_compiler(self) -> ClosureCompiler:
         return BasicClosureCompiler()
 
-    def _fetch_shape(self, mediator: Mediator, request: DumperRequest) -> OutputShape:
+    def _fetch_shape(self, mediator: Mediator, request: LocatedRequest) -> OutputShape:
         return provide_generic_resolved_shape(mediator, OutputShapeRequest(loc_stack=request.loc_stack))
 
-    def _fetch_name_layout(self, mediator: Mediator, request: DumperRequest, shape: OutputShape) -> OutputNameLayout:
+    def _fetch_name_layout(self, mediator: Mediator, request: LocatedRequest, shape: OutputShape) -> OutputNameLayout:
         return mediator.delegating_provide(
             OutputNameLayoutRequest(
                 loc_stack=request.loc_stack,
@@ -116,12 +182,12 @@ class ModelDumperProvider(DumperProvider):
     def _fetch_field_dumpers(
         self,
         mediator: Mediator,
-        request: DumperRequest,
+        request: LocatedRequest,
         shape: OutputShape,
     ) -> Mapping[str, Dumper]:
         dumpers = mediator.mandatory_provide_by_iterable(
             [
-                DumperRequest(loc_stack=request.loc_stack.append_with(output_field_to_loc(field)))
+                request.append_loc(output_field_to_loc(field))
                 for field in shape.fields
             ],
             lambda: "Cannot create dumper for model. Dumpers for some fields cannot be created",

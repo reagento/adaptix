@@ -19,7 +19,8 @@ from ...provider.fields import field_to_loc
 from ...provider.loc_stack_filtering import LocStackChecker
 from ...provider.located_request import LocatedRequest
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
-from ...retort.operating_retort import OperatingRetort, ProviderNotFoundError
+from ...retort.operating_retort import OperatingRetort
+from ...retort.searching_retort import ProviderNotFoundError
 from ...special_cases_optimization import with_default_clause
 from ...utils import Omittable, get_prefix_groups
 from ..model.crown_definitions import (

@@ -1,7 +1,5 @@
 from abc import ABC
 from datetime import date, datetime, time
-from decimal import Decimal
-from fractions import Fraction
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
@@ -19,13 +17,13 @@ from ...retort.operating_retort import OperatingRetort
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
 from ..concrete_provider import (
-    BOOL_LOADER_PROVIDER,
-    COMPLEX_LOADER_PROVIDER,
-    DECIMAL_LOADER_PROVIDER,
-    FLOAT_LOADER_PROVIDER,
-    FRACTION_LOADER_PROVIDER,
-    INT_LOADER_PROVIDER,
-    STR_LOADER_PROVIDER,
+    BOOL_PROVIDER,
+    COMPLEX_PROVIDER,
+    DECIMAL_PROVIDER,
+    FLOAT_PROVIDER,
+    FRACTION_PROVIDER,
+    INT_PROVIDER,
+    STR_PROVIDER,
     BytearrayBase64Provider,
     BytesBase64Provider,
     BytesIOBase64Provider,
@@ -78,26 +76,13 @@ class FilledRetort(OperatingRetort, ABC):
         flag_by_exact_value(),
         enum_by_exact_value(),  # it has higher priority than scalar types for Enum with mixins
 
-        INT_LOADER_PROVIDER,
-        as_is_dumper(int),
-
-        FLOAT_LOADER_PROVIDER,
-        as_is_dumper(float),
-
-        STR_LOADER_PROVIDER,
-        as_is_dumper(str),
-
-        BOOL_LOADER_PROVIDER,
-        as_is_dumper(bool),
-
-        DECIMAL_LOADER_PROVIDER,
-        dumper(Decimal, Decimal.__str__),
-
-        FRACTION_LOADER_PROVIDER,
-        dumper(Fraction, Fraction.__str__),
-
-        COMPLEX_LOADER_PROVIDER,
-        dumper(complex, complex.__str__),
+        INT_PROVIDER,
+        FLOAT_PROVIDER,
+        STR_PROVIDER,
+        BOOL_PROVIDER,
+        DECIMAL_PROVIDER,
+        FRACTION_PROVIDER,
+        COMPLEX_PROVIDER,
 
         BytesBase64Provider(),
         BytesIOBase64Provider(),
@@ -215,13 +200,13 @@ class AdornedRetort(OperatingRetort):
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         with self._clone() as clone:
-            clone._inc_instance_recipe = (
-                tuple(recipe) + clone._inc_instance_recipe
+            clone._instance_recipe = (
+                tuple(recipe) + clone._instance_recipe
             )
 
         return clone
 
-    def _get_config_recipe(self) -> VarTuple[Provider]:
+    def _get_recipe_tail(self) -> VarTuple[Provider]:
         return (
             ValueProvider(StrictCoercionRequest, self._strict_coercion),
             ValueProvider(DebugTrailRequest, self._debug_trail),

@@ -139,11 +139,7 @@ class EnumValueProvider(BaseEnumProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = request.last_loc.type
         value_loader = mediator.mandatory_provide(
-            LoaderRequest(
-                loc_stack=request.loc_stack.append_with(
-                    TypeHintLoc(type=self._value_type),
-                ),
-            ),
+            request.append_loc(TypeHintLoc(type=self._value_type)),
         )
 
         def enum_loader(data):
@@ -157,11 +153,7 @@ class EnumValueProvider(BaseEnumProvider):
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         value_dumper = mediator.mandatory_provide(
-            DumperRequest(
-                loc_stack=request.loc_stack.append_with(
-                    TypeHintLoc(type=self._value_type),
-                ),
-            ),
+            request.append_loc(TypeHintLoc(type=self._value_type)),
         )
 
         def enum_dumper(data):
@@ -176,9 +168,7 @@ class EnumExactValueProvider(BaseEnumProvider):
     """
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        return self._make_loader(request.last_loc.type)
-
-    def _make_loader(self, enum):
+        enum = request.last_loc.type
         variants = [case.value for case in enum]
 
         value_to_member = self._get_exact_value_to_member(enum)

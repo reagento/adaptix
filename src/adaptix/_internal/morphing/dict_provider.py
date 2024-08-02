@@ -29,23 +29,14 @@ class DictProvider(LoaderProvider, DumperProvider):
         key, value = self._extract_key_value(request)
 
         key_loader = mediator.mandatory_provide(
-            LoaderRequest(
-                loc_stack=request.loc_stack.append_with(
-                    GenericParamLoc(
-                        type=key.source,
-                        generic_pos=0,
-                    ),
-                ),
-            ),
+            request.append_loc(GenericParamLoc(type=key.source, generic_pos=0)),
             lambda x: "Cannot create loader for dict. Loader for key cannot be created",
         )
         value_loader = mediator.mandatory_provide(
-            LoaderRequest(
-                loc_stack=request.loc_stack.append_with(
-                    GenericParamLoc(
-                        type=value.source,
-                        generic_pos=1,
-                    ),
+            request.append_loc(
+                GenericParamLoc(
+                    type=value.source,
+                    generic_pos=1,
                 ),
             ),
             lambda x: "Cannot create loader for dict. Loader for value cannot be created",
@@ -158,25 +149,11 @@ class DictProvider(LoaderProvider, DumperProvider):
         key, value = self._extract_key_value(request)
 
         key_dumper = mediator.mandatory_provide(
-            DumperRequest(
-                loc_stack=request.loc_stack.append_with(
-                    GenericParamLoc(
-                        type=key.source,
-                        generic_pos=0,
-                    ),
-                ),
-            ),
+            request.append_loc(GenericParamLoc(type=key.source, generic_pos=0)),
             lambda x: "Cannot create dumper for dict. Dumper for key cannot be created",
         )
         value_dumper = mediator.mandatory_provide(
-            DumperRequest(
-                loc_stack=request.loc_stack.append_with(
-                    GenericParamLoc(
-                        type=value.source,
-                        generic_pos=1,
-                    ),
-                ),
-            ),
+            request.append_loc(GenericParamLoc(type=value.source, generic_pos=1)),
             lambda x: "Cannot create dumper for dict. Dumper for value cannot be created",
         )
         debug_trail = mediator.mandatory_provide(

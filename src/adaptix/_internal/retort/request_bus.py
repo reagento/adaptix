@@ -106,7 +106,7 @@ class BasicRequestBus(RequestBus[RequestT, ResponseT], Generic[RequestT, Respons
 
 class RecursionResolver(ABC, Generic[RequestT, ResponseT]):
     @abstractmethod
-    def track_recursion(self, request: RequestT) -> Optional[ResponseT]:
+    def track_request(self, request: RequestT) -> Optional[ResponseT]:
         ...
 
     @abstractmethod
@@ -120,15 +120,15 @@ class RecursiveRequestBus(BasicRequestBus[RequestT, ResponseT], Generic[RequestT
     def __init__(
         self,
         router: RequestRouter[RequestT],
-        recursion_resolver: RecursionResolver[RequestT, ResponseT],
         error_representor: ErrorRepresentor[RequestT],
         mediator_factory: Callable[[Request, int], Mediator],
+        recursion_resolver: RecursionResolver[RequestT, ResponseT],
     ):
         super().__init__(router, error_representor, mediator_factory)
         self._recursion_resolver = recursion_resolver
 
     def send(self, request: RequestT) -> Any:
-        stub = self._recursion_resolver.track_recursion(request)
+        stub = self._recursion_resolver.track_request(request)
         if stub is not None:
             return stub
 

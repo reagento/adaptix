@@ -32,7 +32,7 @@ class ExtraCollect(metaclass=SingletonMeta):
 # as well as the policy of extra data processing.
 # This structure is named in honor of the crown of the tree.
 #
-# NoneCrown-s represent element that do not map to any field
+# NoneCrown-s represents an element that does not map to any field
 
 
 @dataclass

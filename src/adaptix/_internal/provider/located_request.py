@@ -11,6 +11,8 @@ from .request_checkers import AlwaysTrueRequestChecker
 
 T = TypeVar("T")
 
+LR = TypeVar("LR", bound="LocatedRequest")
+
 
 @dataclass(frozen=True)
 class LocatedRequest(Request[T]):
@@ -19,6 +21,9 @@ class LocatedRequest(Request[T]):
     @property
     def last_loc(self) -> AnyLoc:
         return self.loc_stack.last
+
+    def append_loc(self: LR, loc: AnyLoc) -> LR:
+        return replace(self, loc_stack=self.loc_stack.append_with(loc))
 
 
 class LocatedRequestChecker(RequestChecker[LocatedRequest]):

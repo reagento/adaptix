@@ -17,11 +17,11 @@ def _false():
 
 
 class Requirement(ABC):
-    __slots__ = ("is_meet", "__bool__", "__dict__")
+    __slots__ = ("is_met", "__bool__", "__dict__")
 
     def __init__(self):
-        self.is_meet = self._evaluate()
-        self.__bool__ = _true if self.is_meet else _false
+        self.is_met = self._evaluate()
+        self.__bool__ = _true if self.is_met else _false
 
     @abstractmethod
     def _evaluate(self) -> bool:

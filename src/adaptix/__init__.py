@@ -33,6 +33,7 @@ from ._internal.morphing.model.crown_definitions import (
 from ._internal.morphing.name_layout.base import ExtraIn, ExtraOut
 from ._internal.name_style import NameStyle
 from ._internal.provider.facade.provider import bound
+from ._internal.retort.searching_retort import ProviderNotFoundError
 from ._internal.utils import Omittable, Omitted, create_deprecated_alias_getter
 from .provider import (
     AggregateCannotProvide,
@@ -45,7 +46,6 @@ from .provider import (
     Request,
     create_loc_stack_checker,
 )
-from .retort import ProviderNotFoundError
 
 __all__ = (
     "Dumper",
