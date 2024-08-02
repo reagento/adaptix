@@ -97,10 +97,10 @@ class BaseCrownBuilder(ABC, Generic[LeafCr, DictCr, ListCr]):
         ]
         if paths_with_leaves and len(grouped_paths) != cast(int, paths_with_leaves[-1].path[len(current_path)]) + 1:
             raise ValueError(f"Found gaps in list mapping at {current_path}")
-        return [
+        return tuple(
             self._build_crown(path_group, len(current_path) + 1)
             for path_group in grouped_paths
-        ]
+        )
 
     @abstractmethod
     def _make_list_crown(self, current_path: KeyPath, paths_with_leaves: PathedLeaves[LeafCr]) -> ListCr:

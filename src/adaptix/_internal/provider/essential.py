@@ -1,6 +1,7 @@
+import typing
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, Iterable, Optional, Sequence, Tuple, Type, TypeVar, final
+from typing import TYPE_CHECKING, Any, Callable, Generic, Iterable, Optional, Sequence, Tuple, Type, TypeVar, final
 
 from ..common import VarTuple
 from ..compat import CompatExceptionGroup
@@ -206,6 +207,10 @@ def mandatory_apply_by_iterable(
 ResponseT = TypeVar("ResponseT")
 
 
+if TYPE_CHECKING:
+    P = typing.ParamSpec("P")
+
+
 class Mediator(DirectMediator, ABC, Generic[ResponseT]):
     """Mediator is an object that gives provider access to other providers
     and that stores the state of the current search.
@@ -218,6 +223,15 @@ class Mediator(DirectMediator, ABC, Generic[ResponseT]):
         """Forward current request to providers
         that placed after current provider at the recipe.
         """
+
+    if TYPE_CHECKING:
+        @abstractmethod
+        def cached_call(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+            ...
+    else:
+        @abstractmethod
+        def cached_call(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+            ...
 
 
 RequestT = TypeVar("RequestT", bound=Request)

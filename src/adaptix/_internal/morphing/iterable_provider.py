@@ -73,7 +73,8 @@ class IterableProvider(MorphingProvider):
         )
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        return self._make_loader(
+        return mediator.cached_call(
+            self._make_loader,
             origin=norm.origin,
             iter_factory=iter_factory,
             arg_loader=arg_loader,
@@ -206,7 +207,8 @@ class IterableProvider(MorphingProvider):
             lambda x: "Cannot create dumper for iterable. Dumper for element cannot be created",
         )
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        return self._make_dumper(
+        return mediator.cached_call(
+            self._make_dumper,
             origin=norm.origin,
             iter_factory=iter_factory,
             arg_dumper=arg_dumper,

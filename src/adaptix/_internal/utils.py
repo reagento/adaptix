@@ -9,9 +9,11 @@ from typing import (
     Callable,
     Collection,
     Generator,
+    Generic,
     Iterable,
     Iterator,
     List,
+    Mapping,
     Protocol,
     Tuple,
     TypeVar,
@@ -232,3 +234,38 @@ def create_deprecated_alias_getter(module_name, old_name_to_new_name):
         return getattr(sys.modules[module_name], new_name)
 
     return deprecated_alias_getter
+
+
+MappingT = TypeVar("MappingT", bound=Mapping)
+
+
+class OrderedMappingHashWrapper(Generic[MappingT]):
+    __slots__ = ("mapping", "_hash")
+
+    def __init__(self, mapping: MappingT):
+        self.mapping = mapping
+        self._hash = hash(tuple(self.mapping.items()))
+
+    def __hash__(self):
+        return self._hash
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedMappingHashWrapper):
+            return self.mapping == other.mapping
+        return NotImplemented
+
+
+class MappingHashWrapper(Generic[MappingT]):
+    __slots__ = ("mapping", "_hash")
+
+    def __init__(self, mapping: MappingT):
+        self.mapping = mapping
+        self._hash = hash(frozenset(self.mapping.items()))
+
+    def __hash__(self):
+        return self._hash
+
+    def __eq__(self, other):
+        if isinstance(other, OrderedMappingHashWrapper):
+            return self.mapping == other.mapping
+        return NotImplemented
