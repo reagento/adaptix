@@ -254,6 +254,9 @@ class OrderedMappingHashWrapper(Generic[MappingT]):
             return self.mapping == other.mapping
         return NotImplemented
 
+    def __repr__(self):
+        return f"OrderedMappingHashWrapper({self.mapping})"
+
 
 class MappingHashWrapper(Generic[MappingT]):
     __slots__ = ("mapping", "_hash")
@@ -269,3 +272,6 @@ class MappingHashWrapper(Generic[MappingT]):
         if isinstance(other, OrderedMappingHashWrapper):
             return self.mapping == other.mapping
         return NotImplemented
+
+    def __repr__(self):
+        return f"MappingHashWrapper({self.mapping})"

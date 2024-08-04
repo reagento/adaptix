@@ -12,16 +12,26 @@ from ..provider.methods_provider import method_handler
 from .request_bus import ErrorRepresentor, RecursionResolver, RequestRouter
 from .routers import CheckerAndHandler, SimpleRouter, create_router_for_located_request
 from .searching_retort import SearchingRetort
+from ... import TypeHint
 
 
 class FuncWrapper:
-    __slots__ = ("__call__",)
+    __slots__ = ("__call__", "_key")
 
-    def __init__(self):
+    def __init__(self, key):
+        self._key = key
         self.__call__ = None
 
     def set_func(self, func):
-        self.__call__ = func.__call__
+        self.__call__ = func
+
+    def __eq__(self, other):
+        if isinstance(other, FuncWrapper):
+            return self._key == other._key
+        return NotImplemented
+
+    def __hash__(self):
+        return 100
 
 
 CallableT = TypeVar("CallableT", bound=Callable)
@@ -29,19 +39,23 @@ CallableT = TypeVar("CallableT", bound=Callable)
 
 class LocatedRequestCallableRecursionResolver(RecursionResolver[LocatedRequest, CallableT], Generic[CallableT]):
     def __init__(self) -> None:
-        self._loc_to_stub: Dict[AnyLoc, FuncWrapper] = {}
+        self._tp_to_stub: Dict[TypeHint, FuncWrapper] = {}
 
     def track_request(self, request: LocatedRequest) -> Optional[Any]:
-        if request.loc_stack.count(request.last_loc) == 1:
+        tp = request.last_loc.type
+        if sum(loc.type == tp for loc in request.loc_stack) == 1:
             return None
 
-        stub = FuncWrapper()
-        self._loc_to_stub[request.last_loc] = stub
+        if tp in self._tp_to_stub:
+            return self._tp_to_stub[tp]
+        stub = FuncWrapper(tp)
+        self._tp_to_stub[tp] = stub
         return stub
 
     def track_response(self, request: LocatedRequest, response: CallableT) -> None:
-        if request.last_loc in self._loc_to_stub:
-            self._loc_to_stub.pop(request.last_loc).set_func(response)
+        tp = request.last_loc.type
+        if tp in self._tp_to_stub:
+            self._tp_to_stub.pop(tp).set_func(response)
 
 
 RequestT = TypeVar("RequestT", bound=Request)

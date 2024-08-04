@@ -52,6 +52,6 @@ class BuiltinMediator(Mediator[ResponseT], Generic[ResponseT]):
         key = (func, *args, *kwargs.items())
         if key in self._call_cache:
             return self._call_cache[key]
-        result = func(**kwargs)
+        result = func(*args, **kwargs)
         self._call_cache[key] = result
         return result
