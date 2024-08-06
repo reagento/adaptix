@@ -120,7 +120,7 @@ class EnumNameProvider(BaseEnumProvider):
             except TypeError:
                 raise BadVariantLoadError(variants, data)
 
-        return enum_loader
+        return mediator.cached_call(lambda: enum_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         enum = request.last_loc.type
@@ -129,7 +129,7 @@ class EnumNameProvider(BaseEnumProvider):
         def enum_dumper(data: Enum) -> str:
             return mapping[data]
 
-        return enum_dumper
+        return mediator.cached_call(lambda: enum_dumper)
 
 
 class EnumValueProvider(BaseEnumProvider):
@@ -149,7 +149,7 @@ class EnumValueProvider(BaseEnumProvider):
             except ValueError:
                 raise MsgLoadError("Bad enum value", data)
 
-        return enum_loader
+        return mediator.cached_call(lambda: enum_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         value_dumper = mediator.mandatory_provide(
@@ -159,7 +159,7 @@ class EnumValueProvider(BaseEnumProvider):
         def enum_dumper(data):
             return value_dumper(data.value)
 
-        return enum_dumper
+        return mediator.cached_call(lambda: enum_dumper)
 
 
 class EnumExactValueProvider(BaseEnumProvider):
@@ -193,7 +193,7 @@ class EnumExactValueProvider(BaseEnumProvider):
             except TypeError:
                 raise BadVariantLoadError(variants, data)
 
-        return enum_exact_loader_v2m
+        return mediator.cached_call(lambda: enum_exact_loader_v2m)
 
     def _get_exact_value_to_member(self, enum: Type[Enum]) -> Optional[Mapping[Any, Any]]:
         try:
@@ -212,7 +212,7 @@ class EnumExactValueProvider(BaseEnumProvider):
         def enum_exact_value_dumper(data):
             return member_to_value[data]
 
-        return enum_exact_value_dumper
+        return mediator.cached_call(lambda: enum_exact_value_dumper)
 
 
 class FlagByExactValueProvider(BaseFlagProvider):
@@ -246,13 +246,13 @@ class FlagByExactValueProvider(BaseFlagProvider):
             # so enum lookup cannot raise an error
             return enum(data)
 
-        return flag_loader
+        return mediator.cached_call(lambda: flag_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def flag_exact_value_dumper(data):
             return data.value
 
-        return flag_exact_value_dumper
+        return mediator.cached_call(lambda: flag_exact_value_dumper)
 
 
 def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Sequence[FlagT]:
@@ -326,7 +326,7 @@ class FlagByListProvider(BaseFlagProvider):
 
             return result
 
-        return flag_loader
+        return mediator.cached_call(lambda: flag_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         enum = request.last_loc.type
@@ -349,4 +349,4 @@ class FlagByListProvider(BaseFlagProvider):
                     result.append(mapping[case])
             return list(reversed(result)) if need_to_reverse else result
 
-        return flag_dumper
+        return mediator.cached_call(lambda: flag_dumper)

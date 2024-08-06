@@ -49,10 +49,10 @@ class IsoFormatProvider(MorphingProvider):
             except ValueError:
                 raise ValueLoadError("Invalid isoformat string", data)
 
-        return isoformat_loader
+        return mediator.cached_call(lambda: isoformat_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return self._cls.isoformat
+        return mediator.cached_call(lambda: self._cls.isoformat)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING, format=self._CLS_TO_JSON_FORMAT[self._cls])
@@ -77,7 +77,7 @@ class DatetimeFormatProvider(MorphingProvider):
             except TypeError:
                 raise TypeLoadError(str, data)
 
-        return datetime_format_loader
+        return mediator.cached_call(lambda: datetime_format_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         fmt = self._fmt
@@ -85,7 +85,7 @@ class DatetimeFormatProvider(MorphingProvider):
         def datetime_format_dumper(data: datetime):
             return data.strftime(fmt)
 
-        return datetime_format_dumper
+        return mediator.cached_call(lambda: datetime_format_dumper)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING)
@@ -112,13 +112,13 @@ class DatetimeTimestampProvider(MorphingProvider):
                     data,
                 )
 
-        return datetime_timestamp_loader
+        return mediator.cached_call(lambda: datetime_timestamp_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def datetime_timestamp_dumper(data: datetime):
             return data.timestamp()
 
-        return datetime_timestamp_dumper
+        return mediator.cached_call(lambda: datetime_timestamp_dumper)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.NUMBER)
@@ -168,7 +168,9 @@ class DateTimestampProvider(MorphingProvider):
                     data,
                 )
 
-        return pydate_timestamp_loader if self._is_pydatetime() else date_timestamp_loader
+        return mediator.cached_call(
+            lambda: pydate_timestamp_loader if self._is_pydatetime() else date_timestamp_loader,
+        )
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def date_timestamp_dumper(data: date):
@@ -180,7 +182,7 @@ class DateTimestampProvider(MorphingProvider):
             )
             return dt.timestamp()
 
-        return date_timestamp_dumper
+        return mediator.cached_call(lambda: date_timestamp_dumper)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.NUMBER)
@@ -198,10 +200,10 @@ class SecondsTimedeltaProvider(MorphingProvider):
                 raise TypeLoadError(Union[int, float, Decimal], data)
             return timedelta(seconds=int(data), microseconds=int(data % 1 * 10 ** 6))
 
-        return timedelta_loader
+        return mediator.cached_call(lambda: timedelta_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return timedelta.total_seconds
+        return mediator.cached_call(lambda: timedelta.total_seconds)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.NUMBER)
@@ -216,10 +218,10 @@ def none_loader(data):
 @for_predicate(None)
 class NoneProvider(MorphingProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        return none_loader
+        return mediator.cached_call(lambda: none_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return as_is_stub
+        return mediator.cached_call(lambda: as_is_stub)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.NULL)
@@ -230,7 +232,7 @@ class _Base64DumperMixin(DumperProvider):
         def bytes_base64_dumper(data):
             return b2a_base64(data, newline=False).decode("ascii")
 
-        return bytes_base64_dumper
+        return mediator.cached_call(lambda: bytes_base64_dumper)
 
 
 class _Base64JSONSchemaMixin(JSONSchemaProvider):
@@ -258,7 +260,7 @@ class BytesBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, MorphingPr
             except binascii.Error as e:
                 raise ValueLoadError(str(e), data)
 
-        return bytes_base64_loader
+        return mediator.cached_call(lambda: bytes_base64_loader)
 
 
 @for_predicate(BytesIO)
@@ -271,13 +273,13 @@ class BytesIOBase64Provider(_Base64JSONSchemaMixin, MorphingProvider):
         def bytes_io_base64_loader(data):
             return BytesIO(bytes_base64_loader(data))
 
-        return bytes_io_base64_loader
+        return mediator.cached_call(lambda: bytes_io_base64_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         def bytes_io_base64_dumper(data: BytesIO):
             return b2a_base64(data.getvalue(), newline=False).decode("ascii")
 
-        return bytes_io_base64_dumper
+        return mediator.cached_call(lambda: bytes_io_base64_dumper)
 
 
 @for_predicate(typing.IO[bytes])
@@ -289,7 +291,7 @@ class IOBytesBase64Provider(BytesIOBase64Provider, _Base64JSONSchemaMixin, Morph
 
             return b2a_base64(data.read(), newline=False).decode("ascii")
 
-        return io_bytes_base64_dumper
+        return mediator.cached_call(lambda: io_bytes_base64_dumper)
 
 
 @for_predicate(bytearray)
@@ -305,7 +307,7 @@ class BytearrayBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, Morphi
         def bytearray_base64_loader(data):
             return bytearray(bytes_loader(data))
 
-        return bytearray_base64_loader
+        return mediator.cached_call(lambda: bytearray_base64_loader)
 
 
 def _regex_dumper(data: re.Pattern):
@@ -330,10 +332,10 @@ class RegexPatternProvider(MorphingProvider):
             except re.error as e:
                 raise ValueLoadError(str(e), data)
 
-        return regex_loader
+        return mediator.cached_call(lambda: regex_loader)
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return _regex_dumper
+        return mediator.cached_call(lambda: _regex_dumper)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING, format=JSONSchemaBuiltinFormat.REGEX)
@@ -360,10 +362,12 @@ class ScalarProvider(MorphingProvider, Generic[T]):
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
-        return self._strict_coercion_loader if strict_coercion else self._lax_coercion_loader
+        return mediator.cached_call(
+            lambda: self._strict_coercion_loader if strict_coercion else self._lax_coercion_loader,
+        )
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return self._dumper
+        return mediator.cached_call(lambda: self._dumper)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return self._json_schema
@@ -561,10 +565,18 @@ class SelfTypeProvider(MorphingProvider):
         )
 
     def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
-        return self._substituting_provide(mediator, request)
+        return mediator.cached_call(
+            self._substituting_provide,
+            mediator=mediator,
+            request=request,
+        )
 
     def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
-        return self._substituting_provide(mediator, request)
+        return mediator.cached_call(
+            self._substituting_provide,
+            mediator=mediator,
+            request=request,
+        )
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return self._substituting_provide(mediator, request)
@@ -574,10 +586,12 @@ class SelfTypeProvider(MorphingProvider):
 class LiteralStringProvider(MorphingProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
-        return str_strict_coercion_loader if strict_coercion else str  # type: ignore[return-value]
+        return mediator.cached_call(
+            lambda: str_strict_coercion_loader if strict_coercion else str,  # type: ignore[return-value]
+        )
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return as_is_stub
+        return mediator.cached_call(lambda: as_is_stub)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING)
