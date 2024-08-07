@@ -108,14 +108,13 @@ class EnumNameProvider(BaseEnumProvider):
         self._mapping_generator = mapping_generator
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = request.last_loc.type
-        mapping = self._mapping_generator.generate_for_loading(enum.__members__.values())
         return mediator.cached_call(
             self._make_loader,
-            mapping=mapping,
+            enum=request.last_loc.type,
         )
-    
-    def _make_loader(self, mapping: Mapping):
+
+    def _make_loader(self, enum):
+        mapping = self._mapping_generator.generate_for_loading(enum.__members__.values())
         variants = list(mapping.keys())
 
         def enum_loader(data):
@@ -130,12 +129,19 @@ class EnumNameProvider(BaseEnumProvider):
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         enum = request.last_loc.type
+
+        return mediator.cached_call(
+            self._make_dumper,
+            enum=enum,
+        )
+
+    def _make_dumper(self, enum):
         mapping = self._mapping_generator.generate_for_dumping(enum.__members__.values())
 
         def enum_dumper(data: Enum) -> str:
             return mapping[data]
 
-        return mediator.cached_call(lambda: enum_dumper)
+        return enum_dumper
 
 
 class EnumValueProvider(BaseEnumProvider):
@@ -148,6 +154,13 @@ class EnumValueProvider(BaseEnumProvider):
             request.append_loc(TypeHintLoc(type=self._value_type)),
         )
 
+        return mediator.cached_call(
+            self._make_loader,
+            enum=enum,
+            value_loader=value_loader,
+        )
+
+    def _make_loader(self, enum: Enum, value_loader: Loader):
         def enum_loader(data):
             loaded_value = value_loader(data)
             try:
@@ -155,18 +168,23 @@ class EnumValueProvider(BaseEnumProvider):
             except ValueError:
                 raise MsgLoadError("Bad enum value", data)
 
-        return mediator.cached_call(lambda: enum_loader)
+        return enum_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         value_dumper = mediator.mandatory_provide(
             request.append_loc(TypeHintLoc(type=self._value_type)),
         )
 
+        return mediator.cached_call(
+            self._make_dumper,
+            value_dumper=value_dumper,
+        )
+
+    def _make_dumper(self, value_dumper: Dumper):
         def enum_dumper(data):
             return value_dumper(data.value)
 
-        return mediator.cached_call(lambda: enum_dumper)
-
+        return enum_dumper
 
 class EnumExactValueProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world
@@ -174,9 +192,13 @@ class EnumExactValueProvider(BaseEnumProvider):
     """
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = request.last_loc.type
-        variants = [case.value for case in enum]
+        return mediator.cached_call(
+            self._make_loader,
+            enum=request.last_loc.type,
+        )
 
+    def _make_loader(self, enum):
+        variants = [case.value for case in enum]
         value_to_member = self._get_exact_value_to_member(enum)
         if value_to_member is None:
             def enum_exact_loader(data):
@@ -199,7 +221,8 @@ class EnumExactValueProvider(BaseEnumProvider):
             except TypeError:
                 raise BadVariantLoadError(variants, data)
 
-        return mediator.cached_call(lambda: enum_exact_loader_v2m)
+        return enum_exact_loader_v2m
+
 
     def _get_exact_value_to_member(self, enum: Type[Enum]) -> Optional[Mapping[Any, Any]]:
         try:
@@ -213,17 +236,28 @@ class EnumExactValueProvider(BaseEnumProvider):
         return value_to_member
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        member_to_value = {member: member.value for member in request.last_loc.type}
+        return mediator.cached_call(
+            self._make_dumper,
+            enum=request.last_loc.type,
+        )
+
+    def _make_dumper(self, enum):
+        member_to_value = {member: member.value for member in enum}
 
         def enum_exact_value_dumper(data):
             return member_to_value[data]
 
-        return mediator.cached_call(lambda: enum_exact_value_dumper)
+        return enum_exact_value_dumper
 
 
 class FlagByExactValueProvider(BaseFlagProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        enum = request.last_loc.type
+        return mediator.cached_call(
+            self._make_loader,
+            enum=request.last_loc.type,
+        )
+
+    def _make_loader(self, enum):
         flag_mask = reduce(or_, enum.__members__.values()).value
 
         if flag_mask < 0:
@@ -252,13 +286,16 @@ class FlagByExactValueProvider(BaseFlagProvider):
             # so enum lookup cannot raise an error
             return enum(data)
 
-        return mediator.cached_call(lambda: flag_loader)
+        return flag_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.cached_call(self._make_dumper)
+
+    def _make_dumper(self):
         def flag_exact_value_dumper(data):
             return data.value
 
-        return mediator.cached_call(lambda: flag_exact_value_dumper)
+        return flag_exact_value_dumper
 
 
 def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Sequence[FlagT]:
@@ -288,6 +325,13 @@ class FlagByListProvider(BaseFlagProvider):
         enum = request.last_loc.type
 
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
+        return mediator.cached_call(
+            self._make_loader,
+            enum=enum,
+            strict_coercion=strict_coercion,
+        )
+
+    def _make_loader(self, enum, *, strict_coercion: bool):
         allow_single_value = self._allow_single_value
         allow_duplicates = self._allow_duplicates
 
@@ -332,11 +376,15 @@ class FlagByListProvider(BaseFlagProvider):
 
             return result
 
-        return mediator.cached_call(lambda: flag_loader)
+        return flag_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        enum = request.last_loc.type
+        return mediator.cached_call(
+            self._make_dumper,
+            enum=request.last_loc.type,
+        )
 
+    def _make_dumper(self, enum):
         cases = self._get_cases(enum)
         need_to_reverse = self._allow_compound and cases != _extract_non_compound_cases_from_flag(enum)
         if need_to_reverse:
@@ -355,4 +403,4 @@ class FlagByListProvider(BaseFlagProvider):
                     result.append(mapping[case])
             return list(reversed(result)) if need_to_reverse else result
 
-        return mediator.cached_call(lambda: flag_dumper)
+        return flag_dumper

@@ -213,7 +213,7 @@ class SecondsTimedeltaProvider(MorphingProvider):
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return mediator.cached_call(self._make_loader)
-    
+
     def _make_loader(self):
         ok_types = self._OK_TYPES
 
@@ -244,13 +244,13 @@ def none_loader(data):
 class NoneProvider(MorphingProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return mediator.cached_call(self._make_loader)
-    
+
     def _make_loader(self):
         return none_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return mediator.cached_call(self._make_dumper)
-    
+
     def _make_dumper(self):
         return as_is_stub
 
@@ -279,7 +279,7 @@ B64_PATTERN = re.compile(b"[A-Za-z0-9+/]*={0,2}")
 class BytesBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, MorphingProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         return mediator.cached_call(self._make_loader)
-    
+
     def _make_loader(self):
         def bytes_base64_loader(data):
             try:
@@ -419,7 +419,7 @@ class ScalarProvider(MorphingProvider, Generic[T]):
             strict_coercion=strict_coercion,
         )
 
-    def _make_loader(self, strict_coercion: bool):
+    def _make_loader(self, *, strict_coercion: bool):
         return self._strict_coercion_loader if strict_coercion else self._lax_coercion_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
@@ -646,11 +646,11 @@ class LiteralStringProvider(MorphingProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         return mediator.cached_call(
-            self._make_loader,  # type: ignore[return-value]
+            self._make_loader,
             strict_coercion=strict_coercion,
         )
 
-    def _make_loader(self, strict_coercion: bool):
+    def _make_loader(self, *, strict_coercion: bool):
         return str_strict_coercion_loader if strict_coercion else str
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
