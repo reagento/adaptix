@@ -263,12 +263,19 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
             mediator,
             replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )
+
+        return mediator.cached_call(
+            self._make_loader,
+            loader=dict_loader,
+        )
+
+    def _make_loader(self, loader: Loader):
         default_factory = self.default_factory
 
         def defaultdict_loader(data):
-            return defaultdict(default_factory, dict_loader(data))
+            return defaultdict(default_factory, loader(data))
 
-        return mediator.cached_call(lambda: defaultdict_loader)
+        return defaultdict_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)

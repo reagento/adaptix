@@ -110,6 +110,12 @@ class EnumNameProvider(BaseEnumProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         enum = request.last_loc.type
         mapping = self._mapping_generator.generate_for_loading(enum.__members__.values())
+        return mediator.cached_call(
+            self._make_loader,
+            mapping=mapping,
+        )
+    
+    def _make_loader(self, mapping: Mapping):
         variants = list(mapping.keys())
 
         def enum_loader(data):
@@ -120,7 +126,7 @@ class EnumNameProvider(BaseEnumProvider):
             except TypeError:
                 raise BadVariantLoadError(variants, data)
 
-        return mediator.cached_call(lambda: enum_loader)
+        return enum_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         enum = request.last_loc.type
