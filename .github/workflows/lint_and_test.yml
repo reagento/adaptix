@@ -36,6 +36,8 @@ jobs:
           just-version: 1.14.0
 
       - name: Setup environment to run tox
+        env:
+          UV_SYSTEM_PYTHON: 1
         run:
           just setup-runner
 
@@ -78,6 +80,8 @@ jobs:
           just-version: 1.14.0
 
       - name: Setup environment to run tox
+        env:
+          UV_SYSTEM_PYTHON: 1
         run:
           just setup-runner
 
