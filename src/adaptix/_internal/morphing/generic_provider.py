@@ -475,16 +475,12 @@ class PathLikeProvider(LoaderProvider, DumperProvider):
     _impl = Path
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        return mediator.cached_call(
-            mediator.mandatory_provide,
-            request=LoaderRequest(
+        return mediator.mandatory_provide(
+            LoaderRequest(
                 loc_stack=request.loc_stack.replace_last_type(self._impl),
             ),
-            error_describer=lambda x: f"Cannot create loader for {PathLike}. Loader for {Path} cannot be created",
+            lambda x: f"Cannot create loader for {PathLike}. Loader for {Path} cannot be created",
         )
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return mediator.cached_call(self._make_dumper)
-
-    def _make_dumper(self):
         return path_like_dumper

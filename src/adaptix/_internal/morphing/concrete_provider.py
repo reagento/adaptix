@@ -243,15 +243,9 @@ def none_loader(data):
 @for_predicate(None)
 class NoneProvider(MorphingProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        return mediator.cached_call(self._make_loader)
-
-    def _make_loader(self):
         return none_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return mediator.cached_call(self._make_dumper)
-
-    def _make_dumper(self):
         return as_is_stub
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -384,9 +378,6 @@ class RegexPatternProvider(MorphingProvider):
         return regex_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return mediator.cached_call(self._make_dumper)
-
-    def _make_dumper(self):
         return _regex_dumper
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -423,9 +414,6 @@ class ScalarProvider(MorphingProvider, Generic[T]):
         return self._strict_coercion_loader if strict_coercion else self._lax_coercion_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return mediator.cached_call(self._make_dumper)
-
-    def _make_dumper(self):
         return self._dumper
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -624,18 +612,10 @@ class SelfTypeProvider(MorphingProvider):
         )
 
     def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
-        return mediator.cached_call(
-            self._substituting_provide,
-            mediator=mediator,
-            request=request,
-        )
+        return self._substituting_provide(mediator, request)
 
     def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
-        return mediator.cached_call(
-            self._substituting_provide,
-            mediator=mediator,
-            request=request,
-        )
+        return self._substituting_provide(mediator, request)
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return self._substituting_provide(mediator, request)
@@ -645,18 +625,9 @@ class SelfTypeProvider(MorphingProvider):
 class LiteralStringProvider(MorphingProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
-        return mediator.cached_call(
-            self._make_loader,
-            strict_coercion=strict_coercion,
-        )
-
-    def _make_loader(self, *, strict_coercion: bool):
-        return str_strict_coercion_loader if strict_coercion else str
+        return str_strict_coercion_loader if strict_coercion else str  # type: ignore[return-value]
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return mediator.cached_call(self._make_dumper)
-
-    def _make_dumper(self):
         return as_is_stub
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:

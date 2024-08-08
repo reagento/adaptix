@@ -289,14 +289,10 @@ class FlagByExactValueProvider(BaseFlagProvider):
         return flag_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return mediator.cached_call(self._make_dumper)
-
-    def _make_dumper(self):
-        def flag_exact_value_dumper(data):
-            return data.value
-
         return flag_exact_value_dumper
 
+def flag_exact_value_dumper(data):
+    return data.value
 
 def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Sequence[FlagT]:
     return [case for case in enum.__members__.values() if not math.log2(case.value) % 1]
