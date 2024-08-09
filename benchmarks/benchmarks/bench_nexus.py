@@ -267,7 +267,7 @@ class HubProcessor(Foundation, ABC):
         return BENCHMARK_HUBS
 
     def filtered_envs(self) -> Iterable[EnvDescription]:
-        if self.env_include and self.env_exclude:
+        if self.env_exclude:
             wild_envs = set(self.env_exclude) - {env_description.key for env_description in BENCHMARK_ENVS}
             if wild_envs:
                 raise ValueError(f"Unknown envs {wild_envs}")
