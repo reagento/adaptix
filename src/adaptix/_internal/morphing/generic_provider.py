@@ -154,7 +154,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
 
         enum_cases = [arg for arg in norm.args if isinstance(arg, Enum)]
-        enum_loaders = list(self._fetch_enum_loaders(mediator, request, self._get_enum_types(enum_cases)))
+        enum_loaders = tuple(self._fetch_enum_loaders(mediator, request, self._get_enum_types(enum_cases)))
         allowed_values_repr = self._get_allowed_values_repr(norm.args, mediator, request.loc_stack)
 
         if strict_coercion and any(
@@ -182,10 +182,23 @@ class LiteralProvider(LoaderProvider, DumperProvider):
                 return data
             raise BadVariantLoadError(allowed_values_repr, data)
 
-        return self._get_literal_loader_with_enum(literal_loader, enum_loaders, allowed_values)
+        return mediator.cached_call(
+            self._get_literal_loader_with_enum,
+            basic_loader=literal_loader,
+            enum_loaders=enum_loaders,
+            allowed_values=allowed_values,
+        )
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm = try_normalize_type(request.last_loc.type)
+        return mediator.cached_call(
+            self._make_dumper,
+            norm=norm,
+            mediator=mediator,
+            request=request,
+        )
+
+    def _make_dumper(self, norm: BaseNormType, mediator: Mediator, request: DumperRequest):
         enum_cases = [arg for arg in norm.args if isinstance(arg, Enum)]
 
         if not enum_cases:
@@ -210,13 +223,21 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
         return literal_dumper_with_enums
 
-
 @for_predicate(Union)
 class UnionProvider(LoaderProvider, DumperProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(request.last_loc.type)
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
 
+        return mediator.cached_call(
+            self._make_loader,
+            norm=norm,
+            debug_trail=debug_trail,
+            mediator=mediator,
+            request=request,
+        )
+
+    def _make_loader(self, norm: BaseNormType, debug_trail: DebugTrail, mediator: Mediator, request: LoaderRequest):
         if self._is_single_optional(norm):
             not_none = next(case for case in norm.args if case.origin is not None)
             not_none_loader = mediator.mandatory_provide(
@@ -229,9 +250,14 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 lambda x: "Cannot create loader for union. Loaders for some union cases cannot be created",
             )
             if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
-                return self._single_optional_dt_loader(norm.source, not_none_loader)
+                return self._single_optional_dt_loader(
+                    tp=norm.source,
+                    loader=not_none_loader,
+                    )
             if debug_trail == DebugTrail.DISABLE:
-                return self._single_optional_dt_disable_loader(not_none_loader)
+                return self._single_optional_dt_disable_loader(
+                    loader=not_none_loader,
+                )
             raise ValueError
 
         loaders = mediator.mandatory_provide_by_iterable(
@@ -247,11 +273,11 @@ class UnionProvider(LoaderProvider, DumperProvider):
             lambda: "Cannot create loader for union. Loaders for some union cases cannot be created",
         )
         if debug_trail == DebugTrail.DISABLE:
-            return self._get_loader_dt_disable(tuple(loaders))
+            return self._get_loader_dt_disable(loader_iter=tuple(loaders))
         if debug_trail == DebugTrail.FIRST:
-            return self._get_loader_dt_first(norm.source, tuple(loaders))
+            return self._get_loader_dt_first(tp=norm.source, loader_iter=tuple(loaders))
         if debug_trail == DebugTrail.ALL:
-            return self._get_loader_dt_all(norm.source, tuple(loaders))
+            return self._get_loader_dt_all(tp=norm.source, loader_iter=tuple(loaders))
         raise ValueError
 
     def _single_optional_dt_disable_loader(self, loader: Loader) -> Loader:
@@ -329,6 +355,14 @@ class UnionProvider(LoaderProvider, DumperProvider):
         request_type = request.last_loc.type
         norm = try_normalize_type(request_type)
 
+        return mediator.cached_call(
+            self._make_dumper,
+            norm=norm,
+            mediator=mediator,
+            request=request,
+        )
+
+    def _make_dumper(self, norm: BaseNormType, mediator: Mediator, request: DumperRequest):
         if self._is_single_optional(norm):
             not_none = next(case for case in norm.args if case.origin is not None)
             not_none_dumper = mediator.mandatory_provide(
@@ -342,7 +376,9 @@ class UnionProvider(LoaderProvider, DumperProvider):
             )
             if not_none_dumper == as_is_stub:
                 return as_is_stub
-            return self._get_single_optional_dumper(not_none_dumper)
+            return self._get_single_optional_dumper(
+                dumper=not_none_dumper,
+            )
 
         forbidden_origins = [
             case.source
@@ -381,7 +417,9 @@ class UnionProvider(LoaderProvider, DumperProvider):
         if literal_dumper:
             return literal_dumper
 
-        return self._produce_dumper(dumper_type_dispatcher)
+        return self._produce_dumper(
+            dumper_type_dispatcher=dumper_type_dispatcher,
+        )
 
     def _produce_dumper(self, dumper_type_dispatcher: ClassDispatcher[Any, Dumper]) -> Dumper:
         def union_dumper(data):
