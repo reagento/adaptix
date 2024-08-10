@@ -59,14 +59,14 @@ class ShapeProvider(MethodsProvider):
 
     @method_handler
     def _provide_input_shape(self, mediator: Mediator, request: InputShapeRequest) -> InputShape:
-        shape = self._get_shape(request.last_loc.type)
+        shape = mediator.cached_call(self._get_shape, request.last_loc.type)
         if shape.input is None:
             raise CannotProvide
         return shape.input
 
     @method_handler
     def _provide_output_shape(self, mediator: Mediator, request: OutputShapeRequest) -> OutputShape:
-        shape = self._get_shape(request.last_loc.type)
+        shape = mediator.cached_call(self._get_shape, request.last_loc.type)
         if shape.output is None:
             raise CannotProvide
         return shape.output

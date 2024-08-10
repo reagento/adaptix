@@ -230,9 +230,11 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             lambda: "Cannot create dumper for tuple. Dumpers for some elements cannot be created",
         )
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        return mediator.cached_call(self._make_dumper,
-                                    dumpers=tuple(dumpers),
-                                    debug_trail=debug_trail)
+        return mediator.cached_call(
+            self._make_dumper,
+            dumpers=tuple(dumpers),
+            debug_trail=debug_trail,
+        )
 
     def _make_dumper(self, dumpers: Collection[Dumper], debug_trail: DebugTrail):
         if debug_trail == DebugTrail.DISABLE:

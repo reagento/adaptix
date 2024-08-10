@@ -37,6 +37,8 @@ class BuiltinMediator(Mediator[ResponseT], Generic[ResponseT]):
         self._no_request_bus_error_maker = no_request_bus_error_maker
         self._call_cache = call_cache
 
+    __hash__ = None  # type: ignore[assignment]
+
     def provide(self, request: Request[T]) -> T:
         try:
             request_bus = self._request_buses[type(request)]

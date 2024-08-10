@@ -280,9 +280,7 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
         dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
-
-        return mediator.cached_call(
-            self._DICT_PROVIDER.provide_dumper,
-            mediator=mediator,
+        return self._DICT_PROVIDER.provide_dumper(
+            mediator,
             request=replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )

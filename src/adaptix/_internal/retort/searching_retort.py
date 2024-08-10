@@ -36,7 +36,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
     """A retort that can operate as Retort but have no predefined providers and no high-level user interface"""
 
     def _provide_from_recipe(self, request: Request[T]) -> T:
-        return self._create_mediator(request).provide_from_next()
+        return self._create_mediator(request).provide(request)
 
     def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
         def retort_request_handler(mediator, request):
