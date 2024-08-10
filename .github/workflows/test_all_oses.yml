@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  UV_SYSTEM_PYTHON: 1
+
 jobs:
   testing:
     name: Testing (${{ matrix.python_version.tox }}, ${{ matrix.os }})
@@ -44,6 +47,8 @@ jobs:
           just-version: 1.14.0
 
       - name: Setup environment to run tox
+        env:
+          UV_SYSTEM_PYTHON: 1
         run:
           just setup-runner
 

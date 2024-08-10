@@ -7,15 +7,15 @@ set windows-powershell := true
 # prepare venv and repo for developing
 @bootstrap:
     pip install -r requirements/pre.txt
-    pip install -e .
-    pip install -r requirements/dev.txt
+    uv pip install -e .
+    uv pip install -r requirements/dev.txt
     pre-commit
     pre-commit install
 
 # sync version of installed packages
 @venv-sync:
-    pip-sync requirements/pre.txt requirements/dev.txt
-    pip install -e .
+    uv pip sync requirements/pre.txt requirements/dev.txt
+    uv pip install -e .
 
 # run all linters
 @lint:
@@ -68,7 +68,7 @@ doc_target := "docs-build"
 [private]
 @setup-runner:
     pip install -r requirements/pre.txt
-    pip install -r requirements/runner.txt
+    uv pip install -r requirements/runner.txt
 
 [private]
 @inv *ARGS:
