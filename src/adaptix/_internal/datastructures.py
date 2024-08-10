@@ -23,6 +23,7 @@ from typing import (
 )
 
 from .common import VarTuple
+from .utils import MappingHashWrapper
 
 K = TypeVar("K", bound=Hashable)
 V = TypeVar("V")
@@ -113,6 +114,9 @@ class ClassDispatcher(Generic[K_co, V]):
         if isinstance(other, ClassDispatcher):
             return self._mapping == other._mapping
         return NotImplemented
+
+    def __hash__(self):
+        return hash(MappingHashWrapper(self._mapping))
 
 
 # It's not a KeysView because __iter__ of KeysView must returns an Iterator[K_co]
