@@ -70,20 +70,6 @@ def fetch_code_gen_hook(mediator: Mediator, loc_stack: LocStack) -> CodeGenHook:
         return stub_code_gen_hook
 
 
-class HookWrapper:
-    def __init__(self, hook):
-        self.hook = hook
-
-    def __eq__(self, other):
-        return True
-
-    def __hash__(self):
-        return 0
-
-    def __call__(self, *args, **kwargs):
-        return self.hook(*args, **kwargs)
-
-
 class CodeGenAccumulator(MethodsProvider):
     """Accumulates all generated code. It may be useful for debugging"""
 
@@ -95,7 +81,7 @@ class CodeGenAccumulator(MethodsProvider):
         def hook(data: CodeGenHookData):
             self.list.append((request, data))
 
-        return HookWrapper(hook)
+        return hook
 
     @property
     def code_pairs(self):

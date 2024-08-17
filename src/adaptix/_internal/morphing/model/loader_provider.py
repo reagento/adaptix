@@ -10,7 +10,7 @@ from ...provider.essential import CannotProvide, Mediator
 from ...provider.fields import input_field_to_loc
 from ...provider.located_request import LocatedRequest
 from ...provider.shape_provider import InputShapeRequest, provide_generic_resolved_shape
-from ...utils import Omittable, Omitted, OrderedMappingHashWrapper
+from ...utils import AlwaysEqualHashWrapper, Omittable, Omitted, OrderedMappingHashWrapper
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.request_cls import JSONSchemaRequest
 from ..json_schema.schema_model import JSONValue
@@ -52,7 +52,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
             field_loaders=OrderedMappingHashWrapper(field_loaders),
             strict_coercion=mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack)),
             debug_trail=mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack)),
-            code_gen_hook=fetch_code_gen_hook(mediator, request.loc_stack),
+            code_gen_hook=AlwaysEqualHashWrapper(fetch_code_gen_hook(mediator, request.loc_stack)),
             model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
             closure_name=self._get_closure_name(request),
             file_name=self._get_file_name(request),
@@ -66,7 +66,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
         field_loaders: OrderedMappingHashWrapper[Mapping[str, Loader]],
         strict_coercion: bool,
         debug_trail: DebugTrail,
-        code_gen_hook: CodeGenHook,
+        code_gen_hook: AlwaysEqualHashWrapper[CodeGenHook],
         model_identity: str,
         closure_name: str,
         file_name: str,
@@ -85,7 +85,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
         loader_code, loader_namespace = loader_gen.produce_code(closure_name=closure_name)
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
-            code_gen_hook=code_gen_hook,
+            code_gen_hook=code_gen_hook.value,
             namespace=loader_namespace,
             closure_code=loader_code,
             closure_name=closure_name,

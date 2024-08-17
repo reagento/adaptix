@@ -10,7 +10,7 @@ from ...provider.essential import CannotProvide, Mediator
 from ...provider.fields import output_field_to_loc
 from ...provider.located_request import LocatedRequest
 from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
-from ...utils import Omittable, Omitted, OrderedMappingHashWrapper
+from ...utils import AlwaysEqualHashWrapper, Omittable, Omitted, OrderedMappingHashWrapper
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.request_cls import JSONSchemaRequest
 from ..json_schema.schema_model import JSONValue
@@ -43,7 +43,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
             name_layout=name_layout,
             fields_dumpers=OrderedMappingHashWrapper(fields_dumpers),
             debug_trail=mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack)),
-            code_gen_hook=fetch_code_gen_hook(mediator, request.loc_stack),
+            code_gen_hook=AlwaysEqualHashWrapper(fetch_code_gen_hook(mediator, request.loc_stack)),
             model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
             closure_name=self._get_closure_name(request),
             file_name=self._get_file_name(request),
@@ -56,7 +56,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
         name_layout: OutputNameLayout,
         fields_dumpers: OrderedMappingHashWrapper[Mapping[str, Dumper]],
         debug_trail: DebugTrail,
-        code_gen_hook: CodeGenHook,
+        code_gen_hook: AlwaysEqualHashWrapper[CodeGenHook],
         model_identity: str,
         closure_name: str,
         file_name: str,
@@ -72,7 +72,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
         dumper_code, dumper_namespace = dumper_gen.produce_code(closure_name=closure_name)
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
-            code_gen_hook=code_gen_hook,
+            code_gen_hook=code_gen_hook.value,
             namespace=dumper_namespace,
             closure_code=dumper_code,
             closure_name=closure_name,

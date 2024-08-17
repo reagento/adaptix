@@ -275,3 +275,21 @@ class MappingHashWrapper(Generic[MappingT]):
 
     def __repr__(self):
         return f"MappingHashWrapper({self.mapping})"
+
+
+class AlwaysEqualHashWrapper(Generic[T]):
+    __slots__ = ("value", )
+
+    def __init__(self, value: T):
+        self.value = value
+
+    def __hash__(self):
+        return 0
+
+    def __eq__(self, other):
+        if isinstance(other, AlwaysEqualHashWrapper):
+            return True
+        return NotImplemented
+
+    def __repr__(self):
+        return f"AlwaysEqualHashWrapper({self.value})"
