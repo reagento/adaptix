@@ -1,6 +1,17 @@
-from collections.abc import Collection, Hashable, Iterable, Iterator, KeysView, Mapping, Reversible, Sized, ValuesView
+from collections.abc import (
+    Collection,
+    Hashable,
+    Iterable,
+    Iterator,
+    KeysView,
+    Mapping,
+    Reversible,
+    Set,
+    Sized,
+    ValuesView,
+)
 from itertools import islice
-from typing import AbstractSet, Callable, Generic, Optional, Protocol, TypeVar, Union, runtime_checkable
+from typing import Callable, Generic, Optional, Protocol, TypeVar, Union, runtime_checkable
 
 from .common import VarTuple
 from .utils import MappingHashWrapper
@@ -105,7 +116,7 @@ class ClassDispatcher(Generic[K_co, V]):
 class ClassDispatcherKeysView(Generic[K_co]):
     __slots__ = ("_keys",)
 
-    def __init__(self, keys: AbstractSet[type[K_co]]):
+    def __init__(self, keys: Set[type[K_co]]):
         self._keys = keys
 
     def bind(self, value: V) -> ClassDispatcher[K_co, V]:

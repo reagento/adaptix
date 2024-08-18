@@ -1,8 +1,8 @@
 import itertools
 from abc import ABC, abstractmethod
-from collections.abc import Collection, Container, Iterable, Mapping
+from collections.abc import Collection, Container, Iterable, Mapping, Set
 from dataclasses import dataclass
-from typing import AbstractSet, Any, Callable, TypeVar, Union
+from typing import Any, Callable, TypeVar, Union
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
@@ -119,7 +119,7 @@ def _collect_used_direct_fields(crown: BaseCrown) -> set[str]:
     return used_set
 
 
-def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> AbstractSet[str]:
+def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> Set[str]:
     used_direct_fields = _collect_used_direct_fields(name_layout.crown)
     extra_targets = name_layout.extra_move.fields if isinstance(name_layout.extra_move, ExtraTargets) else ()
     return {

@@ -1,6 +1,5 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Set
 from functools import partial
-from typing import AbstractSet
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
@@ -178,7 +177,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
         shape: InputShape,
         name_layout: InputNameLayout,
         field_loaders: Mapping[str, Loader],
-        skipped_fields: AbstractSet[str],
+        skipped_fields: Set[str],
         model_identity: str,
     ) -> ModelLoaderGen:
         return BuiltinModelLoaderGen(
@@ -245,7 +244,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
         self,
         shape: InputShape,
         name_layout: InputNameLayout,
-        skipped_fields: AbstractSet[str],
+        skipped_fields: Set[str],
     ) -> None:
         skipped_required_fields = [
             field.id

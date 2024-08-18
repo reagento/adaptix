@@ -1,8 +1,8 @@
 import collections.abc
 import contextlib
-from collections.abc import Mapping
+from collections.abc import Mapping, Set
 from dataclasses import dataclass, replace
-from typing import AbstractSet, Callable, Optional
+from typing import Callable, Optional
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -185,7 +185,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         debug_trail: DebugTrail,
         strict_coercion: bool,
         field_loaders: Mapping[str, Loader],
-        skipped_fields: AbstractSet[str],
+        skipped_fields: Set[str],
         model_identity: str,
         props: ModelLoaderProps,
     ):

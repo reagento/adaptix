@@ -1,7 +1,6 @@
 import typing
 from collections.abc import Sequence
 from types import MappingProxyType
-from typing import AbstractSet
 
 from ...feature_requirement import HAS_TYPED_DICT_REQUIRED
 from ...type_tools import BaseNormType, get_all_type_hints, is_typed_dict_class, normalize_type
@@ -46,7 +45,7 @@ def _extract_item_type(tp) -> BaseNormType:
 
 def _fetch_required_keys(
     fields: Sequence[tuple[str, BaseNormType]],
-    frozen_required_keys: AbstractSet[str],
+    frozen_required_keys: Set[str],
 ) -> set:
     required_keys = set(frozen_required_keys)
 
