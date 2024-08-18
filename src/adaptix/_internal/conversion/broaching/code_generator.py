@@ -3,8 +3,9 @@ import itertools
 from abc import ABC, abstractmethod
 from ast import AST
 from collections import defaultdict
+from collections.abc import Mapping
 from inspect import Signature
-from typing import DefaultDict, Mapping, Tuple, Union
+from typing import Union
 
 from ...code_tools.ast_templater import ast_substitute
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
@@ -37,7 +38,7 @@ class GenState:
     def __init__(self, namespace: CascadeNamespace, name_sanitizer: NameSanitizer):
         self._namespace = namespace
         self._name_sanitizer = name_sanitizer
-        self._prefix_counter: DefaultDict[str, int] = defaultdict(lambda: 0)
+        self._prefix_counter: defaultdict[str, int] = defaultdict(lambda: 0)
 
     def register_next_id(self, prefix: str, obj: object) -> str:
         number = self._prefix_counter[prefix]
@@ -59,7 +60,7 @@ class GenState:
 
 class BroachingCodeGenerator(ABC):
     @abstractmethod
-    def produce_code(self, signature: Signature, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, signature: Signature, closure_name: str) -> tuple[str, Mapping[str, object]]:
         ...
 
 
@@ -74,7 +75,7 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
             name_sanitizer=self._name_sanitizer,
         )
 
-    def produce_code(self, signature: Signature, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, signature: Signature, closure_name: str) -> tuple[str, Mapping[str, object]]:
         builder = CodeBuilder()
         namespace = BuiltinCascadeNamespace(occupied=signature.parameters.keys())
         state = self._create_state(namespace=namespace)

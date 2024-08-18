@@ -5,7 +5,7 @@ from typing import TypedDict
 
 from tests_helpers import requires
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_PY_39, HAS_TYPED_DICT_REQUIRED
+from adaptix._internal.feature_requirement import HAS_TYPED_DICT_REQUIRED
 from adaptix._internal.model_tools.definitions import (
     InputField,
     InputShape,
@@ -216,10 +216,6 @@ class GrandChildNotTotal(ChildTotal, total=False):
     z: str
 
 
-def _negate_if_not_py39(value: bool) -> bool:
-    return value if HAS_PY_39 else not value
-
-
 def test_inheritance_first():
     assert (
         get_typed_dict_shape(ParentNotTotal)
@@ -277,7 +273,7 @@ def test_inheritance_second():
                         type=int,
                         id="x",
                         default=NoDefault(),
-                        is_required=_negate_if_not_py39(False),
+                        is_required=False,
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
@@ -311,7 +307,7 @@ def test_inheritance_second():
                         id="x",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor("x", access_error=KeyError if HAS_PY_39 else None),
+                        accessor=create_key_accessor("x", access_error=KeyError),
                         original=None,
                     ),
                     OutputField(
@@ -350,7 +346,7 @@ def test_inheritance_third():
                         type=str,
                         id="y",
                         default=NoDefault(),
-                        is_required=_negate_if_not_py39(True),
+                        is_required=True,
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
@@ -397,7 +393,7 @@ def test_inheritance_third():
                         id="y",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor("y", access_error=None if HAS_PY_39 else KeyError),
+                        accessor=create_key_accessor("y", access_error=None),
                         original=None,
                     ),
                     OutputField(
@@ -415,7 +411,6 @@ def test_inheritance_third():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotatedTotal(TypedDict):
         annotated_field: typing.Annotated[int, "metadata"]

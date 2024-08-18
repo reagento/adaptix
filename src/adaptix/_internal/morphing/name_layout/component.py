@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
+from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools.definitions import (
@@ -89,7 +89,7 @@ AnyField = Union[InputField, OutputField]
 LeafCr = TypeVar("LeafCr", bound=LeafBaseCrown)
 FieldCr = TypeVar("FieldCr", bound=BaseFieldCrown)
 F = TypeVar("F", bound=BaseField)
-FieldAndPath = Tuple[F, Optional[KeyPath]]
+FieldAndPath = tuple[F, Optional[KeyPath]]
 
 
 def apply_lsc(
@@ -214,8 +214,8 @@ class BuiltinStructureMaker(StructureMaker):
                 is_demonstrative=True,
             )
 
-    def _iterate_sub_paths(self, paths: Iterable[KeyPath]) -> Iterable[Tuple[KeyPath, Key]]:
-        yielded: Set[Tuple[KeyPath, Key]] = set()
+    def _iterate_sub_paths(self, paths: Iterable[KeyPath]) -> Iterable[tuple[KeyPath, Key]]:
+        yielded: Set[tuple[KeyPath, Key]] = set()
         for path in paths:
             for i in range(len(path) - 1, -1, -1):
                 result = path[:i], path[i]
@@ -366,7 +366,7 @@ class BuiltinSievesMaker(SievesMaker):
         return result
 
 
-def _paths_to_branches(paths_to_leaves: PathsTo[LeafBaseCrown]) -> Iterable[Tuple[KeyPath, Key]]:
+def _paths_to_branches(paths_to_leaves: PathsTo[LeafBaseCrown]) -> Iterable[tuple[KeyPath, Key]]:
     yielded_branch_path: Set[KeyPath] = set()
     for path in paths_to_leaves:
         for i in range(len(path) - 1, -2, -1):

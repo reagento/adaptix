@@ -148,10 +148,6 @@ class PythonImplementationRequirement(Requirement):
         return f"{self.implementation_name} is required"
 
 
-HAS_PY_39 = PythonVersionRequirement((3, 9))
-HAS_ANNOTATED = HAS_PY_39
-HAS_STD_CLASSES_GENERICS = HAS_PY_39
-
 HAS_PY_310 = PythonVersionRequirement((3, 10))
 HAS_TYPE_UNION_OP = HAS_PY_310
 HAS_TYPE_GUARD = HAS_PY_310

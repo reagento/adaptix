@@ -5,9 +5,6 @@ from types import MappingProxyType
 from typing import Any, NamedTuple
 from unittest.mock import ANY
 
-from tests_helpers import requires
-
-from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     DefaultValue,
     InputField,
@@ -713,7 +710,6 @@ def test_inheritance_overriden_types_functional_parent():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotated(NamedTuple):
         annotated_field: typing.Annotated[int, "metadata"]

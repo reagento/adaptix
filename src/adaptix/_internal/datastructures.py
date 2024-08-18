@@ -14,7 +14,6 @@ from typing import (
     Protocol,
     Reversible,
     Sized,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -101,7 +100,7 @@ class ClassDispatcher(Generic[K_co, V]):
     def keys(self) -> "ClassDispatcherKeysView[K_co]":
         return ClassDispatcherKeysView(self._mapping.keys())
 
-    def items(self) -> Collection[Tuple[Type[K_co], V]]:
+    def items(self) -> Collection[tuple[Type[K_co], V]]:
         return self._mapping.items()
 
     def __repr__(self):

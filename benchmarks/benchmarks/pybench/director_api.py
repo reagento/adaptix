@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
+from typing import Any, Callable, Iterable, Mapping, Optional, Sequence, TypeVar, Union
 
 import pyperf
 from pyperf._cli import format_checks
@@ -51,7 +51,7 @@ class BenchSchema:
 @dataclass(frozen=True)
 class PlotParams:
     title: str
-    fig_size: Tuple[float, float] = (8, 4.8)
+    fig_size: tuple[float, float] = (8, 4.8)
     label_padding: float = 0
     trim_after: Optional[float] = None
     label_format: str = ".1f"
@@ -73,7 +73,7 @@ class BenchAccessor:
         self.data_dir = data_dir
         self.env_spec = env_spec
         self.all_schemas = schemas
-        self.id_to_schema: Dict[str, BenchSchema] = {self.get_id(schema): schema for schema in schemas}
+        self.id_to_schema: dict[str, BenchSchema] = {self.get_id(schema): schema for schema in schemas}
         self._base_check_params = check_params
 
     def add_arguments(self, parser: ArgumentParser) -> None:
@@ -183,7 +183,7 @@ class BenchChecker:
         return [*warnings, *self_warnings]
 
     def _check_yourself(self, schema: BenchSchema, bench: pyperf.Benchmark, check_params: CheckParams) -> Sequence[str]:
-        lines: List[str] = []
+        lines: list[str] = []
         stdev = bench.stdev()
         mean = bench.mean()
         rate = stdev / mean
@@ -264,7 +264,7 @@ class BenchRunner:
             for schema in schemas
         }
 
-        benchmarks_to_run: List[str]
+        benchmarks_to_run: list[str]
         if exclude is not None:
             benchmarks_to_run = [
                 self.accessor.get_local_id(schema)
@@ -331,7 +331,7 @@ class BenchRunner:
         self,
         bench_name: str,
         entrypoint: str,
-        params: List[Any],
+        params: list[Any],
         extra_args: Iterable[str] = (),
     ) -> None:
         subprocess.run(
@@ -538,7 +538,7 @@ class BenchmarkDirector:
         return BenchChecker(accessor)
 
     def _validate_schemas(self, accessor: BenchAccessor):
-        local_id_set: Set[str] = set()
+        local_id_set: set[str] = set()
         for schema in self.schemas:
             local_id = accessor.get_local_id(schema)
             if local_id in local_id_set:

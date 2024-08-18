@@ -2,7 +2,7 @@ import collections.abc
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import replace
-from typing import Any, Callable, Tuple, Union, final
+from typing import Any, Callable, Union, final
 
 from ..common import Coercer, OneArgCoercer, TypeHint
 from ..morphing.utils import try_normalize_type
@@ -221,7 +221,7 @@ class IterableCoercerProvider(NormTypeCoercerProvider):
             return norm.args[0].source
         raise CannotProvide
 
-    def _parse_destination(self, norm: BaseNormType) -> Tuple[Callable, TypeHint]:
+    def _parse_destination(self, norm: BaseNormType) -> tuple[Callable, TypeHint]:
         if norm.origin == tuple and norm.args[-1] != Ellipsis:
             raise CannotProvide("Constant-length tuple is not supported yet", is_demonstrative=True)
         if norm.origin in self.CONCRETE_ORIGINS:
@@ -261,12 +261,12 @@ class DictCoercerProvider(NormTypeCoercerProvider):
 
         return dict_coercer
 
-    def _parse_source(self, norm: BaseNormType) -> Tuple[TypeHint, TypeHint]:
+    def _parse_source(self, norm: BaseNormType) -> tuple[TypeHint, TypeHint]:
         if norm.origin in (dict, collections.abc.Mapping, collections.abc.MutableMapping):
             return norm.args[0].source, norm.args[1].source
         raise CannotProvide
 
-    def _parse_destination(self, norm: BaseNormType) -> Tuple[TypeHint, TypeHint]:
+    def _parse_destination(self, norm: BaseNormType) -> tuple[TypeHint, TypeHint]:
         if norm.origin in (dict, collections.abc.Mapping, collections.abc.MutableMapping):
             return norm.args[0].source, norm.args[1].source
         raise CannotProvide

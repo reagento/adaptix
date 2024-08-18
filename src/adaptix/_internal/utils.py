@@ -15,7 +15,6 @@ from typing import (
     List,
     Mapping,
     Protocol,
-    Tuple,
     TypeVar,
     Union,
     final,
@@ -104,7 +103,7 @@ T = TypeVar("T")
 if HAS_PY_310:
     pairs = itertools.pairwise
 else:
-    def pairs(iterable: Iterable[T]) -> Iterable[Tuple[T, T]]:  # type: ignore[no-redef]
+    def pairs(iterable: Iterable[T]) -> Iterable[tuple[T, T]]:  # type: ignore[no-redef]
         it = iter(iterable)
         try:
             prev = next(it)
@@ -154,8 +153,8 @@ class ComparableSequence(Protocol[T]):
 
 def get_prefix_groups(
     values: Collection[ComparableSeqT],
-) -> Collection[Tuple[ComparableSeqT, Iterable[ComparableSeqT]]]:
-    groups: List[Tuple[ComparableSeqT, List[ComparableSeqT]]] = []
+) -> Collection[tuple[ComparableSeqT, Iterable[ComparableSeqT]]]:
+    groups: List[tuple[ComparableSeqT, List[ComparableSeqT]]] = []
     sorted_values = iter(sorted(values))
     current_group: List[ComparableSeqT] = []
     try:

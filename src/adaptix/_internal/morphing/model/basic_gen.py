@@ -1,21 +1,7 @@
 import itertools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import (
-    AbstractSet,
-    Any,
-    Callable,
-    Collection,
-    Container,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import AbstractSet, Any, Callable, Collection, Container, Dict, Iterable, List, Mapping, Set, TypeVar, Union
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
@@ -74,7 +60,7 @@ class CodeGenAccumulator(MethodsProvider):
     """Accumulates all generated code. It may be useful for debugging"""
 
     def __init__(self) -> None:
-        self.list: List[Tuple[CodeGenHookRequest, CodeGenHookData]] = []
+        self.list: List[tuple[CodeGenHookRequest, CodeGenHookData]] = []
 
     @method_handler
     def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
@@ -259,11 +245,11 @@ def has_collect_policy(crown: InpCrown) -> bool:
 
 class ModelLoaderGen(ABC):
     @abstractmethod
-    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:
         ...
 
 
 class ModelDumperGen(ABC):
     @abstractmethod
-    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:
         ...

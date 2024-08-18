@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, replace
-from typing import Sequence, Tuple, Type, TypeVar, final
+from typing import Sequence, Type, TypeVar, final
 
 from ..common import TypeHint, VarTuple
 from .essential import DirectMediator, Mediator, Provider, Request, RequestChecker, RequestHandler
@@ -66,7 +66,7 @@ class LocStackBoundingProvider(Provider):
         self._loc_stack_checker = loc_stack_checker
         self._provider = provider
 
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[Type[Request], RequestChecker, RequestHandler]]:
         return [
             (request_cls, self._process_request_checker(request_cls, checker), handler)
             for request_cls, checker, handler in self._provider.get_request_handlers()
@@ -88,7 +88,7 @@ class LocatedRequestDelegatingProvider(Provider, ABC):
     REQUEST_CLASSES: VarTuple[Type[LocatedRequest]] = ()
 
     @final
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[Type[Request], RequestChecker, RequestHandler]]:
         request_checker = self.get_request_checker()
 
         def delegating_request_handler(mediator, request):

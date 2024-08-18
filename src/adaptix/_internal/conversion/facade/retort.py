@@ -1,7 +1,7 @@
 import inspect
 from functools import partial
 from inspect import Parameter, Signature
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type, TypeVar, overload
+from typing import Any, Callable, Dict, Iterable, Optional, Type, TypeVar, overload
 
 from adaptix import TypeHint
 
@@ -61,7 +61,7 @@ CallableT = TypeVar("CallableT", bound=Callable)
 class AdornedConversionRetort(OperatingRetort):
     def _calculate_derived(self) -> None:
         super()._calculate_derived()
-        self._simple_converter_cache: Dict[Tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
+        self._simple_converter_cache: Dict[tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         with self._clone() as clone:

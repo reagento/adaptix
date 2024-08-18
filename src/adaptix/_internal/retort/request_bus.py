@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Generic, Iterable, List, Optional, Tuple, TypeVar
+from typing import Any, Callable, Generic, Iterable, List, Optional, TypeVar
 
 from ..provider.essential import (
     AggregateCannotProvide,
@@ -35,7 +35,7 @@ class RequestRouter(ABC, Generic[RequestT]):
         mediator: DirectMediator,
         request: RequestT,
         search_offset: int,
-    ) -> Tuple[RequestHandler, int]:
+    ) -> tuple[RequestHandler, int]:
         """
         :raises: StopIteration
         """

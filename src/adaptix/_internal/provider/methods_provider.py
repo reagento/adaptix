@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Callable, ClassVar, Dict, Iterable, Mapping, Sequence, Tuple, Type, TypeVar, final
+from typing import Any, Callable, ClassVar, Dict, Iterable, Mapping, Sequence, Type, TypeVar, final
 
 from ..type_tools import get_all_type_hints, is_subclass_soft, normalize_type, strip_tags
 from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler
@@ -66,7 +66,7 @@ class MethodsProvider(Provider):
         return AlwaysTrueRequestChecker()
 
     @final
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[Type[Request], RequestChecker, RequestHandler]]:
         request_checker = self._get_request_checker()
         return [
             (request_cls, request_checker, getattr(self, method_name))

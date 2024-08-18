@@ -1,8 +1,8 @@
 import tomllib
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from pathlib import Path
 from textwrap import dedent, indent
-from typing import Iterable
 
 from docutils.statemachine import StringList
 from sphinx.util import docutils

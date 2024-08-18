@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 
 class IssueState(str, Enum):
@@ -100,9 +100,9 @@ class Issue:
     state_reason: Optional[StateReason]
     title: str
     user: Optional[SimpleUser]
-    labels: List[Label]
+    labels: list[Label]
     assignee: Optional[SimpleUser]
-    assignees: Optional[List[SimpleUser]]
+    assignees: Optional[list[SimpleUser]]
     locked: bool
     active_lock_reason: Optional[str]
     comments: int
@@ -120,4 +120,4 @@ class Issue:
 
 @dataclass
 class GetRepoIssuesResponse:
-    data: List[Issue]
+    data: list[Issue]

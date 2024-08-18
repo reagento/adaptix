@@ -1,5 +1,5 @@
 from itertools import islice
-from typing import Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Dict, List, Optional, Sequence, TypeVar, Union
 
 from ..common import TypeHint
 from ..provider.essential import DirectMediator, Request, RequestChecker, RequestHandler
@@ -9,7 +9,7 @@ from ..type_tools import normalize_type
 from .request_bus import RequestRouter
 
 RequestT = TypeVar("RequestT", bound=Request)
-CheckerAndHandler = Tuple[RequestChecker, RequestHandler]
+CheckerAndHandler = tuple[RequestChecker, RequestHandler]
 
 
 class SimpleRouter(RequestRouter[RequestT]):
@@ -23,7 +23,7 @@ class SimpleRouter(RequestRouter[RequestT]):
         mediator: DirectMediator,
         request: RequestT,
         search_offset: int,
-    ) -> Tuple[RequestHandler, int]:
+    ) -> tuple[RequestHandler, int]:
         for i, (checker, handler) in enumerate(
             islice(self._checkers_and_handlers, search_offset, None),
             start=search_offset,
@@ -51,7 +51,7 @@ class LocatedRequestRouter(RequestRouter[LocatedRequest]):
         mediator: DirectMediator,
         request: LocatedRequest,
         search_offset: int,
-    ) -> Tuple[RequestHandler, int]:
+    ) -> tuple[RequestHandler, int]:
         try:
             origin = normalize_type(request.last_loc.type).origin
         except ValueError:

@@ -1,7 +1,7 @@
 import collections.abc
 from collections import defaultdict
 from dataclasses import replace
-from typing import Callable, DefaultDict, Dict, Mapping, Optional, Tuple
+from typing import Callable, DefaultDict, Dict, Mapping, Optional
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -21,7 +21,7 @@ CollectionsMapping = collections.abc.Mapping
 
 @for_predicate(Dict)
 class DictProvider(LoaderProvider, DumperProvider):
-    def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
+    def _extract_key_value(self, request: LocatedRequest) -> tuple[BaseNormType, BaseNormType]:
         norm = try_normalize_type(request.last_loc.type)
         return norm.args
 
@@ -252,7 +252,7 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
     def __init__(self, default_factory: Optional[Callable] = None):
         self.default_factory = default_factory
 
-    def _extract_key_value(self, request: LocatedRequest) -> Tuple[BaseNormType, BaseNormType]:
+    def _extract_key_value(self, request: LocatedRequest) -> tuple[BaseNormType, BaseNormType]:
         norm = try_normalize_type(request.last_loc.type)
         return norm.args
 

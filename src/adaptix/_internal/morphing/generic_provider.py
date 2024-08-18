@@ -9,7 +9,6 @@ from ..common import Dumper, Loader, TypeHint
 from ..compat import CompatExceptionGroup
 from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
-from ..feature_requirement import HAS_PY_39
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStack
 from ..provider.located_request import LocatedRequestDelegatingProvider, LocatedRequestT, for_predicate
@@ -457,7 +456,7 @@ def path_like_dumper(data):
     return data.__fspath__()
 
 
-@for_predicate(PathLike[str] if HAS_PY_39 else PathLike)
+@for_predicate(PathLike[str])
 class PathLikeProvider(LoaderProvider, DumperProvider):
     _impl = Path
 

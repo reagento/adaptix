@@ -1,7 +1,7 @@
 # ruff: noqa: SIM113
 import collections.abc
 import typing
-from typing import Collection, Mapping, Tuple
+from typing import Collection, Mapping
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -26,7 +26,7 @@ from .utils import try_normalize_type
 CollectionsMapping = collections.abc.Mapping
 
 
-@for_predicate(Tuple)
+@for_predicate(tuple)
 class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(request.last_loc.type)

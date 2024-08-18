@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Any, Callable, DefaultDict, Dict, List, Mapping, Optional, Sequence, Tuple, Type, TypeVar
+from typing import Any, Callable, DefaultDict, Dict, List, Mapping, Optional, Sequence, Type, TypeVar
 
 from ..provider.essential import (
     AggregateCannotProvide,
@@ -38,7 +38,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
     def _provide_from_recipe(self, request: Request[T]) -> T:
         return self._create_mediator(request).provide(request)
 
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[Type[Request], RequestChecker, RequestHandler]]:
         def retort_request_handler(mediator, request):
             return self._provide_from_recipe(request)
 

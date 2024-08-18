@@ -1,7 +1,7 @@
 import typing
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any, Tuple
+from typing import Annotated, Any, Tuple
 from unittest.mock import ANY
 
 import attr
@@ -9,7 +9,6 @@ import pytest
 from attrs import Factory, define, field
 from tests_helpers import ATTRS_WITH_ALIAS, requires
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     DefaultFactory,
     DefaultFactoryWithSelf,
@@ -739,11 +738,10 @@ def test_none_attr_custom_init():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated():
     @define
     class WithAnnotated:
-        a: typing.Annotated[int, "metadata"]
+        a: Annotated[int, "metadata"]
 
     assert (
         get_attrs_shape(WithAnnotated)
@@ -774,7 +772,7 @@ def test_annotated():
             output=OutputShape(
                 fields=(
                     OutputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="a",
                         default=NoDefault(),
                         accessor=create_attr_accessor("a", is_required=True),

@@ -1,9 +1,8 @@
 import typing
-import warnings
 from types import MappingProxyType
-from typing import AbstractSet, Sequence, Set, Tuple
+from typing import AbstractSet, Sequence, Set
 
-from ...feature_requirement import HAS_PY_39, HAS_TYPED_DICT_REQUIRED
+from ...feature_requirement import HAS_TYPED_DICT_REQUIRED
 from ...type_tools import BaseNormType, get_all_type_hints, is_typed_dict_class, normalize_type
 from ..definitions import (
     FullShape,
@@ -45,7 +44,7 @@ def _extract_item_type(tp) -> BaseNormType:
 
 
 def _fetch_required_keys(
-    fields: Sequence[Tuple[str, BaseNormType]],
+    fields: Sequence[tuple[str, BaseNormType]],
     frozen_required_keys: AbstractSet[str],
 ) -> Set:
     required_keys = set(frozen_required_keys)
@@ -60,19 +59,8 @@ def _fetch_required_keys(
     return required_keys
 
 
-def _make_requirement_determinant_from_keys(required_fields: set):
+def _make_requirement_determinant(required_fields: set):
     return lambda name: name in required_fields
-
-
-if HAS_PY_39:
-    def _make_requirement_determinant_from_type(tp):
-        required_fields = tp.__required_keys__
-        return lambda name: name in required_fields
-else:
-    def _make_requirement_determinant_from_type(tp):
-        warnings.warn(TypedDictAt38Warning(), stacklevel=3)
-        is_total = tp.__total__
-        return lambda name: is_total
 
 
 def get_typed_dict_shape(tp) -> FullShape:
@@ -90,9 +78,9 @@ def get_typed_dict_shape(tp) -> FullShape:
             [(field_name, field_tp) for (field_name, _), field_tp in zip(type_hints, norm_types)],
             tp.__required_keys__,
         )
-        requirement_determinant = _make_requirement_determinant_from_keys(required_keys)
+        requirement_determinant = _make_requirement_determinant(required_keys)
     else:
-        requirement_determinant = _make_requirement_determinant_from_type(tp)
+        requirement_determinant = _make_requirement_determinant(tp.__required_keys__)
 
     return Shape(
         input=InputShape(

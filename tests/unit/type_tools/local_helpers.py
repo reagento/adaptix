@@ -1,7 +1,7 @@
 import operator
 import typing
 from functools import reduce
-from typing import List, Union
+from typing import Union
 
 from adaptix import TypeHint
 from adaptix._internal.type_tools import BaseNormType, NormParamSpecMarker, NormTV, make_norm_type, normalize_type
@@ -67,7 +67,7 @@ def assert_strict_equal(left: BaseNormType, right: BaseNormType):
     hash(right)
 
 
-def assert_normalize(tp: TypeHint, origin: TypeHint, args: List[typing.Hashable]):
+def assert_normalize(tp: TypeHint, origin: TypeHint, args: list[typing.Hashable]):
     assert_strict_equal(
         normalize_type(tp),
         make_norm_type(origin, tuple(args), source=tp),

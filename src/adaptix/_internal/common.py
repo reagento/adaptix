@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Callable, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Type, TypeVar, Union
 
 K_contra = TypeVar("K_contra", contravariant=True)
 V_co = TypeVar("V_co", covariant=True)
@@ -12,7 +12,7 @@ OneArgCoercer = Callable[[Any], Any]
 
 TypeHint = Any
 
-VarTuple = Tuple[T, ...]
+VarTuple = tuple[T, ...]
 
 Catchable = Union[Type[BaseException], VarTuple[Type[BaseException]]]
 

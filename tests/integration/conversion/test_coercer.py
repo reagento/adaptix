@@ -3,12 +3,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Set, Tuple, Union
 
 import pytest
-from tests_helpers import cond_list
 from tests_helpers.model_spec import ModelSpec
 
 from adaptix import P
 from adaptix._internal.conversion.facade.provider import from_param, link
-from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix.conversion import coercer, impl_converter
 
 
@@ -154,15 +152,10 @@ SOME_DATETIME_UTC = SOME_DATETIME_NAIVE.replace(tzinfo=timezone.utc)
         pytest.param(Optional[str], Optional[str], None, None),
         pytest.param(Optional[bool], Optional[int], True, True),
         pytest.param(Optional[str], Optional[int], "123", 123),
-        *cond_list(
-            HAS_ANNOTATED,
-            lambda: [
-                pytest.param(Optional[typing.Annotated[int, "meta"]], Optional[int], 123, 123),
-                pytest.param(Optional[int], Optional[typing.Annotated[int, "meta"]], 123, 123),
-                pytest.param(typing.Annotated[Optional[int], "meta"], Optional[int], 123, 123),
-                pytest.param(Optional[int], typing.Annotated[Optional[int], "meta"], 123, 123),
-            ],
-        ),
+        pytest.param(Optional[typing.Annotated[int, "meta"]], Optional[int], 123, 123),
+        pytest.param(Optional[int], Optional[typing.Annotated[int, "meta"]], 123, 123),
+        pytest.param(typing.Annotated[Optional[int], "meta"], Optional[int], 123, 123),
+        pytest.param(Optional[int], typing.Annotated[Optional[int], "meta"], 123, 123),
     ],
 )
 def test_optional(model_spec, src_tp, dst_tp, src_value, dst_value):

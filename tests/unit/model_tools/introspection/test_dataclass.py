@@ -7,7 +7,7 @@ from unittest.mock import ANY
 import pytest
 from tests_helpers import requires
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_PY_310
+from adaptix._internal.feature_requirement import HAS_PY_310
 from adaptix._internal.model_tools.definitions import (
     DefaultFactory,
     DefaultValue,
@@ -375,7 +375,6 @@ def test_forward_ref():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated():
     @dataclass
     class WithAnnotated:

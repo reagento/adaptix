@@ -1,7 +1,7 @@
 import collections.abc
 import contextlib
 from dataclasses import dataclass, replace
-from typing import AbstractSet, Callable, Dict, List, Mapping, Optional, Set, Tuple
+from typing import AbstractSet, Callable, Dict, List, Mapping, Optional, Set
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -232,7 +232,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             return False
         return field.is_optional and not self._is_extra_target(field)
 
-    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:
         namespace = BuiltinCascadeNamespace()
         state = self._create_state(namespace)
 

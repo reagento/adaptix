@@ -3,10 +3,9 @@ from typing import List, Optional
 import pytest
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
-from tests_helpers import cond_list, sqlalchemy_equals
+from tests_helpers import sqlalchemy_equals
 
 from adaptix import Retort
-from adaptix._internal.feature_requirement import HAS_STD_CLASSES_GENERICS
 
 
 def test_simple(accum):
@@ -95,10 +94,7 @@ def test_o2o_relationship(accum):
     "list_tp",
     [
         List,
-        *cond_list(
-            HAS_STD_CLASSES_GENERICS,
-            [list],
-        ),
+        list,
     ],
 )
 def test_o2m_relationship(accum, list_tp):

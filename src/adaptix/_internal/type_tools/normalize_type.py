@@ -10,6 +10,7 @@ from dataclasses import InitVar, dataclass
 from enum import Enum, EnumMeta
 from functools import lru_cache, partial
 from typing import (
+    Annotated,
     Any,
     Callable,
     ClassVar,
@@ -25,7 +26,6 @@ from typing import (
     NoReturn,
     Optional,
     Sequence,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -34,7 +34,6 @@ from typing import (
 
 from ..common import TypeHint, VarTuple
 from ..feature_requirement import (
-    HAS_ANNOTATED,
     HAS_PARAM_SPEC,
     HAS_PY_310,
     HAS_PY_311,
@@ -243,7 +242,7 @@ class NormTV(BaseNormType):
         return self._var
 
     @property
-    def args(self) -> Tuple[()]:
+    def args(self) -> tuple[()]:
         return ()
 
     @property
@@ -288,7 +287,7 @@ class NormTVTuple(BaseNormType):
         return self._var
 
     @property
-    def args(self) -> Tuple[()]:
+    def args(self) -> tuple[()]:
         return ()
 
     @property
@@ -325,7 +324,7 @@ class NormParamSpecMarker(BaseNormType, ABC):
         return self._param_spec
 
     @property
-    def args(self) -> Tuple[()]:
+    def args(self) -> tuple[()]:
         return ()
 
     @property
@@ -418,7 +417,7 @@ def make_norm_type(
         if not all(type(arg) in [int, bool, str, bytes] or isinstance(type(arg), EnumMeta) for arg in args):
             raise TypeError
         return _LiteralNormType(args, source=source)
-    if HAS_ANNOTATED and origin == typing.Annotated:
+    if origin == Annotated:
         return _AnnotatedNormType(args, source=source)
     if isinstance(origin, TypeVar):
         raise TypeError
@@ -563,9 +562,8 @@ class TypeNormalizer:
     MUST_SUBSCRIBED_ORIGINS = [
         ClassVar, Final, Literal,
         Union, Optional, InitVar,
+        Annotated,
     ]
-    if HAS_ANNOTATED:
-        MUST_SUBSCRIBED_ORIGINS.append(typing.Annotated)
     if HAS_TYPE_GUARD:
         MUST_SUBSCRIBED_ORIGINS.append(typing.TypeGuard)
     if HAS_TYPED_DICT_REQUIRED:
@@ -584,7 +582,7 @@ class TypeNormalizer:
         if origin is None or origin is NoneType:
             return _NormType(None, (), source=tp)
 
-    @_aspect_storage.add(condition=HAS_ANNOTATED)
+    @_aspect_storage.add
     def _norm_annotated(self, tp, origin, args):
         if origin == typing.Annotated:
             return _AnnotatedNormType(
@@ -664,7 +662,7 @@ class TypeNormalizer:
     @_aspect_storage.add
     def _norm_tuple(self, tp, origin, args):
         if origin == tuple:
-            if tp in (tuple, Tuple):  # not subscribed values
+            if tp in (tuple, typing.Tuple):  # not subscribed values
                 return _NormType(
                     tuple,
                     (ANY_NT, ...),

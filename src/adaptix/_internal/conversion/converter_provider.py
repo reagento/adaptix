@@ -1,7 +1,7 @@
 import itertools
 from functools import update_wrapper
 from inspect import Parameter, Signature
-from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Mapping, Optional, Sequence
 
 from ..code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ..code_tools.code_builder import CodeBuilder
@@ -84,7 +84,7 @@ class BuiltinConverterProvider(ConverterProvider):
         stub_function: Optional[Callable],
         closure_name: str,
         coercer: Coercer,
-    ) -> Tuple[str, Mapping[str, object]]:
+    ) -> tuple[str, Mapping[str, object]]:
         builder = CodeBuilder()
         namespace = BuiltinCascadeNamespace(occupied=signature.parameters.keys())
         namespace.add_outer_constant("_closure_signature", signature)

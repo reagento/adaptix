@@ -1,7 +1,7 @@
 import contextlib
 from dataclasses import replace
 from string import Template
-from typing import Any, Callable, Dict, Mapping, NamedTuple, Tuple
+from typing import Any, Callable, Dict, Mapping, NamedTuple
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -119,7 +119,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         self._id_to_field: Dict[str, OutputField] = {field.id: field for field in self._shape.fields}
         self._model_identity = model_identity
 
-    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:
         body_builder = CodeBuilder()
 
         namespace = BuiltinCascadeNamespace()
