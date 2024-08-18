@@ -3,11 +3,12 @@ import inspect
 import re
 import runpy
 import sys
+from collections.abc import Generator, Reversible, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, is_dataclass
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any, Callable, Dict, Generator, List, Optional, Reversible, Sequence, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
 from uuid import uuid4
 
 import pytest

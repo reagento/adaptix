@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Generic, Iterable, List, Optional, TypeVar
+from collections.abc import Iterable
+from typing import Any, Callable, Generic, List, Optional, TypeVar
 
 from ..provider.essential import (
     AggregateCannotProvide,

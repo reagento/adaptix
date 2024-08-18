@@ -1,9 +1,10 @@
 import collections.abc
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, Collection, Iterable, Literal, Mapping, Optional, Sequence, Set, Type, TypeVar, Union
+from typing import Any, Literal, Optional, Set, Type, TypeVar, Union
 
 from ..common import Dumper, Loader, TypeHint
 from ..compat import CompatExceptionGroup

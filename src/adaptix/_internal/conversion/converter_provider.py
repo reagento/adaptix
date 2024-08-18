@@ -1,7 +1,8 @@
 import itertools
+from collections.abc import Mapping, Sequence
 from functools import update_wrapper
 from inspect import Parameter, Signature
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Callable, Optional
 
 from ..code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ..code_tools.code_builder import CodeBuilder

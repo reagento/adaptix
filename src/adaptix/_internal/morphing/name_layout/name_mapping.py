@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Callable, Iterable, Mapping, Optional, Union
+from typing import Callable, Optional, Union
 
 from ...common import EllipsisType
 from ...model_tools.definitions import BaseField, BaseShape, OutputField, is_valid_field_id

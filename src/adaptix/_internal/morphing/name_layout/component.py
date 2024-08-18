@@ -1,6 +1,7 @@
 from collections import defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar, Union
+from typing import Callable, DefaultDict, Dict, List, Optional, Set, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools.definitions import (

@@ -1,6 +1,7 @@
 import inspect
+from collections.abc import Container, Iterable
 from dataclasses import dataclass, replace
-from typing import Any, Container, Generic, Iterable, Optional, TypeVar, Union, cast
+from typing import Any, Generic, Optional, TypeVar, Union, cast
 
 from ..common import TypeHint
 from ..model_tools.definitions import (

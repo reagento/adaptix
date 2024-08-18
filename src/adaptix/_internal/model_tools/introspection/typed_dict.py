@@ -1,6 +1,7 @@
 import typing
+from collections.abc import Sequence
 from types import MappingProxyType
-from typing import AbstractSet, Sequence, Set
+from typing import AbstractSet, Set
 
 from ...feature_requirement import HAS_TYPED_DICT_REQUIRED
 from ...type_tools import BaseNormType, get_all_type_hints, is_typed_dict_class, normalize_type

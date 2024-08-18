@@ -1,7 +1,8 @@
 import inspect
+from collections.abc import Iterable
 from functools import partial
 from inspect import Parameter, Signature
-from typing import Any, Callable, Dict, Iterable, Optional, Type, TypeVar, overload
+from typing import Any, Callable, Dict, Optional, Type, TypeVar, overload
 
 from adaptix import TypeHint
 

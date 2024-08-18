@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from typing import Sequence, Type, TypeVar, final
+from typing import Type, TypeVar, final
 
 from ..common import TypeHint, VarTuple
 from .essential import DirectMediator, Mediator, Provider, Request, RequestChecker, RequestHandler

@@ -1,8 +1,9 @@
 import contextlib
 from collections import deque
+from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 from textwrap import dedent
-from typing import Deque, Generator, Iterable, Sequence, TypeVar
+from typing import Deque, TypeVar
 
 CB = TypeVar("CB", bound="CodeBuilder")
 

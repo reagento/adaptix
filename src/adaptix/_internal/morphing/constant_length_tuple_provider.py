@@ -1,7 +1,7 @@
 # ruff: noqa: SIM113
 import collections.abc
 import typing
-from typing import Collection, Mapping
+from collections.abc import Collection, Mapping
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup

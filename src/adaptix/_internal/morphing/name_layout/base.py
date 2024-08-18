@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, Mapping, TypeVar, Union
+from collections.abc import Iterable, Mapping
+from typing import TypeVar, Union
 
 from ...common import VarTuple
 from ...provider.essential import Mediator

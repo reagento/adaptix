@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import AbstractSet, Mapping, Optional, Set
+from collections.abc import Mapping
+from typing import AbstractSet, Optional, Set
 
 from .utils import NAME_TO_BUILTIN
 

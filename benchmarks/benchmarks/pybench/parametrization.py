@@ -1,5 +1,6 @@
 import itertools
-from typing import Any, Iterable, Iterator, Mapping, Optional, TypeVar
+from collections.abc import Iterable, Iterator, Mapping
+from typing import Any, Optional, TypeVar
 
 P = TypeVar("P", bound="Parametrizer")
 

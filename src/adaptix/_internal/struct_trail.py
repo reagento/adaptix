@@ -1,6 +1,7 @@
 from collections import deque
+from collections.abc import Reversible, Sequence
 from dataclasses import dataclass
-from typing import Any, Reversible, Sequence, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from .feature_requirement import HAS_NATIVE_EXC_GROUP
 

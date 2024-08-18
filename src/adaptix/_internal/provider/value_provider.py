@@ -1,4 +1,5 @@
-from typing import Generic, Sequence, Type, TypeVar
+from collections.abc import Sequence
+from typing import Generic, Type, TypeVar
 
 from .essential import Provider, Request, RequestChecker, RequestHandler
 from .request_checkers import AlwaysTrueRequestChecker

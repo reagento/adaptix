@@ -1,5 +1,6 @@
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, fields
-from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, Optional, Type, TypeVar
+from typing import Any, Callable, ClassVar, Generic, Optional, Type, TypeVar
 
 from ..datastructures import ClassMap
 from ..type_tools import strip_alias

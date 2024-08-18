@@ -1,6 +1,6 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
 
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker

@@ -3,7 +3,8 @@ import itertools
 import re
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from .common import VarTuple
 

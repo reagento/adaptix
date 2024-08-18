@@ -1,6 +1,7 @@
 import itertools
+from collections.abc import Sequence
 from enum import Enum
-from typing import Sequence, Type, TypeVar
+from typing import Type, TypeVar
 
 from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler
 

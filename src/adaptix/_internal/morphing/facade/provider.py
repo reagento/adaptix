@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from datetime import timezone
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import Any, Callable, Iterable, List, Mapping, Optional, TypeVar, Union
+from typing import Any, Callable, List, Optional, TypeVar, Union
 
 from ...common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField

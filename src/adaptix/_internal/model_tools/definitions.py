@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
+from collections.abc import Hashable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, FrozenSet, Generic, Hashable, Mapping, Optional, TypeVar, Union
+from typing import Any, Callable, FrozenSet, Generic, Optional, TypeVar, Union
 
 from ..common import Catchable, TypeHint, VarTuple
 from ..feature_requirement import DistributionRequirement, DistributionVersionRequirement

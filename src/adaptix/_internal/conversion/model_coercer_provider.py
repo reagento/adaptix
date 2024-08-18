@@ -1,5 +1,6 @@
+from collections.abc import Iterable, Mapping
 from inspect import Parameter, Signature
-from typing import Callable, Iterable, List, Mapping, Optional, Union
+from typing import Callable, List, Optional, Union
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer

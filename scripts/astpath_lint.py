@@ -10,9 +10,10 @@ import argparse
 import os
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
 from fnmatch import fnmatch
-from typing import Iterable, List
+from typing import List
 
 from astpath.search import file_to_xml_ast, find_in_ast
 

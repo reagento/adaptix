@@ -5,6 +5,7 @@ import types
 import typing
 from abc import ABC, abstractmethod
 from collections import abc as c_abc, defaultdict
+from collections.abc import Hashable, Iterable, Sequence
 from copy import copy
 from dataclasses import InitVar, dataclass
 from enum import Enum, EnumMeta
@@ -18,14 +19,11 @@ from typing import (
     Dict,
     Final,
     ForwardRef,
-    Hashable,
-    Iterable,
     List,
     Literal,
     NewType,
     NoReturn,
     Optional,
-    Sequence,
     Type,
     TypeVar,
     Union,

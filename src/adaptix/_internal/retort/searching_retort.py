@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Any, Callable, DefaultDict, Dict, List, Mapping, Optional, Sequence, Type, TypeVar
+from collections.abc import Mapping, Sequence
+from typing import Any, Callable, DefaultDict, Dict, List, Optional, Type, TypeVar
 
 from ..provider.essential import (
     AggregateCannotProvide,

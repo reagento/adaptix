@@ -1,6 +1,6 @@
 import re
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Iterable, Sequence
 
 from adaptix import P, Retort, name_mapping
 

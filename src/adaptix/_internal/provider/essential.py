@@ -1,7 +1,8 @@
 import typing
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Generic, Iterable, Optional, Sequence, Type, TypeVar, final
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypeVar, final
 
 from ..common import VarTuple
 from ..compat import CompatExceptionGroup

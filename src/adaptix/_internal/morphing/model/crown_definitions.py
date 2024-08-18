@@ -1,5 +1,6 @@
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generic, Mapping, Sequence, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools.definitions import BaseShape, DefaultFactory, DefaultValue, InputShape, OutputShape

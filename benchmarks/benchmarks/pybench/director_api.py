@@ -7,12 +7,13 @@ import os
 import subprocess
 import sys
 from argparse import ArgumentParser, Namespace
+from collections.abc import Iterable, Mapping, Sequence
 from copy import copy
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, Iterable, Mapping, Optional, Sequence, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 
 import pyperf
 from pyperf._cli import format_checks

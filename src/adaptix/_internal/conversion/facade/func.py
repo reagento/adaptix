@@ -1,4 +1,5 @@
-from typing import Any, Callable, Iterable, Optional, Type, TypeVar, overload
+from collections.abc import Iterable
+from typing import Any, Callable, Optional, Type, TypeVar, overload
 
 from ...common import TypeHint
 from ...provider.essential import Provider

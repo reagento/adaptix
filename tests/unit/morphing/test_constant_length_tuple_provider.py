@@ -1,7 +1,8 @@
 import collections
 import collections.abc
 import typing
-from typing import Mapping, Tuple
+from collections.abc import Mapping
+from typing import Tuple
 
 import pytest
 from tests_helpers import raises_exc, requires, with_trail

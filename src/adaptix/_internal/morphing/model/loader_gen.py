@@ -1,7 +1,8 @@
 import collections.abc
 import contextlib
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from typing import AbstractSet, Callable, Dict, List, Mapping, Optional, Set
+from typing import AbstractSet, Callable, Dict, List, Optional, Set
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder

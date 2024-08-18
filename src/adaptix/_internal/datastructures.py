@@ -1,25 +1,6 @@
+from collections.abc import Collection, Hashable, Iterable, Iterator, KeysView, Mapping, Reversible, Sized, ValuesView
 from itertools import islice
-from typing import (
-    AbstractSet,
-    Callable,
-    Collection,
-    Dict,
-    Generic,
-    Hashable,
-    Iterable,
-    Iterator,
-    KeysView,
-    Mapping,
-    Optional,
-    Protocol,
-    Reversible,
-    Sized,
-    Type,
-    TypeVar,
-    Union,
-    ValuesView,
-    runtime_checkable,
-)
+from typing import AbstractSet, Callable, Dict, Generic, Optional, Protocol, Type, TypeVar, Union, runtime_checkable
 
 from .common import VarTuple
 from .utils import MappingHashWrapper

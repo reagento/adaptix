@@ -1,9 +1,10 @@
 from abc import ABC
+from collections.abc import ByteString, Iterable, Mapping, MutableMapping
 from datetime import date, datetime, time
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
-from typing import Any, ByteString, Iterable, Mapping, MutableMapping, Optional, Type, TypeVar, overload
+from typing import Any, Optional, Type, TypeVar, overload
 from uuid import UUID
 
 from ...common import Dumper, Loader, TypeHint, VarTuple

@@ -1,6 +1,7 @@
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Generic, Mapping, Sequence, TypeVar, Union
+from typing import Generic, TypeVar, Union
 
 from ...utils import Omittable, Omitted
 

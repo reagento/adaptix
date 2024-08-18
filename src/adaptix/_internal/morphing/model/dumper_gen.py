@@ -1,7 +1,8 @@
 import contextlib
+from collections.abc import Mapping
 from dataclasses import replace
 from string import Template
-from typing import Any, Callable, Dict, Mapping, NamedTuple
+from typing import Any, Callable, Dict, NamedTuple
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder

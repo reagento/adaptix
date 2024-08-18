@@ -1,5 +1,6 @@
+from collections.abc import Container, Mapping
 from dataclasses import dataclass, field
-from typing import Any, Callable, Container, Dict, Mapping, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Type, TypeVar, Union
 
 from ..common import TypeHint
 from ..model_tools.definitions import Accessor, Default

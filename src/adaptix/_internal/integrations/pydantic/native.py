@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Literal, Mapping, Optional, TypeVar, Union
+from collections.abc import Mapping
+from typing import Any, Callable, Dict, Literal, Optional, TypeVar, Union
 
 from ...common import Dumper, Loader
 from ...morphing.load_error import LoadError

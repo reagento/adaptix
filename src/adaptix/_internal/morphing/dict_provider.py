@@ -1,7 +1,8 @@
 import collections.abc
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import replace
-from typing import Callable, DefaultDict, Dict, Mapping, Optional
+from typing import Callable, DefaultDict, Dict, Optional
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup

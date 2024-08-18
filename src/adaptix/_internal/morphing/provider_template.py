@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Container, final
+from collections.abc import Container
+from typing import final
 
 from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator

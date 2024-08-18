@@ -1,10 +1,11 @@
 import collections
 import math
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping, Sequence
 from enum import Enum, EnumMeta, Flag
 from functools import reduce
 from operator import or_
-from typing import Any, Iterable, Mapping, Optional, Sequence, Type, TypeVar, Union, final
+from typing import Any, Optional, Type, TypeVar, Union, final
 
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider

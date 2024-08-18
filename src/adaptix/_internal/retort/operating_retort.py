@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Generic, Iterable, Optional, Sequence, Type, TypeVar
+from collections.abc import Iterable, Sequence
+from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar
 
 from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.json_schema.definitions import JSONSchema

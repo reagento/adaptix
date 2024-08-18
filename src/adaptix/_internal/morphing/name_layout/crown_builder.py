@@ -1,8 +1,9 @@
 import math
 from abc import ABC, abstractmethod
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from itertools import groupby
-from typing import Dict, Generic, Mapping, Sequence, TypeVar, Union, cast
+from typing import Dict, Generic, TypeVar, Union, cast
 
 from ..model.crown_definitions import (
     BaseDictCrown,

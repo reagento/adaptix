@@ -1,7 +1,8 @@
 import typing
+from collections.abc import Collection, Hashable, Mapping
 from dataclasses import dataclass, replace
 from itertools import chain
-from typing import Callable, Collection, Dict, Generic, Hashable, Mapping, TypeVar
+from typing import Callable, Dict, Generic, TypeVar
 
 from ..common import TypeHint
 from ..feature_requirement import HAS_TV_TUPLE, HAS_UNPACK

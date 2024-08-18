@@ -1,9 +1,10 @@
 import inspect
 import itertools
 import typing
+from collections.abc import Sequence
 from functools import cached_property
 from inspect import Parameter, Signature
-from typing import Any, Callable, Optional, Protocol, Sequence, Type
+from typing import Any, Callable, Optional, Protocol, Type
 
 try:
     from pydantic import AliasChoices, BaseModel

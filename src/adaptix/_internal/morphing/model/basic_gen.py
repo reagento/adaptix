@@ -1,7 +1,8 @@
 import itertools
 from abc import ABC, abstractmethod
+from collections.abc import Collection, Container, Iterable, Mapping
 from dataclasses import dataclass
-from typing import AbstractSet, Any, Callable, Collection, Container, Dict, Iterable, List, Mapping, Set, TypeVar, Union
+from typing import AbstractSet, Any, Callable, Dict, List, Set, TypeVar, Union
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler

@@ -1,5 +1,6 @@
 import inspect
-from typing import Any, Generic, List, Mapping, Optional, TypeVar
+from collections.abc import Mapping
+from typing import Any, Generic, List, Optional, TypeVar
 
 from ...common import TypeHint
 

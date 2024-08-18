@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from itertools import islice
-from typing import Dict, List, Optional, Sequence, TypeVar, Union
+from typing import Dict, List, Optional, TypeVar, Union
 
 from ..common import TypeHint
 from ..provider.essential import DirectMediator, Request, RequestChecker, RequestHandler

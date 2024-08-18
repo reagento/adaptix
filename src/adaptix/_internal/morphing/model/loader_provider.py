@@ -1,5 +1,6 @@
+from collections.abc import Mapping
 from functools import partial
-from typing import AbstractSet, Mapping
+from typing import AbstractSet
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
