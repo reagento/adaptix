@@ -30,7 +30,7 @@ class FuncWrapper:
         return NotImplemented
 
     def __hash__(self):
-        return 100
+        return hash(self._key)
 
 
 CallableT = TypeVar("CallableT", bound=Callable)
