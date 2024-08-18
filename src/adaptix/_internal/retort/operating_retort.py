@@ -15,13 +15,22 @@ from .searching_retort import SearchingRetort
 
 
 class FuncWrapper:
-    __slots__ = ("__call__",)
+    __slots__ = ("__call__", "_key")
 
-    def __init__(self):
+    def __init__(self, key):
+        self._key = key
         self.__call__ = None
 
     def set_func(self, func):
-        self.__call__ = func.__call__
+        self.__call__ = func
+
+    def __eq__(self, other):
+        if isinstance(other, FuncWrapper):
+            return self._key == other._key
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self._key)
 
 
 CallableT = TypeVar("CallableT", bound=Callable)
@@ -32,16 +41,20 @@ class LocatedRequestCallableRecursionResolver(RecursionResolver[LocatedRequest, 
         self._loc_to_stub: Dict[AnyLoc, FuncWrapper] = {}
 
     def track_request(self, request: LocatedRequest) -> Optional[Any]:
-        if request.loc_stack.count(request.last_loc) == 1:
+        last_loc = request.last_loc
+        if sum(loc == last_loc for loc in request.loc_stack) == 1:
             return None
 
-        stub = FuncWrapper()
-        self._loc_to_stub[request.last_loc] = stub
+        if last_loc in self._loc_to_stub:
+            return self._loc_to_stub[last_loc]
+        stub = FuncWrapper(last_loc)
+        self._loc_to_stub[last_loc] = stub
         return stub
 
     def track_response(self, request: LocatedRequest, response: CallableT) -> None:
-        if request.last_loc in self._loc_to_stub:
-            self._loc_to_stub.pop(request.last_loc).set_func(response)
+        last_loc = request.last_loc
+        if last_loc in self._loc_to_stub:
+            self._loc_to_stub.pop(last_loc).set_func(response)
 
 
 RequestT = TypeVar("RequestT", bound=Request)

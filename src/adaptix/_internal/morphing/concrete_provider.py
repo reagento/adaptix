@@ -39,6 +39,9 @@ class IsoFormatProvider(MorphingProvider):
         return f"{type(self)}(cls={self._cls})"
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return mediator.cached_call(self._make_loader)
+
+    def _make_loader(self):
         raw_loader = self._cls.fromisoformat
 
         def isoformat_loader(data):
@@ -48,10 +51,12 @@ class IsoFormatProvider(MorphingProvider):
                 raise TypeLoadError(str, data)
             except ValueError:
                 raise ValueLoadError("Invalid isoformat string", data)
-
         return isoformat_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.cached_call(self._make_dumper)
+
+    def _make_dumper(self):
         return self._cls.isoformat
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -67,6 +72,9 @@ class DatetimeFormatProvider(MorphingProvider):
         return f"{type(self)}(fmt={self._fmt})"
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return mediator.cached_call(self._make_loader)
+
+    def _make_loader(self):
         fmt = self._fmt
 
         def datetime_format_loader(data):
@@ -80,6 +88,9 @@ class DatetimeFormatProvider(MorphingProvider):
         return datetime_format_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.cached_call(self._make_dumper)
+
+    def _make_dumper(self):
         fmt = self._fmt
 
         def datetime_format_dumper(data: datetime):
@@ -97,6 +108,9 @@ class DatetimeTimestampProvider(MorphingProvider):
         self._tz = tz
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return mediator.cached_call(self._make_loader)
+
+    def _make_loader(self):
         tz = self._tz
 
         def datetime_timestamp_loader(data):
@@ -115,9 +129,11 @@ class DatetimeTimestampProvider(MorphingProvider):
         return datetime_timestamp_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.cached_call(self._make_dumper)
+
+    def _make_dumper(self):
         def datetime_timestamp_dumper(data: datetime):
             return data.timestamp()
-
         return datetime_timestamp_dumper
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -138,6 +154,9 @@ class DateTimestampProvider(MorphingProvider):
         return False
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return mediator.cached_call(self._make_loader)
+
+    def _make_loader(self):
         def date_timestamp_loader(data):
             try:
                 # Pure-Python implementation and C-extension implementation
@@ -171,6 +190,9 @@ class DateTimestampProvider(MorphingProvider):
         return pydate_timestamp_loader if self._is_pydatetime() else date_timestamp_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.cached_call(self._make_dumper)
+
+    def _make_dumper(self):
         def date_timestamp_dumper(data: date):
             dt = datetime(
                 year=data.year,
@@ -179,7 +201,6 @@ class DateTimestampProvider(MorphingProvider):
                 tzinfo=timezone.utc,
             )
             return dt.timestamp()
-
         return date_timestamp_dumper
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -191,6 +212,9 @@ class SecondsTimedeltaProvider(MorphingProvider):
     _OK_TYPES = (int, float, Decimal)
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return mediator.cached_call(self._make_loader)
+
+    def _make_loader(self):
         ok_types = self._OK_TYPES
 
         def timedelta_loader(data):
@@ -201,6 +225,9 @@ class SecondsTimedeltaProvider(MorphingProvider):
         return timedelta_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.cached_call(self._make_dumper)
+
+    def _make_dumper(self):
         return timedelta.total_seconds
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -227,11 +254,12 @@ class NoneProvider(MorphingProvider):
 
 class _Base64DumperMixin(DumperProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.cached_call(self._make_dumper)
+
+    def _make_dumper(self):
         def bytes_base64_dumper(data):
             return b2a_base64(data, newline=False).decode("ascii")
-
         return bytes_base64_dumper
-
 
 class _Base64JSONSchemaMixin(JSONSchemaProvider):
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -244,6 +272,9 @@ B64_PATTERN = re.compile(b"[A-Za-z0-9+/]*={0,2}")
 @for_predicate(bytes)
 class BytesBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, MorphingProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return mediator.cached_call(self._make_loader)
+
+    def _make_loader(self):
         def bytes_base64_loader(data):
             try:
                 encoded = data.encode("ascii")
@@ -257,7 +288,6 @@ class BytesBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, MorphingPr
                 return a2b_base64(encoded)
             except binascii.Error as e:
                 raise ValueLoadError(str(e), data)
-
         return bytes_base64_loader
 
 
@@ -266,29 +296,36 @@ class BytesIOBase64Provider(_Base64JSONSchemaMixin, MorphingProvider):
     _BYTES_PROVIDER = BytesBase64Provider()
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        bytes_base64_loader = self._BYTES_PROVIDER.provide_loader(mediator, request)
+        return mediator.cached_call(
+            self._make_loader,
+            loader=self._BYTES_PROVIDER.provide_loader(mediator, request),
+        )
 
+    def _make_loader(self, loader: Loader):
         def bytes_io_base64_loader(data):
-            return BytesIO(bytes_base64_loader(data))
-
+            return BytesIO(loader(data))
         return bytes_io_base64_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.cached_call(self._make_dumper)
+
+    def _make_dumper(self):
         def bytes_io_base64_dumper(data: BytesIO):
             return b2a_base64(data.getvalue(), newline=False).decode("ascii")
-
         return bytes_io_base64_dumper
 
 
 @for_predicate(typing.IO[bytes])
 class IOBytesBase64Provider(BytesIOBase64Provider, _Base64JSONSchemaMixin, MorphingProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+        return mediator.cached_call(self._make_dumper)
+
+    def _make_dumper(self):
         def io_bytes_base64_dumper(data: typing.IO[bytes]):
             if data.seekable():
                 data.seek(0)
 
             return b2a_base64(data.read(), newline=False).decode("ascii")
-
         return io_bytes_base64_dumper
 
 
@@ -302,9 +339,14 @@ class BytearrayBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, Morphi
             replace(request, loc_stack=request.loc_stack.replace_last_type(bytes)),
         )
 
-        def bytearray_base64_loader(data):
-            return bytearray(bytes_loader(data))
+        return mediator.cached_call(
+            self._make_loader,
+            loader=bytes_loader,
+        )
 
+    def _make_loader(self, loader: Loader):
+        def bytearray_base64_loader(data):
+            return bytearray(loader(data))
         return bytearray_base64_loader
 
 
@@ -318,6 +360,9 @@ class RegexPatternProvider(MorphingProvider):
         self.flags = flags
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+        return mediator.cached_call(self._make_loader)
+
+    def _make_loader(self):
         flags = self.flags
         re_compile = re.compile
 
@@ -360,6 +405,12 @@ class ScalarProvider(MorphingProvider, Generic[T]):
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
+        return mediator.cached_call(
+            self._make_loader,
+            strict_coercion=strict_coercion,
+        )
+
+    def _make_loader(self, *, strict_coercion: bool):
         return self._strict_coercion_loader if strict_coercion else self._lax_coercion_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:

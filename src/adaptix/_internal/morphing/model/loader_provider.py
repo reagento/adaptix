@@ -10,7 +10,7 @@ from ...provider.essential import CannotProvide, Mediator
 from ...provider.fields import input_field_to_loc
 from ...provider.located_request import LocatedRequest
 from ...provider.shape_provider import InputShapeRequest, provide_generic_resolved_shape
-from ...utils import Omittable, Omitted
+from ...utils import AlwaysEqualHashWrapper, Omittable, Omitted, OrderedMappingHashWrapper
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.request_cls import JSONSchemaRequest
 from ..json_schema.schema_model import JSONValue
@@ -18,6 +18,7 @@ from ..model.loader_gen import BuiltinModelLoaderGen, ModelInputJSONSchemaGen, M
 from ..provider_template import JSONSchemaProvider, LoaderProvider
 from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from .basic_gen import (
+    CodeGenHook,
     ModelLoaderGen,
     compile_closure_with_globals_capturing,
     fetch_code_gen_hook,
@@ -41,16 +42,54 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
         self._props = props
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        loader_gen = self._fetch_model_loader_gen(mediator, request)
-        closure_name = self._get_closure_name(request)
+        shape = self._fetch_shape(mediator, request)
+        name_layout = self._fetch_name_layout(mediator, request, shape)
+        field_loaders = self._fetch_field_loaders(mediator, request, shape)
+        return mediator.cached_call(
+            self._make_loader,
+            shape=shape,
+            name_layout=name_layout,
+            field_loaders=OrderedMappingHashWrapper(field_loaders),
+            strict_coercion=mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack)),
+            debug_trail=mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack)),
+            code_gen_hook=AlwaysEqualHashWrapper(fetch_code_gen_hook(mediator, request.loc_stack)),
+            model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
+            closure_name=self._get_closure_name(request),
+            file_name=self._get_file_name(request),
+        )
+
+    def _make_loader(
+        self,
+        *,
+        shape: InputShape,
+        name_layout: InputNameLayout,
+        field_loaders: OrderedMappingHashWrapper[Mapping[str, Loader]],
+        strict_coercion: bool,
+        debug_trail: DebugTrail,
+        code_gen_hook: AlwaysEqualHashWrapper[CodeGenHook],
+        model_identity: str,
+        closure_name: str,
+        file_name: str,
+    ) -> Loader:
+        skipped_fields = get_skipped_fields(shape, name_layout)
+        self._validate_params(shape, name_layout, skipped_fields)
+        loader_gen = self._create_model_loader_gen(
+            debug_trail=debug_trail,
+            strict_coercion=strict_coercion,
+            shape=shape,
+            name_layout=name_layout,
+            field_loaders=field_loaders.mapping,
+            skipped_fields=skipped_fields,
+            model_identity=model_identity,
+        )
         loader_code, loader_namespace = loader_gen.produce_code(closure_name=closure_name)
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
-            code_gen_hook=fetch_code_gen_hook(mediator, request.loc_stack),
+            code_gen_hook=code_gen_hook.value,
             namespace=loader_namespace,
             closure_code=loader_code,
             closure_name=closure_name,
-            file_name=self._get_file_name(request),
+            file_name=file_name,
         )
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:

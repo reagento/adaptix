@@ -20,7 +20,6 @@ from ...provider.loc_stack_filtering import LocStackChecker
 from ...provider.located_request import LocatedRequest
 from ...provider.overlay_schema import Overlay, Schema, provide_schema
 from ...retort.operating_retort import OperatingRetort
-from ...retort.searching_retort import ProviderNotFoundError
 from ...special_cases_optimization import with_default_clause
 from ...utils import Omittable, get_prefix_groups
 from ..model.crown_definitions import (
@@ -105,7 +104,7 @@ def apply_lsc(
 
 class NameMappingRetort(OperatingRetort):
     def provide_name_mapping(self, request: NameMappingRequest) -> Optional[KeyPath]:
-        return self._facade_provide(request, error_message="")
+        return self._provide_from_recipe(request)
 
 
 class BuiltinStructureMaker(StructureMaker):
@@ -146,7 +145,7 @@ class BuiltinStructureMaker(StructureMaker):
                         loc_stack=request.loc_stack.append_with(field_to_loc(field)),
                     ),
                 )
-            except ProviderNotFoundError:
+            except CannotProvide:
                 path = (generated_key, )
 
             if path is None:

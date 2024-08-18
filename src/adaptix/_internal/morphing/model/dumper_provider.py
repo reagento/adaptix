@@ -10,13 +10,14 @@ from ...provider.essential import CannotProvide, Mediator
 from ...provider.fields import output_field_to_loc
 from ...provider.located_request import LocatedRequest
 from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
-from ...utils import Omittable, Omitted
+from ...utils import AlwaysEqualHashWrapper, Omittable, Omitted, OrderedMappingHashWrapper
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.request_cls import JSONSchemaRequest
 from ..json_schema.schema_model import JSONValue
 from ..provider_template import DumperProvider, JSONSchemaProvider
 from ..request_cls import DebugTrailRequest, DumperRequest
 from .basic_gen import (
+    CodeGenHook,
     ModelDumperGen,
     compile_closure_with_globals_capturing,
     fetch_code_gen_hook,
@@ -33,16 +34,49 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
         self._name_sanitizer = name_sanitizer
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        dumper_gen = self._fetch_model_dumper_gen(mediator, request)
-        closure_name = self._get_closure_name(request)
+        shape = self._fetch_shape(mediator, request)
+        name_layout = self._fetch_name_layout(mediator, request, shape)
+        fields_dumpers = self._fetch_field_dumpers(mediator, request, shape)
+        return mediator.cached_call(
+            self._make_dumper,
+            shape=shape,
+            name_layout=name_layout,
+            fields_dumpers=OrderedMappingHashWrapper(fields_dumpers),
+            debug_trail=mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack)),
+            code_gen_hook=AlwaysEqualHashWrapper(fetch_code_gen_hook(mediator, request.loc_stack)),
+            model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
+            closure_name=self._get_closure_name(request),
+            file_name=self._get_file_name(request),
+        )
+
+    def _make_dumper(
+        self,
+        *,
+        shape: OutputShape,
+        name_layout: OutputNameLayout,
+        fields_dumpers: OrderedMappingHashWrapper[Mapping[str, Dumper]],
+        debug_trail: DebugTrail,
+        code_gen_hook: AlwaysEqualHashWrapper[CodeGenHook],
+        model_identity: str,
+        closure_name: str,
+        file_name: str,
+    ) -> Dumper:
+        self._validate_params(shape, name_layout)
+        dumper_gen = self._create_model_dumper_gen(
+            debug_trail=debug_trail,
+            shape=shape,
+            name_layout=name_layout,
+            fields_dumpers=fields_dumpers.mapping,
+            model_identity=model_identity,
+        )
         dumper_code, dumper_namespace = dumper_gen.produce_code(closure_name=closure_name)
         return compile_closure_with_globals_capturing(
             compiler=self._get_compiler(),
-            code_gen_hook=fetch_code_gen_hook(mediator, request.loc_stack),
+            code_gen_hook=code_gen_hook.value,
             namespace=dumper_namespace,
             closure_code=dumper_code,
             closure_name=closure_name,
-            file_name=self._get_file_name(request),
+            file_name=file_name,
         )
 
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:

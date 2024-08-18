@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Any, Callable, DefaultDict, List, Mapping, Optional, Sequence, Tuple, Type, TypeVar
+from typing import Any, Callable, DefaultDict, Dict, List, Mapping, Optional, Sequence, Tuple, Type, TypeVar
 
 from ..provider.essential import (
     AggregateCannotProvide,
@@ -36,7 +36,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
     """A retort that can operate as Retort but have no predefined providers and no high-level user interface"""
 
     def _provide_from_recipe(self, request: Request[T]) -> T:
-        return self._create_mediator(request).provide_from_next()
+        return self._create_mediator(request).provide(request)
 
     def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
         def retort_request_handler(mediator, request):
@@ -90,6 +90,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
             request_cls: self._create_error_representor(request_cls)
             for request_cls in self._request_cls_to_router
         }
+        self._call_cache: Dict[Any, Any] = {}
 
     def _create_request_cls_to_router(self, full_recipe: Sequence[Provider]) -> Mapping[Type[Request], RequestRouter]:
         request_cls_to_checkers_and_handlers: DefaultDict[Type[Request], List[CheckerAndHandler]] = defaultdict(list)
@@ -148,6 +149,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
     def _create_mediator(self, init_request: Request[T]) -> Mediator[T]:
         request_buses: Mapping[Type[Request], RequestBus]
         no_request_bus_error_maker = self._create_no_request_bus_error_maker()
+        call_cache = self._call_cache
 
         def mediator_factory(request, search_offset):
             return BuiltinMediator(
@@ -155,6 +157,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
                 request=request,
                 search_offset=search_offset,
                 no_request_bus_error_maker=no_request_bus_error_maker,
+                call_cache=call_cache,
             )
 
         request_buses = {

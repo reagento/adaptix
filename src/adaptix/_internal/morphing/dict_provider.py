@@ -44,7 +44,8 @@ class DictProvider(LoaderProvider, DumperProvider):
         debug_trail = mediator.mandatory_provide(
             DebugTrailRequest(loc_stack=request.loc_stack),
         )
-        return self._make_loader(
+        return mediator.cached_call(
+            self._make_loader,
             key_loader=key_loader,
             value_loader=value_loader,
             debug_trail=debug_trail,
@@ -159,7 +160,8 @@ class DictProvider(LoaderProvider, DumperProvider):
         debug_trail = mediator.mandatory_provide(
             DebugTrailRequest(loc_stack=request.loc_stack),
         )
-        return self._make_dumper(
+        return mediator.cached_call(
+            self._make_dumper,
             key_dumper=key_dumper,
             value_dumper=value_dumper,
             debug_trail=debug_trail,
@@ -261,18 +263,24 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
             mediator,
             replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )
+
+        return mediator.cached_call(
+            self._make_loader,
+            loader=dict_loader,
+        )
+
+    def _make_loader(self, loader: Loader):
         default_factory = self.default_factory
 
         def defaultdict_loader(data):
-            return defaultdict(default_factory, dict_loader(data))
+            return defaultdict(default_factory, loader(data))
 
         return defaultdict_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
         dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
-
         return self._DICT_PROVIDER.provide_dumper(
             mediator,
-            replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
+            request=replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
         )
