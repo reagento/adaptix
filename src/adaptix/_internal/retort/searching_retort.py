@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
-from typing import Any, Callable, DefaultDict, Optional, Type, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from ..provider.essential import (
     AggregateCannotProvide,
@@ -39,7 +39,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
     def _provide_from_recipe(self, request: Request[T]) -> T:
         return self._create_mediator(request).provide(request)
 
-    def get_request_handlers(self) -> Sequence[tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
         def retort_request_handler(mediator, request):
             return self._provide_from_recipe(request)
 
@@ -93,8 +93,8 @@ class SearchingRetort(BaseRetort, Provider, ABC):
         }
         self._call_cache: dict[Any, Any] = {}
 
-    def _create_request_cls_to_router(self, full_recipe: Sequence[Provider]) -> Mapping[Type[Request], RequestRouter]:
-        request_cls_to_checkers_and_handlers: DefaultDict[Type[Request], list[CheckerAndHandler]] = defaultdict(list)
+    def _create_request_cls_to_router(self, full_recipe: Sequence[Provider]) -> Mapping[type[Request], RequestRouter]:
+        request_cls_to_checkers_and_handlers: defaultdict[type[Request], list[CheckerAndHandler]] = defaultdict(list)
         for provider in full_recipe:
             for request_cls, checker, handler in provider.get_request_handlers():
                 request_cls_to_checkers_and_handlers[request_cls].append((checker, handler))
@@ -107,22 +107,22 @@ class SearchingRetort(BaseRetort, Provider, ABC):
     @abstractmethod
     def _create_router(
         self,
-        request_cls: Type[RequestT],
+        request_cls: type[RequestT],
         checkers_and_handlers: Sequence[CheckerAndHandler],
     ) -> RequestRouter[RequestT]:
         ...
 
     @abstractmethod
-    def _create_error_representor(self, request_cls: Type[RequestT]) -> ErrorRepresentor[RequestT]:
+    def _create_error_representor(self, request_cls: type[RequestT]) -> ErrorRepresentor[RequestT]:
         ...
 
     @abstractmethod
-    def _create_recursion_resolver(self, request_cls: Type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
+    def _create_recursion_resolver(self, request_cls: type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
         ...
 
     def _create_request_bus(
         self,
-        request_cls: Type[RequestT],
+        request_cls: type[RequestT],
         router: RequestRouter[RequestT],
         mediator_factory: Callable[[Request, int], Mediator],
     ) -> RequestBus:
@@ -148,7 +148,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
         return no_request_bus_error_maker
 
     def _create_mediator(self, init_request: Request[T]) -> Mediator[T]:
-        request_buses: Mapping[Type[Request], RequestBus]
+        request_buses: Mapping[type[Request], RequestBus]
         no_request_bus_error_maker = self._create_no_request_bus_error_maker()
         call_cache = self._call_cache
 

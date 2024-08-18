@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Callable, Generic, Type, TypeVar
+from typing import Any, Callable, Generic, TypeVar
 
 from ..provider.essential import CannotProvide, Mediator, Request
 
@@ -26,7 +26,7 @@ class BuiltinMediator(Mediator[ResponseT], Generic[ResponseT]):
 
     def __init__(
         self,
-        request_buses: Mapping[Type[Request], RequestBus],
+        request_buses: Mapping[type[Request], RequestBus],
         request: Request,
         search_offset: int,
         no_request_bus_error_maker: Callable[[Request], CannotProvide],

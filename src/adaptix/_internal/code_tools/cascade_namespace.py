@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import AbstractSet, Optional, Set
+from typing import AbstractSet, Optional
 
 from .utils import NAME_TO_BUILTIN
 
@@ -37,7 +37,7 @@ class BuiltinCascadeNamespace(CascadeNamespace):
         self._constants = {} if constants is None else dict(constants)
         self._outer_constants = {} if outer_constants is None else dict(outer_constants)
         self._occupied = set() if occupied is None else occupied
-        self._variables: Set[str] = set()
+        self._variables: set[str] = set()
         self._allow_builtins = allow_builtins
 
     def try_add_constant(self, name: str, value: object) -> bool:

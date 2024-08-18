@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Hashable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, FrozenSet, Generic, Optional, TypeVar, Union
+from typing import Any, Callable, Generic, Optional, TypeVar, Union
 
 from ..common import Catchable, TypeHint, VarTuple
 from ..feature_requirement import DistributionRequirement, DistributionVersionRequirement
@@ -194,7 +194,7 @@ class BaseShape:
     See doc :class InputShape: and :class OutputShape: for more details
     """
     fields: VarTuple[BaseField]
-    overriden_types: FrozenSet[str]
+    overriden_types: frozenset[str]
     fields_dict: Mapping[str, BaseField] = field(init=False, hash=False, repr=False, compare=False)
 
     def _validate(self):

@@ -105,7 +105,7 @@ def test_outer_loading_bad_phone():
             [
                 with_trail(
                     UnionLoadError(
-                        f"while loading {Optional[List[NotifyTarget]]}",
+                        f"while loading {Optional[list[NotifyTarget]]}",
                         [
                             TypeLoadError(None, [{"type": "phone", "value": "+1-541-754-3010"}]),
                             AggregateLoadError(
