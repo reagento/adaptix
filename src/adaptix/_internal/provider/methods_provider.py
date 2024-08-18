@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Callable, ClassVar, Type, TypeVar, final
+from typing import Any, Callable, ClassVar, TypeVar, final
 
 from ..type_tools import get_all_type_hints, is_subclass_soft, normalize_type, strip_tags
 from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler
@@ -24,7 +24,7 @@ def method_handler(func: MethodHandler[P, T, R], /) -> MethodHandler[P, T, R]:
     return func
 
 
-def _infer_request_cls(func) -> Type[Request]:
+def _infer_request_cls(func) -> type[Request]:
     signature = inspect.signature(func)
 
     params = list(signature.parameters.values())
@@ -45,7 +45,7 @@ def _infer_request_cls(func) -> Type[Request]:
 
 
 class MethodsProvider(Provider):
-    _mp_cls_request_to_method_name: ClassVar[Mapping[Type[Request], str]] = {}
+    _mp_cls_request_to_method_name: ClassVar[Mapping[type[Request], str]] = {}
 
     def __init_subclass__(cls, **kwargs):
         own_spa = _collect_class_own_request_cls_dict(cls)
@@ -60,14 +60,14 @@ class MethodsProvider(Provider):
             cls._validate_request_cls(request_cls)
 
     @classmethod
-    def _validate_request_cls(cls, request_cls: Type[Request]) -> None:
+    def _validate_request_cls(cls, request_cls: type[Request]) -> None:
         pass
 
     def _get_request_checker(self) -> RequestChecker:
         return AlwaysTrueRequestChecker()
 
     @final
-    def get_request_handlers(self) -> Sequence[tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
         request_checker = self._get_request_checker()
         return [
             (request_cls, request_checker, getattr(self, method_name))
@@ -79,7 +79,7 @@ def _request_cls_attached_to_several_method_handlers(
     cls: type,
     name1: str,
     name2: str,
-    request_cls: Type[Request],
+    request_cls: type[Request],
 ):
     return TypeError(
         f"The {cls} has several @method_handler"
@@ -91,8 +91,8 @@ def _request_cls_attached_to_several_method_handlers(
 def _method_handler_has_different_request_cls(
     cls: type,
     name: str,
-    request_cls1: Type[Request],
-    request_cls2: Type[Request],
+    request_cls1: type[Request],
+    request_cls2: type[Request],
 ):
     return TypeError(
         f"The {cls} has @method_handler"
@@ -101,7 +101,7 @@ def _method_handler_has_different_request_cls(
     )
 
 
-_RequestClsToMethodName = dict[Type[Request], str]
+_RequestClsToMethodName = dict[type[Request], str]
 
 
 def _collect_class_own_request_cls_dict(cls) -> _RequestClsToMethodName:
@@ -129,7 +129,7 @@ def _collect_class_own_request_cls_dict(cls) -> _RequestClsToMethodName:
 
 
 def _merge_request_cls_dicts(cls: type, dict_iter: Iterable[_RequestClsToMethodName]) -> _RequestClsToMethodName:
-    name_to_request_cls: dict[str, Type[Request]] = {}
+    name_to_request_cls: dict[str, type[Request]] = {}
     request_cls_to_name: _RequestClsToMethodName = {}
     for dct in dict_iter:
         for request_cls, name in dct.items():

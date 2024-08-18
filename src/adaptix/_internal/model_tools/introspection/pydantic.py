@@ -4,7 +4,7 @@ import typing
 from collections.abc import Sequence
 from functools import cached_property
 from inspect import Parameter, Signature
-from typing import Any, Callable, Optional, Protocol, Type
+from typing import Any, Callable, Optional, Protocol
 
 try:
     from pydantic import AliasChoices, BaseModel
@@ -58,7 +58,7 @@ _config_defaults = {
 }
 
 
-def _get_config_value(tp: "Type[BaseModel]", key: str) -> Any:
+def _get_config_value(tp: "type[BaseModel]", key: str) -> Any:
     try:
         return tp.model_config[key]  # type: ignore[literal-required]
     except KeyError:
@@ -67,7 +67,7 @@ def _get_config_value(tp: "Type[BaseModel]", key: str) -> Any:
     return _config_defaults[key]
 
 
-def _get_field_parameters(tp: "Type[BaseModel]", field_name: str, field_info: "FieldInfo") -> Sequence[str]:
+def _get_field_parameters(tp: "type[BaseModel]", field_name: str, field_info: "FieldInfo") -> Sequence[str]:
     # AliasPath is ignored
     if field_info.validation_alias is None:
         parameters = [field_name]
@@ -80,7 +80,7 @@ def _get_field_parameters(tp: "Type[BaseModel]", field_name: str, field_info: "F
     return [param for param in parameters if param.isidentifier()]
 
 
-def _get_field_parameter_name(tp: "Type[BaseModel]", field_name: str, field_info: "FieldInfo") -> str:
+def _get_field_parameter_name(tp: "type[BaseModel]", field_name: str, field_info: "FieldInfo") -> str:
     parameters = _get_field_parameters(tp, field_name, field_info)
     if not parameters:
         raise ClarifiedIntrospectionError(
@@ -108,7 +108,7 @@ def _get_field_type(field_info: "FieldInfo") -> TypeHint:
     return field_info.annotation
 
 
-def _get_input_shape(tp: "Type[BaseModel]") -> InputShape:
+def _get_input_shape(tp: "type[BaseModel]") -> InputShape:
     if not _signature_is_self_with_kwargs_only(inspect.signature(tp.__init__)):
         raise ClarifiedIntrospectionError(
             "Pydantic model `__init__` must takes only self and one variable keyword parameter",
@@ -164,7 +164,7 @@ def _get_computed_field_type(field_id: str, computed_field_info: "ComputedFieldI
     return signature.return_annotation
 
 
-def _get_output_shape(tp: "Type[BaseModel]") -> OutputShape:
+def _get_output_shape(tp: "type[BaseModel]") -> OutputShape:
     type_hints = get_all_type_hints(tp)
     fields = itertools.chain(
         (

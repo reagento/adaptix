@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from functools import reduce
 from inspect import isabstract, isgenerator
 from re import Pattern
-from typing import Any, ClassVar, Optional, Type, TypeVar, Union, final
+from typing import Any, ClassVar, Optional, TypeVar, Union, final
 
 from ..common import TypeHint, VarTuple
 from ..datastructures import ImmutableStack
@@ -277,7 +277,7 @@ class LocStackPattern:
         return _ANY
 
     @classmethod
-    def _from_lsc(cls: Type[Pat], lsc: LocStackChecker) -> Pat:
+    def _from_lsc(cls: type[Pat], lsc: LocStackChecker) -> Pat:
         return cls((lsc, ))
 
     def _extend_stack(self: Pat, elements: Iterable[LocStackChecker]) -> Pat:

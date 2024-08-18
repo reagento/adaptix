@@ -2,7 +2,7 @@ import itertools
 from abc import ABC, abstractmethod
 from collections.abc import Collection, Container, Iterable, Mapping
 from dataclasses import dataclass
-from typing import AbstractSet, Any, Callable, Set, TypeVar, Union
+from typing import AbstractSet, Any, Callable, TypeVar, Union
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
@@ -107,7 +107,7 @@ def _inner_collect_used_direct_fields(crown: BaseCrown) -> Iterable[str]:
     raise TypeError
 
 
-def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
+def _collect_used_direct_fields(crown: BaseCrown) -> set[str]:
     lst = _inner_collect_used_direct_fields(crown)
 
     used_set = set()

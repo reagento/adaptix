@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List
 
 from adaptix import Retort, bound, dumper, enum_by_name, loader
 
@@ -35,7 +34,7 @@ literature_retort = Retort(
 @dataclass
 class Person:
     name: str
-    works: List[LiteraryWork]
+    works: list[LiteraryWork]
 
 
 retort = Retort(

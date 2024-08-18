@@ -2,7 +2,7 @@ import collections.abc
 import contextlib
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from typing import AbstractSet, Callable, Optional, Set
+from typing import AbstractSet, Callable, Optional
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -121,7 +121,7 @@ class GenState(Namer):
         self._parent_path: Optional[CrownPath] = None
         self._crown_stack: list[InpCrown] = [root_crown]
 
-        self.type_checked_type_paths: Set[CrownPath] = set()
+        self.type_checked_type_paths: set[CrownPath] = set()
         super().__init__(debug_trail=debug_trail, path_to_suffix={}, path=())
 
     @property
@@ -491,7 +491,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         )
         state.builder.empty_line()
 
-    def _get_dict_crown_required_keys(self, crown: InpDictCrown) -> Set[str]:
+    def _get_dict_crown_required_keys(self, crown: InpDictCrown) -> set[str]:
         return {
             key for key, value in crown.map.items()
             if not (isinstance(value, InpFieldCrown) and self._id_to_field[value.id].is_optional)

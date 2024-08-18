@@ -2,7 +2,7 @@ import collections.abc
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import replace
-from typing import Callable, DefaultDict, Optional
+from typing import Callable, Optional
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -246,7 +246,7 @@ class DictProvider(LoaderProvider, DumperProvider):
         return dict_dumper_dt_all
 
 
-@for_predicate(DefaultDict)
+@for_predicate(defaultdict)
 class DefaultDictProvider(LoaderProvider, DumperProvider):
     _DICT_PROVIDER = DictProvider()
 

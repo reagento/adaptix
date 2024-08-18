@@ -2,7 +2,7 @@ import typing
 from collections.abc import Collection, Hashable, Mapping
 from dataclasses import dataclass, replace
 from itertools import chain
-from typing import Callable, Dict, Generic, TypeVar
+from typing import Callable, Generic, TypeVar
 
 from ..common import TypeHint
 from ..feature_requirement import HAS_TV_TUPLE, HAS_UNPACK
@@ -86,7 +86,7 @@ class GenericResolver(Generic[K, M]):
         if not hasattr(tp, "__orig_bases__"):
             return members_storage
 
-        bases_members: Dict[K, TypeHint] = {}
+        bases_members: dict[K, TypeHint] = {}
         for base in reversed(tp.__orig_bases__):
             bases_members.update(self.get_resolved_members(base).members)
 

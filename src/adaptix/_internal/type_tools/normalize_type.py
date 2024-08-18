@@ -15,11 +15,8 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    DefaultDict,
-    Dict,
     Final,
     ForwardRef,
-    List,
     Literal,
     NewType,
     NoReturn,
@@ -468,7 +465,7 @@ def _replace_source_with_union(norm: BaseNormType, sources: list) -> BaseNormTyp
 NormAspect = Callable[["TypeNormalizer", Any, Any, tuple], Optional[BaseNormType]]
 
 
-class AspectStorage(List[str]):
+class AspectStorage(list[str]):
     @overload
     def add(self, *, condition: object = True) -> Callable[[NormAspect], NormAspect]:
         ...
@@ -500,9 +497,9 @@ TN = TypeVar("TN", bound="TypeNormalizer")
 class TypeNormalizer:
     def __init__(self, implicit_params_getter: ImplicitParamsGetter):
         self.implicit_params_getter = implicit_params_getter
-        self._namespace: Optional[Dict[str, Any]] = None
+        self._namespace: Optional[dict[str, Any]] = None
 
-    def _with_namespace(self: TN, namespace: Dict[str, Any]) -> TN:
+    def _with_namespace(self: TN, namespace: dict[str, Any]) -> TN:
         self_copy = copy(self)
         self_copy._namespace = namespace
         return self_copy
@@ -745,7 +742,7 @@ class TypeNormalizer:
             return _LiteralNormType(args, source=tp)
 
     def _unfold_union_args(self, norm_args: Iterable[N]) -> Iterable[N]:
-        result: List[N] = []
+        result: list[N] = []
         for norm in norm_args:
             if norm.origin == Union:
                 result.extend(norm.args)
@@ -754,7 +751,7 @@ class TypeNormalizer:
         return result
 
     def _dedup_union_args(self, args: Iterable[BaseNormType]) -> Iterable[BaseNormType]:
-        args_to_sources: DefaultDict[BaseNormType, List[Any]] = defaultdict(list)
+        args_to_sources: defaultdict[BaseNormType, list[Any]] = defaultdict(list)
 
         for arg in args:
             args_to_sources[arg].append(arg.source)
@@ -768,7 +765,7 @@ class TypeNormalizer:
 
     def _merge_literals(self, args: Iterable[N]) -> Sequence[N]:
         result = []
-        lit_args: List[N] = []
+        lit_args: list[N] = []
         for norm in args:
             if norm.origin == Literal:
                 lit_args.extend(norm.args)
@@ -779,7 +776,7 @@ class TypeNormalizer:
             result.append(_create_norm_literal(lit_args))
         return result
 
-    _UNION_ORIGINS: List[Any] = [Union]
+    _UNION_ORIGINS: list[Any] = [Union]
     if HAS_TYPE_UNION_OP:
         _UNION_ORIGINS.append(types.UnionType)
 

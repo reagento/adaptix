@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type, TypeVar, overload
+from typing import Any, Optional, TypeVar, overload
 
 from ...common import TypeHint
 from .retort import Retort
@@ -8,7 +8,7 @@ T = TypeVar("T")
 
 
 @overload
-def load(data: Any, tp: Type[T], /) -> T:
+def load(data: Any, tp: type[T], /) -> T:
     ...
 
 
@@ -22,7 +22,7 @@ def load(data: Any, tp: TypeHint, /):
 
 
 @overload
-def dump(data: T, tp: Type[T], /) -> Any:
+def dump(data: T, tp: type[T], /) -> Any:
     ...
 
 

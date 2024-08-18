@@ -1,7 +1,7 @@
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Callable, DefaultDict, Optional, Set, TypeVar, Union
+from typing import Callable, Optional, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools.definitions import (
@@ -164,7 +164,7 @@ class BuiltinStructureMaker(StructureMaker):
         request: LocatedRequest,
         fields_to_paths: Iterable[FieldAndPath],
     ) -> None:
-        paths_to_fields: DefaultDict[KeyPath, list[AnyField]] = defaultdict(list)
+        paths_to_fields: defaultdict[KeyPath, list[AnyField]] = defaultdict(list)
         for field, path in fields_to_paths:
             if path is not None:
                 paths_to_fields[path].append(field)
@@ -216,7 +216,7 @@ class BuiltinStructureMaker(StructureMaker):
             )
 
     def _iterate_sub_paths(self, paths: Iterable[KeyPath]) -> Iterable[tuple[KeyPath, Key]]:
-        yielded: Set[tuple[KeyPath, Key]] = set()
+        yielded: set[tuple[KeyPath, Key]] = set()
         for path in paths:
             for i in range(len(path) - 1, -1, -1):
                 result = path[:i], path[i]
@@ -226,9 +226,9 @@ class BuiltinStructureMaker(StructureMaker):
                 yielded.add(result)
                 yield result
 
-    def _get_paths_to_list(self, request: LocatedRequest, paths: Iterable[KeyPath]) -> Mapping[KeyPath, Set[int]]:
-        paths_to_lists: DefaultDict[KeyPath, Set[int]] = defaultdict(set)
-        paths_to_dicts: Set[KeyPath] = set()
+    def _get_paths_to_list(self, request: LocatedRequest, paths: Iterable[KeyPath]) -> Mapping[KeyPath, set[int]]:
+        paths_to_lists: defaultdict[KeyPath, set[int]] = defaultdict(set)
+        paths_to_dicts: set[KeyPath] = set()
         for sub_path, key in self._iterate_sub_paths(paths):
             if isinstance(key, int):
                 if sub_path in paths_to_dicts:
@@ -368,7 +368,7 @@ class BuiltinSievesMaker(SievesMaker):
 
 
 def _paths_to_branches(paths_to_leaves: PathsTo[LeafBaseCrown]) -> Iterable[tuple[KeyPath, Key]]:
-    yielded_branch_path: Set[KeyPath] = set()
+    yielded_branch_path: set[KeyPath] = set()
     for path in paths_to_leaves:
         for i in range(len(path) - 1, -2, -1):
             sub_path = path[:i]

@@ -4,7 +4,7 @@ from datetime import date, datetime, time
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
-from typing import Any, Optional, Type, TypeVar, overload
+from typing import Any, Optional, TypeVar, overload
 from uuid import UUID
 
 from ...common import Dumper, Loader, TypeHint, VarTuple
@@ -213,7 +213,7 @@ class AdornedRetort(OperatingRetort):
             ValueProvider(DebugTrailRequest, self._debug_trail),
         )
 
-    def get_loader(self, tp: Type[T]) -> Loader[T]:
+    def get_loader(self, tp: type[T]) -> Loader[T]:
         try:
             return self._loader_cache[tp]
         except KeyError:
@@ -222,7 +222,7 @@ class AdornedRetort(OperatingRetort):
         self._loader_cache[tp] = loader_
         return loader_
 
-    def _make_loader(self, tp: Type[T]) -> Loader[T]:
+    def _make_loader(self, tp: type[T]) -> Loader[T]:
         loader_ = self._facade_provide(
             LoaderRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
             error_message=f"Cannot produce loader for type {tp!r}",
@@ -239,7 +239,7 @@ class AdornedRetort(OperatingRetort):
 
         return loader_
 
-    def get_dumper(self, tp: Type[T]) -> Dumper[T]:
+    def get_dumper(self, tp: type[T]) -> Dumper[T]:
         try:
             return self._dumper_cache[tp]
         except KeyError:
@@ -248,7 +248,7 @@ class AdornedRetort(OperatingRetort):
         self._dumper_cache[tp] = dumper_
         return dumper_
 
-    def _make_dumper(self, tp: Type[T]) -> Dumper[T]:
+    def _make_dumper(self, tp: type[T]) -> Dumper[T]:
         dumper_ = self._facade_provide(
             DumperRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
             error_message=f"Cannot produce dumper for type {tp!r}",
@@ -266,7 +266,7 @@ class AdornedRetort(OperatingRetort):
         return dumper_
 
     @overload
-    def load(self, data: Any, tp: Type[T], /) -> T:
+    def load(self, data: Any, tp: type[T], /) -> T:
         ...
 
     @overload
@@ -277,7 +277,7 @@ class AdornedRetort(OperatingRetort):
         return self.get_loader(tp)(data)
 
     @overload
-    def dump(self, data: T, tp: Type[T], /) -> Any:
+    def dump(self, data: T, tp: type[T], /) -> Any:
         ...
 
     @overload
