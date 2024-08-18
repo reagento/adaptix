@@ -2,7 +2,7 @@ import inspect
 import typing
 from inspect import Parameter, Signature
 from types import MappingProxyType
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from ...common import VarTuple
 from ...feature_requirement import HAS_PY_312
@@ -20,7 +20,7 @@ from ..definitions import (
 )
 from .typed_dict import get_typed_dict_shape
 
-_PARAM_KIND_CONV: Dict[Any, ParamKind] = {
+_PARAM_KIND_CONV: dict[Any, ParamKind] = {
     Parameter.POSITIONAL_ONLY: ParamKind.POS_ONLY,
     Parameter.POSITIONAL_OR_KEYWORD: ParamKind.POS_OR_KW,
     Parameter.KEYWORD_ONLY: ParamKind.KW_ONLY,

@@ -453,7 +453,7 @@ class BenchmarkDirector:
         self.data_dir = data_dir
         self.env_spec = env_spec
         self.plot_params = plot_params
-        self.schemas: List[BenchSchema] = list(schemas)
+        self.schemas: list[BenchSchema] = list(schemas)
         self.check_params = check_params
 
     def add(self, *schemas: BenchSchema) -> None:

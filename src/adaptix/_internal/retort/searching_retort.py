@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
-from typing import Any, Callable, DefaultDict, Dict, List, Optional, Type, TypeVar
+from typing import Any, Callable, DefaultDict, Optional, Type, TypeVar
 
 from ..provider.essential import (
     AggregateCannotProvide,
@@ -69,7 +69,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
         return exc if exc.is_demonstrative else None
 
     def _extract_demonstrative_exc(self, exc: AggregateCannotProvide) -> Optional[CannotProvide]:
-        demonstrative_exc_list: List[CannotProvide] = []
+        demonstrative_exc_list: list[CannotProvide] = []
         for sub_exc in exc.exceptions:
             if isinstance(sub_exc, AggregateCannotProvide):
                 sub_exc = self._extract_demonstrative_exc(sub_exc)  # type: ignore[assignment]  # noqa: PLW2901
@@ -91,10 +91,10 @@ class SearchingRetort(BaseRetort, Provider, ABC):
             request_cls: self._create_error_representor(request_cls)
             for request_cls in self._request_cls_to_router
         }
-        self._call_cache: Dict[Any, Any] = {}
+        self._call_cache: dict[Any, Any] = {}
 
     def _create_request_cls_to_router(self, full_recipe: Sequence[Provider]) -> Mapping[Type[Request], RequestRouter]:
-        request_cls_to_checkers_and_handlers: DefaultDict[Type[Request], List[CheckerAndHandler]] = defaultdict(list)
+        request_cls_to_checkers_and_handlers: DefaultDict[Type[Request], list[CheckerAndHandler]] = defaultdict(list)
         for provider in full_recipe:
             for request_cls, checker, handler in provider.get_request_handlers():
                 request_cls_to_checkers_and_handlers[request_cls].append((checker, handler))

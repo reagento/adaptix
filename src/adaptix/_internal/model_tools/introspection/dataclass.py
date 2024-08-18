@@ -1,6 +1,5 @@
 import inspect
 from dataclasses import MISSING as DC_MISSING, Field as DCField, fields as dc_fields, is_dataclass
-from typing import Dict
 
 from ...feature_requirement import HAS_PY_310
 from ...type_tools import get_all_type_hints, is_class_var, normalize_type
@@ -22,7 +21,7 @@ from ..definitions import (
 )
 
 
-def all_dc_fields(cls) -> Dict[str, DCField]:
+def all_dc_fields(cls) -> dict[str, DCField]:
     """Builtin introspection function hides
     some fields like InitVar or ClassVar.
     That function returns full dict

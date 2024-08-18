@@ -1,5 +1,5 @@
 from collections.abc import Iterable, Sequence
-from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar
+from typing import Any, Callable, Generic, Optional, Type, TypeVar
 
 from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.json_schema.definitions import JSONSchema
@@ -39,7 +39,7 @@ CallableT = TypeVar("CallableT", bound=Callable)
 
 class LocatedRequestCallableRecursionResolver(RecursionResolver[LocatedRequest, CallableT], Generic[CallableT]):
     def __init__(self) -> None:
-        self._loc_to_stub: Dict[AnyLoc, FuncWrapper] = {}
+        self._loc_to_stub: dict[AnyLoc, FuncWrapper] = {}
 
     def track_request(self, request: LocatedRequest) -> Optional[Any]:
         last_loc = request.last_loc

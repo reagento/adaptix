@@ -2,7 +2,7 @@ import collections.abc
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import replace
-from typing import Callable, DefaultDict, Dict, Optional
+from typing import Callable, DefaultDict, Optional
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
@@ -20,7 +20,7 @@ from .utils import try_normalize_type
 CollectionsMapping = collections.abc.Mapping
 
 
-@for_predicate(Dict)
+@for_predicate(dict)
 class DictProvider(LoaderProvider, DumperProvider):
     def _extract_key_value(self, request: LocatedRequest) -> tuple[BaseNormType, BaseNormType]:
         norm = try_normalize_type(request.last_loc.type)
@@ -259,7 +259,7 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         key, value = self._extract_key_value(request)
-        dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
+        dict_type_hint = dict[key.source, value.source]  # type: ignore[misc, name-defined]
         dict_loader = self._DICT_PROVIDER.provide_loader(
             mediator,
             replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
@@ -280,7 +280,7 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
-        dict_type_hint = Dict[key.source, value.source]  # type: ignore[misc, name-defined]
+        dict_type_hint = dict[key.source, value.source]  # type: ignore[misc, name-defined]
         return self._DICT_PROVIDER.provide_dumper(
             mediator,
             request=replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),

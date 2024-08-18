@@ -2,7 +2,7 @@
 import builtins
 import math
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 BUILTIN_TO_NAME = {
     getattr(builtins, name): name
@@ -88,7 +88,7 @@ def _get_complex_literal_expr(obj: object) -> Optional[str]:  # noqa: PLR0911
     return None
 
 
-_CLS_TO_FACTORY_LITERAL: Dict[Any, str] = {
+_CLS_TO_FACTORY_LITERAL: dict[Any, str] = {
     list: "[]",
     dict: "{}",
     tuple: "()",

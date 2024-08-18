@@ -2,7 +2,7 @@ import contextlib
 from collections.abc import Mapping
 from dataclasses import replace
 from string import Template
-from typing import Any, Callable, Dict, NamedTuple
+from typing import Any, Callable, NamedTuple
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -46,8 +46,8 @@ class GenState:
         self.builder = builder
         self.namespace = namespace
 
-        self.field_id_to_path: Dict[str, CrownPath] = {}
-        self.path_to_suffix: Dict[CrownPath, str] = {}
+        self.field_id_to_path: dict[str, CrownPath] = {}
+        self.path_to_suffix: dict[CrownPath, str] = {}
 
         self._last_path_idx = 0
         self._path: CrownPath = ()
@@ -117,7 +117,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
             if isinstance(self._name_layout.extra_move, ExtraTargets)
             else ()
         )
-        self._id_to_field: Dict[str, OutputField] = {field.id: field for field in self._shape.fields}
+        self._id_to_field: dict[str, OutputField] = {field.id: field for field in self._shape.fields}
         self._model_identity = model_identity
 
     def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:

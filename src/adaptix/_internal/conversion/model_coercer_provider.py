@@ -1,6 +1,6 @@
 from collections.abc import Iterable, Mapping
 from inspect import Parameter, Signature
-from typing import Callable, List, Optional, Union
+from typing import Callable, Optional, Union
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
@@ -227,7 +227,7 @@ class ModelCoercerProvider(CoercerProvider):
         request: CoercerRequest,
         linking: FunctionLinking,
     ) -> BroachingPlan:
-        args: List[FuncCallArg[BroachingPlan]] = []
+        args: list[FuncCallArg[BroachingPlan]] = []
         field_to_sub_plan = self._generate_sub_plan(
             mediator,
             request,
@@ -329,7 +329,7 @@ class ModelCoercerProvider(CoercerProvider):
         field_to_linking: Mapping[InputField, Optional[LinkingResult]],
         field_to_sub_plan: Mapping[InputField, BroachingPlan],
     ) -> BroachingPlan:
-        args: List[FuncCallArg[BroachingPlan]] = []
+        args: list[FuncCallArg[BroachingPlan]] = []
         has_skipped_params = False
         for param in dst_shape.params:
             field = dst_shape.fields_dict[param.field_id]

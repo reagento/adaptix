@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Collection, Generator, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from copy import copy
-from typing import Any, Callable, Generic, List, Protocol, TypeVar, Union, final, overload
+from typing import Any, Callable, Generic, Protocol, TypeVar, Union, final, overload
 
 from .feature_requirement import HAS_NATIVE_EXC_GROUP, HAS_PY_310, HAS_PY_311
 
@@ -140,9 +140,9 @@ class ComparableSequence(Protocol[T]):
 def get_prefix_groups(
     values: Collection[ComparableSeqT],
 ) -> Collection[tuple[ComparableSeqT, Iterable[ComparableSeqT]]]:
-    groups: List[tuple[ComparableSeqT, List[ComparableSeqT]]] = []
+    groups: list[tuple[ComparableSeqT, list[ComparableSeqT]]] = []
     sorted_values = iter(sorted(values))
-    current_group: List[ComparableSeqT] = []
+    current_group: list[ComparableSeqT] = []
     try:
         prefix = next(sorted_values)
     except StopIteration:

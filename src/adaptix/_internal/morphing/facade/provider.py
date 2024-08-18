@@ -4,7 +4,7 @@ from collections.abc import Iterable, Mapping
 from datetime import timezone
 from enum import Enum, EnumMeta
 from types import MappingProxyType
-from typing import Any, Callable, List, Optional, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 
 from ...common import Catchable, Dumper, Loader, TypeHint, VarTuple
 from ...model_tools.definitions import Default, DescriptorAccessor, NoDefault, OutputField
@@ -144,7 +144,7 @@ def _name_mapping_convert_map(name_map: Omittable[NameMap]) -> VarTuple[Provider
         return (
             DictNameMappingProvider(name_map),
         )
-    result: List[Provider] = []
+    result: list[Provider] = []
     for element in name_map:
         if isinstance(element, Provider):
             result.append(element)

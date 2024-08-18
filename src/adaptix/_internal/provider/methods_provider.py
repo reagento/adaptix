@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Callable, ClassVar, Dict, Type, TypeVar, final
+from typing import Any, Callable, ClassVar, Type, TypeVar, final
 
 from ..type_tools import get_all_type_hints, is_subclass_soft, normalize_type, strip_tags
 from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler
@@ -101,7 +101,7 @@ def _method_handler_has_different_request_cls(
     )
 
 
-_RequestClsToMethodName = Dict[Type[Request], str]
+_RequestClsToMethodName = dict[Type[Request], str]
 
 
 def _collect_class_own_request_cls_dict(cls) -> _RequestClsToMethodName:
@@ -129,7 +129,7 @@ def _collect_class_own_request_cls_dict(cls) -> _RequestClsToMethodName:
 
 
 def _merge_request_cls_dicts(cls: type, dict_iter: Iterable[_RequestClsToMethodName]) -> _RequestClsToMethodName:
-    name_to_request_cls: Dict[str, Type[Request]] = {}
+    name_to_request_cls: dict[str, Type[Request]] = {}
     request_cls_to_name: _RequestClsToMethodName = {}
     for dct in dict_iter:
         for request_cls, name in dct.items():

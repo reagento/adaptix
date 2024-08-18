@@ -1,7 +1,7 @@
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Callable, DefaultDict, Dict, List, Optional, Set, TypeVar, Union
+from typing import Callable, DefaultDict, Optional, Set, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools.definitions import (
@@ -164,7 +164,7 @@ class BuiltinStructureMaker(StructureMaker):
         request: LocatedRequest,
         fields_to_paths: Iterable[FieldAndPath],
     ) -> None:
-        paths_to_fields: DefaultDict[KeyPath, List[AnyField]] = defaultdict(list)
+        paths_to_fields: DefaultDict[KeyPath, list[AnyField]] = defaultdict(list)
         for field, path in fields_to_paths:
             if path is not None:
                 paths_to_fields[path].append(field)
@@ -258,7 +258,7 @@ class BuiltinStructureMaker(StructureMaker):
         field_crown: Callable[[str], FieldCr],
         gaps_filler: Callable[[KeyPath], LeafCr],
     ) -> PathsTo[Union[FieldCr, LeafCr]]:
-        paths_to_leaves: Dict[KeyPath, Union[FieldCr, LeafCr]] = {
+        paths_to_leaves: dict[KeyPath, Union[FieldCr, LeafCr]] = {
             path: field_crown(field.id)
             for field, path in fields_to_paths
             if path is not None
@@ -286,7 +286,7 @@ class BuiltinStructureMaker(StructureMaker):
         extra_move: InpExtraMove,
     ) -> PathsTo[LeafInpCrown]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_stack)
-        fields_to_paths: List[FieldAndPath[InputField]] = list(
+        fields_to_paths: list[FieldAndPath[InputField]] = list(
             self._map_fields(mediator, request, schema, extra_move),
         )
         skipped_required_fields = [
@@ -311,7 +311,7 @@ class BuiltinStructureMaker(StructureMaker):
         extra_move: OutExtraMove,
     ) -> PathsTo[LeafOutCrown]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_stack)
-        fields_to_paths: List[FieldAndPath[OutputField]] = list(
+        fields_to_paths: list[FieldAndPath[OutputField]] = list(
             self._map_fields(mediator, request, schema, extra_move),
         )
         paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, OutFieldCrown, self._fill_output_gap)
@@ -437,7 +437,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
     ) -> PathsTo[DictExtraPolicy]:
         schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_stack)
         policy = self._get_extra_policy(schema)
-        path_to_extra_policy: Dict[KeyPath, DictExtraPolicy] = {
+        path_to_extra_policy: dict[KeyPath, DictExtraPolicy] = {
             (): policy,
         }
         for path, key in _paths_to_branches(paths_to_leaves):
