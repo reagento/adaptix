@@ -1,6 +1,5 @@
-import typing
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Set, Tuple, Union
+from typing import Annotated, Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Set, Tuple, Union
 
 import pytest
 from tests_helpers.model_spec import ModelSpec
@@ -152,10 +151,10 @@ SOME_DATETIME_UTC = SOME_DATETIME_NAIVE.replace(tzinfo=timezone.utc)
         pytest.param(Optional[str], Optional[str], None, None),
         pytest.param(Optional[bool], Optional[int], True, True),
         pytest.param(Optional[str], Optional[int], "123", 123),
-        pytest.param(Optional[typing.Annotated[int, "meta"]], Optional[int], 123, 123),
-        pytest.param(Optional[int], Optional[typing.Annotated[int, "meta"]], 123, 123),
-        pytest.param(typing.Annotated[Optional[int], "meta"], Optional[int], 123, 123),
-        pytest.param(Optional[int], typing.Annotated[Optional[int], "meta"], 123, 123),
+        pytest.param(Optional[Annotated[int, "meta"]], Optional[int], 123, 123),
+        pytest.param(Optional[int], Optional[Annotated[int, "meta"]], 123, 123),
+        pytest.param(Annotated[Optional[int], "meta"], Optional[int], 123, 123),
+        pytest.param(Optional[int], Annotated[Optional[int], "meta"], 123, 123),
     ],
 )
 def test_optional(model_spec, src_tp, dst_tp, src_value, dst_value):

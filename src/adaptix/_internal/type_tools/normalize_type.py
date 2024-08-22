@@ -1,4 +1,4 @@
-# ruff: noqa: RET503,
+# ruff: noqa: RET503, UP006
 import dataclasses
 import sys
 import types
@@ -168,7 +168,7 @@ class _LiteralNormType(_BasicNormType):
 class _AnnotatedNormType(_BasicNormType):
     @property
     def origin(self) -> Any:
-        return typing.Annotated
+        return Annotated
 
     __slots__ = (*_BasicNormType.__slots__, "_hash")
 
@@ -578,7 +578,7 @@ class TypeNormalizer:
 
     @_aspect_storage.add
     def _norm_annotated(self, tp, origin, args):
-        if origin == typing.Annotated:
+        if origin == Annotated:
             return _AnnotatedNormType(
                 (self.normalize(args[0]), *args[1:]),
                 source=tp,

@@ -1,10 +1,9 @@
 import inspect
 import itertools
-import typing
 from collections.abc import Sequence
 from functools import cached_property
 from inspect import Parameter, Signature
-from typing import Any, Callable, Optional, Protocol
+from typing import Annotated, Any, Callable, Optional, Protocol
 
 try:
     from pydantic import AliasChoices, BaseModel
@@ -104,7 +103,7 @@ def _signature_is_self_with_kwargs_only(init_signature: Signature) -> bool:
 
 def _get_field_type(field_info: "FieldInfo") -> TypeHint:
     if field_info.metadata:
-        return typing.Annotated[(field_info.annotation, *field_info.metadata)]
+        return Annotated[(field_info.annotation, *field_info.metadata)]
     return field_info.annotation
 
 

@@ -1,6 +1,7 @@
 import typing
 from collections.abc import Sequence, Set
 from types import MappingProxyType
+from typing import Annotated
 
 from ...feature_requirement import HAS_TYPED_DICT_REQUIRED
 from ...type_tools import BaseNormType, get_all_type_hints, is_typed_dict_class, normalize_type
@@ -38,7 +39,7 @@ def _get_td_hints(tp):
 
 
 def _extract_item_type(tp) -> BaseNormType:
-    if tp.origin is typing.Annotated:
+    if tp.origin is Annotated:
         return tp.args[0]
     return tp
 

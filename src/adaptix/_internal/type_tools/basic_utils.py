@@ -1,6 +1,6 @@
 import types
 import typing
-from typing import Any, ForwardRef, Generic, NewType, Protocol, TypedDict, TypeVar, Union
+from typing import Annotated, Any, ForwardRef, Generic, NewType, Protocol, TypedDict, TypeVar, Union
 
 from ..common import TypeHint, VarTuple
 from ..feature_requirement import HAS_PY_312
@@ -85,8 +85,8 @@ def is_generic(tp: TypeHint) -> bool:
             and not is_parametrized(tp)
         )
         or (
-            strip_alias(tp) == typing.Annotated
-            and tp != typing.Annotated
+            strip_alias(tp) == Annotated
+            and tp != Annotated
             and is_generic(tp.__origin__)
         )
     )

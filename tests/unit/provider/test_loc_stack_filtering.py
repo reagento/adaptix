@@ -1,9 +1,8 @@
 # ruff: noqa: A001, A002
 import collections.abc
-import typing
 from contextlib import nullcontext
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar, Union, overload
+from typing import Annotated, Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar, Union, overload
 
 import pytest
 from tests_helpers import full_match
@@ -340,19 +339,19 @@ class MyGeneric(Generic[T]):
             result=ExactOriginLSC(Union),
         ),
         param_result(
-            typing.Annotated,
-            result=ExactOriginLSC(typing.Annotated),
+            Annotated,
+            result=ExactOriginLSC(Annotated),
         ),
         param_result(
-            typing.Annotated[int, "meta"],
-            result=ExactTypeLSC(normalize_type(typing.Annotated[int, "meta"])),
+            Annotated[int, "meta"],
+            result=ExactTypeLSC(normalize_type(Annotated[int, "meta"])),
         ),
         param_result(
-            typing.Annotated[List[int], "meta"],
-            result=ExactTypeLSC(normalize_type(typing.Annotated[list[int], "meta"])),
+            Annotated[List[int], "meta"],
+            result=ExactTypeLSC(normalize_type(Annotated[list[int], "meta"])),
         ),
         param_result(
-            typing.Annotated[list, "meta"],
+            Annotated[list, "meta"],
             raises=ValueError,
             exact_match=(
                 "Can not create LocStackChecker from"
@@ -360,7 +359,7 @@ class MyGeneric(Generic[T]):
             ),
         ),
         param_result(
-            typing.Annotated[List[T], "meta"],
+            Annotated[List[T], "meta"],
             raises=ValueError,
             exact_match=(
                 "Can not create LocStackChecker from"
@@ -368,7 +367,7 @@ class MyGeneric(Generic[T]):
             ),
         ),
         param_result(
-            typing.Annotated[Dict[int, T], "meta"],
+            Annotated[Dict[int, T], "meta"],
             raises=ValueError,
             exact_match=(
                 "Can not create LocStackChecker from"

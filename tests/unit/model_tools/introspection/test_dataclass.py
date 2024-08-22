@@ -1,7 +1,6 @@
-import typing
 from dataclasses import InitVar, dataclass, field
 from types import MappingProxyType
-from typing import ClassVar
+from typing import Annotated, ClassVar
 from unittest.mock import ANY
 
 import pytest
@@ -378,7 +377,7 @@ def test_forward_ref():
 def test_annotated():
     @dataclass
     class WithAnnotated:
-        annotated_field: typing.Annotated[int, "metadata"]
+        annotated_field: Annotated[int, "metadata"]
 
     assert (
         get_dataclass_shape(WithAnnotated)
@@ -389,7 +388,7 @@ def test_annotated():
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="annotated_field",
                         default=NoDefault(),
                         is_required=True,
@@ -409,7 +408,7 @@ def test_annotated():
             output=OutputShape(
                 fields=(
                     OutputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="annotated_field",
                         default=NoDefault(),
                         accessor=create_attr_accessor("annotated_field", is_required=True),

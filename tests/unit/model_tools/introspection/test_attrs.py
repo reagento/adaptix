@@ -1,4 +1,3 @@
-import typing
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Annotated, Any, Tuple
@@ -752,7 +751,7 @@ def test_annotated():
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="a",
                         default=NoDefault(),
                         is_required=True,
