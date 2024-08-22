@@ -383,35 +383,35 @@ def test_type_var_tuple_begin(model_spec, gen_models_ns):
     assert_fields_types(
         WithTVTupleBegin,
         {
-            "a": Tuple[Unpack[Tuple[Any, ...]]],
+            "a": tuple[Unpack[tuple[Any, ...]]],
             "b": Any,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[int, str],
         {
-            "a": Tuple[int],
+            "a": tuple[int],
             "b": str,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[int, str, bool],
         {
-            "a": Tuple[int, str],
+            "a": tuple[int, str],
             "b": bool,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[int, Unpack[Tuple[str, bool]]],
         {
-            "a": Tuple[int, str],
+            "a": tuple[int, str],
             "b": bool,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
         {
-            "a": Tuple[str, bool, str],
+            "a": tuple[str, bool, str],
             "b": bool,
         },
     )
@@ -428,35 +428,35 @@ def test_type_var_tuple_end(model_spec, gen_models_ns):
         WithTVTupleEnd,
         {
             "a": Any,
-            "b": Tuple[Unpack[Tuple[Any, ...]]],
+            "b": tuple[Unpack[tuple[Any, ...]]],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[int, str],
         {
             "a": int,
-            "b": Tuple[str],
+            "b": tuple[str],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[int, str, bool],
         {
             "a": int,
-            "b": Tuple[str, bool],
+            "b": tuple[str, bool],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[int, Unpack[Tuple[str, bool]]],
         {
             "a": int,
-            "b": Tuple[str, bool],
+            "b": tuple[str, bool],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
         {
             "a": str,
-            "b": Tuple[bool, str, bool],
+            "b": tuple[bool, str, bool],
         },
     )
 
@@ -472,7 +472,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle,
         {
             "a": Any,
-            "b": Tuple[Unpack[Tuple[Any, ...]]],
+            "b": tuple[Unpack[tuple[Any, ...]]],
             "c": Any,
         },
     )
@@ -480,7 +480,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, str],
         {
             "a": int,
-            "b": Tuple[()],
+            "b": tuple[()],
             "c": str,
         },
     )
@@ -488,7 +488,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, str, bool],
         {
             "a": int,
-            "b": Tuple[str],
+            "b": tuple[str],
             "c": bool,
         },
     )
@@ -496,7 +496,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, str, str, bool],
         {
             "a": int,
-            "b": Tuple[str, str],
+            "b": tuple[str, str],
             "c": bool,
         },
     )
@@ -504,7 +504,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, Unpack[Tuple[str, bool]]],
         {
             "a": int,
-            "b": Tuple[str],
+            "b": tuple[str],
             "c": bool,
         },
     )
@@ -512,7 +512,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, Unpack[Tuple[str, bool]], int],
         {
             "a": int,
-            "b": Tuple[str, bool],
+            "b": tuple[str, bool],
             "c": int,
         },
     )
@@ -520,7 +520,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, Unpack[Tuple[str, ...]], int],
         {
             "a": int,
-            "b": Tuple[Unpack[Tuple[str, ...]]],
+            "b": tuple[Unpack[Tuple[str, ...]]],
             "c": int,
         },
     )
@@ -528,7 +528,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, bool, Unpack[Tuple[str, ...]], int],
         {
             "a": int,
-            "b": Tuple[bool, Unpack[Tuple[str, ...]]],
+            "b": tuple[bool, Unpack[Tuple[str, ...]]],
             "c": int,
         },
     )

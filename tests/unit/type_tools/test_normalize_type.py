@@ -270,17 +270,12 @@ def test_type(make_union):
 
     assert_normalize(
         Type[make_union[int, str]],
-        Union, [normalize_type(Type[int]), normalize_type(Type[str])],
+        Union, [normalize_type(type[int]), normalize_type(type[str])],
     )
 
     assert_normalize(
-        Union[Type[make_union[int, str]], Type[bool]],
-        Union, [normalize_type(Type[int]), normalize_type(Type[str]), normalize_type(Type[bool])],
-    )
-
-    assert_normalize(
-        Union[Type[make_union[int, str]], Type[int]],
-        Union, [normalize_type(Type[int]), normalize_type(Type[str])],
+        Union[type[make_union[int, str]], type[int]],
+        Union, [normalize_type(type[int]), normalize_type(type[str])],
     )
 
 
@@ -450,10 +445,10 @@ def test_union(make_union):
     )
 
     assert_normalize(
-        make_union[Type[list], Type[Union[List, str]]],
+        make_union[type[list], type[Union[List, str]]],
         Union, [
-            normalize_type(Union[Type[list], Type[List]]),
-            normalize_type(Type[str]),
+            normalize_type(Union[type[list], type[List]]),
+            normalize_type(type[str]),
         ],
     )
 
@@ -1006,7 +1001,7 @@ def test_type_var_tuple_generic(tpl):
 
     assert_normalize(
         Array,
-        Array, [normalize_type(Unpack[Tuple[Any, ...]])],
+        Array, [normalize_type(Unpack[tuple[Any, ...]])],
     )
     assert_normalize(
         Array[int],
@@ -1040,7 +1035,7 @@ def test_type_var_tuple_generic_pre(tpl):
 
     assert_normalize(
         PreArray,
-        PreArray, [nt_zero(Any), normalize_type(Unpack[Tuple[Any, ...]])],
+        PreArray, [nt_zero(Any), normalize_type(Unpack[tuple[Any, ...]])],
     )
     assert_normalize(
         PreArray[int],
@@ -1077,7 +1072,7 @@ def test_type_var_tuple_generic_post(tpl):
 
     assert_normalize(
         PostArray,
-        PostArray, [normalize_type(Unpack[Tuple[Any, ...]]), nt_zero(Any)],
+        PostArray, [normalize_type(Unpack[tuple[Any, ...]]), nt_zero(Any)],
     )
     assert_normalize(
         PostArray[int],

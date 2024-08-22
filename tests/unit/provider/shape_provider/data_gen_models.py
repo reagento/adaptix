@@ -1,5 +1,5 @@
 # mypy: disable-error-code="name-defined, misc"
-from typing import Generic, Tuple, TypeVar
+from typing import Generic, TypeVar
 
 from tests_helpers import ModelSpec
 
@@ -24,16 +24,16 @@ if HAS_TV_TUPLE and model_spec.kind != ModelSpec.PYDANTIC:
 
     @model_spec.decorator
     class WithTVTupleBegin(*model_spec.bases, Generic[Unpack[ShapeT], T]):
-        a: Tuple[Unpack[ShapeT]]
+        a: tuple[Unpack[ShapeT]]
         b: T
 
     @model_spec.decorator
     class WithTVTupleEnd(*model_spec.bases, Generic[T, Unpack[ShapeT]]):
         a: T
-        b: Tuple[Unpack[ShapeT]]
+        b: tuple[Unpack[ShapeT]]
 
     @model_spec.decorator
     class WithTVTupleMiddle(*model_spec.bases, Generic[T1, Unpack[ShapeT], T2]):
         a: T1
-        b: Tuple[Unpack[ShapeT]]
+        b: tuple[Unpack[ShapeT]]
         c: T2

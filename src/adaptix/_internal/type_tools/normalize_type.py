@@ -1,4 +1,4 @@
-# ruff: noqa: RET503
+# ruff: noqa: RET503,
 import dataclasses
 import sys
 import types
@@ -21,7 +21,6 @@ from typing import (
     NewType,
     NoReturn,
     Optional,
-    Type,
     TypeVar,
     Union,
     overload,
@@ -801,7 +800,7 @@ class TypeNormalizer:
             if norm.origin == Union:
                 return _UnionNormType(
                     tuple(
-                        _NormType(type, (arg,), source=Type[arg.source])
+                        _NormType(type, (arg,), source=type[arg.source])
                         for arg in norm.args
                     ),
                     source=tp,

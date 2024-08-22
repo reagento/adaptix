@@ -1,5 +1,5 @@
 import typing
-from collections.abc import Sequence
+from collections.abc import Sequence, Set
 from types import MappingProxyType
 
 from ...feature_requirement import HAS_TYPED_DICT_REQUIRED
