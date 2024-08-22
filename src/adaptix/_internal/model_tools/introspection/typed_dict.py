@@ -20,18 +20,6 @@ from ..definitions import (
 )
 
 
-class TypedDictAt38Warning(UserWarning):
-    """Runtime introspection of TypedDict at python3.8 does not support inheritance.
-    Please update python or consider limitations suppressing this warning
-    """
-
-    def __str__(self):
-        return (
-            "Runtime introspection of TypedDict at python3.8 does not support inheritance."
-            " Please, update python or consider limitations suppressing this warning"
-        )
-
-
 def _get_td_hints(tp):
     elements = list(get_all_type_hints(tp).items())
     elements.sort(key=lambda v: v[0])

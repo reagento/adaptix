@@ -1,6 +1,5 @@
 from ._internal.common import Dumper, Loader, TypeHint
 from ._internal.definitions import DebugTrail
-from ._internal.model_tools.introspection.typed_dict import TypedDictAt38Warning
 from ._internal.morphing.facade.func import dump, load
 from ._internal.morphing.facade.provider import (
     as_is_dumper,
@@ -73,7 +72,6 @@ __all__ = (
     "AdornedRetort",
     "FilledRetort",
     "Retort",
-    "TypedDictAt38Warning",
     "Omittable",
     "Omitted",
     "provider",

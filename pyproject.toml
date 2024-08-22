@@ -73,7 +73,6 @@ python_files = [
   'local_helpers.py',
 ]
 testpaths = ['tests', 'examples']
-filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
 
 [tool.coverage.run]
 branch = true
