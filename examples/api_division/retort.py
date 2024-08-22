@@ -1,5 +1,4 @@
 from decimal import Decimal
-from typing import List
 
 import phonenumbers
 from phonenumbers import PhoneNumber
@@ -81,7 +80,7 @@ inner_receipt_retort = _base_retort.extend(
 
 outer_receipt_retort = _base_retort.extend(
     recipe=[
-        validator(List[RecItem], lambda x: len(x) > 0, "At least one item must be presented"),
+        validator(list[RecItem], lambda x: len(x) > 0, "At least one item must be presented"),
         validator(P[RecItem].quantity, lambda x: x > Decimal(0), "Value must be > 0"),
         validator(P[RecItem].price, lambda x: x >= Money(0), "Value must be >= 0"),
 

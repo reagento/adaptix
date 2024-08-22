@@ -1,11 +1,11 @@
 # ruff: noqa: FBT001, FBT003
 import typing
 from types import MappingProxyType
-from typing import TypedDict
+from typing import Annotated, TypedDict
 
 from tests_helpers import requires
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_PY_39, HAS_TYPED_DICT_REQUIRED
+from adaptix._internal.feature_requirement import HAS_TYPED_DICT_REQUIRED
 from adaptix._internal.model_tools.definitions import (
     InputField,
     InputShape,
@@ -216,10 +216,6 @@ class GrandChildNotTotal(ChildTotal, total=False):
     z: str
 
 
-def _negate_if_not_py39(value: bool) -> bool:
-    return value if HAS_PY_39 else not value
-
-
 def test_inheritance_first():
     assert (
         get_typed_dict_shape(ParentNotTotal)
@@ -277,7 +273,7 @@ def test_inheritance_second():
                         type=int,
                         id="x",
                         default=NoDefault(),
-                        is_required=_negate_if_not_py39(False),
+                        is_required=False,
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
@@ -311,7 +307,7 @@ def test_inheritance_second():
                         id="x",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor("x", access_error=KeyError if HAS_PY_39 else None),
+                        accessor=create_key_accessor("x", access_error=KeyError),
                         original=None,
                     ),
                     OutputField(
@@ -350,7 +346,7 @@ def test_inheritance_third():
                         type=str,
                         id="y",
                         default=NoDefault(),
-                        is_required=_negate_if_not_py39(True),
+                        is_required=True,
                         metadata=MappingProxyType({}),
                         original=None,
                     ),
@@ -397,7 +393,7 @@ def test_inheritance_third():
                         id="y",
                         default=NoDefault(),
                         metadata=MappingProxyType({}),
-                        accessor=create_key_accessor("y", access_error=None if HAS_PY_39 else KeyError),
+                        accessor=create_key_accessor("y", access_error=None),
                         original=None,
                     ),
                     OutputField(
@@ -415,10 +411,9 @@ def test_inheritance_third():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotatedTotal(TypedDict):
-        annotated_field: typing.Annotated[int, "metadata"]
+        annotated_field: Annotated[int, "metadata"]
 
     assert (
         get_typed_dict_shape(WithAnnotatedTotal)
@@ -429,7 +424,7 @@ def test_annotated():
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="annotated_field",
                         default=NoDefault(),
                         is_required=True,
@@ -449,7 +444,7 @@ def test_annotated():
             output=OutputShape(
                 fields=(
                     OutputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="annotated_field",
                         default=NoDefault(),
                         accessor=create_key_accessor("annotated_field", access_error=None),
@@ -463,7 +458,7 @@ def test_annotated():
     )
 
     class WithAnnotatedNotTotal(TypedDict, total=False):
-        annotated_field: typing.Annotated[int, "metadata"]
+        annotated_field: Annotated[int, "metadata"]
 
     assert (
         get_typed_dict_shape(WithAnnotatedNotTotal)
@@ -474,7 +469,7 @@ def test_annotated():
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="annotated_field",
                         default=NoDefault(),
                         is_required=False,
@@ -494,7 +489,7 @@ def test_annotated():
             output=OutputShape(
                 fields=(
                     OutputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="annotated_field",
                         default=NoDefault(),
                         accessor=create_key_accessor("annotated_field", access_error=KeyError),
@@ -672,13 +667,13 @@ def test_required():
 def test_required_annotated():
     class Base(TypedDict):
         f1: int
-        f2: typing.Annotated[typing.Required[int], "metadata"]
-        f3: 'typing.NotRequired[typing.Annotated[int, "metadata"]]'
+        f2: Annotated[typing.Required[int], "metadata"]
+        f3: 'typing.NotRequired[Annotated[int, "metadata"]]'
 
     class Child(Base, total=False):
         f4: int
-        f5: 'typing.Annotated[typing.Required[int], "metadata"]'
-        f6: typing.NotRequired[typing.Annotated[int, "metadata"]]
+        f5: 'Annotated[typing.Required[int], "metadata"]'
+        f6: typing.NotRequired[Annotated[int, "metadata"]]
 
     assert (
         get_typed_dict_shape(Child)
@@ -697,7 +692,7 @@ def test_required_annotated():
                         original=None,
                     ),
                     InputField(
-                        type=typing.Annotated[typing.Required[int], "metadata"],
+                        type=Annotated[typing.Required[int], "metadata"],
                         id="f2",
                         default=NoDefault(),
                         is_required=True,
@@ -705,7 +700,7 @@ def test_required_annotated():
                         original=None,
                     ),
                     InputField(
-                        type=typing.NotRequired[typing.Annotated[int, "metadata"]],
+                        type=typing.NotRequired[Annotated[int, "metadata"]],
                         id="f3",
                         default=NoDefault(),
                         is_required=False,
@@ -721,7 +716,7 @@ def test_required_annotated():
                         original=None,
                     ),
                     InputField(
-                        type=typing.Annotated[typing.Required[int], "metadata"],
+                        type=Annotated[typing.Required[int], "metadata"],
                         id="f5",
                         default=NoDefault(),
                         is_required=True,
@@ -729,7 +724,7 @@ def test_required_annotated():
                         original=None,
                     ),
                     InputField(
-                        type=typing.NotRequired[typing.Annotated[int, "metadata"]],
+                        type=typing.NotRequired[Annotated[int, "metadata"]],
                         id="f6",
                         default=NoDefault(),
                         is_required=False,
@@ -782,7 +777,7 @@ def test_required_annotated():
                         original=None,
                     ),
                     OutputField(
-                        type=typing.Annotated[typing.Required[int], "metadata"],
+                        type=Annotated[typing.Required[int], "metadata"],
                         id="f2",
                         default=NoDefault(),
                         accessor=create_key_accessor("f2", access_error=None),
@@ -790,7 +785,7 @@ def test_required_annotated():
                         original=None,
                     ),
                     OutputField(
-                        type=typing.NotRequired[typing.Annotated[int, "metadata"]],
+                        type=typing.NotRequired[Annotated[int, "metadata"]],
                         id="f3",
                         default=NoDefault(),
                         accessor=create_key_accessor("f3", access_error=KeyError),
@@ -806,7 +801,7 @@ def test_required_annotated():
                         original=None,
                     ),
                     OutputField(
-                        type=typing.Annotated[typing.Required[int], "metadata"],
+                        type=Annotated[typing.Required[int], "metadata"],
                         id="f5",
                         default=NoDefault(),
                         accessor=create_key_accessor("f5", access_error=None),
@@ -814,7 +809,7 @@ def test_required_annotated():
                         original=None,
                     ),
                     OutputField(
-                        type=typing.NotRequired[typing.Annotated[int, "metadata"]],
+                        type=typing.NotRequired[Annotated[int, "metadata"]],
                         id="f6",
                         default=NoDefault(),
                         accessor=create_key_accessor("f6", access_error=KeyError),

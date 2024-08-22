@@ -1,18 +1,19 @@
 import itertools
-from typing import Any, Dict, Iterable, Iterator, Mapping, Optional, TypeVar
+from collections.abc import Iterable, Iterator, Mapping
+from typing import Any, Optional, TypeVar
 
 P = TypeVar("P", bound="Parametrizer")
 
 
 class Parametrizer:
     def __init__(self, *, product: Optional[Mapping[str, Iterable[Any]]] = None) -> None:
-        self._product: Dict[str, Iterable[Any]] = {} if product is None else dict(product)
+        self._product: dict[str, Iterable[Any]] = {} if product is None else dict(product)
 
     def product(self: P, variants: Mapping[str, Iterable[Any]]) -> P:
         self._product.update(variants)
         return self
 
-    def __iter__(self) -> Iterator[Dict[str, Any]]:
+    def __iter__(self) -> Iterator[dict[str, Any]]:
         for case_values in itertools.product(*self._product.values()):
             yield dict(zip(self._product.keys(), case_values))
 

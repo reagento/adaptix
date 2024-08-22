@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Generic, Iterable, Optional, Sequence, Type, TypeVar
+from collections.abc import Iterable, Sequence
+from typing import Any, Callable, Generic, Optional, TypeVar
 
 from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.json_schema.definitions import JSONSchema
@@ -38,7 +39,7 @@ CallableT = TypeVar("CallableT", bound=Callable)
 
 class LocatedRequestCallableRecursionResolver(RecursionResolver[LocatedRequest, CallableT], Generic[CallableT]):
     def __init__(self) -> None:
-        self._loc_to_stub: Dict[AnyLoc, FuncWrapper] = {}
+        self._loc_to_stub: dict[AnyLoc, FuncWrapper] = {}
 
     def track_request(self, request: LocatedRequest) -> Optional[Any]:
         last_loc = request.last_loc
@@ -117,14 +118,14 @@ class OperatingRetort(SearchingRetort):
 
     def _create_router(
         self,
-        request_cls: Type[RequestT],
+        request_cls: type[RequestT],
         checkers_and_handlers: Sequence[CheckerAndHandler],
     ) -> RequestRouter[RequestT]:
         if issubclass(request_cls, LocatedRequest):
             return create_router_for_located_request(checkers_and_handlers)  # type: ignore[return-value]
         return SimpleRouter(checkers_and_handlers)
 
-    def _create_error_representor(self, request_cls: Type[RequestT]) -> ErrorRepresentor[RequestT]:
+    def _create_error_representor(self, request_cls: type[RequestT]) -> ErrorRepresentor[RequestT]:
         if issubclass(request_cls, LoaderRequest):
             return LocatedRequestErrorRepresentor("Cannot find loader")
         if issubclass(request_cls, DumperRequest):
@@ -139,7 +140,7 @@ class OperatingRetort(SearchingRetort):
 
         return BaseRequestErrorRepresentor(f"Can not satisfy {request_cls}")
 
-    def _create_recursion_resolver(self, request_cls: Type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
+    def _create_recursion_resolver(self, request_cls: type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
         if issubclass(request_cls, (LoaderRequest, DumperRequest)):
             return LocatedRequestCallableRecursionResolver()  # type: ignore[return-value]
         return None

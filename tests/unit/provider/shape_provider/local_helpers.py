@@ -1,4 +1,5 @@
-from typing import Mapping, Optional
+from collections.abc import Mapping
+from typing import Optional
 
 from tests_helpers.misc import create_mediator
 

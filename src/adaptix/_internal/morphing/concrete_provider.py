@@ -7,7 +7,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from io import BytesIO
-from typing import Generic, Optional, Type, TypeVar, Union
+from typing import Generic, Optional, TypeVar, Union
 
 from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
@@ -31,7 +31,7 @@ class IsoFormatProvider(MorphingProvider):
         datetime: JSONSchemaBuiltinFormat.DATE_TIME,
     }
 
-    def __init__(self, cls: Type[Union[date, time]]):
+    def __init__(self, cls: type[Union[date, time]]):
         self._cls = cls
         self._loc_stack_checker = create_loc_stack_checker(cls)
 
@@ -390,7 +390,7 @@ T = TypeVar("T")
 class ScalarProvider(MorphingProvider, Generic[T]):
     def __init__(
         self,
-        target: Type[T],
+        target: type[T],
         strict_coercion_loader: Loader[T],
         lax_coercion_loader: Loader[T],
         dumper: Dumper[T],

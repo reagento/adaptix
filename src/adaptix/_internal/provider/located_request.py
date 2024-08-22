@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from typing import Sequence, Tuple, Type, TypeVar, final
+from typing import TypeVar, final
 
 from ..common import TypeHint, VarTuple
 from .essential import DirectMediator, Mediator, Provider, Request, RequestChecker, RequestHandler
@@ -40,7 +41,7 @@ class LocatedRequestMethodsProvider(MethodsProvider):
     _loc_stack_checker: LocStackChecker = AnyLocStackChecker()
 
     @classmethod
-    def _validate_request_cls(cls, request_cls: Type[Request]) -> None:
+    def _validate_request_cls(cls, request_cls: type[Request]) -> None:
         if not issubclass(request_cls, LocatedRequest):
             raise TypeError(
                 f"@method_handler of {LocatedRequestMethodsProvider} can process only child of {LocatedRequest}",
@@ -51,7 +52,7 @@ class LocatedRequestMethodsProvider(MethodsProvider):
 
 
 def for_predicate(pred: Pred):
-    def decorator(cls: Type[LocatedRequestMethodsProvider]):
+    def decorator(cls: type[LocatedRequestMethodsProvider]):
         if not (isinstance(cls, type) and issubclass(cls, LocatedRequestMethodsProvider)):
             raise TypeError(f"Only {LocatedRequestMethodsProvider} child is allowed")
 
@@ -66,13 +67,13 @@ class LocStackBoundingProvider(Provider):
         self._loc_stack_checker = loc_stack_checker
         self._provider = provider
 
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
         return [
             (request_cls, self._process_request_checker(request_cls, checker), handler)
             for request_cls, checker, handler in self._provider.get_request_handlers()
         ]
 
-    def _process_request_checker(self, request_cls: Type[Request], checker: RequestChecker) -> RequestChecker:
+    def _process_request_checker(self, request_cls: type[Request], checker: RequestChecker) -> RequestChecker:
         if issubclass(request_cls, LocatedRequest):
             if isinstance(checker, AlwaysTrueRequestChecker):
                 return LocatedRequestChecker(self._loc_stack_checker)
@@ -85,10 +86,10 @@ LocatedRequestT = TypeVar("LocatedRequestT", bound=LocatedRequest)
 
 
 class LocatedRequestDelegatingProvider(Provider, ABC):
-    REQUEST_CLASSES: VarTuple[Type[LocatedRequest]] = ()
+    REQUEST_CLASSES: VarTuple[type[LocatedRequest]] = ()
 
     @final
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
         request_checker = self.get_request_checker()
 
         def delegating_request_handler(mediator, request):

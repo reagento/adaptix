@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Generic, Iterable, List, Optional, Tuple, TypeVar
+from collections.abc import Iterable
+from typing import Any, Callable, Generic, Optional, TypeVar
 
 from ..provider.essential import (
     AggregateCannotProvide,
@@ -35,7 +36,7 @@ class RequestRouter(ABC, Generic[RequestT]):
         mediator: DirectMediator,
         request: RequestT,
         search_offset: int,
-    ) -> Tuple[RequestHandler, int]:
+    ) -> tuple[RequestHandler, int]:
         """
         :raises: StopIteration
         """
@@ -68,7 +69,7 @@ class BasicRequestBus(RequestBus[RequestT, ResponseT], Generic[RequestT, Respons
         return self._send_inner(request, search_offset)
 
     def _send_inner(self, request: RequestT, search_offset: int) -> Any:
-        exceptions: List[CannotProvide] = []
+        exceptions: list[CannotProvide] = []
         next_offset = search_offset
         mediator = self._mediator_factory(request, next_offset)
         while True:

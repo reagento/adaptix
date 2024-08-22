@@ -1,5 +1,6 @@
+from collections.abc import Mapping, Sequence
 from functools import partial
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer

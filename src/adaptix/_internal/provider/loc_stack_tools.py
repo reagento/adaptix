@@ -1,4 +1,3 @@
-from typing import Tuple
 
 from ..common import TypeHint
 from ..type_tools import is_parametrized
@@ -37,7 +36,7 @@ def format_loc_stack(loc_stack: LocStack[AnyLoc]) -> str:
     return fmt_tp
 
 
-def find_owner_with_field(stack: LocStack) -> Tuple[TypeHintLoc, FieldLoc]:
+def find_owner_with_field(stack: LocStack) -> tuple[TypeHintLoc, FieldLoc]:
     for next_loc, prev_loc in pairs(reversed(stack)):
         if next_loc.is_castable(FieldLoc):
             return prev_loc, next_loc

@@ -8,11 +8,8 @@ from tests_helpers.model_spec import only_generic_models, with_model_spec_requir
 
 from adaptix import CannotProvide
 from adaptix._internal.feature_requirement import (
-    HAS_PY_39,
-    HAS_PY_310,
     HAS_PY_312,
     HAS_SELF_TYPE,
-    HAS_STD_CLASSES_GENERICS,
     HAS_SUPPORTED_PYDANTIC_PKG,
     HAS_TV_TUPLE,
     IS_PYPY,
@@ -69,7 +66,7 @@ def test_type_var_field(gen_models_ns):
     assert_fields_types(WithTVField[T], {"a": int, "b": T})
 
 
-@pytest.mark.parametrize("tp", [List, list] if HAS_STD_CLASSES_GENERICS else [List])
+@pytest.mark.parametrize("tp", [List, list])
 def test_gen_field(model_spec, tp):
     @model_spec.decorator
     class WithGenField(*model_spec.bases, Generic[T]):
@@ -82,8 +79,8 @@ def test_gen_field(model_spec, tp):
     assert_fields_types(WithGenField[T], {"a": int, "b": tp[T]}, pydantic={"a": int, "b": tp[Any]})
 
 
-@pytest.mark.parametrize("tp1", [List, list] if HAS_STD_CLASSES_GENERICS else [List])
-@pytest.mark.parametrize("tp2", [Dict, dict] if HAS_STD_CLASSES_GENERICS else [Dict])
+@pytest.mark.parametrize("tp1", [List, list])
+@pytest.mark.parametrize("tp2", [Dict, dict])
 def test_two_params(model_spec, tp1, tp2):
     @model_spec.decorator
     class WithStdGenField(*model_spec.bases, Generic[K, V]):
@@ -225,7 +222,7 @@ T7 = TypeVar("T7")
 
 
 @exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS)
-@pytest.mark.parametrize("tp", [List, list] if HAS_STD_CLASSES_GENERICS else [List])
+@pytest.mark.parametrize("tp", [List, list])
 def test_generic_multiple_inheritance(model_spec, tp) -> None:
     @model_spec.decorator
     class GrandParent(*model_spec.bases, Generic[T1, T2]):
@@ -266,16 +263,13 @@ def test_generic_multiple_inheritance(model_spec, tp) -> None:
         List,
         List[T],
         List[int],
-        *cond_list(
-            HAS_STD_CLASSES_GENERICS,
-            lambda: [list[T]],
-        ),
+        list[T],
     ],
 )
 def test_not_a_model(tp):
     # TODO: fix it  # noqa: TD003
     # At this python versions and implementation list has __init__ that allow to generate Shape
-    if not (IS_PYPY and (HAS_PY_39 or HAS_PY_310)):
+    if not IS_PYPY:
         with pytest.raises(CannotProvide):
             provide_generic_resolved_shape(
                 create_mediator(),
@@ -389,35 +383,35 @@ def test_type_var_tuple_begin(model_spec, gen_models_ns):
     assert_fields_types(
         WithTVTupleBegin,
         {
-            "a": Tuple[Unpack[Tuple[Any, ...]]],
+            "a": tuple[Unpack[tuple[Any, ...]]],
             "b": Any,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[int, str],
         {
-            "a": Tuple[int],
+            "a": tuple[int],
             "b": str,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[int, str, bool],
         {
-            "a": Tuple[int, str],
+            "a": tuple[int, str],
             "b": bool,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[int, Unpack[Tuple[str, bool]]],
         {
-            "a": Tuple[int, str],
+            "a": tuple[int, str],
             "b": bool,
         },
     )
     assert_fields_types(
         WithTVTupleBegin[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
         {
-            "a": Tuple[str, bool, str],
+            "a": tuple[str, bool, str],
             "b": bool,
         },
     )
@@ -434,35 +428,35 @@ def test_type_var_tuple_end(model_spec, gen_models_ns):
         WithTVTupleEnd,
         {
             "a": Any,
-            "b": Tuple[Unpack[Tuple[Any, ...]]],
+            "b": tuple[Unpack[tuple[Any, ...]]],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[int, str],
         {
             "a": int,
-            "b": Tuple[str],
+            "b": tuple[str],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[int, str, bool],
         {
             "a": int,
-            "b": Tuple[str, bool],
+            "b": tuple[str, bool],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[int, Unpack[Tuple[str, bool]]],
         {
             "a": int,
-            "b": Tuple[str, bool],
+            "b": tuple[str, bool],
         },
     )
     assert_fields_types(
         WithTVTupleEnd[Unpack[Tuple[str, bool]], Unpack[Tuple[str, bool]]],
         {
             "a": str,
-            "b": Tuple[bool, str, bool],
+            "b": tuple[bool, str, bool],
         },
     )
 
@@ -478,7 +472,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle,
         {
             "a": Any,
-            "b": Tuple[Unpack[Tuple[Any, ...]]],
+            "b": tuple[Unpack[tuple[Any, ...]]],
             "c": Any,
         },
     )
@@ -486,7 +480,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, str],
         {
             "a": int,
-            "b": Tuple[()],
+            "b": tuple[()],
             "c": str,
         },
     )
@@ -494,7 +488,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, str, bool],
         {
             "a": int,
-            "b": Tuple[str],
+            "b": tuple[str],
             "c": bool,
         },
     )
@@ -502,7 +496,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, str, str, bool],
         {
             "a": int,
-            "b": Tuple[str, str],
+            "b": tuple[str, str],
             "c": bool,
         },
     )
@@ -510,7 +504,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, Unpack[Tuple[str, bool]]],
         {
             "a": int,
-            "b": Tuple[str],
+            "b": tuple[str],
             "c": bool,
         },
     )
@@ -518,7 +512,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, Unpack[Tuple[str, bool]], int],
         {
             "a": int,
-            "b": Tuple[str, bool],
+            "b": tuple[str, bool],
             "c": int,
         },
     )
@@ -526,7 +520,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, Unpack[Tuple[str, ...]], int],
         {
             "a": int,
-            "b": Tuple[Unpack[Tuple[str, ...]]],
+            "b": tuple[Unpack[Tuple[str, ...]]],
             "c": int,
         },
     )
@@ -534,7 +528,7 @@ def test_type_var_tuple_middle(model_spec, gen_models_ns):
         WithTVTupleMiddle[int, bool, Unpack[Tuple[str, ...]], int],
         {
             "a": int,
-            "b": Tuple[bool, Unpack[Tuple[str, ...]]],
+            "b": tuple[bool, Unpack[Tuple[str, ...]]],
             "c": int,
         },
     )

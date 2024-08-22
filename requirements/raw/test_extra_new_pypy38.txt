@@ -1,4 +1,0 @@
--r test_extra_none.txt
-attrs==23.2.0
-sqlalchemy==2.0.30
-pydantic==2.5.3   # last version with pypy38 support

@@ -1,6 +1,7 @@
 from collections import defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar, Union
+from typing import Callable, Optional, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools.definitions import (
@@ -89,7 +90,7 @@ AnyField = Union[InputField, OutputField]
 LeafCr = TypeVar("LeafCr", bound=LeafBaseCrown)
 FieldCr = TypeVar("FieldCr", bound=BaseFieldCrown)
 F = TypeVar("F", bound=BaseField)
-FieldAndPath = Tuple[F, Optional[KeyPath]]
+FieldAndPath = tuple[F, Optional[KeyPath]]
 
 
 def apply_lsc(
@@ -163,7 +164,7 @@ class BuiltinStructureMaker(StructureMaker):
         request: LocatedRequest,
         fields_to_paths: Iterable[FieldAndPath],
     ) -> None:
-        paths_to_fields: DefaultDict[KeyPath, List[AnyField]] = defaultdict(list)
+        paths_to_fields: defaultdict[KeyPath, list[AnyField]] = defaultdict(list)
         for field, path in fields_to_paths:
             if path is not None:
                 paths_to_fields[path].append(field)
@@ -214,8 +215,8 @@ class BuiltinStructureMaker(StructureMaker):
                 is_demonstrative=True,
             )
 
-    def _iterate_sub_paths(self, paths: Iterable[KeyPath]) -> Iterable[Tuple[KeyPath, Key]]:
-        yielded: Set[Tuple[KeyPath, Key]] = set()
+    def _iterate_sub_paths(self, paths: Iterable[KeyPath]) -> Iterable[tuple[KeyPath, Key]]:
+        yielded: set[tuple[KeyPath, Key]] = set()
         for path in paths:
             for i in range(len(path) - 1, -1, -1):
                 result = path[:i], path[i]
@@ -225,9 +226,9 @@ class BuiltinStructureMaker(StructureMaker):
                 yielded.add(result)
                 yield result
 
-    def _get_paths_to_list(self, request: LocatedRequest, paths: Iterable[KeyPath]) -> Mapping[KeyPath, Set[int]]:
-        paths_to_lists: DefaultDict[KeyPath, Set[int]] = defaultdict(set)
-        paths_to_dicts: Set[KeyPath] = set()
+    def _get_paths_to_list(self, request: LocatedRequest, paths: Iterable[KeyPath]) -> Mapping[KeyPath, set[int]]:
+        paths_to_lists: defaultdict[KeyPath, set[int]] = defaultdict(set)
+        paths_to_dicts: set[KeyPath] = set()
         for sub_path, key in self._iterate_sub_paths(paths):
             if isinstance(key, int):
                 if sub_path in paths_to_dicts:
@@ -257,7 +258,7 @@ class BuiltinStructureMaker(StructureMaker):
         field_crown: Callable[[str], FieldCr],
         gaps_filler: Callable[[KeyPath], LeafCr],
     ) -> PathsTo[Union[FieldCr, LeafCr]]:
-        paths_to_leaves: Dict[KeyPath, Union[FieldCr, LeafCr]] = {
+        paths_to_leaves: dict[KeyPath, Union[FieldCr, LeafCr]] = {
             path: field_crown(field.id)
             for field, path in fields_to_paths
             if path is not None
@@ -285,7 +286,7 @@ class BuiltinStructureMaker(StructureMaker):
         extra_move: InpExtraMove,
     ) -> PathsTo[LeafInpCrown]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_stack)
-        fields_to_paths: List[FieldAndPath[InputField]] = list(
+        fields_to_paths: list[FieldAndPath[InputField]] = list(
             self._map_fields(mediator, request, schema, extra_move),
         )
         skipped_required_fields = [
@@ -310,7 +311,7 @@ class BuiltinStructureMaker(StructureMaker):
         extra_move: OutExtraMove,
     ) -> PathsTo[LeafOutCrown]:
         schema = provide_schema(StructureOverlay, mediator, request.loc_stack)
-        fields_to_paths: List[FieldAndPath[OutputField]] = list(
+        fields_to_paths: list[FieldAndPath[OutputField]] = list(
             self._map_fields(mediator, request, schema, extra_move),
         )
         paths_to_leaves = self._make_paths_to_leaves(request, fields_to_paths, OutFieldCrown, self._fill_output_gap)
@@ -366,8 +367,8 @@ class BuiltinSievesMaker(SievesMaker):
         return result
 
 
-def _paths_to_branches(paths_to_leaves: PathsTo[LeafBaseCrown]) -> Iterable[Tuple[KeyPath, Key]]:
-    yielded_branch_path: Set[KeyPath] = set()
+def _paths_to_branches(paths_to_leaves: PathsTo[LeafBaseCrown]) -> Iterable[tuple[KeyPath, Key]]:
+    yielded_branch_path: set[KeyPath] = set()
     for path in paths_to_leaves:
         for i in range(len(path) - 1, -2, -1):
             sub_path = path[:i]
@@ -436,7 +437,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
     ) -> PathsTo[DictExtraPolicy]:
         schema = provide_schema(ExtraMoveAndPoliciesOverlay, mediator, request.loc_stack)
         policy = self._get_extra_policy(schema)
-        path_to_extra_policy: Dict[KeyPath, DictExtraPolicy] = {
+        path_to_extra_policy: dict[KeyPath, DictExtraPolicy] = {
             (): policy,
         }
         for path, key in _paths_to_branches(paths_to_leaves):

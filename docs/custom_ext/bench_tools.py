@@ -1,5 +1,4 @@
 import json
-from typing import Dict
 from zipfile import ZipFile
 
 import plotly
@@ -45,7 +44,7 @@ class CustomBenchUsedDistributions(SphinxMacroDirective):
     required_arguments = 0
 
     def generate_string(self) -> str:
-        distributions: Dict[str, str] = {}
+        distributions: dict[str, str] = {}
 
         for hub_description in BENCHMARK_HUBS:
             with ZipFile(RELEASE_DATA / f"{hub_description.key}.zip") as release_zip:

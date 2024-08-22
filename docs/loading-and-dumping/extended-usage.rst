@@ -39,6 +39,7 @@ Recursive data types
 These types could be loaded and dumped without additional configuration.
 
 .. literalinclude:: /examples/loading-and-dumping/extended_usage/recursive_data_types.py
+   :lines: 2-
 
 But it does not work with cyclic-referenced objects like
 

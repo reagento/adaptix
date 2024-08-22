@@ -1,26 +1,17 @@
-from itertools import islice
-from typing import (
-    AbstractSet,
-    Callable,
+from collections.abc import (
     Collection,
-    Dict,
-    Generic,
     Hashable,
     Iterable,
     Iterator,
     KeysView,
     Mapping,
-    Optional,
-    Protocol,
     Reversible,
+    Set,
     Sized,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
     ValuesView,
-    runtime_checkable,
 )
+from itertools import islice
+from typing import Callable, Generic, Optional, Protocol, TypeVar, Union, runtime_checkable
 
 from .common import VarTuple
 from .utils import MappingHashWrapper
@@ -39,7 +30,7 @@ class SupportsKeysAndGetItem(Protocol[K, _VT_co]):
         ...
 
 
-class UnrewritableDict(Dict[K, V], Generic[K, V]):
+class UnrewritableDict(dict[K, V], Generic[K, V]):
     def __setitem__(self, key, value):
         if key in self:
             old_value = self[key]
@@ -79,10 +70,10 @@ class ClassDispatcher(Generic[K_co, V]):
     """
     __slots__ = ("_mapping",)
 
-    def __init__(self, mapping: Optional[Mapping[Type[K_co], V]] = None):
-        self._mapping: Dict[Type[K_co], V] = {} if mapping is None else dict(mapping)
+    def __init__(self, mapping: Optional[Mapping[type[K_co], V]] = None):
+        self._mapping: dict[type[K_co], V] = {} if mapping is None else dict(mapping)
 
-    def dispatch(self, key: Type[K_co]) -> V:
+    def dispatch(self, key: type[K_co]) -> V:
         """Returns a value associated with the key.
         If the key does not exist, it will return
         the value of the closest superclass otherwise raise KeyError
@@ -101,13 +92,13 @@ class ClassDispatcher(Generic[K_co, V]):
     def keys(self) -> "ClassDispatcherKeysView[K_co]":
         return ClassDispatcherKeysView(self._mapping.keys())
 
-    def items(self) -> Collection[Tuple[Type[K_co], V]]:
+    def items(self) -> Collection[tuple[type[K_co], V]]:
         return self._mapping.items()
 
     def __repr__(self):
         return f"{type(self).__qualname__}({self._mapping})"
 
-    def to_dict(self) -> Dict[Type[K_co], V]:
+    def to_dict(self) -> dict[type[K_co], V]:
         return self._mapping.copy()
 
     def __eq__(self, other):
@@ -120,12 +111,12 @@ class ClassDispatcher(Generic[K_co, V]):
 
 
 # It's not a KeysView because __iter__ of KeysView must returns an Iterator[K_co]
-# but there is no inverse of Type[]
+# but there is no inverse of type[]
 
 class ClassDispatcherKeysView(Generic[K_co]):
     __slots__ = ("_keys",)
 
-    def __init__(self, keys: AbstractSet[Type[K_co]]):
+    def __init__(self, keys: Set[type[K_co]]):
         self._keys = keys
 
     def bind(self, value: V) -> ClassDispatcher[K_co, V]:
@@ -137,7 +128,7 @@ class ClassDispatcherKeysView(Generic[K_co]):
     def __len__(self) -> int:
         return len(self._keys)
 
-    def __iter__(self) -> Iterator[Type[K_co]]:
+    def __iter__(self) -> Iterator[type[K_co]]:
         return iter(self._keys)
 
     def __contains__(self, element: object) -> bool:
@@ -157,16 +148,16 @@ class ClassMap(Generic[H]):
 
     def __init__(self, *values: H):
         # need stable order for hash calculation
-        self._mapping: Mapping[Type[H], H] = {
+        self._mapping: Mapping[type[H], H] = {
             type(value): value
             for value in sorted(values, key=lambda v: type(v).__qualname__)
         }
         self._hash = hash(tuple(self._mapping.values()))
 
-    def __getitem__(self, item: Type[D]) -> D:
+    def __getitem__(self, item: type[D]) -> D:
         return self._mapping[item]  # type: ignore[index,return-value]
 
-    def __iter__(self) -> Iterator[Type[H]]:
+    def __iter__(self) -> Iterator[type[H]]:
         return iter(self._mapping)
 
     def __len__(self) -> int:
@@ -175,20 +166,20 @@ class ClassMap(Generic[H]):
     def __contains__(self, item):
         return item in self._mapping
 
-    def has(self, *classes: Type[H]) -> bool:
+    def has(self, *classes: type[H]) -> bool:
         return all(key in self._mapping for key in classes)
 
     def get_or_raise(
         self,
-        key: Type[D],
-        exception_factory: Callable[[], Union[BaseException, Type[BaseException]]],
+        key: type[D],
+        exception_factory: Callable[[], Union[BaseException, type[BaseException]]],
     ) -> D:
         try:
             return self._mapping[key]  # type: ignore[index,return-value]
         except KeyError:
             raise exception_factory() from None
 
-    def keys(self) -> KeysView[Type[H]]:
+    def keys(self) -> KeysView[type[H]]:
         return self._mapping.keys()
 
     def values(self) -> ValuesView[H]:
@@ -214,7 +205,7 @@ class ClassMap(Generic[H]):
     def add(self: CM, *values: H) -> CM:
         return type(self)(*self._mapping.values(), *values)
 
-    def discard(self: CM, *classes: Type[H]) -> CM:
+    def discard(self: CM, *classes: type[H]) -> CM:
         return type(self)(
             value for key, value in self._mapping.items()
             if key not in classes
@@ -232,13 +223,13 @@ class ImmutableStack(Reversible[T_co], Hashable, Sized, Generic[T_co]):
         self._tuple = args
 
     @classmethod
-    def _from_tuple(cls: Type[StackT], tpl: VarTuple[T_co]) -> StackT:
+    def _from_tuple(cls: type[StackT], tpl: VarTuple[T_co]) -> StackT:
         self = cls.__new__(cls)
         self._tuple = tpl
         return self
 
     @classmethod
-    def from_iter(cls: Type[StackT], iterable: Iterable[T_co]) -> StackT:
+    def from_iter(cls: type[StackT], iterable: Iterable[T_co]) -> StackT:
         return cls._from_tuple(tuple(iterable))
 
     @property

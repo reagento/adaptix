@@ -1,15 +1,14 @@
 import collections
 import collections.abc
 from collections import deque
+from collections.abc import Iterable, Mapping
 from typing import (
     AbstractSet,
     Collection,
     Deque,
     Dict,
     FrozenSet,
-    Iterable,
     List,
-    Mapping,
     MutableSequence,
     MutableSet,
     Reversible,

@@ -1,7 +1,8 @@
 # ruff: noqa: SIM113
 import collections.abc
+from collections.abc import Iterable, Mapping
 from inspect import isabstract
-from typing import Callable, Iterable, Mapping
+from typing import Callable
 
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup

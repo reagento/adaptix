@@ -1,7 +1,8 @@
 import collections.abc
 import contextlib
+from collections.abc import Mapping, Set
 from dataclasses import dataclass, replace
-from typing import AbstractSet, Callable, Dict, List, Mapping, Optional, Set, Tuple
+from typing import Callable, Optional
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -100,13 +101,13 @@ class Namer:
 
 
 class GenState(Namer):
-    path_to_suffix: Dict[CrownPath, str]
+    path_to_suffix: dict[CrownPath, str]
 
     def __init__(
         self,
         builder: CodeBuilder,
         namespace: CascadeNamespace,
-        name_to_field: Dict[str, InputField],
+        name_to_field: dict[str, InputField],
         debug_trail: DebugTrail,
         root_crown: InpCrown,
     ):
@@ -114,13 +115,13 @@ class GenState(Namer):
         self.namespace = namespace
         self._name_to_field = name_to_field
 
-        self.field_id_to_path: Dict[str, CrownPath] = {}
+        self.field_id_to_path: dict[str, CrownPath] = {}
 
         self._last_path_idx = 0
         self._parent_path: Optional[CrownPath] = None
-        self._crown_stack: List[InpCrown] = [root_crown]
+        self._crown_stack: list[InpCrown] = [root_crown]
 
-        self.type_checked_type_paths: Set[CrownPath] = set()
+        self.type_checked_type_paths: set[CrownPath] = set()
         super().__init__(debug_trail=debug_trail, path_to_suffix={}, path=())
 
     @property
@@ -184,7 +185,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         debug_trail: DebugTrail,
         strict_coercion: bool,
         field_loaders: Mapping[str, Loader],
-        skipped_fields: AbstractSet[str],
+        skipped_fields: Set[str],
         model_identity: str,
         props: ModelLoaderProps,
     ):
@@ -192,10 +193,10 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         self._name_layout = name_layout
         self._debug_trail = debug_trail
         self._strict_coercion = strict_coercion
-        self._id_to_field: Dict[str, InputField] = {
+        self._id_to_field: dict[str, InputField] = {
             field.id: field for field in self._shape.fields
         }
-        self._field_id_to_param: Dict[str, Param] = {
+        self._field_id_to_param: dict[str, Param] = {
             param.field_id: param for param in self._shape.params
         }
         self._field_loaders = field_loaders
@@ -232,7 +233,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             return False
         return field.is_optional and not self._is_extra_target(field)
 
-    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:
         namespace = BuiltinCascadeNamespace()
         state = self._create_state(namespace)
 
@@ -490,7 +491,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         )
         state.builder.empty_line()
 
-    def _get_dict_crown_required_keys(self, crown: InpDictCrown) -> Set[str]:
+    def _get_dict_crown_required_keys(self, crown: InpDictCrown) -> set[str]:
         return {
             key for key, value in crown.map.items()
             if not (isinstance(value, InpFieldCrown) and self._id_to_field[value.id].is_optional)

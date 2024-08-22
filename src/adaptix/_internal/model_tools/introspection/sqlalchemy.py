@@ -1,5 +1,6 @@
 import inspect
-from typing import Any, Generic, List, Mapping, Optional, TypeVar
+from collections.abc import Mapping
+from typing import Any, Generic, Optional, TypeVar
 
 from ...common import TypeHint
 
@@ -86,7 +87,7 @@ def _get_type_for_relationship(relationship: "RelationshipProperty", type_hints:
         return _unwrap_mapped_annotation(type_hints[relationship.key])
     except KeyError:
         if relationship.uselist:
-            return List[relationship.entity.class_]  # type: ignore[name-defined]
+            return list[relationship.entity.class_]  # type: ignore[name-defined]
         return Optional[relationship.entity.class_]
 
 

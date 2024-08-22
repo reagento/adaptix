@@ -1,4 +1,4 @@
-from typing import Tuple, Unpack
+from typing import Unpack
 
 from tests_helpers import ModelSpec
 
@@ -12,18 +12,18 @@ class WithTVField[_T](*model_spec.bases):
 if model_spec.kind != ModelSpec.PYDANTIC:
     @model_spec.decorator
     class WithTVTupleBegin[*ShapeT, T](*model_spec.bases):
-        a: Tuple[Unpack[ShapeT]]
+        a: tuple[Unpack[ShapeT]]
         b: T
 
 
     @model_spec.decorator
     class WithTVTupleEnd[T, *ShapeT](*model_spec.bases):
         a: T
-        b: Tuple[Unpack[ShapeT]]
+        b: tuple[Unpack[ShapeT]]
 
 
     @model_spec.decorator
     class WithTVTupleMiddle[T1, *ShapeT, T2](*model_spec.bases):
         a: T1
-        b: Tuple[Unpack[ShapeT]]
+        b: tuple[Unpack[ShapeT]]
         c: T2

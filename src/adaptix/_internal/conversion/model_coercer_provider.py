@@ -1,5 +1,6 @@
+from collections.abc import Iterable, Mapping
 from inspect import Parameter, Signature
-from typing import Callable, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
@@ -118,13 +119,13 @@ class ModelCoercerProvider(CoercerProvider):
         request: CoercerRequest,
         dst_shape: InputShape,
         src_shape: OutputShape,
-    ) -> Iterable[Tuple[InputField, Optional[LinkingResult]]]:
+    ) -> Iterable[tuple[InputField, Optional[LinkingResult]]]:
         sources = tuple(
             request.src.append_with(output_field_to_loc(src_field))
             for src_field in src_shape.fields
         )
 
-        def fetch_field_linking(dst_field: InputField) -> Tuple[InputField, Optional[LinkingResult]]:
+        def fetch_field_linking(dst_field: InputField) -> tuple[InputField, Optional[LinkingResult]]:
             destination = request.dst.append_with(input_field_to_loc(dst_field))
             try:
                 linking = mediator.provide(
@@ -226,7 +227,7 @@ class ModelCoercerProvider(CoercerProvider):
         request: CoercerRequest,
         linking: FunctionLinking,
     ) -> BroachingPlan:
-        args: List[FuncCallArg[BroachingPlan]] = []
+        args: list[FuncCallArg[BroachingPlan]] = []
         field_to_sub_plan = self._generate_sub_plan(
             mediator,
             request,
@@ -249,7 +250,7 @@ class ModelCoercerProvider(CoercerProvider):
         self,
         mediator: Mediator,
         request: CoercerRequest,
-        field_linkings: Iterable[Tuple[InputField, LinkingResult]],
+        field_linkings: Iterable[tuple[InputField, LinkingResult]],
         parent_func: Optional[Callable],
     ) -> Mapping[InputField, BroachingPlan]:
         def generate_sub_plan(input_field: InputField, linking_result: LinkingResult):
@@ -328,7 +329,7 @@ class ModelCoercerProvider(CoercerProvider):
         field_to_linking: Mapping[InputField, Optional[LinkingResult]],
         field_to_sub_plan: Mapping[InputField, BroachingPlan],
     ) -> BroachingPlan:
-        args: List[FuncCallArg[BroachingPlan]] = []
+        args: list[FuncCallArg[BroachingPlan]] = []
         has_skipped_params = False
         for param in dst_shape.params:
             field = dst_shape.fields_dict[param.field_id]

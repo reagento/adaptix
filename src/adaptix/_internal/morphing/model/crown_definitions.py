@@ -1,5 +1,6 @@
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generic, Mapping, Sequence, TypeVar, Union
+from typing import Any, Callable, Generic, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools.definitions import BaseShape, DefaultFactory, DefaultValue, InputShape, OutputShape
@@ -101,7 +102,7 @@ Sieve = Callable[[Any, Any], bool]
 
 @dataclass(frozen=True)
 class OutDictCrown(BaseDictCrown["OutCrown"]):
-    sieves: Dict[str, Sieve]
+    sieves: dict[str, Sieve]
 
     def _validate(self):
         wild_sieves = self.sieves.keys() - self.map.keys()

@@ -1,6 +1,7 @@
 import itertools
+from collections.abc import Sequence
 from enum import Enum
-from typing import Sequence, Tuple, Type, TypeVar
+from typing import TypeVar
 
 from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler
 
@@ -11,7 +12,7 @@ class ConcatProvider(Provider):
     def __init__(self, *providers: Provider):
         self._providers = providers
 
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
         return list(
             itertools.chain.from_iterable(
                 provider.get_request_handlers()
@@ -56,7 +57,7 @@ class ChainingProvider(Provider):
 
         return chaining_handler
 
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
         return [
             (request_cls, checker, self._wrap_handler(handler))
             for request_cls, checker, handler in self._provider.get_request_handlers()

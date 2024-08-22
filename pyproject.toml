@@ -7,7 +7,7 @@ name = 'adaptix'
 version = '3.0.0b7'
 description = 'An extremely flexible and configurable data model conversion library'
 readme = 'README.md'
-requires-python = '>=3.8'
+requires-python = '>=3.9'
 dependencies = [
     'exceptiongroup>=1.1.3; python_version<"3.11"',
     'astunparse>=1.6.3; python_version<="3.8"',
@@ -73,7 +73,6 @@ python_files = [
   'local_helpers.py',
 ]
 testpaths = ['tests', 'examples']
-filterwarnings = ['ignore::adaptix.TypedDictAt38Warning']
 
 [tool.coverage.run]
 branch = true
@@ -165,6 +164,7 @@ ignore = [
   'PTH201',
   'RSE102',
   'TCH003',
+  'PYI025',
 
   # Rules conflictin with other tools
   'I001',
@@ -173,7 +173,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ['F401']
 
-"test_*" = ['S101', 'PLR2004', 'PLC0105', 'N806', 'FA102']
+"test_*" = ['S101', 'PLR2004', 'PLC0105', 'N806', 'FA102', 'UP035', 'UP006']
 "tests/*/local_helpers.py" = ['S101', 'PLR2004', 'PLC0105', 'N806', 'FA102']
 "tests/*/data_*.py" = ['F821']
 "tests/tests_helpers/*" = ['INP001', 'S101']

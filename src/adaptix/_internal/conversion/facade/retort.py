@@ -1,7 +1,8 @@
 import inspect
+from collections.abc import Iterable
 from functools import partial
 from inspect import Parameter, Signature
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type, TypeVar, overload
+from typing import Any, Callable, Optional, TypeVar, overload
 
 from adaptix import TypeHint
 
@@ -61,7 +62,7 @@ CallableT = TypeVar("CallableT", bound=Callable)
 class AdornedConversionRetort(OperatingRetort):
     def _calculate_derived(self) -> None:
         super()._calculate_derived()
-        self._simple_converter_cache: Dict[Tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
+        self._simple_converter_cache: dict[tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         with self._clone() as clone:
@@ -99,8 +100,8 @@ class AdornedConversionRetort(OperatingRetort):
     @overload
     def get_converter(
         self,
-        src: Type[SrcT],
-        dst: Type[DstT],
+        src: type[SrcT],
+        dst: type[DstT],
         *,
         recipe: Iterable[Provider] = (),
     ) -> Callable[[SrcT], DstT]:
@@ -169,7 +170,7 @@ class AdornedConversionRetort(OperatingRetort):
             function_name=None,
         )
 
-    def convert(self, src_obj: Any, dst: Type[DstT], *, recipe: Iterable[Provider] = ()) -> DstT:
+    def convert(self, src_obj: Any, dst: type[DstT], *, recipe: Iterable[Provider] = ()) -> DstT:
         """Method transforming a source object to destination.
 
         :param src_obj: A type of converter input data.

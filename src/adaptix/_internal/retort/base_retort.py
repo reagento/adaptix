@@ -1,6 +1,7 @@
 import itertools
 from abc import ABCMeta
-from typing import ClassVar, Iterable, Sequence, TypeVar
+from collections.abc import Iterable, Sequence
+from typing import ClassVar, TypeVar
 
 from ..common import VarTuple
 from ..provider.essential import Provider

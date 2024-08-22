@@ -1,13 +1,9 @@
 # ruff: noqa: PYI024, UP014, FBT003
-import typing
 from collections import namedtuple
 from types import MappingProxyType
-from typing import Any, NamedTuple
+from typing import Annotated, Any, NamedTuple
 from unittest.mock import ANY
 
-from tests_helpers import requires
-
-from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     DefaultValue,
     InputField,
@@ -713,10 +709,9 @@ def test_inheritance_overriden_types_functional_parent():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotated(NamedTuple):
-        annotated_field: typing.Annotated[int, "metadata"]
+        annotated_field: Annotated[int, "metadata"]
 
     assert (
         get_named_tuple_shape(WithAnnotated)
@@ -727,7 +722,7 @@ def test_annotated():
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="annotated_field",
                         default=NoDefault(),
                         is_required=True,
@@ -747,7 +742,7 @@ def test_annotated():
             output=OutputShape(
                 fields=(
                     OutputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="annotated_field",
                         default=NoDefault(),
                         accessor=create_key_accessor(0, access_error=None),

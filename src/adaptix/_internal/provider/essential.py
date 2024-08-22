@@ -1,7 +1,8 @@
 import typing
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Generic, Iterable, Optional, Sequence, Tuple, Type, TypeVar, final
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, final
 
 from ..common import VarTuple
 from ..compat import CompatExceptionGroup
@@ -248,5 +249,5 @@ class Provider(ABC):
     """An object that can process Request instances"""
 
     @abstractmethod
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
         ...

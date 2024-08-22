@@ -1,5 +1,6 @@
 import itertools
-from typing import Callable, Iterable, Mapping, NoReturn, Optional, TypeVar, Union
+from collections.abc import Iterable, Mapping
+from typing import Callable, NoReturn, Optional, TypeVar, Union
 
 from ..common import Coercer, OneArgCoercer, VarTuple
 from ..model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind

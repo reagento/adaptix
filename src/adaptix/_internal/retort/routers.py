@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from itertools import islice
-from typing import Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 from ..common import TypeHint
 from ..provider.essential import DirectMediator, Request, RequestChecker, RequestHandler
@@ -9,7 +10,7 @@ from ..type_tools import normalize_type
 from .request_bus import RequestRouter
 
 RequestT = TypeVar("RequestT", bound=Request)
-CheckerAndHandler = Tuple[RequestChecker, RequestHandler]
+CheckerAndHandler = tuple[RequestChecker, RequestHandler]
 
 
 class SimpleRouter(RequestRouter[RequestT]):
@@ -23,7 +24,7 @@ class SimpleRouter(RequestRouter[RequestT]):
         mediator: DirectMediator,
         request: RequestT,
         search_offset: int,
-    ) -> Tuple[RequestHandler, int]:
+    ) -> tuple[RequestHandler, int]:
         for i, (checker, handler) in enumerate(
             islice(self._checkers_and_handlers, search_offset, None),
             start=search_offset,
@@ -36,7 +37,7 @@ class SimpleRouter(RequestRouter[RequestT]):
         return len(self._checkers_and_handlers)
 
 
-OriginToHandler = Dict[TypeHint, RequestHandler]
+OriginToHandler = dict[TypeHint, RequestHandler]
 LRRoutingItem = Union[CheckerAndHandler, OriginToHandler]
 
 
@@ -51,7 +52,7 @@ class LocatedRequestRouter(RequestRouter[LocatedRequest]):
         mediator: DirectMediator,
         request: LocatedRequest,
         search_offset: int,
-    ) -> Tuple[RequestHandler, int]:
+    ) -> tuple[RequestHandler, int]:
         try:
             origin = normalize_type(request.last_loc.type).origin
         except ValueError:
@@ -79,7 +80,7 @@ class ExactOriginCombiner:
         self._combo: OriginToHandler = {}
 
     def _stop_combo(self, checker_and_handler: Optional[CheckerAndHandler]) -> Sequence[LRRoutingItem]:
-        result: List[LRRoutingItem] = []
+        result: list[LRRoutingItem] = []
         if self._combo:
             if len(self._combo) == 1:
                 [(origin, handler)] = self._combo.items()
@@ -110,7 +111,7 @@ class ExactOriginCombiner:
 def create_router_for_located_request(
     checkers_and_handlers: Sequence[CheckerAndHandler],
 ) -> RequestRouter[LocatedRequest]:
-    items: List[Union[CheckerAndHandler, OriginToHandler]] = []
+    items: list[Union[CheckerAndHandler, OriginToHandler]] = []
 
     combiner = ExactOriginCombiner()
     for checkers_and_handler in checkers_and_handlers:

@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Literal, Mapping, Optional, TypeVar, Union
+from collections.abc import Mapping
+from typing import Any, Callable, Literal, Optional, TypeVar, Union
 
 from ...common import Dumper, Loader
 from ...morphing.load_error import LoadError
@@ -85,7 +86,7 @@ def native_pydantic(
     fallback: Omittable[Callable[[Any], Any]] = Omitted(),
     serialize_as_any: Omittable[bool] = Omitted(),
     # common parameters
-    context: Omittable[Optional[Dict[str, Any]]] = Omitted(),
+    context: Omittable[Optional[dict[str, Any]]] = Omitted(),
     config: Optional["ConfigDict"] = None,
 ) -> Provider:
     """Provider that represents value via pydantic.

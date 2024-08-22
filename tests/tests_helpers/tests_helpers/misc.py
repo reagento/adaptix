@@ -3,11 +3,12 @@ import inspect
 import re
 import runpy
 import sys
+from collections.abc import Generator, Reversible, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, is_dataclass
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any, Callable, Dict, Generator, List, Optional, Reversible, Sequence, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 from uuid import uuid4
 
 import pytest
@@ -41,7 +42,7 @@ def requires(requirement: Requirement):
 E = TypeVar("E", bound=Exception)
 
 
-def _repr_value(obj: Any) -> Dict[str, Any]:
+def _repr_value(obj: Any) -> dict[str, Any]:
     if not isinstance(obj, Exception):
         return obj
 
@@ -74,7 +75,7 @@ def _repr_value(obj: Any) -> Dict[str, Any]:
 
 
 def raises_exc(
-    exc: Union[Type[E], E],
+    exc: Union[type[E], E],
     func: Callable[[], Any],
     *,
     match: Optional[str] = None,
@@ -131,7 +132,7 @@ class DebugCtx:
 class PlaceholderProvider(Provider):
     value: int
 
-    def get_request_handlers(self) -> Sequence[Tuple[Type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
         return []
 
 
@@ -173,7 +174,7 @@ class ByTrailSelector:
 def load_namespace(
     file_name: str,
     ns_id: Optional[str] = None,
-    vars: Optional[Dict[str, Any]] = None,  # noqa: A002
+    vars: Optional[dict[str, Any]] = None,  # noqa: A002
     run_name: Optional[str] = None,
     stack_offset: int = 1,
 ) -> SimpleNamespace:
@@ -192,7 +193,7 @@ def load_namespace(
 def load_namespace_keeping_module(
     file_name: str,
     ns_id: Optional[str] = None,
-    vars: Optional[Dict[str, Any]] = None,  # noqa: A002
+    vars: Optional[dict[str, Any]] = None,  # noqa: A002
     run_name: Optional[str] = None,
 ) -> Generator[SimpleNamespace, None, None]:
     if run_name is None:
@@ -208,7 +209,7 @@ def load_namespace_keeping_module(
         sys.modules.pop(run_name, None)
 
 
-def with_notes(exc: E, *notes: Union[str, List[str]]) -> E:
+def with_notes(exc: E, *notes: Union[str, list[str]]) -> E:
     for note_or_list in notes:
         if isinstance(note_or_list, list):
             for note in note_or_list:

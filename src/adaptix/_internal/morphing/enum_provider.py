@@ -1,10 +1,11 @@
 import collections
 import math
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping, Sequence
 from enum import Enum, EnumMeta, Flag
 from functools import reduce
 from operator import or_
-from typing import Any, Iterable, Mapping, Optional, Sequence, Type, TypeVar, Union, final
+from typing import Any, Optional, TypeVar, Union, final
 
 from ..common import Dumper, Loader, TypeHint
 from ..morphing.provider_template import DumperProvider, LoaderProvider
@@ -224,7 +225,7 @@ class EnumExactValueProvider(BaseEnumProvider):
         return enum_exact_loader_v2m
 
 
-    def _get_exact_value_to_member(self, enum: Type[Enum]) -> Optional[Mapping[Any, Any]]:
+    def _get_exact_value_to_member(self, enum: type[Enum]) -> Optional[Mapping[Any, Any]]:
         try:
             value_to_member = {member.value: member for member in enum}
         except TypeError:
@@ -291,10 +292,12 @@ class FlagByExactValueProvider(BaseFlagProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return flag_exact_value_dumper
 
+
 def flag_exact_value_dumper(data):
     return data.value
 
-def _extract_non_compound_cases_from_flag(enum: Type[FlagT]) -> Sequence[FlagT]:
+
+def _extract_non_compound_cases_from_flag(enum: type[FlagT]) -> Sequence[FlagT]:
     return [case for case in enum.__members__.values() if not math.log2(case.value) % 1]
 
 
@@ -312,7 +315,7 @@ class FlagByListProvider(BaseFlagProvider):
         self._allow_duplicates = allow_duplicates
         self._allow_compound = allow_compound
 
-    def _get_cases(self, enum: Type[FlagT]) -> Sequence[FlagT]:
+    def _get_cases(self, enum: type[FlagT]) -> Sequence[FlagT]:
         if self._allow_compound:
             return list(enum.__members__.values())
         return _extract_non_compound_cases_from_flag(enum)

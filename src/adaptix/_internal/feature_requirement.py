@@ -3,7 +3,8 @@ import itertools
 import re
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from .common import VarTuple
 
@@ -147,10 +148,6 @@ class PythonImplementationRequirement(Requirement):
     def fail_reason(self) -> str:
         return f"{self.implementation_name} is required"
 
-
-HAS_PY_39 = PythonVersionRequirement((3, 9))
-HAS_ANNOTATED = HAS_PY_39
-HAS_STD_CLASSES_GENERICS = HAS_PY_39
 
 HAS_PY_310 = PythonVersionRequirement((3, 10))
 HAS_TYPE_UNION_OP = HAS_PY_310

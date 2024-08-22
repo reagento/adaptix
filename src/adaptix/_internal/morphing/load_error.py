@@ -1,7 +1,8 @@
 import dataclasses
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Optional, Union
 
 from ..common import TypeHint, VarTuple
 from ..compat import CompatExceptionGroup

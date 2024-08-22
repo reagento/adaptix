@@ -2,7 +2,7 @@ import linecache
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from threading import Lock
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 from .code_builder import CodeBuilder
 
@@ -16,7 +16,7 @@ class ClosureCompiler(ABC):
         base_id: str,
         filename_maker: Callable[[str], str],
         builder: CodeBuilder,
-        namespace: Dict[str, Any],
+        namespace: dict[str, Any],
     ) -> Callable:
         """Execute content of builder and return value that body returned (it is must be a closure).
         :param base_id: string that used to generate unique id
@@ -32,7 +32,7 @@ class ConcurrentCounter:
 
     def __init__(self) -> None:
         self._lock = Lock()
-        self._name_to_idx: Dict[str, int] = defaultdict(lambda: 0)
+        self._name_to_idx: dict[str, int] = defaultdict(lambda: 0)
 
     def generate_idx(self, name: str) -> int:
         with self._lock:
@@ -54,10 +54,10 @@ class BasicClosureCompiler(ClosureCompiler):
 
         return main_builder
 
-    def _compile(self, source: str, unique_filename: str, namespace: Dict[str, Any]):
+    def _compile(self, source: str, unique_filename: str, namespace: dict[str, Any]):
         code_obj = compile(source, unique_filename, "exec")
 
-        local_namespace: Dict[str, Any] = {}
+        local_namespace: dict[str, Any] = {}
         exec(code_obj, namespace, local_namespace)  # noqa: S102
         linecache.cache[unique_filename] = (
             len(source),
@@ -78,7 +78,7 @@ class BasicClosureCompiler(ClosureCompiler):
         base_id: str,
         filename_maker: Callable[[str], str],
         builder: CodeBuilder,
-        namespace: Dict[str, Any],
+        namespace: dict[str, Any],
     ) -> Callable:
         source = self._make_source_builder(builder).string()
         unique_id = self._get_unique_id(base_id)

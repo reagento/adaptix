@@ -1,5 +1,6 @@
+from collections.abc import Iterable, Mapping
 from enum import Enum, Flag, IntEnum, auto
-from typing import Iterable, Mapping, Union
+from typing import Union
 
 import pytest
 from tests_helpers import parametrize_bool, raises_exc, with_cause, with_notes

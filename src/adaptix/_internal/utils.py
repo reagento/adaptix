@@ -2,25 +2,10 @@ import itertools
 import sys
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Collection, Generator, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from copy import copy
-from typing import (
-    Any,
-    Callable,
-    Collection,
-    Generator,
-    Generic,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Protocol,
-    Tuple,
-    TypeVar,
-    Union,
-    final,
-    overload,
-)
+from typing import Any, Callable, Generic, Protocol, TypeVar, Union, final, overload
 
 from .feature_requirement import HAS_NATIVE_EXC_GROUP, HAS_PY_310, HAS_PY_311
 
@@ -104,7 +89,7 @@ T = TypeVar("T")
 if HAS_PY_310:
     pairs = itertools.pairwise
 else:
-    def pairs(iterable: Iterable[T]) -> Iterable[Tuple[T, T]]:  # type: ignore[no-redef]
+    def pairs(iterable: Iterable[T]) -> Iterable[tuple[T, T]]:  # type: ignore[no-redef]
         it = iter(iterable)
         try:
             prev = next(it)
@@ -154,10 +139,10 @@ class ComparableSequence(Protocol[T]):
 
 def get_prefix_groups(
     values: Collection[ComparableSeqT],
-) -> Collection[Tuple[ComparableSeqT, Iterable[ComparableSeqT]]]:
-    groups: List[Tuple[ComparableSeqT, List[ComparableSeqT]]] = []
+) -> Collection[tuple[ComparableSeqT, Iterable[ComparableSeqT]]]:
+    groups: list[tuple[ComparableSeqT, list[ComparableSeqT]]] = []
     sorted_values = iter(sorted(values))
-    current_group: List[ComparableSeqT] = []
+    current_group: list[ComparableSeqT] = []
     try:
         prefix = next(sorted_values)
     except StopIteration:

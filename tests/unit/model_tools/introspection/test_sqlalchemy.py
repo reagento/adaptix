@@ -1,11 +1,9 @@
-from typing import Optional
+from typing import Annotated, Optional
 from unittest.mock import ANY
 
 from sqlalchemy import Column, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
-from tests_helpers import requires
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     DefaultFactory,
     DefaultValue,
@@ -513,10 +511,7 @@ def test_imperative():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_declarative_annotated():
-    from typing import Annotated
-
     mapper_registry = registry()
 
     @mapper_registry.mapped

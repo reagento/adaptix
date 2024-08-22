@@ -1,15 +1,15 @@
 import collections.abc
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, Collection, Iterable, Literal, Mapping, Optional, Sequence, Set, Type, TypeVar, Union
+from typing import Any, Literal, Optional, TypeVar, Union
 
 from ..common import Dumper, Loader, TypeHint
 from ..compat import CompatExceptionGroup
 from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
-from ..feature_requirement import HAS_PY_39
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStack
 from ..provider.located_request import LocatedRequestDelegatingProvider, LocatedRequestT, for_predicate
@@ -82,7 +82,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return frozenset(literal_dumper(arg) if isinstance(arg, Enum) else arg for arg in args)
 
     def _get_enum_types(self, cases: Collection) -> Collection:
-        seen: Set[Type[Enum]] = set()
+        seen: set[type[Enum]] = set()
         enum_types = []
         for case in cases:
             case_type = type(case)
@@ -92,7 +92,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return enum_types
 
     def _fetch_enum_loaders(
-        self, mediator: Mediator, request: LoaderRequest, enum_classes: Iterable[Type[Enum]],
+        self, mediator: Mediator, request: LoaderRequest, enum_classes: Iterable[type[Enum]],
     ) -> Iterable[Loader[Enum]]:
         requests = [
             request.append_loc(TypeHintLoc(type=enum_cls))
@@ -104,8 +104,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         )
 
     def _fetch_enum_dumpers(
-        self, mediator: Mediator, request: DumperRequest, enum_classes: Iterable[Type[Enum]],
-    ) -> Mapping[Type[Enum], Dumper[Enum]]:
+        self, mediator: Mediator, request: DumperRequest, enum_classes: Iterable[type[Enum]],
+    ) -> Mapping[type[Enum], Dumper[Enum]]:
         requests = [
             request.append_loc(TypeHintLoc(type=enum_cls))
             for enum_cls in enum_classes
@@ -212,7 +212,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             enum_dumpers_wrapper=MappingHashWrapper(enum_dumpers),
         )
 
-    def _make_dumper(self, enum_dumpers_wrapper: MappingHashWrapper[Mapping[Type[Enum], Dumper[Enum]]]):
+    def _make_dumper(self, enum_dumpers_wrapper: MappingHashWrapper[Mapping[type[Enum], Dumper[Enum]]]):
         enum_dumpers = enum_dumpers_wrapper.mapping
 
         if len(enum_dumpers) == 1:
@@ -457,7 +457,7 @@ def path_like_dumper(data):
     return data.__fspath__()
 
 
-@for_predicate(PathLike[str] if HAS_PY_39 else PathLike)
+@for_predicate(PathLike[str])
 class PathLikeProvider(LoaderProvider, DumperProvider):
     _impl = Path
 
