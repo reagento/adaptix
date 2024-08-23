@@ -272,7 +272,7 @@ towncrier==23.11.0
     # via -r requirements/raw/dev.txt
 tox==4.18.0
     # via tox-uv
-tox-uv==1.11.1
+tox-uv==1.11.2
     # via -r requirements/raw/runner.txt
 typing-extensions==4.12.2
     # via

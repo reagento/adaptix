@@ -26,7 +26,7 @@ cfgv==3.4.0
     # via pre-commit
 charset-normalizer==3.3.2
     # via requests
-colorama==0.4.6 ; python_version > '3.4'
+colorama==0.4.6 ; python_full_version >= '3.5'
     # via radon
 contourpy==1.2.1
     # via matplotlib
