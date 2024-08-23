@@ -2,9 +2,9 @@
 #    uv pip compile requirements/raw/bench.txt -o requirements/bench.txt --allow-unsafe --strip-extras --no-strip-markers
 -e ./benchmarks
     # via -r requirements/raw/bench.txt
-annotated-types==0.6.0
+annotated-types==0.7.0
     # via pydantic
-attrs==23.2.0
+attrs==24.2.0
     # via cattrs
 cattrs==23.1.2
     # via -r requirements/raw/bench.txt
@@ -18,7 +18,7 @@ mashumaro==3.10
     # via -r requirements/raw/bench.txt
 msgspec==0.18.4 ; implementation_name != 'pypy'
     # via -r requirements/raw/bench.txt
-packaging==24.0
+packaging==24.1
     # via
     #   marshmallow
     #   pytest
@@ -38,7 +38,7 @@ pytest==7.4.2
     # via -r requirements/raw/bench.txt
 schematics==2.1.1
     # via -r requirements/raw/bench.txt
-typing-extensions==4.11.0
+typing-extensions==4.12.2
     # via
     #   mashumaro
     #   pydantic

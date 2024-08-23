@@ -247,7 +247,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             TypeLoadError, ExcludedTypeLoadError,
             LoadError, AggregateLoadError,
         ):
-            state.namespace.add_constant(named_value.__name__, named_value)  # type: ignore[attr-defined]
+            state.namespace.add_constant(named_value.__name__, named_value)
 
         state.namespace.add_constant("CompatExceptionGroup", CompatExceptionGroup)
         state.namespace.add_constant("CollectionsMapping", collections.abc.Mapping)
@@ -837,9 +837,7 @@ class ModelInputJSONSchemaGen:
     def _is_required_crown(self, crown: InpCrown) -> bool:
         if isinstance(crown, InpFieldCrown):
             return self._shape.fields_dict[crown.id].is_required
-        if isinstance(crown, InpNoneCrown):
-            return False
-        return True
+        return isinstance(crown, InpNoneCrown)
 
     def convert_crown(self, crown: InpCrown) -> JSONSchema:
         if isinstance(crown, InpDictCrown):

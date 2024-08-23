@@ -2,7 +2,7 @@
 #    uv pip compile requirements/raw/test_extra_old.txt -o requirements/test_extra_old.txt --allow-unsafe --strip-extras --no-strip-markers
 -e ./tests/tests_helpers
     # via -r requirements/raw/test_extra_none.txt
-annotated-types==0.6.0
+annotated-types==0.7.0
     # via pydantic
 attrs==21.3.0
     # via -r requirements/raw/test_extra_old.txt
@@ -14,7 +14,7 @@ greenlet==3.0.3 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or 
     # via sqlalchemy
 iniconfig==2.0.0
     # via pytest
-packaging==24.0
+packaging==24.1
     # via pytest
 phonenumberslite==8.13.26
     # via -r requirements/raw/test_extra_none.txt
@@ -32,7 +32,6 @@ sqlalchemy==2.0.0
     # via -r requirements/raw/test_extra_old.txt
 typing-extensions==4.6.3
     # via
-    #   -r requirements/raw/test_extra_old.txt
     #   pydantic
     #   pydantic-core
     #   sqlalchemy

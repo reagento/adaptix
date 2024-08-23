@@ -118,6 +118,7 @@ ignore_decorators = ['@_aspect_storage.add', '@overload', '@abstractmethod']
 
 [tool.ruff]
 line-length = 120
+output-format = "concise"
 
 [tool.ruff.lint]
 select = ['ALL']

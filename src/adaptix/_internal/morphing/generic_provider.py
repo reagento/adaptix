@@ -60,7 +60,7 @@ class TypeAliasUnwrappingProvider(LocatedRequestDelegatingProvider):
 
 
 def _is_exact_zero_or_one(arg):
-    return type(arg) is int and arg in (0, 1)  # noqa: E721
+    return type(arg) is int and arg in (0, 1)
 
 
 @dataclass

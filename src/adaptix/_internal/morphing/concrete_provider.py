@@ -421,7 +421,7 @@ class ScalarProvider(MorphingProvider, Generic[T]):
 
 
 def int_strict_coercion_loader(data):
-    if type(data) is int:  # noqa: E721
+    if type(data) is int:
         return data
     raise TypeLoadError(int, data)
 
@@ -475,7 +475,7 @@ FLOAT_PROVIDER = ScalarProvider(
 
 
 def str_strict_coercion_loader(data):
-    if type(data) is str:  # noqa: E721
+    if type(data) is str:
         return data
     raise TypeLoadError(str, data)
 
@@ -490,7 +490,7 @@ STR_PROVIDER = ScalarProvider(
 
 
 def bool_strict_coercion_loader(data):
-    if type(data) is bool:  # noqa: E721
+    if type(data) is bool:
         return data
     raise TypeLoadError(bool, data)
 
@@ -505,7 +505,7 @@ BOOL_PROVIDER = ScalarProvider(
 
 
 def decimal_strict_coercion_loader(data):
-    if type(data) is str:  # noqa: E721
+    if type(data) is str:
         try:
             return Decimal(data)
         except InvalidOperation:

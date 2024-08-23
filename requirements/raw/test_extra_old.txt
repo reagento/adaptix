@@ -2,9 +2,3 @@
 attrs==21.3.0
 sqlalchemy==2.0.0
 pydantic==2.1.0
-
-# pydantic-core has dependency:
-# `typing-extensions >=4.6.0,<4.7.0; platform_python_implementation == "PyPy"`
-# Final requirements file generated on cpython ignoring this contraint.
-# This is leads to ResolutionImpossible error on PyPy run
-typing-extensions>=4.6.0, <4.7.0

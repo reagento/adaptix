@@ -154,7 +154,7 @@ def _get_input_shape(
         )
 
     for relationship in relationships:
-        if relationship.collection_class is not None and strip_alias(relationship.collection_class) != list:
+        if relationship.collection_class is not None and strip_alias(relationship.collection_class) is not list:
             continue  # it is not supported
         if relationship.uselist is None:
             continue  # it cannot be None there
@@ -204,7 +204,7 @@ def _get_output_shape(
         if isinstance(column, sqlalchemy.Column)
     ]
     for relationship in relationships:
-        if relationship.collection_class is not None and strip_alias(relationship.collection_class) != list:
+        if relationship.collection_class is not None and strip_alias(relationship.collection_class) is not list:
             continue  # it is not supported
         if relationship.uselist is None:
             continue  # it cannot be None there

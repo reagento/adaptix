@@ -81,7 +81,7 @@ def is_generic(tp: TypeHint) -> bool:
         bool(get_type_vars(tp))
         or (
             strip_alias(tp) in BUILTIN_ORIGIN_TO_TYPEVARS
-            and tp != type
+            and tp is not type
             and not is_parametrized(tp)
         )
         or (

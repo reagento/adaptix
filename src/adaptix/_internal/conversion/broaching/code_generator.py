@@ -152,19 +152,19 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
                 args.append(sub_ast)
             elif isinstance(arg, KeywordArg):
                 sub_ast = self._gen_plan_element_dispatch(state, arg.element)
-                keywords.append(ast.keyword(arg=arg.key, value=sub_ast))
+                keywords.append(ast.keyword(arg=arg.key, value=sub_ast))  # type: ignore[call-overload]
             elif isinstance(arg, UnpackMapping):
                 sub_ast = self._gen_plan_element_dispatch(state, arg.element)
-                keywords.append(ast.keyword(value=sub_ast))
+                keywords.append(ast.keyword(value=sub_ast))  # type: ignore[call-overload]
             elif isinstance(arg, UnpackIterable):
                 sub_ast = self._gen_plan_element_dispatch(state, arg.element)
-                args.append(ast.Starred(value=sub_ast, ctx=ast.Load()))
+                args.append(ast.Starred(value=sub_ast, ctx=ast.Load()))  # type: ignore[arg-type]
             else:
                 raise TypeError
 
         return ast.Call(
             func=ast.Name(name, ast.Load()),
-            args=args,
+            args=args,  # type: ignore[arg-type]
             keywords=keywords,
         )
 

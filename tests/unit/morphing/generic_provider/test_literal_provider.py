@@ -29,11 +29,11 @@ def test_loader_base(strict_coercion, debug_trail):
 
 
 def _is_exact_zero(arg):
-    return type(arg) is int and arg == 0  # noqa: E721
+    return type(arg) is int and arg == 0
 
 
 def _is_exact_one(arg):
-    return type(arg) is int and arg == 1  # noqa: E721
+    return type(arg) is int and arg == 1
 
 
 def test_strict_coercion(debug_trail):

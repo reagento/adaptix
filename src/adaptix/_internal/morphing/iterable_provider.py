@@ -51,7 +51,7 @@ class IterableProvider(MorphingProvider):
     def _fetch_norm_and_arg(self, request: LocatedRequest):
         norm = try_normalize_type(request.last_loc.type)
 
-        if len(norm.args) != 1 and not (norm.origin == tuple and norm.args[-1] == Ellipsis):
+        if len(norm.args) != 1 and not (norm.origin is tuple and norm.args[-1] == Ellipsis):
             raise CannotProvide
 
         try:
@@ -160,7 +160,7 @@ class IterableProvider(MorphingProvider):
         def iter_loader_dt_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Iterable, Mapping, data)
-            if type(data) is str:  # noqa: E721
+            if type(data) is str:
                 raise ExcludedTypeLoadError(Iterable, str, data)
 
             try:
@@ -176,7 +176,7 @@ class IterableProvider(MorphingProvider):
         def iter_loader_sc(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(Iterable, Mapping, data)
-            if type(data) is str:  # noqa: E721
+            if type(data) is str:
                 raise ExcludedTypeLoadError(Iterable, str, data)
 
             try:
@@ -284,6 +284,6 @@ class IterableProvider(MorphingProvider):
             ),
             lambda x: "Cannot create JSONSchema for iterable. JSONSchema for element cannot be created",
         )
-        if norm.origin == set:
+        if norm.origin is set:
             return JSONSchema(type=JSONSchemaType.ARRAY, items=item_schema, unique_items=True)
         return JSONSchema(type=JSONSchemaType.ARRAY, items=item_schema)

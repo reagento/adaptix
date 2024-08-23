@@ -84,7 +84,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         def dt_sc_loader(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(tuple, Mapping, data)
-            if type(data) is str:  # noqa: E721
+            if type(data) is str:
                 raise ExcludedTypeLoadError(tuple, str, data)
 
             try:
@@ -191,7 +191,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
         def dt_disable_sc_loader(data):
             if isinstance(data, CollectionsMapping):
                 raise ExcludedTypeLoadError(tuple, Mapping, data)
-            if type(data) is str:  # noqa: E721
+            if type(data) is str:
                 raise ExcludedTypeLoadError(tuple, str, data)
 
             try:

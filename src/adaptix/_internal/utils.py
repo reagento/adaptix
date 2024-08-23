@@ -15,7 +15,7 @@ C = TypeVar("C", bound="Cloneable")
 class Cloneable(ABC):
     @abstractmethod
     def _calculate_derived(self) -> None:
-        ...
+        return
 
     @contextmanager
     @final

@@ -215,14 +215,14 @@ class IterableCoercerProvider(NormTypeCoercerProvider):
         return iterable_coercer
 
     def _parse_source(self, norm: BaseNormType) -> TypeHint:
-        if norm.origin == tuple and norm.args[-1] != Ellipsis:
+        if norm.origin is tuple and norm.args[-1] != Ellipsis:
             raise CannotProvide("Constant-length tuple is not supported yet", is_demonstrative=True)
         if norm.origin in self.CONCRETE_ORIGINS or norm.origin in self.ABC_TO_IMPL:
             return norm.args[0].source
         raise CannotProvide
 
     def _parse_destination(self, norm: BaseNormType) -> tuple[Callable, TypeHint]:
-        if norm.origin == tuple and norm.args[-1] != Ellipsis:
+        if norm.origin is tuple and norm.args[-1] != Ellipsis:
             raise CannotProvide("Constant-length tuple is not supported yet", is_demonstrative=True)
         if norm.origin in self.CONCRETE_ORIGINS:
             return norm.origin, norm.args[0].source

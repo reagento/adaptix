@@ -655,7 +655,7 @@ class TypeNormalizer:
 
     @_aspect_storage.add
     def _norm_tuple(self, tp, origin, args):
-        if origin == tuple:
+        if origin is tuple:
             if tp in (tuple, typing.Tuple):  # not subscribed values
                 return _NormType(
                     tuple,
@@ -683,7 +683,7 @@ class TypeNormalizer:
         # it is necessary to unpack the variable-length tuple as well
         if len(args) == 1 and args[0].origin == typing.Unpack:
             inner_tp = args[0].args[0]
-            if inner_tp.origin == tuple:
+            if inner_tp.origin is tuple:
                 return inner_tp.args
 
         return self._unpack_generic_elements(args)
@@ -698,7 +698,7 @@ class TypeNormalizer:
         return tuple(result)
 
     def _is_fixed_size_tuple(self, tp: BaseNormType) -> bool:
-        return tp.origin == tuple and (not tp.args or tp.args[-1] is not Ellipsis)
+        return tp.origin is tuple and (not tp.args or tp.args[-1] is not Ellipsis)
 
     @_aspect_storage.add
     def _norm_callable(self, tp, origin, args):
@@ -806,7 +806,7 @@ class TypeNormalizer:
                     source=tp,
                 )
 
-    ALLOWED_ZERO_PARAMS_ORIGINS = {Any, NoReturn}
+    ALLOWED_ZERO_PARAMS_ORIGINS: set[Any] = {Any, NoReturn}
     if HAS_TYPE_ALIAS:
         ALLOWED_ZERO_PARAMS_ORIGINS.add(typing.TypeAlias)
     if HAS_PY_310:

@@ -277,7 +277,7 @@ class FlagByExactValueProvider(BaseFlagProvider):
             )
 
         def flag_loader(data):
-            if type(data) is not int:  # noqa: E721
+            if type(data) is not int:
                 raise TypeLoadError(int, data)
 
             if data < 0 or data > flag_mask:
