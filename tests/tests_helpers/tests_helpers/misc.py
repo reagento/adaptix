@@ -1,4 +1,5 @@
 import dataclasses
+import importlib.util
 import inspect
 import re
 import runpy
@@ -190,6 +191,15 @@ def load_namespace(
 
 
 @contextmanager
+def temp_module(module: ModuleType):
+    sys.modules[module.__name__] = module
+    try:
+        yield
+    finally:
+        sys.modules.pop(module.__name__, None)
+
+
+@contextmanager
 def load_namespace_keeping_module(
     file_name: str,
     ns_id: Optional[str] = None,
@@ -202,11 +212,19 @@ def load_namespace_keeping_module(
     module = ModuleType(run_name)
     for attr, value in ns.__dict__.items():
         setattr(module, attr, value)
-    sys.modules[run_name] = module
-    try:
+
+    with temp_module(module):
         yield ns
-    finally:
-        sys.modules.pop(run_name, None)
+
+
+def import_local_module(file_path: Path, name: Optional[str] = None) -> ModuleType:
+    if name is None:
+        name = file_path.stem
+
+    spec = importlib.util.spec_from_file_location(name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def with_notes(exc: E, *notes: Union[str, list[str]]) -> E:
