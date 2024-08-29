@@ -12,7 +12,6 @@ from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeName
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.name_sanitizer import NameSanitizer
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory
-from ...compat import compat_ast_unparse
 from ...model_tools.definitions import DescriptorAccessor, ItemAccessor
 from ...special_cases_optimization import as_is_stub, as_is_stub_with_ctx
 from .definitions import (
@@ -87,7 +86,7 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
         )
         with builder(f"def {closure_name}{no_types_signature}:"):
             body = self._gen_plan_element_dispatch(state, self._plan)
-            builder += "return " + compat_ast_unparse(body)
+            builder += "return " + ast.unparse(body)
 
         builder += f"{closure_name}.__signature__ = _closure_signature"
         builder += f"{closure_name}.__name__ = {closure_name!r}"
