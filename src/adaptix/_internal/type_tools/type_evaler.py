@@ -7,7 +7,11 @@ from types import ModuleType
 def make_fragments_collector(*, typing_modules: Sequence[str]) -> Callable[[ast.Module], list[ast.stmt]]:
     def check_condition(expr: ast.expr) -> bool:
         # searches for `TYPE_CHECKING`
-        if isinstance(expr, ast.Name) and isinstance(expr.ctx, ast.Load):
+        if (
+            isinstance(expr, ast.Name)
+            and isinstance(expr.ctx, ast.Load)
+            and expr.id == "TYPE_CHECKING"
+        ):
             return True
 
         # searches for `typing.TYPE_CHECKING`
