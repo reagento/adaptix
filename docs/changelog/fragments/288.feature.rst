@@ -1,0 +1,2 @@
+Add public api for :func:`.type_tools.exec_type_checking`
+to deal with cyclic references by executing ``if TYPE_CHECKING:`` constructs
