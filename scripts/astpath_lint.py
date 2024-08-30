@@ -64,7 +64,11 @@ RULES = [
         module="typing",
         variable="get_type_hints",
         error_msg="Use type_tools.get_all_type_hints() instead of typing.get_type_hints()",
-        exclude=["src/adaptix/_internal/type_tools/fundamentals.py"],
+        exclude=[
+            "src/adaptix/_internal/type_tools/fundamentals.py",
+            "docs/examples/loading-and-dumping/extended_usage/dealing_with_type_checking/main.py",
+            "docs/examples/loading-and-dumping/extended_usage/dealing_with_type_checking/error_on_analysis.py",
+        ],
     ),
     ImportRule(
         module="_decimal",
