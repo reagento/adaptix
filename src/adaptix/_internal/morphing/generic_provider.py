@@ -205,7 +205,6 @@ class LiteralProvider(LoaderProvider, DumperProvider):
                     last_iteration = len(loaders) - 1
                     if c != last_iteration:
                         continue
-                    raise
             return basic_loader(data)
 
         return wrapped_loader_many
@@ -318,7 +317,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         return literal_dumper_with_bytes
 
     def _make_dumper(
-        self, enum_dumpers_wrapper: MappingHashWrapper[Mapping[type[Enum], Dumper[Enum]]],
+        self,
+        enum_dumpers_wrapper: MappingHashWrapper[Mapping[type[Enum], Dumper[Enum]]],
         bytes_dumper: Optional[Dumper[bytes]],
     ):
         enum_dumpers = enum_dumpers_wrapper.mapping
