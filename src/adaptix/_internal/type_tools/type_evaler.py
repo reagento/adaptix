@@ -45,6 +45,16 @@ def exec_type_checking(
     *,
     collector: Callable[[ast.Module], list[ast.stmt]] = default_collector,
 ) -> None:
+    """This function scans module source code,
+    collects fragments under ``if TYPE_CHECKING`` and ``if typing.TYPE_CHECKING``
+    and executes them in the context of module.
+    After these, all imports and type definitions became available at runtime for analysis.
+
+    By default, it ignores ``if`` with ``else`` branch.
+
+    :param module: A module for processing
+    :param collector: A function collecting code fragments to execute
+    """
     source = inspect.getsource(module)
     fragments = collector(ast.parse(source))
     code = compile(ast.Module(fragments, type_ignores=[]), f"<exec_type_checking of {module}>", "exec")
