@@ -309,7 +309,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
         return literal_dumper_with_enums
 
-    def _get_bytes_dumper(self, bytes_dumper: Dumper[bytes]) -> Dumper:
+    def _get_bytes_literal_dumper(self, bytes_dumper: Dumper[bytes]) -> Dumper:
         def literal_dumper_with_bytes(data):
             if isinstance(data, bytes):
                 return bytes_dumper(data)
@@ -327,16 +327,16 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             return self._get_enum_dumper(enum_dumpers)
 
         if not enum_dumpers:
-            return self._get_bytes_dumper(bytes_dumper)
+            return self._get_bytes_literal_dumper(bytes_dumper)
 
-        bytes_dumper = self._get_bytes_dumper(bytes_dumper)
-        enum_dumper = self._get_enum_dumper(enum_dumpers)
+        bytes_literal_dumper = self._get_bytes_literal_dumper(bytes_dumper)
+        enum_literal_dumper = self._get_enum_dumper(enum_dumpers)
 
         def literal_dumper_many(data):
             if isinstance(data, bytes):
-                return bytes_dumper(data)
+                return bytes_literal_dumper(data)
             if isinstance(data, Enum):
-                return enum_dumper(data)
+                return enum_literal_dumper(data)
             return data
 
         return literal_dumper_many
