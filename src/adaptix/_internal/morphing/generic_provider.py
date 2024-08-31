@@ -1,6 +1,6 @@
 import collections.abc
 from collections.abc import Collection, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from os import PathLike
 from pathlib import Path
@@ -17,6 +17,7 @@ from ..provider.location import GenericParamLoc, TypeHintLoc
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
 from ..utils import MappingHashWrapper
+from .concrete_provider import BytesBase64Provider
 from .load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider
 from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
@@ -67,6 +68,7 @@ def _is_exact_zero_or_one(arg):
 @for_predicate(Literal)
 class LiteralProvider(LoaderProvider, DumperProvider):
     tuple_size_limit: int = 4
+    _BYTES_PROVIDER = BytesBase64Provider()
 
     def _get_allowed_values_collection(self, args: Collection) -> Collection:
         if len(args) > self.tuple_size_limit:
@@ -150,17 +152,39 @@ class LiteralProvider(LoaderProvider, DumperProvider):
 
         return wrapped_loader_with_enums
 
+    def _get_literal_loader_with_bytes(
+        self, basic_loader: Loader, allowed_values: Collection, bytes_loader: Loader,
+    ) -> Loader:
+        def wrapped_loader_with_bytes(data):
+            try:
+                bytes_value = bytes_loader(data)
+            except LoadError:
+                pass
+            else:
+                if bytes_value in allowed_values:
+                    return bytes_value
+            return basic_loader(data)
+
+        return wrapped_loader_with_bytes
+
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(request.last_loc.type)
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         enum_cases = tuple(arg for arg in norm.args if isinstance(arg, Enum))
+        bytes_cases = tuple(arg for arg in norm.args if isinstance(arg, bytes))
         enum_loaders = tuple(self._fetch_enum_loaders(mediator, request, self._get_enum_types(enum_cases)))
+        bytes_loader = self._BYTES_PROVIDER.provide_loader(
+            mediator,
+            replace(request, loc_stack=request.loc_stack.replace_last_type(bytes)),
+        )
         allowed_values_repr = self._get_allowed_values_repr(norm.args, mediator, request.loc_stack)
         return mediator.cached_call(
             self._make_loader,
             cases=norm.args,
+            bytes_cases=bytes_cases,
             strict_coercion=strict_coercion,
             enum_loaders=enum_loaders,
+            bytes_loader=bytes_loader,
             allowed_values_repr=allowed_values_repr,
         )
 
@@ -171,6 +195,8 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         strict_coercion: bool,
         enum_loaders: Sequence[Loader],
         allowed_values_repr: Collection[str],
+        bytes_cases: Sequence[bytes],
+        bytes_loader: Loader,
     ) -> Loader:
         if strict_coercion and any(
             isinstance(arg, bool) or _is_exact_zero_or_one(arg)
@@ -196,6 +222,9 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             if data in allowed_values:
                 return data
             raise BadVariantLoadError(allowed_values_repr, data)
+
+        if bytes_cases:
+            return self._get_literal_loader_with_bytes(literal_loader, allowed_values, bytes_loader)
 
         return self._get_literal_loader_with_enum(literal_loader, enum_loaders, allowed_values)
 
