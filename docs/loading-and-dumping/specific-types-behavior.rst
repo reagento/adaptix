@@ -170,12 +170,13 @@ Literal
 Loader accepts only values listed in ``Literal``.
 If ``strict_coercion`` is enabled, the loader will distinguish equal ``bool`` and ``int`` instances,
 otherwise, they will be considered as same values.
-``Enum`` instances will be loaded via its loaders. Enum loaders have a higher priority over others, that is, they will be applied first.
+``Enum`` instances will be loaded via its loaders. ``bytes`` instances (e.g ``b"abc"``) will be loaded via its loaders as well.
+Enum loaders have a higher priority over others, that is, they will be applied first.
 
 If the input value could be interpreted as several ``Literal`` members, the result will be undefined.
 
 Dumper will return value without any processing excluding ``Enum`` instances,
-they will be processed via the corresponding dumper.
+they will be processed via the corresponding dumper. ``bytes`` instances also will be processed via the corresponding dumper.
 
 Be careful when you use a ``0``, ``1``, ``False`` and ``True`` as ``Literal`` members.
 Due to type hint caching ``Literal[0, 1]`` sometimes returns ``Literal[False, True]``.
