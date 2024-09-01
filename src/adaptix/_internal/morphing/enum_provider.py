@@ -187,6 +187,7 @@ class EnumValueProvider(BaseEnumProvider):
 
         return enum_dumper
 
+
 class EnumExactValueProvider(BaseEnumProvider):
     """This provider represents enum members to the outside world
     by their value without any processing
@@ -223,7 +224,6 @@ class EnumExactValueProvider(BaseEnumProvider):
                 raise BadVariantLoadError(variants, data)
 
         return enum_exact_loader_v2m
-
 
     def _get_exact_value_to_member(self, enum: type[Enum]) -> Optional[Mapping[Any, Any]]:
         try:

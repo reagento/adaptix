@@ -100,7 +100,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         requests = [request.append_loc(TypeHintLoc(type=enum_cls)) for enum_cls in enum_classes]
         return mediator.mandatory_provide_by_iterable(
             requests,
-            lambda: "Cannot create loaders for enum. Loader for literal cannot be created",
+            lambda: "Cannot create loader for literal. Loaders for enums cannot be created",
         )
 
     def _fetch_bytes_loader(
@@ -123,7 +123,7 @@ class LiteralProvider(LoaderProvider, DumperProvider):
         requests = [request.append_loc(TypeHintLoc(type=enum_cls)) for enum_cls in enum_classes]
         dumpers = mediator.mandatory_provide_by_iterable(
             requests,
-            lambda: "Cannot create loaders for enum. Loader for literal cannot be created",
+            lambda: "Cannot create dumper for literal. Dumpers for enums cannot be created",
         )
         return dict(zip(enum_classes, dumpers))
 

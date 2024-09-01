@@ -31,10 +31,12 @@ class CannotProvide(Exception):
         *,
         is_terminal: bool = False,
         is_demonstrative: bool = False,
+        parent_notes_gen: Optional[Callable[[], Sequence[str]]] = None,
     ):
         self.message = message
         self.is_terminal = is_terminal
         self.is_demonstrative = is_demonstrative
+        self.parent_notes_gen = parent_notes_gen
 
     def __repr__(self):
         return (
@@ -52,10 +54,12 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         *,
         is_terminal: bool = False,
         is_demonstrative: bool = False,
+        parent_notes_gen: Optional[Callable[[], Sequence[str]]] = None,
     ):
         # Parameter `message` is saved by `__new__` of CompatExceptionGroup
         self.is_terminal = is_terminal
         self.is_demonstrative = is_demonstrative
+        self.parent_notes_gen = parent_notes_gen
 
     if not HAS_NATIVE_EXC_GROUP:
         def __new__(

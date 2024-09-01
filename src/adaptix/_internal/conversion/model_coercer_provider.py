@@ -29,7 +29,7 @@ from ..conversion.request_cls import (
 )
 from ..model_tools.definitions import DefaultValue, InputField, InputShape, OutputShape, ParamKind, create_key_accessor
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
-from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
+from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import input_field_to_loc, output_field_to_loc
 from ..provider.loc_stack_filtering import LocStack
 from ..provider.location import AnyLoc, InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc
@@ -43,8 +43,7 @@ class ModelCoercerProvider(CoercerProvider):
         self._name_sanitizer = name_sanitizer
 
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        dst_shape = self._fetch_dst_shape(mediator, request.dst)
-        src_shape = self._fetch_src_shape(mediator, request.src)
+        dst_shape, src_shape = self._fetch_shapes(mediator, request)
         broaching_plan = self._make_broaching_plan(
             mediator=mediator,
             request=request,
@@ -52,6 +51,32 @@ class ModelCoercerProvider(CoercerProvider):
             src_shape=src_shape,
         )
         return self._make_coercer(mediator, request, broaching_plan)
+
+    def _fetch_shapes(self, mediator: Mediator, request: CoercerRequest) -> tuple[InputShape, OutputShape]:
+        exception_and_type_list = []
+        try:
+            dst_shape = self._fetch_dst_shape(mediator, request.dst)
+        except CannotProvide as e:
+            exception_and_type_list.append((e, request.dst.last.type))
+
+        try:
+            src_shape = self._fetch_src_shape(mediator, request.src)
+        except CannotProvide as e:
+            exception_and_type_list.append((e, request.src.last.type))
+
+        if len(exception_and_type_list) == 1:
+            raise CannotProvide(
+                parent_notes_gen=lambda: [
+                    f"Hint: Class `{exception_and_type_list[0][1].__name__}` is not recognized as model."
+                    " Did your forget `@dataclass` decorator? Check documentation what model kinds are supported",
+                ],
+            )
+        if len(exception_and_type_list) == 2:  # noqa: PLR2004
+            raise AggregateCannotProvide(
+                "Classes are not recognized as models",
+                [exc for exc, tp in exception_and_type_list],
+            )
+        return dst_shape, src_shape
 
     def _make_coercer(
         self,

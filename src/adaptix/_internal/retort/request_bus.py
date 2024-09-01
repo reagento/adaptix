@@ -76,14 +76,14 @@ class BasicRequestBus(RequestBus[RequestT, ResponseT], Generic[RequestT, Respons
             try:
                 handler, next_offset = self._router.route_handler(mediator, request, next_offset)
             except StopIteration:
-                raise self._attach_request_context_notes(
-                    AggregateCannotProvide.make(
-                        self._error_representor.get_provider_not_found_description(request),
-                        exceptions,
-                        is_demonstrative=True,
-                    ),
-                    request,
-                ) from None
+                exc = AggregateCannotProvide.make(
+                    self._error_representor.get_provider_not_found_description(request),
+                    exceptions,
+                    is_demonstrative=True,
+                )
+                self._attach_request_context_notes(exc, request)
+                self._attach_sub_exceptions_notes(exc, exceptions)
+                raise exc from None
             except CannotProvide:
                 raise RuntimeError("RequestChecker raises CannotProvide")
 
@@ -102,6 +102,13 @@ class BasicRequestBus(RequestBus[RequestT, ResponseT], Generic[RequestT, Respons
         notes = self._error_representor.get_request_context_notes(request)
         for note in notes:
             add_note(exc, note)
+        return exc
+
+    def _attach_sub_exceptions_notes(self, exc: E, sub_exceptions: Iterable[CannotProvide]) -> E:
+        for sub_exc in sub_exceptions:
+            if sub_exc.parent_notes_gen is not None:
+                for note in sub_exc.parent_notes_gen():
+                    add_note(exc, note)
         return exc
 
 

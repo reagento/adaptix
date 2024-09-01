@@ -43,7 +43,7 @@ class BaseRetort(Cloneable, metaclass=RetortMeta):
             ),
         )
 
-    def __init__(self, recipe: Iterable[Provider] = ()):
+    def __init__(self, *, recipe: Iterable[Provider] = ()):
         self._instance_recipe = tuple(recipe)
         self._calculate_derived()
 

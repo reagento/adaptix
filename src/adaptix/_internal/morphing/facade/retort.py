@@ -174,10 +174,11 @@ class AdornedRetort(OperatingRetort):
         recipe: Iterable[Provider] = (),
         strict_coercion: bool = True,
         debug_trail: DebugTrail = DebugTrail.ALL,
+        hide_traceback: bool = True,
     ):
         self._strict_coercion = strict_coercion
         self._debug_trail = debug_trail
-        super().__init__(recipe)
+        super().__init__(recipe=recipe, hide_traceback=hide_traceback)
 
     def _calculate_derived(self):
         super()._calculate_derived()
@@ -189,14 +190,15 @@ class AdornedRetort(OperatingRetort):
         *,
         strict_coercion: Optional[bool] = None,
         debug_trail: Optional[DebugTrail] = None,
+        hide_traceback: Optional[bool] = None,
     ) -> AR:
         with self._clone() as clone:
             if strict_coercion is not None:
                 clone._strict_coercion = strict_coercion
-
             if debug_trail is not None:
                 clone._debug_trail = debug_trail
-
+            if hide_traceback is not None:
+                clone._hide_traceback = hide_traceback
         return clone
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:

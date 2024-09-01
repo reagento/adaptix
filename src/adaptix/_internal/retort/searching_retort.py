@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, Callable, Optional, TypeVar
 
+from ..compat import CompatBaseExceptionGroup
 from ..provider.essential import (
     AggregateCannotProvide,
     CannotProvide,
@@ -36,6 +37,10 @@ RequestT = TypeVar("RequestT", bound=Request)
 class SearchingRetort(BaseRetort, Provider, ABC):
     """A retort that can operate as Retort but have no predefined providers and no high-level user interface"""
 
+    def __init__(self, *, recipe: Iterable[Provider] = (), hide_traceback: bool = True):
+        self._hide_traceback = hide_traceback
+        super().__init__(recipe=recipe)
+
     def _provide_from_recipe(self, request: Request[T]) -> T:
         return self._create_mediator(request).provide(request)
 
@@ -53,13 +58,26 @@ class SearchingRetort(BaseRetort, Provider, ABC):
             for request_class in request_classes
         ]
 
+    def _exception_walk(self, exc: BaseException) -> Iterable[BaseException]:
+        yield exc
+        if isinstance(exc, CompatBaseExceptionGroup):
+            for sub_exc in exc.exceptions:
+                yield from self._exception_walk(sub_exc)
+        if exc.__cause__ is not None:
+            yield from self._exception_walk(exc.__cause__)
+        if exc.__context__ is not None:
+            yield from self._exception_walk(exc.__context__)
+
     def _facade_provide(self, request: Request[T], *, error_message: str) -> T:
         try:
             return self._provide_from_recipe(request)
         except CannotProvide as e:
-            cause = self._get_exception_cause(e)
             exception = ProviderNotFoundError(error_message)
+
+            cause = self._get_exception_cause(e)
             if cause is not None:
+                for sub_exc in self._exception_walk(cause):
+                    sub_exc.__traceback__ = None
                 add_note(exception, "Note: The attached exception above contains verbose description of the problem")
             raise exception from cause
 
