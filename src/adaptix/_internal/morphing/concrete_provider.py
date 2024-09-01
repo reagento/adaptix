@@ -261,6 +261,7 @@ class _Base64DumperMixin(DumperProvider):
             return b2a_base64(data, newline=False).decode("ascii")
         return bytes_base64_dumper
 
+
 class _Base64JSONSchemaMixin(JSONSchemaProvider):
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema(type=JSONSchemaType.STRING, content_encoding="base64")
