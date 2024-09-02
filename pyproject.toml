@@ -1,10 +1,10 @@
 [build-system]
-requires = ['setuptools==69.1.0']
+requires = ['setuptools==74.1.0']
 build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'adaptix'
-version = '3.0.0b7'
+version = '3.0.0b8'
 description = 'An extremely flexible and configurable data model conversion library'
 readme = 'README.md'
 requires-python = '>=3.9'

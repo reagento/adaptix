@@ -1,1 +1,0 @@
-Add new :func:`.datetime_by_timestamp` and :func:`.date_by_timestamp`.
