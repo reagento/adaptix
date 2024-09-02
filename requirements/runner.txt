@@ -33,7 +33,7 @@ tox==4.18.0
     # via tox-uv
 tox-uv==1.11.2
     # via -r requirements/raw/runner.txt
-uv==0.3.2
+uv==0.4.2
     # via tox-uv
 virtualenv==20.26.3
     # via tox

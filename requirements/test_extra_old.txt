@@ -30,7 +30,7 @@ pytz==2024.1
     # via dirty-equals
 sqlalchemy==2.0.0
     # via -r requirements/raw/test_extra_old.txt
-typing-extensions==4.6.3
+typing-extensions==4.12.2
     # via
     #   pydantic
     #   pydantic-core
