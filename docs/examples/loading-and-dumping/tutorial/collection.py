@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 
 from adaptix import Retort
 
@@ -22,6 +21,6 @@ data = [
 ]
 
 retort = Retort()
-books = retort.load(data, List[Book])
+books = retort.load(data, list[Book])
 assert books == [Book(title="Fahrenheit 451", price=100), Book(title="1984", price=100)]
-assert retort.dump(books, List[Book]) == data
+assert retort.dump(books, list[Book]) == data

@@ -3,15 +3,15 @@ import itertools
 from abc import ABC, abstractmethod
 from ast import AST
 from collections import defaultdict
+from collections.abc import Mapping
 from inspect import Signature
-from typing import DefaultDict, Mapping, Tuple, Union
+from typing import Union
 
 from ...code_tools.ast_templater import ast_substitute
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.name_sanitizer import NameSanitizer
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory
-from ...compat import compat_ast_unparse
 from ...model_tools.definitions import DescriptorAccessor, ItemAccessor
 from ...special_cases_optimization import as_is_stub, as_is_stub_with_ctx
 from .definitions import (
@@ -37,7 +37,7 @@ class GenState:
     def __init__(self, namespace: CascadeNamespace, name_sanitizer: NameSanitizer):
         self._namespace = namespace
         self._name_sanitizer = name_sanitizer
-        self._prefix_counter: DefaultDict[str, int] = defaultdict(lambda: 0)
+        self._prefix_counter: defaultdict[str, int] = defaultdict(lambda: 0)
 
     def register_next_id(self, prefix: str, obj: object) -> str:
         number = self._prefix_counter[prefix]
@@ -59,7 +59,7 @@ class GenState:
 
 class BroachingCodeGenerator(ABC):
     @abstractmethod
-    def produce_code(self, signature: Signature, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, signature: Signature, closure_name: str) -> tuple[str, Mapping[str, object]]:
         ...
 
 
@@ -74,7 +74,7 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
             name_sanitizer=self._name_sanitizer,
         )
 
-    def produce_code(self, signature: Signature, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, signature: Signature, closure_name: str) -> tuple[str, Mapping[str, object]]:
         builder = CodeBuilder()
         namespace = BuiltinCascadeNamespace(occupied=signature.parameters.keys())
         state = self._create_state(namespace=namespace)
@@ -86,7 +86,7 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
         )
         with builder(f"def {closure_name}{no_types_signature}:"):
             body = self._gen_plan_element_dispatch(state, self._plan)
-            builder += "return " + compat_ast_unparse(body)
+            builder += "return " + ast.unparse(body)
 
         builder += f"{closure_name}.__signature__ = _closure_signature"
         builder += f"{closure_name}.__name__ = {closure_name!r}"
@@ -151,19 +151,19 @@ class BuiltinBroachingCodeGenerator(BroachingCodeGenerator):
                 args.append(sub_ast)
             elif isinstance(arg, KeywordArg):
                 sub_ast = self._gen_plan_element_dispatch(state, arg.element)
-                keywords.append(ast.keyword(arg=arg.key, value=sub_ast))
+                keywords.append(ast.keyword(arg=arg.key, value=sub_ast))  # type: ignore[call-overload]
             elif isinstance(arg, UnpackMapping):
                 sub_ast = self._gen_plan_element_dispatch(state, arg.element)
-                keywords.append(ast.keyword(value=sub_ast))
+                keywords.append(ast.keyword(value=sub_ast))  # type: ignore[call-overload]
             elif isinstance(arg, UnpackIterable):
                 sub_ast = self._gen_plan_element_dispatch(state, arg.element)
-                args.append(ast.Starred(value=sub_ast, ctx=ast.Load()))
+                args.append(ast.Starred(value=sub_ast, ctx=ast.Load()))  # type: ignore[arg-type]
             else:
                 raise TypeError
 
         return ast.Call(
             func=ast.Name(name, ast.Load()),
-            args=args,
+            args=args,  # type: ignore[arg-type]
             keywords=keywords,
         )
 

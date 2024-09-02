@@ -1,11 +1,12 @@
 # ruff: noqa: FBT003
 from enum import Enum
-from typing import Literal
+from typing import Any, Iterable, Literal
 from uuid import uuid4
 
+import pytest
 from tests_helpers import raises_exc
 
-from adaptix import Retort
+from adaptix import P, Provider, Retort, dumper, loader
 from adaptix._internal.morphing.load_error import BadVariantLoadError
 
 
@@ -29,11 +30,11 @@ def test_loader_base(strict_coercion, debug_trail):
 
 
 def _is_exact_zero(arg):
-    return type(arg) is int and arg == 0  # noqa: E721
+    return type(arg) is int and arg == 0
 
 
 def _is_exact_one(arg):
-    return type(arg) is int and arg == 1  # noqa: E721
+    return type(arg) is int and arg == 1
 
 
 def test_strict_coercion(debug_trail):
@@ -124,6 +125,66 @@ def test_loader_with_enums(strict_coercion, debug_trail):
     )
 
 
+@pytest.mark.parametrize(
+    ["input_data", "recipe"],
+    [
+        ("YWJj", []),
+        ("abc", [loader(P[bytes], lambda x: x.encode())]),
+    ],
+)
+def test_loader_with_bytes(
+    strict_coercion,
+    debug_trail,
+    input_data: Any,
+    recipe: Iterable[Provider],
+):
+    retort = Retort(
+        recipe=recipe,
+    )
+
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_loader(
+        Literal[b"abc"],
+    )
+
+    assert loader(input_data) == b"abc"
+
+    raises_exc(
+        BadVariantLoadError({b"abc"}, "YWJ"),
+        lambda: loader("YWJ"),
+    )
+
+
+def test_loader_with_bytes_and_enums(strict_coercion, debug_trail):
+    class Enum1(Enum):
+        CASE1 = 1
+        CASE2 = 2
+
+    retort = Retort()
+
+    loader = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_loader(
+        Literal[b"abc", Enum1.CASE1],
+    )
+
+    assert loader("YWJj") == b"abc"
+    assert loader(1) == Enum1.CASE1
+
+    raises_exc(
+        BadVariantLoadError({b"abc", Enum1.CASE1.value}, "YWJ"),
+        lambda: loader("YWJ"),
+    )
+
+    raises_exc(
+        BadVariantLoadError({b"abc", Enum1.CASE1.value}, 2),
+        lambda: loader(2),
+    )
+
+
 def test_dumper_with_enums(strict_coercion, debug_trail):
     retort = Retort()
 
@@ -156,3 +217,46 @@ def test_dumper_with_enums(strict_coercion, debug_trail):
     assert dumper(Enum1.CASE1) == 1
     assert dumper(Enum1.CASE2) == 2
     assert dumper(10) == 10
+
+@pytest.mark.parametrize(
+    ["expected_data", "recipe"],
+    [
+        ("YWJj", []),
+        ("abc", [dumper(P[bytes], lambda x: x.decode())]),
+    ],
+)
+def test_dumper_with_bytes(strict_coercion, debug_trail, expected_data: Any, recipe: Iterable[Provider]):
+    retort = Retort(
+        recipe=recipe,
+    )
+
+    dumper = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_dumper(
+        Literal[b"abc"],
+    )
+
+    assert dumper(b"abc") == expected_data
+
+
+def test_dumper_with_bytes_and_enums(strict_coercion, debug_trail):
+    class Enum1(Enum):
+        CASE1 = 1
+        CASE2 = 2
+
+    class Enum2(Enum):
+        CASE1 = 1
+        CASE2 = 2
+
+    retort = Retort()
+
+    dumper = retort.replace(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    ).get_dumper(
+        Literal[b"abc", Enum1.CASE1],
+    )
+
+    assert dumper(b"abc") == "YWJj"
+    assert dumper(Enum1.CASE1) == 1

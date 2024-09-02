@@ -10,9 +10,9 @@ import argparse
 import os
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass
 from fnmatch import fnmatch
-from typing import Iterable, List
 
 from astpath.search import file_to_xml_ast, find_in_ast
 
@@ -32,7 +32,7 @@ class Rule(ABC):
 
 
 class ImportRule(Rule):
-    def __init__(self, module: str, variable: str, error_msg: str, exclude: List[str]):
+    def __init__(self, module: str, variable: str, error_msg: str, exclude: list[str]):
         self.module = module
         self.variable = variable
         self.error_msg = error_msg
@@ -64,7 +64,11 @@ RULES = [
         module="typing",
         variable="get_type_hints",
         error_msg="Use type_tools.get_all_type_hints() instead of typing.get_type_hints()",
-        exclude=["src/adaptix/_internal/type_tools/fundamentals.py"],
+        exclude=[
+            "src/adaptix/_internal/type_tools/fundamentals.py",
+            "docs/examples/loading-and-dumping/extended_usage/dealing_with_type_checking/main.py",
+            "docs/examples/loading-and-dumping/extended_usage/dealing_with_type_checking/error_on_analysis.py",
+        ],
     ),
     ImportRule(
         module="_decimal",
@@ -87,7 +91,7 @@ RULES = [
 ]
 
 
-def analyze_file(filename: str, rule_matches: List[RuleMatch]) -> None:
+def analyze_file(filename: str, rule_matches: list[RuleMatch]) -> None:
     xml_ast = file_to_xml_ast(filename)
 
     for rule in RULES:
@@ -119,7 +123,7 @@ def main() -> None:
     parser.add_argument("targets", help="files to lint", nargs="+")
     args = parser.parse_args()
 
-    rule_matches: List[RuleMatch] = []
+    rule_matches: list[RuleMatch] = []
 
     for target in args.targets:
         for root, _, filenames in os.walk(target):

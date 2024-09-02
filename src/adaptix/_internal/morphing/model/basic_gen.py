@@ -1,29 +1,17 @@
 import itertools
 from abc import ABC, abstractmethod
+from collections.abc import Collection, Container, Iterable, Mapping, Set
 from dataclasses import dataclass
-from typing import (
-    AbstractSet,
-    Any,
-    Callable,
-    Collection,
-    Container,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, TypeVar, Union
 
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
 from ...model_tools.definitions import InputField, OutputField
 from ...provider.essential import CannotProvide, Mediator
-from ...provider.request_cls import LocatedRequest, LocStack
-from ...provider.static_provider import StaticProvider, static_provision_action
+from ...provider.loc_stack_filtering import LocStack
+from ...provider.located_request import LocatedRequest
+from ...provider.methods_provider import MethodsProvider, method_handler
 from .crown_definitions import (
     BaseCrown,
     BaseDictCrown,
@@ -46,7 +34,7 @@ from .crown_definitions import (
 
 @dataclass
 class CodeGenHookData:
-    namespace: Dict[str, Any]
+    namespace: dict[str, Any]
     source: str
 
 
@@ -69,13 +57,13 @@ def fetch_code_gen_hook(mediator: Mediator, loc_stack: LocStack) -> CodeGenHook:
         return stub_code_gen_hook
 
 
-class CodeGenAccumulator(StaticProvider):
+class CodeGenAccumulator(MethodsProvider):
     """Accumulates all generated code. It may be useful for debugging"""
 
     def __init__(self) -> None:
-        self.list: List[Tuple[CodeGenHookRequest, CodeGenHookData]] = []
+        self.list: list[tuple[CodeGenHookRequest, CodeGenHookData]] = []
 
-    @static_provision_action
+    @method_handler
     def _provide_code_gen_hook(self, mediator: Mediator, request: CodeGenHookRequest) -> CodeGenHook:
         def hook(data: CodeGenHookData):
             self.list.append((request, data))
@@ -119,7 +107,7 @@ def _inner_collect_used_direct_fields(crown: BaseCrown) -> Iterable[str]:
     raise TypeError
 
 
-def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
+def _collect_used_direct_fields(crown: BaseCrown) -> set[str]:
     lst = _inner_collect_used_direct_fields(crown)
 
     used_set = set()
@@ -131,7 +119,7 @@ def _collect_used_direct_fields(crown: BaseCrown) -> Set[str]:
     return used_set
 
 
-def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> AbstractSet[str]:
+def get_skipped_fields(shape: BaseShape, name_layout: BaseNameLayout) -> Set[str]:
     used_direct_fields = _collect_used_direct_fields(name_layout.crown)
     extra_targets = name_layout.extra_move.fields if isinstance(name_layout.extra_move, ExtraTargets) else ()
     return {
@@ -258,11 +246,11 @@ def has_collect_policy(crown: InpCrown) -> bool:
 
 class ModelLoaderGen(ABC):
     @abstractmethod
-    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:
         ...
 
 
 class ModelDumperGen(ABC):
     @abstractmethod
-    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:
         ...

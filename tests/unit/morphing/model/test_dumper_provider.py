@@ -32,8 +32,8 @@ from adaptix._internal.morphing.model.crown_definitions import (
 )
 from adaptix._internal.morphing.model.dumper_provider import ModelDumperProvider
 from adaptix._internal.morphing.request_cls import DumperRequest
-from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.shape_provider import OutputShapeRequest
+from adaptix._internal.provider.value_provider import ValueProvider
 from adaptix._internal.struct_trail import Attr, TrailElement, TrailElementMarker
 from adaptix._internal.utils import SingletonMeta
 
@@ -820,10 +820,10 @@ def test_optional_fields_at_list(debug_ctx, debug_trail, acc_schema):
         ),
         name_layout=OutputNameLayout(
             crown=OutListCrown(
-                [
+                (
                     OutFieldCrown("a"),
                     OutFieldCrown("b"),
-                ],
+                ),
             ),
             extra_move=None,
         ),
@@ -993,10 +993,10 @@ def test_direct_list(debug_ctx, debug_trail, trail_select, acc_schema):
         ),
         name_layout=OutputNameLayout(
             crown=OutListCrown(
-                [
+                (
                     OutFieldCrown("a"),
                     OutFieldCrown("b"),
-                ],
+                ),
             ),
             extra_move=None,
         ),
@@ -1084,7 +1084,7 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select, acc_schema):
                     ),
                     "w": OutFieldCrown("c"),
                     "v": OutListCrown(
-                        [
+                        (
                             OutFieldCrown("d"),
                             OutDictCrown(
                                 {
@@ -1093,11 +1093,11 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select, acc_schema):
                                 sieves={},
                             ),
                             OutListCrown(
-                                [
+                                (
                                     OutFieldCrown("f"),
-                                ],
+                                ),
                             ),
-                        ],
+                        ),
                     ),
                     "t": OutDictCrown(
                         {
@@ -1106,9 +1106,9 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select, acc_schema):
                         sieves={},
                     ),
                     "r": OutListCrown(
-                        [
+                        (
                             OutFieldCrown("h"),
-                        ],
+                        ),
                     ),
                 },
                 sieves={
@@ -1362,12 +1362,12 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, acc_schema):
         ),
         name_layout=OutputNameLayout(
             crown=OutListCrown(
-                [
+                (
                     OutNoneCrown(placeholder=DefaultValue(None)),
                     OutNoneCrown(placeholder=DefaultValue(SomeClass(2))),
                     OutFieldCrown("a"),
                     OutNoneCrown(placeholder=DefaultFactory(list)),
-                ],
+                ),
             ),
             extra_move=None,
         ),

@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import List
 
 from adaptix import P, Retort, loader
 
@@ -21,8 +20,8 @@ class Book:
 
 @dataclass
 class Bookshop:
-    workers: List[Person]
-    books: List[Book]
+    workers: list[Person]
+    books: list[Book]
 
 
 data = {

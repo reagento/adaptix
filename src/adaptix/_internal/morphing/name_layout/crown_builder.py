@@ -1,8 +1,9 @@
 import math
 from abc import ABC, abstractmethod
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from itertools import groupby
-from typing import Dict, Generic, Mapping, Sequence, TypeVar, Union, cast
+from typing import Generic, TypeVar, Union, cast
 
 from ..model.crown_definitions import (
     BaseDictCrown,
@@ -97,10 +98,10 @@ class BaseCrownBuilder(ABC, Generic[LeafCr, DictCr, ListCr]):
         ]
         if paths_with_leaves and len(grouped_paths) != cast(int, paths_with_leaves[-1].path[len(current_path)]) + 1:
             raise ValueError(f"Found gaps in list mapping at {current_path}")
-        return [
+        return tuple(
             self._build_crown(path_group, len(current_path) + 1)
             for path_group in grouped_paths
-        ]
+        )
 
     @abstractmethod
     def _make_list_crown(self, current_path: KeyPath, paths_with_leaves: PathedLeaves[LeafCr]) -> ListCr:
@@ -131,7 +132,7 @@ class OutCrownBuilder(BaseCrownBuilder[LeafOutCrown, OutDictCrown, OutListCrown]
         super().__init__(paths_to_leaves)
 
     def _make_dict_crown(self, current_path: KeyPath, paths_with_leaves: PathedLeaves[LeafOutCrown]) -> OutDictCrown:
-        key_to_sieve: Dict[str, Sieve] = {}
+        key_to_sieve: dict[str, Sieve] = {}
         for leaf_with_path in paths_with_leaves:
             sieve = self.path_to_sieves.get(leaf_with_path.path[:len(current_path) + 1])
             if sieve is not None:

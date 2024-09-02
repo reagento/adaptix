@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Literal, Mapping, Optional, TypeVar, Union
+from collections.abc import Mapping
+from typing import Any, Callable, Literal, Optional, TypeVar, Union
 
 from ...common import Dumper, Loader
 from ...morphing.load_error import LoadError
@@ -33,7 +34,7 @@ class NativePydanticProvider(LoaderProvider, DumperProvider):
     def _skip_omitted(self, mapping: Mapping[str, T]) -> Mapping[str, T]:
         return {k: v for k, v in mapping.items() if v != Omitted()}
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         validation_params = self._skip_omitted(self._validation_params)
         validator = TypeAdapter(request.last_loc.type, config=self._config).validator.validate_python
 
@@ -54,7 +55,7 @@ class NativePydanticProvider(LoaderProvider, DumperProvider):
 
         return native_pydantic_loader
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         serialization_params = self._skip_omitted(self._serialization_params)
         serializer = TypeAdapter(request.last_loc.type, config=self._config).serializer.to_python
 
@@ -85,7 +86,7 @@ def native_pydantic(
     fallback: Omittable[Callable[[Any], Any]] = Omitted(),
     serialize_as_any: Omittable[bool] = Omitted(),
     # common parameters
-    context: Omittable[Optional[Dict[str, Any]]] = Omitted(),
+    context: Omittable[Optional[dict[str, Any]]] = Omitted(),
     config: Optional["ConfigDict"] = None,
 ) -> Provider:
     """Provider that represents value via pydantic.

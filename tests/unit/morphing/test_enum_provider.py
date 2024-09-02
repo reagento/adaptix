@@ -1,11 +1,13 @@
+from collections.abc import Iterable, Mapping
 from enum import Enum, Flag, IntEnum, auto
-from typing import Iterable, Mapping, Union
+from typing import Union
 
 import pytest
 from tests_helpers import parametrize_bool, raises_exc, with_cause, with_notes
 
 from adaptix import (
     CannotProvide,
+    DebugTrail,
     NameStyle,
     ProviderNotFoundError,
     Retort,
@@ -14,7 +16,6 @@ from adaptix import (
     enum_by_value,
     flag_by_member_names,
 )
-from adaptix._internal.morphing.enum_provider import EnumExactValueProvider
 from adaptix._internal.morphing.load_error import (
     DuplicatedValuesLoadError,
     ExcludedTypeLoadError,
@@ -163,9 +164,13 @@ def test_exact_value_provider_int_enum(strict_coercion, debug_trail):
     )
 
 
-def test_exact_value_optimization(strict_coercion, debug_trail):
-    assert EnumExactValueProvider()._make_loader(MyEnum).__name__ == "enum_exact_loader_v2m"
-    assert EnumExactValueProvider()._make_loader(MyEnumWithMissingHook).__name__ == "enum_exact_loader"
+def test_exact_value_optimization(strict_coercion):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=DebugTrail.DISABLE,
+    )
+    assert retort.get_loader(MyEnum).__name__ == "enum_exact_loader_v2m"
+    assert retort.get_loader(MyEnumWithMissingHook).__name__ == "enum_exact_loader"
 
 
 def custom_string_dumper(value: str):

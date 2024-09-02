@@ -1,21 +1,25 @@
 import dataclasses
+import importlib.util
 import inspect
 import re
 import runpy
 import sys
+from collections.abc import Generator, Reversible, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, is_dataclass
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any, Callable, Dict, Generator, List, Optional, Reversible, Type, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 from uuid import uuid4
 
 import pytest
 
-from adaptix import CannotProvide, DebugTrail, Mediator, Provider, ProviderNotFoundError, Request
+from adaptix import CannotProvide, DebugTrail, Provider, ProviderNotFoundError, Request, Retort
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
+from adaptix._internal.provider.essential import Mediator, RequestChecker, RequestHandler
+from adaptix._internal.retort.operating_retort import OperatingRetort
 from adaptix._internal.struct_trail import TrailElement, extend_trail, render_trail_as_note
 from adaptix._internal.type_tools import is_parametrized
 from adaptix._internal.utils import add_note
@@ -39,7 +43,7 @@ def requires(requirement: Requirement):
 E = TypeVar("E", bound=Exception)
 
 
-def _repr_value(obj: Any) -> Dict[str, Any]:
+def _repr_value(obj: Any) -> dict[str, Any]:
     if not isinstance(obj, Exception):
         return obj
 
@@ -72,7 +76,7 @@ def _repr_value(obj: Any) -> Dict[str, Any]:
 
 
 def raises_exc(
-    exc: Union[Type[E], E],
+    exc: Union[type[E], E],
     func: Callable[[], Any],
     *,
     match: Optional[str] = None,
@@ -129,8 +133,8 @@ class DebugCtx:
 class PlaceholderProvider(Provider):
     value: int
 
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        raise CannotProvide
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+        return []
 
 
 def full_match(string_to_match: str) -> str:
@@ -171,7 +175,7 @@ class ByTrailSelector:
 def load_namespace(
     file_name: str,
     ns_id: Optional[str] = None,
-    vars: Optional[Dict[str, Any]] = None,  # noqa: A002
+    vars: Optional[dict[str, Any]] = None,  # noqa: A002
     run_name: Optional[str] = None,
     stack_offset: int = 1,
 ) -> SimpleNamespace:
@@ -187,10 +191,19 @@ def load_namespace(
 
 
 @contextmanager
+def temp_module(module: ModuleType):
+    sys.modules[module.__name__] = module
+    try:
+        yield
+    finally:
+        sys.modules.pop(module.__name__, None)
+
+
+@contextmanager
 def load_namespace_keeping_module(
     file_name: str,
     ns_id: Optional[str] = None,
-    vars: Optional[Dict[str, Any]] = None,  # noqa: A002
+    vars: Optional[dict[str, Any]] = None,  # noqa: A002
     run_name: Optional[str] = None,
 ) -> Generator[SimpleNamespace, None, None]:
     if run_name is None:
@@ -199,14 +212,22 @@ def load_namespace_keeping_module(
     module = ModuleType(run_name)
     for attr, value in ns.__dict__.items():
         setattr(module, attr, value)
-    sys.modules[run_name] = module
-    try:
+
+    with temp_module(module):
         yield ns
-    finally:
-        sys.modules.pop(run_name, None)
 
 
-def with_notes(exc: E, *notes: Union[str, List[str]]) -> E:
+def import_local_module(file_path: Path, name: Optional[str] = None) -> ModuleType:
+    if name is None:
+        name = file_path.stem
+
+    spec = importlib.util.spec_from_file_location(name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def with_notes(exc: E, *notes: Union[str, list[str]]) -> E:
     for note_or_list in notes:
         if isinstance(note_or_list, list):
             for note in note_or_list:
@@ -231,3 +252,14 @@ class FailedRequirement(Requirement):
     @property
     def fail_reason(self) -> str:
         return self._fail_reason
+
+
+class StubRequest(Request):
+    pass
+
+
+stub_retort = Retort()
+
+
+def create_mediator(retort: OperatingRetort = stub_retort) -> Mediator:
+    return retort._create_mediator(StubRequest())

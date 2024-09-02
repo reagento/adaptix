@@ -1,7 +1,8 @@
 import itertools
+from collections.abc import Mapping, Sequence
 from functools import update_wrapper
 from inspect import Parameter, Signature
-from typing import Any, Callable, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Optional
 
 from ..code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ..code_tools.code_builder import CodeBuilder
@@ -12,8 +13,8 @@ from ..conversion.request_cls import CoercerRequest, ConversionContext, Converte
 from ..model_tools.definitions import DefaultValue, NoDefault
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.location import FieldLoc
-from ..provider.request_cls import LocStack, TypeHintLoc
+from ..provider.loc_stack_filtering import LocStack
+from ..provider.location import FieldLoc, TypeHintLoc
 from .provider_template import ConverterProvider
 
 
@@ -84,7 +85,7 @@ class BuiltinConverterProvider(ConverterProvider):
         stub_function: Optional[Callable],
         closure_name: str,
         coercer: Coercer,
-    ) -> Tuple[str, Mapping[str, object]]:
+    ) -> tuple[str, Mapping[str, object]]:
         builder = CodeBuilder()
         namespace = BuiltinCascadeNamespace(occupied=signature.parameters.keys())
         namespace.add_outer_constant("_closure_signature", signature)

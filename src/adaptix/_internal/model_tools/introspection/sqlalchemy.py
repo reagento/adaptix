@@ -1,5 +1,6 @@
 import inspect
-from typing import Any, Generic, List, Mapping, Optional, TypeVar
+from collections.abc import Mapping
+from typing import Any, Generic, Optional, TypeVar
 
 from ...common import TypeHint
 
@@ -86,7 +87,7 @@ def _get_type_for_relationship(relationship: "RelationshipProperty", type_hints:
         return _unwrap_mapped_annotation(type_hints[relationship.key])
     except KeyError:
         if relationship.uselist:
-            return List[relationship.entity.class_]  # type: ignore[name-defined]
+            return list[relationship.entity.class_]  # type: ignore[name-defined]
         return Optional[relationship.entity.class_]
 
 
@@ -153,7 +154,7 @@ def _get_input_shape(
         )
 
     for relationship in relationships:
-        if relationship.collection_class is not None and strip_alias(relationship.collection_class) != list:
+        if relationship.collection_class is not None and strip_alias(relationship.collection_class) is not list:
             continue  # it is not supported
         if relationship.uselist is None:
             continue  # it cannot be None there
@@ -203,7 +204,7 @@ def _get_output_shape(
         if isinstance(column, sqlalchemy.Column)
     ]
     for relationship in relationships:
-        if relationship.collection_class is not None and strip_alias(relationship.collection_class) != list:
+        if relationship.collection_class is not None and strip_alias(relationship.collection_class) is not list:
             continue  # it is not supported
         if relationship.uselist is None:
             continue  # it cannot be None there

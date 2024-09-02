@@ -1,13 +1,15 @@
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, fields
-from typing import Any, Callable, ClassVar, Generic, Iterable, Mapping, Optional, Type, TypeVar
+from typing import Any, Callable, ClassVar, Generic, Optional, TypeVar
 
 from ..datastructures import ClassMap
 from ..type_tools import strip_alias
 from ..utils import Omitted
 from .essential import CannotProvide, Mediator
+from .loc_stack_filtering import LocStack
+from .located_request import LocatedRequest
+from .methods_provider import MethodsProvider, method_handler
 from .provider_wrapper import Chain
-from .request_cls import LocatedRequest, LocStack
-from .static_provider import StaticProvider, static_provision_action
 
 
 @dataclass(frozen=True)
@@ -23,7 +25,7 @@ Merger = Callable[[Any, Any, Any], Any]
 
 @dataclass(frozen=True)
 class Overlay(Generic[Sc]):
-    _schema_cls: ClassVar[Type[Schema]]  # ClassVar cannot contain TypeVar
+    _schema_cls: ClassVar[type[Schema]]  # ClassVar cannot contain TypeVar
     _mergers: ClassVar[Optional[Mapping[str, Merger]]]
 
     def __init_subclass__(cls, *args, **kwargs):
@@ -79,10 +81,10 @@ class Overlay(Generic[Sc]):
 
 @dataclass(frozen=True)
 class OverlayRequest(LocatedRequest[Ov], Generic[Ov]):
-    overlay_cls: Type[Ov]
+    overlay_cls: type[Ov]
 
 
-def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: LocStack) -> Sc:
+def provide_schema(overlay: type[Overlay[Sc]], mediator: Mediator, loc_stack: LocStack) -> Sc:
     stacked_overlay = mediator.mandatory_provide(
         OverlayRequest(
             loc_stack=loc_stack,
@@ -106,12 +108,12 @@ def provide_schema(overlay: Type[Overlay[Sc]], mediator: Mediator, loc_stack: Lo
     return stacked_overlay.to_schema()
 
 
-class OverlayProvider(StaticProvider):
+class OverlayProvider(MethodsProvider):
     def __init__(self, overlays: Iterable[Overlay], chain: Optional[Chain]):
         self._chain = chain
         self._overlays = ClassMap(*overlays)
 
-    @static_provision_action
+    @method_handler
     def _provide_overlay(self, mediator: Mediator, request: OverlayRequest):
         try:
             overlay = self._overlays[request.overlay_cls]

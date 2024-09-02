@@ -1,9 +1,9 @@
 import typing
-import warnings
+from collections.abc import Sequence, Set
 from types import MappingProxyType
-from typing import AbstractSet, Sequence, Set, Tuple
+from typing import Annotated
 
-from ...feature_requirement import HAS_PY_39, HAS_TYPED_DICT_REQUIRED
+from ...feature_requirement import HAS_TYPED_DICT_REQUIRED
 from ...type_tools import BaseNormType, get_all_type_hints, is_typed_dict_class, normalize_type
 from ..definitions import (
     FullShape,
@@ -20,18 +20,6 @@ from ..definitions import (
 )
 
 
-class TypedDictAt38Warning(UserWarning):
-    """Runtime introspection of TypedDict at python3.8 does not support inheritance.
-    Please update python or consider limitations suppressing this warning
-    """
-
-    def __str__(self):
-        return (
-            "Runtime introspection of TypedDict at python3.8 does not support inheritance."
-            " Please, update python or consider limitations suppressing this warning"
-        )
-
-
 def _get_td_hints(tp):
     elements = list(get_all_type_hints(tp).items())
     elements.sort(key=lambda v: v[0])
@@ -39,15 +27,15 @@ def _get_td_hints(tp):
 
 
 def _extract_item_type(tp) -> BaseNormType:
-    if tp.origin is typing.Annotated:
+    if tp.origin is Annotated:
         return tp.args[0]
     return tp
 
 
 def _fetch_required_keys(
-    fields: Sequence[Tuple[str, BaseNormType]],
-    frozen_required_keys: AbstractSet[str],
-) -> Set:
+    fields: Sequence[tuple[str, BaseNormType]],
+    frozen_required_keys: Set[str],
+) -> set:
     required_keys = set(frozen_required_keys)
 
     for field_name, field_tp in fields:
@@ -60,19 +48,8 @@ def _fetch_required_keys(
     return required_keys
 
 
-def _make_requirement_determinant_from_keys(required_fields: set):
+def _make_requirement_determinant(required_fields: set):
     return lambda name: name in required_fields
-
-
-if HAS_PY_39:
-    def _make_requirement_determinant_from_type(tp):
-        required_fields = tp.__required_keys__
-        return lambda name: name in required_fields
-else:
-    def _make_requirement_determinant_from_type(tp):
-        warnings.warn(TypedDictAt38Warning(), stacklevel=3)
-        is_total = tp.__total__
-        return lambda name: is_total
 
 
 def get_typed_dict_shape(tp) -> FullShape:
@@ -90,9 +67,9 @@ def get_typed_dict_shape(tp) -> FullShape:
             [(field_name, field_tp) for (field_name, _), field_tp in zip(type_hints, norm_types)],
             tp.__required_keys__,
         )
-        requirement_determinant = _make_requirement_determinant_from_keys(required_keys)
+        requirement_determinant = _make_requirement_determinant(required_keys)
     else:
-        requirement_determinant = _make_requirement_determinant_from_type(tp)
+        requirement_determinant = _make_requirement_determinant(tp.__required_keys__)
 
     return Shape(
         input=InputShape(

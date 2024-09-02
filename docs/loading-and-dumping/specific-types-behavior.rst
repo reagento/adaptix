@@ -109,7 +109,13 @@ dumper serialize value via ``__str__`` method.
 date, time and datetime
 '''''''''''''''''''''''''''
 
-Value is represented as an isoformat string.
+By default value is represented as an isoformat string.
+
+But you can override this behaviour with other providers:
+
+- To load and dump ``datetime`` to / from specific format, you can use :func:`.datetime_by_format`
+- To load and dump ``datetime`` to / from UNIX timestamp, you can use :func:`.datetime_by_timestamp`
+- To load and dump ``date`` from UNIX timestamp, you can use :func:`.date_by_timestamp`
 
 timedelta
 '''''''''''''''''''''''''''
@@ -137,7 +143,7 @@ Enum members are represented by their value without any conversion.
 LiteralString
 '''''''''''''''''''''''
 
-Loader and dumper have same behaviour as builtin one's of ``str`` type
+Loader and dumper have same behavior as builtin one's of ``str`` type
 
 Compound types
 ================
@@ -164,12 +170,13 @@ Literal
 Loader accepts only values listed in ``Literal``.
 If ``strict_coercion`` is enabled, the loader will distinguish equal ``bool`` and ``int`` instances,
 otherwise, they will be considered as same values.
-``Enum`` instances will be loaded via its loaders. Enum loaders have a higher priority over others, that is, they will be applied first.
+``Enum`` instances will be loaded via its loaders. ``bytes`` instances (e.g ``b"abc"``) will be loaded via its loaders as well.
+Enum loaders have a higher priority over others, that is, they will be applied first.
 
 If the input value could be interpreted as several ``Literal`` members, the result will be undefined.
 
 Dumper will return value without any processing excluding ``Enum`` instances,
-they will be processed via the corresponding dumper.
+they will be processed via the corresponding dumper. ``bytes`` instances also will be processed via the corresponding dumper.
 
 Be careful when you use a ``0``, ``1``, ``False`` and ``True`` as ``Literal`` members.
 Due to type hint caching ``Literal[0, 1]`` sometimes returns ``Literal[False, True]``.
@@ -248,4 +255,4 @@ Also, the model could be loaded from the list.
 
 Dumper works similarly and produces dict (or list).
 
-See :ref:`supported-model-kinds` for exact list of supported model.
+See :ref:`supported-model-kinds` for exact list of supported models.

@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
 from ..common import Dumper, Loader
-from ..provider.request_cls import LocatedRequest
+from ..definitions import DebugTrail
+from ..provider.located_request import LocatedRequest
 
 
 @dataclass(frozen=True)
@@ -11,4 +12,12 @@ class LoaderRequest(LocatedRequest[Loader]):
 
 @dataclass(frozen=True)
 class DumperRequest(LocatedRequest[Dumper]):
+    pass
+
+
+class StrictCoercionRequest(LocatedRequest[bool]):
+    pass
+
+
+class DebugTrailRequest(LocatedRequest[DebugTrail]):
     pass

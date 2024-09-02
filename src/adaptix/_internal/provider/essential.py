@@ -1,6 +1,8 @@
+import typing
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, Iterable, Optional, Sequence, TypeVar, final
+from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, TypeVar, final
 
 from ..common import VarTuple
 from ..compat import CompatExceptionGroup
@@ -29,10 +31,12 @@ class CannotProvide(Exception):
         *,
         is_terminal: bool = False,
         is_demonstrative: bool = False,
+        parent_notes_gen: Optional[Callable[[], Sequence[str]]] = None,
     ):
         self.message = message
         self.is_terminal = is_terminal
         self.is_demonstrative = is_demonstrative
+        self.parent_notes_gen = parent_notes_gen
 
     def __repr__(self):
         return (
@@ -50,10 +54,12 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         *,
         is_terminal: bool = False,
         is_demonstrative: bool = False,
+        parent_notes_gen: Optional[Callable[[], Sequence[str]]] = None,
     ):
         # Parameter `message` is saved by `__new__` of CompatExceptionGroup
         self.is_terminal = is_terminal
         self.is_demonstrative = is_demonstrative
+        self.parent_notes_gen = parent_notes_gen
 
     if not HAS_NATIVE_EXC_GROUP:
         def __new__(
@@ -106,10 +112,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         )
 
 
-V = TypeVar("V")
-
-
-class Mediator(ABC, Generic[V]):
+class DirectMediator(ABC):
     """Mediator is an object that gives provider access to other providers
     and that stores the state of the current search.
 
@@ -123,12 +126,6 @@ class Mediator(ABC, Generic[V]):
         :param request: A request instance
         :return: Result of the request processing
         :raise CannotProvide: A provider able to process the request does not be found
-        """
-
-    @abstractmethod
-    def provide_from_next(self) -> V:
-        """Forward current request to providers
-        that placed after current provider at the recipe.
         """
 
     @final
@@ -212,13 +209,49 @@ def mandatory_apply_by_iterable(
     return results
 
 
+ResponseT = TypeVar("ResponseT")
+
+
+if TYPE_CHECKING:
+    P = typing.ParamSpec("P")
+
+
+class Mediator(DirectMediator, ABC, Generic[ResponseT]):
+    """Mediator is an object that gives provider access to other providers
+    and that stores the state of the current search.
+
+    Mediator is a proxy to providers of retort.
+    """
+
+    @abstractmethod
+    def provide_from_next(self) -> ResponseT:
+        """Forward current request to providers
+        that placed after current provider at the recipe.
+        """
+
+    if TYPE_CHECKING:
+        @abstractmethod
+        def cached_call(self, func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> T:
+            ...
+    else:
+        @abstractmethod
+        def cached_call(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
+            ...
+
+
+RequestT = TypeVar("RequestT", bound=Request)
+RequestHandler = Callable[[Mediator[ResponseT], RequestT], ResponseT]
+
+
+class RequestChecker(ABC, Generic[RequestT]):
+    @abstractmethod
+    def check_request(self, mediator: DirectMediator, request: RequestT, /) -> bool:
+        ...
+
+
 class Provider(ABC):
     """An object that can process Request instances"""
 
     @abstractmethod
-    def apply_provider(self, mediator: Mediator[T], request: Request[T]) -> T:
-        """Handle request instance and return a value of type required by request.
-        Behavior must be the same during the provider object lifetime
-
-        :raise CannotProvide: provider cannot process passed request
-        """
+    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+        ...

@@ -1,7 +1,8 @@
 import collections.abc
 import contextlib
-from dataclasses import dataclass
-from typing import AbstractSet, Dict, List, Mapping, Optional, Set, Tuple
+from collections.abc import Mapping, Set
+from dataclasses import dataclass, replace
+from typing import Callable, Optional
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -12,6 +13,9 @@ from ...definitions import DebugTrail
 from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
 from ...special_cases_optimization import as_is_stub
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
+from ...utils import Omittable, Omitted
+from ..json_schema.definitions import JSONSchema
+from ..json_schema.schema_model import JSONSchemaType, JSONValue
 from ..load_error import (
     AggregateLoadError,
     ExcludedTypeLoadError,
@@ -97,13 +101,13 @@ class Namer:
 
 
 class GenState(Namer):
-    path_to_suffix: Dict[CrownPath, str]
+    path_to_suffix: dict[CrownPath, str]
 
     def __init__(
         self,
         builder: CodeBuilder,
         namespace: CascadeNamespace,
-        name_to_field: Dict[str, InputField],
+        name_to_field: dict[str, InputField],
         debug_trail: DebugTrail,
         root_crown: InpCrown,
     ):
@@ -111,13 +115,13 @@ class GenState(Namer):
         self.namespace = namespace
         self._name_to_field = name_to_field
 
-        self.field_id_to_path: Dict[str, CrownPath] = {}
+        self.field_id_to_path: dict[str, CrownPath] = {}
 
         self._last_path_idx = 0
         self._parent_path: Optional[CrownPath] = None
-        self._crown_stack: List[InpCrown] = [root_crown]
+        self._crown_stack: list[InpCrown] = [root_crown]
 
-        self.type_checked_type_paths: Set[CrownPath] = set()
+        self.type_checked_type_paths: set[CrownPath] = set()
         super().__init__(debug_trail=debug_trail, path_to_suffix={}, path=())
 
     @property
@@ -181,7 +185,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         debug_trail: DebugTrail,
         strict_coercion: bool,
         field_loaders: Mapping[str, Loader],
-        skipped_fields: AbstractSet[str],
+        skipped_fields: Set[str],
         model_identity: str,
         props: ModelLoaderProps,
     ):
@@ -189,10 +193,10 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         self._name_layout = name_layout
         self._debug_trail = debug_trail
         self._strict_coercion = strict_coercion
-        self._id_to_field: Dict[str, InputField] = {
+        self._id_to_field: dict[str, InputField] = {
             field.id: field for field in self._shape.fields
         }
-        self._field_id_to_param: Dict[str, Param] = {
+        self._field_id_to_param: dict[str, Param] = {
             param.field_id: param for param in self._shape.params
         }
         self._field_loaders = field_loaders
@@ -229,7 +233,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             return False
         return field.is_optional and not self._is_extra_target(field)
 
-    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:
         namespace = BuiltinCascadeNamespace()
         state = self._create_state(namespace)
 
@@ -243,7 +247,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             TypeLoadError, ExcludedTypeLoadError,
             LoadError, AggregateLoadError,
         ):
-            state.namespace.add_constant(named_value.__name__, named_value)  # type: ignore[attr-defined]
+            state.namespace.add_constant(named_value.__name__, named_value)
 
         state.namespace.add_constant("CompatExceptionGroup", CompatExceptionGroup)
         state.namespace.add_constant("CollectionsMapping", collections.abc.Mapping)
@@ -261,7 +265,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         if not self._gen_root_crown_dispatch(state, self._name_layout.crown):
             raise TypeError
 
-        self._gen_extra_targets_assigment(state)
+        self._gen_extra_targets_assignment(state)
 
         if self._debug_trail == DebugTrail.ALL:
             state.builder(
@@ -487,7 +491,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         )
         state.builder.empty_line()
 
-    def _get_dict_crown_required_keys(self, crown: InpDictCrown) -> Set[str]:
+    def _get_dict_crown_required_keys(self, crown: InpDictCrown) -> set[str]:
         return {
             key for key, value in crown.map.items()
             if not (isinstance(value, InpFieldCrown) and self._id_to_field[value.id].is_optional)
@@ -603,7 +607,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 assign_to=state.v_raw_field(field),
             )
             with state.builder("else:"):
-                self._gen_field_assigment(
+                self._gen_field_assignment(
                     assign_to=state.v_field(field),
                     field_id=field.id,
                     loader_arg=state.v_raw_field(field),
@@ -625,7 +629,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                     on_lookup_error=on_lookup_error,
                 )
                 with state.builder("else:"):
-                    self._gen_field_assigment(
+                    self._gen_field_assignment(
                         assign_to=assign_to,
                         field_id=field.id,
                         loader_arg=state.v_raw_field(field),
@@ -651,7 +655,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
     ):
         if state.parent_path in state.type_checked_type_paths:
             with state.builder(f"if {state.path[-1]!r} in {state.parent.v_data}:"):
-                self._gen_field_assigment(
+                self._gen_field_assignment(
                     assign_to=assign_to,
                     field_id=field.id,
                     loader_arg=f"{state.parent.v_data}[{state.path[-1]!r}]",
@@ -690,7 +694,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                     else:
                     """,
                 ):
-                    self._gen_field_assigment(
+                    self._gen_field_assignment(
                         assign_to=assign_to,
                         field_id=field.id,
                         loader_arg="value",
@@ -712,14 +716,14 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                         else:
                         """,
                     ):
-                        self._gen_field_assigment(
+                        self._gen_field_assignment(
                             assign_to=assign_to,
                             field_id=field.id,
                             loader_arg="value",
                             state=state,
                         )
 
-    def _gen_field_assigment(
+    def _gen_field_assignment(
         self,
         assign_to: str,
         field_id: str,
@@ -746,7 +750,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 f"{assign_to} = {processing_expr}",
             )
 
-    def _gen_extra_targets_assigment(self, state: GenState):
+    def _gen_extra_targets_assignment(self, state: GenState):
         # Saturate extra targets with data.
         # If extra data is not collected, loader of the required field will get empty dict
         extra_move = self._name_layout.extra_move
@@ -758,7 +762,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             for target in extra_move.fields:
                 field = self._id_to_field[target]
 
-                self._gen_field_assigment(
+                self._gen_field_assignment(
                     assign_to=state.v_field(field),
                     field_id=target,
                     loader_arg=state.v_extra,
@@ -768,7 +772,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             for target in extra_move.fields:
                 field = self._id_to_field[target]
                 if field.is_required:
-                    self._gen_field_assigment(
+                    self._gen_field_assignment(
                         assign_to=state.v_field(field),
                         field_id=target,
                         loader_arg="{}",
@@ -779,3 +783,69 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
 
     def _gen_none_crown(self, state: GenState, crown: InpNoneCrown):
         pass
+
+
+class ModelInputJSONSchemaGen:
+    def __init__(
+        self,
+        shape: InputShape,
+        field_json_schema_getter: Callable[[InputField], JSONSchema],
+        field_default_dumper: Callable[[InputField], Omittable[JSONValue]],
+    ):
+        self._shape = shape
+        self._field_json_schema_getter = field_json_schema_getter
+        self._field_default_dumper = field_default_dumper
+
+    def _convert_dict_crown(self, crown: InpDictCrown) -> JSONSchema:
+        return JSONSchema(
+            type=JSONSchemaType.OBJECT,
+            required=[
+                key
+                for key, value in crown.map.items()
+                if self._is_required_crown(value)
+            ],
+            properties={
+                key: self.convert_crown(value)
+                for key, value in crown.map.items()
+            },
+            additional_properties=crown.extra_policy != ExtraForbid(),
+        )
+
+    def _convert_list_crown(self, crown: InpListCrown) -> JSONSchema:
+        items = [
+            self.convert_crown(sub_crown)
+            for sub_crown in crown.map
+        ]
+        return JSONSchema(
+            type=JSONSchemaType.ARRAY,
+            prefix_items=items,
+            max_items=len(items) if crown.extra_policy != ExtraForbid() else Omitted(),
+            min_items=len(items),
+        )
+
+    def _convert_field_crown(self, crown: InpFieldCrown) -> JSONSchema:
+        field = self._shape.fields_dict[crown.id]
+        json_schema = self._field_json_schema_getter(field)
+        default = self._field_default_dumper(field)
+        if default != Omitted():
+            return replace(json_schema, default=default)
+        return json_schema
+
+    def _convert_none_crown(self, crown: InpNoneCrown) -> JSONSchema:
+        return JSONSchema()
+
+    def _is_required_crown(self, crown: InpCrown) -> bool:
+        if isinstance(crown, InpFieldCrown):
+            return self._shape.fields_dict[crown.id].is_required
+        return isinstance(crown, InpNoneCrown)
+
+    def convert_crown(self, crown: InpCrown) -> JSONSchema:
+        if isinstance(crown, InpDictCrown):
+            return self._convert_dict_crown(crown)
+        if isinstance(crown, InpListCrown):
+            return self._convert_list_crown(crown)
+        if isinstance(crown, InpFieldCrown):
+            return self._convert_field_crown(crown)
+        if isinstance(crown, InpNoneCrown):
+            return self._convert_none_crown(crown)
+        raise TypeError

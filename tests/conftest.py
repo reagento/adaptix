@@ -21,17 +21,17 @@ def trail_select(debug_trail):
 
 
 @pytest.fixture()
-def model_spec() -> ModelSpecSchema:  # noqa: PT004
+def model_spec() -> ModelSpecSchema:
     ...
 
 
 @pytest.fixture()
-def src_model_spec() -> ModelSpecSchema:  # noqa: PT004
+def src_model_spec() -> ModelSpecSchema:
     ...
 
 
 @pytest.fixture()
-def dst_model_spec() -> ModelSpecSchema:  # noqa: PT004
+def dst_model_spec() -> ModelSpecSchema:
     ...
 
 

@@ -54,10 +54,10 @@ from adaptix._internal.morphing.model.crown_definitions import (
     OutputNameLayoutRequest,
 )
 from adaptix._internal.morphing.request_cls import DumperRequest, LoaderRequest
-from adaptix._internal.provider.loc_stack_filtering import P
-from adaptix._internal.provider.provider_template import ValueProvider
-from adaptix._internal.provider.request_cls import LocStack, TypeHintLoc
+from adaptix._internal.provider.loc_stack_filtering import LocStack, P
+from adaptix._internal.provider.location import TypeHintLoc
 from adaptix._internal.provider.shape_provider import InputShapeRequest, OutputShapeRequest
+from adaptix._internal.provider.value_provider import ValueProvider
 
 
 @dataclass
@@ -351,20 +351,20 @@ def test_as_list():
     ) == Layouts(
         inp=InputNameLayout(
             crown=InpListCrown(
-                map=[
+                map=(
                     InpFieldCrown(id="a"),
                     InpFieldCrown(id="b"),
-                ],
+                ),
                 extra_policy=ExtraSkip(),
             ),
             extra_move=None,
         ),
         out=OutputNameLayout(
             crown=OutListCrown(
-                map=[
+                map=(
                     OutFieldCrown(id="a"),
                     OutFieldCrown(id="b"),
-                ],
+                ),
             ),
             extra_move=None,
         ),
@@ -385,22 +385,22 @@ def test_as_list():
     ) == Layouts(
         inp=InputNameLayout(
             crown=InpListCrown(
-                map=[
+                map=(
                     InpFieldCrown(id="b"),
                     InpFieldCrown(id="a"),
                     InpFieldCrown(id="c"),
-                ],
+                ),
                 extra_policy=ExtraSkip(),
             ),
             extra_move=None,
         ),
         out=OutputNameLayout(
             crown=OutListCrown(
-                map=[
+                map=(
                     OutFieldCrown(id="b"),
                     OutFieldCrown(id="a"),
                     OutFieldCrown(id="c"),
-                ],
+                ),
             ),
             extra_move=None,
         ),
@@ -544,22 +544,22 @@ def test_gaps_filling():
     ) == Layouts(
         inp=InputNameLayout(
             crown=InpListCrown(
-                map=[
+                map=(
                     InpFieldCrown(id="a"),
                     InpNoneCrown(),
                     InpFieldCrown(id="b"),
-                ],
+                ),
                 extra_policy=ExtraSkip(),
             ),
             extra_move=None,
         ),
         out=OutputNameLayout(
             crown=OutListCrown(
-                map=[
+                map=(
                     OutFieldCrown(id="a"),
                     OutNoneCrown(placeholder=DefaultValue(value=None)),
                     OutFieldCrown(id="b"),
-                ],
+                ),
             ),
             extra_move=None,
         ),
@@ -590,19 +590,19 @@ def test_structure_flattening():
                 map={
                     "f": InpFieldCrown(id="f"),
                     "w": InpListCrown(
-                        map=[
+                        map=(
                             InpFieldCrown(id="d"),
-                        ],
+                        ),
                         extra_policy=ExtraSkip(),
                     ),
                     "x": InpDictCrown(
                         map={
                             "e": InpFieldCrown(id="e"),
                             "y": InpListCrown(
-                                map=[
+                                map=(
                                     InpFieldCrown(id="a"),
                                     InpFieldCrown(id="b"),
-                                ],
+                                ),
                                 extra_policy=ExtraSkip(),
                             ),
                             "z": InpFieldCrown(id="c"),
@@ -619,18 +619,18 @@ def test_structure_flattening():
                 map={
                     "f": OutFieldCrown(id="f"),
                     "w": OutListCrown(
-                        map=[
+                        map=(
                             OutFieldCrown(id="d"),
-                        ],
+                        ),
                     ),
                     "x": OutDictCrown(
                         map={
                             "e": OutFieldCrown(id="e"),
                             "y": OutListCrown(
-                                map=[
+                                map=(
                                     OutFieldCrown(id="a"),
                                     OutFieldCrown(id="b"),
-                                ],
+                                ),
                             ),
                             "z": OutFieldCrown(id="c"),
                         },
@@ -832,18 +832,18 @@ def test_extra_at_list():
     assert layouts == Layouts(
         InputNameLayout(
             crown=InpListCrown(
-                map=[
+                map=(
                     InpFieldCrown("a"),
-                ],
+                ),
                 extra_policy=ExtraSkip(),
             ),
             extra_move=None,
         ),
         OutputNameLayout(
             crown=OutListCrown(
-                map=[
+                map=(
                     OutFieldCrown("a"),
-                ],
+                ),
             ),
             extra_move=None,
         ),
@@ -863,18 +863,18 @@ def test_extra_at_list():
     assert layouts == Layouts(
         InputNameLayout(
             crown=InpListCrown(
-                map=[
+                map=(
                     InpFieldCrown("a"),
-                ],
+                ),
                 extra_policy=ExtraForbid(),
             ),
             extra_move=None,
         ),
         OutputNameLayout(
             crown=OutListCrown(
-                map=[
+                map=(
                     OutFieldCrown("a"),
-                ],
+                ),
             ),
             extra_move=None,
         ),
@@ -1205,9 +1205,9 @@ def test_ellipsis_replacing_int_key():
         TestField("b"),
         name_mapping(
             as_list=True,
-            map=[
+            map=(
                 (".*", ("data", ...)),
-            ],
+            ),
         ),
         DEFAULT_NAME_MAPPING,
     )
@@ -1216,10 +1216,10 @@ def test_ellipsis_replacing_int_key():
             crown=InpDictCrown(
                 map={
                     "data": InpListCrown(
-                        map=[
+                        map=(
                             InpFieldCrown("a_"),
                             InpFieldCrown("b"),
-                        ],
+                        ),
                         extra_policy=ExtraSkip(),
                     ),
                 },
@@ -1231,10 +1231,10 @@ def test_ellipsis_replacing_int_key():
             crown=OutDictCrown(
                 map={
                     "data": OutListCrown(
-                        map=[
+                        map=(
                             OutFieldCrown("a_"),
                             OutFieldCrown("b"),
-                        ],
+                        ),
                     ),
                 },
                 sieves={},
@@ -1274,14 +1274,14 @@ def test_empty_models_list():
     assert layouts == Layouts(
         InputNameLayout(
             crown=InpListCrown(
-                map=[],
+                map=(),
                 extra_policy=ExtraSkip(),
             ),
             extra_move=None,
         ),
         OutputNameLayout(
             crown=OutListCrown(
-                map=[],
+                map=(),
             ),
             extra_move=None,
         ),

@@ -1,8 +1,9 @@
 import contextlib
 from collections import deque
+from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 from textwrap import dedent
-from typing import Deque, Generator, Iterable, Sequence, TypeVar
+from typing import TypeVar
 
 CB = TypeVar("CB", bound="CodeBuilder")
 
@@ -11,7 +12,7 @@ class CodeBuilder:
     __slots__ = ("_lines", "_current_indent", "_indent_delta")
 
     def __init__(self, indent_delta: int = 4):
-        self._lines: Deque[str] = deque()
+        self._lines: deque[str] = deque()
         self._current_indent = 0
         self._indent_delta = indent_delta
 

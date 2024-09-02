@@ -41,8 +41,8 @@ def cov(c: Context, env_list, output="coverage.xml", parallel=False):
 def deps_compile(c: Context, upgrade=False):
     promises = [
         c.run(
-            f'pip-compile {req} -o {Path("requirements") / req.name}'
-            ' -q --allow-unsafe --strip-extras'
+            f'uv pip compile {req} -o {Path("requirements") / req.name}'
+            ' -q --allow-unsafe --strip-extras --no-strip-markers'
             + if_str(upgrade, " --upgrade"),
             asynchronous=True,
         )

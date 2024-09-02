@@ -16,7 +16,6 @@ How to setup the repository
 
 #. Install all needed python interpreters
 
-   * CPython 3.8
    * CPython 3.9
    * CPython 3.10
    * CPython 3.11

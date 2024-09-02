@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 from adaptix import NameStyle, Retort, name_mapping
 
@@ -8,7 +8,7 @@ from adaptix import NameStyle, Retort, name_mapping
 class Person:
     first_name: str
     last_name: str
-    extra: Dict[str, Any]
+    extra: dict[str, Any]
 
 
 @dataclass

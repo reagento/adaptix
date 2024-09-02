@@ -5,7 +5,9 @@ from collections import abc as c_abc, defaultdict
 from dataclasses import InitVar
 from enum import Enum
 from itertools import permutations
+from types import GenericAlias
 from typing import (
+    Annotated,
     Any,
     Callable,
     ClassVar,
@@ -35,12 +37,10 @@ import pytest
 from tests_helpers import cond_list, full_match, requires
 
 from adaptix._internal.feature_requirement import (
-    HAS_ANNOTATED,
     HAS_PARAM_SPEC,
     HAS_PY_310,
     HAS_PY_311,
     HAS_PY_312,
-    HAS_STD_CLASSES_GENERICS,
     HAS_TV_TUPLE,
     HAS_TYPE_ALIAS,
     HAS_TYPE_GUARD,
@@ -108,11 +108,10 @@ def test_generic_concrete_one_arg(tp, alias):
         alias,
         tp, [nt_zero(Any)],
     )
-    if HAS_STD_CLASSES_GENERICS:
-        assert_normalize(
-            tp[int],
-            tp, [nt_zero(int)],
-        )
+    assert_normalize(
+        tp[int],
+        tp, [nt_zero(int)],
+    )
     assert_normalize(
         alias[int],
         tp, [nt_zero(int)],
@@ -137,11 +136,10 @@ def test_generic_concrete_two_args(tp, alias):
         alias,
         tp, [nt_zero(Any), nt_zero(Any)],
     )
-    if HAS_STD_CLASSES_GENERICS:
-        assert_normalize(
-            tp[int, str],
-            tp, [nt_zero(int), nt_zero(str)],
-        )
+    assert_normalize(
+        tp[int, str],
+        tp, [nt_zero(int), nt_zero(str)],
+    )
     assert_normalize(
         alias[int, str],
         tp, [nt_zero(int), nt_zero(str)],
@@ -157,27 +155,24 @@ def test_special_generics():
         Tuple,
         tuple, [nt_zero(Any), ...],
     )
-    if HAS_STD_CLASSES_GENERICS:
-        assert_normalize(
-            tuple[int],
-            tuple, [nt_zero(int)],
-        )
+    assert_normalize(
+        tuple[int],
+        tuple, [nt_zero(int)],
+    )
     assert_normalize(
         Tuple[int],
         tuple, [nt_zero(int)],
     )
-    if HAS_STD_CLASSES_GENERICS:
-        assert_normalize(
-            tuple[int, ...],
-            tuple, [nt_zero(int), ...],
-        )
+    assert_normalize(
+        tuple[int, ...],
+        tuple, [nt_zero(int), ...],
+    )
     assert_normalize(
         Tuple[int, ...],
         tuple, [nt_zero(int), ...],
     )
 
-    if HAS_STD_CLASSES_GENERICS:
-        assert_normalize(tuple[()], tuple, [])
+    assert_normalize(tuple[()], tuple, [])
     assert_normalize(Tuple[()], tuple, [])
 
     any_str_placeholder = make_norm_type(
@@ -195,7 +190,7 @@ def test_special_generics():
     "callable_tp",
     [
         Callable,
-        *cond_list(HAS_STD_CLASSES_GENERICS, [c_abc.Callable]),
+        c_abc.Callable,
     ],
 )
 def test_callable(callable_tp):
@@ -275,17 +270,12 @@ def test_type(make_union):
 
     assert_normalize(
         Type[make_union[int, str]],
-        Union, [normalize_type(Type[int]), normalize_type(Type[str])],
+        Union, [normalize_type(type[int]), normalize_type(type[str])],
     )
 
     assert_normalize(
-        Union[Type[make_union[int, str]], Type[bool]],
-        Union, [normalize_type(Type[int]), normalize_type(Type[str]), normalize_type(Type[bool])],
-    )
-
-    assert_normalize(
-        Union[Type[make_union[int, str]], Type[int]],
-        Union, [normalize_type(Type[int]), normalize_type(Type[str])],
+        Union[type[make_union[int, str]], type[int]],
+        Union, [normalize_type(type[int]), normalize_type(type[str])],
     )
 
 
@@ -408,10 +398,7 @@ def test_final():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated():
-    from typing import Annotated
-
     pytest.raises(NotSubscribedError, lambda: normalize_type(Annotated))
 
     assert_normalize(
@@ -458,10 +445,10 @@ def test_union(make_union):
     )
 
     assert_normalize(
-        make_union[Type[list], Type[Union[List, str]]],
+        make_union[type[list], type[Union[List, str]]],
         Union, [
-            normalize_type(Union[Type[list], Type[List]]),
-            normalize_type(Type[str]),
+            normalize_type(Union[type[list], type[List]]),
+            normalize_type(type[str]),
         ],
     )
 
@@ -914,10 +901,7 @@ def test_type_alias():
     )
 
 
-@requires(HAS_STD_CLASSES_GENERICS)
 def test_types_generic_alias():
-    from types import GenericAlias
-
     assert_normalize(
         GenericAlias(list, (int,)),
         list, [nt_zero(int)],
@@ -1017,7 +1001,7 @@ def test_type_var_tuple_generic(tpl):
 
     assert_normalize(
         Array,
-        Array, [normalize_type(Unpack[Tuple[Any, ...]])],
+        Array, [normalize_type(Unpack[tuple[Any, ...]])],
     )
     assert_normalize(
         Array[int],
@@ -1051,7 +1035,7 @@ def test_type_var_tuple_generic_pre(tpl):
 
     assert_normalize(
         PreArray,
-        PreArray, [nt_zero(Any), normalize_type(Unpack[Tuple[Any, ...]])],
+        PreArray, [nt_zero(Any), normalize_type(Unpack[tuple[Any, ...]])],
     )
     assert_normalize(
         PreArray[int],
@@ -1088,7 +1072,7 @@ def test_type_var_tuple_generic_post(tpl):
 
     assert_normalize(
         PostArray,
-        PostArray, [normalize_type(Unpack[Tuple[Any, ...]]), nt_zero(Any)],
+        PostArray, [normalize_type(Unpack[tuple[Any, ...]]), nt_zero(Any)],
     )
     assert_normalize(
         PostArray[int],

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum, IntEnum
-from typing import List, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 from phonenumbers import PhoneNumber
 
@@ -46,7 +46,7 @@ class RecItem:
 @dataclass(frozen=True)
 class Receipt:
     type: ReceiptType
-    items: List[RecItem]
+    items: list[RecItem]
     taxation: Taxation
-    notify: Optional[List[NotifyTarget]]
+    notify: Optional[list[NotifyTarget]]
     version: Literal["1"] = "1"

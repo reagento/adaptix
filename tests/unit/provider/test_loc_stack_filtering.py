@@ -1,26 +1,25 @@
 # ruff: noqa: A001, A002
 import collections.abc
-import typing
 from contextlib import nullcontext
 from dataclasses import dataclass
-from typing import Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar, Union, overload
+from typing import Annotated, Any, Dict, Generic, Iterable, List, Optional, Type, TypeVar, Union, overload
 
 import pytest
-from tests_helpers import cond_list, full_match
+from tests_helpers import full_match
+from tests_helpers.misc import create_mediator
 
 from adaptix import Chain, P, Retort, loader
 from adaptix._internal.common import TypeHint
-from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import NoDefault
 from adaptix._internal.provider.loc_stack_filtering import (
     ExactOriginLSC,
     ExactTypeLSC,
+    LocStack,
     LocStackEndChecker,
     OriginSubclassLSC,
     create_loc_stack_checker,
 )
 from adaptix._internal.provider.location import FieldLoc, GenericParamLoc, TypeHintLoc
-from adaptix._internal.provider.request_cls import LocStack
 from adaptix._internal.type_tools import normalize_type
 
 
@@ -54,10 +53,6 @@ def param_result(*values, result=None, raises=None, exact_match=None, match=None
     if id is None:
         id = str(values[0]) if len(values) == 1 else str(values)
     return pytest.param(*values, result, context, id=id)
-
-
-def create_mediator():
-    return Retort()._create_mediator()
 
 
 @pytest.mark.parametrize(
@@ -343,46 +338,41 @@ class MyGeneric(Generic[T]):
             Union,
             result=ExactOriginLSC(Union),
         ),
-        *cond_list(
-            HAS_ANNOTATED,
-            lambda: [
-                param_result(
-                    typing.Annotated,
-                    result=ExactOriginLSC(typing.Annotated),
-                ),
-                param_result(
-                    typing.Annotated[int, "meta"],
-                    result=ExactTypeLSC(normalize_type(typing.Annotated[int, "meta"])),
-                ),
-                param_result(
-                    typing.Annotated[List[int], "meta"],
-                    result=ExactTypeLSC(normalize_type(typing.Annotated[list[int], "meta"])),
-                ),
-                param_result(
-                    typing.Annotated[list, "meta"],
-                    raises=ValueError,
-                    exact_match=(
-                        "Can not create LocStackChecker from"
-                        " typing.Annotated[list, 'meta'] generic alias (parametrized generic)"
-                    ),
-                ),
-                param_result(
-                    typing.Annotated[List[T], "meta"],
-                    raises=ValueError,
-                    exact_match=(
-                        "Can not create LocStackChecker from"
-                        " typing.Annotated[typing.List[~T], 'meta'] generic alias (parametrized generic)"
-                    ),
-                ),
-                param_result(
-                    typing.Annotated[Dict[int, T], "meta"],
-                    raises=ValueError,
-                    exact_match=(
-                        "Can not create LocStackChecker from"
-                        " typing.Annotated[typing.Dict[int, ~T], 'meta'] generic alias (parametrized generic)"
-                    ),
-                ),
-            ],
+        param_result(
+            Annotated,
+            result=ExactOriginLSC(Annotated),
+        ),
+        param_result(
+            Annotated[int, "meta"],
+            result=ExactTypeLSC(normalize_type(Annotated[int, "meta"])),
+        ),
+        param_result(
+            Annotated[List[int], "meta"],
+            result=ExactTypeLSC(normalize_type(Annotated[list[int], "meta"])),
+        ),
+        param_result(
+            Annotated[list, "meta"],
+            raises=ValueError,
+            exact_match=(
+                "Can not create LocStackChecker from"
+                " typing.Annotated[list, 'meta'] generic alias (parametrized generic)"
+            ),
+        ),
+        param_result(
+            Annotated[List[T], "meta"],
+            raises=ValueError,
+            exact_match=(
+                "Can not create LocStackChecker from"
+                " typing.Annotated[typing.List[~T], 'meta'] generic alias (parametrized generic)"
+            ),
+        ),
+        param_result(
+            Annotated[Dict[int, T], "meta"],
+            raises=ValueError,
+            exact_match=(
+                "Can not create LocStackChecker from"
+                " typing.Annotated[typing.Dict[int, ~T], 'meta'] generic alias (parametrized generic)"
+            ),
         ),
     ],
 )

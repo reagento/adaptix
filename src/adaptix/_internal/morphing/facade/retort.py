@@ -1,31 +1,30 @@
 from abc import ABC
+from collections.abc import ByteString, Iterable, Mapping, MutableMapping  # noqa: PYI057
 from datetime import date, datetime, time
-from decimal import Decimal
-from fractions import Fraction
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
 from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
-from typing import Any, ByteString, Iterable, Mapping, MutableMapping, Optional, Type, TypeVar, overload
+from typing import Any, Optional, TypeVar, overload
 from uuid import UUID
 
 from ...common import Dumper, Loader, TypeHint, VarTuple
 from ...definitions import DebugTrail
 from ...provider.essential import Provider, Request
-from ...provider.loc_stack_filtering import P
-from ...provider.provider_template import ValueProvider
-from ...provider.request_cls import DebugTrailRequest, LocStack, StrictCoercionRequest, TypeHintLoc
+from ...provider.loc_stack_filtering import LocStack, P
+from ...provider.location import TypeHintLoc
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
+from ...provider.value_provider import ValueProvider
 from ...retort.operating_retort import OperatingRetort
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
 from ..concrete_provider import (
-    BOOL_LOADER_PROVIDER,
-    COMPLEX_LOADER_PROVIDER,
-    DECIMAL_LOADER_PROVIDER,
-    FLOAT_LOADER_PROVIDER,
-    FRACTION_LOADER_PROVIDER,
-    INT_LOADER_PROVIDER,
-    STR_LOADER_PROVIDER,
+    BOOL_PROVIDER,
+    COMPLEX_PROVIDER,
+    DECIMAL_PROVIDER,
+    FLOAT_PROVIDER,
+    FRACTION_PROVIDER,
+    INT_PROVIDER,
+    STR_PROVIDER,
     BytearrayBase64Provider,
     BytesBase64Provider,
     BytesIOBase64Provider,
@@ -55,7 +54,7 @@ from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSie
 from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
 from ..provider_template import ABCProxy
-from ..request_cls import DumperRequest, LoaderRequest
+from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from .provider import as_is_dumper, as_is_loader, dumper, enum_by_exact_value, flag_by_exact_value, loader, name_mapping
 
 
@@ -78,26 +77,13 @@ class FilledRetort(OperatingRetort, ABC):
         flag_by_exact_value(),
         enum_by_exact_value(),  # it has higher priority than scalar types for Enum with mixins
 
-        INT_LOADER_PROVIDER,
-        as_is_dumper(int),
-
-        FLOAT_LOADER_PROVIDER,
-        as_is_dumper(float),
-
-        STR_LOADER_PROVIDER,
-        as_is_dumper(str),
-
-        BOOL_LOADER_PROVIDER,
-        as_is_dumper(bool),
-
-        DECIMAL_LOADER_PROVIDER,
-        dumper(Decimal, Decimal.__str__),
-
-        FRACTION_LOADER_PROVIDER,
-        dumper(Fraction, Fraction.__str__),
-
-        COMPLEX_LOADER_PROVIDER,
-        dumper(complex, complex.__str__),
+        INT_PROVIDER,
+        FLOAT_PROVIDER,
+        STR_PROVIDER,
+        BOOL_PROVIDER,
+        DECIMAL_PROVIDER,
+        FRACTION_PROVIDER,
+        COMPLEX_PROVIDER,
 
         BytesBase64Provider(),
         BytesIOBase64Provider(),
@@ -188,10 +174,11 @@ class AdornedRetort(OperatingRetort):
         recipe: Iterable[Provider] = (),
         strict_coercion: bool = True,
         debug_trail: DebugTrail = DebugTrail.ALL,
+        hide_traceback: bool = True,
     ):
         self._strict_coercion = strict_coercion
         self._debug_trail = debug_trail
-        super().__init__(recipe)
+        super().__init__(recipe=recipe, hide_traceback=hide_traceback)
 
     def _calculate_derived(self):
         super()._calculate_derived()
@@ -203,31 +190,32 @@ class AdornedRetort(OperatingRetort):
         *,
         strict_coercion: Optional[bool] = None,
         debug_trail: Optional[DebugTrail] = None,
+        hide_traceback: Optional[bool] = None,
     ) -> AR:
         with self._clone() as clone:
             if strict_coercion is not None:
                 clone._strict_coercion = strict_coercion
-
             if debug_trail is not None:
                 clone._debug_trail = debug_trail
-
+            if hide_traceback is not None:
+                clone._hide_traceback = hide_traceback
         return clone
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         with self._clone() as clone:
-            clone._inc_instance_recipe = (
-                tuple(recipe) + clone._inc_instance_recipe
+            clone._instance_recipe = (
+                tuple(recipe) + clone._instance_recipe
             )
 
         return clone
 
-    def _get_config_recipe(self) -> VarTuple[Provider]:
+    def _get_recipe_tail(self) -> VarTuple[Provider]:
         return (
             ValueProvider(StrictCoercionRequest, self._strict_coercion),
             ValueProvider(DebugTrailRequest, self._debug_trail),
         )
 
-    def get_loader(self, tp: Type[T]) -> Loader[T]:
+    def get_loader(self, tp: type[T]) -> Loader[T]:
         try:
             return self._loader_cache[tp]
         except KeyError:
@@ -236,7 +224,7 @@ class AdornedRetort(OperatingRetort):
         self._loader_cache[tp] = loader_
         return loader_
 
-    def _make_loader(self, tp: Type[T]) -> Loader[T]:
+    def _make_loader(self, tp: type[T]) -> Loader[T]:
         loader_ = self._facade_provide(
             LoaderRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
             error_message=f"Cannot produce loader for type {tp!r}",
@@ -253,7 +241,7 @@ class AdornedRetort(OperatingRetort):
 
         return loader_
 
-    def get_dumper(self, tp: Type[T]) -> Dumper[T]:
+    def get_dumper(self, tp: type[T]) -> Dumper[T]:
         try:
             return self._dumper_cache[tp]
         except KeyError:
@@ -262,7 +250,7 @@ class AdornedRetort(OperatingRetort):
         self._dumper_cache[tp] = dumper_
         return dumper_
 
-    def _make_dumper(self, tp: Type[T]) -> Dumper[T]:
+    def _make_dumper(self, tp: type[T]) -> Dumper[T]:
         dumper_ = self._facade_provide(
             DumperRequest(loc_stack=LocStack(TypeHintLoc(type=tp))),
             error_message=f"Cannot produce dumper for type {tp!r}",
@@ -280,7 +268,7 @@ class AdornedRetort(OperatingRetort):
         return dumper_
 
     @overload
-    def load(self, data: Any, tp: Type[T], /) -> T:
+    def load(self, data: Any, tp: type[T], /) -> T:
         ...
 
     @overload
@@ -291,7 +279,7 @@ class AdornedRetort(OperatingRetort):
         return self.get_loader(tp)(data)
 
     @overload
-    def dump(self, data: T, tp: Type[T], /) -> Any:
+    def dump(self, data: T, tp: type[T], /) -> Any:
         ...
 
     @overload

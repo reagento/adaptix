@@ -34,8 +34,8 @@ from adaptix._internal.morphing.model.crown_definitions import (
     InputNameLayoutRequest,
 )
 from adaptix._internal.morphing.request_cls import LoaderRequest
-from adaptix._internal.provider.provider_template import ValueProvider
 from adaptix._internal.provider.shape_provider import InputShapeRequest
+from adaptix._internal.provider.value_provider import ValueProvider
 from adaptix.load_error import (
     ExtraFieldsLoadError,
     ExtraItemsLoadError,
@@ -298,10 +298,10 @@ def test_direct_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_
         ),
         name_layout=InputNameLayout(
             crown=InpListCrown(
-                [
+                (
                     InpFieldCrown("a"),
                     InpFieldCrown("b"),
-                ],
+                ),
                 extra_policy=extra_policy,
             ),
             extra_move=None,
@@ -710,10 +710,10 @@ def test_optional_fields_at_list(debug_ctx, debug_trail, extra_policy):
         ),
         name_layout=InputNameLayout(
             crown=InpListCrown(
-                [
+                (
                     InpFieldCrown("a"),
                     InpFieldCrown("b"),
-                ],
+                ),
                 extra_policy=extra_policy,
             ),
             extra_move=None,
@@ -785,7 +785,7 @@ COMPLEX_STRUCTURE_CROWN = InpDictCrown(
         ),
         "w": InpFieldCrown("c"),
         "v": InpListCrown(
-            [
+            (
                 InpFieldCrown("d"),
                 InpDictCrown(
                     {
@@ -794,12 +794,12 @@ COMPLEX_STRUCTURE_CROWN = InpDictCrown(
                     extra_policy=ExtraCollect(),
                 ),
                 InpListCrown(
-                    [
+                    (
                         InpFieldCrown("f"),
-                    ],
+                    ),
                     extra_policy=ExtraForbid(),
                 ),
-            ],
+            ),
             extra_policy=ExtraForbid(),
         ),
     },
@@ -1037,11 +1037,11 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, extra_policy, trail_se
         ),
         name_layout=InputNameLayout(
             crown=InpListCrown(
-                [
+                (
                     InpNoneCrown(),
                     InpFieldCrown("a"),
                     InpNoneCrown(),
-                ],
+                ),
                 extra_policy=extra_policy,
             ),
             extra_move=None,
@@ -1184,7 +1184,7 @@ def test_empty_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_c
         shape=shape(),
         name_layout=InputNameLayout(
             crown=InpListCrown(
-                [],
+                (),
                 extra_policy=extra_policy,
             ),
             extra_move=None,

@@ -2,13 +2,13 @@ import collections.abc
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import replace
-from typing import Any, Callable, Tuple, Union, final
+from typing import Any, Callable, Union, final
 
 from ..common import Coercer, OneArgCoercer, TypeHint
+from ..morphing.utils import try_normalize_type
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStackChecker
 from ..provider.location import GenericParamLoc
-from ..provider.request_cls import try_normalize_type
 from ..special_cases_optimization import as_is_stub, as_is_stub_with_ctx
 from ..type_tools import BaseNormType, is_generic, is_parametrized, is_subclass_soft, normalize_type, strip_tags
 from .provider_template import CoercerProvider
@@ -131,23 +131,11 @@ class OptionalCoercerProvider(NormTypeCoercerProvider):
 
         not_none_src = self._get_not_none(norm_src)
         not_none_dst = self._get_not_none(norm_dst)
-        not_none_request = replace(
-            request,
-            src=request.src.append_with(
-                GenericParamLoc(
-                    type=not_none_src.source,
-                    generic_pos=0,
-                ),
-            ),
-            dst=request.dst.append_with(
-                GenericParamLoc(
-                    type=not_none_dst.source,
-                    generic_pos=0,
-                ),
-            ),
-        )
         not_none_coercer = mediator.mandatory_provide(
-            not_none_request,
+            request.append_loc(
+                src_loc=GenericParamLoc(type=not_none_src.source, generic_pos=0),
+                dst_loc=GenericParamLoc(type=not_none_dst.source, generic_pos=0),
+            ),
             lambda x: "Cannot create coercer for optionals. Coercer for wrapped value cannot be created",
         )
         if not_none_coercer == as_is_stub_with_ctx:
@@ -214,14 +202,9 @@ class IterableCoercerProvider(NormTypeCoercerProvider):
         src_arg_tp = self._parse_source(norm_src)
         dst_factory, dst_arg_tp = self._parse_destination(norm_dst)
         element_coercer = mediator.mandatory_provide(
-            CoercerRequest(
-                src=request.src.append_with(
-                    GenericParamLoc(type=src_arg_tp, generic_pos=0),
-                ),
-                ctx=request.ctx,
-                dst=request.dst.append_with(
-                    GenericParamLoc(type=dst_arg_tp, generic_pos=0),
-                ),
+            request.append_loc(
+                src_loc=GenericParamLoc(type=src_arg_tp, generic_pos=0),
+                dst_loc=GenericParamLoc(type=dst_arg_tp, generic_pos=0),
             ),
             lambda x: "Cannot create coercer for iterables. Coercer for element cannot be created",
         )
@@ -232,14 +215,14 @@ class IterableCoercerProvider(NormTypeCoercerProvider):
         return iterable_coercer
 
     def _parse_source(self, norm: BaseNormType) -> TypeHint:
-        if norm.origin == tuple and norm.args[-1] != Ellipsis:
+        if norm.origin is tuple and norm.args[-1] != Ellipsis:
             raise CannotProvide("Constant-length tuple is not supported yet", is_demonstrative=True)
         if norm.origin in self.CONCRETE_ORIGINS or norm.origin in self.ABC_TO_IMPL:
             return norm.args[0].source
         raise CannotProvide
 
-    def _parse_destination(self, norm: BaseNormType) -> Tuple[Callable, TypeHint]:
-        if norm.origin == tuple and norm.args[-1] != Ellipsis:
+    def _parse_destination(self, norm: BaseNormType) -> tuple[Callable, TypeHint]:
+        if norm.origin is tuple and norm.args[-1] != Ellipsis:
             raise CannotProvide("Constant-length tuple is not supported yet", is_demonstrative=True)
         if norm.origin in self.CONCRETE_ORIGINS:
             return norm.origin, norm.args[0].source
@@ -259,26 +242,16 @@ class DictCoercerProvider(NormTypeCoercerProvider):
         src_key_tp, src_value_tp = self._parse_source(norm_src)
         dst_key_tp, dst_value_tp = self._parse_destination(norm_dst)
         key_coercer = mediator.mandatory_provide(
-            CoercerRequest(
-                src=request.src.append_with(
-                    GenericParamLoc(type=src_key_tp, generic_pos=0),
-                ),
-                ctx=request.ctx,
-                dst=request.dst.append_with(
-                    GenericParamLoc(type=dst_key_tp, generic_pos=0),
-                ),
+            request.append_loc(
+                src_loc=GenericParamLoc(type=src_key_tp, generic_pos=0),
+                dst_loc=GenericParamLoc(type=dst_key_tp, generic_pos=0),
             ),
             lambda x: "Cannot create coercer for dicts. Coercer for key cannot be created",
         )
         value_coercer = mediator.mandatory_provide(
-            CoercerRequest(
-                src=request.src.append_with(
-                    GenericParamLoc(type=src_value_tp, generic_pos=1),
-                ),
-                ctx=request.ctx,
-                dst=request.dst.append_with(
-                    GenericParamLoc(type=dst_value_tp, generic_pos=1),
-                ),
+            request.append_loc(
+                src_loc=GenericParamLoc(type=src_value_tp, generic_pos=1),
+                dst_loc=GenericParamLoc(type=dst_value_tp, generic_pos=1),
             ),
             lambda x: "Cannot create coercer for dicts. Coercer for value cannot be created",
         )
@@ -288,12 +261,12 @@ class DictCoercerProvider(NormTypeCoercerProvider):
 
         return dict_coercer
 
-    def _parse_source(self, norm: BaseNormType) -> Tuple[TypeHint, TypeHint]:
+    def _parse_source(self, norm: BaseNormType) -> tuple[TypeHint, TypeHint]:
         if norm.origin in (dict, collections.abc.Mapping, collections.abc.MutableMapping):
             return norm.args[0].source, norm.args[1].source
         raise CannotProvide
 
-    def _parse_destination(self, norm: BaseNormType) -> Tuple[TypeHint, TypeHint]:
+    def _parse_destination(self, norm: BaseNormType) -> tuple[TypeHint, TypeHint]:
         if norm.origin in (dict, collections.abc.Mapping, collections.abc.MutableMapping):
             return norm.args[0].source, norm.args[1].source
         raise CannotProvide

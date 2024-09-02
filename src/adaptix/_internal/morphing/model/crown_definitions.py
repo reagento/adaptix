@@ -1,10 +1,11 @@
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generic, Mapping, Sequence, TypeVar, Union
+from typing import Any, Callable, Generic, TypeVar, Union
 
 from ...common import VarTuple
 from ...model_tools.definitions import BaseShape, DefaultFactory, DefaultValue, InputShape, OutputShape
-from ...provider.request_cls import LocatedRequest
-from ...utils import SingletonMeta
+from ...provider.located_request import LocatedRequest
+from ...utils import MappingHashWrapper, SingletonMeta
 
 T = TypeVar("T")
 
@@ -32,25 +33,25 @@ class ExtraCollect(metaclass=SingletonMeta):
 # as well as the policy of extra data processing.
 # This structure is named in honor of the crown of the tree.
 #
-# NoneCrown-s represent element that do not map to any field
+# NoneCrown-s represents an element that does not map to any field
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseDictCrown(Generic[T]):
     map: Mapping[str, T]
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseListCrown(Generic[T]):
     map: Sequence[T]
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseNoneCrown:
     pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class BaseFieldCrown:
     id: str
 
@@ -65,22 +66,25 @@ DictExtraPolicy = Union[ExtraSkip, ExtraForbid, ExtraCollect]
 ListExtraPolicy = Union[ExtraSkip, ExtraForbid]
 
 
-@dataclass
+@dataclass(frozen=True)
 class InpDictCrown(BaseDictCrown["InpCrown"]):
     extra_policy: DictExtraPolicy
 
+    def __hash__(self):
+        return hash(MappingHashWrapper(self.map))
 
-@dataclass
+
+@dataclass(frozen=True)
 class InpListCrown(BaseListCrown["InpCrown"]):
     extra_policy: ListExtraPolicy
 
 
-@dataclass
+@dataclass(frozen=True)
 class InpNoneCrown(BaseNoneCrown):
     pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class InpFieldCrown(BaseFieldCrown):
     pass
 
@@ -96,9 +100,9 @@ InpCrown = Union[BranchInpCrown, LeafInpCrown]
 Sieve = Callable[[Any, Any], bool]
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutDictCrown(BaseDictCrown["OutCrown"]):
-    sieves: Dict[str, Sieve]
+    sieves: dict[str, Sieve]
 
     def _validate(self):
         wild_sieves = self.sieves.keys() - self.map.keys()
@@ -110,8 +114,11 @@ class OutDictCrown(BaseDictCrown["OutCrown"]):
     def __post_init__(self):
         self._validate()
 
+    def __hash__(self):
+        return hash((MappingHashWrapper(self.map), MappingHashWrapper(self.sieves)))
 
-@dataclass
+
+@dataclass(frozen=True)
 class OutListCrown(BaseListCrown["OutCrown"]):
     pass
 
@@ -119,12 +126,12 @@ class OutListCrown(BaseListCrown["OutCrown"]):
 Placeholder = Union[DefaultValue, DefaultFactory]
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutNoneCrown(BaseNoneCrown):
     placeholder: Placeholder
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutFieldCrown(BaseFieldCrown):
     pass
 

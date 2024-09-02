@@ -1,6 +1,47 @@
 ----------------------------------------------------
 
 
+.. _v3.0.0b8:
+
+`3.0.0b8 <https://github.com/reagento/adaptix/tree/v3.0.0b8>`__ -- 2024-09-02
+=============================================================================
+
+.. _v3.0.0b8-Features:
+
+Features
+--------
+
+- Add new :func:`.datetime_by_timestamp` and :func:`.date_by_timestamp` provider factories. `#281 <https://github.com/reagento/adaptix/issues/281>`__
+- Add :func:`.datetime_by_format` to public API. `#286 <https://github.com/reagento/adaptix/issues/286>`__
+- Add :func:`.type_tools.exec_type_checking` function
+  to deal with cyclic references by executing ``if TYPE_CHECKING:`` constructs. `#288 <https://github.com/reagento/adaptix/issues/288>`__
+- Add support for bytes inside literal, for example ``Literal[b"abc"]``. `#318 <https://github.com/reagento/adaptix/issues/318>`__
+- The library shows a hint if one class is a model and the other is not.
+- Traceback of ``CannotProvide`` is hidden (it is raised when loader, dumper, or converter can not be created).
+  It simplifies error messages to users.
+  You can show traceback by disabling ``hide_traceback`` parameter of ``Retort``.
+
+.. _v3.0.0b8-Breaking Changes:
+
+Breaking Changes
+----------------
+
+- Drop support of Python 3.8.
+- ``TypedDictAt38Warning`` is removed.
+
+.. _v3.0.0b8-Other:
+
+Other
+-----
+
+- Refactor internal provider routing system. It becomes more simple and readable.
+  Also, internal caching is added.
+  This led to a 40% speedup in loader generation for medium models
+  and up to 4x speedup for large models with many recursive types.
+
+----------------------------------------------------
+
+
 .. _v3.0.0b7:
 
 `3.0.0b7 <https://github.com/reagento/adaptix/tree/v3.0.0b7>`__ -- 2024-06-10

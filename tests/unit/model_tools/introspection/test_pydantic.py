@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any
+from typing import Annotated, Any
 from unittest.mock import ANY
 
 import pytest
@@ -7,9 +7,8 @@ from annotated_types import Ge, Gt
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, computed_field
 from pydantic.fields import AliasChoices, AliasPath, ModelPrivateAttr
 from pydantic_core import PydanticUndefined
-from tests_helpers import parametrize_bool, raises_exc, requires
+from tests_helpers import parametrize_bool, raises_exc
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     ClarifiedIntrospectionError,
     DefaultFactory,
@@ -635,10 +634,7 @@ def test_forbidden_custom_init_with_extra_arg():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated():
-    from typing import Annotated
-
     class MyModel(BaseModel):
         f1: Annotated[str, "meta"]
 
@@ -711,10 +707,7 @@ def test_annotated():
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_field_constraints():
-    from typing import Annotated
-
     class MyModel(BaseModel):
         f1: int = Field(gt=1, ge=10)
 

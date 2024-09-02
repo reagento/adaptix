@@ -1,7 +1,7 @@
 import collections
-import typing
 from collections import namedtuple
 from typing import (
+    Annotated,
     Any,
     Callable,
     Dict,
@@ -20,7 +20,7 @@ from typing import (
 import pytest
 from tests_helpers import cond_list, load_namespace
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED, HAS_PY_312, HAS_STD_CLASSES_GENERICS
+from adaptix._internal.feature_requirement import HAS_PY_312
 from adaptix._internal.type_tools import is_named_tuple_class, is_protocol, is_user_defined_generic
 from adaptix._internal.type_tools.basic_utils import (
     get_type_vars_of_parametrized,
@@ -213,9 +213,8 @@ def test_is_parametrized():
     assert is_parametrized(List[int])
     assert is_parametrized(List[T])
 
-    if HAS_STD_CLASSES_GENERICS:
-        assert is_parametrized(list[int])
-        assert is_parametrized(list[T])
+    assert is_parametrized(list[int])
+    assert is_parametrized(list[T])
 
     assert not is_parametrized(Union)
     assert is_parametrized(Union[int, str])
@@ -226,33 +225,23 @@ def test_is_parametrized():
 @pytest.mark.parametrize(
     ["tp", "result"],
     [
-        (list, bool(HAS_STD_CLASSES_GENERICS)),
+        (list, True),
         (List, True),
         (Dict, True),
         (List[T], True),
         (List[int], False),
-        *cond_list(
-            HAS_STD_CLASSES_GENERICS,
-            lambda: [
-                (list[T], True),
-                (list[int], False),
-            ],
-        ),
+        (list[T], True),
+        (list[int], False),
         *gen_ns_parametrize(
             lambda gen_ns: (gen_ns.Gen, True),
             lambda gen_ns: (gen_ns.Gen[T], True),
             lambda gen_ns: (gen_ns.Gen[int], False),
         ),
-        *cond_list(
-            HAS_ANNOTATED,
-            lambda: [
-                (typing.Annotated, False),
-                (typing.Annotated[int, "meta"], False),
-                (typing.Annotated[T, "meta"], True),
-                (typing.Annotated[list, "meta"], True),
-                (typing.Annotated[list[T], "meta"], True),
-            ],
-        ),
+        (Annotated, False),
+        (Annotated[int, "meta"], False),
+        (Annotated[T, "meta"], True),
+        (Annotated[list, "meta"], True),
+        (Annotated[list[T], "meta"], True),
         (type, False),  # cannot be parametrized
         (Type, True),
         *type_alias_ns_parametrize(
@@ -276,28 +265,18 @@ def test_is_generic(tp, result):
         (Dict, True),
         (List[T], False),
         (List[int], False),
-        *cond_list(
-            HAS_STD_CLASSES_GENERICS,
-            lambda: [
-                (list[T], False),
-                (list[int], False),
-            ],
-        ),
+        (list[T], False),
+        (list[int], False),
         *gen_ns_parametrize(
             lambda gen_ns: (gen_ns.Gen, True),
             lambda gen_ns: (gen_ns.Gen[T], False),
             lambda gen_ns: (gen_ns.Gen[int], False),
         ),
-        *cond_list(
-            HAS_ANNOTATED,
-            lambda: [
-                (typing.Annotated, False),
-                (typing.Annotated[int, "meta"], False),
-                (typing.Annotated[T, "meta"], False),
-                (typing.Annotated[list, "meta"], False),
-                (typing.Annotated[list[T], "meta"], False),
-            ],
-        ),
+        (Annotated, False),
+        (Annotated[int, "meta"], False),
+        (Annotated[T, "meta"], False),
+        (Annotated[list, "meta"], False),
+        (Annotated[list[T], "meta"], False),
         *type_alias_ns_parametrize(
             lambda type_alias_ns: (type_alias_ns.IntAlias, False),
             lambda type_alias_ns: (type_alias_ns.RecursiveAlias, False),
@@ -311,7 +290,7 @@ def test_is_bare_generic(tp, result):
     assert is_bare_generic(tp) == result
 
 
-def test_get_type_vars_of_parametrized(gen_ns):  # noqa: PLR0915
+def test_get_type_vars_of_parametrized(gen_ns):
     assert get_type_vars_of_parametrized(gen_ns.Gen[T]) == (T,)
     assert get_type_vars_of_parametrized(gen_ns.Gen[str]) == ()
     assert get_type_vars_of_parametrized(gen_ns.Gen) == ()
@@ -346,36 +325,33 @@ def test_get_type_vars_of_parametrized(gen_ns):  # noqa: PLR0915
     assert get_type_vars_of_parametrized(Callable[[T], T]) == (T,)
     assert get_type_vars_of_parametrized(Callable[[T, int, V], T]) == (T, V)
 
-    if HAS_STD_CLASSES_GENERICS:
-        assert get_type_vars_of_parametrized(list[T]) == (T,)
-        assert get_type_vars_of_parametrized(list[str]) == ()
-        assert get_type_vars_of_parametrized(dict[T, V]) == (T, V)
-        assert get_type_vars_of_parametrized(dict[str, V]) == (V,)
-        assert get_type_vars_of_parametrized(dict[T, str]) == (T,)
-        assert get_type_vars_of_parametrized(dict[str, str]) == ()
-        assert get_type_vars_of_parametrized(dict[V, T]) == (V, T)
+    assert get_type_vars_of_parametrized(list[T]) == (T,)
+    assert get_type_vars_of_parametrized(list[str]) == ()
+    assert get_type_vars_of_parametrized(dict[T, V]) == (T, V)
+    assert get_type_vars_of_parametrized(dict[str, V]) == (V,)
+    assert get_type_vars_of_parametrized(dict[T, str]) == (T,)
+    assert get_type_vars_of_parametrized(dict[str, str]) == ()
+    assert get_type_vars_of_parametrized(dict[V, T]) == (V, T)
 
-        assert get_type_vars_of_parametrized(tuple[()]) == ()
-        assert get_type_vars_of_parametrized(tuple[int]) == ()
-        assert get_type_vars_of_parametrized(tuple[int, T]) == (T,)
+    assert get_type_vars_of_parametrized(tuple[()]) == ()
+    assert get_type_vars_of_parametrized(tuple[int]) == ()
+    assert get_type_vars_of_parametrized(tuple[int, T]) == (T,)
 
     assert get_type_vars_of_parametrized(Generic) == ()
     assert get_type_vars_of_parametrized(Generic[T]) == (T,)
     assert get_type_vars_of_parametrized(Generic[T, V]) == (T, V)
 
-    if HAS_ANNOTATED:
-        assert get_type_vars_of_parametrized(typing.Annotated[int, "meta"]) == ()
+    assert get_type_vars_of_parametrized(Annotated[int, "meta"]) == ()
 
-        assert get_type_vars_of_parametrized(typing.Annotated[list, "meta"]) == ()
-        assert get_type_vars_of_parametrized(typing.Annotated[list[int], "meta"]) == ()
-        assert get_type_vars_of_parametrized(typing.Annotated[list[T], "meta"]) == (T,)
+    assert get_type_vars_of_parametrized(Annotated[list, "meta"]) == ()
+    assert get_type_vars_of_parametrized(Annotated[list[int], "meta"]) == ()
+    assert get_type_vars_of_parametrized(Annotated[list[T], "meta"]) == (T,)
 
-        assert get_type_vars_of_parametrized(typing.Annotated[gen_ns.Gen, "meta"]) == ()
-        assert get_type_vars_of_parametrized(typing.Annotated[gen_ns.Gen[T], "meta"]) == (T,)
+    assert get_type_vars_of_parametrized(Annotated[gen_ns.Gen, "meta"]) == ()
+    assert get_type_vars_of_parametrized(Annotated[gen_ns.Gen[T], "meta"]) == (T,)
 
-        assert get_type_vars_of_parametrized(typing.Annotated[Proto, "meta"]) == ()
-        assert get_type_vars_of_parametrized(typing.Annotated[Proto[T], "meta"]) == (T,)
-
+    assert get_type_vars_of_parametrized(Annotated[Proto, "meta"]) == ()
+    assert get_type_vars_of_parametrized(Annotated[Proto[T], "meta"]) == (T,)
 
 @pytest.mark.parametrize(
     ["cls", "result"],
@@ -439,17 +415,12 @@ class DictChildGeneric(dict):
     pass
 
 
-def std_classes_parametrized():
-    class ListAliasChild(list[int]):
-        pass
+class ListAliasChild(list[int]):
+    pass
 
-    class DictAliasChild(dict[str, str]):
-        pass
 
-    return [
-        (ListAliasChild, False),
-        (DictAliasChild, False),
-    ]
+class DictAliasChild(dict[str, str]):
+    pass
 
 
 @pytest.mark.parametrize(
@@ -457,7 +428,8 @@ def std_classes_parametrized():
     [
         (ListChildGeneric, False),
         (DictChildGeneric, False),
-        *cond_list(HAS_STD_CLASSES_GENERICS, std_classes_parametrized),
+        (ListAliasChild, False),
+        (DictAliasChild, False),
     ],
 )
 def test_is_generic_class_builtin_children(cls, result):

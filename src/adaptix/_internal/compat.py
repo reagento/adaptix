@@ -1,14 +1,7 @@
 try:
-    from builtins import ExceptionGroup
+    from builtins import BaseExceptionGroup, ExceptionGroup
 except ImportError:
-    from exceptiongroup import ExceptionGroup  # type: ignore[no-redef]
+    from exceptiongroup import BaseExceptionGroup, ExceptionGroup  # type: ignore[no-redef]
 
 CompatExceptionGroup = ExceptionGroup
-
-
-try:
-    from ast import unparse
-except ImportError:
-    from astunparse import unparse  # type: ignore[no-redef]
-
-compat_ast_unparse = unparse
+CompatBaseExceptionGroup = BaseExceptionGroup

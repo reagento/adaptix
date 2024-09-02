@@ -1,5 +1,6 @@
+from collections.abc import Iterable, Mapping
 from inspect import Parameter, Signature
-from typing import Callable, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
@@ -28,10 +29,10 @@ from ..conversion.request_cls import (
 )
 from ..model_tools.definitions import DefaultValue, InputField, InputShape, OutputShape, ParamKind, create_key_accessor
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
-from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
+from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import input_field_to_loc, output_field_to_loc
+from ..provider.loc_stack_filtering import LocStack
 from ..provider.location import AnyLoc, InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc
-from ..provider.request_cls import LocStack
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..utils import add_note
 from .provider_template import CoercerProvider
@@ -42,8 +43,7 @@ class ModelCoercerProvider(CoercerProvider):
         self._name_sanitizer = name_sanitizer
 
     def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
-        dst_shape = self._fetch_dst_shape(mediator, request.dst)
-        src_shape = self._fetch_src_shape(mediator, request.src)
+        dst_shape, src_shape = self._fetch_shapes(mediator, request)
         broaching_plan = self._make_broaching_plan(
             mediator=mediator,
             request=request,
@@ -51,6 +51,32 @@ class ModelCoercerProvider(CoercerProvider):
             src_shape=src_shape,
         )
         return self._make_coercer(mediator, request, broaching_plan)
+
+    def _fetch_shapes(self, mediator: Mediator, request: CoercerRequest) -> tuple[InputShape, OutputShape]:
+        exception_and_type_list = []
+        try:
+            dst_shape = self._fetch_dst_shape(mediator, request.dst)
+        except CannotProvide as e:
+            exception_and_type_list.append((e, request.dst.last.type))
+
+        try:
+            src_shape = self._fetch_src_shape(mediator, request.src)
+        except CannotProvide as e:
+            exception_and_type_list.append((e, request.src.last.type))
+
+        if len(exception_and_type_list) == 1:
+            raise CannotProvide(
+                parent_notes_gen=lambda: [
+                    f"Hint: Class `{exception_and_type_list[0][1].__name__}` is not recognized as model."
+                    " Did your forget `@dataclass` decorator? Check documentation what model kinds are supported",
+                ],
+            )
+        if len(exception_and_type_list) == 2:  # noqa: PLR2004
+            raise AggregateCannotProvide(
+                "Classes are not recognized as models",
+                [exc for exc, tp in exception_and_type_list],
+            )
+        return dst_shape, src_shape
 
     def _make_coercer(
         self,
@@ -118,13 +144,13 @@ class ModelCoercerProvider(CoercerProvider):
         request: CoercerRequest,
         dst_shape: InputShape,
         src_shape: OutputShape,
-    ) -> Iterable[Tuple[InputField, Optional[LinkingResult]]]:
+    ) -> Iterable[tuple[InputField, Optional[LinkingResult]]]:
         sources = tuple(
             request.src.append_with(output_field_to_loc(src_field))
             for src_field in src_shape.fields
         )
 
-        def fetch_field_linking(dst_field: InputField) -> Tuple[InputField, Optional[LinkingResult]]:
+        def fetch_field_linking(dst_field: InputField) -> tuple[InputField, Optional[LinkingResult]]:
             destination = request.dst.append_with(input_field_to_loc(dst_field))
             try:
                 linking = mediator.provide(
@@ -226,7 +252,7 @@ class ModelCoercerProvider(CoercerProvider):
         request: CoercerRequest,
         linking: FunctionLinking,
     ) -> BroachingPlan:
-        args: List[FuncCallArg[BroachingPlan]] = []
+        args: list[FuncCallArg[BroachingPlan]] = []
         field_to_sub_plan = self._generate_sub_plan(
             mediator,
             request,
@@ -249,7 +275,7 @@ class ModelCoercerProvider(CoercerProvider):
         self,
         mediator: Mediator,
         request: CoercerRequest,
-        field_linkings: Iterable[Tuple[InputField, LinkingResult]],
+        field_linkings: Iterable[tuple[InputField, LinkingResult]],
         parent_func: Optional[Callable],
     ) -> Mapping[InputField, BroachingPlan]:
         def generate_sub_plan(input_field: InputField, linking_result: LinkingResult):
@@ -328,7 +354,7 @@ class ModelCoercerProvider(CoercerProvider):
         field_to_linking: Mapping[InputField, Optional[LinkingResult]],
         field_to_sub_plan: Mapping[InputField, BroachingPlan],
     ) -> BroachingPlan:
-        args: List[FuncCallArg[BroachingPlan]] = []
+        args: list[FuncCallArg[BroachingPlan]] = []
         has_skipped_params = False
         for param in dst_shape.params:
             field = dst_shape.fields_dict[param.field_id]

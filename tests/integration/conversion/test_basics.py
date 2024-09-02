@@ -1,8 +1,7 @@
-from typing import Any, Generic, TypeVar
+from typing import Annotated, Any, Generic, TypeVar
 
-from tests_helpers import ModelSpec, exclude_model_spec, only_generic_models, requires
+from tests_helpers import ModelSpec, exclude_model_spec, only_generic_models
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix.conversion import impl_converter
 
 
@@ -192,10 +191,7 @@ def test_same_nested(src_model_spec, dst_model_spec):
     )
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated_ignoring(src_model_spec, dst_model_spec):
-    from typing import Annotated
-
     @src_model_spec.decorator
     class SourceModel(*src_model_spec.bases):
         field1: Any

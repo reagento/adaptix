@@ -1,6 +1,8 @@
 import contextlib
+from collections.abc import Mapping
+from dataclasses import replace
 from string import Template
-from typing import Dict, Mapping, NamedTuple, Tuple
+from typing import Any, Callable, NamedTuple
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -19,6 +21,9 @@ from ...model_tools.definitions import (
 )
 from ...special_cases_optimization import as_is_stub, get_default_clause
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
+from ...utils import Omittable, Omitted
+from ..json_schema.definitions import JSONSchema
+from ..json_schema.schema_model import JSONSchemaType, JSONValue
 from .basic_gen import ModelDumperGen, get_skipped_fields
 from .crown_definitions import (
     CrownPath,
@@ -27,6 +32,7 @@ from .crown_definitions import (
     ExtraTargets,
     OutCrown,
     OutDictCrown,
+    OutExtraMove,
     OutFieldCrown,
     OutListCrown,
     OutNoneCrown,
@@ -40,8 +46,8 @@ class GenState:
         self.builder = builder
         self.namespace = namespace
 
-        self.field_id_to_path: Dict[str, CrownPath] = {}
-        self.path_to_suffix: Dict[CrownPath, str] = {}
+        self.field_id_to_path: dict[str, CrownPath] = {}
+        self.path_to_suffix: dict[CrownPath, str] = {}
 
         self._last_path_idx = 0
         self._path: CrownPath = ()
@@ -111,10 +117,10 @@ class BuiltinModelDumperGen(ModelDumperGen):
             if isinstance(self._name_layout.extra_move, ExtraTargets)
             else ()
         )
-        self._id_to_field: Dict[str, OutputField] = {field.id: field for field in self._shape.fields}
+        self._id_to_field: dict[str, OutputField] = {field.id: field for field in self._shape.fields}
         self._model_identity = model_identity
 
-    def produce_code(self, closure_name: str) -> Tuple[str, Mapping[str, object]]:
+    def produce_code(self, closure_name: str) -> tuple[str, Mapping[str, object]]:
         body_builder = CodeBuilder()
 
         namespace = BuiltinCascadeNamespace()
@@ -648,3 +654,78 @@ class BuiltinModelDumperGen(ModelDumperGen):
 
     def _gen_none_crown(self, state: GenState, crown: OutNoneCrown):
         pass
+
+
+class ModelOutputJSONSchemaGen:
+    def __init__(
+        self,
+        shape: OutputShape,
+        extra_move: OutExtraMove,
+        field_json_schema_getter: Callable[[OutputField], JSONSchema],
+        field_default_dumper: Callable[[OutputField], Omittable[JSONValue]],
+        placeholder_dumper: Callable[[Any], JSONValue],
+    ):
+        self._shape = shape
+        self._extra_move = extra_move
+        self._field_json_schema_getter = field_json_schema_getter
+        self._field_default_dumper = field_default_dumper
+        self._placeholder_dumper = placeholder_dumper
+
+    def _convert_dict_crown(self, crown: OutDictCrown) -> JSONSchema:
+        return JSONSchema(
+            type=JSONSchemaType.OBJECT,
+            required=[
+                key
+                for key, value in crown.map.items()
+                if self._is_required_crown(value)
+            ],
+            properties={
+                key: self.convert_crown(value)
+                for key, value in crown.map.items()
+            },
+            additional_properties=self._extra_move is not None,
+        )
+
+    def _convert_list_crown(self, crown: OutListCrown) -> JSONSchema:
+        items = [
+            self.convert_crown(sub_crown)
+            for sub_crown in crown.map
+        ]
+        return JSONSchema(
+            type=JSONSchemaType.ARRAY,
+            prefix_items=items,
+            max_items=len(items),
+            min_items=len(items),
+        )
+
+    def _convert_field_crown(self, crown: OutFieldCrown) -> JSONSchema:
+        field = self._shape.fields_dict[crown.id]
+        json_schema = self._field_json_schema_getter(field)
+        default = self._field_default_dumper(field)
+        if default != Omitted():
+            return replace(json_schema, default=default)
+        return json_schema
+
+    def _convert_none_crown(self, crown: OutNoneCrown) -> JSONSchema:
+        value = (
+            crown.placeholder.factory()
+            if isinstance(crown.placeholder, DefaultFactory) else
+            crown.placeholder.value
+        )
+        return JSONSchema(const=self._placeholder_dumper(value))
+
+    def _is_required_crown(self, crown: OutCrown) -> bool:
+        if isinstance(crown, OutFieldCrown):
+            return self._shape.fields_dict[crown.id].is_required
+        return True
+
+    def convert_crown(self, crown: OutCrown) -> JSONSchema:
+        if isinstance(crown, OutDictCrown):
+            return self._convert_dict_crown(crown)
+        if isinstance(crown, OutListCrown):
+            return self._convert_list_crown(crown)
+        if isinstance(crown, OutFieldCrown):
+            return self._convert_field_crown(crown)
+        if isinstance(crown, OutNoneCrown):
+            return self._convert_none_crown(crown)
+        raise TypeError

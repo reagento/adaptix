@@ -1,37 +1,55 @@
 from abc import ABC, abstractmethod
+from collections.abc import Container
 from typing import final
 
 from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import ExactOriginLSC
-from ..provider.provider_template import ProviderWithAttachableLSC
-from ..provider.static_provider import static_provision_action
+from ..provider.located_request import LocatedRequestMethodsProvider
+from ..provider.methods_provider import method_handler
 from ..type_tools import normalize_type
+from .json_schema.definitions import JSONSchema
+from .json_schema.request_cls import JSONSchemaRequest
+from .json_schema.schema_model import JSONSchemaDialect
 from .request_cls import DumperRequest, LoaderRequest
 
 
-class LoaderProvider(ProviderWithAttachableLSC, ABC):
-    @final
-    @static_provision_action
-    def _outer_provide_loader(self, mediator: Mediator, request: LoaderRequest):
-        self._apply_loc_stack_checker(mediator, request)
-        return self._provide_loader(mediator, request)
-
+class LoaderProvider(LocatedRequestMethodsProvider, ABC):
+    @method_handler
     @abstractmethod
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
         ...
 
 
-class DumperProvider(ProviderWithAttachableLSC, ABC):
+class DumperProvider(LocatedRequestMethodsProvider, ABC):
+    @method_handler
+    @abstractmethod
+    def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
+        ...
+
+
+class JSONSchemaProvider(LocatedRequestMethodsProvider, ABC):
+    SUPPORTED_JSON_SCHEMA_DIALECTS: Container[str] = (JSONSchemaDialect.DRAFT_2020_12, )
+
     @final
-    @static_provision_action
-    def _outer_provide_dumper(self, mediator: Mediator, request: DumperRequest):
-        self._apply_loc_stack_checker(mediator, request)
-        return self._provide_dumper(mediator, request)
+    @method_handler
+    def provide_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
+        if request.ctx.dialect not in self.SUPPORTED_JSON_SCHEMA_DIALECTS:
+            raise CannotProvide(f"Dialect {request.ctx.dialect} is not supported for this type")
+        return self._generate_json_schema(mediator, request)
 
     @abstractmethod
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         ...
+
+
+class MorphingProvider(
+    LoaderProvider,
+    DumperProvider,
+    JSONSchemaProvider,
+    ABC,
+):
+    pass
 
 
 class ABCProxy(LoaderProvider, DumperProvider):
@@ -42,7 +60,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
         self._for_loader = for_loader
         self._for_dumper = for_dumper
 
-    def _provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
+    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         if not self._for_loader:
             raise CannotProvide
 
@@ -53,7 +71,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
             lambda x: f"Cannot create loader for union. Loader for {self._impl} cannot be created",
         )
 
-    def _provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
+    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         if not self._for_dumper:
             raise CannotProvide
 

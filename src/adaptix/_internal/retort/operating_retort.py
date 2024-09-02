@@ -1,138 +1,146 @@
-from abc import ABC
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Type
+from collections.abc import Iterable, Sequence
+from typing import Any, Callable, Generic, Optional, TypeVar
 
-from ..common import VarTuple
 from ..conversion.request_cls import CoercerRequest, LinkingRequest
+from ..morphing.json_schema.definitions import JSONSchema
+from ..morphing.json_schema.request_cls import InlineJSONSchemaRequest, JSONSchemaRefRequest, JSONSchemaRequest
 from ..morphing.request_cls import DumperRequest, LoaderRequest
-from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider, Request
+from ..provider.essential import Mediator, Provider, Request
+from ..provider.loc_stack_tools import format_loc_stack
+from ..provider.located_request import LocatedRequest, LocatedRequestMethodsProvider
 from ..provider.location import AnyLoc
-from ..provider.request_cls import LocatedRequest, LocStack, format_loc_stack
-from ..utils import add_note, copy_exception_dunders, with_module
-from .base_retort import BaseRetort
-from .mediator import ErrorRepresentor, RecursionResolver, T
+from ..provider.methods_provider import method_handler
+from .request_bus import ErrorRepresentor, RecursionResolver, RequestRouter
+from .routers import CheckerAndHandler, SimpleRouter, create_router_for_located_request
+from .searching_retort import SearchingRetort
 
 
 class FuncWrapper:
-    __slots__ = ("__call__",)
+    __slots__ = ("__call__", "_key")
 
-    def __init__(self):
+    def __init__(self, key):
+        self._key = key
         self.__call__ = None
 
     def set_func(self, func):
-        self.__call__ = func.__call__
+        self.__call__ = func
+
+    def __eq__(self, other):
+        if isinstance(other, FuncWrapper):
+            return self._key == other._key
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self._key)
 
 
-class MorphingRecursionResolver(RecursionResolver):
-    REQUEST_CLASSES: VarTuple[Type[LocatedRequest]] = (LoaderRequest, DumperRequest)
+CallableT = TypeVar("CallableT", bound=Callable)
 
+
+class LocatedRequestCallableRecursionResolver(RecursionResolver[LocatedRequest, CallableT], Generic[CallableT]):
     def __init__(self) -> None:
-        self._loc_to_stub: Dict[AnyLoc, FuncWrapper] = {}
+        self._loc_to_stub: dict[AnyLoc, FuncWrapper] = {}
 
-    def track_recursion(self, request: Request[T]) -> Optional[Any]:
-        if not isinstance(request, self.REQUEST_CLASSES):
+    def track_request(self, request: LocatedRequest) -> Optional[Any]:
+        last_loc = request.last_loc
+        if sum(loc == last_loc for loc in request.loc_stack) == 1:
             return None
 
-        if request.loc_stack.count(request.last_loc) == 1:
-            return None
-
-        stub = FuncWrapper()
-        self._loc_to_stub[request.last_loc] = stub
+        if last_loc in self._loc_to_stub:
+            return self._loc_to_stub[last_loc]
+        stub = FuncWrapper(last_loc)
+        self._loc_to_stub[last_loc] = stub
         return stub
 
-    def process_request_result(self, request: Request[T], result: T) -> None:
-        if isinstance(request, self.REQUEST_CLASSES) and request.last_loc in self._loc_to_stub:
-            self._loc_to_stub.pop(request.last_loc).set_func(result)
+    def track_response(self, request: LocatedRequest, response: CallableT) -> None:
+        last_loc = request.last_loc
+        if last_loc in self._loc_to_stub:
+            self._loc_to_stub.pop(last_loc).set_func(response)
 
 
-@with_module("adaptix")
-class ProviderNotFoundError(Exception):
-    def __init__(self, message: str):
-        self.message = message
-
-    def __str__(self):
-        return self.message
+RequestT = TypeVar("RequestT", bound=Request)
+LocatedRequestT = TypeVar("LocatedRequestT", bound=LocatedRequest)
 
 
-class BuiltinErrorRepresentor(ErrorRepresentor):
-    _NO_PROVIDER_DESCRIPTION_METHOD: Mapping[Type[Request], str] = {
-        LinkingRequest: "_get_linking_request_description",
-    }
-    _NO_PROVIDER_DESCRIPTION_CONST: Mapping[Type[Request], str] = {
-        LoaderRequest: "Cannot find loader",
-        DumperRequest: "Cannot find dumper",
-        CoercerRequest: "Cannot find coercer",
-    }
+class BaseRequestErrorRepresentor(ErrorRepresentor[RequestT], Generic[RequestT]):
+    def __init__(self, not_found_desc: str):
+        self._not_found_desc = not_found_desc
 
-    def _get_linking_request_description(self, request: LinkingRequest) -> str:
-        dst_desc = self._get_loc_stack_desc(request.destination)
-        return f"Cannot find paired field of `{dst_desc}` for linking"
+    def get_request_context_notes(self, request: RequestT) -> Iterable[str]:
+        return ()
 
-    def get_no_provider_description(self, request: Request) -> str:
-        request_cls = type(request)
-        if request_cls in self._NO_PROVIDER_DESCRIPTION_METHOD:
-            return getattr(self, self._NO_PROVIDER_DESCRIPTION_METHOD[request_cls])(request)
-        if request_cls in self._NO_PROVIDER_DESCRIPTION_CONST:
-            return self._NO_PROVIDER_DESCRIPTION_CONST[request_cls]
-        return f"There is no provider that can process {request}"
+    def get_provider_not_found_description(self, request: RequestT) -> str:
+        return self._not_found_desc
 
-    def _get_loc_stack_desc(self, loc_stack: LocStack[AnyLoc]) -> str:
-        return format_loc_stack(loc_stack)
 
-    def _get_located_request_context_notes(self, request: LocatedRequest) -> Iterable[str]:
-        loc_stack_desc = self._get_loc_stack_desc(request.loc_stack)
+class LocatedRequestErrorRepresentor(BaseRequestErrorRepresentor[LocatedRequestT], Generic[LocatedRequestT]):
+    def get_request_context_notes(self, request: LocatedRequestT) -> Iterable[str]:
+        loc_stack_desc = format_loc_stack(request.loc_stack)
         yield f"Location: `{loc_stack_desc}`"
 
-    def _get_coercer_request_context_notes(self, request: CoercerRequest) -> Iterable[str]:
-        src_desc = self._get_loc_stack_desc(request.src)
-        dst_desc = self._get_loc_stack_desc(request.dst)
+
+class LinkingRequestErrorRepresentor(ErrorRepresentor[LinkingRequest]):
+    def get_request_context_notes(self, request: RequestT) -> Iterable[str]:
+        return ()
+
+    def get_provider_not_found_description(self, request: LinkingRequest) -> str:
+        dst_desc = format_loc_stack(request.destination)
+        return f"Cannot find paired field of `{dst_desc}` for linking"
+
+
+class CoercerRequestErrorRepresentor(BaseRequestErrorRepresentor[CoercerRequest]):
+    def get_request_context_notes(self, request: CoercerRequest) -> Iterable[str]:
+        src_desc = format_loc_stack(request.src)
+        dst_desc = format_loc_stack(request.dst)
         yield f"Linking: `{src_desc} => {dst_desc}`"
 
-    def get_request_context_notes(self, request: Request) -> Iterable[str]:
-        if isinstance(request, LocatedRequest):
-            yield from self._get_located_request_context_notes(request)
-        elif isinstance(request, CoercerRequest):
-            yield from self._get_coercer_request_context_notes(request)
+
+class JSONSchemaMiddlewareProvider(LocatedRequestMethodsProvider):
+    @method_handler
+    def provide_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
+        loc_stack = request.loc_stack
+        ctx = request.ctx
+        json_schema = mediator.provide_from_next()
+        inline = mediator.mandatory_provide(InlineJSONSchemaRequest(loc_stack=loc_stack, ctx=ctx))
+        if inline:
+            return json_schema
+        ref = mediator.mandatory_provide(JSONSchemaRefRequest(loc_stack=loc_stack, json_schema=json_schema, ctx=ctx))
+        return JSONSchema(ref=ref)
 
 
-class OperatingRetort(BaseRetort, Provider, ABC):
+class OperatingRetort(SearchingRetort):
     """A retort that can operate as Retort but have no predefined providers and no high-level user interface"""
 
-    def apply_provider(self, mediator: Mediator, request: Request[T]) -> T:
-        return self._provide_from_recipe(request)
+    def _get_recipe_head(self) -> Sequence[Provider]:
+        return (
+            JSONSchemaMiddlewareProvider(),
+        )
 
-    def _facade_provide(self, request: Request[T], *, error_message: str) -> T:
-        try:
-            return self._provide_from_recipe(request)
-        except CannotProvide as e:
-            cause = self._get_exception_cause(e)
-            exception = ProviderNotFoundError(error_message)
-            if cause is not None:
-                add_note(exception, "Note: The attached exception above contains verbose description of the problem")
-            raise exception from cause
+    def _create_router(
+        self,
+        request_cls: type[RequestT],
+        checkers_and_handlers: Sequence[CheckerAndHandler],
+    ) -> RequestRouter[RequestT]:
+        if issubclass(request_cls, LocatedRequest):
+            return create_router_for_located_request(checkers_and_handlers)  # type: ignore[return-value]
+        return SimpleRouter(checkers_and_handlers)
 
-    def _get_exception_cause(self, exc: CannotProvide) -> Optional[CannotProvide]:
-        if isinstance(exc, AggregateCannotProvide):
-            return self._extract_demonstrative_exc(exc)
-        return exc if exc.is_demonstrative else None
+    def _create_error_representor(self, request_cls: type[RequestT]) -> ErrorRepresentor[RequestT]:
+        if issubclass(request_cls, LoaderRequest):
+            return LocatedRequestErrorRepresentor("Cannot find loader")
+        if issubclass(request_cls, DumperRequest):
+            return LocatedRequestErrorRepresentor("Cannot find dumper")
+        if issubclass(request_cls, LocatedRequest):
+            return LocatedRequestErrorRepresentor(f"Can not satisfy {request_cls}")
 
-    def _extract_demonstrative_exc(self, exc: AggregateCannotProvide) -> Optional[CannotProvide]:
-        demonstrative_exc_list: List[CannotProvide] = []
-        for sub_exc in exc.exceptions:
-            if isinstance(sub_exc, AggregateCannotProvide):
-                sub_exc = self._extract_demonstrative_exc(sub_exc)  # type: ignore[assignment]  # noqa: PLW2901
-                if sub_exc is not None:
-                    demonstrative_exc_list.append(sub_exc)
-            elif sub_exc.is_demonstrative:  # type: ignore[union-attr]
-                demonstrative_exc_list.append(sub_exc)  # type: ignore[arg-type]
+        if issubclass(request_cls, CoercerRequest):
+            return CoercerRequestErrorRepresentor("Cannot find coercer")  # type: ignore[return-value]
+        if issubclass(request_cls, LinkingRequest):
+            return LinkingRequestErrorRepresentor()  # type: ignore[return-value]
 
-        if not exc.is_demonstrative and not demonstrative_exc_list:
-            return None
-        new_exc = exc.derive_upcasting(demonstrative_exc_list)
-        copy_exception_dunders(source=exc, target=new_exc)
-        return new_exc
+        return BaseRequestErrorRepresentor(f"Can not satisfy {request_cls}")
 
-    def _create_recursion_resolver(self) -> RecursionResolver:
-        return MorphingRecursionResolver()
-
-    def _get_error_representor(self) -> ErrorRepresentor:
-        return BuiltinErrorRepresentor()
+    def _create_recursion_resolver(self, request_cls: type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
+        if issubclass(request_cls, (LoaderRequest, DumperRequest)):
+            return LocatedRequestCallableRecursionResolver()  # type: ignore[return-value]
+        return None

@@ -1,4 +1,5 @@
-from typing import Any, Callable, Iterable, Optional, Type, TypeVar, overload
+from collections.abc import Iterable
+from typing import Any, Callable, Optional, TypeVar, overload
 
 from ...common import TypeHint
 from ...provider.essential import Provider
@@ -11,7 +12,7 @@ DstT = TypeVar("DstT")
 CallableT = TypeVar("CallableT", bound=Callable)
 
 
-def convert(src_obj: Any, dst: Type[DstT], *, recipe: Iterable[Provider] = ()) -> DstT:
+def convert(src_obj: Any, dst: type[DstT], *, recipe: Iterable[Provider] = ()) -> DstT:
     """Function transforming a source object to destination.
 
     :param src_obj: A type of converter input data.
@@ -24,8 +25,8 @@ def convert(src_obj: Any, dst: Type[DstT], *, recipe: Iterable[Provider] = ()) -
 
 @overload
 def get_converter(
-    src: Type[SrcT],
-    dst: Type[DstT],
+    src: type[SrcT],
+    dst: type[DstT],
     *,
     recipe: Iterable[Provider] = (),
     name: Optional[str] = None,

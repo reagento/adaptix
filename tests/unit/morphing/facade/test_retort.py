@@ -27,7 +27,7 @@ def test_retort_extend():
     extended_retort = retort.extend(recipe=to_extend)
 
     assert retort._get_full_recipe() == recipe_before_extend
-    assert extended_retort._get_full_recipe()[:len(to_extend)] == to_extend
+    assert extended_retort._get_full_recipe()[1:len(to_extend)+1] == to_extend
     assert not extended_retort._loader_cache
     assert not extended_retort._dumper_cache
 

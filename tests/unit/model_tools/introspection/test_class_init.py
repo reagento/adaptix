@@ -1,12 +1,9 @@
-import typing
 from types import MappingProxyType
-from typing import Any
+from typing import Annotated, Any
 from unittest.mock import ANY
 
 import pytest
-from tests_helpers import requires
 
-from adaptix._internal.feature_requirement import HAS_ANNOTATED
 from adaptix._internal.model_tools.definitions import (
     DefaultValue,
     InputField,
@@ -265,10 +262,9 @@ def test_var_arg():
         get_class_init_shape(HasVarArg)
 
 
-@requires(HAS_ANNOTATED)
 def test_annotated():
     class WithAnnotated:
-        def __init__(self, a: typing.Annotated[int, "metadata"]):
+        def __init__(self, a: Annotated[int, "metadata"]):
             pass
 
     assert (
@@ -280,7 +276,7 @@ def test_annotated():
                 kwargs=None,
                 fields=(
                     InputField(
-                        type=typing.Annotated[int, "metadata"],
+                        type=Annotated[int, "metadata"],
                         id="a",
                         default=NoDefault(),
                         is_required=True,

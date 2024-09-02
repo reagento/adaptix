@@ -1,6 +1,6 @@
 import ast
 from ast import AST, NodeTransformer
-from typing import Mapping
+from collections.abc import Mapping
 
 
 class Substitutor(NodeTransformer):

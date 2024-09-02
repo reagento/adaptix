@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
@@ -14,4 +13,4 @@ class Review:
 class Book:
     id: int
     name: str
-    reviews: List[Review]  # contains 100 items
+    reviews: list[Review]  # contains 100 items

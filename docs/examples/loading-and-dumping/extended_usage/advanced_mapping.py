@@ -1,6 +1,6 @@
 import re
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Iterable, List, Sequence
 
 from adaptix import P, Retort, name_mapping
 
@@ -9,9 +9,9 @@ from adaptix import P, Retort, name_mapping
 class Document:
     key: str
 
-    redirects: List[str]
-    edition_keys: List[str]
-    lcc_list: List[str]
+    redirects: list[str]
+    edition_keys: list[str]
+    lcc_list: list[str]
 
 
 def create_plural_stripper(
