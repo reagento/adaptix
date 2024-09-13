@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 3
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -65,10 +65,10 @@ jobs:
         os: ['ubuntu-latest']
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3
         with:
           python-version: ${{ matrix.python_version.setup }}
 
@@ -91,12 +91,13 @@ jobs:
             --cov-output .coverage.${{ matrix.python_version.tox }}
 
       - name: Store coverage file
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}
         with:
           name: coverage-${{ matrix.python_version.tox }}
           path: .coverage.${{ matrix.python_version.tox }}
           if-no-files-found: error
+          include-hidden-files: true
 
       - name: Run tests without coverage
         if: ${{ !(matrix.python_version.cov && github.event_name == 'pull_request') }}
@@ -114,9 +115,9 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         id: download
         with:
           pattern: coverage-*
@@ -131,7 +132,7 @@ jobs:
           MINIMUM_GREEN: 90
 
       - name: Store Pull Request comment to be posted (for external pr)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
         with:
           name: python-coverage-comment-action
