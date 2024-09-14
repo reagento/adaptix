@@ -97,6 +97,7 @@ def is_bare_generic(tp: TypeHint) -> bool:
     return (
         (
             is_generic(strip_alias(tp))
+            or is_generic(tp) and not is_parametrized(tp)
             or tp in BUILTIN_ORIGIN_TO_TYPEVARS
         )
         and not is_parametrized(tp)
