@@ -94,14 +94,7 @@ def is_generic(tp: TypeHint) -> bool:
 
 def is_bare_generic(tp: TypeHint) -> bool:
     """Check if the type could be parameterized, excluding type aliases (list[T] etc.)"""
-    return (
-        (
-            is_generic(strip_alias(tp))
-            or is_generic(tp) and not is_parametrized(tp)
-            or tp in BUILTIN_ORIGIN_TO_TYPEVARS
-        )
-        and not is_parametrized(tp)
-    )
+    return is_generic(tp) and not is_parametrized(tp)
 
 
 def is_generic_class(cls: type) -> bool:
