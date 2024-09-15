@@ -20,5 +20,5 @@ So, this is valid installation variants:
 
 .. code-block:: text
 
-   pip install adaptix[attrs-strict]==3.0.0b6
-   pip install adaptix[attrs, sqlalchemy-strict]==3.0.0b6
+   pip install adaptix[attrs-strict]==3.0.0b8
+   pip install adaptix[attrs, sqlalchemy-strict]==3.0.0b8
