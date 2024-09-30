@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 3
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -65,7 +65,7 @@ jobs:
         os: ['ubuntu-latest']
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
 
       - name: Set up Python 3.11
         uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3
@@ -115,7 +115,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
 
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         id: download
