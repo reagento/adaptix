@@ -91,7 +91,7 @@ jobs:
             --cov-output .coverage.${{ matrix.python_version.tox }}
 
       - name: Store coverage file
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}
         with:
           name: coverage-${{ matrix.python_version.tox }}
@@ -132,7 +132,7 @@ jobs:
           MINIMUM_GREEN: 90
 
       - name: Store Pull Request comment to be posted (for external pr)
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
         with:
           name: python-coverage-comment-action
