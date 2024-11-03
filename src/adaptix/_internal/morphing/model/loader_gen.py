@@ -1,8 +1,8 @@
 import collections.abc
-import contextlib
 from collections.abc import Mapping, Set
+from contextlib import AbstractContextManager, contextmanager, nullcontext
 from dataclasses import dataclass, replace
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -147,7 +147,7 @@ class GenState(Namer):
     def parent_crown(self) -> BranchInpCrown:
         return self._crown_stack[-2]  # type: ignore[return-value]
 
-    @contextlib.contextmanager
+    @contextmanager
     def add_key(self, crown: InpCrown, key: CrownPathElem):
         past = self._path
         past_parent = self._parent_path
@@ -475,7 +475,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         state.builder(f"{state.parent.v_extra}[{state.path[-1]!r}] = {state.v_extra}")
         state.builder.empty_line()
 
-    @contextlib.contextmanager
+    @contextmanager
     def _maybe_wrap_with_type_load_error_catching(self, state: GenState):
         if self._debug_trail != DebugTrail.ALL or not state.path:
             yield
@@ -504,38 +504,42 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         if state.path:
             self._gen_assignment_from_parent_data(state, assign_to=state.v_data)
             state.builder.empty_line()
+            ctx: AbstractContextManager[Any] = state.builder("else:")
+        else:
+            ctx = nullcontext()
 
-        if self._can_collect_extra:
-            state.builder += f"{state.v_extra} = {{}}"
-        if self._debug_trail == DebugTrail.ALL:
-            state.builder += f"{state.v_has_not_found_error} = False"
+        with ctx:
+            if self._can_collect_extra:
+                state.builder += f"{state.v_extra} = {{}}"
+            if self._debug_trail == DebugTrail.ALL:
+                state.builder += f"{state.v_has_not_found_error} = False"
 
-        with self._maybe_wrap_with_type_load_error_catching(state):
-            for key, value in crown.map.items():
-                self._gen_crown_dispatch(state, value, key)
+            with self._maybe_wrap_with_type_load_error_catching(state):
+                for key, value in crown.map.items():
+                    self._gen_crown_dispatch(state, value, key)
 
-            if state.path not in state.type_checked_type_paths:
-                with state.builder(f"if not isinstance({state.v_data}, CollectionsMapping):"):
-                    self._gen_raise_bad_type_error(state, f"TypeLoadError(CollectionsMapping, {state.v_data})")
-                state.builder.empty_line()
-                state.type_checked_type_paths.add(state.path)
+                if state.path not in state.type_checked_type_paths:
+                    with state.builder(f"if not isinstance({state.v_data}, CollectionsMapping):"):
+                        self._gen_raise_bad_type_error(state, f"TypeLoadError(CollectionsMapping, {state.v_data})")
+                    state.builder.empty_line()
+                    state.type_checked_type_paths.add(state.path)
 
-            if crown.extra_policy == ExtraForbid():
-                state.builder += f"""
-                    {state.v_extra}_set = set({state.v_data}) - {state.v_known_keys}
-                    if {state.v_extra}_set:
-                        {state.emit_error(f"ExtraFieldsLoadError({state.v_extra}_set, {state.v_data})")}
-                """
-                state.builder.empty_line()
-            elif crown.extra_policy == ExtraCollect():
-                state.builder += f"""
-                    for key in set({state.v_data}) - {state.v_known_keys}:
-                        {state.v_extra}[key] = {state.v_data}[key]
-                """
-                state.builder.empty_line()
+                if crown.extra_policy == ExtraForbid():
+                    state.builder += f"""
+                        {state.v_extra}_set = set({state.v_data}) - {state.v_known_keys}
+                        if {state.v_extra}_set:
+                            {state.emit_error(f"ExtraFieldsLoadError({state.v_extra}_set, {state.v_data})")}
+                    """
+                    state.builder.empty_line()
+                elif crown.extra_policy == ExtraCollect():
+                    state.builder += f"""
+                        for key in set({state.v_data}) - {state.v_known_keys}:
+                            {state.v_extra}[key] = {state.v_data}[key]
+                    """
+                    state.builder.empty_line()
 
-        if self._can_collect_extra:
-            self._gen_add_self_extra_to_parent_extra(state)
+            if self._can_collect_extra:
+                self._gen_add_self_extra_to_parent_extra(state)
 
     def _gen_forbidden_sequence_check(self, state: GenState) -> None:
         with state.builder(f"if type({state.v_data}) is str:"):
@@ -545,44 +549,48 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         if state.path:
             self._gen_assignment_from_parent_data(state, assign_to=state.v_data)
             state.builder.empty_line()
+            ctx: AbstractContextManager[Any] = state.builder("else:")
+        else:
+            ctx = nullcontext()
 
-        if self._can_collect_extra:
-            list_literal: list = [
-                {} if isinstance(sub_crown, (InpFieldCrown, InpNoneCrown)) else None
-                for sub_crown in crown.map
-            ]
-            state.builder(f"{state.v_extra} = {list_literal!r}")
+        with ctx:
+            if self._can_collect_extra:
+                list_literal: list = [
+                    {} if isinstance(sub_crown, (InpFieldCrown, InpNoneCrown)) else None
+                    for sub_crown in crown.map
+                ]
+                state.builder(f"{state.v_extra} = {list_literal!r}")
 
-        with self._maybe_wrap_with_type_load_error_catching(state):
-            if self._strict_coercion:
-                self._gen_forbidden_sequence_check(state)
+            with self._maybe_wrap_with_type_load_error_catching(state):
+                if self._strict_coercion:
+                    self._gen_forbidden_sequence_check(state)
 
-            for key, value in enumerate(crown.map):
-                self._gen_crown_dispatch(state, value, key)
+                for key, value in enumerate(crown.map):
+                    self._gen_crown_dispatch(state, value, key)
 
-            if state.path not in state.type_checked_type_paths:
-                with state.builder(f"if not isinstance({state.v_data}, CollectionsSequence):"):
-                    self._gen_raise_bad_type_error(state, f"TypeLoadError(CollectionsSequence, {state.v_data})")
-                state.builder.empty_line()
-                state.type_checked_type_paths.add(state.path)
+                if state.path not in state.type_checked_type_paths:
+                    with state.builder(f"if not isinstance({state.v_data}, CollectionsSequence):"):
+                        self._gen_raise_bad_type_error(state, f"TypeLoadError(CollectionsSequence, {state.v_data})")
+                    state.builder.empty_line()
+                    state.type_checked_type_paths.add(state.path)
 
-            expected_len = len(crown.map)
-            if crown.extra_policy == ExtraForbid():
-                state.builder += f"""
-                    if len({state.v_data}) != {expected_len}:
+                expected_len = len(crown.map)
+                if crown.extra_policy == ExtraForbid():
+                    state.builder += f"""
+                        if len({state.v_data}) != {expected_len}:
+                            if len({state.v_data}) < {expected_len}:
+                                {state.emit_error(f"NoRequiredItemsLoadError({expected_len}, {state.v_data})")}
+                            else:
+                                {state.emit_error(f"ExtraItemsLoadError({expected_len}, {state.v_data})")}
+                    """
+                else:
+                    state.builder += f"""
                         if len({state.v_data}) < {expected_len}:
                             {state.emit_error(f"NoRequiredItemsLoadError({expected_len}, {state.v_data})")}
-                        else:
-                            {state.emit_error(f"ExtraItemsLoadError({expected_len}, {state.v_data})")}
-                """
-            else:
-                state.builder += f"""
-                    if len({state.v_data}) < {expected_len}:
-                        {state.emit_error(f"NoRequiredItemsLoadError({expected_len}, {state.v_data})")}
-                """
+                    """
 
-        if self._can_collect_extra:
-            self._gen_add_self_extra_to_parent_extra(state)
+            if self._can_collect_extra:
+                self._gen_add_self_extra_to_parent_extra(state)
 
     def _get_default_clause_expr(self, state: GenState, field: InputField) -> str:
         if isinstance(field.default, DefaultValue):
