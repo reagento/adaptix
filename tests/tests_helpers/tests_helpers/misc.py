@@ -7,6 +7,7 @@ import sys
 from collections.abc import Generator, Reversible, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, is_dataclass
+from functools import reduce
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, Callable, Optional, TypeVar, Union
@@ -252,6 +253,19 @@ class FailedRequirement(Requirement):
     @property
     def fail_reason(self) -> str:
         return self._fail_reason
+
+
+class AndRequirement(Requirement):
+    def __init__(self, *requirements):
+        self._requirements = requirements
+        super().__init__()
+
+    def _evaluate(self) -> bool:
+        return reduce(lambda a, b: bool(a) and bool(b), self._requirements)
+
+    @property
+    def fail_reason(self) -> str:
+        return " AND ".join(requirement.fail_reason for requirement in self._requirements)
 
 
 class StubRequest(Request):
