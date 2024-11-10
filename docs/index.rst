@@ -7,6 +7,7 @@ Adaptix
 
    overview
    benchmarks
+   why-not-pydantic
 
 .. toctree::
    :maxdepth: 2
