@@ -6,12 +6,10 @@ Why not Pydantic?
 Introduction
 ====================
 
-.. Надо переписать вступление!!!!!!!!!
-
 Pydantic is one of the most popular libraries for data serialization and deserialization.
-However, the principles it’s built on often hinder ease of use.
+However, the principles it’s built on often prevent ease of use.
 
-In this article, we’ll explore how using Adaptix instead of Pydantic can help tackle common tasks more efficiently.
+In this article, we’ll explore how using Adaptix instead of Pydantic can help manage common tasks more efficiently.
 
 .. note::
 
@@ -19,8 +17,43 @@ In this article, we’ll explore how using Adaptix instead of Pydantic can help 
   Some things may have changed since then, but probably not much.
 
 
+The Main Thesis
+=====================
+
+Pydantic works smoothly only when you violate the Single Responsibility Principle (SRP).
+It wants to know about your domain layer, it wants to penetrate it.
+Pydantic performs best when it's simultaneously a (de)serializer for incoming requests and a domain model.
+But as soon as you separate your code into layers,
+issues arise when transferring data between them.
+
+Let's imagine that you have three nested domain dataclasses.
+You work fine for a while, and then you add new field to the deepest model and
+discover that Pydantic doesn't include the UTC offset in the datetime string
+(or it has any other unwanted behavior).
+
+Your possible options:
+
+* Completely duplicate the dataclass structure, including all nested models,
+  into an equivalent Pydantic model with the necessary config.
+* Perform manual serialization.
+* Start using Adaptix.
+
+And what you get:
+
+* It does not invade your domain layer, the serialization logic lives entirely in the presentation layer.
+* It decreases code coupling.
+* You can use adaptix to convert models passing between layers
+
+
+Why I can not use Pydantic as domain model? Well, let’s talk about that.
+
+
+Pydantic's pitfalls
+==========================
+
+
 Coupling instance creation and data parsing
-================================================
+-------------------------------------------------
 
 Creating any model instance in Pydantic triggers data parsing.
 On one hand, this makes instance creation within a program significantly more resource-intensive,
@@ -29,7 +62,7 @@ Let’s examine this in detail.
 
 
 Instantiating penalty
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let’s take a model from the Pydantic tutorial:
 
@@ -84,7 +117,7 @@ And yet, it’s even slower:
 
 
 Fused validation
----------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Validating invariants within the model is reasonable,
 but validation should be separated into business logic and representation layers.
@@ -109,7 +142,7 @@ or skip any validation at all using ``.model_construct()``
 
 
 Implicit conversions
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 The next issue lies in the fact that implicit type conversion logic, suitable for parsing,
 is often inappropriate for creating an object via a constructor.
@@ -120,7 +153,8 @@ However, this behavior can lead to errors when applied within a program.
 
 For example, if you pass a ``float`` value to a field with the ``Decimal`` type,
 Pydantic will implicitly convert it instead of raising an error.
-This leads to the fact that the error of using floats for monetary calculations can be hidden,
+This leads to the possibility
+that the error of using floats for monetary calculations can be hidden,
 potentially causing inaccuracies.
 
 .. literalinclude:: /examples/why_not_pydantic/implicit_conversions.py
@@ -136,7 +170,7 @@ To do so, you must enable strict mode and disable it each time model parsing occ
 
 
 Aliasing mess
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 The essence of aliases is that you have an external and an internal field name,
 where the external name is unsuitable for use within the program.
@@ -153,7 +187,7 @@ Additionally, this option affects JSON parsing, enabling it to use field names a
 
 
 Mistakes silencing
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 One of the biggest issues with Pydantic’s approach is that extra fields passed into the constructor are ignored.
 As a result, such typos do not show up immediately,
@@ -171,7 +205,7 @@ though this will also affect the parser.
 
 
 Locking ecosystem
-=============================
+------------------------------
 
 Pydantic’s primary purpose is data serialization and deserialization.
 Instead of using standard library models (``@dataclass``, ``NamedTuple``, ``TypedDict``),
@@ -185,7 +219,7 @@ support for Pydantic models, creating dependencies on these integrations.
 Pydantic does support standard library models, but this support is very limited.
 For example, you can’t alter parsing or serialization logic in an existing class.
 
-You can avoid these issues by restricting Pydantic to the layer responsible for communication with outer world.
+You can avoid these issues by restricting Pydantic to the layer responsible for communication with the outer world.
 However, this requires duplicating classes and manually writing converters.
 Pydantic offers a ``from_attributes=True`` mode,
 which allows you to create model instances from other objects,
@@ -193,7 +227,7 @@ though it has significant limitations.
 
 
 Underdone class mapping
-===============================
+------------------------------
 
 Pydantic offers very weak support for transforming one model into another.
 It behaves like a regular validation mode for an unknown source,
@@ -232,7 +266,7 @@ such as if a field in the target model has a default value.
 
 
 One presentation ought to be enough for anybody
-====================================================
+----------------------------------------------------
 
 Pydantic tightly binds parsing rules to the model itself.
 This creates major issues if you want to load or export the model differently based on use cases.
@@ -249,7 +283,7 @@ and write dispatch logic inside the validators.
 
 
 Pydantic written in Rust, so Pydantic is fast?
-===================================================
+--------------------------------------------------
 
 As benchmarks show, this is far from true.
 
@@ -261,8 +295,47 @@ without losing in any benchmark, and PyPy usage can significantly speed up Adapt
 For more detail, see :ref:`benchmarks`.
 
 
-Unmentioned Adaptix advantages
-===================================
+
+About Adaptix
+==========================
+
+
+The Philosophy
+---------------------------------
+
+
+Adaptix does not offer a new special model that requires IDE and type checker support.
+It works with any model you like
+(``@dataclass``, ``attrs``, and even Pydantic, see full list at :ref:`supported-model-kinds`).
+
+Adaptix does not affect the model definition.
+You create a special object that implements the loading and dumping of models.
+This object is called a `Retort` (the name of a chemical device used to distill substances).
+
+For each presentation format, you create a new retort instance.
+You can extend and combine instances to eliminate code duplication.
+
+So, you have:
+  * Models defined inside your business logic layer (these classes know nothing about serialization mechanism),
+  * Retorts know how to transform these classes into outer formats.
+
+Such separation allows you to keep your code clean and simple.
+Also, you can create one retort instance to handle dozens of classes
+following similar principles of outer representation.
+
+See :ref:`loading and dumping tutorial <loading-and-dumping-tutorial>` for details.
+
+But that's not all. Adaptix can generate object mappers.
+Such converters are vital for layered applications
+but they are very boring to write and error-prone to maintain.
+For the same or similar models, you can produce a converter using one line of code.
+This converter knows about two models but does not affect them.
+
+See :ref:`conversion tutorial <conversion-tutorial>` for details.
+
+
+Unmentioned advantages
+---------------------------------
 
 All the issues mentioned above highlight problems that don’t arise when using Adaptix.
 However, there are aspects that cannot be counted as issues with Pydantic,
@@ -272,7 +345,6 @@ Firstly, Adaptix has a predicate system that allows granular customization of be
 You can adjust behavior for groups of classes or for a type only if it is within a specific class.
 You can also configure logic separately for dictionary keys and values, even if they share the same type.
 See :ref:`predicate-system` for details.
-
 
 Secondly, Adaptix is designed to provide the maximum number of opportunities to follow the DRY (Don't Repeat Yourself) principle.
 
@@ -284,7 +356,7 @@ For more information on these capabilities, see :ref:`retort_extension_and_combi
 
 
 Migrating from Pydantic
-========================================
+---------------------------------
 
 Adaptix provides several tools for a gradual migration from Pydantic.
 
@@ -306,3 +378,17 @@ you can control behavior more granularly than Pydantic itself allows
 
 .. literalinclude:: /examples/reference/integrations/native_pydantic.py
    :caption: Delegating to Pydantic
+
+
+Conclusion
+=====================
+
+While Pydantic has been a popular choice for data serialization and validation in Python,
+it comes with notable drawbacks that can complicate software development, particularly in layered architectures.
+Its tight coupling of validation, serialization, and domain modeling often violates the Single Responsibility Principle,
+leading to issues such as unnecessary complexity, inefficiency, and loss of flexibility.
+
+Adaptix, by contrast, offers a more modular and developer-friendly approach.
+By decoupling serialization logic from domain models, it allows for cleaner code, easier maintenance,
+and more efficient operations. Whether it’s class mapping, custom validation, or handling diverse data formats,
+Adaptix delivers robust solutions that avoid the pitfalls commonly encountered with Pydantic.
