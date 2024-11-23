@@ -27,7 +27,7 @@ But as soon as you separate your code into layers,
 issues arise when transferring data between them.
 
 Let's imagine that you have three nested domain dataclasses.
-You work fine for a while, and then you add new field to the deepest model and
+It works fine for a while, and then you add new field to the deepest model and
 discover that Pydantic doesn't include the UTC offset in the datetime string
 (or it has any other unwanted behavior).
 
@@ -38,7 +38,7 @@ Your possible options:
 * Perform manual serialization.
 * Start using Adaptix.
 
-And what you get:
+And what you get after switching:
 
 * It does not invade your domain layer, the serialization logic lives entirely in the presentation layer.
 * It decreases code coupling.
@@ -61,7 +61,7 @@ while on the other, it can lead to unexpected and undesirable behavior during in
 Let’s examine this in detail.
 
 
-Instantiating penalty
+Instantiation penalty
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Let’s take a model from the Pydantic tutorial:
