@@ -160,6 +160,8 @@ Some facts about ``P``:
    situated at field ``name``, placed at model ``Foo``
 
 
+.. _retort_extension_and_combination:
+
 Retort extension and combination
 -------------------------------------
 

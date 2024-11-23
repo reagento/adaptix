@@ -4,9 +4,11 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
+from tests_helpers.misc import AndRequirement
 
 from adaptix._internal.feature_requirement import (
     HAS_PY_311,
+    HAS_PY_312,
     HAS_SUPPORTED_PYDANTIC_PKG,
     HAS_SUPPORTED_SQLALCHEMY_PKG,
     Requirement,
@@ -48,6 +50,8 @@ GLOB_REQUIREMENTS = {
     "loading-and-dumping/extended_usage/private_fields_skipping_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
     "reference/integrations/sqlalchemy_json/*": HAS_SUPPORTED_SQLALCHEMY_PKG,
     "conversion/tutorial/tldr": HAS_SUPPORTED_SQLALCHEMY_PKG,
+    "why_not_pydantic/instantiating_penalty*": AndRequirement(HAS_PY_312, HAS_SUPPORTED_PYDANTIC_PKG),
+    "why_not_pydantic/*": HAS_SUPPORTED_PYDANTIC_PKG,
 }
 
 
