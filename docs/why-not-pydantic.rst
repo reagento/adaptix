@@ -23,11 +23,10 @@ The Main Thesis
 Pydantic works smoothly only when you violate the Single Responsibility Principle (SRP).
 It wants to know about your domain layer, it wants to penetrate it.
 Pydantic performs best when it's simultaneously a (de)serializer for incoming requests and a domain model.
-But as soon as you separate your code into layers,
-issues arise when transferring data between them.
+However, separating your code into layers can lead to challenges when transferring data between them.
 
 Let's imagine that you have three nested domain dataclasses.
-It works fine for a while, and then you add new field to the deepest model and
+It works fine for a while, and then you add a new field to the deepest model and
 discover that Pydantic doesn't include the UTC offset in the datetime string
 (or it has any other unwanted behavior).
 
@@ -40,12 +39,11 @@ Your possible options:
 
 And what you get after switching:
 
-* It does not invade your domain layer, the serialization logic lives entirely in the presentation layer.
-* It decreases code coupling.
-* You can use adaptix to convert models passing between layers
+* Nothing invades your domain layer, the serialization logic lives entirely in the presentation layer.
+* Decreased code coupling.
+* You can use adaptix to convert models passing between layers.
 
-
-Why I can not use Pydantic as domain model? Well, let’s talk about that.
+Why can't I just use Pydantic as the domain model? Well, let’s talk about that.
 
 
 Pydantic's pitfalls
@@ -82,7 +80,7 @@ Here are the results:
    dataclass 0.9756000880151987
 
 Creating a Pydantic model instance is nearly 2.4 times slower than creating a similar dataclass instance.
-This is the cost you’ll pay each time you want to create an object in your business logic.
+This performance overhead is the cost you’ll pay each time you create an object in your business logic.
 
 But Pydantic has a method, ``.model_construct()``, for creating instances without validation!
 And yet, it’s even slower:
@@ -174,12 +172,12 @@ Aliasing mess
 
 The essence of aliases is that you have an external and an internal field name,
 where the external name is unsuitable for use within the program.
-However, the Pydantic combines different representations into ball of mud.
+However, the Pydantic combines different representations into a ball of mud.
 
 By default, the constructor only accepts fields by their aliases (i.e., using the external names).
 You can change this with the ``populate_by_name`` configuration option.
-This option allows you to use the internal field names in the constructor,
-yet the constructor will still accept the external representation.
+This option allows you to use the internal field names in the constructor
+while still accepting the external representation.
 Additionally, this option affects JSON parsing, enabling it to use field names alongside aliases.
 
 .. literalinclude:: /examples/why_not_pydantic/aliasing_mess_extra.py
@@ -191,7 +189,7 @@ Mistakes silencing
 
 One of the biggest issues with Pydantic’s approach is that extra fields passed into the constructor are ignored.
 As a result, such typos do not show up immediately,
-but live in the program until they are found by tests or users.
+but remain in the program until discovered by tests or users.
 
 Static analyzers can reduce the number of such errors,
 but this does not always work due to the dynamic nature of Python.
@@ -229,7 +227,7 @@ though it has significant limitations.
 Underdone class mapping
 ------------------------------
 
-Pydantic offers very weak support for transforming one model into another.
+Pydantic offers limited support for transforming one model into another.
 It behaves like a regular validation mode for an unknown source,
 except instead of referencing dictionary keys, it accesses object attributes.
 
@@ -269,7 +267,7 @@ One presentation ought to be enough for anybody
 ----------------------------------------------------
 
 Pydantic tightly binds parsing rules to the model itself.
-This creates major issues if you want to load or export the model differently based on use cases.
+This creates major issues when loading or exporting the model differently based on use cases.
 
 For example, you might load a config from various formats.
 While the structure of the config is generally similar,
