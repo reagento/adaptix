@@ -39,6 +39,7 @@ from ..concrete_provider import (
 from ..constant_length_tuple_provider import ConstantLengthTupleProvider
 from ..dict_provider import DefaultDictProvider, DictProvider
 from ..generic_provider import (
+    ForwardRefEvaluatingProvider,
     LiteralProvider,
     NewTypeUnwrappingProvider,
     PathLikeProvider,
@@ -157,6 +158,7 @@ class FilledRetort(OperatingRetort, ABC):
         NewTypeUnwrappingProvider(),
         TypeHintTagsUnwrappingProvider(),
         TypeAliasUnwrappingProvider(),
+        ForwardRefEvaluatingProvider(),
     ]
 
 

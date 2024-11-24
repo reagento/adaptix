@@ -16,7 +16,7 @@ from adaptix._internal.feature_requirement import (
 
 REPO_ROOT = Path(__file__).parent.parent
 DOCS_EXAMPLES_ROOT = REPO_ROOT / "docs" / "examples"
-EXCLUDE = ["__init__.py", "helpers.py"]
+EXCLUDE = ["**/__init__.py", "**/helpers.py", "why_not_pydantic/*benchmark*"]
 GLOB = "*.py"
 
 
@@ -27,7 +27,7 @@ def pytest_generate_tests(metafunc):
     paths_to_test = [
         sub_path
         for sub_path in DOCS_EXAMPLES_ROOT.rglob(GLOB)
-        if sub_path.name not in EXCLUDE and not sub_path.is_dir()
+        if not any(fnmatch(sub_path.relative_to(DOCS_EXAMPLES_ROOT).as_posix(), glob) for glob in EXCLUDE)
     ]
     metafunc.parametrize(
         ["import_path", "case_id"],

@@ -534,19 +534,24 @@ class TypeNormalizer:
         raise RuntimeError
 
     def _norm_forward_ref(self, tp):
-        if self._namespace is not None:
-            if isinstance(tp, str):
-                return _replace_source(
-                    self.normalize(ForwardRef(tp)),
-                    source=tp,
-                )
-            if isinstance(tp, ForwardRef):
-                return _replace_source(
-                    self.normalize(eval_forward_ref(self._namespace, tp)),
-                    source=tp,
-                )
-        elif isinstance(tp, (str, ForwardRef)):
+        if isinstance(tp, str):
+            fwd_ref = ForwardRef(tp)
+        elif isinstance(tp, ForwardRef):
+            fwd_ref = tp
+        else:
+            return None
+
+        if fwd_ref.__forward_module__ is not None:
+            ns = fwd_ref.__forward_module__.__dict__
+        elif self._namespace is not None:
+            ns = self._namespace
+        else:
             raise ValueError(f"Can not normalize value {tp!r}, there are no namespace to evaluate types")
+
+        return _replace_source(
+            self.normalize(eval_forward_ref(ns, fwd_ref)),
+            source=tp,
+        )
 
     _aspect_storage = AspectStorage()
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, Literal, Optional, TypeVar, Union
+from typing import Any, ForwardRef, Literal, Optional, TypeVar, Union
 
 from ..common import Dumper, Loader, TypeHint
 from ..compat import CompatExceptionGroup
@@ -16,6 +16,7 @@ from ..provider.located_request import LocatedRequestDelegatingProvider, Located
 from ..provider.location import GenericParamLoc, TypeHintLoc
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
+from ..type_tools.basic_utils import eval_forward_ref
 from ..utils import MappingHashWrapper
 from .load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider
@@ -57,6 +58,20 @@ class TypeAliasUnwrappingProvider(LocatedRequestDelegatingProvider):
             raise CannotProvide
 
         return norm.value[tuple(arg.source for arg in norm.args)] if norm.args else norm.value
+
+
+class ForwardRefEvaluatingProvider(LocatedRequestDelegatingProvider):
+    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
+
+    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
+        tp = request.last_loc.type
+        if not isinstance(tp, ForwardRef):
+            raise CannotProvide
+
+        if tp.__forward_module__ is None:
+            raise CannotProvide("ForwardRef can not be evaluated", is_terminal=True, is_demonstrative=True)
+
+        return eval_forward_ref(tp.__forward_module__.__dict__, tp)
 
 
 def _is_exact_zero_or_one(arg):
