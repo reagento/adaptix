@@ -184,17 +184,19 @@ def test_specific_type_loading(retort, tp, factory):
 
 
 @pytest.mark.parametrize(
-    ["tp", "factory"],
+    ["tp", "factory", "compare_tuple"],
     [
-        (Deque[str], deque),
-        (Set[str], set),
-        (FrozenSet[str], frozenset),
-        (Tuple[str, ...], tuple),
+        (Deque[str], deque, True),
+        (Set[str], set, False),
+        (FrozenSet[str], frozenset, False),
+        (Tuple[str, ...], tuple, True),
     ],
 )
-def test_specific_type_dumping(retort, tp, factory):
+def test_specific_type_dumping(retort, tp, factory, compare_tuple):
     dumped = retort.dump(factory(["a", "b", "c"]), tp)
-    assert dumped == factory(["a", "b", "c"])
+    if compare_tuple:
+        assert dumped == ("a", "b", "c")
+    assert factory(dumped) == factory(["a", "b", "c"])
 
 
 def test_abc_impl(retort, strict_coercion, debug_trail):
