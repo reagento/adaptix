@@ -30,6 +30,9 @@ class JSONSchemaType(Enum):
     INTEGER = "integer"
     STRING = "string"
 
+    def __repr__(self):
+        return f"{type(self).__name__}.{self.name}"
+
 
 class JSONSchemaBuiltinFormat(Enum):
     DATE_TIME = "date-time"
@@ -51,6 +54,9 @@ class JSONSchemaBuiltinFormat(Enum):
     JSON_POINTER = "json-pointer"
     RELATIVE_JSON_POINTER = "relative-json-pointer"
     REGEX = "regex"
+
+    def __repr__(self):
+        return f"{type(self).__name__}.{self.name}"
 
 
 JSONSchemaT = TypeVar("JSONSchemaT")
@@ -160,7 +166,14 @@ class BaseJSONSchema(
 ):
     extra_keywords: JSONObject[JSONValue] = field(default_factory=dict)
 
+    def __repr__(self):
+        body = ", ".join(
+            f"{key}={value!r}"
+            for key, value in vars(self).items()
+            if value != ({} if key == "extra_keywords" else Omitted())
+        )
+        return f"{type(self).__name__}({body})"
+
 
 class JSONSchemaDialect(str, Enum):
     DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
-

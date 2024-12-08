@@ -14,7 +14,7 @@ JSONSchemaT = TypeVar("JSONSchemaT")
 class JSONSchemaRef(Generic[JSONSchemaT]):
     value: str
     is_final: bool
-    json_schema: JSONSchemaT = field(repr=False)
+    json_schema: JSONSchemaT
     loc_stack: LocStack = field(repr=False)
 
     def __hash__(self):

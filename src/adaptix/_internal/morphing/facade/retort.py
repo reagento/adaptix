@@ -48,15 +48,26 @@ from ..generic_provider import (
     UnionProvider,
 )
 from ..iterable_provider import IterableProvider
+from ..json_schema.providers import InlineJSONSchemaProvider, JSONSchemaRefProvider
 from ..model.crown_definitions import ExtraSkip
 from ..model.dumper_provider import ModelDumperProvider
 from ..model.loader_provider import ModelLoaderProvider
+from ..model.request_filtering import AnyModelLSC
 from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
 from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
 from ..provider_template import ABCProxy
 from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
-from .provider import as_is_dumper, as_is_loader, dumper, enum_by_exact_value, flag_by_exact_value, loader, name_mapping
+from .provider import (
+    as_is_dumper,
+    as_is_loader,
+    bound,
+    dumper,
+    enum_by_exact_value,
+    flag_by_exact_value,
+    loader,
+    name_mapping,
+)
 
 
 class FilledRetort(OperatingRetort, ABC):
@@ -152,6 +163,10 @@ class FilledRetort(OperatingRetort, ABC):
         ),
         ModelLoaderProvider(),
         ModelDumperProvider(),
+
+        bound(AnyModelLSC(), InlineJSONSchemaProvider(inline=False)),
+        InlineJSONSchemaProvider(inline=True),
+        JSONSchemaRefProvider(),
 
         BUILTIN_SHAPE_PROVIDER,
 
