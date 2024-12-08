@@ -12,6 +12,7 @@ from ..provider.essential import CannotProvide, Mediator
 from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
 from ..struct_trail import append_trail, render_trail_as_note
+from ..type_tools import is_subclass_soft
 from .json_schema.definitions import JSONSchema
 from .json_schema.request_cls import JSONSchemaRequest
 from .json_schema.schema_model import JSONSchemaType
@@ -202,7 +203,7 @@ class IterableProvider(MorphingProvider):
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         norm, arg = self._fetch_norm_and_arg(request)
 
-        iter_factory = self._get_iter_factory(norm.origin)
+        iter_factory = self._get_dumper_iter_factory(norm)
         arg_dumper = mediator.mandatory_provide(
             request.append_loc(GenericParamLoc(type=arg, generic_pos=0)),
             lambda x: "Cannot create dumper for iterable. Dumper for element cannot be created",
@@ -215,6 +216,11 @@ class IterableProvider(MorphingProvider):
             arg_dumper=arg_dumper,
             debug_trail=debug_trail,
         )
+
+    def _get_dumper_iter_factory(self, norm):
+        if is_subclass_soft(norm.origin, list):
+            return norm.origin
+        return tuple
 
     def _make_dumper(self, *, origin, iter_factory, arg_dumper, debug_trail: DebugTrail):
         if debug_trail == DebugTrail.DISABLE:
