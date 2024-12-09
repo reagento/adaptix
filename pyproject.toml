@@ -140,6 +140,7 @@ ignore = [
   'B008',
   'BLE001',
   'RUF009',
+  'PD011',
 
   # Rules that are not applicable in the project for now
   'TID252',

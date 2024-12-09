@@ -118,7 +118,7 @@ mdit-py-plugins==0.4.1
     # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
-msgspec==0.18.4 ; implementation_name != 'pypy'
+#msgspec==0.18.4 ; implementation_name != 'pypy'
     # via -r requirements/raw/bench.txt
 mypy==1.11.1
     # via -r requirements/raw/lint.txt
