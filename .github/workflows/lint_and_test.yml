@@ -58,6 +58,7 @@ jobs:
           - { setup: '3.10',     tox: 'py310',   cov: true  }
           - { setup: '3.11',     tox: 'py311',   cov: true  }
           - { setup: '3.12.3',   tox: 'py312',   cov: true  }  # (1)
+          - { setup: '3.13',     tox: 'py313',   cov: true  }
           - { setup: 'pypy3.9',  tox: 'pypy39',  cov: false }
           - { setup: 'pypy3.10', tox: 'pypy310', cov: false }
 

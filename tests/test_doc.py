@@ -29,17 +29,17 @@ def pytest_generate_tests(metafunc):
         for sub_path in DOCS_EXAMPLES_ROOT.rglob(GLOB)
         if not any(fnmatch(sub_path.relative_to(DOCS_EXAMPLES_ROOT).as_posix(), glob) for glob in EXCLUDE)
     ]
-    metafunc.parametrize(
-        ["import_path", "case_id"],
-        [
-            pytest.param(
-                ".".join((path_to_test.parent / path_to_test.stem).relative_to(REPO_ROOT).parts),
-                str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT).as_posix()),
-                id=str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT).as_posix()),
-            )
-            for path_to_test in paths_to_test
-        ],
-    )
+    parameter_sets = [
+        pytest.param(
+            ".".join((path_to_test.parent / path_to_test.stem).relative_to(REPO_ROOT).parts),
+            str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT).as_posix()),
+            id=str((path_to_test.parent / path_to_test.stem).relative_to(DOCS_EXAMPLES_ROOT).as_posix()),
+        )
+        for path_to_test in paths_to_test
+    ]
+    for param_set in parameter_sets:
+        pytest.register_assert_rewrite(param_set.values[0])
+    metafunc.parametrize(["import_path", "case_id"], parameter_sets)
 
 
 GLOB_REQUIREMENTS = {
@@ -67,5 +67,4 @@ def test_example(import_path: str, case_id: str):
     if requirement is not None and not requirement:
         pytest.skip(requirement.fail_reason)
 
-    pytest.register_assert_rewrite(import_path)
     importlib.import_module(import_path)
