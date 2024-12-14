@@ -33,7 +33,7 @@ def string_dumper(data):
     raise TypeError
 
 
-@pytest.fixture()
+@pytest.fixture
 def retort():
     return Retort(
         recipe=[

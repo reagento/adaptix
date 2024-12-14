@@ -3,7 +3,7 @@ import itertools
 from collections.abc import Sequence
 from functools import cached_property
 from inspect import Parameter, Signature
-from typing import Annotated, Any, Callable, Optional, Protocol
+from typing import Annotated, Any
 
 try:
     from pydantic import AliasChoices, BaseModel
@@ -38,12 +38,7 @@ from ..definitions import (
 )
 
 
-class WithDefaults(Protocol):
-    default: Any
-    default_factory: Optional[Callable[[], Any]]
-
-
-def _get_default(field: WithDefaults) -> Default:
+def _get_default(field) -> Default:
     if field.default_factory is not None:
         return DefaultFactory(field.default_factory)
     if field.default is PydanticUndefined:

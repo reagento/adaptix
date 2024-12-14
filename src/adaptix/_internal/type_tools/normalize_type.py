@@ -68,7 +68,7 @@ T = TypeVar("T")
 
 
 class _BasicNormType(BaseNormType, ABC):
-    __slots__ = ("_source", "_args")
+    __slots__ = ("_args", "_source")
 
     def __init__(self, args: VarTuple[Any], *, source: TypeHint):
         self._source = source
@@ -218,7 +218,7 @@ TypeVarLimit = Union[Bound, Constraints]
 
 
 class _BaseNormTypeVarLike(BaseNormType):
-    __slots__ = ("_var", "_source")
+    __slots__ = ("_source", "_var")
 
     def __init__(self, var: Any, *, source: TypeHint):
         self._var = var
@@ -358,7 +358,7 @@ AnyNormTypeVarLike = Union[NormTV, NormTVTuple, NormParamSpec]
 
 
 class NormTypeAlias(BaseNormType):
-    __slots__ = ("_type_alias", "_args", "_norm_type_vars")
+    __slots__ = ("_args", "_norm_type_vars", "_type_alias")
 
     def __init__(self, type_alias, args: VarTuple[BaseNormType], type_vars: VarTuple[AnyNormTypeVarLike]):
         self._type_alias = type_alias

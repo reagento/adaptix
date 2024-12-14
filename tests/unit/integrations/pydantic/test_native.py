@@ -1,3 +1,6 @@
+from typing import Any
+
+from dirty_equals import IsInstance
 from pydantic import BaseModel, ValidationError
 from tests_helpers import raises_exc, with_cause
 
@@ -7,7 +10,9 @@ from adaptix._internal.morphing.load_error import LoadError
 
 
 def create_stub_validation_error():
-    return ValidationError.from_exception_data(title="", line_errors=[])
+    error = ValidationError.from_exception_data(title="", line_errors=[])
+    error.args = []
+    return error
 
 
 def test_validation_without_params():

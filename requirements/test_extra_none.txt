@@ -2,19 +2,17 @@
 #    uv pip compile requirements/raw/test_extra_none.txt -o requirements/test_extra_none.txt --allow-unsafe --strip-extras --no-strip-markers
 -e ./tests/tests_helpers
     # via -r requirements/raw/test_extra_none.txt
-coverage==7.4.4
+coverage==7.6.9
     # via -r requirements/raw/test_extra_none.txt
-dirty-equals==0.7.1.post0
+dirty-equals==0.8.0
     # via -r requirements/raw/test_extra_none.txt
 iniconfig==2.0.0
     # via pytest
-packaging==24.1
+packaging==24.2
     # via pytest
-phonenumberslite==8.13.26
+phonenumberslite==8.13.52
     # via -r requirements/raw/test_extra_none.txt
 pluggy==1.5.0
     # via pytest
-pytest==7.4.2
+pytest==8.3.4
     # via -r requirements/raw/test_extra_none.txt
-pytz==2024.1
-    # via dirty-equals

@@ -73,6 +73,8 @@ def native_pydantic(
     # loading (validation) parameters
     strict: Omittable[Optional[bool]] = Omitted(),
     from_attributes: Omittable[Optional[bool]] = Omitted(),
+    self_instance: Omittable[Any] = Omitted(),
+    allow_partial: Omittable[Union[bool, Literal["off", "on", "trailing-strings"]]] = Omitted(),
     # dumping (serialization) parameters
     mode: Omittable[Union[Literal["json", "python"], str]] = Omitted(),  # noqa: PYI051
     include: Omittable["IncEx"] = Omitted(),
@@ -100,6 +102,8 @@ def native_pydantic(
 
     :param strict: Parameter passed directly to ``.validate_python()`` method
     :param from_attributes: Parameter passed directly to ``.validate_python()`` method
+    :param self_instance: Parameter passed directly to ``.validate_python()`` method
+    :param allow_partial: Parameter passed directly to ``.validate_python()`` method
 
     :param mode: Parameter passed directly to ``.to_python()`` method
     :param include: Parameter passed directly to ``.to_python()`` method
@@ -125,6 +129,8 @@ def native_pydantic(
             validation_params={
                 "strict": strict,
                 "from_attributes": from_attributes,
+                "self_instance": self_instance,
+                "allow_partial": allow_partial,
                 "context": context,
             },
             serialization_params={
@@ -132,7 +138,6 @@ def native_pydantic(
                 "include": include,
                 "exclude": exclude,
                 "by_alias": by_alias,
-                "context": context,
                 "exclude_unset": exclude_unset,
                 "exclude_defaults": exclude_defaults,
                 "exclude_none": exclude_none,
@@ -140,6 +145,7 @@ def native_pydantic(
                 "warnings": warnings,
                 "fallback": fallback,
                 "serialize_as_any": serialize_as_any,
+                "context": context,
             },
         ),
     )

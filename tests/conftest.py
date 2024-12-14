@@ -15,22 +15,22 @@ def debug_trail(request):
     return request.param
 
 
-@pytest.fixture()
+@pytest.fixture
 def trail_select(debug_trail):
     return ByTrailSelector(debug_trail)
 
 
-@pytest.fixture()
+@pytest.fixture
 def model_spec() -> ModelSpecSchema:
     ...
 
 
-@pytest.fixture()
+@pytest.fixture
 def src_model_spec() -> ModelSpecSchema:
     ...
 
 
-@pytest.fixture()
+@pytest.fixture
 def dst_model_spec() -> ModelSpecSchema:
     ...
 

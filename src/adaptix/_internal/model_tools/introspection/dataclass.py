@@ -74,13 +74,13 @@ def get_dataclass_shape(tp) -> FullShape:
     name_to_dc_field = all_dc_fields(tp)
     dc_fields_public = dc_fields(tp)
     init_params = list(
-        inspect.signature(tp.__init__).parameters.keys(),
+        inspect.signature(tp.__init__).parameters.keys(),  # type: ignore[misc]
     )[1:]
     type_hints = get_all_type_hints(tp)
 
     return Shape(
         input=InputShape(
-            constructor=tp,
+            constructor=tp,  # type: ignore[arg-type]
             fields=tuple(
                 _create_inp_field_from_dc_field(dc_field, type_hints)
                 for dc_field in name_to_dc_field.values()

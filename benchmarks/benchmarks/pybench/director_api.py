@@ -21,12 +21,12 @@ from pyperf._cli import format_checks
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
 __all__ = (
-    "BenchmarkDirector",
-    "BenchSchema",
-    "PlotParams",
-    "CheckParams",
     "BenchAccessor",
     "BenchChecker",
+    "BenchSchema",
+    "BenchmarkDirector",
+    "CheckParams",
+    "PlotParams",
 )
 
 EnvSpec = Mapping[str, str]

@@ -11,12 +11,12 @@ files: |-
   )$
 
 default_stages:
-  - commit
-  - push
+  - pre-commit
+  - pre-push
 
 repos:
   - repo: 'https://github.com/pre-commit/pre-commit-hooks'
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: check-merge-conflict
       - id: debug-statements
@@ -33,7 +33,7 @@ repos:
         args: ['-e']  # remove default --in-place argument and emit error
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.2
+    rev: v0.8.3
     hooks:
       - id: ruff
         args: [ --fix-only ]

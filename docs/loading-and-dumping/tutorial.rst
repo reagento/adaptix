@@ -272,6 +272,7 @@ is replaced by standard `ExceptionGroup <https://docs.python.org/3/library/excep
 For the dumping process any exception is unexpected, so it always will be wrapped with ``ExceptionGroup``
 
 .. literalinclude:: /examples/loading-and-dumping/tutorial/unexpected_error.py
+   :lines: 2-
 
 Trail of exception is stored at a special private attribute and could be accessed via :class:`~.struct_trail.get_trail`.
 

@@ -6,17 +6,17 @@ annotated-types==0.7.0
     # via pydantic
 attrs==21.3.0
     # via -r requirements/raw/test_extra_old.txt
-coverage==7.4.4
+coverage==7.6.9
     # via -r requirements/raw/test_extra_none.txt
-dirty-equals==0.7.1.post0
+dirty-equals==0.8.0
     # via -r requirements/raw/test_extra_none.txt
-greenlet==3.0.3 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64'
+greenlet==3.1.1 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64'
     # via sqlalchemy
 iniconfig==2.0.0
     # via pytest
-packaging==24.1
+packaging==24.2
     # via pytest
-phonenumberslite==8.13.26
+phonenumberslite==8.13.52
     # via -r requirements/raw/test_extra_none.txt
 pluggy==1.5.0
     # via pytest
@@ -24,10 +24,8 @@ pydantic==2.1.0
     # via -r requirements/raw/test_extra_old.txt
 pydantic-core==2.4.0
     # via pydantic
-pytest==7.4.2
+pytest==8.3.4
     # via -r requirements/raw/test_extra_none.txt
-pytz==2024.1
-    # via dirty-equals
 sqlalchemy==2.0.0
     # via -r requirements/raw/test_extra_old.txt
 typing-extensions==4.12.2

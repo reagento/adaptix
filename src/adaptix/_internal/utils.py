@@ -113,7 +113,7 @@ ComparableSeqT = TypeVar("ComparableSeqT", bound="ComparableSequence")
 
 
 class ComparableSequence(Protocol[T]):
-    def __lt__(self, __other: T) -> bool:
+    def __lt__(self, __other: T, /) -> bool:
         ...
 
     @overload
@@ -225,7 +225,7 @@ MappingT = TypeVar("MappingT", bound=Mapping)
 
 
 class OrderedMappingHashWrapper(Generic[MappingT]):
-    __slots__ = ("mapping", "_hash")
+    __slots__ = ("_hash", "mapping")
 
     def __init__(self, mapping: MappingT):
         self.mapping = mapping
@@ -244,7 +244,7 @@ class OrderedMappingHashWrapper(Generic[MappingT]):
 
 
 class MappingHashWrapper(Generic[MappingT]):
-    __slots__ = ("mapping", "_hash")
+    __slots__ = ("_hash", "mapping")
 
     def __init__(self, mapping: MappingT):
         self.mapping = mapping
