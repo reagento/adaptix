@@ -42,7 +42,7 @@ class AuditLogRecord(Base):
     data: Mapped[AnyAuditLog] = mapped_column(AdaptixJSON(retort, AnyAuditLog))
 
 
-@pytest.fixture()
+@pytest.fixture
 def engine():
     engine = create_engine("sqlite://")
     try:
@@ -52,12 +52,12 @@ def engine():
         engine.dispose()
 
 
-@pytest.fixture()
+@pytest.fixture
 def session_factory(engine):
     return sessionmaker(engine)
 
 
-@pytest.fixture()
+@pytest.fixture
 def session(session_factory):
     with session_factory() as session:
         yield session

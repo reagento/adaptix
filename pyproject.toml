@@ -1,5 +1,5 @@
 [build-system]
-requires = ['setuptools==74.1.0']
+requires = ['setuptools==75.6.0']
 build-backend = 'setuptools.build_meta'
 
 [project]
@@ -36,9 +36,9 @@ classifiers = [
 attrs = ['attrs >= 21.3.0']
 attrs-strict = ['attrs >= 21.3.0, <= 24.2.0']
 sqlalchemy = ['sqlalchemy >= 2.0.0']
-sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.32']
+sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.36']
 pydantic = ['pydantic >= 2.0.0']
-pydantic-strict = ['pydantic >= 2.0.0, <= 2.8.2']
+pydantic-strict = ['pydantic >= 2.0.0, <= 2.10.3']
 
 [project.urls]
 'Homepage' = 'https://github.com/reagento/adaptix'
@@ -127,6 +127,8 @@ fixable = [
   'COM812',
   'D400',
   'PT001',
+  'RUF023',
+  'RUF022',
 ]
 ignore = [
   # Rules that should be turned on in the near future
@@ -151,20 +153,19 @@ ignore = [
   'ARG',
   'D100',
   'PLR0913',
-  'TCH002',
+  'TC002',
 
   # Strange and obscure rules that will never be turned on
-  'ANN101',
   'FA100',
   'TRY003',
   'TRY201',
   'EM',
   'PERF203',
-  'TCH001',
+  'TC001',
   'TD002',
   'PTH201',
   'RSE102',
-  'TCH003',
+  'TC003',
   'PYI025',
 
   # Rules conflictin with other tools

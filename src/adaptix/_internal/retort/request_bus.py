@@ -50,7 +50,7 @@ E = TypeVar("E", bound=Exception)
 
 
 class BasicRequestBus(RequestBus[RequestT, ResponseT], Generic[RequestT, ResponseT]):
-    __slots__ = ("_router", "_error_representor", "_mediator_factory")
+    __slots__ = ("_error_representor", "_mediator_factory", "_router")
 
     def __init__(
         self,

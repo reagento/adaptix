@@ -18,7 +18,7 @@ def _false():
 
 
 class Requirement(ABC):
-    __slots__ = ("is_met", "__bool__", "__dict__")
+    __slots__ = ("__bool__", "__dict__", "is_met")
 
     def __init__(self):
         self.is_met = self._evaluate()

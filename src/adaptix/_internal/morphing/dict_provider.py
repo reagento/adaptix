@@ -259,7 +259,7 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         key, value = self._extract_key_value(request)
-        dict_type_hint = dict[key.source, value.source]  # type: ignore[misc, name-defined]
+        dict_type_hint = dict[key.source, value.source]  # type: ignore[name-defined]
         dict_loader = self._DICT_PROVIDER.provide_loader(
             mediator,
             replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),
@@ -280,7 +280,7 @@ class DefaultDictProvider(LoaderProvider, DumperProvider):
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         key, value = self._extract_key_value(request)
-        dict_type_hint = dict[key.source, value.source]  # type: ignore[misc, name-defined]
+        dict_type_hint = dict[key.source, value.source]  # type: ignore[name-defined]
         return self._DICT_PROVIDER.provide_dumper(
             mediator,
             request=replace(request, loc_stack=request.loc_stack.replace_last_type(dict_type_hint)),

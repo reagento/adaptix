@@ -1,5 +1,5 @@
-setuptools==69.5.1
-towncrier==23.11.0
+setuptools==75.6.0
+towncrier==24.8.0
 
 -r runner.txt
 -r lint.txt

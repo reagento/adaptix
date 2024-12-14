@@ -22,7 +22,7 @@ class RequestBus(ABC, Generic[RequestT, ResponseT]):
 
 
 class BuiltinMediator(Mediator[ResponseT], Generic[ResponseT]):
-    __slots__ = ("_request_buses", "_request", "_search_offset", "_no_request_bus_error_maker", "_call_cache")
+    __slots__ = ("_call_cache", "_no_request_bus_error_maker", "_request", "_request_buses", "_search_offset")
 
     def __init__(
         self,

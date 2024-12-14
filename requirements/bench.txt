@@ -18,7 +18,7 @@ mashumaro==3.10
     # via -r requirements/raw/bench.txt
 msgspec==0.18.4 ; implementation_name != 'pypy'
     # via -r requirements/raw/bench.txt
-packaging==24.1
+packaging==24.2
     # via
     #   marshmallow
     #   pytest
@@ -28,13 +28,13 @@ psutil==5.9.5
     # via
     #   -r requirements/raw/bench.txt
     #   pyperf
-pydantic==2.8.2
+pydantic==2.10.3
     # via -r requirements/raw/bench.txt
-pydantic-core==2.20.1
+pydantic-core==2.27.1
     # via pydantic
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
-pytest==7.4.2
+pytest==8.3.4
     # via -r requirements/raw/bench.txt
 schematics==2.1.1
     # via -r requirements/raw/bench.txt

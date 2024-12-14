@@ -26,7 +26,7 @@ class SupportsKeysAndGetItem(Protocol[K, _VT_co]):
     def keys(self) -> Iterable[K]:
         ...
 
-    def __getitem__(self, __key: K) -> _VT_co:
+    def __getitem__(self, __key: K, /) -> _VT_co:
         ...
 
 
@@ -144,7 +144,7 @@ H = TypeVar("H", bound=Hashable)
 
 
 class ClassMap(Generic[H]):
-    __slots__ = ("_mapping", "_hash")
+    __slots__ = ("_hash", "_mapping")
 
     def __init__(self, *values: H):
         # need stable order for hash calculation
