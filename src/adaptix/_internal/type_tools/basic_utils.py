@@ -3,7 +3,7 @@ import typing
 from typing import Annotated, Any, ForwardRef, Generic, NewType, Protocol, TypedDict, TypeVar, Union
 
 from ..common import TypeHint, VarTuple
-from ..feature_requirement import HAS_PY_312
+from ..feature_requirement import HAS_PY_312, HAS_PY_313
 from .constants import BUILTIN_ORIGIN_TO_TYPEVARS
 from .fundamentals import get_generic_args, get_type_vars, strip_alias
 
@@ -123,5 +123,9 @@ def get_type_vars_of_parametrized(tp: TypeHint) -> VarTuple[TypeVar]:
     return params
 
 
-def eval_forward_ref(namespace: dict[str, Any], forward_ref: ForwardRef):
-    return forward_ref._evaluate(namespace, None, recursive_guard=frozenset())
+if HAS_PY_313:
+    def eval_forward_ref(namespace: dict[str, Any], forward_ref: ForwardRef):
+        return forward_ref._evaluate(namespace, None, (), recursive_guard=frozenset())  # type: ignore[misc, arg-type]
+else:
+    def eval_forward_ref(namespace: dict[str, Any], forward_ref: ForwardRef):
+        return forward_ref._evaluate(namespace, None, recursive_guard=frozenset())
