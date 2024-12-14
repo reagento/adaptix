@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Generic, TypeVar, Union
+from typing import Any, Generic, TypeVar, Union
 
 from ...utils import Omittable, Omitted
 
@@ -9,13 +9,15 @@ T = TypeVar("T")
 
 JSONNumeric = Union[int, float]
 JSONObject = Mapping[str, T]
+
+# Recursive normalized types are not supported now.
 JSONValue = Union[
     JSONNumeric,
     str,
     bool,
     None,
-    Sequence["JSONValue"],
-    JSONObject["JSONValue"],
+    Sequence[Any],
+    JSONObject[Any],
 ]
 
 
@@ -27,6 +29,9 @@ class JSONSchemaType(Enum):
     NUMBER = "number"
     INTEGER = "integer"
     STRING = "string"
+
+    def __repr__(self):
+        return f"{type(self).__name__}.{self.name}"
 
 
 class JSONSchemaBuiltinFormat(Enum):
@@ -49,6 +54,9 @@ class JSONSchemaBuiltinFormat(Enum):
     JSON_POINTER = "json-pointer"
     RELATIVE_JSON_POINTER = "relative-json-pointer"
     REGEX = "regex"
+
+    def __repr__(self):
+        return f"{type(self).__name__}.{self.name}"
 
 
 JSONSchemaT = TypeVar("JSONSchemaT")
@@ -158,7 +166,14 @@ class BaseJSONSchema(
 ):
     extra_keywords: JSONObject[JSONValue] = field(default_factory=dict)
 
+    def __repr__(self):
+        body = ", ".join(
+            f"{key}={value!r}"
+            for key, value in vars(self).items()
+            if value != ({} if key == "extra_keywords" else Omitted())
+        )
+        return f"{type(self).__name__}({body})"
+
 
 class JSONSchemaDialect(str, Enum):
     DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
-

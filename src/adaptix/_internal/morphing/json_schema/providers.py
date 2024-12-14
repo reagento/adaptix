@@ -15,9 +15,6 @@ class InlineJSONSchemaProvider(LocatedRequestMethodsProvider):
 
 
 class JSONSchemaRefProvider(LocatedRequestMethodsProvider):
-    def __init__(self, *, inline: bool):
-        self._inline = inline
-
     @method_handler
     def provide_json_schema_ref(self, mediator: Mediator, request: JSONSchemaRefRequest) -> JSONSchemaRef:
         return JSONSchemaRef(
@@ -28,7 +25,11 @@ class JSONSchemaRefProvider(LocatedRequestMethodsProvider):
         )
 
     def _get_reference_value(self, request: JSONSchemaRefRequest) -> str:
-        return str(request.loc_stack.last.type)
+        tp = request.loc_stack.last.type
+        try:
+            return tp.__name__
+        except AttributeError:
+            return str(tp)
 
 
 class ConstantJSONSchemaRefProvider(LocatedRequestMethodsProvider):

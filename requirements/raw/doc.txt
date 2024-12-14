@@ -1,6 +1,6 @@
 -r bench.txt
 
-sphinx==8.0.2
+sphinx==8.1.3
 sphinx-copybutton==0.5.2
 sphinx-design==0.6.1
 sphinx-paramlinks==0.6.0
@@ -15,4 +15,4 @@ furo==2024.8.6
 docutils-stubs==0.0.22
 
 gitpython==3.1.43
-plotly==5.23.0
+plotly==5.24.1

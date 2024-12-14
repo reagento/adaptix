@@ -24,7 +24,7 @@ class CascadeNamespace(ABC):
 
 
 class BuiltinCascadeNamespace(CascadeNamespace):
-    __slots__ = ("_constants", "_outer_constants", "_occupied", "_variables", "_allow_builtins")
+    __slots__ = ("_allow_builtins", "_constants", "_occupied", "_outer_constants", "_variables")
 
     def __init__(
         self,

@@ -4,7 +4,7 @@ from tests_helpers import DebugCtx
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
 
 
-@pytest.fixture()
+@pytest.fixture
 def debug_ctx():
     return DebugCtx(CodeGenAccumulator())
 

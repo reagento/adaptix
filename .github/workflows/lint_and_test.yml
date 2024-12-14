@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 3
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -58,6 +58,7 @@ jobs:
           - { setup: '3.10',     tox: 'py310',   cov: true  }
           - { setup: '3.11',     tox: 'py311',   cov: true  }
           - { setup: '3.12.3',   tox: 'py312',   cov: true  }  # (1)
+          - { setup: '3.13',     tox: 'py313',   cov: true  }
           - { setup: 'pypy3.9',  tox: 'pypy39',  cov: false }
           - { setup: 'pypy3.10', tox: 'pypy310', cov: false }
 
@@ -65,7 +66,7 @@ jobs:
         os: ['ubuntu-latest']
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Set up Python 3.11
         uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3
@@ -91,7 +92,7 @@ jobs:
             --cov-output .coverage.${{ matrix.python_version.tox }}
 
       - name: Store coverage file
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}
         with:
           name: coverage-${{ matrix.python_version.tox }}
@@ -115,7 +116,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
 
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         id: download
@@ -125,14 +126,14 @@ jobs:
 
       - name: Coverage comment
         id: coverage_comment
-        uses: py-cov-action/python-coverage-comment-action@44f4df022ec3c3cbb61e56e0b550a490bde8aa73
+        uses: py-cov-action/python-coverage-comment-action@b2eb38dd175bf053189b35f738f9207278b00925
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MERGE_COVERAGE_FILES: true
           MINIMUM_GREEN: 90
 
       - name: Store Pull Request comment to be posted (for external pr)
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
         with:
           name: python-coverage-comment-action

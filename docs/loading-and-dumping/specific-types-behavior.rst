@@ -223,12 +223,10 @@ Iterable subclasses
 If ``strict_coercion`` is enabled, the loader takes any iterable excluding ``str`` and ``Mapping``.
 If ``strict_coercion`` is disabled, any iterable are accepted.
 
-Dumper produces the same iterable with dumped elements.
+Dumper produces the ``tuple`` (or ``list`` for list children) with dumped elements.
 
-If you require a dumper or loader for abstract type, a minimal suitable type will be used.
-For example, if you need a dumper for type ``Iterable[int]``, retort will use ``tuple``.
-So if a field with ``Iterable[int]`` type will contain ``List[int]``,
-the list will be converted to a tuple while dumping.
+If you require a loader for abstract type, a minimal suitable type will be used.
+For type ``Iterable[int]`` retort will use ``tuple``.
 
 Tuple of dynamic length like ``*tuple[int, ...]`` isn't supported yet.
 This doesn't applies for tuples like ``*tuple[int, str]`` (constant length tuples).

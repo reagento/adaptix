@@ -626,7 +626,7 @@ class SelfTypeProvider(MorphingProvider):
 class LiteralStringProvider(MorphingProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
-        return str_strict_coercion_loader if strict_coercion else str  # type: ignore[return-value]
+        return str_strict_coercion_loader if strict_coercion else str
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
         return as_is_stub

@@ -119,6 +119,7 @@ def make_loader_getter(
                 ValueProvider(InputShapeRequest, shape),
                 ValueProvider(InputNameLayoutRequest, name_layout),
                 bound(int, ValueProvider(LoaderRequest, int_loader)),
+                debug_ctx.accum,
             ],
         )
         return retort.replace(
@@ -926,6 +927,18 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select):
                 "v": "this is not a list",
             },
         ),
+    )
+
+    raises_exc(
+        trail_select(
+            disable=NoRequiredFieldsLoadError(fields={"w", "v", "z"}, input_value={}),
+            first=with_trail(NoRequiredFieldsLoadError(fields={"w", "v", "z"}, input_value={}), []),
+            all=AggregateLoadError(
+                f"while loading model {Gauge}",
+                [with_trail(NoRequiredFieldsLoadError(fields={"w", "v", "z"}, input_value={}), [])],
+            ),
+        ),
+        lambda: loader({}),
     )
 
 

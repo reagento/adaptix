@@ -2,7 +2,7 @@ Just use pip to install the library
 
 .. code-block:: text
 
-    pip install adaptix==3.0.0b8
+    pip install adaptix==3.0.0b9
 
 
 Integrations with 3-rd party libraries are turned on automatically,
@@ -20,5 +20,5 @@ So, this is valid installation variants:
 
 .. code-block:: text
 
-   pip install adaptix[attrs-strict]==3.0.0b8
-   pip install adaptix[attrs, sqlalchemy-strict]==3.0.0b8
+   pip install adaptix[attrs-strict]==3.0.0b9
+   pip install adaptix[attrs, sqlalchemy-strict]==3.0.0b9

@@ -1,4 +1,6 @@
 import sys
+import typing
+from contextlib import nullcontext
 from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 import pytest
@@ -11,6 +13,7 @@ from adaptix._internal.feature_requirement import (
     HAS_PY_312,
     HAS_SELF_TYPE,
     HAS_SUPPORTED_PYDANTIC_PKG,
+    HAS_TV_DEFAULT,
     HAS_TV_TUPLE,
     IS_PYPY,
     DistributionVersionRequirement,
@@ -554,3 +557,51 @@ def test_pydantic():
 
     # a limitation of pydantic implementation
     assert_distinct_fields_types(MyModel[T], input={"a": Any}, output={"a": Any, "b": Any, "_c": Any})
+
+
+NOTHING_TYPEVAR_MAKER = lambda default: TypeVar("tv_int", default=default)  # noqa: E731
+
+
+@requires(HAS_TV_DEFAULT)
+@pytest.mark.parametrize(
+    "tv_maker",
+    [
+        pytest.param(NOTHING_TYPEVAR_MAKER, id="nothing"),
+        pytest.param(lambda default: TypeVar("tv_int", default=default, bound=object), id="bound"),
+        pytest.param(lambda default: TypeVar("tv_int", str, int, default=default), id="constraints"),
+    ],
+)
+def test_tv_default(model_spec, tv_maker):
+    with (
+        pytest.raises(NotImplementedError)
+        if model_spec.kind == ModelSpec.PYDANTIC and tv_maker != NOTHING_TYPEVAR_MAKER else
+        nullcontext()
+    ):
+        tv_int = tv_maker(default=int)
+
+        @model_spec.decorator
+        class MyModel(*model_spec.bases, Generic[tv_int]):
+            a: tv_int
+            b: int
+
+        assert_fields_types(MyModel, {"a": int, "b": int})
+        assert_fields_types(MyModel[int], {"a": int, "b": int})
+        assert_fields_types(MyModel[str], {"a": str, "b": int})
+        assert_fields_types(MyModel[T], {"a": T, "b": int})
+
+
+@requires(HAS_TV_DEFAULT)
+@exclude_model_spec(ModelSpec.PYDANTIC)
+def test_tv_tuple_default(model_spec):
+    t1 = typing.TypeVarTuple("t1", default=(int, str))
+
+    @model_spec.decorator
+    class MyModel(*model_spec.bases, Generic[typing.Unpack[t1]]):
+        a: tuple[typing.Unpack[t1]]
+        b: int
+
+    assert_fields_types(MyModel, {"a": tuple[int, str], "b": int})
+    assert_fields_types(MyModel[str], {"a": tuple[str], "b": int})
+    assert_fields_types(MyModel[int, str], {"a": tuple[int, str], "b": int})
+    assert_fields_types(MyModel[int, str, bool], {"a": tuple[int, str, bool], "b": int})
+    assert_fields_types(MyModel[T], {"a": tuple[T], "b": int})

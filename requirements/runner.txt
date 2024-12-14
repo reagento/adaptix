@@ -6,34 +6,34 @@ chardet==5.2.0
     # via tox
 colorama==0.4.6
     # via tox
-coverage==7.4.4
+coverage==7.6.9
     # via -r requirements/raw/runner.txt
-distlib==0.3.8
+distlib==0.3.9
     # via virtualenv
-filelock==3.15.4
+filelock==3.16.1
     # via
     #   tox
     #   virtualenv
 invoke==2.2.0
     # via -r requirements/raw/runner.txt
-packaging==24.1
+packaging==24.2
     # via
     #   pyproject-api
     #   tox
     #   tox-uv
-platformdirs==4.2.2
+platformdirs==4.3.6
     # via
     #   tox
     #   virtualenv
 pluggy==1.5.0
     # via tox
-pyproject-api==1.7.1
+pyproject-api==1.8.0
     # via tox
-tox==4.18.0
+tox==4.23.2
     # via tox-uv
-tox-uv==1.11.2
+tox-uv==1.16.1
     # via -r requirements/raw/runner.txt
-uv==0.4.2
+uv==0.5.9
     # via tox-uv
-virtualenv==20.26.3
+virtualenv==20.28.0
     # via tox

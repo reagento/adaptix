@@ -9,7 +9,7 @@ CB = TypeVar("CB", bound="CodeBuilder")
 
 
 class CodeBuilder:
-    __slots__ = ("_lines", "_current_indent", "_indent_delta")
+    __slots__ = ("_current_indent", "_indent_delta", "_lines")
 
     def __init__(self, indent_delta: int = 4):
         self._lines: deque[str] = deque()

@@ -11,11 +11,11 @@ from adaptix._internal.struct_trail import (
 )
 
 __all__ = (
-    "TrailElement",
-    "TrailElementMarker",
     "Attr",
     "ItemKey",
     "Trail",
+    "TrailElement",
+    "TrailElementMarker",
     "append_trail",
     "extend_trail",
     "get_trail",

@@ -7,7 +7,9 @@ from adaptix._internal.morphing.load_error import LoadError
 
 
 def create_stub_validation_error():
-    return ValidationError.from_exception_data(title="", line_errors=[])
+    error = ValidationError.from_exception_data(title="", line_errors=[])
+    error.args = []
+    return error
 
 
 def test_validation_without_params():

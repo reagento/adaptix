@@ -28,7 +28,7 @@ def int_dumper(data):
     raise TypeError
 
 
-@pytest.fixture()
+@pytest.fixture
 def retort():
     return AdornedRetort(
         recipe=[

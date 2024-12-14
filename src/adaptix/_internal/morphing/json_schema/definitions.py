@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Generic, TypeVar, Union
 
 from ...provider.loc_stack_filtering import LocStack
+from ...type_tools.fwd_ref import FwdRef
 from .schema_model import BaseJSONSchema
 
 T = TypeVar("T")
@@ -13,7 +14,7 @@ JSONSchemaT = TypeVar("JSONSchemaT")
 class JSONSchemaRef(Generic[JSONSchemaT]):
     value: str
     is_final: bool
-    json_schema: JSONSchemaT = field(repr=False)
+    json_schema: JSONSchemaT
     loc_stack: LocStack = field(repr=False)
 
     def __hash__(self):
@@ -23,10 +24,10 @@ class JSONSchemaRef(Generic[JSONSchemaT]):
 Boolable = Union[T, bool]
 
 
-class JSONSchema(BaseJSONSchema[JSONSchemaRef[Boolable["JSONSchema"]], Boolable["JSONSchema"]]):
+class JSONSchema(BaseJSONSchema[JSONSchemaRef[Boolable[FwdRef["JSONSchema"]]], Boolable[FwdRef["JSONSchema"]]]):
     pass
 
 
-class ResolvedJSONSchema(BaseJSONSchema[str, Boolable["ResolvedJSONSchema"]]):
+class ResolvedJSONSchema(BaseJSONSchema[str, Boolable[FwdRef["ResolvedJSONSchema"]]]):
     pass
 

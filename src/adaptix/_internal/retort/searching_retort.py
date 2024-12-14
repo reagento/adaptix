@@ -76,8 +76,9 @@ class SearchingRetort(BaseRetort, Provider, ABC):
 
             cause = self._get_exception_cause(e)
             if cause is not None:
-                for sub_exc in self._exception_walk(cause):
-                    sub_exc.__traceback__ = None
+                if self._hide_traceback:
+                    for sub_exc in self._exception_walk(cause):
+                        sub_exc.__traceback__ = None
                 add_note(exception, "Note: The attached exception above contains verbose description of the problem")
             raise exception from cause
 
