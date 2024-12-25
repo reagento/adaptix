@@ -2,7 +2,8 @@ import sys
 from pathlib import Path
 
 from adaptix import DebugTrail
-from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams, PlotParams
+from benchmarks.pybench.database import DATABASE_FILE_NAME
+from benchmarks.pybench.director_api import BenchmarkDirector, BenchMeta, BenchSchema, CheckParams, PlotParams
 from benchmarks.simple_structures import (
     bench_adaptix,
     bench_cattrs,
@@ -30,6 +31,8 @@ director = BenchmarkDirector(
     check_params=lambda env_spec: CheckParams(
         stdev_rel_threshold=0.07 if env_spec["py_impl"] == "pypy" else 0.04,
     ),
+    meta=BenchMeta(benchmark_subname="loading", benchmark_name="simple_structures"),
+db_name=DATABASE_FILE_NAME,
 )
 
 director.add(

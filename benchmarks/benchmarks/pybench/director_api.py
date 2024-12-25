@@ -1,9 +1,11 @@
 # pylint: disable=import-error,no-name-in-module
 # ruff: noqa: T201, S603
+import datetime
 import importlib.metadata
 import inspect
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 from argparse import ArgumentParser, Namespace
@@ -18,6 +20,7 @@ from typing import Any, Callable, Optional, TypeVar, Union
 import pyperf
 from pyperf._cli import format_checks
 
+from benchmarks.pybench.database import BenchRecord, database_manager, write_bench
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
 __all__ = (
@@ -36,6 +39,12 @@ EnvSpec = Mapping[str, str]
 class CheckParams:
     stdev_rel_threshold: Optional[float] = None
     ignore_pyperf_warnings: Optional[bool] = None
+
+
+@dataclass(frozen=True)
+class BenchMeta:
+    benchmark_name: str
+    benchmark_subname: str
 
 
 @dataclass(frozen=True)
@@ -216,7 +225,9 @@ class BenchChecker:
 
 
 class BenchRunner:
-    def __init__(self, accessor: BenchAccessor, checker: BenchChecker):
+    def __init__(self, accessor: BenchAccessor, checker: BenchChecker, meta: BenchMeta, db_name: str):
+        self.db_name = db_name
+        self.meta = meta
         self.accessor = accessor
         self.checker = checker
 
@@ -281,10 +292,16 @@ class BenchRunner:
             benchmarks_to_run = [self.accessor.get_local_id(schema) for schema in schemas]
 
         print("Benchmarks to run: " + " ".join(benchmarks_to_run))
-        for tag in benchmarks_to_run:
-            self.run_one_benchmark(local_id_to_schema[tag])
+        with database_manager(self.db_name) as cursor:
+            for tag in benchmarks_to_run:
+                self.run_one_benchmark(local_id_to_schema[tag], cursor)
 
-    def run_one_benchmark(self, schema: BenchSchema) -> None:
+    def run_one_benchmark(self, schema: BenchSchema, cursor: sqlite3.Cursor) -> None:
+        distributions = {
+                    dist: importlib.metadata.version(dist)
+                    for dist in schema.used_distributions
+                }
+
         bench_id = self.accessor.get_id(schema)
         sig = inspect.signature(
             load_by_object_ref(schema.entry_point)
@@ -310,10 +327,7 @@ class BenchRunner:
                 "base": schema.base,
                 "tags": schema.tags,
                 "kwargs": schema.kwargs,
-                "distributions": {
-                    dist: importlib.metadata.version(dist)
-                    for dist in schema.used_distributions
-                },
+                "distributions": distributions,
             }
             result_file.write_text(
                 json.dumps(
@@ -327,6 +341,16 @@ class BenchRunner:
             rel_stddev = bench.stdev() / bench.mean()
             print(f"Relative stdev is {rel_stddev:.1%} (max allowed is {check_params.stdev_rel_threshold:.1%})")
             print()
+            bench_data: BenchRecord = {
+                "base": schema.base, "kwargs": json.dumps(schema.kwargs),
+                "distributions": json.dumps(distributions), "is_actual": True,
+                "created_at": datetime.datetime.now(tz=datetime.timezone.utc), "tags": "".join(schema.tags),
+                "data": result_file.read_bytes(),
+                "local_id": self.accessor.get_local_id(schema), "global_id": self.accessor.get_id(schema),
+                "benchmark_subname": self.meta.benchmark_subname, "benchmark_name": self.meta.benchmark_name,
+            }
+            write_bench(bench_data, cursor)
+            cursor.connection.commit()
 
     def launch_benchmark(
         self,
@@ -449,7 +473,11 @@ class BenchmarkDirector:
         env_spec: EnvSpec,
         check_params: Callable[[EnvSpec], CheckParams],
         schemas: Iterable[BenchSchema] = (),
+        db_name: str,
+        meta: BenchMeta,
     ):
+        self.db_name = db_name
+        self.meta = meta
         self.data_dir = data_dir
         self.env_spec = env_spec
         self.plot_params = plot_params
@@ -530,7 +558,7 @@ class BenchmarkDirector:
         )
 
     def make_bench_runner(self, accessor: BenchAccessor, checker: BenchChecker) -> BenchRunner:
-        return BenchRunner(accessor, checker)
+        return BenchRunner(accessor, checker, self.meta, self.db_name)
 
     def make_bench_plotter(self, accessor: BenchAccessor) -> BenchPlotter:
         return BenchPlotter(self.plot_params, accessor)

@@ -1,6 +1,10 @@
+import contextlib
 import datetime
 import sqlite3
+from collections.abc import Iterator
 from typing import TypedDict
+
+DATABASE_FILE_NAME = "adaptix_bench.db"
 
 
 class BenchRecord(TypedDict):
@@ -38,5 +42,41 @@ def migrate_sqlite(database_name: str):
         cursor = con.cursor()
         cursor.execute(create_table_ddl_q)
         cursor.execute(unique_index_ddl_q)
+        con.commit()
         cursor.close()
 
+
+def write_bench(bench_data: BenchRecord, cursor: sqlite3.Cursor):
+    insert_q = """INSERT OR REPLACE INTO bench (
+    is_actual,
+    benchmark_name,
+    benchmark_subname,
+    base,
+    local_id,
+    global_id,
+    tags,
+    kwargs,
+    distributions,
+    data,
+    created_at
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?);"""
+    cursor.execute(insert_q, (
+        bench_data["is_actual"], bench_data["benchmark_name"],
+        bench_data["benchmark_subname"], bench_data["base"],
+        bench_data["local_id"], bench_data["global_id"],
+        bench_data["tags"], bench_data["kwargs"], bench_data["distributions"],
+        bench_data["data"], bench_data["created_at"],
+    ))
+
+@contextlib.contextmanager
+def database_manager(db_name: str) -> Iterator[sqlite3.Cursor]:
+    db = sqlite3.connect(db_name)
+    cursor = db.cursor()
+    try:
+        yield cursor
+    finally:
+        cursor.close()
+
+
+if __name__ == "__main__":
+    migrate_sqlite(DATABASE_FILE_NAME)
