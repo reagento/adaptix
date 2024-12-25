@@ -1,5 +1,21 @@
 import datetime
 import sqlite3
+from typing import TypedDict
+
+
+class BenchRecord(TypedDict):
+    is_actual: bool
+    benchmark_name: str
+    benchmark_subname: str
+    base: str
+    local_id: str
+    global_id: str
+    tags: str
+    kwargs: str
+    distributions: str
+    data: bytes
+    created_at: datetime.datetime
+
 
 
 def migrate_sqlite(database_name: str):
