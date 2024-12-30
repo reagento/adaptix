@@ -34,6 +34,8 @@ pydantic-core==2.27.1
     # via pydantic
 pyperf==2.6.1
     # via -r requirements/raw/bench.txt
+pysqlite3-binary==0.5.4
+    # via -r requirements/raw/bench.txt
 pytest==8.3.4
     # via -r requirements/raw/bench.txt
 schematics==2.1.1

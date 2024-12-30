@@ -1,8 +1,9 @@
 import contextlib
 import datetime
-import sqlite3
 from collections.abc import Iterator
 from typing import TypedDict
+
+import pysqlite3 as sqlite3
 
 DATABASE_FILE_NAME = "adaptix_bench.db"
 
