@@ -1,25 +1,13 @@
 import contextlib
-import datetime
-from collections.abc import Iterator
-from typing import TypedDict
+from typing import Iterator
 
 import pysqlite3 as sqlite3
+
+from benchmarks.pybench.common import BenchRecord, BenchWriter
 
 DATABASE_FILE_NAME = "adaptix_bench.db"
 
 
-class BenchRecord(TypedDict):
-    is_actual: bool
-    benchmark_name: str
-    benchmark_subname: str
-    base: str
-    local_id: str
-    global_id: str
-    tags: str
-    kwargs: str
-    distributions: str
-    data: bytes
-    created_at: datetime.datetime
 
 
 
@@ -46,9 +34,12 @@ def migrate_sqlite(database_name: str):
         con.commit()
         cursor.close()
 
+class SQLite3BenchWriter(BenchWriter):
+    def __init__(self, db_name: str):
+        self.db_name = db_name
 
-def write_bench(bench_data: BenchRecord, cursor: sqlite3.Cursor):
-    insert_q = """INSERT OR REPLACE INTO bench (
+    def write_bench_data(self, record: BenchRecord) -> None:
+        insert_q = """INSERT OR REPLACE INTO bench (
     is_actual,
     benchmark_name,
     benchmark_subname,
@@ -61,22 +52,19 @@ def write_bench(bench_data: BenchRecord, cursor: sqlite3.Cursor):
     data,
     created_at
     ) VALUES (?,?,?,?,?,?,?,?,?,?,?);"""
-    cursor.execute(insert_q, (
-        bench_data["is_actual"], bench_data["benchmark_name"],
-        bench_data["benchmark_subname"], bench_data["base"],
-        bench_data["local_id"], bench_data["global_id"],
-        bench_data["tags"], bench_data["kwargs"], bench_data["distributions"],
-        bench_data["data"], bench_data["created_at"],
-    ))
+        with sqlite3.connect(self.db_name) as conn:
+            conn.execute(insert_q, (
+                record["is_actual"], record["benchmark_name"],
+                record["benchmark_subname"], record["base"],
+                record["local_id"], record["global_id"],
+                record["tags"], record["kwargs"], record["distributions"],
+                record["data"], record["created_at"],
+            ))
+            conn.commit()
 
-@contextlib.contextmanager
-def database_manager(db_name: str) -> Iterator[sqlite3.Cursor]:
-    db = sqlite3.connect(db_name)
-    cursor = db.cursor()
-    try:
-        yield cursor
-    finally:
-        cursor.close()
+
+def sqlite3_writer() -> SQLite3BenchWriter:
+    return SQLite3BenchWriter(DATABASE_FILE_NAME)
 
 
 if __name__ == "__main__":

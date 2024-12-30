@@ -5,7 +5,6 @@ import importlib.metadata
 import inspect
 import json
 import os
-import sqlite3
 import subprocess
 import sys
 from argparse import ArgumentParser, Namespace
@@ -20,7 +19,8 @@ from typing import Any, Callable, Optional, TypeVar, Union
 import pyperf
 from pyperf._cli import format_checks
 
-from benchmarks.pybench.database import BenchRecord, database_manager, write_bench
+from benchmarks.pybench.common import BenchWriter
+from benchmarks.pybench.database import BenchRecord
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
 __all__ = (
@@ -225,8 +225,8 @@ class BenchChecker:
 
 
 class BenchRunner:
-    def __init__(self, accessor: BenchAccessor, checker: BenchChecker, meta: BenchMeta, db_name: str):
-        self.db_name = db_name
+    def __init__(self, accessor: BenchAccessor, checker: BenchChecker, meta: BenchMeta, writer: BenchWriter):
+        self.bench_writer = writer
         self.meta = meta
         self.accessor = accessor
         self.checker = checker
@@ -292,11 +292,10 @@ class BenchRunner:
             benchmarks_to_run = [self.accessor.get_local_id(schema) for schema in schemas]
 
         print("Benchmarks to run: " + " ".join(benchmarks_to_run))
-        with database_manager(self.db_name) as cursor:
-            for tag in benchmarks_to_run:
-                self.run_one_benchmark(local_id_to_schema[tag], cursor)
+        for tag in benchmarks_to_run:
+            self.run_one_benchmark(local_id_to_schema[tag])
 
-    def run_one_benchmark(self, schema: BenchSchema, cursor: sqlite3.Cursor) -> None:
+    def run_one_benchmark(self, schema: BenchSchema) -> None:
         distributions = {
                     dist: importlib.metadata.version(dist)
                     for dist in schema.used_distributions
@@ -349,8 +348,9 @@ class BenchRunner:
                 "local_id": self.accessor.get_local_id(schema), "global_id": self.accessor.get_id(schema),
                 "benchmark_subname": self.meta.benchmark_subname, "benchmark_name": self.meta.benchmark_name,
             }
-            write_bench(bench_data, cursor)
-            cursor.connection.commit()
+            self.bench_writer.write_bench_data(bench_data)
+
+
 
     def launch_benchmark(
         self,
@@ -473,10 +473,10 @@ class BenchmarkDirector:
         env_spec: EnvSpec,
         check_params: Callable[[EnvSpec], CheckParams],
         schemas: Iterable[BenchSchema] = (),
-        db_name: str,
+        bench_writer: BenchWriter,
         meta: BenchMeta,
     ):
-        self.db_name = db_name
+        self.bench_writer = bench_writer
         self.meta = meta
         self.data_dir = data_dir
         self.env_spec = env_spec
@@ -558,7 +558,7 @@ class BenchmarkDirector:
         )
 
     def make_bench_runner(self, accessor: BenchAccessor, checker: BenchChecker) -> BenchRunner:
-        return BenchRunner(accessor, checker, self.meta, self.db_name)
+        return BenchRunner(accessor, checker, self.meta, self.bench_writer)
 
     def make_bench_plotter(self, accessor: BenchAccessor) -> BenchPlotter:
         return BenchPlotter(self.plot_params, accessor)

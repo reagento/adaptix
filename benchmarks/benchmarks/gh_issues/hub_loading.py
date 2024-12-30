@@ -11,7 +11,7 @@ from benchmarks.gh_issues import (
     bench_pydantic,
     bench_schematics,
 )
-from benchmarks.pybench.database import DATABASE_FILE_NAME
+from benchmarks.pybench.database import DATABASE_FILE_NAME, sqlite3_writer
 from benchmarks.pybench.director_api import BenchmarkDirector, BenchMeta, BenchSchema, CheckParams, PlotParams
 
 director = BenchmarkDirector(
@@ -30,7 +30,7 @@ director = BenchmarkDirector(
         stdev_rel_threshold=0.07 if env_spec["py_impl"] == "pypy" else 0.04,
     ),
     meta=BenchMeta(benchmark_name="gh_issues", benchmark_subname="loading"),
-    db_name=DATABASE_FILE_NAME,
+    bench_writer=sqlite3_writer(),
 )
 
 director.add(

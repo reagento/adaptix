@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 from adaptix import DebugTrail
-from benchmarks.pybench.database import DATABASE_FILE_NAME
+from benchmarks.pybench.database import DATABASE_FILE_NAME, sqlite3_writer
 from benchmarks.pybench.director_api import BenchmarkDirector, BenchMeta, BenchSchema, CheckParams, PlotParams
 from benchmarks.simple_structures import (
     bench_adaptix,
@@ -33,7 +33,7 @@ director = BenchmarkDirector(
         stdev_rel_threshold=0.07 if env_spec["py_impl"] == "pypy" else 0.04,
     ),
     meta=BenchMeta(benchmark_name="simple_structures", benchmark_subname="dumping"),
-db_name=DATABASE_FILE_NAME,
+bench_writer=sqlite3_writer(),
 )
 
 director.add(
