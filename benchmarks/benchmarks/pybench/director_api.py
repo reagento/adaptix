@@ -19,8 +19,8 @@ from typing import Any, Callable, Optional, TypeVar, Union
 import pyperf
 from pyperf._cli import format_checks
 
-from benchmarks.pybench.common import BenchWriter
-from benchmarks.pybench.database import BenchRecord
+from benchmarks.pybench.persistence.common import BenchWriter
+from benchmarks.pybench.persistence.database import BenchRecord
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
 __all__ = (
@@ -79,12 +79,17 @@ class BenchAccessor:
         env_spec: EnvSpec,
         check_params: Callable[[EnvSpec], CheckParams],
         schemas: Sequence[BenchSchema],
+        meta: BenchMeta,
     ):
+        self.meta = meta
         self.data_dir = data_dir
         self.env_spec = env_spec
         self.all_schemas = schemas
         self.id_to_schema: dict[str, BenchSchema] = {self.get_id(schema): schema for schema in schemas}
         self._base_check_params = check_params
+
+    def get_name_and_subname(self) -> tuple[str, str]:
+        return self.meta.benchmark_name, self.meta.benchmark_subname
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("--data-dir", action="store", required=False, type=Path)
@@ -473,10 +478,10 @@ class BenchmarkDirector:
         env_spec: EnvSpec,
         check_params: Callable[[EnvSpec], CheckParams],
         schemas: Iterable[BenchSchema] = (),
-        bench_writer: BenchWriter,
         meta: BenchMeta,
+        writer_class: type[BenchWriter],
     ):
-        self.bench_writer = bench_writer
+        self.writer_class = writer_class
         self.meta = meta
         self.data_dir = data_dir
         self.env_spec = env_spec
@@ -549,16 +554,20 @@ class BenchmarkDirector:
 
         return parser
 
+    def make_writer(self) -> BenchWriter:
+        return self.writer_class(self.make_accessor())
+
     def make_accessor(self) -> BenchAccessor:
         return BenchAccessor(
             data_dir=self.data_dir,
             env_spec=self.env_spec,
             check_params=self.check_params,
             schemas=self.schemas,
+            meta=self.meta,
         )
 
     def make_bench_runner(self, accessor: BenchAccessor, checker: BenchChecker) -> BenchRunner:
-        return BenchRunner(accessor, checker, self.meta, self.bench_writer)
+        return BenchRunner(accessor, checker, self.meta, self.make_writer())
 
     def make_bench_plotter(self, accessor: BenchAccessor) -> BenchPlotter:
         return BenchPlotter(self.plot_params, accessor)

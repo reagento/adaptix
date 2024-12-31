@@ -12,8 +12,8 @@ from benchmarks.gh_issues import (
     bench_pydantic,
     bench_schematics,
 )
-from benchmarks.pybench.database import DATABASE_FILE_NAME, SQLite3BenchWriter, sqlite3_writer
 from benchmarks.pybench.director_api import BenchmarkDirector, BenchMeta, BenchSchema, CheckParams, PlotParams
+from benchmarks.pybench.persistence.database import SQLite3BenchOperator
 
 director = BenchmarkDirector(
     data_dir=Path(__file__).parent.parent.parent / "data" / "gh_issues" / "dumping",
@@ -31,7 +31,7 @@ director = BenchmarkDirector(
         stdev_rel_threshold=0.07 if env_spec["py_impl"] == "pypy" else 0.04,
     ),
     meta=BenchMeta(benchmark_name="gh_issues", benchmark_subname="dumping"),
-    bench_writer=sqlite3_writer(),
+    writer_class=SQLite3BenchOperator,
 )
 
 director.add(
