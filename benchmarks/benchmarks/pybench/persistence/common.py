@@ -1,10 +1,19 @@
 import abc
 import datetime
 from pathlib import Path
-from typing import Protocol, TypedDict
+from typing import Any, Iterable, Mapping, Protocol, Sequence, TypedDict
 
+from mypy.memprofile import defaultdict
+
+
+class BenchSchemaProto(Protocol):
+    tags: Sequence[str]
+    base: str
 
 class BenchAccessProto(Protocol):
+
+    schemas: Sequence[BenchSchemaProto]
+
     @abc.abstractmethod
     def get_name_and_subname(self) -> tuple[str, str]:
         raise NotImplementedError
@@ -39,16 +48,43 @@ class BenchRecord(TypedDict):
 class BenchWriter(Protocol):
 
     @abc.abstractmethod
-    def __init__(self, accessor: BenchAccessProto):
+    def write_bench_data(self, record: BenchRecord) -> None:
         return
 
     @abc.abstractmethod
-    def write_bench_data(self, record: BenchRecord) -> None:
+    def write_release(self, hub_to_director_to_env: Mapping[..., Mapping]) -> None:
         return
 
 
 class BenchReader(Protocol):
 
     @abc.abstractmethod
-    def read_bench_data(self, bench_id: str) -> bytes:
+    def read_schemas_content(self) -> Sequence[str]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def release_to_measures(self, hub_key: str) -> Mapping[..., Sequence[...]]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_distributions(self, benchmark_hub: Iterable) -> dict[str, str]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def load_benchmarks(self) -> Sequence:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def fill_validation(self, dist_to_versions: defaultdict[..., set]):
+        return
+
+
+class BenchOperator(BenchReader, BenchWriter, Protocol):
+
+    @abc.abstractmethod
+    def __init__(self, accessor: BenchAccessProto | None):
+        return
+
+    @abc.abstractmethod
+    def get_index(self, mapped_data: Mapping) -> dict[str, Any]:
         raise NotImplementedError

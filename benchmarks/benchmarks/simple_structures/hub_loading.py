@@ -32,7 +32,7 @@ director = BenchmarkDirector(
         stdev_rel_threshold=0.07 if env_spec["py_impl"] == "pypy" else 0.04,
     ),
     meta=BenchMeta(benchmark_subname="loading", benchmark_name="simple_structures"),
-    writer_class=SQLite3BenchOperator,
+    operator_class=SQLite3BenchOperator,
 )
 
 director.add(

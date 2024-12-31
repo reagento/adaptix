@@ -1,11 +1,8 @@
-import json
-from zipfile import ZipFile
-
 import plotly
 from docutils import nodes
 from sphinx.util.docutils import SphinxDirective
 
-from benchmarks.bench_nexus import BENCHMARK_HUBS, KEY_TO_HUB, RELEASE_DATA, Renderer, pyperf_bench_to_measure
+from benchmarks.bench_nexus import BENCHMARK_HUBS, KEY_TO_HUB, OperatorClass, Renderer
 
 from .macros import SphinxMacroDirective, directive
 from .utils import file_ascii_hash
@@ -44,16 +41,8 @@ class CustomBenchUsedDistributions(SphinxMacroDirective):
     required_arguments = 0
 
     def generate_string(self) -> str:
-        distributions: dict[str, str] = {}
-
-        for hub_description in BENCHMARK_HUBS:
-            with ZipFile(RELEASE_DATA / f"{hub_description.key}.zip") as release_zip:
-                index = json.loads(release_zip.read("index.json"))
-                for file_list in index["env_files"].values():
-                    for file in file_list:
-                        distributions.update(
-                            pyperf_bench_to_measure(release_zip.read(file)).distributions,
-                        )
+        operator = OperatorClass(None)
+        distributions: dict[str, str] = operator.get_distributions(BENCHMARK_HUBS)
 
         return directive(
             """
