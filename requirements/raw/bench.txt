@@ -4,7 +4,6 @@ pytest==8.3.4
 
 pyperf==2.6.1
 psutil==5.9.5
-pysqlite3-binary==0.5.4
 
 mashumaro==3.10
 pydantic==2.10.3
