@@ -8,21 +8,20 @@ from argparse import ArgumentParser, Namespace
 from collections import defaultdict
 from concurrent.futures import Executor, ThreadPoolExecutor
 from dataclasses import dataclass
+from itertools import chain
 from pathlib import Path
 from textwrap import dedent
 from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar
+from zipfile import ZIP_BZIP2, ZipFile
 
 import plotly
 import plotly.graph_objects as go
 
 from adaptix._internal.utils import pairs
-from benchmarks.nexus_utils import BENCHMARK_ENVS, BenchmarkMeasure, EnvDescription, pyperf_bench_to_measure
+from benchmarks.nexus_utils import BENCHMARK_ENVS, KEY_TO_ENV, BenchmarkMeasure, EnvDescription, pyperf_bench_to_measure
 from benchmarks.pybench.director_api import BenchAccessor, BenchChecker, BenchmarkDirector
-from benchmarks.pybench.persistence.database import SQLite3BenchOperator
 
 T = TypeVar("T")
-
-OperatorClass = SQLite3BenchOperator
 
 
 def call_by_namespace(func: Callable[..., T], namespace: Namespace) -> T:
@@ -527,8 +526,22 @@ class Renderer(HubProcessor):
         self,
         hub_description: HubDescription,
     ) -> Mapping[EnvDescription, Sequence[BenchmarkMeasure]]:
-        operator = OperatorClass(None)
-        return operator.release_to_measures(hub_description.key)
+        with ZipFile(RELEASE_DATA / f"{hub_description.key}.zip") as release_zip:
+            index = json.loads(release_zip.read("index.json"))
+            env_to_files = {
+                KEY_TO_ENV[env_key]: files
+                for env_key, files in index["env_files"].items()
+            }
+            return {
+                env: sorted(
+                    (
+                        pyperf_bench_to_measure(release_zip.read(file))
+                        for file in files
+                    ),
+                    key=lambda x: x.pyperf.mean(),
+                )
+                for env, files in env_to_files.items()
+            }
 
     def render_hub_from_workbench(
         self,
@@ -767,8 +780,9 @@ class HubValidator(HubProcessor):
         for _hub_description, env_to_director in hub_to_director_to_env.items():
             for director in env_to_director.values():
                 operator = director.make_operator()
-                operator.fill_validation(dist_to_versions)
-
+                for bench_report in operator.read_schemas_content():
+                    for dist, version in json.loads(bench_report)["pybench_data"]["distributions"].items():
+                        dist_to_versions[dist].add(version)
         return [
             f"Benchmarks using distribution {dist!r} were taken with different versions {versions!r}"
             for dist, versions in dist_to_versions.items()
@@ -782,10 +796,45 @@ class Releaser(HubProcessor):
         validator.validate(self.filtered_hubs())
         self._release()
 
+    def _get_index_data(self, env_to_files: Mapping[EnvDescription, Iterable[Path]]) -> Dict[str, Any]:
+        return {
+            "env_files": {
+                env_description.key: [
+                    file.name for file in files
+                ]
+                for env_description, files in env_to_files.items()
+            },
+        }
+
     def _release(self):
         hub_to_director_to_env = self.load_directors(self.filtered_hubs())
-        operator = OperatorClass(None)
-        operator.write_release(hub_to_director_to_env)
+        for hub_description, env_to_director in hub_to_director_to_env.items():
+            env_with_accessor = [
+                (env_description, director.make_accessor())
+                for env_description, director in env_to_director.items()
+            ]
+            env_to_files = {
+                env_description: [
+                    accessor.bench_result_file(accessor.get_id(schema))
+                    for schema in accessor.schemas
+                ]
+                for env_description, accessor in env_with_accessor
+            }
+            with ZipFile(
+                file=RELEASE_DATA / f"{hub_description.key}.zip",
+                mode="w",
+                compression=ZIP_BZIP2,
+                compresslevel=9,
+            ) as release_zip:
+                for file_path in chain.from_iterable(env_to_files.values()):
+                    release_zip.write(file_path, arcname=file_path.name)
+
+                release_zip.writestr(
+                    "index.json",
+                    json.dumps(
+                        self._get_index_data(env_to_files),
+                    ),
+                )
 
 
 class ListGetter(Foundation):

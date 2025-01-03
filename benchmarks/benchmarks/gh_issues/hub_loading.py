@@ -11,8 +11,9 @@ from benchmarks.gh_issues import (
     bench_pydantic,
     bench_schematics,
 )
-from benchmarks.pybench.director_api import BenchmarkDirector, BenchMeta, BenchSchema, CheckParams, PlotParams
-from benchmarks.pybench.persistence.database import SQLite3BenchOperator
+from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams, PlotParams
+from benchmarks.pybench.persistence.common import BenchMeta
+from benchmarks.pybench.persistence.database import SQLite3BenchOperator, sqlite_operator_factory
 
 director = BenchmarkDirector(
     data_dir=Path(__file__).parent.parent.parent / "data" / "gh_issues" / "loading",
@@ -30,7 +31,7 @@ director = BenchmarkDirector(
         stdev_rel_threshold=0.07 if env_spec["py_impl"] == "pypy" else 0.04,
     ),
     meta=BenchMeta(benchmark_name="gh_issues", benchmark_subname="loading"),
-    operator_class=SQLite3BenchOperator,
+    operator_factory=sqlite_operator_factory,
 )
 
 director.add(

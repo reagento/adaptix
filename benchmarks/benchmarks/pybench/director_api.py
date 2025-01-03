@@ -19,7 +19,7 @@ from typing import Any, Callable, Optional, TypeVar, Union
 import pyperf
 from pyperf._cli import format_checks
 
-from benchmarks.pybench.persistence.common import BenchOperator, BenchWriter
+from benchmarks.pybench.persistence.common import BenchAccessProto, BenchMeta, BenchOperator, BenchWriter
 from benchmarks.pybench.persistence.database import BenchRecord
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
@@ -39,12 +39,6 @@ EnvSpec = Mapping[str, str]
 class CheckParams:
     stdev_rel_threshold: Optional[float] = None
     ignore_pyperf_warnings: Optional[bool] = None
-
-
-@dataclass(frozen=True)
-class BenchMeta:
-    benchmark_name: str
-    benchmark_subname: str
 
 
 @dataclass(frozen=True)
@@ -72,7 +66,7 @@ BUILTIN_CHECK_PARAMS = CheckParams(
 )
 
 
-class BenchAccessor:
+class BenchAccessor(BenchAccessProto):
     def __init__(
         self,
         data_dir: Path,
@@ -302,10 +296,9 @@ class BenchRunner:
 
     def run_one_benchmark(self, schema: BenchSchema) -> None:
         distributions = {
-                    dist: importlib.metadata.version(dist)
-                    for dist in schema.used_distributions
-                }
-
+            dist: importlib.metadata.version(dist)
+            for dist in schema.used_distributions
+        }
         bench_id = self.accessor.get_id(schema)
         sig = inspect.signature(
             load_by_object_ref(schema.entry_point)
@@ -346,16 +339,19 @@ class BenchRunner:
             print(f"Relative stdev is {rel_stddev:.1%} (max allowed is {check_params.stdev_rel_threshold:.1%})")
             print()
             bench_data: BenchRecord = {
-                "base": schema.base, "kwargs": json.dumps(schema.kwargs),
-                "distributions": json.dumps(distributions), "is_actual": True,
-                "created_at": datetime.datetime.now(tz=datetime.timezone.utc), "tags": json.dumps(schema.tags),
+                "base": schema.base,
+                "kwargs": json.dumps(schema.kwargs),
+                "distributions": json.dumps(distributions),
+                "is_actual": True,
+                "created_at": datetime.datetime.now(tz=datetime.timezone.utc),
+                "tags": json.dumps(schema.tags),
                 "data": temp_result.read_bytes(),
-                "local_id": self.accessor.get_local_id(schema), "global_id": self.accessor.get_id(schema),
-                "benchmark_subname": self.meta.benchmark_subname, "benchmark_name": self.meta.benchmark_name,
+                "local_id": self.accessor.get_local_id(schema),
+                "global_id": self.accessor.get_id(schema),
+                "benchmark_subname": self.meta.benchmark_subname,
+                "benchmark_name": self.meta.benchmark_name,
             }
             self.bench_writer.write_bench_data(bench_data)
-
-
 
     def launch_benchmark(
         self,
@@ -401,10 +397,11 @@ class BenchPlotter:
     def draw_plot(self, output: Optional[Path], dpi: float):
         if output is None:
             output = self.accessor.data_dir / f"plot{self.accessor.env_spec_str()}.png"
+        benchs_data = self.operator.read_schemas_content()
         self._render_plot(
             output=output,
             dpi=dpi,
-            benchmarks=self.operator.load_benchmarks(),
+            benchmarks=[pyperf.Benchmark.loads(data) for data in benchs_data],
         )
 
     def _render_plot(self, output: Path, dpi: float, benchmarks: Iterable[pyperf.Benchmark]) -> None:
@@ -479,9 +476,9 @@ class BenchmarkDirector:
         check_params: Callable[[EnvSpec], CheckParams],
         schemas: Iterable[BenchSchema] = (),
         meta: BenchMeta,
-        operator_class: type[BenchOperator],
+        operator_factory: Callable[[BenchAccessor], BenchOperator],
     ):
-        self.operator_class = operator_class
+        self.operator_factory = operator_factory
         self.meta = meta
         self.data_dir = data_dir
         self.env_spec = env_spec
@@ -555,7 +552,7 @@ class BenchmarkDirector:
         return parser
 
     def make_operator(self) -> BenchOperator:
-        return self.operator_class(self.make_accessor())
+        return self.operator_factory(self.make_accessor())
 
     def make_accessor(self) -> BenchAccessor:
         return BenchAccessor(
