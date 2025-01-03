@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
 from textwrap import dedent
-from typing import Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar
+from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar
 from zipfile import ZIP_BZIP2, ZipFile
 
 import plotly
@@ -820,14 +820,19 @@ class Releaser(HubProcessor):
                 ]
                 for env_description, accessor in env_with_accessor
             }
+            env_to_operator =  {
+                env_description: director.make_operator()
+                for env_description, director in env_to_director.items()
+            }
+
             with ZipFile(
                 file=RELEASE_DATA / f"{hub_description.key}.zip",
                 mode="w",
                 compression=ZIP_BZIP2,
                 compresslevel=9,
             ) as release_zip:
-                for file_path in chain.from_iterable(env_to_files.values()):
-                    release_zip.write(file_path, arcname=file_path.name)
+                for env in env_to_files:
+                    env_to_operator[env].write_release_files(release_zip, env_to_files[env])
 
                 release_zip.writestr(
                     "index.json",

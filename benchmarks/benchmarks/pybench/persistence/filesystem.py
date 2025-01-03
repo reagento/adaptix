@@ -1,3 +1,7 @@
+from itertools import chain
+from pathlib import Path
+from zipfile import ZipFile
+
 from benchmarks.pybench.persistence.common import BenchAccessProto, BenchOperator, BenchRecord
 
 
@@ -18,6 +22,14 @@ class FileSystemBenchOperator(BenchOperator):
                 path.read_text(),
             )
         return content_container
+
+    def write_release_files(
+        self,
+        release_zip: ZipFile,
+        files: list[Path],
+    ) -> None:
+        for file_path in files:
+            release_zip.write(file_path, arcname=file_path.name)
 
 
 def filesystem_operator_factory(accessor: BenchAccessProto | None = None) -> FileSystemBenchOperator:

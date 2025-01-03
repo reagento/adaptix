@@ -1,6 +1,7 @@
+from pathlib import Path
+from sqlite3 import Connection, connect
 from typing import Sequence
-
-from pysqlite3 import Connection, connect
+from zipfile import ZipFile
 
 from benchmarks.pybench.persistence.common import BenchAccessProto, BenchOperator, BenchRecord
 
@@ -106,6 +107,21 @@ class SQLite3BenchOperator(BenchOperator):
                 record["created_at"],
             ))
             conn.commit()
+
+    def write_release_files(
+        self,
+        release_zip: ZipFile,
+        files: list[Path],
+    ) -> None:
+        connection = connect(self.db_name)
+        data = []
+        for schema in self.accessor.schemas:
+            data.append(self._bench_data(connection, self.accessor.get_id(schema),
+                                 self.accessor.meta.benchmark_name,
+                                 self.accessor.meta.benchmark_subname))
+        connection.close()
+        for file_path, data in zip(files, data):
+            release_zip.writestr(file_path.name, data)
 
 
 def sqlite_operator_factory(accessor: BenchAccessProto | None = None) -> SQLite3BenchOperator:

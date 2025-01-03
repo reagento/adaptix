@@ -3,6 +3,7 @@ import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, Sequence, TypedDict
+from zipfile import ZipFile
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,14 @@ class BenchWriter(Protocol):
 
     @abc.abstractmethod
     def write_bench_data(self, record: BenchRecord) -> None:
+        return
+
+    @abc.abstractmethod
+    def write_release_files(
+        self,
+        release_zip: ZipFile,
+        files: list[Path],
+    ) -> None:
         return
 
 
