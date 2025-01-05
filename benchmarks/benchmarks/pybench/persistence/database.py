@@ -53,7 +53,7 @@ class SQLite3BenchOperator(BenchOperator):
         AND benchmark_subname = ?
         AND global_id = ?;
     """
-    INSERT_BENCH_DATA_Q = insert_q = """
+    INSERT_BENCH_DATA_Q = """
     INSERT OR REPLACE INTO bench (
     is_actual,
     benchmark_name,
@@ -93,6 +93,7 @@ class SQLite3BenchOperator(BenchOperator):
                                  self.accessor.get_id(schema),
                              ))
         data = result.fetchone()
+        con.close()
         if not data:
             return None
         return data[0]

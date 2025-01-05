@@ -331,15 +331,12 @@ class BenchRunner:
                 "kwargs": schema.kwargs,
                 "distributions": distributions,
             }
-            temp_result = Path(dir_name) / f"{bench_id}-result.json"
-            temp_result.write_text(
-                json.dumps(
+            bench_data_text = json.dumps(
                     result_data,
                     ensure_ascii=False,
                     check_circular=False,
-                ),
             )
-            bench = pyperf.Benchmark.load(str(temp_result))
+            bench = pyperf.Benchmark.loads(bench_data_text)
             check_params = self.accessor.resolve_check_params(schema)
             rel_stddev = bench.stdev() / bench.mean()
             print(f"Relative stdev is {rel_stddev:.1%} (max allowed is {check_params.stdev_rel_threshold:.1%})")
@@ -351,7 +348,7 @@ class BenchRunner:
                 "is_actual": True,
                 "created_at": datetime.datetime.now(tz=datetime.timezone.utc),
                 "tags": json.dumps(schema.tags),
-                "data": temp_result.read_bytes(),
+                "data": bench_data_text,
                 "local_id": self.accessor.get_local_id(schema),
                 "global_id": self.accessor.get_id(schema),
                 "benchmark_subname": self.meta.benchmark_subname,
