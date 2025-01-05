@@ -518,7 +518,7 @@ class Renderer(HubProcessor):
 
     def _director_to_measures(self, director: BenchmarkDirector) -> Sequence[BenchmarkMeasure]:
         operator = director.make_operator()
-        measures = [pyperf_bench_to_measure(d) for d in operator.read_schemas_content()]
+        measures = [pyperf_bench_to_measure(d) for d in operator.read_benchmarks_results()]
         measures.sort(key=lambda x: x.pyperf.mean())
         return measures
 
@@ -780,7 +780,7 @@ class HubValidator(HubProcessor):
         for _hub_description, env_to_director in hub_to_director_to_env.items():
             for director in env_to_director.values():
                 operator = director.make_operator()
-                for bench_report in operator.read_schemas_content():
+                for bench_report in operator.read_benchmarks_results():
                     for dist, version in json.loads(bench_report)["pybench_data"]["distributions"].items():
                         dist_to_versions[dist].add(version)
         return [

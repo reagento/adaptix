@@ -7,14 +7,14 @@ from benchmarks.pybench.persistence.common import BenchAccessProto, BenchOperato
 
 class FileSystemBenchOperator(BenchOperator):
 
-    def __init__(self, accessor: BenchAccessProto | None):
+    def __init__(self, accessor: BenchAccessProto):
         self.accessor = accessor
 
     def write_bench_data(self, record: BenchRecord) -> None:
         result_file = self.accessor.bench_result_file(record["global_id"])
         result_file.write_bytes(record["data"])
 
-    def read_schemas_content(self):
+    def read_benchmarks_results(self):
         content_container = []
         for schema in self.accessor.schemas:
             path = self.accessor.bench_result_file(self.accessor.get_id(schema))
@@ -32,5 +32,5 @@ class FileSystemBenchOperator(BenchOperator):
             release_zip.write(file_path, arcname=file_path.name)
 
 
-def filesystem_operator_factory(accessor: BenchAccessProto | None = None) -> FileSystemBenchOperator:
+def filesystem_operator_factory(accessor: BenchAccessProto) -> FileSystemBenchOperator:
     return FileSystemBenchOperator(accessor)

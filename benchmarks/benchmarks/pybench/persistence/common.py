@@ -62,7 +62,7 @@ class BenchWriter(Protocol):
 class BenchReader(Protocol):
 
     @abc.abstractmethod
-    def read_schemas_content(self) -> Sequence[str]:
+    def read_benchmarks_results(self) -> Sequence[str]:
         raise NotImplementedError
 
 

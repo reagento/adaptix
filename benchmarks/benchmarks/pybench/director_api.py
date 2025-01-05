@@ -397,7 +397,7 @@ class BenchPlotter:
     def draw_plot(self, output: Optional[Path], dpi: float):
         if output is None:
             output = self.accessor.data_dir / f"plot{self.accessor.env_spec_str()}.png"
-        benchs_data = self.operator.read_schemas_content()
+        benchs_data = self.operator.read_benchmarks_results()
         self._render_plot(
             output=output,
             dpi=dpi,
