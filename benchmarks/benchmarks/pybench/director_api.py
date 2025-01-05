@@ -20,7 +20,8 @@ import pyperf
 from pyperf._cli import format_checks
 
 from benchmarks.pybench.persistence.common import BenchAccessProto, BenchMeta, BenchOperator, BenchWriter
-from benchmarks.pybench.persistence.database import BenchRecord
+from benchmarks.pybench.persistence.database import BenchRecord, SQLite3BenchOperator, sqlite_operator_factory
+from benchmarks.pybench.persistence.filesystem import filesystem_operator_factory
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
 __all__ = (
@@ -33,6 +34,12 @@ __all__ = (
 )
 
 EnvSpec = Mapping[str, str]
+
+
+def operator_factory(accessor: BenchAccessProto, sqlite: bool) -> BenchOperator:
+    if sqlite:
+        return sqlite_operator_factory(accessor)
+    return filesystem_operator_factory(accessor)
 
 
 @dataclass(frozen=True)
@@ -224,8 +231,7 @@ class BenchChecker:
 
 
 class BenchRunner:
-    def __init__(self, accessor: BenchAccessor, checker: BenchChecker, meta: BenchMeta, writer: BenchWriter):
-        self.bench_writer = writer
+    def __init__(self, accessor: BenchAccessor, checker: BenchChecker, meta: BenchMeta):
         self.meta = meta
         self.accessor = accessor
         self.checker = checker
@@ -244,6 +250,7 @@ class BenchRunner:
             "--unstable", action="store_true", required=False, default=False,
             help="run only unstable or missing benchmarks",
         )
+        parser.add_argument("--sqlite", action="store_true", required=False, default=False)
 
     def run_benchmarks(
         self,
@@ -252,7 +259,9 @@ class BenchRunner:
         exclude: Optional[Sequence[str]] = None,
         missing: bool = False,
         unstable: bool = False,
+        sqlite: bool = False,
     ) -> None:
+        operator = operator_factory(self.accessor, sqlite)
         schemas: Sequence[BenchSchema]
         if missing:
             schemas = [
@@ -292,9 +301,9 @@ class BenchRunner:
 
         print("Benchmarks to run: " + " ".join(benchmarks_to_run))
         for tag in benchmarks_to_run:
-            self.run_one_benchmark(local_id_to_schema[tag])
+            self.run_one_benchmark(local_id_to_schema[tag], operator)
 
-    def run_one_benchmark(self, schema: BenchSchema) -> None:
+    def run_one_benchmark(self, schema: BenchSchema, operator: BenchWriter) -> None:
         distributions = {
             dist: importlib.metadata.version(dist)
             for dist in schema.used_distributions
@@ -351,7 +360,7 @@ class BenchRunner:
                 "benchmark_subname": self.meta.benchmark_subname,
                 "benchmark_name": self.meta.benchmark_name,
             }
-            self.bench_writer.write_bench_data(bench_data)
+            operator.write_bench_data(bench_data)
 
     def launch_benchmark(
         self,
@@ -377,31 +386,24 @@ class BenchRunner:
 
 
 class BenchPlotter:
-    def __init__(self, params: PlotParams, accessor: BenchAccessor, operator: BenchOperator):
+    def __init__(self, params: PlotParams, accessor: BenchAccessor):
         self.params = params
         self.accessor = accessor
-        self.operator = operator
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("--output", "-o", action="store", required=False, type=Path)
         parser.add_argument("--dpi", action="store", required=False, type=float, default=100)
 
-    def _load_benchmarks(self) -> Iterable[pyperf.Benchmark]:
-        return [
-            pyperf.Benchmark.load(
-                str(self.accessor.bench_result_file(self.accessor.get_id(schema))),
-            )
-            for schema in self.accessor.schemas
-        ]
 
-    def draw_plot(self, output: Optional[Path], dpi: float):
+    def draw_plot(self, output: Optional[Path], dpi: float, sqlite: bool = False):
+        operator = operator_factory(self.accessor, sqlite)
         if output is None:
             output = self.accessor.data_dir / f"plot{self.accessor.env_spec_str()}.png"
-        benchs_data = self.operator.read_benchmarks_results()
+        benches_data = operator.read_benchmarks_results()
         self._render_plot(
             output=output,
             dpi=dpi,
-            benchmarks=[pyperf.Benchmark.loads(data) for data in benchs_data],
+            benchmarks=[pyperf.Benchmark.loads(data) for data in benches_data],
         )
 
     def _render_plot(self, output: Path, dpi: float, benchmarks: Iterable[pyperf.Benchmark]) -> None:
@@ -476,9 +478,7 @@ class BenchmarkDirector:
         check_params: Callable[[EnvSpec], CheckParams],
         schemas: Iterable[BenchSchema] = (),
         meta: BenchMeta,
-        operator_factory: Callable[[BenchAccessor], BenchOperator],
     ):
-        self.operator_factory = operator_factory
         self.meta = meta
         self.data_dir = data_dir
         self.env_spec = env_spec
@@ -525,6 +525,7 @@ class BenchmarkDirector:
         checker: BenchChecker,
     ) -> ArgumentParser:
         parser = ArgumentParser()
+        parser.add_argument("--sqlite", action="store_true", default=False, required=False)
 
         subparsers = parser.add_subparsers(required=True)
 
@@ -551,9 +552,6 @@ class BenchmarkDirector:
 
         return parser
 
-    def make_operator(self) -> BenchOperator:
-        return self.operator_factory(self.make_accessor())
-
     def make_accessor(self) -> BenchAccessor:
         return BenchAccessor(
             data_dir=self.data_dir,
@@ -564,10 +562,10 @@ class BenchmarkDirector:
         )
 
     def make_bench_runner(self, accessor: BenchAccessor, checker: BenchChecker) -> BenchRunner:
-        return BenchRunner(accessor, checker, self.meta, self.make_operator())
+        return BenchRunner(accessor, checker, self.meta)
 
     def make_bench_plotter(self, accessor: BenchAccessor) -> BenchPlotter:
-        return BenchPlotter(self.plot_params, accessor, self.make_operator())
+        return BenchPlotter(self.plot_params, accessor)
 
     def make_bench_checker(self, accessor: BenchAccessor) -> BenchChecker:
         return BenchChecker(accessor)
