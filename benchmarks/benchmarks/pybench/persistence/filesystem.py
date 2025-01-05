@@ -1,5 +1,6 @@
 from itertools import chain
 from pathlib import Path
+from typing import Any
 from zipfile import ZipFile
 
 from benchmarks.pybench.persistence.common import BenchAccessProto, BenchOperator, BenchRecord
@@ -22,6 +23,12 @@ class FileSystemBenchOperator(BenchOperator):
                 path.read_text(),
             )
         return content_container
+
+    def bench_data(self, schema: Any) -> str | None:
+        try:
+            return self.accessor.bench_result_file(self.accessor.get_id(schema)).read_text()
+        except FileNotFoundError:
+            return None
 
     def write_release_files(
         self,

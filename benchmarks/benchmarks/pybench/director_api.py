@@ -19,7 +19,7 @@ from typing import Any, Callable, Optional, TypeVar, Union
 import pyperf
 from pyperf._cli import format_checks
 
-from benchmarks.pybench.persistence.common import BenchAccessProto, BenchMeta, BenchOperator, BenchWriter
+from benchmarks.pybench.persistence.common import BenchAccessProto, BenchMeta, BenchOperator, BenchReader, BenchWriter
 from benchmarks.pybench.persistence.database import BenchRecord, SQLite3BenchOperator, sqlite_operator_factory
 from benchmarks.pybench.persistence.filesystem import filesystem_operator_factory
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
@@ -88,9 +88,6 @@ class BenchAccessor(BenchAccessProto):
         self.all_schemas = schemas
         self.id_to_schema: dict[str, BenchSchema] = {self.get_id(schema): schema for schema in schemas}
         self._base_check_params = check_params
-
-    def get_name_and_subname(self) -> tuple[str, str]:
-        return self.meta.benchmark_name, self.meta.benchmark_subname
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument("--data-dir", action="store", required=False, type=Path)
@@ -187,12 +184,11 @@ class BenchChecker:
             if not line.startswith("Use")
         ]
 
-    def get_warnings(self, schema: BenchSchema) -> Optional[Sequence[str]]:
-        result_file_path = self.accessor.bench_result_file(self.accessor.get_id(schema))
-        if not result_file_path.exists():
+    def get_warnings(self, schema: BenchSchema, operator: BenchReader) -> Optional[Sequence[str]]:
+        data = operator.bench_data(schema)
+        if data is None:
             return None
-
-        bench = pyperf.Benchmark.load(str(result_file_path))
+        bench = pyperf.Benchmark.loads(data)
         check_params = self.accessor.resolve_check_params(schema)
         warnings = self._process_pyperf_warnings(schema, bench, check_params, format_checks(bench))
         self_warnings = self._check_yourself(schema, bench, check_params)
@@ -210,11 +206,12 @@ class BenchChecker:
             )
         return lines
 
-    def check_results(self, *, local_id_list: bool = False):
+    def check_results(self, *, local_id_list: bool = False, sqlite: bool = False):
         lines = []
         schemas_with_warnings = []
+        reader = operator_factory(self.accessor, sqlite)
         for schema in self.accessor.schemas:
-            warnings = self.get_warnings(schema)
+            warnings = self.get_warnings(schema, reader)
             if warnings is None:
                 lines.append(f"Result file of {self.accessor.get_id(schema)!r}")
                 lines.append("")
@@ -271,7 +268,7 @@ class BenchRunner:
         elif unstable:
             schemas = [
                 schema for schema, warnings in (
-                    (schema, self.checker.get_warnings(schema))
+                    (schema, self.checker.get_warnings(schema, operator))
                     for schema in self.accessor.schemas
                 )
                 if warnings is None or warnings
@@ -525,7 +522,12 @@ class BenchmarkDirector:
         checker: BenchChecker,
     ) -> ArgumentParser:
         parser = ArgumentParser()
-        parser.add_argument("--sqlite", action="store_true", default=False, required=False)
+        parser.add_argument(
+            "--sqlite",
+            action="store_true",
+            default=False,
+            required=False,
+        )
 
         subparsers = parser.add_subparsers(required=True)
 

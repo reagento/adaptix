@@ -2,7 +2,7 @@ import abc
 import datetime
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol, Sequence, TypedDict
+from typing import Any, Protocol, Sequence, TypedDict
 from zipfile import ZipFile
 
 
@@ -64,6 +64,10 @@ class BenchReader(Protocol):
     @abc.abstractmethod
     def read_benchmarks_results(self) -> Sequence[str]:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def bench_data(self, schema: Any) -> str | None:
+        return
 
 
 class BenchOperator(BenchReader, BenchWriter, Protocol):

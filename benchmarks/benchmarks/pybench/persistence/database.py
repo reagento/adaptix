@@ -1,6 +1,6 @@
 from pathlib import Path
 from sqlite3 import Connection, connect
-from typing import Sequence
+from typing import Any, Sequence
 from zipfile import ZipFile
 
 from benchmarks.pybench.persistence.common import BenchAccessProto, BenchOperator, BenchRecord
@@ -80,6 +80,19 @@ class SQLite3BenchOperator(BenchOperator):
                                                       self.accessor.meta.benchmark_subname).decode())
         con.close()
         return content_container
+
+    def bench_data(self, schema: Any) -> str | None:
+        con = connect(self.db_name)
+        result = con.execute(self.GET_BENCH_DATA_Q,
+                             (
+                                 self.accessor.meta.benchmark_name,
+                                 self.accessor.meta.benchmark_subname,
+                                 self.accessor.get_id(schema),
+                             ))
+        data = result.fetchone()
+        if not data:
+            return None
+        return data[0]
 
     def _bench_data(self, connection: Connection, bench_id, bench_name: str, bench_sub_name: str) -> bytes:
         result = connection.execute(self.GET_BENCH_DATA_Q, (bench_name, bench_sub_name, bench_id))
