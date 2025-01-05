@@ -33,12 +33,15 @@ def database_initialization(database_name: str):
     data TEXT,
     created_at DATETIME
     );
+    """
+    index_ddl_q = """
     CREATE UNIQUE INDEX IF NOT EXISTS bench_unique ON bench (
      benchmark_name, benchmark_subname, global_id
     ) WHERE is_actual=TRUE;
      """
     with connect(database_name) as con:
         con.execute(create_table_ddl_q)
+        con.execute(index_ddl_q)
         con.commit()
 
 
