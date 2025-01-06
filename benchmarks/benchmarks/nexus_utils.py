@@ -34,6 +34,11 @@ class EnvDescription:
 
 BENCHMARK_ENVS: Iterable[EnvDescription] = [
     EnvDescription(
+        title="CPython 3.8",
+        key="py38",
+        tox_env="py38-bench",
+    ),
+    EnvDescription(
         title="CPython 3.9",
         key="py39",
         tox_env="py39-bench",
