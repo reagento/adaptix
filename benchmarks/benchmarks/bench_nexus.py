@@ -8,7 +8,6 @@ from argparse import ArgumentParser, Namespace
 from collections import defaultdict
 from concurrent.futures import Executor, ThreadPoolExecutor
 from dataclasses import dataclass
-from itertools import chain
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar
@@ -425,7 +424,7 @@ class Orchestrator(HubProcessor):
 
     def update_local_ids_with_warnings(self, case_state: CaseState) -> None:
         local_ids_with_warnings = []
-        reader = operator_factory(case_state.accessor, self.sqlite)
+        reader = operator_factory(case_state.accessor, sqlite=bool(self.sqlite))
         for schema in case_state.accessor.schemas:
             warnings = case_state.checker.get_warnings(schema, reader)
             if warnings is None or warnings:
@@ -530,8 +529,8 @@ class Renderer(HubProcessor):
         self.print(f"Open file://{Path(output).absolute()}")
 
     def _director_to_measures(self, director: BenchmarkDirector) -> Sequence[BenchmarkMeasure]:
-        reader = operator_factory(director.make_accessor(), self.sqlite)
-        measures = [pyperf_bench_to_measure(d) for d in reader.read_benchmarks_results()]
+        reader = operator_factory(director.make_accessor(), sqlite=bool(self.sqlite))
+        measures = [pyperf_bench_to_measure(d) for d in reader.get_all_bench_results()]
         measures.sort(key=lambda x: x.pyperf.mean())
         return measures
 
@@ -792,9 +791,9 @@ class HubValidator(HubProcessor):
         dist_to_versions: DefaultDict[str, Set[str]] = defaultdict(set)
         for _hub_description, env_to_director in hub_to_director_to_env.items():
             for director in env_to_director.values():
-                reader = operator_factory(director.make_accessor(), self.sqlite)
-                for bench_report in reader.read_benchmarks_results():
-                    for dist, version in json.loads(bench_report)["pybench_data"]["distributions"].items():
+                reader = operator_factory(director.make_accessor(), sqlite=bool(self.sqlite))
+                for bench_result in reader.get_all_bench_results():
+                    for dist, version in json.loads(bench_result)["pybench_data"]["distributions"].items():
                         dist_to_versions[dist].add(version)
         return [
             f"Benchmarks using distribution {dist!r} were taken with different versions {versions!r}"
@@ -845,8 +844,11 @@ class Releaser(HubProcessor):
             ) as release_zip:
                 for env in env_to_files:
                     accessor = env_to_accessor[env]
-                    writer = operator_factory(accessor, self.sqlite)
-                    writer.write_release_files(release_zip, env_to_files[env])
+                    bench_operator = operator_factory(accessor, sqlite=bool(self.sqlite))
+                    bench_results = bench_operator.get_all_bench_results()
+
+                    for file_path, data in zip(env_to_files[env], bench_results):
+                        release_zip.writestr(file_path.name, data)
 
                 release_zip.writestr(
                     "index.json",

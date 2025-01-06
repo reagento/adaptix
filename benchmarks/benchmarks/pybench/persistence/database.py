@@ -1,7 +1,6 @@
-from pathlib import Path
+from collections.abc import Sequence
 from sqlite3 import Connection, connect
-from typing import Any, Sequence
-from zipfile import ZipFile
+from typing import Any, Optional
 
 from benchmarks.pybench.persistence.common import BenchAccessProto, BenchOperator, BenchRecord
 
@@ -73,18 +72,18 @@ class SQLite3BenchOperator(BenchOperator):
         self.accessor = accessor
         self.db_name = db_name
 
-    def read_benchmarks_results(self) -> Sequence[str]:
+    def get_all_bench_results(self) -> Sequence[str]:
         con = connect(self.db_name)
         content_container = []
         for schema in self.accessor.schemas:
             global_id = self.accessor.get_id(schema)
             content_container.append(self._bench_data(con, global_id,
                                                       self.accessor.meta.benchmark_name,
-                                                      self.accessor.meta.benchmark_subname).decode())
+                                                      self.accessor.meta.benchmark_subname))
         con.close()
         return content_container
 
-    def bench_data(self, schema: Any) -> str | None:
+    def get_bench_result(self, schema: Any) -> Optional[str]:
         con = connect(self.db_name)
         result = con.execute(self.GET_BENCH_DATA_Q,
                              (
@@ -98,14 +97,14 @@ class SQLite3BenchOperator(BenchOperator):
             return None
         return data[0]
 
-    def _bench_data(self, connection: Connection, bench_id, bench_name: str, bench_sub_name: str) -> bytes:
+    def _bench_data(self, connection: Connection, bench_id, bench_name: str, bench_sub_name: str) -> str:
         result = connection.execute(self.GET_BENCH_DATA_Q, (bench_name, bench_sub_name, bench_id))
         data = result.fetchone()
         if not data:
             raise RecordNotFound(bench_id, bench_name, bench_sub_name)
         return data[0]
 
-    def write_bench_data(self, record: BenchRecord) -> None:
+    def write_bench_result(self, record: BenchRecord) -> None:
 
         with connect(self.db_name) as conn:
             conn.execute(self.INSERT_BENCH_DATA_Q, (
@@ -122,21 +121,6 @@ class SQLite3BenchOperator(BenchOperator):
                 record["created_at"],
             ))
             conn.commit()
-
-    def write_release_files(
-        self,
-        release_zip: ZipFile,
-        files: list[Path],
-    ) -> None:
-        connection = connect(self.db_name)
-        data = []
-        for schema in self.accessor.schemas:
-            data.append(self._bench_data(connection, self.accessor.get_id(schema),
-                                 self.accessor.meta.benchmark_name,
-                                 self.accessor.meta.benchmark_subname))
-        connection.close()
-        for file_path, data in zip(files, data):
-            release_zip.writestr(file_path.name, data)
 
 
 def sqlite_operator_factory(accessor: BenchAccessProto) -> SQLite3BenchOperator:

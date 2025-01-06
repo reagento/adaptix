@@ -1,9 +1,10 @@
 import abc
 import datetime
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
-from typing import Any, Protocol, Sequence, TypedDict
-from zipfile import ZipFile
+from typing import Any, Optional, Protocol, TypedDict
 
 
 @dataclass(frozen=True)
@@ -13,13 +14,17 @@ class BenchMeta:
 
 
 class BenchSchemaProto(Protocol):
-    tags: Sequence[str]
+    tags: Iterable[str]
     base: str
 
 
 class BenchAccessProto(Protocol):
     meta: BenchMeta
-    schemas: Sequence[BenchSchemaProto]
+
+    @abc.abstractmethod
+    @cached_property
+    def schemas(self) -> Sequence[BenchSchemaProto]:
+        raise NotImplementedError
 
     @abc.abstractmethod
     def bench_result_file(self, bench_id: str) -> Path:
@@ -40,35 +45,20 @@ class BenchRecord(TypedDict):
     tags: str
     kwargs: str
     distributions: str
-    data: bytes
+    data: str
     created_at: datetime.datetime
 
 
-class BenchWriter(Protocol):
+class BenchOperator(Protocol):
 
     @abc.abstractmethod
-    def write_bench_data(self, record: BenchRecord) -> None:
+    def write_bench_result(self, record: BenchRecord) -> None:
         return
 
     @abc.abstractmethod
-    def write_release_files(
-        self,
-        release_zip: ZipFile,
-        files: list[Path],
-    ) -> None:
-        return
-
-
-class BenchReader(Protocol):
-
-    @abc.abstractmethod
-    def read_benchmarks_results(self) -> Sequence[str]:
+    def get_all_bench_results(self) -> Sequence[str]:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def bench_data(self, schema: Any) -> str | None:
-        return
-
-
-class BenchOperator(BenchReader, BenchWriter, Protocol):
-    pass
+    def get_bench_result(self, schema: Any) -> Optional[str]:
+        return None

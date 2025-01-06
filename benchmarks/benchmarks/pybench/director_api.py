@@ -19,8 +19,8 @@ from typing import Any, Callable, Optional, TypeVar, Union
 import pyperf
 from pyperf._cli import format_checks
 
-from benchmarks.pybench.persistence.common import BenchAccessProto, BenchMeta, BenchOperator, BenchReader, BenchWriter
-from benchmarks.pybench.persistence.database import BenchRecord, SQLite3BenchOperator, sqlite_operator_factory
+from benchmarks.pybench.persistence.common import BenchAccessProto, BenchMeta, BenchOperator, BenchSchemaProto
+from benchmarks.pybench.persistence.database import BenchRecord, sqlite_operator_factory
 from benchmarks.pybench.persistence.filesystem import filesystem_operator_factory
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
@@ -36,7 +36,7 @@ __all__ = (
 EnvSpec = Mapping[str, str]
 
 
-def operator_factory(accessor: BenchAccessProto, sqlite: bool) -> BenchOperator:
+def operator_factory(accessor: BenchAccessProto, *, sqlite: bool) -> BenchOperator:
     if sqlite:
         return sqlite_operator_factory(accessor)
     return filesystem_operator_factory(accessor)
@@ -49,7 +49,7 @@ class CheckParams:
 
 
 @dataclass(frozen=True)
-class BenchSchema:
+class BenchSchema(BenchSchemaProto):
     entry_point: Union[Callable, str]
     base: str
     tags: Iterable[str]
@@ -184,8 +184,8 @@ class BenchChecker:
             if not line.startswith("Use")
         ]
 
-    def get_warnings(self, schema: BenchSchema, operator: BenchReader) -> Optional[Sequence[str]]:
-        data = operator.bench_data(schema)
+    def get_warnings(self, schema: BenchSchema, bench_operator: BenchOperator) -> Optional[Sequence[str]]:
+        data = bench_operator.get_bench_result(schema)
         if data is None:
             return None
         bench = pyperf.Benchmark.loads(data)
@@ -209,7 +209,7 @@ class BenchChecker:
     def check_results(self, *, local_id_list: bool = False, sqlite: bool = False):
         lines = []
         schemas_with_warnings = []
-        reader = operator_factory(self.accessor, sqlite)
+        reader = operator_factory(self.accessor, sqlite=sqlite)
         for schema in self.accessor.schemas:
             warnings = self.get_warnings(schema, reader)
             if warnings is None:
@@ -258,7 +258,7 @@ class BenchRunner:
         unstable: bool = False,
         sqlite: bool = False,
     ) -> None:
-        operator = operator_factory(self.accessor, sqlite)
+        operator = operator_factory(self.accessor, sqlite=sqlite)
         schemas: Sequence[BenchSchema]
         if missing:
             schemas = [
@@ -300,7 +300,7 @@ class BenchRunner:
         for tag in benchmarks_to_run:
             self.run_one_benchmark(local_id_to_schema[tag], operator)
 
-    def run_one_benchmark(self, schema: BenchSchema, operator: BenchWriter) -> None:
+    def run_one_benchmark(self, schema: BenchSchema, bench_operator: BenchOperator) -> None:
         distributions = {
             dist: importlib.metadata.version(dist)
             for dist in schema.used_distributions
@@ -354,7 +354,7 @@ class BenchRunner:
                 "benchmark_subname": self.meta.benchmark_subname,
                 "benchmark_name": self.meta.benchmark_name,
             }
-            operator.write_bench_data(bench_data)
+            bench_operator.write_bench_result(bench_data)
 
     def launch_benchmark(
         self,
@@ -389,11 +389,11 @@ class BenchPlotter:
         parser.add_argument("--dpi", action="store", required=False, type=float, default=100)
 
 
-    def draw_plot(self, output: Optional[Path], dpi: float, sqlite: bool = False):
-        operator = operator_factory(self.accessor, sqlite)
+    def draw_plot(self, output: Optional[Path], dpi: float, *,  sqlite: bool = False):
+        operator = operator_factory(self.accessor, sqlite=sqlite)
         if output is None:
             output = self.accessor.data_dir / f"plot{self.accessor.env_spec_str()}.png"
-        benches_data = operator.read_benchmarks_results()
+        benches_data = operator.get_all_bench_results()
         self._render_plot(
             output=output,
             dpi=dpi,
