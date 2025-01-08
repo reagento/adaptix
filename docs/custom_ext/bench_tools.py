@@ -5,8 +5,7 @@ import plotly
 from docutils import nodes
 from sphinx.util.docutils import SphinxDirective
 
-from benchmarks.bench_nexus import BENCHMARK_HUBS, KEY_TO_HUB, RELEASE_DATA, Renderer
-from benchmarks.nexus_utils import pyperf_bench_to_measure
+from benchmarks.bench_nexus import BENCHMARK_HUBS, KEY_TO_HUB, RELEASE_DATA, Renderer, pyperf_bench_to_measure
 
 from .macros import SphinxMacroDirective, directive
 from .utils import file_ascii_hash
