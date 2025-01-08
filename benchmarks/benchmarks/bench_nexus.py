@@ -10,14 +10,14 @@ from concurrent.futures import Executor, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar
+from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar, Union
 from zipfile import ZIP_BZIP2, ZipFile
 
 import plotly
 import plotly.graph_objects as go
+import pyperf
 
 from adaptix._internal.utils import pairs
-from benchmarks.nexus_utils import BENCHMARK_ENVS, KEY_TO_ENV, BenchmarkMeasure, EnvDescription, pyperf_bench_to_measure
 from benchmarks.pybench.director_api import BenchAccessor, BenchChecker, BenchmarkDirector, operator_factory
 
 T = TypeVar("T")
@@ -27,6 +27,81 @@ def call_by_namespace(func: Callable[..., T], namespace: Namespace) -> T:
     sig = inspect.signature(func)
     kwargs_for_func = (vars(namespace).keys() & sig.parameters.keys())
     return func(**{key: getattr(namespace, key) for key in kwargs_for_func})
+
+
+@dataclass
+class BenchmarkMeasure:
+    base: str
+    tags: Sequence[str]
+    kwargs: Mapping[str, Any]
+    distributions: Mapping[str, str]
+    pyperf: pyperf.Benchmark
+
+
+def pyperf_bench_to_measure(data: Union[str, bytes]) -> BenchmarkMeasure:
+    pybench_data = json.loads(data)["pybench_data"]
+    return BenchmarkMeasure(
+        base=pybench_data["base"],
+        tags=pybench_data["tags"],
+        kwargs=pybench_data["kwargs"],
+        distributions=pybench_data["distributions"],
+        pyperf=pyperf.Benchmark.loads(data),
+    )
+
+
+@dataclass(frozen=True)
+class EnvDescription:
+    key: str
+    title: str
+    tox_env: str
+
+
+BENCHMARK_ENVS: Iterable[EnvDescription] = [
+    EnvDescription(
+        title="CPython 3.8",
+        key="py38",
+        tox_env="py38-bench",
+    ),
+    EnvDescription(
+        title="CPython 3.9",
+        key="py39",
+        tox_env="py39-bench",
+    ),
+    EnvDescription(
+        title="CPython 3.10",
+        key="py310",
+        tox_env="py310-bench",
+    ),
+    EnvDescription(
+        title="CPython 3.11",
+        key="py311",
+        tox_env="py311-bench",
+    ),
+    EnvDescription(
+        title="CPython 3.12",
+        key="py312",
+        tox_env="py312-bench",
+    ),
+    EnvDescription(
+        title="PyPy 3.8",
+        key="pypy38",
+        tox_env="pypy38-bench",
+    ),
+    EnvDescription(
+        title="PyPy 3.9",
+        key="pypy39",
+        tox_env="pypy39-bench",
+    ),
+    EnvDescription(
+        title="PyPy 3.10",
+        key="pypy310",
+        tox_env="pypy310-bench",
+    ),
+]
+KEY_TO_ENV = {
+    env_description.key: env_description
+    for env_description in BENCHMARK_ENVS
+}
 
 
 class Foundation(ABC):
