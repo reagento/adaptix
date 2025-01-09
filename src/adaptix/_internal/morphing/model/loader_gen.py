@@ -721,6 +721,8 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                         f"""
                         if value is sentinel:
                             {on_lookup_error}
+                            if isinstance({assign_to}, Omitted):
+                                raise LoadError('Field omitted')
                         else:
                         """,
                     ):

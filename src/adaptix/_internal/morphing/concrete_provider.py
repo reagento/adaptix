@@ -644,10 +644,6 @@ def sentinel_dumper(data):
     return str(data)
 
 
-def sentinel_loader(data):
-    return data
-
-
 @for_predicate(Omitted)
 class SentinelProvider(MorphingProvider):
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -656,14 +652,7 @@ class SentinelProvider(MorphingProvider):
     def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
         return sentinel_dumper
 
-    def _get_arg(self, request: LocatedRequest) -> ...:
-        norm = try_normalize_type(request.last_loc.type)
-
-        if len(norm.args) != 1:
-            raise CannotProvide
-
-        return norm.args[0]
 
     def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
-        return sentinel_loader
+        return as_is_stub
 
