@@ -245,7 +245,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             ExtraFieldsLoadError, ExtraItemsLoadError,
             NoRequiredFieldsLoadError, NoRequiredItemsLoadError,
             TypeLoadError, ExcludedTypeLoadError,
-            LoadError, AggregateLoadError,
+            LoadError, AggregateLoadError, Omitted,
         ):
             state.namespace.add_constant(named_value.__name__, named_value)
 
@@ -749,6 +749,8 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 f"""
                 try:
                     {assign_to} = {processing_expr}
+                    if isinstance({assign_to}, Omitted):
+                        raise LoadError("Field omitted")
                 except Exception as e:
                     {state.emit_error('e')}
                 """,
