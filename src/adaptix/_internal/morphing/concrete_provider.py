@@ -641,7 +641,7 @@ class LiteralStringProvider(MorphingProvider):
 def sentinel_dumper(data):
     if type(data) is Omitted:
         raise ValueError("Field is missing")
-    return str(data)
+    return data
 
 
 @for_predicate(Omitted)

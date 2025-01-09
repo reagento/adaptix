@@ -31,7 +31,7 @@ def test_adaptix_sentinel_for_omittable(retort):
 
 def test_load_no_value(retort):
     with pytest.raises(LoadError):
-        print(retort.load({}, WO))
+        retort.load({}, WO)
 
 
 def test_dump_valid_omittable(retort):
@@ -39,7 +39,7 @@ def test_dump_valid_omittable(retort):
 
 
 def test_dump_omitted(retort):
-    with pytest.raises(ValueError):
+    with pytest.raises(ExceptionGroup):
         retort.dump(WO(), WO)
 
 
