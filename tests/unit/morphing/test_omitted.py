@@ -3,6 +3,7 @@ import dataclasses
 import pytest
 
 from adaptix import Omittable, Omitted, Retort
+from adaptix._internal.feature_requirement import HAS_NATIVE_EXC_GROUP
 from adaptix._internal.morphing.load_error import LoadError
 
 
@@ -39,8 +40,12 @@ def test_dump_valid_omittable(retort):
 
 
 def test_dump_omitted(retort):
-    with pytest.raises(ExceptionGroup):
-        retort.dump(WO(), WO)
+    if HAS_NATIVE_EXC_GROUP:
+        with pytest.raises(ExceptionGroup):
+            retort.dump(WO(), WO)
+    else:
+        with pytest.raises(Exception):
+            retort.dump(WO(), WO)
 
 
 def  test_dump_omittable_wrong_type(retort):

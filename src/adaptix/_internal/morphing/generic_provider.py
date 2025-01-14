@@ -378,7 +378,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 ),
                 lambda x: "Cannot create loader for union. Loaders for some union cases cannot be created",
             )
-            if is_single_omittable:
+            if is_single_optional:
                 if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
                     return mediator.cached_call(self._single_optional_dt_loader, norm.source, not_fallback_loader)
                 if debug_trail == DebugTrail.DISABLE:
