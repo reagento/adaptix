@@ -17,8 +17,8 @@ from ..provider.location import GenericParamLoc, TypeHintLoc
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
 from ..type_tools.basic_utils import eval_forward_ref
-from ..utils import MappingHashWrapper
-from .load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
+from ..utils import MappingHashWrapper, Omitted
+from .load_error import BadVariantLoadError, LoadError, NoRequiredFieldsLoadError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider
 from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from .utils import try_normalize_type
@@ -362,22 +362,32 @@ class UnionProvider(LoaderProvider, DumperProvider):
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(request.last_loc.type)
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-
-        if self._is_single_optional(norm):
-            not_none = next(case for case in norm.args if case.origin is not None)
-            not_none_loader = mediator.mandatory_provide(
+        is_single_optional = self._is_single_optional(norm)
+        is_single_omittable = self._is_single_omittable(norm)
+        if is_single_omittable or is_single_optional:
+            if is_single_optional:
+                defined_type = next(case for case in norm.args if case.origin is not None)
+            else:
+                defined_type = next(case for case in norm.args if case.origin is not Omitted)
+            not_fallback_loader = mediator.mandatory_provide(
                 request.append_loc(
                     GenericParamLoc(
-                        type=not_none.source,
+                        type=defined_type.source,
                         generic_pos=0,
                     ),
                 ),
                 lambda x: "Cannot create loader for union. Loaders for some union cases cannot be created",
             )
-            if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
-                return mediator.cached_call(self._single_optional_dt_loader, norm.source, not_none_loader)
-            if debug_trail == DebugTrail.DISABLE:
-                return mediator.cached_call(self._single_optional_dt_disable_loader, not_none_loader)
+            if is_single_omittable:
+                if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
+                    return mediator.cached_call(self._single_optional_dt_loader, norm.source, not_fallback_loader)
+                if debug_trail == DebugTrail.DISABLE:
+                    return mediator.cached_call(self._single_optional_dt_disable_loader, not_fallback_loader)
+            else:
+                if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
+                    return mediator.cached_call(self._single_omittable_dt_loader, norm.source, not_fallback_loader)
+                if debug_trail == DebugTrail.DISABLE:
+                    return mediator.cached_call(self._single_omittable_dt_disable_loader, not_fallback_loader)
             raise ValueError
 
         loaders = mediator.mandatory_provide_by_iterable(
@@ -399,6 +409,24 @@ class UnionProvider(LoaderProvider, DumperProvider):
         if debug_trail == DebugTrail.ALL:
             return mediator.cached_call(self._get_loader_dt_all, norm.source, tuple(loaders))
         raise ValueError
+
+    def _single_omittable_dt_disable_loader(self, loader: Loader) -> Loader:
+        def omittable_dt_disable_loader(data):
+            if isinstance(data, Omitted):
+                raise TypeError
+            return loader(data)
+
+        return omittable_dt_disable_loader
+
+    def _single_omittable_dt_loader(self, tp, loader: Loader) -> Loader:
+        def omittable_dt_loader(data):
+            if isinstance(data, Omitted):
+                raise TypeError
+            try:
+                return loader(data)
+            except LoadError as e:
+                raise UnionLoadError(f"while loading {tp}", [TypeLoadError(None, data), e])
+        return omittable_dt_loader
 
     def _single_optional_dt_disable_loader(self, loader: Loader) -> Loader:
         def optional_dt_disable_loader(data):
@@ -464,6 +492,9 @@ class UnionProvider(LoaderProvider, DumperProvider):
             raise UnionLoadError(f"while loading {tp}", errors)
 
         return union_loader_dt_all
+
+    def _is_single_omittable(self, norm: BaseNormType) -> bool:
+        return len(norm.args) == 2 and any(case.origin is Omitted for case in norm.args)
 
     def _is_single_optional(self, norm: BaseNormType) -> bool:
         return len(norm.args) == 2 and None in [case.origin for case in norm.args]  # noqa: PLR2004
