@@ -4,11 +4,11 @@
 
 pre-commit==4.0.1
 
-mypy[faster-cache]==1.13.0
+mypy[faster-cache]==1.14.0
 
 vulture==2.10
 
-ruff==0.8.3
+ruff==0.9.1
 
 radon==6.0.1
 dlint==0.14.1
