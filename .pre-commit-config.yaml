@@ -8,6 +8,8 @@ files: |-
       |(docs/custom_ext/.*)
       |(benchmarks/.*)
       |(scripts/.*)
+      |(.github/.*)
+      |(.pre-commit-config.yaml)
   )$
 
 default_stages:
@@ -32,8 +34,8 @@ repos:
       - id: eradicate
         args: ['-e']  # remove default --in-place argument and emit error
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.3
+  - repo: 'https://github.com/astral-sh/ruff-pre-commit'
+    rev: v0.9.1
     hooks:
       - id: ruff
         args: [ --fix-only ]
@@ -42,3 +44,24 @@ repos:
     rev: 5.13.2
     hooks:
       - id: isort
+
+  - repo: 'https://github.com/python-jsonschema/check-jsonschema'
+    rev: 0.31.0
+    hooks:
+      - id: check-dependabot
+      - id: check-github-workflows
+
+  - repo: 'https://github.com/rhysd/actionlint'
+    rev: v1.7.3
+    hooks:
+      - id: actionlint
+
+  - repo: 'https://github.com/woodruffw/zizmor-pre-commit'
+    rev: v1.1.1
+    hooks:
+      - id: zizmor
+
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes

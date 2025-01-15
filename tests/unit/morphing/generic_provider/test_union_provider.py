@@ -226,7 +226,7 @@ def test_literal(strict_coercion, debug_trail):
     ["other_type", "value", "expected", "wrong_value"],
     [
         (
-         Decimal, Decimal(200.5), "200.5", [1, 2, 3],
+         Decimal, Decimal("200.5"), "200.5", [1, 2, 3],
         ),
         (
          Union[str, Decimal], "some string", "some string", [1, 2, 3],
