@@ -19,6 +19,7 @@ class RecordNotFound(Exception):
 
 def database_initialization(database_name: str):
     create_table_ddl_q = """
+    BEGIN;
     CREATE TABLE IF NOT EXISTS bench (
     is_actual BOOLEAN,
     benchmark_name TEXT,
@@ -32,16 +33,13 @@ def database_initialization(database_name: str):
     data TEXT,
     created_at DATETIME
     );
-    """
-    index_ddl_q = """
     CREATE UNIQUE INDEX IF NOT EXISTS bench_unique ON bench (
      benchmark_name, benchmark_subname, global_id
     ) WHERE is_actual=TRUE;
+    COMMIT;
      """
     with connect(database_name) as con:
-        con.execute(create_table_ddl_q)
-        con.execute(index_ddl_q)
-        con.commit()
+        con.executescript(create_table_ddl_q)
 
 
 class SQLite3BenchOperator(BenchOperator):
