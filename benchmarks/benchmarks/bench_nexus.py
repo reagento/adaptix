@@ -903,13 +903,6 @@ class Releaser(HubProcessor):
             env_to_accessor = {
                 env_description: accessor for env_description, accessor in env_with_accessor
             }
-            env_to_files = {
-                env_description: [
-                    accessor.bench_result_file(accessor.get_id(schema))
-                    for schema in accessor.schemas
-                ]
-                for env_description, accessor in env_with_accessor
-            }
 
             with ZipFile(
                 file=RELEASE_DATA / f"{hub_description.key}.zip",
@@ -917,20 +910,38 @@ class Releaser(HubProcessor):
                 compression=ZIP_BZIP2,
                 compresslevel=9,
             ) as release_zip:
-                for env in env_to_files:
+                for env in env_to_accessor:
                     accessor = env_to_accessor[env]
                     bench_operator = operator_factory(accessor, sqlite=bool(self.sqlite))
                     bench_results = bench_operator.get_all_bench_results()
+                    bench_ids = [accessor.get_id(schema) for schema in accessor.schemas]
+                    if self.sqlite:
+                        for name, data in zip(bench_ids, bench_results):
+                            release_zip.writestr(name, data)
+                    else:
+                        for file_path, data in zip(
+                            [
+                                accessor.bench_result_file(id_)
+                                for id_ in bench_ids
+                            ],
+                            bench_results,
+                        ):
+                            release_zip.writestr(file_path.name, data)
 
-                    for file_path, data in zip(env_to_files[env], bench_results):
-                        release_zip.writestr(file_path.name, data)
-
-                release_zip.writestr(
-                    "index.json",
-                    json.dumps(
-                        self._get_index_data(env_to_files),
-                    ),
-                )
+                if not self.sqlite:
+                    release_zip.writestr(
+                        "index.json",
+                        json.dumps(
+                            self._get_index_data(
+                                {
+                                    env_description: [
+                                        accessor.bench_result_file(accessor.get_id(schema))
+                                        for schema in accessor.schemas
+                                    ]
+                                    for env_description, accessor in env_with_accessor
+                                }),
+                        ),
+                    )
 
 
 class ListGetter(Foundation):
