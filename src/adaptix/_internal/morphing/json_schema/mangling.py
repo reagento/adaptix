@@ -1,9 +1,9 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import Container, Mapping, Sequence
 from itertools import count
 from typing import Optional
 
 from ...datastructures import OrderedUniqueGrouper
-from .definitions import RefSource, ResolvedJSONSchema
+from .definitions import RefSource
 from .resolver import RefMangler
 
 
@@ -14,7 +14,7 @@ class IndexRefMangler(RefMangler):
 
     def mangle_refs(
         self,
-        defs: Mapping[str, ResolvedJSONSchema],
+        occupied_refs: Container[str],
         common_ref: str,
         sources: Sequence[RefSource],
     ) -> Mapping[RefSource, str]:
@@ -24,7 +24,7 @@ class IndexRefMangler(RefMangler):
             while True:
                 idx = next(counter)
                 mangled = self._with_index(common_ref, idx)
-                if mangled not in defs:
+                if mangled not in occupied_refs:
                     result[source] = mangled
                     break
 
@@ -37,7 +37,7 @@ class IndexRefMangler(RefMangler):
 class QualnameRefMangler(RefMangler):
     def mangle_refs(
         self,
-        defs: Mapping[str, ResolvedJSONSchema],
+        occupied_refs: Container[str],
         common_ref: str,
         sources: Sequence[RefSource],
     ) -> Mapping[RefSource, str]:
@@ -55,11 +55,11 @@ class CompoundRefMangler(RefMangler):
 
     def mangle_refs(
         self,
-        defs: Mapping[str, ResolvedJSONSchema],
+        occupied_refs: Container[str],
         common_ref: str,
         sources: Sequence[RefSource],
     ) -> Mapping[RefSource, str]:
-        mangled = self._base.mangle_refs(defs, common_ref, sources)
+        mangled = self._base.mangle_refs(occupied_refs, common_ref, sources)
 
         grouper = OrderedUniqueGrouper[str, RefSource]()
         for source, ref in mangled.items():
@@ -67,6 +67,6 @@ class CompoundRefMangler(RefMangler):
 
         for ref, ref_sources in grouper.finalize().items():
             if len(ref_sources) > 1:
-                mangled = {**mangled, **self._wrapper.mangle_refs(defs, ref, ref_sources)}
+                mangled = {**mangled, **self._wrapper.mangle_refs(occupied_refs, ref, ref_sources)}
 
         return mangled

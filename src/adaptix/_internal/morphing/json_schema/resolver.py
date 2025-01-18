@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Mapping, MutableMapping, Sequence
-
-from adaptix import Omitted
+from collections.abc import Container, Mapping, Sequence
 
 from ...datastructures import OrderedUniqueGrouper
 from ...provider.loc_stack_filtering import LocStack
 from ...provider.loc_stack_tools import format_loc_stack
+from ...utils import Omitted
 from .definitions import JSONSchema, RefSource, ResolvedJSONSchema
 from .schema_tools import replace_json_schema_ref, traverse_json_schema
 
@@ -15,9 +14,9 @@ class JSONSchemaResolver(ABC):
     @abstractmethod
     def resolve(
         self,
-        defs: MutableMapping[str, ResolvedJSONSchema],
+        occupied_refs: Container[str],
         root_schemas: Sequence[JSONSchema],
-    ) -> Sequence[ResolvedJSONSchema]:
+    ) -> tuple[Mapping[str, ResolvedJSONSchema], Sequence[ResolvedJSONSchema]]:
         ...
 
 
@@ -31,7 +30,7 @@ class RefMangler(ABC):
     @abstractmethod
     def mangle_refs(
         self,
-        defs: Mapping[str, ResolvedJSONSchema],
+        occupied_refs: Container[str],
         common_ref: str,
         sources: Sequence[RefSource],
     ) -> Mapping[RefSource, str]:
@@ -45,16 +44,20 @@ class BuiltinJSONSchemaResolver(JSONSchemaResolver):
 
     def resolve(
         self,
-        defs: MutableMapping[str, ResolvedJSONSchema],
+        occupied_refs: Container[str],
         root_schemas: Sequence[JSONSchema],
-    ) -> Sequence[ResolvedJSONSchema]:
+    ) -> tuple[Mapping[str, ResolvedJSONSchema], Sequence[ResolvedJSONSchema]]:
         ref_to_sources = self._collect_ref_to_sources(root_schemas)
-        source_determinator = self._get_source_determinator(defs, ref_to_sources)
-        self._write_to_defs(defs, source_determinator)
-        return [
+        source_determinator = self._get_source_determinator(occupied_refs, ref_to_sources)
+        defs = {
+            ref: replace_json_schema_ref(source.json_schema, source_determinator)
+            for source, ref in source_determinator.items()
+        }
+        schemas = [
             replace_json_schema_ref(root, source_determinator)
             for root in root_schemas
         ]
+        return defs, schemas
 
     def _collect_ref_to_sources(self, root_schemas: Sequence[JSONSchema]) -> Mapping[str, Sequence[RefSource]]:
         grouper = OrderedUniqueGrouper[str, RefSource[JSONSchema]]()
@@ -74,16 +77,16 @@ class BuiltinJSONSchemaResolver(JSONSchemaResolver):
 
     def _get_source_determinator(
         self,
-        defs: Mapping[str, ResolvedJSONSchema],
+        occupied_refs: Container[str],
         ref_to_sources: Mapping[str, Sequence[RefSource]],
     ) -> Mapping[RefSource, str]:
         source_determinator = {}
         for common_ref, sources in ref_to_sources.items():
-            if len(sources) == 1 and common_ref not in defs:
+            if len(sources) == 1 and common_ref not in occupied_refs:
                 source_determinator[sources[0]] = common_ref
             else:
                 self._validate_sources(common_ref, sources)
-                mangling_result = self._ref_mangler.mangle_refs(defs, common_ref, sources)
+                mangling_result = self._ref_mangler.mangle_refs(occupied_refs, common_ref, sources)
                 source_determinator.update(mangling_result)
         self._validate_mangling(source_determinator)
         return source_determinator
@@ -117,14 +120,3 @@ class BuiltinJSONSchemaResolver(JSONSchemaResolver):
                 f" can not mangle some refs."
                 f" {unmangled_desc}",
             )
-
-    def _write_to_defs(
-        self,
-        defs: MutableMapping[str, ResolvedJSONSchema],
-        source_determinator: Mapping[RefSource, str],
-    ) -> None:
-        for source, ref in source_determinator.items():
-            resolved_json_schema = replace_json_schema_ref(source.json_schema, source_determinator)
-            if ref in defs and defs[ref] == resolved_json_schema:
-                continue
-            defs[ref] = resolved_json_schema

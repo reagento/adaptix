@@ -7,16 +7,7 @@ from adaptix import TypeHint
 
 from ...utils import Omittable, Omitted
 from .definitions import JSONSchema, RefSource, ResolvedJSONSchema
-from .schema_model import (
-    BaseJSONSchema,
-    JSONNumeric,
-    JSONObject,
-    JSONSchemaBuiltinFormat,
-    JSONSchemaT,
-    JSONSchemaType,
-    JSONValue,
-    RefT,
-)
+from .schema_model import JSONNumeric, JSONObject, JSONSchemaBuiltinFormat, JSONSchemaT, JSONSchemaType, JSONValue, RefT
 
 _non_generic_fields_types = [
     Omittable[Union[JSONSchemaType, Sequence[JSONSchemaType]]],  # type: ignore[misc]
@@ -39,22 +30,19 @@ _base_json_schema_templates = {
         """
         if __value__ != Omitted():
             for item in __value__:
-                yield item
                 yield from __traverser__(item)
         """,
     ),
     Omittable[JSONSchemaT]: dedent(  # type: ignore[misc, valid-type]
         """
         if __value__ != Omitted():
-            yield __value__
-            yield from __traverser__(value)
+            yield from __traverser__(__value__)
         """,
     ),
     Omittable[JSONObject[JSONSchemaT]]: dedent(  # type: ignore[misc, valid-type]
         """
         if __value__ != Omitted():
             for item in __value__.values():
-                yield item
                 yield from __traverser__(item)
         """,
     ),
@@ -65,7 +53,7 @@ _json_schema_templates = {
     Omittable[RefT]: dedent(  # type: ignore[misc, valid-type]
         """
         if __value__ != Omitted():
-            yield __value__.json_schema
+            yield from __traverser__(__value__.json_schema)
         """,
     ),
 }
@@ -90,18 +78,21 @@ def _generate_json_schema_traverser(
             .strip("\n"),
         )
 
-    module_code = f"def {function_name}(obj, /):\n" + "\n\n".join(indent(item, " " * 4) for item in result)
+    module_code = dedent(
+        f"""
+        def {function_name}(obj, /):
+            if isinstance(obj, bool):
+                return
+
+            yield obj
+
+        """,
+    ) + "\n\n".join(indent(item, " " * 4) for item in result)
     namespace: dict[str, Any] = {"Omitted": Omitted}
     exec(compile(module_code, file_name, "exec"), namespace, namespace)  # noqa: S102
     return namespace[function_name]
 
 
-traverse_base_json_schema = _generate_json_schema_traverser(
-    function_name="traverse_base_json_schema",
-    file_name="<traverse_base_json_schema generation>",
-    templates=_base_json_schema_templates,
-    cls=BaseJSONSchema,
-)
 traverse_json_schema = _generate_json_schema_traverser(
     function_name="traverse_json_schema",
     file_name="<traverse_json_schema generation>",
@@ -158,7 +149,17 @@ def _generate_json_schema_replacer(
         )
 
     body = "\n".join(indent(item, " " * 8) for item in result)
-    module_code = f"def {function_name}(obj, ctx, /):\n    return {target_cls.__name__}(\n{body}\n    )"
+    module_code = dedent(
+        f"""
+        def {function_name}(obj, ctx, /):
+            if isinstance(obj, bool):
+                return obj
+
+            return {target_cls.__name__}(
+            {body}
+            )
+        """,
+    )
     namespace: dict[str, Any] = {target_cls.__name__: target_cls, "Omitted": Omitted}
     exec(compile(module_code, file_name, "exec"), namespace, namespace)  # noqa: S102
     return namespace[function_name]

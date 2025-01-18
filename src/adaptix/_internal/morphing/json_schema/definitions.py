@@ -13,17 +13,19 @@ JSONSchemaT = TypeVar("JSONSchemaT")
 @dataclass(frozen=True)
 class RefSource(Generic[JSONSchemaT]):
     value: Optional[str]
-    json_schema: JSONSchemaT
+    json_schema: JSONSchemaT = field(hash=False)
     loc_stack: LocStack = field(repr=False)
 
 
 Boolable = Union[T, bool]
 
 
+@dataclass(repr=False)
 class JSONSchema(BaseJSONSchema[RefSource[FwdRef["JSONSchema"]], Boolable[FwdRef["JSONSchema"]]]):
     pass
 
 
+@dataclass(repr=False)
 class ResolvedJSONSchema(BaseJSONSchema[str, Boolable[FwdRef["ResolvedJSONSchema"]]]):
     pass
 

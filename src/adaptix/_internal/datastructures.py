@@ -285,7 +285,7 @@ class OrderedUniqueGrouper(Generic[K, ItemT]):
         self._key_to_item_set = defaultdict(set)
 
     def add(self, key: K, item: ItemT) -> None:
-        if key in self._key_to_item_set and item not in self._key_to_item_set[key]:
+        if item not in self._key_to_item_set[key]:
             self._key_to_item_set[key].add(item)
             self._key_to_item_list[key].append(item)
 
