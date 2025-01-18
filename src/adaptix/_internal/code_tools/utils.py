@@ -58,6 +58,8 @@ def _get_complex_literal_expr(obj: object) -> Optional[str]:  # noqa: PLR0911
         return _parenthesize("[]", obj)
 
     if type(obj) is tuple:
+        if len(obj) == 1:
+            return f"({_provide_lit_expr(obj[0])}, )"
         return _parenthesize("()", obj)
 
     if type(obj) is set:
