@@ -53,7 +53,7 @@ class BenchOperator(Protocol):
 
     @abc.abstractmethod
     def write_bench_result(self, record: BenchRecord) -> None:
-        return
+        ...
 
     @abc.abstractmethod
     def get_all_bench_results(self) -> Sequence[str]:
@@ -61,4 +61,4 @@ class BenchOperator(Protocol):
 
     @abc.abstractmethod
     def get_bench_result(self, schema: Any) -> Optional[str]:
-        return None
+        ...
