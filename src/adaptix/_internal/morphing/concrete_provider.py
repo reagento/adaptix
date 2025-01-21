@@ -656,12 +656,11 @@ class SentinelProvider(MorphingProvider):
 
 
     def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
-        norm = try_normalize_type(request.last_loc.type)
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
         if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
-            return mediator.cached_call(self._omittable_dt_loader, norm.source)
+            return mediator.cached_call(self._omittable_dt_loader)
         if debug_trail == DebugTrail.DISABLE:
-            return mediator.cached_call(self._omittable_dt_disable_loader, not_fallback_loader)
+            return mediator.cached_call(self._omittable_dt_disable_loader)
         raise ValueError
 
     def _omittable_dt_disable_loader(self, loader: Loader) -> Loader:
