@@ -2,7 +2,7 @@ import collections.abc
 from collections.abc import Mapping, Set
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
 from ...code_tools.code_builder import CodeBuilder
@@ -13,7 +13,6 @@ from ...definitions import DebugTrail
 from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
 from ...special_cases_optimization import as_is_stub
 from ...struct_trail import append_trail, extend_trail, render_trail_as_note
-from ...type_tools import normalize_type
 from ...utils import Omittable, Omitted
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.schema_model import JSONSchemaType, JSONValue
@@ -246,7 +245,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             ExtraFieldsLoadError, ExtraItemsLoadError,
             NoRequiredFieldsLoadError, NoRequiredItemsLoadError,
             TypeLoadError, ExcludedTypeLoadError,
-            LoadError, AggregateLoadError, Omitted,
+            LoadError, AggregateLoadError,
         ):
             state.namespace.add_constant(named_value.__name__, named_value)
 
@@ -722,11 +721,6 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                         f"""
                         if value is sentinel:
                             {on_lookup_error}
-                        """,
-                    ):
-                        self._gen_omitted_check(field.id, assign_to, state)
-                    with state.builder(
-                        """
                         else:
                         """,
                     ):
@@ -736,20 +730,6 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                             loader_arg="value",
                             state=state,
                         )
-
-    def _gen_omitted_check(self, field_id: str, fn: str, state: GenState) -> None:
-        input_field_type = self._id_to_field[field_id].type
-        norm = normalize_type(input_field_type)
-        if norm.origin is Union and any(case.origin is Omitted for case in norm.args):
-            state.builder(
-                f"""
-                if isinstance({fn}, Omitted):
-                    errors.append(NoRequiredFieldsLoadError(required_keys - set(data), data))
-                    has_not_found_error = True
-                """,
-            )
-            return
-        state.builder("pass")
 
     def _gen_field_assignment(
         self,
@@ -769,23 +749,14 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 f"""
                 try:
                     {assign_to} = {processing_expr}
-                """,
-            )
-            state.builder(
-                f"""
                 except Exception as e:
                     {state.emit_error('e')}
                 """,
             )
-            with state.builder("else:"):
-                self._gen_omitted_check(field_id, assign_to, state)
         else:
             state.builder(
-                f"""
-                {assign_to} = {processing_expr}
-                """,
+                f"{assign_to} = {processing_expr}",
             )
-            self._gen_omitted_check(field_id, assign_to, state)
 
     def _gen_extra_targets_assignment(self, state: GenState):
         # Saturate extra targets with data.
