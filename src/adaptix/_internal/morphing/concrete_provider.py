@@ -654,7 +654,7 @@ def sentinel_loader(data):
 @for_predicate(Omitted)
 class OmittedProvider(MorphingProvider):
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
-        return JSONSchema()
+        raise CannotProvide
 
     def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
         return make_sentinel_dumper(Omitted)
