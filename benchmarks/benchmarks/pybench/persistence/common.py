@@ -24,15 +24,15 @@ class BenchAccessProto(Protocol):
     @abc.abstractmethod
     @cached_property
     def schemas(self) -> Sequence[BenchSchemaProto]:
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
     def bench_result_file(self, bench_id: str) -> Path:
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
     def get_id(self, schema) -> str:
-        raise NotImplementedError
+        ...
 
 
 class BenchRecord(TypedDict):
@@ -57,7 +57,7 @@ class BenchOperator(Protocol):
 
     @abc.abstractmethod
     def get_all_bench_results(self) -> Sequence[str]:
-        raise NotImplementedError
+        ...
 
     @abc.abstractmethod
     def get_bench_result(self, schema: Any) -> Optional[str]:
