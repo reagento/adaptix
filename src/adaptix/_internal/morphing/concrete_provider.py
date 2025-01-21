@@ -640,39 +640,25 @@ class LiteralStringProvider(MorphingProvider):
         return JSONSchema(type=JSONSchemaType.STRING)
 
 
-def sentinel_dumper(data):
-    if type(data) is Omitted:
-        raise ValueError("Field is missing")
-    return data
+def make_sentinel_dumper(sentinel_type: typing.Type):
+    def sentinel_dumper(data):
+        if type(data) is sentinel_type:
+            raise ValueError("Field is missing")
+    return sentinel_dumper
+
+
+def sentinel_loader(data):
+    raise ValueLoadError("Field value required", data)
 
 
 @for_predicate(Omitted)
-class SentinelProvider(MorphingProvider):
+class OmittedProvider(MorphingProvider):
     def _generate_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
         return JSONSchema()
 
     def provide_dumper(self, mediator: Mediator[Dumper], request: DumperRequest) -> Dumper:
-        return sentinel_dumper
+        return make_sentinel_dumper(Omitted)
 
 
     def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
-            return mediator.cached_call(self._omittable_dt_loader)
-        if debug_trail == DebugTrail.DISABLE:
-            return mediator.cached_call(self._omittable_dt_disable_loader)
-        raise ValueError
-
-    def _omittable_dt_disable_loader(self, loader: Loader) -> Loader:
-        def omittable_dt_disable_loader(data):
-            raise TypeError
-
-        return omittable_dt_disable_loader
-
-    def _omittable_dt_loader(self) -> Loader:
-        def omittable_dt_loader(data):
-            raise ValueLoadError("Field value required", "Оmitted")
-
-        return omittable_dt_loader
-
-
+        return sentinel_loader
