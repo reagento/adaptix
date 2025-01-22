@@ -109,9 +109,6 @@ class BenchAccessor(BenchAccessProto):
     def apply_state(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-    def bench_result_file(self, bench_id: str) -> Path:
-        return self.data_dir / f"{bench_id}.json"
-
     def env_spec_str(self) -> str:
         return "[" + "-".join(f"{k}={v}" for k, v in self.env_spec.items()) + "]"
 
@@ -263,7 +260,7 @@ class BenchRunner:
         if missing:
             schemas = [
                 schema for schema in self.accessor.schemas
-                if not self.accessor.bench_result_file(self.accessor.get_id(schema)).exists()
+                if not operator.bench_exists(self.accessor.get_id(schema))
             ]
         elif unstable:
             schemas = [

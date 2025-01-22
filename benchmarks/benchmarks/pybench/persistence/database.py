@@ -70,6 +70,20 @@ class SQLite3BenchOperator(BenchOperator):
         self.accessor = accessor
         self.db_name = db_name
 
+    def bench_exists(self, bench_id: str) -> bool:
+        con = connect(self.db_name)
+        result = con.execute(self.GET_BENCH_DATA_Q,
+                             (
+                                 self.accessor.meta.benchmark_name,
+                                 self.accessor.meta.benchmark_subname,
+                                 bench_id,
+                             ))
+        data = result.fetchone()
+        con.close()
+        if not data:
+            return False
+        return True
+
     def get_all_bench_results(self) -> Sequence[str]:
         con = connect(self.db_name)
         content_container = []

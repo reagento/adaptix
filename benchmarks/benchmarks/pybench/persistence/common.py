@@ -20,14 +20,11 @@ class BenchSchemaProto(Protocol):
 
 class BenchAccessProto(Protocol):
     meta: BenchMeta
+    data_dir: Path
 
     @abc.abstractmethod
     @cached_property
     def schemas(self) -> Sequence[BenchSchemaProto]:
-        ...
-
-    @abc.abstractmethod
-    def bench_result_file(self, bench_id: str) -> Path:
         ...
 
     @abc.abstractmethod
@@ -61,4 +58,8 @@ class BenchOperator(Protocol):
 
     @abc.abstractmethod
     def get_bench_result(self, schema: Any) -> Optional[str]:
+        ...
+
+    @abc.abstractmethod
+    def bench_exists(self, bench_id: str) -> bool:
         ...

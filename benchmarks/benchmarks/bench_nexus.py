@@ -10,7 +10,22 @@ from concurrent.futures import Executor, ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    DefaultDict,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    TypeVar,
+    Union,
+    cast,
+)
 from zipfile import ZIP_BZIP2, ZipFile
 
 import plotly
@@ -19,6 +34,7 @@ import pyperf
 
 from adaptix._internal.utils import pairs
 from benchmarks.pybench.director_api import BenchAccessor, BenchChecker, BenchmarkDirector, operator_factory
+from benchmarks.pybench.persistence.filesystem import FileSystemBenchOperator
 
 T = TypeVar("T")
 
@@ -893,6 +909,31 @@ class Releaser(HubProcessor):
             },
         }
 
+    def _release_from_files(
+        self,
+        operator: FileSystemBenchOperator,
+        release_zip: ZipFile,
+        bench_ids: list[str],
+        bench_results: Sequence[str],
+    ):
+        for file_path, data in zip(
+            [
+                operator.bench_result_file(id_)
+                for id_ in bench_ids
+            ],
+            bench_results,
+        ):
+            release_zip.writestr(file_path.name, data)
+
+    def _release_from_sqlite(
+        self,
+        release_zip: ZipFile,
+        bench_ids: list[str],
+        bench_results: Sequence[str],
+    ):
+        for name, data in zip(bench_ids, bench_results):
+            release_zip.writestr(name, data)
+
     def _release(self):
         hub_to_director_to_env = self.load_directors(self.filtered_hubs())
         for hub_description, env_to_director in hub_to_director_to_env.items():
@@ -915,27 +956,26 @@ class Releaser(HubProcessor):
                     bench_operator = operator_factory(accessor, sqlite=bool(self.sqlite))
                     bench_results = bench_operator.get_all_bench_results()
                     bench_ids = [accessor.get_id(schema) for schema in accessor.schemas]
-                    if self.sqlite:
-                        for name, data in zip(bench_ids, bench_results):
-                            release_zip.writestr(name, data)
+                    if isinstance(bench_operator, FileSystemBenchOperator):
+                        self._release_from_files(
+                            bench_operator, release_zip,
+                            bench_ids, bench_results,
+                        )
                     else:
-                        for file_path, data in zip(
-                            [
-                                accessor.bench_result_file(id_)
-                                for id_ in bench_ids
-                            ],
-                            bench_results,
-                        ):
-                            release_zip.writestr(file_path.name, data)
+                        self._release_from_sqlite(release_zip, bench_ids, bench_results)
 
                 if not self.sqlite:
+                    filesys_operator_factory = cast(
+                        Callable[[BenchAccessor, Literal[False]], FileSystemBenchOperator],
+                        operator_factory,
+                    )
                     release_zip.writestr(
                         "index.json",
                         json.dumps(
                             self._get_index_data(
                                 {
                                     env_description: [
-                                        accessor.bench_result_file(accessor.get_id(schema))
+                                        filesys_operator_factory(accessor, False).bench_result_file(accessor.get_id(schema))
                                         for schema in accessor.schemas
                                     ]
                                     for env_description, accessor in env_with_accessor
