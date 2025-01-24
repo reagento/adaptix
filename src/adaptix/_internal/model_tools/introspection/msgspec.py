@@ -1,9 +1,11 @@
 from types import MappingProxyType
-from typing import ClassVar, Mapping, get_origin
+from typing import Mapping
 
-from msgspec import NODEFAULT
-from msgspec.structs import FieldInfo, fields
-
+try:
+    from msgspec import NODEFAULT
+    from msgspec.structs import FieldInfo, fields
+except ImportError:
+    pass
 from ...feature_requirement import HAS_MSGSPEC_PKG, HAS_SUPPORTED_MSGSPEC_PKG
 from ...type_tools import get_all_type_hints, is_class_var, normalize_type
 from ..definitions import (
@@ -25,7 +27,7 @@ from ..definitions import (
 )
 
 
-def _get_default_from_field_info(fi: FieldInfo) -> Default:
+def _get_default_from_field_info(fi: "FieldInfo") -> Default:
     if fi.default is not NODEFAULT:
         return DefaultValue(fi.default)
     if fi.default_factory is not NODEFAULT:
@@ -33,7 +35,7 @@ def _get_default_from_field_info(fi: FieldInfo) -> Default:
     return NoDefault()
 
 
-def _create_input_field_from_structs_field_info(fi: FieldInfo, type_hints: Mapping) -> InputField:
+def _create_input_field_from_structs_field_info(fi: "FieldInfo", type_hints: Mapping[str, type]) -> InputField:
     default = _get_default_from_field_info(fi)
     return InputField(
         id=fi.name,
