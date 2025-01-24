@@ -1,11 +1,11 @@
 from types import MappingProxyType
-from typing import Mapping
+from typing import ClassVar, Mapping, get_origin
 
 from msgspec import NODEFAULT
 from msgspec.structs import FieldInfo, fields
 
 from ...feature_requirement import HAS_MSGSPEC_PKG, HAS_SUPPORTED_MSGSPEC_PKG
-from ...type_tools import get_all_type_hints
+from ...type_tools import get_all_type_hints, is_class_var, normalize_type
 from ..definitions import (
     Default,
     DefaultFactory,
@@ -57,23 +57,33 @@ def get_struct_shape(tp) -> FullShape:
         raise IntrospectionError
 
     type_hints = get_all_type_hints(tp)
+    init_fields = tuple(
+        field_name
+        for field_name in type_hints
+        if not is_class_var(normalize_type(type_hints[field_name]))
+    )
     return FullShape(
         InputShape(
             constructor=tp,
             fields=tuple(
                 _create_input_field_from_structs_field_info(fi, type_hints)
-                for fi in fields_info
+                for fi in fields_info if fi.name in init_fields
             ),
             params=tuple(
                 Param(
                     field_id=field_id,
                     name=field_id,
-                    kind=ParamKind.POS_OR_KW,
+                    kind=ParamKind.KW_ONLY,
                 )
                 for field_id in type_hints
+                if field_id in init_fields
         ),
             kwargs=None,
-            overriden_types=frozenset(tp.__annotations__.keys()),
+            overriden_types=frozenset(
+                annotation
+                for annotation in tp.__annotations__
+                if annotation in init_fields
+            ),
         ),
         OutputShape(
             fields=tuple(
@@ -85,6 +95,10 @@ def get_struct_shape(tp) -> FullShape:
                     default=_get_default_from_field_info(fi),
                     accessor=create_attr_accessor(attr_name=fi.name, is_required=True),
                 ) for fi in fields_info),
-            overriden_types=frozenset(tp.__annotations__.keys()),
+            overriden_types=frozenset(
+                annotation
+                for annotation in tp.__annotations__.keys()
+                if annotation in init_fields
+            ),
         ),
     )
