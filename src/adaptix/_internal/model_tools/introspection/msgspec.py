@@ -73,7 +73,7 @@ def get_struct_shape(tp) -> FullShape:
                 Param(
                     field_id=field_id,
                     name=field_id,
-                    kind=ParamKind.KW_ONLY,
+                    kind=ParamKind.KW_ONLY,  # information is not provided by Struct introspection
                 )
                 for field_id in type_hints
                 if field_id in init_fields

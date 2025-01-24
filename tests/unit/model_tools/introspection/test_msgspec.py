@@ -1,5 +1,5 @@
 from types import MappingProxyType, NoneType
-from typing import ClassVar, Union
+from typing import ClassVar, Sequence, Union
 from unittest.mock import ANY
 
 from msgspec import NODEFAULT, Struct, field
@@ -41,6 +41,8 @@ class BasicStruct(Struct):
 
 def test_basic():
     assert (
+        get_struct_shape(BasicStruct)
+        ==
         Shape(
             input=InputShape(
                 constructor=BasicStruct,
@@ -162,7 +164,100 @@ def test_basic():
                 overriden_types=frozenset({"a", "b", "c", "d", "f"}),
             ),
         )
-         == get_struct_shape(BasicStruct)
     )
 
 
+class Bar(Struct):
+    a: Sequence[int]
+    b: float
+
+
+class BarChild(Bar):
+    c: int
+    a: list[int]
+
+
+def test_inheritance():
+    assert (
+        get_struct_shape(BarChild)
+        ==
+        Shape(
+            InputShape(
+                constructor=BarChild,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=list[int],
+                        id="a",
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    InputField(
+                        type=float,
+                        id="b",
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    InputField(
+                        type=int,
+                        id="c",
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id="a",
+                        name="a",
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id="b",
+                        name="b",
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id="c",
+                        name="c",
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                ),
+                overriden_types=frozenset({"a", "c"}),
+            ),
+            OutputShape(
+                fields=(
+                    OutputField(
+                        type=list[int],
+                        id="a",
+                        default=NoDefault(),
+                        accessor=create_attr_accessor("a", is_required=True),
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    OutputField(
+                        type=float,
+                        id="b",
+                        default=NoDefault(),
+                        accessor=create_attr_accessor("b", is_required=True),
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    OutputField(
+                        type=int,
+                        id="c",
+                        default=NoDefault(),
+                        accessor=create_attr_accessor("c", is_required=True),
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                ),
+                overriden_types=frozenset({"a", "c"}),
+            ),
+        )
+    )
