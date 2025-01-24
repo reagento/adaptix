@@ -1,5 +1,5 @@
 from types import MappingProxyType, NoneType
-from typing import Annotated, Any, ClassVar, Sequence, Union
+from typing import Annotated, Any, ClassVar, Generic, Sequence, TypeVar, Union
 from unittest.mock import ANY
 
 from msgspec import Struct, field
@@ -268,6 +268,7 @@ class ForwardRefStruct(Struct):
 class ForwardRefStructChild(ForwardRefStruct):
     b: str
 
+
 def test_forward_ref():
     assert (
         get_struct_shape(ForwardRefStruct)
@@ -311,8 +312,10 @@ def test_forward_ref():
         )
     )
 
+
 class WithAnnotatedField(Struct):
     a: Annotated[int, "metadata"]
+
 
 def test_annotated():
     assert (
@@ -370,6 +373,7 @@ class UsingFeatures(
 ):
     a: int = field(name="g")
     b: bool = True
+
 
 def test_features():
     assert (
@@ -433,4 +437,55 @@ def test_features():
                 overriden_types=frozenset({"a", "b"}),
             ),
         )
+    )
+
+
+T = TypeVar("T")
+
+
+class GenericStruct(Struct, Generic[T]):
+    a: T
+
+
+def test_generic():
+    assert (
+        get_struct_shape(GenericStruct)
+        ==
+        Shape(
+            InputShape(
+                constructor=GenericStruct,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=T,
+                        id="a",
+                        default=NoDefault(),
+                        metadata=MappingProxyType({}),
+                        is_required=True,
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id="a",
+                        name="a",
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                ),
+                overriden_types=frozenset({"a"}),
+            ),
+            OutputShape(
+                fields=(
+                    OutputField(
+                        type=T,
+                        id="a",
+                        default=NoDefault(),
+                        accessor=create_attr_accessor("a", is_required=True),
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                ),
+                overriden_types=frozenset({"a"}),
+        ),
+    )
     )
