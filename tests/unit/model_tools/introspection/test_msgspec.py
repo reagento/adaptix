@@ -1,14 +1,12 @@
 from types import MappingProxyType, NoneType
-from typing import ClassVar, Sequence, Union
+from typing import Annotated, Any, ClassVar, Sequence, Union
 from unittest.mock import ANY
 
-from msgspec import NODEFAULT, Struct, field
-from msgspec.structs import FieldInfo
+from msgspec import Struct, field
 
 from adaptix._internal.model_tools.definitions import (
     DefaultFactory,
     DefaultValue,
-    Inp,
     InputField,
     InputShape,
     NoDefault,
@@ -167,12 +165,12 @@ def test_basic():
     )
 
 
-class Bar(Struct):
+class BarParent(Struct):
     a: Sequence[int]
     b: float
 
 
-class BarChild(Bar):
+class BarChild(BarParent):
     c: int
     a: list[int]
 
@@ -258,6 +256,181 @@ def test_inheritance():
                     ),
                 ),
                 overriden_types=frozenset({"a", "c"}),
+            ),
+        )
+    )
+
+
+class ForwardRefStruct(Struct):
+    a: "int"
+
+
+class ForwardRefStructChild(ForwardRefStruct):
+    b: str
+
+def test_forward_ref():
+    assert (
+        get_struct_shape(ForwardRefStruct)
+        ==
+        Shape(
+            input=InputShape(
+                constructor=ForwardRefStruct,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        id="a",
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id="a",
+                        name="a",
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                ),
+                overriden_types=frozenset({"a"}),
+            ),
+            output=OutputShape(
+                fields=(
+                    OutputField(
+                        type=int,
+                        id="a",
+                        default=NoDefault(),
+                        accessor=create_attr_accessor("a", is_required=True),
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                ),
+                overriden_types=frozenset({"a"}),
+            ),
+        )
+    )
+
+class WithAnnotatedField(Struct):
+    a: Annotated[int, "metadata"]
+
+def test_annotated():
+    assert (
+        get_struct_shape(WithAnnotatedField)
+        ==
+        Shape(
+            input=InputShape(
+                constructor=WithAnnotatedField,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=Annotated[int, "metadata"],
+                        id="a",
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id="a",
+                        name="a",
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                ),
+                overriden_types=frozenset({"a"}),
+            ),
+            output=OutputShape(
+                fields=(
+                    OutputField(
+                        type=Annotated[int, "metadata"],
+                        id="a",
+                        default=NoDefault(),
+                        accessor=create_attr_accessor("a", is_required=True),
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                ),
+                overriden_types=frozenset({"a"}),
+            ),
+        )
+    )
+
+
+class UsingFeatures(
+    Struct,
+    kw_only=True,
+    eq=False,
+    frozen=True,
+    tag=True,
+    omit_defaults=True,
+    forbid_unknown_fields=True,
+    array_like=True,
+):
+    a: int = field(name="g")
+    b: bool = True
+
+def test_features():
+    assert (
+        get_struct_shape(UsingFeatures)
+        ==
+        Shape(
+            InputShape(
+                constructor=UsingFeatures,
+                kwargs=None,
+                fields=(
+                    InputField(
+                        type=int,
+                        id="a",
+                        default=NoDefault(),
+                        is_required=True,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    InputField(
+                        type=bool,
+                        id="b",
+                        default=DefaultValue(True),
+                        is_required=False,
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                ),
+                params=(
+                    Param(
+                        field_id="a",
+                        name="a",
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                    Param(
+                        field_id="b",
+                        name="b",
+                        kind=ParamKind.KW_ONLY,
+                    ),
+                ),
+                overriden_types=frozenset({"a", "b"}),
+            ),
+            OutputShape(
+                fields=(
+                    OutputField(
+                        type=int,
+                        id="a",
+                        default=NoDefault(),
+                        accessor=create_attr_accessor("a", is_required=True),
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                    OutputField(
+                        type=bool,
+                        id="b",
+                        default=DefaultValue(True),
+                        accessor=create_attr_accessor("b", is_required=True),
+                        metadata=MappingProxyType({}),
+                        original=ANY,
+                    ),
+                ),
+                overriden_types=frozenset({"a", "b"}),
             ),
         )
     )
