@@ -10,6 +10,7 @@ from _pytest.python import Metafunc
 
 from adaptix._internal.feature_requirement import (
     HAS_ATTRS_PKG,
+    HAS_MSGSPEC_PKG,
     HAS_PY_311,
     HAS_PYDANTIC_PKG,
     HAS_SQLALCHEMY_PKG,
@@ -38,6 +39,7 @@ class ModelSpec(Enum):
     ATTRS = "attrs"
     SQLALCHEMY = "sqlalchemy"
     PYDANTIC = "pydantic"
+    MSGSPEC = "msgspec"
 
     @classmethod
     def default_requirements(cls):
@@ -45,6 +47,7 @@ class ModelSpec(Enum):
             cls.ATTRS: HAS_ATTRS_PKG,
             cls.SQLALCHEMY: HAS_SQLALCHEMY_PKG,
             cls.PYDANTIC: HAS_PYDANTIC_PKG,
+            cls.MSGSPEC: HAS_MSGSPEC_PKG,
         }
 
 
@@ -105,6 +108,9 @@ def model_spec_to_schema(spec: ModelSpec):
             model_config = ConfigDict(arbitrary_types_allowed=True)
 
         return ModelSpecSchema(decorator=lambda x: x, bases=(CustomBaseModel, ), get_field=getattr, kind=spec)
+    if spec == ModelSpec.MSGSPEC:
+        from msgspec import Struct
+        return ModelSpecSchema(decorator=lambda x: x, bases=(Struct,), get_field=getattr, kind=spec)
     raise ValueError
 
 

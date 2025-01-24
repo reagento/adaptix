@@ -2,7 +2,13 @@ import pytest
 from tests_helpers import ByTrailSelector, ModelSpecSchema, cond_list, parametrize_model_spec
 
 from adaptix import DebugTrail
-from adaptix._internal.feature_requirement import HAS_ATTRS_PKG, HAS_PY_312, HAS_PYDANTIC_PKG, HAS_SQLALCHEMY_PKG
+from adaptix._internal.feature_requirement import (
+    HAS_ATTRS_PKG,
+    HAS_MSGSPEC_PKG,
+    HAS_PY_312,
+    HAS_PYDANTIC_PKG,
+    HAS_SQLALCHEMY_PKG,
+)
 
 
 @pytest.fixture(params=[False, True], ids=lambda x: f"strict_coercion={x}")
@@ -46,4 +52,5 @@ collect_ignore_glob = [
     *cond_list(not HAS_ATTRS_PKG, ["*_attrs.py", "*_attrs_*.py", "**/attrs/**"]),
     *cond_list(not HAS_PYDANTIC_PKG, ["*_pydantic.py", "*_pydantic_*.py", "**/pydantic/**"]),
     *cond_list(not HAS_SQLALCHEMY_PKG, ["*_sqlalchemy.py", "*_sqlalchemy_*.py", "**/sqlalchemy/**"]),
+    *cond_list(not HAS_MSGSPEC_PKG,["*_msgspec.py", "*_msgspec_*.py", "**/msgspec/**"]),
 ]
