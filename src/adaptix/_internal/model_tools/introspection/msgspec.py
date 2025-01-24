@@ -4,6 +4,7 @@ from typing import Mapping
 from msgspec import NODEFAULT
 from msgspec.structs import FieldInfo, fields
 
+from ...feature_requirement import HAS_MSGSPEC_PKG, HAS_SUPPORTED_MSGSPEC_PKG
 from ...type_tools import get_all_type_hints
 from ..definitions import (
     Default,
@@ -14,10 +15,12 @@ from ..definitions import (
     InputShape,
     IntrospectionError,
     NoDefault,
+    NoTargetPackageError,
     OutputField,
     OutputShape,
     Param,
     ParamKind,
+    TooOldPackageError,
     create_attr_accessor,
 )
 
@@ -43,12 +46,17 @@ def _create_input_field_from_structs_field_info(fi: FieldInfo, type_hints: Mappi
 
 
 def get_struct_shape(tp) -> FullShape:
+    if not HAS_SUPPORTED_MSGSPEC_PKG:
+        if not HAS_MSGSPEC_PKG:
+            raise NoTargetPackageError(HAS_MSGSPEC_PKG)
+        raise TooOldPackageError(HAS_SUPPORTED_MSGSPEC_PKG)
 
-    type_hints = get_all_type_hints(tp)
     try:
         fields_info = fields(tp)
     except TypeError:
         raise IntrospectionError
+
+    type_hints = get_all_type_hints(tp)
     return FullShape(
         InputShape(
             constructor=tp,
@@ -65,7 +73,7 @@ def get_struct_shape(tp) -> FullShape:
                 for field_id in type_hints
         ),
             kwargs=None,
-            overriden_types=frozenset({}),
+            overriden_types=frozenset(tp.__annotations__.keys()),
         ),
         OutputShape(
             fields=tuple(
@@ -77,6 +85,6 @@ def get_struct_shape(tp) -> FullShape:
                     default=_get_default_from_field_info(fi),
                     accessor=create_attr_accessor(attr_name=fi.name, is_required=True),
                 ) for fi in fields_info),
-            overriden_types=frozenset({}),
+            overriden_types=frozenset(tp.__annotations__.keys()),
         ),
     )
