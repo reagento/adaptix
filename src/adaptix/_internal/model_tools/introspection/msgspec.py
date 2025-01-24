@@ -39,7 +39,7 @@ def _create_input_field_from_structs_field_info(fi: FieldInfo, type_hints: Mappi
         id=fi.name,
         type=type_hints[fi.name],
         default=default,
-        is_required=default == NoDefault(),
+        is_required=fi.required,
         original=fi,
         metadata=MappingProxyType({}),
     )
