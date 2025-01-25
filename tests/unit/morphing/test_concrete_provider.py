@@ -18,6 +18,7 @@ from adaptix._internal.morphing.concrete_provider import (
     DateTimestampProvider,
     DatetimeTimestampProvider,
 )
+from adaptix._internal.morphing.dump_error import SentinelDumpError
 from adaptix._internal.morphing.load_error import LoadError, UnionLoadError
 from adaptix.load_error import FormatMismatchLoadError, TypeLoadError, ValueLoadError
 
@@ -526,7 +527,7 @@ def test_omittable_provider(strict_coercion, debug_trail):
 
     dumper = retort.get_dumper(Omittable[int])
     raises_exc(
-        ValueError("Field is missing"),
+        SentinelDumpError(Omitted),
         lambda: dumper(Omitted()),
     )
     loader = retort.get_loader(Omittable[int])

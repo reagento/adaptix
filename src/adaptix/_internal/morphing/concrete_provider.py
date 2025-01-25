@@ -20,6 +20,7 @@ from ..provider.loc_stack_tools import find_owner_with_field
 from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
 from ..special_cases_optimization import as_is_stub
+from .dump_error import SentinelDumpError
 from .json_schema.definitions import JSONSchema
 from .json_schema.request_cls import JSONSchemaRequest
 from .json_schema.schema_model import JSONSchemaBuiltinFormat, JSONSchemaType
@@ -643,7 +644,7 @@ class LiteralStringProvider(MorphingProvider):
 def make_sentinel_dumper(sentinel_type: typing.Type):
     def sentinel_dumper(data):
         if type(data) is sentinel_type:
-            raise ValueError("Field is missing")
+            raise SentinelDumpError(sentinel_type)
     return sentinel_dumper
 
 
