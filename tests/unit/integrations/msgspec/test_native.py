@@ -35,7 +35,7 @@ def test_with_conversion_params():
         b: str
 
     retort = Retort(
-        recipe=[native_msgspec(MyModel, strict=True)],
+        recipe=[native_msgspec(MyModel, convert={"strict": True})],
     )
 
     loader_ = retort.get_loader(MyModel)
@@ -55,7 +55,7 @@ def test_to_builtins_with_params():
         b: str
 
     retort = Retort(
-        recipe=[native_msgspec(MyModel, to_builtins_str_keys=False)],
+        recipe=[native_msgspec(MyModel, to_builtins={"str_keys": False})],
     )
 
     loader_ = retort.get_loader(MyModel)
