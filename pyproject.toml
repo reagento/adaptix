@@ -39,6 +39,7 @@ sqlalchemy = ['sqlalchemy >= 2.0.0']
 sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.36']
 pydantic = ['pydantic >= 2.0.0']
 pydantic-strict = ['pydantic >= 2.0.0, <= 2.10.3']
+msgspec = ["msgspec > = 0.14.0"]
 
 [project.urls]
 'Homepage' = 'https://github.com/reagento/adaptix'
