@@ -351,7 +351,7 @@ class BenchRunner:
                 "benchmark_subname": self.meta.benchmark_subname,
                 "benchmark_name": self.meta.benchmark_name,
             }
-            bench_operator.write_bench_result(bench_data)
+            bench_operator.write_bench_record(bench_data)
 
     def launch_benchmark(
         self,

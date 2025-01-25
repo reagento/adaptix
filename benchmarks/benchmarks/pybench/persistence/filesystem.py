@@ -12,7 +12,7 @@ class FileSystemBenchOperator(BenchOperator):
     def bench_exists(self, bench_id: str) -> bool:
         return self.bench_result_file(bench_id).exists()
 
-    def write_bench_result(self, record: BenchRecord) -> None:
+    def write_bench_record(self, record: BenchRecord) -> None:
         result_file = self.bench_result_file(record["global_id"])
         result_file.write_text(record["data"])
 

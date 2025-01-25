@@ -49,7 +49,7 @@ class BenchRecord(TypedDict):
 class BenchOperator(Protocol):
 
     @abc.abstractmethod
-    def write_bench_result(self, record: BenchRecord) -> None:
+    def write_bench_record(self, record: BenchRecord) -> None:
         ...
 
     @abc.abstractmethod

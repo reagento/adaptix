@@ -116,7 +116,7 @@ class SQLite3BenchOperator(BenchOperator):
             raise RecordNotFound(bench_id, bench_name, bench_sub_name)
         return data[0]
 
-    def write_bench_result(self, record: BenchRecord) -> None:
+    def write_bench_record(self, record: BenchRecord) -> None:
 
         with connect(self.db_name) as conn:
             conn.execute(self.INSERT_BENCH_DATA_Q, (
