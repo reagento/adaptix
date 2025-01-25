@@ -69,10 +69,6 @@ def native_msgspec(
     strict: Omittable[bool] = Omitted(),
     from_attributes: Omittable[bool] = Omitted(),
 ) -> Provider:
-    """
-    Msgspec conversion
-    @param type: it is required for loading
-    """
     return bound_by_any(
         preds,
         NativeMsgspecProvider(
