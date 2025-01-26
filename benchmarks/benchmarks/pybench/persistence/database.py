@@ -136,8 +136,5 @@ class SQLite3BenchOperator(BenchOperator):
 
 
 def sqlite_operator_factory(accessor: BenchAccessProto) -> SQLite3BenchOperator:
-    return SQLite3BenchOperator(accessor, DATABASE_FILE_NAME)
-
-
-if __name__ == "__main__":
     database_initialization(DATABASE_FILE_NAME)
+    return SQLite3BenchOperator(accessor, DATABASE_FILE_NAME)
