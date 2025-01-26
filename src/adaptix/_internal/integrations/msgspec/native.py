@@ -28,6 +28,7 @@ class ToBuiltins(TypedDict, total=False):
     str_keys: bool
     enc_hook: Callable[[Any], Any]
 
+
 class NativeMsgspecProvider(LoaderProvider, DumperProvider):
     def __init__(
         self,
@@ -37,15 +38,12 @@ class NativeMsgspecProvider(LoaderProvider, DumperProvider):
         self.conversion_params = conversion_params
         self.to_builtins_params = to_builtins_params
 
-    def _skip_omitted(self, mapping: Mapping[str, T]) -> Mapping[str, T]:
-        return {k: v for k, v in mapping.items() if v != Omitted()}
-
     def provide_loader(self, mediator: Mediator[Loader], request: LoaderRequest) -> Loader:
-        type_ = request.last_loc.type
+        tp = request.last_loc.type
         if conversion_params := self.conversion_params:
             def native_msgspec_loader(data):
                 try:
-                    return convert(data, type=type_, **conversion_params)
+                    return convert(data, type=tp, **conversion_params)
                 except ValidationError as e:
                     raise LoadError() from e
 
@@ -53,7 +51,7 @@ class NativeMsgspecProvider(LoaderProvider, DumperProvider):
 
         def native_msgspec_loader_no_params(data):
             try:
-                return convert(data, type=type_)
+                return convert(data, type=tp)
             except ValidationError as e:
                 raise LoadError() from e
 

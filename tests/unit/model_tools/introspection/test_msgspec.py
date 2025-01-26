@@ -91,27 +91,27 @@ def test_basic():
                     Param(
                         field_id="a",
                         name="a",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                     Param(
                         field_id="c",
                         name="c",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                     Param(
                         field_id="b",
                         name="b",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                     Param(
                         field_id="d",
                         name="d",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                     Param(
                         field_id="f",
                         name="f",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({"a", "b", "c", "d", "f"}),
@@ -213,17 +213,17 @@ def test_inheritance():
                     Param(
                         field_id="a",
                         name="a",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                     Param(
                         field_id="b",
                         name="b",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                     Param(
                         field_id="c",
                         name="c",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({"a", "c"}),
@@ -291,7 +291,7 @@ def test_forward_ref():
                     Param(
                         field_id="a",
                         name="a",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({"a"}),
@@ -339,7 +339,7 @@ def test_annotated():
                     Param(
                         field_id="a",
                         name="a",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({"a"}),

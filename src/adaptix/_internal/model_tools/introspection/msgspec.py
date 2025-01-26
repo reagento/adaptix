@@ -1,3 +1,4 @@
+import inspect
 from types import MappingProxyType
 from typing import Mapping
 
@@ -64,6 +65,7 @@ def get_struct_shape(tp) -> FullShape:
         for field_name in type_hints
         if not is_class_var(normalize_type(type_hints[field_name]))
     )
+    input_param_kind = ParamKind.KW_ONLY if "*" in inspect.signature(tp) else ParamKind.POS_OR_KW
     return FullShape(
         InputShape(
             constructor=tp,
@@ -75,7 +77,7 @@ def get_struct_shape(tp) -> FullShape:
                 Param(
                     field_id=field_id,
                     name=field_id,
-                    kind=ParamKind.KW_ONLY,  # information is not provided by Struct introspection
+                    kind=input_param_kind,
                 )
                 for field_id in type_hints
                 if field_id in init_fields
