@@ -488,4 +488,4 @@ def test_generic():
                 overriden_types=frozenset({"a"}),
         ),
     )
-    )
+)

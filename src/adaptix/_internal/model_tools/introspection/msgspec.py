@@ -48,6 +48,16 @@ def _create_input_field_from_structs_field_info(fi: "FieldInfo", type_hints: Map
     )
 
 
+def _get_kind_from_sig(param_kind):
+    if param_kind == inspect.Parameter.POSITIONAL_OR_KEYWORD:
+        return ParamKind.POS_OR_KW
+    if param_kind == inspect.Parameter.KEYWORD_ONLY:
+        return ParamKind.KW_ONLY
+    if param_kind == inspect.Parameter.POSITIONAL_ONLY:
+        return ParamKind.POS_ONLY
+    raise IntrospectionError
+
+
 def get_struct_shape(tp) -> FullShape:
     if not HAS_SUPPORTED_MSGSPEC_PKG:
         if not HAS_MSGSPEC_PKG:
@@ -65,7 +75,7 @@ def get_struct_shape(tp) -> FullShape:
         for field_name in type_hints
         if not is_class_var(normalize_type(type_hints[field_name]))
     )
-    input_param_kind = ParamKind.KW_ONLY if "*" in inspect.signature(tp) else ParamKind.POS_OR_KW
+    param_sig = inspect.signature(tp).parameters
     return FullShape(
         InputShape(
             constructor=tp,
@@ -77,7 +87,7 @@ def get_struct_shape(tp) -> FullShape:
                 Param(
                     field_id=field_id,
                     name=field_id,
-                    kind=input_param_kind,
+                    kind=_get_kind_from_sig(param_sig[field_id].kind),
                 )
                 for field_id in type_hints
                 if field_id in init_fields
