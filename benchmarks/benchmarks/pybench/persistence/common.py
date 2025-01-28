@@ -4,7 +4,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Optional, Protocol, TypedDict
+from typing import Any, Mapping, Optional, Protocol, TypedDict
 
 
 @dataclass(frozen=True)
@@ -39,11 +39,10 @@ class BenchRecord(TypedDict):
     base: str
     local_id: str
     global_id: str
-    tags: str
-    kwargs: str
-    distributions: str
+    tags: Iterable[str]
+    kwargs: Mapping[str, Any]
+    distributions: dict[str, str]
     data: str
-    created_at: datetime.datetime
 
 
 class BenchOperator(Protocol):
@@ -58,8 +57,4 @@ class BenchOperator(Protocol):
 
     @abc.abstractmethod
     def get_bench_result(self, schema: Any) -> Optional[str]:
-        ...
-
-    @abc.abstractmethod
-    def bench_exists(self, bench_id: str) -> bool:
         ...

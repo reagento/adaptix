@@ -260,7 +260,7 @@ class BenchRunner:
         if missing:
             schemas = [
                 schema for schema in self.accessor.schemas
-                if not operator.bench_exists(self.accessor.get_id(schema))
+                if not operator.get_bench_result(schema)
             ]
         elif unstable:
             schemas = [
@@ -340,11 +340,10 @@ class BenchRunner:
             print()
             bench_data: BenchRecord = {
                 "base": schema.base,
-                "kwargs": json.dumps(schema.kwargs),
-                "distributions": json.dumps(distributions),
+                "kwargs": schema.kwargs,
+                "distributions": distributions,
                 "is_actual": True,
-                "created_at": datetime.datetime.now(tz=datetime.timezone.utc),
-                "tags": json.dumps(schema.tags),
+                "tags": schema.tags,
                 "data": bench_data_text,
                 "local_id": self.accessor.get_local_id(schema),
                 "global_id": self.accessor.get_id(schema),

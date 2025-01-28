@@ -964,24 +964,24 @@ class Releaser(HubProcessor):
                     else:
                         self._release_from_sqlite(release_zip, bench_ids, bench_results)
 
-                if not self.sqlite:
-                    filesys_operator_factory = cast(
-                        Callable[[BenchAccessor, Literal[False]], FileSystemBenchOperator],
-                        operator_factory,
-                    )
-                    release_zip.writestr(
-                        "index.json",
-                        json.dumps(
-                            self._get_index_data(
-                                {
-                                    env_description: [
-                                        filesys_operator_factory(accessor, False).bench_result_file(accessor.get_id(schema))
-                                        for schema in accessor.schemas
-                                    ]
-                                    for env_description, accessor in env_with_accessor
-                                }),
+                filesys_operator_factory = cast(
+                    Callable[[BenchAccessor, Literal[False]], FileSystemBenchOperator],
+                    operator_factory,
+                )
+                release_zip.writestr(
+                    "index.json",
+                    json.dumps(
+                        self._get_index_data(
+                            {
+                                env_description: [
+                                    filesys_operator_factory(accessor, False).bench_result_file(accessor.get_id(schema))
+                                    for schema in accessor.schemas
+                                ]
+                                for env_description, accessor in env_with_accessor
+                            },
                         ),
-                    )
+                    ),
+                )
 
 
 class ListGetter(Foundation):

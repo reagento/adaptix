@@ -1,3 +1,5 @@
+import datetime
+import json
 from collections.abc import Sequence
 from sqlite3 import Connection, connect
 from typing import Any, Optional
@@ -7,7 +9,7 @@ from benchmarks.pybench.persistence.common import BenchAccessProto, BenchOperato
 DATABASE_FILE_NAME = "adaptix_bench.db"
 
 
-class RecordNotFound(Exception):
+class _RecordNotFound(Exception):
     def __init__(self, gid: str, name: str, sub_name: str):
         self.gid = gid
         self.name = name
@@ -70,20 +72,6 @@ class SQLite3BenchOperator(BenchOperator):
         self.accessor = accessor
         self.db_name = db_name
 
-    def bench_exists(self, bench_id: str) -> bool:
-        con = connect(self.db_name)
-        result = con.execute(self.GET_BENCH_DATA_Q,
-                             (
-                                 self.accessor.meta.benchmark_name,
-                                 self.accessor.meta.benchmark_subname,
-                                 bench_id,
-                             ))
-        data = result.fetchone()
-        con.close()
-        if not data:
-            return False
-        return True
-
     def get_all_bench_results(self) -> Sequence[str]:
         con = connect(self.db_name)
         content_container = []
@@ -113,7 +101,7 @@ class SQLite3BenchOperator(BenchOperator):
         result = connection.execute(self.GET_BENCH_DATA_Q, (bench_name, bench_sub_name, bench_id))
         data = result.fetchone()
         if not data:
-            raise RecordNotFound(bench_id, bench_name, bench_sub_name)
+            raise _RecordNotFound(bench_id, bench_name, bench_sub_name)
         return data[0]
 
     def write_bench_record(self, record: BenchRecord) -> None:
@@ -126,11 +114,11 @@ class SQLite3BenchOperator(BenchOperator):
                 record["base"],
                 record["local_id"],
                 record["global_id"],
-                record["tags"],
-                record["kwargs"],
-                record["distributions"],
+                json.dumps(record["tags"]),
+                json.dumps(record["kwargs"]),
+                json.dumps(record["distributions"]),
                 record["data"],
-                record["created_at"],
+                datetime.datetime.now(tz=datetime.timezone.utc),
             ))
             conn.commit()
 
