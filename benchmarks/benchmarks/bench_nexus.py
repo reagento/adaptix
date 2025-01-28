@@ -899,11 +899,11 @@ class Releaser(HubProcessor):
         validator.validate(self.filtered_hubs())
         self._release()
 
-    def _get_index_data(self, env_to_files: Mapping[EnvDescription, Iterable[Path]]) -> Dict[str, Any]:
+    def _get_index_data(self, env_to_files: Mapping[EnvDescription, Iterable[str]]) -> Dict[str, Any]:
         return {
             "env_files": {
                 env_description.key: [
-                    file.name for file in files
+                    file for file in files
                 ]
                 for env_description, files in env_to_files.items()
             },
@@ -956,25 +956,16 @@ class Releaser(HubProcessor):
                     bench_operator = operator_factory(accessor, sqlite=bool(self.sqlite))
                     bench_results = bench_operator.get_all_bench_results()
                     bench_ids = [accessor.get_id(schema) for schema in accessor.schemas]
-                    if isinstance(bench_operator, FileSystemBenchOperator):
-                        self._release_from_files(
-                            bench_operator, release_zip,
-                            bench_ids, bench_results,
-                        )
-                    else:
-                        self._release_from_sqlite(release_zip, bench_ids, bench_results)
+                    for name, data in zip(bench_ids, bench_results):
+                        release_zip.writestr(name + ".json", data)
 
-                filesys_operator_factory = cast(
-                    Callable[[BenchAccessor, Literal[False]], FileSystemBenchOperator],
-                    operator_factory,
-                )
                 release_zip.writestr(
                     "index.json",
                     json.dumps(
                         self._get_index_data(
                             {
                                 env_description: [
-                                    filesys_operator_factory(accessor, False).bench_result_file(accessor.get_id(schema))
+                                    accessor.get_id(schema) + ".json"
                                     for schema in accessor.schemas
                                 ]
                                 for env_description, accessor in env_with_accessor
