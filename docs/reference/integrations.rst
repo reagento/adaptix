@@ -21,7 +21,7 @@ Models that are supported out of the box:
 - `attrs <https://www.attrs.org/en/stable/>`__ (only from ``>=21.3.0``)
 - `sqlalchemy <https://docs.sqlalchemy.org/en/20/>`__ (only from ``>=2.0.0``)
 - `pydantic <https://docs.pydantic.dev/latest/>`__ (only from ``>=2.0.0``)
-- `msgspec <https://jcristharif.com/msgspec/>` __ (only from ``>=0.14.0``)
+- `msgspec <https://jcristharif.com/msgspec/>`__ (only from ``>=0.14.0``)
 
 Arbitrary types also are supported to be loaded by introspection of ``__init__`` method,
 but it can not be dumped.
@@ -111,12 +111,14 @@ You can override this behavior to use a native pydantic validation/serialization
 
 .. _msgspec:
 
-Msgspec
+Working with msgspec
 =============
 
 By default, any msgspec Struct is loaded and dumped like any other model.
-For example, any unsupported by to_builtins types won't be casted.
-You can override this behaviour by using a native msgspec to_builtins/convert mechanism.
+``load`` in adaptix behaves like ``convert`` in msgspec.
+Same is for ``dump`` and ``to_builtins``.
+For example, types unsupported by ``to_builtins`` won't be casted.
+You can override this behaviour by using a native msgspec ``to_builtins``/``convert`` mechanism.
 
 .. literalinclude:: /examples/reference/integrations/native_msgspec.py
 
