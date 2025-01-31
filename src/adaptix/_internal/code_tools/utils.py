@@ -53,7 +53,7 @@ def _try_sort(iterable):
         return iterable
 
 
-def _get_complex_literal_expr(obj: object) -> Optional[str]:  # noqa: PLR0911
+def _get_complex_literal_expr(obj: object) -> Optional[str]:  # noqa: PLR0911, C901
     if type(obj) is list:
         return _parenthesize("[]", obj)
 
