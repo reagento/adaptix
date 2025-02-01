@@ -236,7 +236,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
             raise TypeError
 
         if isinstance(extra_extraction_out_stmt, Expression):
-            extending_stmt = CodeBlock(
+            extending_stmt: Statement = CodeBlock(
                 "<out_variable>.update(<extra>)",
                 out_variable=RawExpr(final_crown_out_stmt.var),
                 extra=extra_extraction_out_stmt,
@@ -267,20 +267,19 @@ class BuiltinModelDumperGen(ModelDumperGen):
 
     def _get_extra_extraction(self, state: GenState) -> Optional[OutStatement]:
         if isinstance(self._name_layout.extra_move, ExtraTargets):
-            self._get_extra_target_extraction(state, self._name_layout.extra_move)
-        elif isinstance(self._name_layout.extra_move, ExtraExtract):
-            self._get_extra_extract_extraction(state, self._name_layout.extra_move)
-        elif self._name_layout.extra_move is None:
+            return self._get_extra_target_extraction(state, self._name_layout.extra_move)
+        if isinstance(self._name_layout.extra_move, ExtraExtract):
+            return self._get_extra_extract_extraction(state, self._name_layout.extra_move)
+        if self._name_layout.extra_move is None:
             return None
-        else:
-            raise ValueError
+        raise ValueError
 
     def _get_extra_target_extraction(self, state: GenState, extra_targets: ExtraTargets) -> OutStatement:
         if len(extra_targets.fields) == 1:
-            return self._get_field_extraction(state.namespace, self._id_to_field[extra_targets.fields[0]])
+            return self._get_field_extraction(state, self._id_to_field[extra_targets.fields[0]])
 
         out_stmts = [
-            self._get_field_extraction(state.namespace, self._id_to_field[field_id])
+            self._get_field_extraction(state, self._id_to_field[field_id])
             for field_id in extra_targets.fields
         ]
         builder = DictBuilder()
@@ -303,7 +302,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 )
 
         dict_literal = DictLiteral(
-            MappingUnpack(out_stmt if isinstance(out_stmt, Expression) else out_stmt.var)
+            MappingUnpack(out_stmt if isinstance(out_stmt, Expression) else RawExpr(out_stmt.var))
             for out_stmt in out_stmts
         )
         if not builder.before_stmts and not builder.after_stmts:
@@ -374,28 +373,28 @@ class BuiltinModelDumperGen(ModelDumperGen):
         namespace.register_var(out_variable)
         return out_variable
 
-    def _get_field_extraction(self, namespace: CascadeNamespace, field: OutputField) -> OutStatement:
+    def _get_field_extraction(self, state: GenState, field: OutputField) -> OutStatement:
         return (
-            self._get_required_field_extraction(namespace, field)
+            self._get_required_field_extraction(state, field)
             if field.is_required else
-            self._get_optional_field_extraction(namespace, field)
+            self._get_optional_field_extraction(state, field)
         )
 
-    def _get_required_field_extraction(self, namespace: CascadeNamespace, field: OutputField) -> OutStatement:
-        access_expr = self._get_access_expr(namespace, field)
-        trail_element = self._get_trail_element_expr(namespace, field)
+    def _get_required_field_extraction(self, state: GenState, field: OutputField) -> OutStatement:
+        access_expr = self._get_access_expr(state.namespace, field)
+        trail_element = self._get_trail_element_expr(state.namespace, field)
 
         if self._debug_trail == DebugTrail.DISABLE:
             return RawExpr(access_expr)
 
-        out_variable = self._get_field_out_variable(namespace, field)
+        out_variable = self._get_field_out_variable(state.namespace, field)
         stmt = (
             CodeBlock(
                 """
                 try:
                     <out_variable> = <access_expr>
                 except Exception as e:
-                    errors.append(append_trail(e, <trail_element>))
+                    <error_handling>
                 """,
                 out_variable=RawExpr(out_variable),
                 access_expr=RawExpr(access_expr),
@@ -423,13 +422,9 @@ class BuiltinModelDumperGen(ModelDumperGen):
             var=out_variable,
         )
 
-    def _get_optional_field_extraction(
-        self,
-        namespace: CascadeNamespace,
-        field: OutputField,
-    ) -> OutStatement:
-        access_expr = self._get_access_expr(namespace, field)
-        out_variable = self._get_field_out_variable(namespace, field)
+    def _get_optional_field_extraction(self, state: GenState, field: OutputField) -> OutStatement:
+        access_expr = self._get_access_expr(state.namespace, field)
+        out_variable = self._get_field_out_variable(state.namespace, field)
 
         def stmt_maker(*, on_access_ok: Statement, on_access_error: Statement) -> Statement:
             return statements(
@@ -578,9 +573,9 @@ class BuiltinModelDumperGen(ModelDumperGen):
             )
             if isinstance(dumper_call, Expression):
                 builder.dict_items.append(DictKeyValue(StringLiteral(key), dumper_call))
-            elif isinstance(dumper_call, OutStatement):
+            elif isinstance(dumper_call, OutVarStatement):
                 builder.before_stmts.append(dumper_call.stmt)
-                builder.dict_items.append(DictKeyValue(StringLiteral(key), dumper_call))
+                builder.dict_items.append(DictKeyValue(StringLiteral(key), RawExpr(dumper_call.var)))
             else:
                 raise TypeError
         if isinstance(out_stmt, OutVarStatement):
@@ -735,19 +730,28 @@ class BuiltinModelDumperGen(ModelDumperGen):
         raise TypeError
 
     def _get_list_crown_out_stmt(self, state: GenState, crown: OutListCrown) -> OutStatement:
-        dumped_out_stmts = [
-            self._wrap_with_dumper_call(
-                state,
-                sub_crown,
-                self._get_crown_out_stmt(state, idx, sub_crown),
-            )
+        out_stmts = [
+            self._get_crown_out_stmt(state, idx, sub_crown)
             for idx, sub_crown in enumerate(crown.map)
         ]
         before_stmts = [
             out_stmt.stmt
-            for out_stmt in dumped_out_stmts
+            for out_stmt in out_stmts
             if isinstance(out_stmt, OutVarStatement)
         ]
+        dumped_out_stmts = [
+            self._wrap_with_dumper_call(
+                state,
+                sub_crown,
+                out_stmt if isinstance(out_stmt, Expression) else RawExpr(out_stmt.var),
+            )
+            for sub_crown, out_stmt in zip(crown.map, out_stmts)
+        ]
+        before_stmts.extend(
+            out_stmt.stmt
+            for out_stmt in dumped_out_stmts
+            if isinstance(out_stmt, OutVarStatement)
+        )
         list_literal = ListLiteral(
             [
                 out_stmt if isinstance(out_stmt, Expression) else RawExpr(out_stmt.var)
@@ -773,7 +777,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
 
     def _get_field_crown_out_stmt(self, state: GenState, crown: OutFieldCrown) -> OutStatement:
         state.field_id_to_path[crown.id] = state.path
-        return self._get_field_extraction(state.namespace, self._id_to_field[crown.id])
+        return self._get_field_extraction(state, self._id_to_field[crown.id])
 
     def _get_none_crown_out_stmt(self, state: GenState, crown: OutNoneCrown) -> OutStatement:
         if isinstance(crown.placeholder, DefaultFactory):
