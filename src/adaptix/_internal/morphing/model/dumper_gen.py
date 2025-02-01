@@ -18,6 +18,8 @@ from ...code_tools.code_gen_tree import (
     RawStatement,
     Statement,
     StringLiteral,
+    TextSliceWriter,
+    TryExcept,
     statements,
 )
 from ...code_tools.utils import get_literal_expr, get_literal_from_factory, is_singleton
@@ -64,6 +66,8 @@ class GenState:
 
         self._last_path_idx = 0
         self._path: CrownPath = ()
+        self.error_handlings: list[tuple[Statement, Optional[str]]] = []
+        self.finalized = False
 
     def _ensure_path_idx(self, path: CrownPath) -> str:
         try:
@@ -103,13 +107,37 @@ class GenState:
         return self.suffix("result")
 
 
+class ErrorHandlerCall(Statement):
+    def __init__(self, state: GenState, trail_element_expr: Optional[str], stmt: Optional[Statement]):
+        self._state = state
+        self._trail_element_expr = trail_element_expr
+        self.stmt = stmt
+
+    def write_lines(self, writer: TextSliceWriter) -> None:
+        exc = "e" if self._trail_element_expr is None else f"append_trail(e, {self._trail_element_expr})"
+        idx = len(self._state.error_handlings)
+        if self.stmt is None:
+            raise ValueError
+        self._state.error_handlings.append((self.stmt, self._trail_element_expr))
+        if self._state.finalized:
+            writer.write(f"raise error_handler({idx}, data, {exc}) from None")
+        else:
+            writer.write(f"errors.append({exc})")
+
+
 class OutVarStatement(NamedTuple):
     stmt: Statement
     var: str
 
 
 class OutVarStatementMaker(Protocol):
-    def __call__(self, *, on_access_ok: Statement, on_access_error: Statement) -> Statement:
+    def __call__(
+        self,
+        *,
+        on_access_ok: Statement,
+        on_access_error: Statement,
+        on_unexpected_error: Optional[Statement],
+    ) -> Statement:
         ...
 
 
@@ -193,15 +221,14 @@ class BuiltinModelDumperGen(ModelDumperGen):
             body=body,
         )
         closure.write_lines(writer)
+        state.finalized = True
+
+        result = writer.make_string()
         if self._debug_trail == DebugTrail.ALL:
-            error_handler = CodeBlock(
-                """
-                def error_handler(idx, data, exc):
-                    pass
-                """,
-            )
-            error_handler.write_lines(writer)
-        return writer.make_string(), namespace.all_constants
+            error_handler_writer = LinesWriter()
+            self._get_error_handler(state).write_lines(error_handler_writer)
+            result += error_handler_writer.make_string()
+        return result, namespace.all_constants
 
     def _get_body_statement(self, state: GenState) -> Statement:
         crown_out_stmt = self._get_root_crown_stmt(state)
@@ -249,8 +276,11 @@ class BuiltinModelDumperGen(ModelDumperGen):
             )
         elif isinstance(extra_extraction_out_stmt, OptionalOutVarStatement):
             extending_stmt = extra_extraction_out_stmt.stmt_maker(
-                on_access_ok=CodeBlock("<out_variable>.update(<extra>)"),
+                on_access_ok=CodeBlock(
+                    "<out_variable>.update(<extra>)",
+                ),
                 on_access_error=CodeBlock.PASS,
+                on_unexpected_error=None,
             )
         else:
             raise TypeError
@@ -298,6 +328,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                             var=RawExpr(out_stmt.var),
                         ),
                         on_access_error=CodeBlock.PASS,
+                        on_unexpected_error=None,
                     ),
                 )
 
@@ -338,11 +369,41 @@ class BuiltinModelDumperGen(ModelDumperGen):
                         try:
                             extra = extractor(data)
                         except Exception as e:
-                            raise error_handler(1, obj, append_trail(e, <trail_element>)) from None
+                            <error_handling>
                     """,
+                    error_handling=ErrorHandlerCall(
+                        trail_element_expr=None,
+                        state=state,
+                        stmt=CodeBlock("extractor(data)"),
+                    ),
                 ),
             ),
             var=out_variable,
+        )
+
+    def _get_error_handler(self, state: GenState) -> Statement:
+        error_scanning_stmts = []
+        for idx, (stmt, trail_element) in enumerate(state.error_handlings):
+            error_scanning_stmts.append(
+                CodeBlock(
+                    """
+                    if idx > <idx>:
+                        <stmt>
+                    """,
+                    idx=RawExpr(repr(idx)),
+                    stmt=stmt,
+                ),
+            )
+        return statements(
+            CodeBlock(
+                """
+                def error_handler(idx, data, e):
+                    errors = [e]
+                    <error_scanning_stmts>
+                    raise ExceptionGroup("", errors)
+                """,
+                error_scanning_stmts=statements(*error_scanning_stmts),
+            ),
         )
 
     def _get_access_expr(self, namespace: CascadeNamespace, field: OutputField) -> str:
@@ -357,6 +418,16 @@ class BuiltinModelDumperGen(ModelDumperGen):
         accessor_getter = f"accessor_getter_{field.id}"
         namespace.add_constant(accessor_getter, field.accessor.getter)
         return f"{accessor_getter}(data)"
+
+    def _get_access_error_expr(self, namespace: CascadeNamespace, field: OutputField) -> str:
+        access_error = field.accessor.access_error
+        literal_expr = get_literal_expr(access_error)
+        if literal_expr is not None:
+            return literal_expr
+
+        access_error_getter = f"access_error_{field.id}"
+        namespace.add_constant(access_error_getter, field.accessor.getter)
+        return f"{access_error_getter}(data)"
 
     def _get_trail_element_expr(self, namespace: CascadeNamespace, field: OutputField) -> str:
         trail_element = field.accessor.trail_element
@@ -381,69 +452,36 @@ class BuiltinModelDumperGen(ModelDumperGen):
         )
 
     def _get_required_field_extraction(self, state: GenState, field: OutputField) -> OutStatement:
-        access_expr = self._get_access_expr(state.namespace, field)
-        trail_element = self._get_trail_element_expr(state.namespace, field)
-
-        if self._debug_trail == DebugTrail.DISABLE:
-            return RawExpr(access_expr)
-
-        out_variable = self._get_field_out_variable(state.namespace, field)
-        stmt = (
-            CodeBlock(
-                """
-                try:
-                    <out_variable> = <access_expr>
-                except Exception as e:
-                    <error_handling>
-                """,
-                out_variable=RawExpr(out_variable),
-                access_expr=RawExpr(access_expr),
-                trail_element=RawExpr(trail_element),
-            )
-            if self._debug_trail == DebugTrail.ALL else
-            CodeBlock(
-                """
-                try:
-                    <out_variable> = <access_expr>
-                except Exception as e:
-                    append_trail(e, <trail_element>)
-                    raise
-                """,
-                out_variable=RawExpr(out_variable),
-                access_expr=RawExpr(access_expr),
-                trail_element=RawExpr(trail_element),
-            )
-        )
-        return OutVarStatement(
-            stmt=statements(
-                stmt,
-                CodeBlock.EMPTY_LINE,
-            ),
-            var=out_variable,
-        )
+        return RawExpr(self._get_access_expr(state.namespace, field))
 
     def _get_optional_field_extraction(self, state: GenState, field: OutputField) -> OutStatement:
         access_expr = self._get_access_expr(state.namespace, field)
+        access_error_expr = self._get_access_error_expr(state.namespace, field)
         out_variable = self._get_field_out_variable(state.namespace, field)
 
-        def stmt_maker(*, on_access_ok: Statement, on_access_error: Statement) -> Statement:
-            return statements(
-                CodeBlock(
-                    """
-                    try:
-                        <out_variable> = <access_expr>
-                    except <access_error>:
-                        <on_access_error>
-                    else:
-                        <on_access_ok>
-                    """,
+        def stmt_maker(
+            *,
+            on_access_ok: Statement,
+            on_access_error: Statement,
+            on_unexpected_error: Optional[Statement],
+        ) -> Statement:
+            excepts = [
+                (RawExpr(access_error_expr), on_access_error),
+            ]
+            if on_unexpected_error is not None:
+                excepts.append(
+                    (RawExpr("Exception as e"), on_unexpected_error),
+                )
+            return TryExcept(
+                try_=CodeBlock(
+                    "<out_variable> = <access_expr>",
                     out_variable=RawExpr(out_variable),
                     access_expr=RawExpr(access_expr),
-                    on_access_ok=on_access_ok,
-                    on_access_error=on_access_error,
                 ),
-                CodeBlock.EMPTY_LINE,
+                excepts=excepts,
+                else_=on_access_ok,
             )
+
         return OptionalOutVarStatement(
             var=out_variable,
             stmt_maker=stmt_maker,
@@ -512,7 +550,13 @@ class BuiltinModelDumperGen(ModelDumperGen):
             var=out_variable,
         )
 
-    def _wrap_with_dumper_call(self, state: GenState, sub_crown: OutCrown, expr: Expression) -> RequiredStatement:
+    def _wrap_with_dumper_call(
+        self,
+        state: GenState,
+        sub_crown: OutCrown,
+        expr: Expression,
+        error_handler_call: Optional[ErrorHandlerCall] = None,
+    ) -> RequiredStatement:
         if not isinstance(sub_crown, OutFieldCrown):
             return expr
 
@@ -534,11 +578,15 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 try:
                     <out_variable> = <dumper_call>
                 except Exception as e:
-                    raise error_handler(1, obj, append_trail(e, <trail_element>)) from None
+                    <error_handling>
                 """,
                 out_variable=RawExpr(out_variable),
                 dumper_call=dumper_call,
-                trail_element=RawExpr(trail_element),
+                error_handling=(
+                    ErrorHandlerCall(trail_element_expr=trail_element, state=state, stmt=dumper_call)
+                    if error_handler_call is None else
+                    error_handler_call
+                ),
             )
             return OutVarStatement(var=out_variable, stmt=wrapped)
         if self._debug_trail == DebugTrail.FIRST:
@@ -556,6 +604,17 @@ class BuiltinModelDumperGen(ModelDumperGen):
             )
             return OutVarStatement(var=out_variable, stmt=wrapped)
         return dumper_call
+
+    def _get_error_handler_call_for_sub_crown(self, state: GenState, sub_crown: OutCrown) -> ErrorHandlerCall:
+        return ErrorHandlerCall(
+            state=state,
+            trail_element_expr=(
+                self._get_trail_element_expr(state.namespace, self._id_to_field[sub_crown.id])
+                if isinstance(sub_crown, OutFieldCrown) else
+                None
+            ),
+            stmt=None,
+        )
 
     def _process_dict_sub_crown(
         self,
@@ -588,15 +647,19 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 out_stmt=RawExpr(out_stmt.var),
             )
         if isinstance(out_stmt, OptionalOutVarStatement):
+            error_handler_call = self._get_error_handler_call_for_sub_crown(state, sub_crown)
             stmt = out_stmt.stmt_maker(
                 on_access_ok=self._get_dict_append(
                     state=state,
                     key=key,
                     sub_crown=sub_crown,
                     expr=RawExpr(out_stmt.var),
+                    error_handler_call=error_handler_call,
                 ),
                 on_access_error=CodeBlock.PASS,
+                on_unexpected_error=error_handler_call,
             )
+            error_handler_call.stmt = stmt
             builder.after_stmts.append(stmt)
         raise TypeError
 
@@ -609,61 +672,78 @@ class BuiltinModelDumperGen(ModelDumperGen):
         sub_crown: OutCrown,
         out_stmt: OutStatement,
     ) -> None:
+        if isinstance(out_stmt, Expression):
+            temp_var = state.var_suffix("temp", key)
+            self._process_dict_sieved_sub_crown(
+                state=state,
+                builder=builder,
+                key=key,
+                sieve=sieve,
+                sub_crown=sub_crown,
+                out_stmt=OutVarStatement(
+                    var=temp_var,
+                    stmt=CodeBlock(
+                        "<temp_var> = <expr>",
+                        temp_var=RawExpr(temp_var),
+                        expr=out_stmt,
+                    ),
+                ),
+            )
         if isinstance(out_stmt, OptionalOutVarStatement):
+            error_handler_call = self._get_error_handler_call_for_sub_crown(state, sub_crown)
             stmt = out_stmt.stmt_maker(
-                on_access_ok=self._get_dict_sieved_append(
-                    state=state,
-                    sieve=sieve,
-                    key=key,
-                    sub_crown=sub_crown,
-                    testing_var=out_stmt.var,
+                on_access_ok=CodeBlock(
+                    """
+                    if <condition>:
+                        <dict_append>
+                    """,
+                    condition=RawExpr(self._get_sieve_condition(state, sieve, key, out_stmt.var)),
+                    dict_append=self._get_dict_append(state, key, sub_crown, RawExpr(out_stmt.var), error_handler_call),
                 ),
                 on_access_error=CodeBlock.PASS,
+                on_unexpected_error=error_handler_call,
             )
-        elif isinstance(out_stmt, Expression):
-            temp_var = state.var_suffix("temp", key)
-            stmt = statements(
-                CodeBlock(
-                    "<temp_var> = <expr>",
-                    temp_var=RawExpr(temp_var),
-                    expr=out_stmt,
-                ),
-                self._get_dict_sieved_append(
-                    state=state,
-                    sieve=sieve,
-                    key=key,
-                    sub_crown=sub_crown,
-                    testing_var=temp_var,
-                ),
+            error_handler_call.stmt = stmt
+            builder.after_stmts.append(stmt)
+        if isinstance(out_stmt, OutVarStatement):
+            error_handler_call = self._get_error_handler_call_for_sub_crown(state, sub_crown)
+            condition = RawExpr(self._get_sieve_condition(state, sieve, key, out_stmt.var))
+            stmt = CodeBlock(
+                """
+                try:
+                    <stmt>
+                except Exception as e:
+                    <error_handler>
+                if <condition>:
+                    <dict_append>
+                """,
+                stmt=out_stmt.stmt,
+                error_handler=error_handler_call,
+                condition=condition,
+                dict_append=self._get_dict_append(state, key, sub_crown, RawExpr(out_stmt.var), error_handler_call),
             )
-        elif isinstance(out_stmt, OutVarStatement):
-            stmt = self._get_dict_sieved_append(
-                state=state,
-                sieve=sieve,
-                key=key,
-                sub_crown=sub_crown,
-                testing_var=out_stmt.var,
+            dumper_call = self._wrap_with_dumper_call(state, sub_crown, RawExpr(out_stmt.var), error_handler_call)
+            error_handler_call.stmt = CodeBlock(
+                """
+                try:
+                    <stmt>
+                except Exception as e:
+                    <error_handler>
+                else:
+                    if <condition>:
+                        try:
+                            <dumper_stmt>
+                        except Exception as e:
+                            <error_handler>
+                """,
+                stmt=out_stmt.stmt,
+                error_handler=error_handler_call,
+                condition=condition,
+                dumper_stmt=dumper_call.stmt if isinstance(dumper_call, OutVarStatement) else dumper_call,
             )
+            builder.after_stmts.append(stmt)
         else:
             raise TypeError
-        builder.after_stmts.append(stmt)
-
-    def _get_dict_sieved_append(
-        self,
-        state: GenState,
-        sieve: Sieve,
-        key: str,
-        sub_crown: OutCrown,
-        testing_var: str,
-    ) -> Statement:
-        return CodeBlock(
-            """
-            if <condition>:
-                <dict_append>
-            """,
-            condition=RawExpr(self._get_sieve_condition(state, sieve, key, testing_var)),
-            dict_append=self._get_dict_append(state, key, sub_crown, RawExpr(testing_var)),
-        )
 
     def _get_dict_append(
         self,
@@ -671,8 +751,9 @@ class BuiltinModelDumperGen(ModelDumperGen):
         key: str,
         sub_crown: OutCrown,
         expr: Expression,
+        error_handler_call: Optional[ErrorHandlerCall],
     ) -> Statement:
-        dumped = self._wrap_with_dumper_call(state, sub_crown, expr)
+        dumped = self._wrap_with_dumper_call(state, sub_crown, expr, error_handler_call)
         if isinstance(dumped, OutVarStatement):
             return CodeBlock(
                 """

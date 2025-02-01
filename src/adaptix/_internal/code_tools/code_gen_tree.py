@@ -174,3 +174,38 @@ class StringLiteral(Expression):
 
     def write_lines(self, writer: TextSliceWriter) -> None:
         writer.write(repr(self._text))
+
+
+class TryExcept(Statement):
+    def __init__(self, try_: Statement, excepts: Iterable[tuple[Expression, Statement]], else_: Statement):
+        self._try = try_
+        self._excepts = excepts
+        self._else = else_
+
+    def write_lines(self, writer: TextSliceWriter) -> None:
+        if not self._excepts:
+            self._try.write_lines(writer)
+            if self._else != CodeBlock.PASS:
+                self._else.write_lines(writer)
+            return
+
+        writer.write("try:")
+        with writer:
+            self._try.write_lines(writer)
+
+        for catching, handling in self._excepts:
+            CodeBlock(
+                """
+                except <catching>:
+                    <handling>
+                """,
+                catching=catching,
+                handling=handling,
+            ).write_lines(
+                writer,
+            )
+
+        if self._else != CodeBlock.PASS:
+            writer.write("else:")
+            with writer:
+                self._else.write_lines(writer)
