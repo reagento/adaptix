@@ -120,9 +120,9 @@ class ErrorHandlerCall(Statement):
             raise ValueError
         self._state.error_handlings.append((self.stmt, self._trail_element_expr))
         if self._state.finalized:
-            writer.write(f"raise error_handler({idx}, data, {exc}) from None")
-        else:
             writer.write(f"errors.append({exc})")
+        else:
+            writer.write(f"raise error_handler({idx}, data, {exc}) from None")
 
 
 class OutVarStatement(NamedTuple):
@@ -227,7 +227,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         if self._debug_trail == DebugTrail.ALL:
             error_handler_writer = LinesWriter()
             self._get_error_handler(state).write_lines(error_handler_writer)
-            result += error_handler_writer.make_string()
+            result += "\n" + error_handler_writer.make_string()
         return result, namespace.all_constants
 
     def _get_body_statement(self, state: GenState) -> Statement:
@@ -383,11 +383,11 @@ class BuiltinModelDumperGen(ModelDumperGen):
 
     def _get_error_handler(self, state: GenState) -> Statement:
         error_scanning_stmts = []
-        for idx, (stmt, trail_element) in enumerate(state.error_handlings):
+        for idx, (stmt, _) in enumerate(state.error_handlings):
             error_scanning_stmts.append(
                 CodeBlock(
                     """
-                    if idx > <idx>:
+                    if idx < <idx>:
                         <stmt>
                     """,
                     idx=RawExpr(repr(idx)),
@@ -513,7 +513,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
     def _get_dict_crown_out_stmt(self, state: GenState, crown: OutDictCrown) -> OutStatement:
         builder = DictBuilder()
         for key, sub_crown in crown.map.items():
-            if key in crown.sieves:
+            if key not in crown.sieves:
                 self._process_dict_sub_crown(
                     state=state,
                     builder=builder,
@@ -560,15 +560,20 @@ class BuiltinModelDumperGen(ModelDumperGen):
         if not isinstance(sub_crown, OutFieldCrown):
             return expr
 
-        if self._fields_dumpers[sub_crown.id] == as_is_stub:
-            return expr
         field = self._id_to_field[sub_crown.id]
         trail_element = self._get_trail_element_expr(state.namespace, field)
-        dumper_call = CodeExpr(
-            "<dumper>(<expr>)",
-            dumper=RawExpr(self._v_dumper(field)),
-            expr=expr,
-        )
+        if self._fields_dumpers[sub_crown.id] == as_is_stub:
+            if self._debug_trail == DebugTrail.DISABLE:
+                return expr
+
+            dumper_call = expr
+        else:
+            dumper_call = CodeExpr(
+                "<dumper>(<expr>)",
+                dumper=RawExpr(self._v_dumper(field)),
+                expr=expr,
+            )
+
         out_variable = f"dumped_{field.id}"
         state.namespace.register_var(out_variable)
 
@@ -637,7 +642,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 builder.dict_items.append(DictKeyValue(StringLiteral(key), RawExpr(dumper_call.var)))
             else:
                 raise TypeError
-        if isinstance(out_stmt, OutVarStatement):
+        elif isinstance(out_stmt, OutVarStatement):
             builder.before_stmts.append(out_stmt.stmt)
             self._process_dict_sub_crown(
                 state=state,
@@ -646,7 +651,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 sub_crown=sub_crown,
                 out_stmt=RawExpr(out_stmt.var),
             )
-        if isinstance(out_stmt, OptionalOutVarStatement):
+        elif isinstance(out_stmt, OptionalOutVarStatement):
             error_handler_call = self._get_error_handler_call_for_sub_crown(state, sub_crown)
             stmt = out_stmt.stmt_maker(
                 on_access_ok=self._get_dict_append(
@@ -661,7 +666,8 @@ class BuiltinModelDumperGen(ModelDumperGen):
             )
             error_handler_call.stmt = stmt
             builder.after_stmts.append(stmt)
-        raise TypeError
+        else:
+            raise TypeError
 
     def _process_dict_sieved_sub_crown(
         self,
