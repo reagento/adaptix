@@ -36,7 +36,7 @@ from ...model_tools.definitions import (
     OutputShape,
 )
 from ...special_cases_optimization import as_is_stub, get_default_clause
-from ...struct_trail import append_trail, extend_trail
+from ...struct_trail import TrailElement, append_trail, extend_trail
 from ...utils import Omittable, Omitted
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.schema_model import JSONSchemaType, JSONValue
@@ -53,21 +53,26 @@ from .crown_definitions import (
     OutListCrown,
     OutNoneCrown,
     OutputNameLayout,
+    Placeholder,
     Sieve,
 )
 
 
 class GenState:
-    def __init__(self, namespace: CascadeNamespace):
+    def __init__(self, namespace: CascadeNamespace, debug_trail: DebugTrail):
         self.namespace = namespace
+        self.debug_trail = debug_trail
 
         self.field_id_to_path: dict[str, CrownPath] = {}
         self.path_to_suffix: dict[CrownPath, str] = {}
 
         self._last_path_idx = 0
         self._path: CrownPath = ()
-        self.error_handlings: list[tuple[Statement, Optional[str]]] = []
-        self.finalized = False
+
+        self.trail_element_to_name_idx: dict[TrailElement, int] = {}
+        self.error_collectors: list[Statement] = []
+        self.overriden_error_collectors: dict[TrailElement, Callable[[Statement], Statement]] = {}
+        self.trail_to_collector_idx: dict[TrailElement, int] = {}
 
     def _ensure_path_idx(self, path: CrownPath) -> str:
         try:
@@ -107,27 +112,145 @@ class GenState:
         return self.suffix("result")
 
 
-class ErrorHandlerCall(Statement):
-    def __init__(self, state: GenState, trail_element_expr: Optional[str], stmt: Optional[Statement]):
-        self._state = state
-        self._trail_element_expr = trail_element_expr
-        self.stmt = stmt
+class VarExpr(Expression):
+    def __init__(self, name: str):
+        self.name = name
 
     def write_lines(self, writer: TextSliceWriter) -> None:
-        exc = "e" if self._trail_element_expr is None else f"append_trail(e, {self._trail_element_expr})"
-        idx = len(self._state.error_handlings)
-        if self.stmt is None:
-            raise ValueError
-        self._state.error_handlings.append((self.stmt, self._trail_element_expr))
-        if self._state.finalized:
-            writer.write(f"errors.append({exc})")
+        writer.write(self.name)
+
+
+class AssignmentStatement(Statement):
+    def __init__(self, var: VarExpr, value: Expression):
+        self.var = var
+        self.value = value
+
+    def write_lines(self, writer: TextSliceWriter) -> None:
+        CodeBlock(
+            "<var> = <value>",
+            var=self.var,
+            value=self.value,
+        ).write_lines(
+            writer,
+        )
+
+
+class ReturnVarStatement(Statement):
+    def __init__(self, var: VarExpr):
+        self.var = var
+
+    def write_lines(self, writer: TextSliceWriter) -> None:
+        CodeBlock(
+            "return <var>",
+            var=self.var,
+        ).write_lines(
+            writer,
+        )
+
+
+class ErrorCatching(Statement):
+    def __init__(self, state: GenState, trail_element: Optional[TrailElement], stmt: AssignmentStatement):
+        self._state = state
+        self._trail_element = trail_element
+        self.stmt = stmt
+
+    def _get_trail_element_expr(self, trail_element: TrailElement) -> Expression:
+        literal_expr = get_literal_expr(trail_element)
+        if literal_expr is not None:
+            return RawExpr(literal_expr)
+
+        if trail_element in self._state.trail_element_to_name_idx:
+            idx = self._state.trail_element_to_name_idx[trail_element]
+            v_trail_element = f"trail_element_{idx}"
         else:
-            writer.write(f"raise error_handler({idx}, data, {exc}) from None")
+            idx = len(self._state.trail_element_to_name_idx)
+            self._state.trail_element_to_name_idx[trail_element] = idx
+            v_trail_element = f"trail_element_{idx}"
+            self._state.namespace.add_constant(v_trail_element, trail_element)
+        return RawExpr(v_trail_element)
+
+    def _get_append_trail(self, trail_element: TrailElement) -> Expression:
+        return CodeExpr(
+            "append_trail(e, <trail_element>)",
+            trail_element=self._get_trail_element_expr(self._trail_element),
+        )
+
+    def _wrap_stmt(self, stmt: Statement) -> Statement:
+        if self._state.debug_trail == DebugTrail.DISABLE:
+            return stmt
+        if self._state.debug_trail == DebugTrail.FIRST:
+            if self._trail_element is None:
+                return stmt
+            return CodeBlock(
+                """
+                try:
+                    <stmt>
+                except Exception as e:
+                    <append_trail>
+                    raise
+                """,
+                stmt=self.stmt,
+                append_trail=self._get_append_trail(self._trail_element),
+            )
+        if self._state.debug_trail == DebugTrail.ALL:
+            idx = self._process_error_collecting(stmt)
+            return CodeBlock(
+                """
+                try:
+                    <stmt>
+                except Exception as e:
+                    raise error_handler(<idx>, data, <append_trail>) from None
+                """,
+                stmt=self.stmt,
+                idx=RawExpr(repr(idx)),
+                append_trail=(
+                    RawExpr("e")
+                    if self._trail_element is None else
+                    self._get_append_trail(self._trail_element)
+                ),
+            )
+        raise ValueError
+
+    def _process_error_collecting(self, stmt: Statement) -> int:
+        idx = len(self._state.error_collectors)
+
+        if self._trail_element is None:
+            self._state.error_collectors.append(stmt)
+        else:
+            if self._trail_element in self._state.trail_to_collector_idx:
+                return self._state.trail_to_collector_idx[self._trail_element]
+
+            self._state.error_collectors.append(self._get_error_collector(stmt, self._trail_element))
+            self._state.trail_to_collector_idx[self._trail_element] = idx
+        return idx
+
+    def _get_error_collector(self, stmt: Statement, trail_element: TrailElement) -> Statement:
+        error_saving = CodeBlock(
+            "errors.append(<append_trail>)",
+            append_trail=self._get_append_trail(trail_element),
+        )
+
+        if self._trail_element in self._state.overriden_error_collectors:
+            return self._state.overriden_error_collectors[self._trail_element](error_saving)
+
+        return CodeBlock(
+            """
+            try:
+                <stmt>
+            except Exception as e:
+                <error_saving>
+            """,
+            stmt=stmt,
+            error_saving=error_saving,
+        )
+
+    def write_lines(self, writer: TextSliceWriter) -> None:
+        self._wrap_stmt(self.stmt).write_lines(writer)
 
 
 class OutVarStatement(NamedTuple):
     stmt: Statement
-    var: str
+    var: VarExpr
 
 
 class OutVarStatementMaker(Protocol):
@@ -142,12 +265,11 @@ class OutVarStatementMaker(Protocol):
 
 
 class OptionalOutVarStatement(NamedTuple):
-    var: str
+    var: VarExpr
     stmt_maker: OutVarStatementMaker
 
 
-RequiredStatement = Union[Expression, OutVarStatement]
-OutStatement = Union[Expression, OutVarStatement, OptionalOutVarStatement]
+OutStatement = Union[OutVarStatement, OptionalOutVarStatement]
 
 
 class DictBuilder:
@@ -177,7 +299,11 @@ class BuiltinModelDumperGen(ModelDumperGen):
         return f"dumper_{field.id}"
 
     def _create_state(self, namespace: CascadeNamespace) -> GenState:
-        return GenState(namespace)
+        return GenState(namespace, self._debug_trail)
+
+    def _alloc_var(self, state: GenState, name: str) -> VarExpr:
+        state.namespace.register_var(name)
+        return VarExpr(name)
 
     def _get_header(self, state: GenState) -> Statement:
         writer = LinesWriter()
@@ -221,78 +347,54 @@ class BuiltinModelDumperGen(ModelDumperGen):
             body=body,
         )
         closure.write_lines(writer)
-        state.finalized = True
 
         result = writer.make_string()
-        if self._debug_trail == DebugTrail.ALL:
+        if state.debug_trail == DebugTrail.ALL:
             error_handler_writer = LinesWriter()
             self._get_error_handler(state).write_lines(error_handler_writer)
-            result += "\n" + error_handler_writer.make_string()
+            result += "\n\n\n" + error_handler_writer.make_string()
         return result, namespace.all_constants
 
     def _get_body_statement(self, state: GenState) -> Statement:
         crown_out_stmt = self._get_root_crown_stmt(state)
         extra_extraction_out_stmt = self._get_extra_extraction(state)
+
         if extra_extraction_out_stmt is None:
-            if isinstance(crown_out_stmt, OutVarStatement):
-                return statements(
+            extending_stmt = crown_out_stmt
+        elif isinstance(extra_extraction_out_stmt, OutVarStatement):
+            extending_stmt = OutVarStatement(
+                var=crown_out_stmt.var,
+                stmt=statements(
                     crown_out_stmt.stmt,
                     CodeBlock(
-                        "return <out_variable>",
-                        out_variable=RawExpr(crown_out_stmt.var),
+                        "<result>.update(<extra>)",
+                        result=crown_out_stmt.var,
+                        extra=extra_extraction_out_stmt.var,
                     ),
-                )
-            return CodeBlock(
-                "return <expr>",
-                expr=crown_out_stmt,
-            )
-
-        if isinstance(crown_out_stmt, OutVarStatement):
-            final_crown_out_stmt = crown_out_stmt
-        elif isinstance(crown_out_stmt, Expression):
-            state.namespace.register_var("result")
-            final_crown_out_stmt = OutVarStatement(
-                stmt=CodeBlock(
-                    """
-                    result = <expr>
-                    """,
                 ),
-                var="result",
-            )
-        else:
-            raise TypeError
-
-        if isinstance(extra_extraction_out_stmt, Expression):
-            extending_stmt: Statement = CodeBlock(
-                "<out_variable>.update(<extra>)",
-                out_variable=RawExpr(final_crown_out_stmt.var),
-                extra=extra_extraction_out_stmt,
-            )
-        elif isinstance(extra_extraction_out_stmt, OutVarStatement):
-            extending_stmt = CodeBlock(
-                "<out_variable>.update(<extra>)",
-                out_variable=RawExpr(final_crown_out_stmt.var),
-                extra=RawExpr(extra_extraction_out_stmt.var),
             )
         elif isinstance(extra_extraction_out_stmt, OptionalOutVarStatement):
-            extending_stmt = extra_extraction_out_stmt.stmt_maker(
-                on_access_ok=CodeBlock(
-                    "<out_variable>.update(<extra>)",
+            extending_stmt = OutVarStatement(
+                var=extra_extraction_out_stmt.var,
+                stmt=extra_extraction_out_stmt.stmt_maker(
+                    on_access_ok=statements(
+                        crown_out_stmt.stmt,
+                        CodeBlock(
+                            "<result>.update(<extra>)",
+                            result=crown_out_stmt.var,
+                            extra=extra_extraction_out_stmt.var,
+                        ),
+                    ),
+                    on_access_error=CodeBlock.PASS,
+                    on_unexpected_error=None,
                 ),
-                on_access_error=CodeBlock.PASS,
-                on_unexpected_error=None,
             )
         else:
             raise TypeError
 
         return statements(
-            final_crown_out_stmt.stmt,
-            extending_stmt,
-            CodeBlock(
-                """
-                return <out_variable>
-                """,
-            ),
+            extending_stmt.stmt,
+            ReturnVarStatement(extending_stmt.var),
         )
 
     def _get_extra_extraction(self, state: GenState) -> Optional[OutStatement]:
@@ -315,95 +417,68 @@ class BuiltinModelDumperGen(ModelDumperGen):
         builder = DictBuilder()
 
         for out_stmt in out_stmts:
-            if isinstance(out_stmt, Expression):
-                builder.dict_items.append(MappingUnpack(out_stmt))
-            elif isinstance(out_stmt, OutVarStatement):
+            if isinstance(out_stmt, OutVarStatement):
                 builder.before_stmts.append(out_stmt.stmt)
-                builder.dict_items.append(MappingUnpack(RawExpr(out_stmt.var)))
+                builder.dict_items.append(MappingUnpack(out_stmt.var))
             elif isinstance(out_stmt, OptionalOutVarStatement):
                 builder.after_stmts.append(
                     out_stmt.stmt_maker(
                         on_access_ok=CodeBlock(
                             "extra.update(<var>)",
-                            var=RawExpr(out_stmt.var),
+                            var=out_stmt.var,
                         ),
                         on_access_error=CodeBlock.PASS,
                         on_unexpected_error=None,
                     ),
                 )
 
-        dict_literal = DictLiteral(
-            MappingUnpack(out_stmt if isinstance(out_stmt, Expression) else RawExpr(out_stmt.var))
-            for out_stmt in out_stmts
-        )
-        if not builder.before_stmts and not builder.after_stmts:
-            return dict_literal
-
-        out_variable = "extra"
-        state.namespace.register_var(out_variable)
+        var = self._alloc_var(state, "extra")
         return OutVarStatement(
             stmt=statements(
                 *builder.before_stmts,
-                CodeBlock(
-                    "<out_variable> = <main_dict>",
-                    out_variable=RawExpr(out_variable),
-                    main_dict=dict_literal,
+                AssignmentStatement(
+                    var=var,
+                    value=DictLiteral(builder.dict_items),
                 ),
                 *builder.after_stmts,
             ),
-            var=out_variable,
+            var=var,
         )
 
     def _get_extra_extract_extraction(self, state: GenState, extra_move: ExtraExtract) -> OutStatement:
         state.namespace.add_constant("extractor", extra_move.func)
-
-        if self._debug_trail != DebugTrail.ALL:
-            return RawExpr("extra = extractor(data)")
-
-        out_variable = "extra"
-        state.namespace.register_var(out_variable)
+        var = self._alloc_var(state, "extra")
         return OutVarStatement(
             stmt=statements(
-                CodeBlock(
-                    """
-                        try:
-                            extra = extractor(data)
-                        except Exception as e:
-                            <error_handling>
-                    """,
-                    error_handling=ErrorHandlerCall(
-                        trail_element_expr=None,
-                        state=state,
-                        stmt=CodeBlock("extractor(data)"),
-                    ),
+                ErrorCatching(
+                    state=state,
+                    trail_element=None,
+                    stmt=AssignmentStatement(var=var, value=RawExpr("extractor(data)")),
                 ),
             ),
-            var=out_variable,
+            var=var,
         )
 
     def _get_error_handler(self, state: GenState) -> Statement:
-        error_scanning_stmts = []
-        for idx, (stmt, _) in enumerate(state.error_handlings):
-            error_scanning_stmts.append(
-                CodeBlock(
-                    """
-                    if idx < <idx>:
-                        <stmt>
-                    """,
-                    idx=RawExpr(repr(idx)),
-                    stmt=stmt,
-                ),
-            )
-        return statements(
+        error_collectors = [
             CodeBlock(
                 """
-                def error_handler(idx, data, e):
-                    errors = [e]
-                    <error_scanning_stmts>
-                    raise ExceptionGroup("", errors)
+                if idx < <idx>:
+                    <stmt>
                 """,
-                error_scanning_stmts=statements(*error_scanning_stmts),
-            ),
+                idx=RawExpr(repr(idx)),
+                stmt=stmt,
+            )
+            for idx, stmt in enumerate(state.error_collectors)
+        ]
+        return CodeBlock(
+            """
+            def error_handler(idx, data, e):
+                errors = [e]
+                <error_collectors>
+                return ExceptionGroup("", errors)
+            """,
+            error_collectors=statements(*error_collectors),
         )
 
     def _get_access_expr(self, namespace: CascadeNamespace, field: OutputField) -> str:
@@ -451,13 +526,21 @@ class BuiltinModelDumperGen(ModelDumperGen):
             self._get_optional_field_extraction(state, field)
         )
 
-    def _get_required_field_extraction(self, state: GenState, field: OutputField) -> OutStatement:
-        return RawExpr(self._get_access_expr(state.namespace, field))
+    def _get_required_field_extraction(self, state: GenState, field: OutputField) -> OutVarStatement:
+        var = self._alloc_var(state, f"r_{field.id}")
+        return OutVarStatement(
+            stmt=ErrorCatching(
+                state=state,
+                trail_element=field.accessor.trail_element,
+                stmt=AssignmentStatement(var=var, value=RawExpr(self._get_access_expr(state.namespace, field))),
+            ),
+            var=var,
+        )
 
     def _get_optional_field_extraction(self, state: GenState, field: OutputField) -> OutStatement:
         access_expr = self._get_access_expr(state.namespace, field)
         access_error_expr = self._get_access_error_expr(state.namespace, field)
-        out_variable = self._get_field_out_variable(state.namespace, field)
+        var = self._alloc_var(state, f"r_{field.id}")
 
         def stmt_maker(
             *,
@@ -473,21 +556,17 @@ class BuiltinModelDumperGen(ModelDumperGen):
                     (RawExpr("Exception as e"), on_unexpected_error),
                 )
             return TryExcept(
-                try_=CodeBlock(
-                    "<out_variable> = <access_expr>",
-                    out_variable=RawExpr(out_variable),
-                    access_expr=RawExpr(access_expr),
-                ),
+                try_=AssignmentStatement(var=var, value=RawExpr(access_expr)),
                 excepts=excepts,
                 else_=on_access_ok,
             )
 
         return OptionalOutVarStatement(
-            var=out_variable,
+            var=var,
             stmt_maker=stmt_maker,
         )
 
-    def _get_root_crown_stmt(self, state: GenState) -> RequiredStatement:
+    def _get_root_crown_stmt(self, state: GenState) -> OutVarStatement:
         if isinstance(self._name_layout.crown, OutDictCrown):
             result = self._get_dict_crown_out_stmt(state, self._name_layout.crown)
         elif isinstance(self._name_layout.crown, OutListCrown):
@@ -531,94 +610,46 @@ class BuiltinModelDumperGen(ModelDumperGen):
                     out_stmt=self._get_crown_out_stmt(state, key, sub_crown),
                 )
 
-        dict_literal = DictLiteral(builder.dict_items)
-        if not builder.before_stmts and not builder.after_stmts:
-            return dict_literal
-
-        out_variable = state.v_crown
-        state.namespace.register_var(out_variable)
+        var = self._alloc_var(state, state.v_crown)
         return OutVarStatement(
             stmt=statements(
                 *builder.before_stmts,
-                CodeBlock(
-                    "<out_variable> = <main_dict>",
-                    out_variable=RawExpr(out_variable),
-                    main_dict=dict_literal,
+                AssignmentStatement(
+                    var=var,
+                    value=DictLiteral(builder.dict_items),
                 ),
                 *builder.after_stmts,
             ),
-            var=out_variable,
+            var=var,
         )
 
     def _wrap_with_dumper_call(
         self,
         state: GenState,
         sub_crown: OutCrown,
-        expr: Expression,
-        error_handler_call: Optional[ErrorHandlerCall] = None,
-    ) -> RequiredStatement:
+        var: VarExpr,
+    ) -> OutVarStatement:
         if not isinstance(sub_crown, OutFieldCrown):
-            return expr
+            return OutVarStatement(var=var, stmt=statements())
 
         field = self._id_to_field[sub_crown.id]
-        trail_element = self._get_trail_element_expr(state.namespace, field)
-        if self._fields_dumpers[sub_crown.id] == as_is_stub:
-            if self._debug_trail == DebugTrail.DISABLE:
-                return expr
-
-            dumper_call = expr
-        else:
-            dumper_call = CodeExpr(
+        dumped_var = self._alloc_var(state, f"dumped_{field.id}")
+        dumper_call = (
+            var
+            if self._fields_dumpers[sub_crown.id] == as_is_stub else
+            CodeExpr(
                 "<dumper>(<expr>)",
                 dumper=RawExpr(self._v_dumper(field)),
-                expr=expr,
+                expr=var,
             )
-
-        out_variable = f"dumped_{field.id}"
-        state.namespace.register_var(out_variable)
-
-        if self._debug_trail == DebugTrail.ALL:
-            wrapped = CodeBlock(
-                """
-                try:
-                    <out_variable> = <dumper_call>
-                except Exception as e:
-                    <error_handling>
-                """,
-                out_variable=RawExpr(out_variable),
-                dumper_call=dumper_call,
-                error_handling=(
-                    ErrorHandlerCall(trail_element_expr=trail_element, state=state, stmt=dumper_call)
-                    if error_handler_call is None else
-                    error_handler_call
-                ),
-            )
-            return OutVarStatement(var=out_variable, stmt=wrapped)
-        if self._debug_trail == DebugTrail.FIRST:
-            wrapped = CodeBlock(
-                """
-                try:
-                    <out_variable> = <dumper_call>
-                except Exception as e:
-                    append_trail(e, <trail_element>)
-                    raise
-                """,
-                out_variable=RawExpr(out_variable),
-                dumper_call=dumper_call,
-                trail_element=RawExpr(trail_element),
-            )
-            return OutVarStatement(var=out_variable, stmt=wrapped)
-        return dumper_call
-
-    def _get_error_handler_call_for_sub_crown(self, state: GenState, sub_crown: OutCrown) -> ErrorHandlerCall:
-        return ErrorHandlerCall(
-            state=state,
-            trail_element_expr=(
-                self._get_trail_element_expr(state.namespace, self._id_to_field[sub_crown.id])
-                if isinstance(sub_crown, OutFieldCrown) else
-                None
+        )
+        return OutVarStatement(
+            var=dumped_var,
+            stmt=ErrorCatching(
+                state=state,
+                trail_element=field.accessor.trail_element,
+                stmt=AssignmentStatement(var=dumped_var, value=dumper_call),
             ),
-            stmt=None,
         )
 
     def _process_dict_sub_crown(
@@ -629,42 +660,30 @@ class BuiltinModelDumperGen(ModelDumperGen):
         sub_crown: OutCrown,
         out_stmt: OutStatement,
     ) -> None:
-        if isinstance(out_stmt, Expression):
-            dumper_call = self._wrap_with_dumper_call(
-                state=state,
-                sub_crown=sub_crown,
-                expr=out_stmt,
-            )
-            if isinstance(dumper_call, Expression):
-                builder.dict_items.append(DictKeyValue(StringLiteral(key), dumper_call))
-            elif isinstance(dumper_call, OutVarStatement):
-                builder.before_stmts.append(dumper_call.stmt)
-                builder.dict_items.append(DictKeyValue(StringLiteral(key), RawExpr(dumper_call.var)))
-            else:
-                raise TypeError
-        elif isinstance(out_stmt, OutVarStatement):
+        dumper_call = self._wrap_with_dumper_call(
+            state=state,
+            sub_crown=sub_crown,
+            var=out_stmt.var,
+        )
+        if isinstance(out_stmt, OutVarStatement):
             builder.before_stmts.append(out_stmt.stmt)
-            self._process_dict_sub_crown(
-                state=state,
-                builder=builder,
-                key=key,
-                sub_crown=sub_crown,
-                out_stmt=RawExpr(out_stmt.var),
+            builder.before_stmts.append(dumper_call.stmt)
+            builder.dict_items.append(
+                DictKeyValue(StringLiteral(key), dumper_call.var),
             )
         elif isinstance(out_stmt, OptionalOutVarStatement):
-            error_handler_call = self._get_error_handler_call_for_sub_crown(state, sub_crown)
             stmt = out_stmt.stmt_maker(
-                on_access_ok=self._get_dict_append(
-                    state=state,
-                    key=key,
-                    sub_crown=sub_crown,
-                    expr=RawExpr(out_stmt.var),
-                    error_handler_call=error_handler_call,
+                on_access_ok=statements(
+                    dumper_call.stmt,
+                    self._get_dict_append(
+                        state=state,
+                        key=key,
+                        value=dumper_call.var,
+                    ),
                 ),
                 on_access_error=CodeBlock.PASS,
-                on_unexpected_error=error_handler_call,
+                on_unexpected_error=...,
             )
-            error_handler_call.stmt = stmt
             builder.after_stmts.append(stmt)
         else:
             raise TypeError
@@ -678,76 +697,52 @@ class BuiltinModelDumperGen(ModelDumperGen):
         sub_crown: OutCrown,
         out_stmt: OutStatement,
     ) -> None:
-        if isinstance(out_stmt, Expression):
-            temp_var = state.var_suffix("temp", key)
-            self._process_dict_sieved_sub_crown(
-                state=state,
-                builder=builder,
-                key=key,
-                sieve=sieve,
-                sub_crown=sub_crown,
-                out_stmt=OutVarStatement(
-                    var=temp_var,
-                    stmt=CodeBlock(
-                        "<temp_var> = <expr>",
-                        temp_var=RawExpr(temp_var),
-                        expr=out_stmt,
-                    ),
-                ),
-            )
+        dumper_call = self._wrap_with_dumper_call(state, sub_crown, out_stmt.var)
+        condition = self._get_sieve_condition(state, sieve, key, out_stmt.var)
+        conditional_append = CodeBlock(
+            """
+            if <condition>:
+                <dict_append>
+            """,
+            condition=condition,
+            dict_append=self._get_dict_append(state, key, out_stmt.var),
+        )
         if isinstance(out_stmt, OptionalOutVarStatement):
-            error_handler_call = self._get_error_handler_call_for_sub_crown(state, sub_crown)
             stmt = out_stmt.stmt_maker(
-                on_access_ok=CodeBlock(
-                    """
-                    if <condition>:
-                        <dict_append>
-                    """,
-                    condition=RawExpr(self._get_sieve_condition(state, sieve, key, out_stmt.var)),
-                    dict_append=self._get_dict_append(state, key, sub_crown, RawExpr(out_stmt.var), error_handler_call),
-                ),
+                on_access_ok=conditional_append,
                 on_access_error=CodeBlock.PASS,
-                on_unexpected_error=error_handler_call,
+                on_unexpected_error=...,
             )
-            error_handler_call.stmt = stmt
             builder.after_stmts.append(stmt)
         if isinstance(out_stmt, OutVarStatement):
-            error_handler_call = self._get_error_handler_call_for_sub_crown(state, sub_crown)
-            condition = RawExpr(self._get_sieve_condition(state, sieve, key, out_stmt.var))
-            stmt = CodeBlock(
-                """
-                try:
-                    <stmt>
-                except Exception as e:
-                    <error_handler>
-                if <condition>:
-                    <dict_append>
-                """,
-                stmt=out_stmt.stmt,
-                error_handler=error_handler_call,
-                condition=condition,
-                dict_append=self._get_dict_append(state, key, sub_crown, RawExpr(out_stmt.var), error_handler_call),
+            builder.after_stmts.append(
+                statements(
+                    out_stmt.stmt,
+                    conditional_append,
+                ),
             )
-            dumper_call = self._wrap_with_dumper_call(state, sub_crown, RawExpr(out_stmt.var), error_handler_call)
-            error_handler_call.stmt = CodeBlock(
-                """
-                try:
-                    <stmt>
-                except Exception as e:
-                    <error_handler>
-                else:
-                    if <condition>:
+            if isinstance(sub_crown, OutFieldCrown):
+                trail_element = self._id_to_field[sub_crown.id].accessor.trail_element
+                state.overriden_error_collectors[trail_element] = (
+                    lambda error_saving: CodeBlock(
+                        """
                         try:
-                            <dumper_stmt>
+                            <stmt>
                         except Exception as e:
-                            <error_handler>
-                """,
-                stmt=out_stmt.stmt,
-                error_handler=error_handler_call,
-                condition=condition,
-                dumper_stmt=dumper_call.stmt if isinstance(dumper_call, OutVarStatement) else dumper_call,
-            )
-            builder.after_stmts.append(stmt)
+                            <error_saving>
+                        else:
+                            if <condition>:
+                                try:
+                                    <dumper_call>
+                                except Exception as e:
+                                    <error_saving>
+                        """,
+                        stmt=out_stmt.stmt,
+                        condition=condition,
+                        dumper_call=dumper_call.stmt,
+                        error_saving=error_saving,
+                    )
+                )
         else:
             raise TypeError
 
@@ -755,64 +750,46 @@ class BuiltinModelDumperGen(ModelDumperGen):
         self,
         state: GenState,
         key: str,
-        sub_crown: OutCrown,
-        expr: Expression,
-        error_handler_call: Optional[ErrorHandlerCall],
+        value: Expression,
     ) -> Statement:
-        dumped = self._wrap_with_dumper_call(state, sub_crown, expr, error_handler_call)
-        if isinstance(dumped, OutVarStatement):
-            return CodeBlock(
-                """
-                <dumper_call>
-                <crown>[<key>] = <dumped_value>
-                """,
-                dumper_call=dumped.stmt,
-                key=StringLiteral(key),
-                crown=RawExpr(state.v_crown),
-                dumped_value=RawExpr(dumped.var),
-            )
-        if isinstance(dumped, Expression):
-            return CodeBlock(
-                """
-                <crown>[<key>] = <dumper_call>
-                """,
-                dumper_call=dumped,
-                key=StringLiteral(key),
-                crown=RawExpr(state.v_crown),
-            )
-        raise TypeError
+        return CodeBlock(
+            "<crown>[<key>] = <value>",
+            key=StringLiteral(key),
+            crown=RawExpr(state.v_crown),
+            dumped_value=value,
+        )
 
-    def _get_sieve_condition(self, state: GenState, sieve: Sieve, key: str, input_expr: str) -> str:
+    def _get_sieve_condition(self, state: GenState, sieve: Sieve, key: str, test_var: VarExpr) -> Expression:
         default_clause = get_default_clause(sieve)
         if default_clause is None:
             v_sieve = state.suffix("sieve", key)
             state.namespace.add_constant(v_sieve, sieve)
-            return f"{v_sieve}({input_expr})"
+            return RawExpr(f"{v_sieve}({test_var.name})")
 
         if isinstance(default_clause, DefaultValue):
             literal_expr = get_literal_expr(default_clause.value)
             if literal_expr is not None:
-                return (
-                    f"{input_expr} is not {literal_expr}"
+                return RawExpr(
+                    f"{test_var.name} is not {literal_expr}"
                     if is_singleton(default_clause.value) else
-                    f"{input_expr} != {literal_expr}"
+                    f"{test_var.name} != {literal_expr}",
                 )
             v_default = state.suffix("default", key)
             state.namespace.add_constant(v_default, default_clause.value)
-            return f"{input_expr} != {v_default}"
+            return RawExpr(f"{test_var.name} != {v_default}")
 
         if isinstance(default_clause, DefaultFactory):
             literal_expr = get_literal_from_factory(default_clause.factory)
             if literal_expr is not None:
-                return f"{input_expr} != {literal_expr}"
+                return RawExpr(f"{test_var.name} != {literal_expr}")
             v_default = state.suffix("default", key)
             state.namespace.add_constant(v_default, default_clause.factory)
-            return f"{input_expr} != {v_default}()"
+            return RawExpr(f"{test_var.name} != {v_default}()")
 
         if isinstance(default_clause, DefaultFactoryWithSelf):
             v_default = state.suffix("default", key)
             state.namespace.add_constant(v_default, default_clause.factory)
-            return f"{input_expr} != {v_default}(data)"
+            return RawExpr(f"{test_var.name} != {v_default}(data)")
 
         raise TypeError
 
@@ -821,71 +798,61 @@ class BuiltinModelDumperGen(ModelDumperGen):
             self._get_crown_out_stmt(state, idx, sub_crown)
             for idx, sub_crown in enumerate(crown.map)
         ]
-        before_stmts = [
-            out_stmt.stmt
-            for out_stmt in out_stmts
-            if isinstance(out_stmt, OutVarStatement)
-        ]
         dumped_out_stmts = [
             self._wrap_with_dumper_call(
                 state,
                 sub_crown,
-                out_stmt if isinstance(out_stmt, Expression) else RawExpr(out_stmt.var),
+                out_stmt.var,
             )
             for sub_crown, out_stmt in zip(crown.map, out_stmts)
         ]
-        before_stmts.extend(
-            out_stmt.stmt
-            for out_stmt in dumped_out_stmts
-            if isinstance(out_stmt, OutVarStatement)
-        )
-        list_literal = ListLiteral(
-            [
-                out_stmt if isinstance(out_stmt, Expression) else RawExpr(out_stmt.var)
-                for out_stmt in dumped_out_stmts
-            ],
-        )
-        if not before_stmts:
-            return list_literal
-
-        out_variable = state.v_crown
-        state.namespace.register_var(out_variable)
+        var = self._alloc_var(state, state.v_crown)
         return OutVarStatement(
             stmt=statements(
-                *before_stmts,
-                CodeBlock(
-                    "<out_variable> = <list_literal>",
-                    out_variable=RawExpr(out_variable),
-                    list_literal=list_literal,
+                *(out_stmt.stmt for out_stmt in out_stmts),
+                *(out_stmt.stmt for out_stmt in dumped_out_stmts),
+                AssignmentStatement(
+                    var=var,
+                    value=ListLiteral([out_stmt.var for out_stmt in dumped_out_stmts]),
                 ),
             ),
-            var=out_variable,
+            var=var,
         )
 
     def _get_field_crown_out_stmt(self, state: GenState, crown: OutFieldCrown) -> OutStatement:
         state.field_id_to_path[crown.id] = state.path
         return self._get_field_extraction(state, self._id_to_field[crown.id])
 
-    def _get_none_crown_out_stmt(self, state: GenState, crown: OutNoneCrown) -> OutStatement:
-        if isinstance(crown.placeholder, DefaultFactory):
-            literal_expr = get_literal_from_factory(crown.placeholder.factory)
+    def _get_placeholder_expr(self, state: GenState, placeholder: Placeholder) -> Expression:
+        if isinstance(placeholder, DefaultFactory):
+            literal_expr = get_literal_from_factory(placeholder.factory)
             if literal_expr is not None:
                 return RawExpr(literal_expr)
 
             v_placeholder = state.suffix("placeholder")
-            state.namespace.add_constant(v_placeholder, crown.placeholder.factory)
+            state.namespace.add_constant(v_placeholder, placeholder.factory)
             return RawExpr(v_placeholder + "()")
 
-        if isinstance(crown.placeholder, DefaultValue):
-            literal_expr = get_literal_expr(crown.placeholder.value)
+        if isinstance(placeholder, DefaultValue):
+            literal_expr = get_literal_expr(placeholder.value)
             if literal_expr is not None:
                 return RawExpr(literal_expr)
 
             v_placeholder = state.suffix("placeholder")
-            state.namespace.add_constant(v_placeholder, crown.placeholder.value)
+            state.namespace.add_constant(v_placeholder, placeholder.value)
             return RawExpr(v_placeholder)
 
         raise TypeError
+
+    def _get_none_crown_out_stmt(self, state: GenState, crown: OutNoneCrown) -> OutStatement:
+        var = self._alloc_var(state, state.v_crown)
+        return OutVarStatement(
+            var=var,
+            stmt=AssignmentStatement(
+                var=var,
+                value=self._get_placeholder_expr(state, crown.placeholder),
+            ),
+        )
 
 
 class ModelOutputJSONSchemaGen:
