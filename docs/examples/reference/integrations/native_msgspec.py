@@ -1,5 +1,4 @@
 import datetime
-from dataclasses import dataclass
 
 from msgspec import Struct
 

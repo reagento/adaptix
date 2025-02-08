@@ -1,16 +1,17 @@
-from typing import Any, Callable, Iterable, Mapping, Optional, TypedDict, TypeVar
+import contextlib
+from collections.abc import Iterable
+from typing import Any, Callable, Optional, TypedDict, TypeVar
 
-from adaptix import Dumper, Loader, Mediator, Omittable, Omitted, Provider
+from adaptix import Dumper, Loader, Mediator, Provider
 from adaptix._internal.morphing.load_error import LoadError
 from adaptix._internal.morphing.provider_template import DumperProvider, LoaderProvider
 from adaptix._internal.morphing.request_cls import DumperRequest, LoaderRequest
 from adaptix._internal.provider.facade.provider import bound_by_any
 from adaptix._internal.provider.loc_stack_filtering import Pred
 
-try:
+with contextlib.suppress(ImportError):
     from msgspec import ValidationError, convert, to_builtins
-except ImportError:
-    pass
+
 
 T = TypeVar("T")
 
@@ -70,7 +71,7 @@ class NativeMsgspecProvider(LoaderProvider, DumperProvider):
 def native_msgspec(
     *preds: Pred,
     convert: Optional[Convert] = None,
-    to_builtins: Optional[Convert] = None,
+    to_builtins: Optional[ToBuiltins] = None,
 ) -> Provider:
     return bound_by_any(
         preds,

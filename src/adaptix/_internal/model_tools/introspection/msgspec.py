@@ -1,6 +1,6 @@
 import inspect
+from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Mapping
 
 try:
     from msgspec import NODEFAULT
@@ -111,7 +111,7 @@ def get_struct_shape(tp) -> FullShape:
                 ) for fi in fields_info),
             overriden_types=frozenset(
                 annotation
-                for annotation in tp.__annotations__.keys()
+                for annotation in tp.__annotations__
                 if annotation in init_fields
             ),
         ),

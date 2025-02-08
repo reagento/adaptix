@@ -1,5 +1,5 @@
 from types import MappingProxyType, NoneType
-from typing import Annotated, Any, ClassVar, Generic, Sequence, TypeVar, Union
+from typing import Annotated, ClassVar, Generic, Sequence, TypeVar, Union
 from unittest.mock import ANY
 
 from msgspec import Struct, field
@@ -57,7 +57,7 @@ def test_basic():
                     InputField(
                         type=bool,
                         id="c",
-                        default=DefaultValue(True),
+                        default=DefaultValue(value=True),
                         is_required=False,
                         metadata=MappingProxyType({}),
                         original=ANY,
@@ -129,7 +129,7 @@ def test_basic():
                     OutputField(
                         type=bool,
                         id="c",
-                        default=DefaultValue(True),
+                        default=DefaultValue(value=True),
                         accessor=create_attr_accessor("c", is_required=True),
                         metadata=MappingProxyType({}),
                         original=ANY,
@@ -395,7 +395,7 @@ def test_features():
                     InputField(
                         type=bool,
                         id="b",
-                        default=DefaultValue(True),
+                        default=DefaultValue(value=True),
                         is_required=False,
                         metadata=MappingProxyType({}),
                         original=ANY,
@@ -428,7 +428,7 @@ def test_features():
                     OutputField(
                         type=bool,
                         id="b",
-                        default=DefaultValue(True),
+                        default=DefaultValue(value=True),
                         accessor=create_attr_accessor("b", is_required=True),
                         metadata=MappingProxyType({}),
                         original=ANY,
