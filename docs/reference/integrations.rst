@@ -114,11 +114,9 @@ You can override this behavior to use a native pydantic validation/serialization
 Working with msgspec
 =============
 
-By default, any msgspec Struct is loaded and dumped like any other model.
-``load`` in adaptix behaves like ``convert`` in msgspec.
-Same is for ``dump`` and ``to_builtins``.
-For example, types unsupported by ``to_builtins`` won't be casted.
-You can override this behaviour by using a native msgspec ``to_builtins``/``convert`` mechanism.
+By default, any msgspec Struct is loaded, dumped and converted like any other model.
+If your code uses specific options for ``to_builtins`` or ``convert`` functions, you can specify
+them with native msgspec mechanism defined in Retort as shown in example.
 
 .. literalinclude:: /examples/reference/integrations/native_msgspec.py
 
