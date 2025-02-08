@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from tests_helpers import raises_exc, with_trail
 
-from adaptix import DebugTrail, Retort
+from adaptix import DebugTrail, Retort, loader as loader_recipe
 from adaptix.load_error import AggregateLoadError, TypeLoadError
 from adaptix.struct_trail import get_trail
 
@@ -92,3 +92,17 @@ def test_int_dt_disable(accum):
 
     dumper = retort.get_dumper(ExampleInt)
     assert dumper(ExampleInt(field1=1, field2=1)) == {"field1": 1, "field2": 1}
+
+
+def test_int_child():
+    class CustomInt(int):
+        pass
+
+    default = CustomInt(0)
+
+    @dataclass
+    class Model:
+        field1: CustomInt = default
+
+    retort = Retort(recipe=[loader_recipe(CustomInt, CustomInt)])
+    assert retort.load({}, Model).field1 is default
