@@ -21,6 +21,7 @@ Models that are supported out of the box:
 - `attrs <https://www.attrs.org/en/stable/>`__ (only from ``>=21.3.0``)
 - `sqlalchemy <https://docs.sqlalchemy.org/en/20/>`__ (only from ``>=2.0.0``)
 - `pydantic <https://docs.pydantic.dev/latest/>`__ (only from ``>=2.0.0``)
+- `msgspec <https://jcristharif.com/msgspec/>`__ (only from ``>=0.14.0``)
 
 Arbitrary types also are supported to be loaded by introspection of ``__init__`` method,
 but it can not be dumped.
@@ -107,6 +108,17 @@ For example, any aliases or config parameters defined inside the model are ignor
 You can override this behavior to use a native pydantic validation/serialization mechanism.
 
 .. literalinclude:: /examples/reference/integrations/native_pydantic.py
+
+.. _msgspec:
+
+Working with msgspec
+=============
+
+By default, any msgspec Struct is loaded, dumped and converted like any other model.
+If your code uses specific options for ``to_builtins`` or ``convert`` functions, you can specify
+them with native msgspec mechanism defined in Retort as shown in example.
+
+.. literalinclude:: /examples/reference/integrations/native_msgspec.py
 
 .. _sqlalchemy_json:
 
