@@ -48,7 +48,9 @@ from ..generic_provider import (
     UnionProvider,
 )
 from ..iterable_provider import IterableProvider
+from ..json_schema.definitions import JSONSchema
 from ..json_schema.providers import InlineJSONSchemaProvider, JSONSchemaRefProvider
+from ..json_schema.request_cls import JSONSchemaContext, JSONSchemaRequest
 from ..model.crown_definitions import ExtraSkip
 from ..model.dumper_provider import ModelDumperProvider
 from ..model.loader_provider import ModelLoaderProvider
@@ -312,6 +314,12 @@ class AdornedRetort(OperatingRetort):
                     " you have to explicitly pass the type of object",
                 )
         return self.get_dumper(tp)(data)
+
+    def make_json_schema(self, tp: TypeHint, ctx: JSONSchemaContext) -> JSONSchema:
+        return self._facade_provide(
+            JSONSchemaRequest(loc_stack=LocStack(TypeHintLoc(type=tp)), ctx=ctx),
+            error_message=f"Cannot produce JSONSchema for type {tp!r}",
+        )
 
 
 class Retort(FilledRetort, AdornedRetort):
