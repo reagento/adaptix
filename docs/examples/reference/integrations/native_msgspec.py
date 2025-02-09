@@ -10,6 +10,7 @@ class Music(Struct):
     released: datetime.date
     composition: str
 
+
 data = {
     "released": datetime.date(2007,1,20),
     "composition": "Espacio de silencio",

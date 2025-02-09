@@ -2,12 +2,13 @@ import contextlib
 from collections.abc import Iterable
 from typing import Any, Callable, Optional, TypedDict, TypeVar
 
-from adaptix import Dumper, Loader, Mediator, Provider
-from adaptix._internal.morphing.load_error import LoadError
-from adaptix._internal.morphing.provider_template import DumperProvider, LoaderProvider
-from adaptix._internal.morphing.request_cls import DumperRequest, LoaderRequest
-from adaptix._internal.provider.facade.provider import bound_by_any
-from adaptix._internal.provider.loc_stack_filtering import Pred
+from ...common import Dumper, Loader
+from ...morphing.load_error import LoadError
+from ...morphing.provider_template import DumperProvider, LoaderProvider
+from ...morphing.request_cls import DumperRequest, LoaderRequest
+from ...provider.essential import Mediator, Provider
+from ...provider.facade.provider import bound_by_any
+from ...provider.loc_stack_filtering import Pred
 
 with contextlib.suppress(ImportError):
     from msgspec import ValidationError, convert, to_builtins

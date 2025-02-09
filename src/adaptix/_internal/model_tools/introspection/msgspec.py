@@ -91,7 +91,7 @@ def get_struct_shape(tp) -> FullShape:
                 )
                 for field_id in type_hints
                 if field_id in init_fields
-        ),
+            ),
             kwargs=None,
             overriden_types=frozenset(
                 annotation
