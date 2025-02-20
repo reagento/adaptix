@@ -118,7 +118,7 @@ mdurl==0.1.2
     # via markdown-it-py
 msgspec==0.18.4 ; implementation_name != 'pypy'
     # via -r requirements/raw/bench.txt
-mypy==1.14.0
+mypy==1.15.0
     # via -r requirements/raw/lint.txt
 mypy-extensions==1.0.0
     # via mypy
