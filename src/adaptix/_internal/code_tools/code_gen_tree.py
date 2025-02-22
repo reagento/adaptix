@@ -155,10 +155,14 @@ class DictKeyValue(DictItem):
 
 
 class DictLiteral(Expression):
-    def __init__(self, items: Iterable[DictItem]):
+    def __init__(self, items: Sequence[DictItem]):
         self._items = items
 
     def write_lines(self, writer: TextSliceWriter) -> None:
+        if len(self._items) == 0:
+            writer.write("{}")
+            return
+
         writer.write("{")
         with writer:
             for item in self._items:

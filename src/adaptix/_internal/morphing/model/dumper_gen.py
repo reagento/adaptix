@@ -13,7 +13,6 @@ from ...code_tools.code_gen_tree import (
     Expression,
     LinesWriter,
     ListLiteral,
-    MappingUnpack,
     RawExpr,
     RawStatement,
     Statement,
@@ -69,14 +68,14 @@ class GenState:
         self._path: CrownPath = ()
 
         self.trail_element_to_name_idx: dict[TrailElement, int] = {}
-        self.error_collectors: list[Statement] = []
-        self.trail_to_collector_idx: dict[TrailElement, int] = {}
 
         self.error_handler_name = error_handler_name
         self.error_handlers: dict[Optional[OutputField], Callable[[Statement], Statement]] = {}
         self.field_to_idx: dict[Optional[OutputField], int] = {}
 
     def register_field_idx(self, field: Optional[OutputField]) -> int:
+        if field in self.field_to_idx:
+            return self.field_to_idx[field]
         idx = len(self.field_to_idx)
         self.field_to_idx[field] = idx
         return idx
@@ -118,6 +117,21 @@ class GenState:
     def v_crown(self) -> str:
         return self.suffix("result")
 
+    def get_trail_element_expr(self, trail_element: TrailElement) -> str:
+        literal_expr = get_literal_expr(trail_element)
+        if literal_expr is not None:
+            return literal_expr
+
+        if trail_element in self.trail_element_to_name_idx:
+            idx = self.trail_element_to_name_idx[trail_element]
+            v_trail_element = f"trail_element_{idx}"
+        else:
+            idx = len(self.trail_element_to_name_idx)
+            self.trail_element_to_name_idx[trail_element] = idx
+            v_trail_element = f"trail_element_{idx}"
+            self.namespace.add_constant(v_trail_element, trail_element)
+        return v_trail_element
+
 
 class VarExpr(Expression):
     def __init__(self, name: str):
@@ -147,28 +161,13 @@ class ErrorHandling(Statement):
         self._state = state
         self._field = field
 
-    def _get_trail_element_expr(self, trail_element: TrailElement) -> str:
-        literal_expr = get_literal_expr(trail_element)
-        if literal_expr is not None:
-            return literal_expr
-
-        if trail_element in self._state.trail_element_to_name_idx:
-            idx = self._state.trail_element_to_name_idx[trail_element]
-            v_trail_element = f"trail_element_{idx}"
-        else:
-            idx = len(self._state.trail_element_to_name_idx)
-            self._state.trail_element_to_name_idx[trail_element] = idx
-            v_trail_element = f"trail_element_{idx}"
-            self._state.namespace.add_constant(v_trail_element, trail_element)
-        return v_trail_element
-
     def _get_append_trail(self) -> str:
         if self._field is None:
             if self._state.debug_trail == DebugTrail.ALL:
                 return "e"
             raise ValueError
-        trail_element = self._get_trail_element_expr(self._field.accessor.trail_element)
-        return f"append_trail(e, {trail_element}))"
+        trail_element = self._state.get_trail_element_expr(self._field.accessor.trail_element)
+        return f"append_trail(e, {trail_element})"
 
     def write_lines(self, writer: TextSliceWriter) -> None:
         if self._state.debug_trail == DebugTrail.DISABLE:
@@ -200,7 +199,7 @@ class FieldErrorCatching(Statement):
                     <error_handling>
                 """,
                 stmt=self._stmt,
-                handling=ErrorHandling(self._state, self._field),
+                error_handling=ErrorHandling(self._state, self._field),
             ).write_lines(
                 writer,
             )
@@ -307,13 +306,13 @@ class BuiltinModelDumperGen(ModelDumperGen):
         extra_extraction = self._get_extra_extraction(state)
         if extra_extraction is not None:
             out_stmt = OutVarStatement(
-                var=extra_extraction.var,
+                var=out_stmt.var,
                 stmt=statements(
                     out_stmt.stmt,
                     extra_extraction.stmt,
                     CodeBlock(
                         "<result>.update(<extra>)",
-                        result=extra_extraction.var,
+                        result=out_stmt.var,
                         extra=extra_extraction.var,
                     ),
                 ),
@@ -351,7 +350,13 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 fragments.append(
                     DictFragment(
                         before=out_stmt.stmt,
-                        item=MappingUnpack(out_stmt.var),
+                        after=CodeBlock(
+                            """
+                            <extra_var>.update(<dumped_var>)
+                            """,
+                            extra_var=extra_var,
+                            dumped_var=out_stmt.var,
+                        ),
                     ),
                 )
             else:
@@ -379,7 +384,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 AssignmentStatement(
                     var=var,
                     value=DictLiteral(
-                        fragment.item for fragment in fragments if fragment.item is not None
+                        [fragment.item for fragment in fragments if fragment.item is not None],
                     ),
                 ),
                 *(fragment.after for fragment in fragments if fragment.after is not None),
@@ -431,7 +436,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 else:
                     try:
                         <dumper>
-                    except Exception:
+                    except Exception as e:
                         <collector>
             """,
             raw_var=raw_var,
@@ -500,26 +505,33 @@ class BuiltinModelDumperGen(ModelDumperGen):
             var=var,
         )
 
+    def _get_error_collector(self, state: GenState, field: Optional[OutputField]) -> Statement:
+        if field is None:
+            return RawStatement("errors.append(e)")
+
+        trail_element = state.get_trail_element_expr(field.accessor.trail_element)
+        return RawStatement(f"errors.append(append_trail(e, {trail_element}))")
+
     def _get_error_handler(self, state: GenState) -> Statement:
-        error_collectors = [
+        error_testers = [
             CodeBlock(
                 """
                 if idx < <idx>:
                     <stmt>
                 """,
                 idx=RawExpr(repr(idx)),
-                stmt=stmt,
+                stmt=state.error_handlers[field](self._get_error_collector(state, field)),
             )
-            for idx, stmt in enumerate(state.error_collectors)
+            for field, idx in state.field_to_idx.items()
         ]
         return CodeBlock(
             """
-            def <error_handler>(idx, data, e):
-                errors = [e]
-                <error_collectors>
+            def <error_handler>(idx, data, first_exc):
+                errors = [first_exc]
+                <error_testers>
                 return ExceptionGroup(<error_msg>, [render_trail_as_note(e) for e in errors])
             """,
-            error_collectors=statements(*error_collectors),
+            error_testers=statements(*error_testers),
             error_msg=StringLiteral(f"while dumping model {self._model_identity}"),
             error_handler=RawExpr(state.error_handler_name),
         )
@@ -619,18 +631,22 @@ class BuiltinModelDumperGen(ModelDumperGen):
     def _process_dict_sieved_field(self, state: GenState, key: str, sieve: Sieve, field: OutputField) -> DictFragment:
         access_expr = self._get_access_expr(state.namespace, field)
         raw_var = self._alloc_var(state, f"r_{field.id}")
+        dumped_var = self._alloc_var(state, f"dumped_{field.id}")
         condition = self._get_sieve_condition(state, sieve, key, raw_var)
 
         if field.is_required:
-            dumped_var = self._alloc_var(state, f"dumped_{field.id}")
             state.error_handlers[field] = lambda collector: CodeBlock(
                 """
-                    <raw_var> = <access_expr>
-                    if <condition>:
-                        try:
-                            <dumper>
-                        except Exception as e:
-                            <collector>
+                    try:
+                        <raw_var> = <access_expr>
+                    except Exception as e:
+                        <collector>
+                    else:
+                        if <condition>:
+                            try:
+                                <dumper>
+                            except Exception as e:
+                                <collector>
                 """,
                 raw_var=raw_var,
                 access_expr=access_expr,
@@ -641,13 +657,16 @@ class BuiltinModelDumperGen(ModelDumperGen):
             return DictFragment(
                 after=CodeBlock(
                     """
-                    <raw_var> = <access_expr>
+                    <access_stmt>
                     if <condition>:
                         <dumped_stmt>
                         <crown>[<key>] = <dumped_var>
                     """,
-                    raw_var=raw_var,
-                    access_expr=access_expr,
+                    access_stmt=FieldErrorCatching(
+                        state=state,
+                        field=field,
+                        stmt=AssignmentStatement(raw_var, access_expr),
+                    ),
                     condition=condition,
                     dumped_stmt=FieldErrorCatching(
                         state=state,
@@ -661,8 +680,6 @@ class BuiltinModelDumperGen(ModelDumperGen):
             )
 
         access_error_expr = self._get_access_error_expr(state.namespace, field)
-        raw_var = self._alloc_var(state, f"r_{field.id}")
-        dumped_var = self._alloc_var(state, f"dumped_{field.id}")
         state.error_handlers[field] = lambda collector: CodeBlock(
             """
                 try:
@@ -702,6 +719,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
                 raw_var=raw_var,
                 access_expr=access_expr,
                 access_error_expr=access_error_expr,
+                condition=condition,
                 dumped_stmt=FieldErrorCatching(
                     state=state,
                     field=field,
