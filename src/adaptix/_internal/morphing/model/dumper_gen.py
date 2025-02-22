@@ -61,7 +61,7 @@ class GenState:
         self.namespace = namespace
         self.debug_trail = debug_trail
 
-        self.field_id_to_path: dict[str, CrownPath] = {}   # TODO
+        self.field_id_to_path: dict[str, CrownPath] = {}
         self.path_to_suffix: dict[CrownPath, str] = {}
 
         self._last_path_idx = 0
@@ -529,7 +529,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
             def <error_handler>(idx, data, first_exc):
                 errors = [first_exc]
                 <error_testers>
-                return ExceptionGroup(<error_msg>, [render_trail_as_note(e) for e in errors])
+                return CompatExceptionGroup(<error_msg>, [render_trail_as_note(e) for e in errors])
             """,
             error_testers=statements(*error_testers),
             error_msg=StringLiteral(f"while dumping model {self._model_identity}"),
@@ -587,20 +587,15 @@ class BuiltinModelDumperGen(ModelDumperGen):
         for key, sub_crown in crown.map.items():
             if isinstance(sub_crown, OutFieldCrown):
                 field = self._id_to_field[sub_crown.id]
+                state.field_id_to_path[field.id] = state.path
                 fragments.append(
                     self._process_dict_field(state, key, field)
                     if key not in crown.sieves else
                     self._process_dict_sieved_field(state, key, crown.sieves[key], field),
                 )
             else:
-                if key in crown.sieves:
-                    raise ValueError
-                out_stmt = self._get_crown_out_stmt(state, key, sub_crown)
                 fragments.append(
-                    DictFragment(
-                        before=out_stmt.stmt,
-                        item=DictKeyValue(StringLiteral(key), out_stmt.var),
-                    ),
+                    self._process_dict_non_field_crown(state, key, crown.sieves.get(key), sub_crown),
                 )
 
         var = self._alloc_var(state, state.v_crown)
@@ -732,6 +727,35 @@ class BuiltinModelDumperGen(ModelDumperGen):
             ),
         )
 
+    def _process_dict_non_field_crown(
+        self,
+        state: GenState,
+        key: str,
+        sieve: Optional[Sieve],
+        sub_crown: OutCrown,
+    ) -> DictFragment:
+        out_stmt = self._get_crown_out_stmt(state, key, sub_crown)
+        if sieve is None:
+            return DictFragment(
+                before=out_stmt.stmt,
+                item=DictKeyValue(StringLiteral(key), out_stmt.var),
+            )
+
+        condition = self._get_sieve_condition(state, sieve, key, out_stmt.var)
+        return DictFragment(
+            before=out_stmt.stmt,
+            after=CodeBlock(
+                """
+                if <condition>:
+                    <crown>[<key>] = <sub_crown_var>
+                """,
+                condition=condition,
+                key=StringLiteral(key),
+                crown=VarExpr(state.v_crown),
+                sub_crown_var=out_stmt.var,
+            ),
+        )
+
     def _get_sieve_condition(self, state: GenState, sieve: Sieve, key: str, test_var: VarExpr) -> Expression:
         default_clause = get_default_clause(sieve)
         if default_clause is None:
@@ -771,6 +795,7 @@ class BuiltinModelDumperGen(ModelDumperGen):
         for idx, sub_crown in enumerate(crown.map):
             if isinstance(sub_crown, OutFieldCrown):
                 field = self._id_to_field[sub_crown.id]
+                state.field_id_to_path[field.id] = state.path
                 if field.is_optional:
                     raise ValueError
                 out_stmts.append(
