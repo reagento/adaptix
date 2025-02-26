@@ -10,5 +10,5 @@ class SomeModel(BaseModel):
 SomeModel(
     a=1,
     b=2,
-    c=3,  # unknown filed!
+    c=3,  # unknown field!
 )
