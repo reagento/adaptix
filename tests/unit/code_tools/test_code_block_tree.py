@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from adaptix._internal.code_tools.code_gen_tree import (
+from adaptix._internal.code_tools.code_block_tree import (
     CodeBlock,
     DictKeyValue,
     DictLiteral,

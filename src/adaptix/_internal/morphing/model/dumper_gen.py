@@ -4,7 +4,7 @@ from dataclasses import replace
 from typing import Any, Callable, NamedTuple, Optional
 
 from ...code_tools.cascade_namespace import BuiltinCascadeNamespace, CascadeNamespace
-from ...code_tools.code_gen_tree import (
+from ...code_tools.code_block_tree import (
     CodeBlock,
     CodeExpr,
     DictItem,
