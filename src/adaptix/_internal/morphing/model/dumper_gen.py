@@ -108,11 +108,6 @@ class GenState:
             return basis
         return basis + "_" + self._ensure_path_idx(path)
 
-    def var_suffix(self, basis: str, key: Optional[CrownPathElem] = None) -> str:
-        var = self.suffix(basis, key)
-        self.namespace.register_var(var)
-        return var
-
     @property
     def v_crown(self) -> str:
         return self.suffix("result")

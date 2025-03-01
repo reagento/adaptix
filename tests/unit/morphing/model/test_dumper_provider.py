@@ -1367,6 +1367,7 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, acc_schema):
                     OutNoneCrown(placeholder=DefaultValue(SomeClass(2))),
                     OutFieldCrown("a"),
                     OutNoneCrown(placeholder=DefaultFactory(list)),
+                    OutNoneCrown(placeholder=DefaultFactory(lambda: SomeClass(4))),
                 ),
             ),
             extra_move=None,
@@ -1376,4 +1377,4 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, acc_schema):
     )
     dumper = dumper_getter()
 
-    assert dumper(acc_schema.dummy(a=1)) == [None, SomeClass(2), 1, []]
+    assert dumper(acc_schema.dummy(a=1)) == [None, SomeClass(2), 1, [], SomeClass(4)]
