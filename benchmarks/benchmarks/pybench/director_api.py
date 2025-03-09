@@ -1,6 +1,5 @@
 # pylint: disable=import-error,no-name-in-module
 # ruff: noqa: T201, S603
-import datetime
 import importlib.metadata
 import inspect
 import json
@@ -14,14 +13,19 @@ from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, Callable, Literal, Optional, TypeVar, Union
 
 import pyperf
 from pyperf._cli import format_checks
 
-from benchmarks.pybench.persistence.common import BenchAccessProto, BenchMeta, BenchOperator, BenchSchemaProto
-from benchmarks.pybench.persistence.database import BenchRecord, sqlite_operator_factory
-from benchmarks.pybench.persistence.filesystem import filesystem_operator_factory
+from benchmarks.pybench.storage import (
+    BenchCaseResult,
+    BenchCaseResultStats,
+    BenchStorage,
+    FilesystemBenchStorage,
+    SqliteBenchStorage,
+    UninitedBenchStorage,
+)
 from benchmarks.pybench.utils import get_function_object_ref, load_by_object_ref
 
 __all__ = (
@@ -30,16 +34,9 @@ __all__ = (
     "BenchSchema",
     "BenchmarkDirector",
     "CheckParams",
-    "PlotParams",
 )
 
 EnvSpec = Mapping[str, str]
-
-
-def operator_factory(accessor: BenchAccessProto, *, sqlite: bool) -> BenchOperator:
-    if sqlite:
-        return sqlite_operator_factory(accessor)
-    return filesystem_operator_factory(accessor)
 
 
 @dataclass(frozen=True)
@@ -49,7 +46,7 @@ class CheckParams:
 
 
 @dataclass(frozen=True)
-class BenchSchema(BenchSchemaProto):
+class BenchSchema:
     entry_point: Union[Callable, str]
     base: str
     tags: Iterable[str]
@@ -59,44 +56,67 @@ class BenchSchema(BenchSchemaProto):
     check_params: Callable[[EnvSpec], CheckParams] = lambda env_spec: CheckParams()
 
 
-@dataclass(frozen=True)
-class PlotParams:
-    title: str
-    fig_size: tuple[float, float] = (8, 4.8)
-    label_padding: float = 0
-    trim_after: Optional[float] = None
-    label_format: str = ".1f"
-
-
 BUILTIN_CHECK_PARAMS = CheckParams(
     ignore_pyperf_warnings=False,
 )
 
 
-class BenchAccessor(BenchAccessProto):
+class BenchStorageFactory:
+    def __init__(self, benchmark: str):
+        self.benchmark = benchmark
+
+    @classmethod
+    def add_arguments(cls, parser: ArgumentParser) -> None:
+        parser.add_argument("--storage-type", "-st", choices=["fs", "sqlite"])
+        parser.add_argument("--sqlite-db", action="store", required=False, type=Path)
+        parser.add_argument("--fs-data-dir", action="store", required=False, type=Path)
+
+    def create(
+        self,
+        storage_type: Optional[Literal["fs", "sqlite"]] = None,
+        sqlite_db: Optional[Path] = None,
+        fs_data_dir: Optional[Path] = None,
+    ) -> BenchStorage:
+        if storage_type is None or storage_type == "sqlite":
+            return SqliteBenchStorage(
+                db_path=str(
+                    Path(__file__).parent.parent.parent / "data" / "bench_results.sqlite"
+                    if sqlite_db is None else
+                    sqlite_db,
+                ),
+                benchmark=self.benchmark,
+            )
+        elif storage_type == "fs":  # noqa: RET505
+            return FilesystemBenchStorage(
+                data_dir=(
+                    Path(__file__).parent.parent.parent / "data" / self.benchmark
+                    if fs_data_dir is None else
+                    fs_data_dir
+                ),
+            )
+        raise ValueError(f"Bad storage_type {storage_type!r}")
+
+
+class BenchAccessor:
     def __init__(
         self,
-        data_dir: Path,
+        benchmark: str,
+        storage: BenchStorage,
         env_spec: EnvSpec,
         check_params: Callable[[EnvSpec], CheckParams],
         schemas: Sequence[BenchSchema],
-        meta: BenchMeta,
     ):
-        self.meta = meta
-        self.data_dir = data_dir
+        self.benchmark = benchmark
+        self._storage = storage
         self.env_spec = env_spec
         self.all_schemas = schemas
         self.id_to_schema: dict[str, BenchSchema] = {self.get_id(schema): schema for schema in schemas}
         self._base_check_params = check_params
 
     def add_arguments(self, parser: ArgumentParser) -> None:
-        parser.add_argument("--data-dir", action="store", required=False, type=Path)
         parser.add_argument("--env-spec", action="extend", nargs="+", required=False, metavar="KEY=VALUE")
 
-    def override_state(self, env_spec: Optional[Iterable[str]], data_dir: Optional[Path] = None):
-        if data_dir is not None:
-            self.data_dir = data_dir
-
+    def override_state(self, env_spec: Optional[Iterable[str]]):
         if env_spec is not None:
             update_data = {}
             for item in env_spec:
@@ -106,8 +126,8 @@ class BenchAccessor(BenchAccessProto):
                 update_data[key] = value
             self.env_spec = {**self.env_spec, **update_data}
 
-    def apply_state(self) -> None:
-        self.data_dir.mkdir(parents=True, exist_ok=True)
+    def set_storage(self, storage: BenchStorage) -> None:
+        self._storage = storage
 
     def env_spec_str(self) -> str:
         return "[" + "-".join(f"{k}={v}" for k, v in self.env_spec.items()) + "]"
@@ -155,6 +175,19 @@ class BenchAccessor(BenchAccessProto):
             if schema.skip_if is None or not schema.skip_if(self.env_spec)
         ]
 
+    def get_case_result(self, schema: BenchSchema) -> Optional[BenchCaseResult]:
+        return self._storage.get_case_result(self.get_id(schema))
+
+    def get_existing_case_result(self, schema: BenchSchema) -> BenchCaseResult:
+        schema_id = self.get_id(schema)
+        case_result = self._storage.get_case_result(schema_id)
+        if case_result is None:
+            raise KeyError(f"Result for {schema_id!r} of {self.benchmark!r} not found")
+        return case_result
+
+    def write_case_result(self, result: BenchCaseResult, stats: BenchCaseResultStats) -> None:
+        return self._storage.write_case_result(result, stats)
+
 
 class BenchChecker:
     def __init__(self, accessor: BenchAccessor):
@@ -181,11 +214,11 @@ class BenchChecker:
             if not line.startswith("Use")
         ]
 
-    def get_warnings(self, schema: BenchSchema, bench_operator: BenchOperator) -> Optional[Sequence[str]]:
-        data = bench_operator.get_bench_result(schema)
+    def get_warnings(self, schema: BenchSchema) -> Optional[Sequence[str]]:
+        data = self.accessor.get_case_result(schema)
         if data is None:
             return None
-        bench = pyperf.Benchmark.loads(data)
+        bench = pyperf.Benchmark.loads(json.dumps(data))
         check_params = self.accessor.resolve_check_params(schema)
         warnings = self._process_pyperf_warnings(schema, bench, check_params, format_checks(bench))
         self_warnings = self._check_yourself(schema, bench, check_params)
@@ -203,12 +236,11 @@ class BenchChecker:
             )
         return lines
 
-    def check_results(self, *, local_id_list: bool = False, sqlite: bool = False):
+    def check_results(self, *, local_id_list: bool = False):
         lines = []
         schemas_with_warnings = []
-        reader = operator_factory(self.accessor, sqlite=sqlite)
         for schema in self.accessor.schemas:
-            warnings = self.get_warnings(schema, reader)
+            warnings = self.get_warnings(schema)
             if warnings is None:
                 lines.append(f"Result file of {self.accessor.get_id(schema)!r}")
                 lines.append("")
@@ -225,8 +257,7 @@ class BenchChecker:
 
 
 class BenchRunner:
-    def __init__(self, accessor: BenchAccessor, checker: BenchChecker, meta: BenchMeta):
-        self.meta = meta
+    def __init__(self, accessor: BenchAccessor, checker: BenchChecker):
         self.accessor = accessor
         self.checker = checker
 
@@ -244,7 +275,6 @@ class BenchRunner:
             "--unstable", action="store_true", required=False, default=False,
             help="run only unstable or missing benchmarks",
         )
-        parser.add_argument("--sqlite", action="store_true", required=False, default=False)
 
     def run_benchmarks(
         self,
@@ -253,19 +283,17 @@ class BenchRunner:
         exclude: Optional[Sequence[str]] = None,
         missing: bool = False,
         unstable: bool = False,
-        sqlite: bool = False,
     ) -> None:
-        operator = operator_factory(self.accessor, sqlite=sqlite)
         schemas: Sequence[BenchSchema]
         if missing:
             schemas = [
                 schema for schema in self.accessor.schemas
-                if not operator.get_bench_result(schema)
+                if self.accessor.get_case_result(schema) is not None
             ]
         elif unstable:
             schemas = [
                 schema for schema, warnings in (
-                    (schema, self.checker.get_warnings(schema, operator))
+                    (schema, self.checker.get_warnings(schema))
                     for schema in self.accessor.schemas
                 )
                 if warnings is None or warnings
@@ -295,9 +323,9 @@ class BenchRunner:
 
         print("Benchmarks to run: " + " ".join(benchmarks_to_run))
         for tag in benchmarks_to_run:
-            self.run_one_benchmark(local_id_to_schema[tag], operator)
+            self.run_one_benchmark(local_id_to_schema[tag])
 
-    def run_one_benchmark(self, schema: BenchSchema, bench_operator: BenchOperator) -> None:
+    def run_one_benchmark(self, schema: BenchSchema) -> None:
         distributions = {
             dist: importlib.metadata.version(dist)
             for dist in schema.used_distributions
@@ -321,36 +349,30 @@ class BenchRunner:
                 params=[schema.kwargs[param] for param in sig.parameters],
                 extra_args=["-o", str(temp_file)],
             )
-            result_data = json.loads(temp_file.read_text())
-            result_data["pybench_data"] = {
+            case_result: BenchCaseResult = json.loads(temp_file.read_text())
+            case_result["pybench_data"] = {
+                "case_id": self.accessor.get_id(schema),
                 "base": schema.base,
                 "tags": schema.tags,
+                "env_spec": self.accessor.env_spec,
                 "kwargs": schema.kwargs,
                 "distributions": distributions,
             }
-            bench_data_text = json.dumps(
-                    result_data,
-                    ensure_ascii=False,
-                    check_circular=False,
+            bench = pyperf.Benchmark.loads(
+                json.dumps(case_result, ensure_ascii=False, check_circular=False),
             )
-            bench = pyperf.Benchmark.loads(bench_data_text)
             check_params = self.accessor.resolve_check_params(schema)
-            rel_stddev = bench.stdev() / bench.mean()
-            print(f"Relative stdev is {rel_stddev:.1%} (max allowed is {check_params.stdev_rel_threshold:.1%})")
-            print()
-            bench_data: BenchRecord = {
-                "base": schema.base,
-                "kwargs": schema.kwargs,
-                "distributions": distributions,
-                "is_actual": True,
-                "tags": schema.tags,
-                "data": bench_data_text,
-                "local_id": self.accessor.get_local_id(schema),
-                "global_id": self.accessor.get_id(schema),
-                "benchmark_subname": self.meta.benchmark_subname,
-                "benchmark_name": self.meta.benchmark_name,
+            stats: BenchCaseResultStats = {
+                "mean": bench.mean(),
+                "stdev": bench.stdev(),
+                "rel_stdev": bench.stdev() / bench.mean(),
             }
-            bench_operator.write_bench_record(bench_data)
+            print(
+                f"Relative stdev is {stats['rel_stdev']:.1%}"
+                f" (max allowed is {check_params.stdev_rel_threshold:.1%})"
+                "\n",
+            )
+            self.accessor.write_case_result(case_result, stats)
 
     def launch_benchmark(
         self,
@@ -375,77 +397,6 @@ class BenchRunner:
         )
 
 
-class BenchPlotter:
-    def __init__(self, params: PlotParams, accessor: BenchAccessor):
-        self.params = params
-        self.accessor = accessor
-
-    def add_arguments(self, parser: ArgumentParser) -> None:
-        parser.add_argument("--output", "-o", action="store", required=False, type=Path)
-        parser.add_argument("--dpi", action="store", required=False, type=float, default=100)
-
-
-    def draw_plot(self, output: Optional[Path], dpi: float, *,  sqlite: bool = False):
-        operator = operator_factory(self.accessor, sqlite=sqlite)
-        if output is None:
-            output = self.accessor.data_dir / f"plot{self.accessor.env_spec_str()}.png"
-        benches_data = operator.get_all_bench_results()
-        self._render_plot(
-            output=output,
-            dpi=dpi,
-            benchmarks=[pyperf.Benchmark.loads(data) for data in benches_data],
-        )
-
-    def _render_plot(self, output: Path, dpi: float, benchmarks: Iterable[pyperf.Benchmark]) -> None:
-        # pylint: disable=import-outside-toplevel
-        from matplotlib import pyplot as plt
-
-        from benchmarks.pybench.matplotlib_utils import bar_left_aligned_label
-
-        benchmarks = sorted(benchmarks, key=lambda b: b.mean())
-        _, ax = plt.subplots(figsize=self.params.fig_size)
-        x_pos = range(len(benchmarks))
-        means = [bench.mean() * 10 ** 6 for bench in benchmarks]
-        errors = [bench.stdev() * 10 ** 6 for bench in benchmarks]
-        hbars = ax.barh(
-            x_pos,
-            means,
-            xerr=errors,
-            align="center",
-            alpha=1,
-            color="orange",
-            ecolor="black",
-            capsize=5,
-            edgecolor="black",
-        )
-
-        if self.params.trim_after is not None:
-            upper_bound = next(mean * 1.08 for mean in reversed(means) if mean <= self.params.trim_after)
-            ax.set_xbound(upper=upper_bound)
-
-        bar_left_aligned_label(
-            ax,
-            hbars,
-            padding=self.params.label_padding,
-            fontsize=9,
-            labels=[format(mean, self.params.label_format) for mean in means],
-        )
-        ax.set_xlabel("Time (μs)")
-        ax.set_yticks(x_pos)
-        ax.tick_params(bottom=False, left=False)
-        ax.set_yticklabels(
-            [
-                self.accessor.get_label(self.accessor.id_to_schema[bench.get_name()])
-                for bench in benchmarks
-            ],
-        )
-        ax.set_title(self.params.title)
-        ax.xaxis.grid(visible=True)
-        plt.tight_layout(w_pad=1000)
-        ax.set_axisbelow(True)
-        plt.savefig(output, dpi=dpi)
-
-
 T = TypeVar("T")
 
 
@@ -462,19 +413,16 @@ class BenchmarkDirector:
     def __init__(
         self,
         *,
-        data_dir: Path,
-        plot_params: PlotParams,
+        benchmark: str,
         env_spec: EnvSpec,
         check_params: Callable[[EnvSpec], CheckParams],
         schemas: Iterable[BenchSchema] = (),
-        meta: BenchMeta,
     ):
-        self.meta = meta
-        self.data_dir = data_dir
+        self.benchmark = benchmark
         self.env_spec = env_spec
-        self.plot_params = plot_params
         self.schemas: list[BenchSchema] = list(schemas)
         self.check_params = check_params
+        self.storage: BenchStorage = UninitedBenchStorage()
 
     def add(self, *schemas: BenchSchema) -> None:
         self.schemas.extend(schemas)
@@ -488,20 +436,15 @@ class BenchmarkDirector:
 
         checker = self.make_bench_checker(accessor)
         runner = self.make_bench_runner(accessor, checker)
-        plotter = self.make_bench_plotter(accessor)
+        storage_factory = self.make_storage_factory()
 
-        parser = self._make_parser(accessor, runner, plotter, checker)
+        parser = self._make_parser(accessor, runner, checker, storage_factory)
         namespace = parser.parse_args(args)
 
+        accessor.set_storage(call_by_namespace(storage_factory.create, namespace))
         call_by_namespace(accessor.override_state, namespace)
-        accessor.apply_state()
         if namespace.command == "run":
             call_by_namespace(runner.run_benchmarks, namespace)
-        elif namespace.command == "render":
-            call_by_namespace(plotter.draw_plot, namespace)
-        elif namespace.command == "run-render":
-            call_by_namespace(runner.run_benchmarks, namespace)
-            call_by_namespace(plotter.draw_plot, namespace)
         elif namespace.command == "check":
             call_by_namespace(checker.check_results, namespace)
         else:
@@ -511,56 +454,39 @@ class BenchmarkDirector:
         self,
         accessor: BenchAccessor,
         runner: BenchRunner,
-        plotter: BenchPlotter,
         checker: BenchChecker,
+        storage_factory: BenchStorageFactory,
     ) -> ArgumentParser:
         parser = ArgumentParser()
-        parser.add_argument(
-            "--sqlite",
-            action="store_true",
-            default=False,
-            required=False,
-        )
-
         subparsers = parser.add_subparsers(required=True)
 
         run_parser = subparsers.add_parser("run")
         run_parser.set_defaults(command="run")
         accessor.add_arguments(run_parser)
         runner.add_arguments(run_parser)
-
-        render_parser = subparsers.add_parser("render")
-        render_parser.set_defaults(command="render")
-        accessor.add_arguments(render_parser)
-        plotter.add_arguments(render_parser)
-
-        run_render_parser = subparsers.add_parser("run-render")
-        run_render_parser.set_defaults(command="run-render")
-        accessor.add_arguments(run_render_parser)
-        runner.add_arguments(run_render_parser)
-        plotter.add_arguments(run_render_parser)
+        storage_factory.add_arguments(run_parser)
 
         check_parser = subparsers.add_parser("check")
         check_parser.set_defaults(command="check")
         accessor.add_arguments(check_parser)
         checker.add_arguments(check_parser)
-
+        storage_factory.add_arguments(check_parser)
         return parser
 
     def make_accessor(self) -> BenchAccessor:
         return BenchAccessor(
-            data_dir=self.data_dir,
+            benchmark=self.benchmark,
             env_spec=self.env_spec,
             check_params=self.check_params,
             schemas=self.schemas,
-            meta=self.meta,
+            storage=self.storage,
         )
 
-    def make_bench_runner(self, accessor: BenchAccessor, checker: BenchChecker) -> BenchRunner:
-        return BenchRunner(accessor, checker, self.meta)
+    def make_storage_factory(self) -> BenchStorageFactory:
+        return BenchStorageFactory(self.benchmark)
 
-    def make_bench_plotter(self, accessor: BenchAccessor) -> BenchPlotter:
-        return BenchPlotter(self.plot_params, accessor)
+    def make_bench_runner(self, accessor: BenchAccessor, checker: BenchChecker) -> BenchRunner:
+        return BenchRunner(accessor, checker)
 
     def make_bench_checker(self, accessor: BenchAccessor) -> BenchChecker:
         return BenchChecker(accessor)
@@ -573,7 +499,8 @@ class BenchmarkDirector:
                 raise ValueError(f"Local id {local_id} is duplicated")
             local_id_set.add(local_id)
 
-    def replace(self: BD, *, env_spec: EnvSpec) -> BD:
+    def replace(self: BD, *, env_spec: EnvSpec, storage: BenchStorage) -> BD:
         self_copy = copy(self)
         self_copy.env_spec = env_spec
+        self_copy.storage = storage
         return self_copy

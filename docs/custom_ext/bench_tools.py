@@ -1,4 +1,5 @@
 import json
+from argparse import Namespace
 from zipfile import ZipFile
 
 import plotly
@@ -16,7 +17,7 @@ class CustomBenchChart(SphinxDirective):
 
     def get_html(self, hub_key: str) -> str:
         hub_description = KEY_TO_HUB[hub_key]
-        renderer = Renderer()
+        renderer = Renderer(Namespace())
         light_html = plotly.offline.plot(
             renderer.render_hub_from_release(hub_description, Renderer.LIGHT_COLOR_SCHEME),
             config={"displaylogo": False},
@@ -52,7 +53,9 @@ class CustomBenchUsedDistributions(SphinxMacroDirective):
                 for file_list in index["env_files"].values():
                     for file in file_list:
                         distributions.update(
-                            pyperf_bench_to_measure(release_zip.read(file)).distributions,
+                            pyperf_bench_to_measure(
+                                json.loads(release_zip.read(file)),
+                            ).distributions,
                         )
         return directive(
             """

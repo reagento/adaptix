@@ -8,24 +8,10 @@ from argparse import ArgumentParser, Namespace
 from collections import defaultdict
 from concurrent.futures import Executor, ThreadPoolExecutor
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import (
-    Any,
-    Callable,
-    DefaultDict,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar
 from zipfile import ZIP_BZIP2, ZipFile
 
 import plotly
@@ -33,8 +19,7 @@ import plotly.graph_objects as go
 import pyperf
 
 from adaptix._internal.utils import pairs
-from benchmarks.pybench.director_api import BenchAccessor, BenchChecker, BenchmarkDirector, operator_factory
-from benchmarks.pybench.persistence.filesystem import FileSystemBenchOperator
+from benchmarks.pybench.director_api import BenchAccessor, BenchChecker, BenchmarkDirector, BenchStorageFactory
 
 T = TypeVar("T")
 
@@ -54,8 +39,8 @@ class BenchmarkMeasure:
     pyperf: pyperf.Benchmark
 
 
-def pyperf_bench_to_measure(data: Union[str, bytes]) -> BenchmarkMeasure:
-    pybench_data = json.loads(data)["pybench_data"]
+def pyperf_bench_to_measure(data: Mapping[str, Any]) -> BenchmarkMeasure:
+    pybench_data = data["pybench_data"]
     return BenchmarkMeasure(
         base=pybench_data["base"],
         tags=pybench_data["tags"],
@@ -73,11 +58,6 @@ class EnvDescription:
 
 
 BENCHMARK_ENVS: Iterable[EnvDescription] = [
-    EnvDescription(
-        title="CPython 3.8",
-        key="py38",
-        tox_env="py38-bench",
-    ),
     EnvDescription(
         title="CPython 3.9",
         key="py39",
@@ -97,11 +77,6 @@ BENCHMARK_ENVS: Iterable[EnvDescription] = [
         title="CPython 3.12",
         key="py312",
         tox_env="py312-bench",
-    ),
-    EnvDescription(
-        title="PyPy 3.8",
-        key="pypy38",
-        tox_env="pypy38-bench",
     ),
     EnvDescription(
         title="PyPy 3.9",
@@ -259,26 +234,20 @@ class HubProcessor(Foundation, ABC):
             nargs="+",
             required=False,
         )
-        parser.add_argument(
-            "--sqlite",
-            action="store_true",
-            default=False,
-            required=False,
-        )
 
     def __init__(
         self,
+        namespace: Namespace,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         env_include: Optional[Sequence[str]] = None,
         env_exclude: Optional[Sequence[str]] = None,
-        sqlite: Optional[bool] = None,
     ):
-        self.sqlite = sqlite
         self.include = include
         self.exclude = exclude
         self.env_include = env_include
         self.env_exclude = env_exclude
+        self.namespace = namespace
 
     def filtered_hubs(self) -> Iterable[HubDescription]:
         if self.include:
@@ -359,14 +328,19 @@ class HubProcessor(Foundation, ABC):
             return {
                 hub_description: {
                     env_description: (
-                        importlib.import_module(hub_description.module).director.replace(
-                            env_spec=json.loads(future.result()),
+                        self._prepare_director(
+                            importlib.import_module(hub_description.module).director,
+                            json.loads(future.result()),
                         )
                     )
                     for env_description, future in env_to_future.items()
                 }
                 for hub_description, env_to_future in hub_to_env_to_future.items()
             }
+
+    def _prepare_director(self, director: BenchmarkDirector, env_spec: Mapping[str, str]) -> BenchmarkDirector:
+        storage = call_by_namespace(director.make_storage_factory().create, self.namespace)
+        return director.replace(env_spec=env_spec, storage=storage)
 
 
 @dataclass
@@ -408,16 +382,16 @@ class Orchestrator(HubProcessor):
 
     def __init__(
         self,
+        namespace: Namespace,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         env_include: Optional[Sequence[str]] = None,
         env_exclude: Optional[Sequence[str]] = None,
         series: int = 2,
         max_tries: Optional[int] = None,
-        sqlite: bool = False,
     ):
         super().__init__(
-            sqlite=sqlite,
+            namespace=namespace,
             include=include,
             exclude=exclude,
             env_include=env_include,
@@ -515,9 +489,8 @@ class Orchestrator(HubProcessor):
 
     def update_local_ids_with_warnings(self, case_state: CaseState) -> None:
         local_ids_with_warnings = []
-        reader = operator_factory(case_state.accessor, sqlite=bool(self.sqlite))
         for schema in case_state.accessor.schemas:
-            warnings = case_state.checker.get_warnings(schema, reader)
+            warnings = case_state.checker.get_warnings(schema)
             if warnings is None or warnings:
                 local_ids_with_warnings.append(
                     case_state.accessor.get_local_id(schema),
@@ -534,7 +507,6 @@ class Orchestrator(HubProcessor):
             case_state.tries_count += 1
             self.update_local_ids_with_warnings(case_state)
             if case_state.is_completed:
-                case_state.director.make_bench_plotter(case_state.accessor).draw_plot(output=None, dpi=100)
                 return
             self.print("Got unstable results for " + " ".join(case_state.local_ids_with_warnings))
             if case_state.is_out_of_tries:
@@ -573,15 +545,15 @@ class Renderer(HubProcessor):
 
     def __init__(
         self,
+        namespace: Namespace,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         env_include: Optional[Sequence[str]] = None,
         env_exclude: Optional[Sequence[str]] = None,
         output: Optional[str] = None,
-        sqlite: bool = False,
     ):
         super().__init__(
-            sqlite=sqlite,
+            namespace=namespace,
             include=include,
             exclude=exclude,
             env_include=env_include,
@@ -620,8 +592,14 @@ class Renderer(HubProcessor):
         self.print(f"Open file://{Path(output).absolute()}")
 
     def _director_to_measures(self, director: BenchmarkDirector) -> Sequence[BenchmarkMeasure]:
-        reader = operator_factory(director.make_accessor(), sqlite=bool(self.sqlite))
-        measures = [pyperf_bench_to_measure(d) for d in reader.get_all_bench_results()]
+        accessor = director.make_accessor()
+        measures = []
+        for schema in accessor.schemas:
+            measures.append(
+                pyperf_bench_to_measure(
+                    accessor.get_existing_case_result(schema),
+                ),
+            )
         measures.sort(key=lambda x: x.pyperf.mean())
         return measures
 
@@ -638,7 +616,7 @@ class Renderer(HubProcessor):
             return {
                 env: sorted(
                     (
-                        pyperf_bench_to_measure(release_zip.read(file))
+                        pyperf_bench_to_measure(json.loads(release_zip.read(file)))
                         for file in files
                     ),
                     key=lambda x: x.pyperf.mean(),
@@ -882,10 +860,12 @@ class HubValidator(HubProcessor):
         dist_to_versions: DefaultDict[str, Set[str]] = defaultdict(set)
         for _hub_description, env_to_director in hub_to_director_to_env.items():
             for director in env_to_director.values():
-                reader = operator_factory(director.make_accessor(), sqlite=bool(self.sqlite))
-                for bench_result in reader.get_all_bench_results():
-                    for dist, version in json.loads(bench_result)["pybench_data"]["distributions"].items():
+                accessor = director.make_accessor()
+                for schema in accessor.schemas:
+                    bench_report = accessor.get_existing_case_result(schema)
+                    for dist, version in bench_report["pybench_data"]["distributions"].items():
                         dist_to_versions[dist].add(version)
+
         return [
             f"Benchmarks using distribution {dist!r} were taken with different versions {versions!r}"
             for dist, versions in dist_to_versions.items()
@@ -895,84 +875,44 @@ class HubValidator(HubProcessor):
 
 class Releaser(HubProcessor):
     def start(self) -> None:
-        validator = HubValidator()
+        validator = HubValidator(self.namespace)
         validator.validate(self.filtered_hubs())
         self._release()
-
-    def _get_index_data(self, env_to_files: Mapping[EnvDescription, Iterable[str]]) -> Dict[str, Any]:
-        return {
-            "env_files": {
-                env_description.key: [
-                    file for file in files
-                ]
-                for env_description, files in env_to_files.items()
-            },
-        }
-
-    def _release_from_files(
-        self,
-        operator: FileSystemBenchOperator,
-        release_zip: ZipFile,
-        bench_ids: list[str],
-        bench_results: Sequence[str],
-    ):
-        for file_path, data in zip(
-            [
-                operator.bench_result_file(id_)
-                for id_ in bench_ids
-            ],
-            bench_results,
-        ):
-            release_zip.writestr(file_path.name, data)
-
-    def _release_from_sqlite(
-        self,
-        release_zip: ZipFile,
-        bench_ids: list[str],
-        bench_results: Sequence[str],
-    ):
-        for name, data in zip(bench_ids, bench_results):
-            release_zip.writestr(name, data)
 
     def _release(self):
         hub_to_director_to_env = self.load_directors(self.filtered_hubs())
         for hub_description, env_to_director in hub_to_director_to_env.items():
-            env_with_accessor = [
-                (env_description, director.make_accessor())
-                for env_description, director in env_to_director.items()
-            ]
-            env_to_accessor = {
-                env_description: accessor for env_description, accessor in env_with_accessor
-            }
+            self._make_release_for_hub(hub_description, env_to_director)
 
-            with ZipFile(
-                file=RELEASE_DATA / f"{hub_description.key}.zip",
-                mode="w",
-                compression=ZIP_BZIP2,
-                compresslevel=9,
-            ) as release_zip:
-                for env in env_to_accessor:
-                    accessor = env_to_accessor[env]
-                    bench_operator = operator_factory(accessor, sqlite=bool(self.sqlite))
-                    bench_results = bench_operator.get_all_bench_results()
-                    bench_ids = [accessor.get_id(schema) for schema in accessor.schemas]
-                    for name, data in zip(bench_ids, bench_results):
-                        release_zip.writestr(name + ".json", data)
+    def _make_release_for_hub(
+        self,
+        hub_description: HubDescription,
+        env_to_director: Mapping[EnvDescription, BenchmarkDirector],
+    ) -> None:
+        file_to_content = {}
+        env_to_filename_list = {}
+        for env_description, director in env_to_director.items():
+            accessor = director.make_accessor()
+            filename_list = []
+            for schema in accessor.schemas:
+                filename = accessor.get_id(schema) + ".json"
+                file_to_content[filename] = accessor.get_case_result(schema)
+                filename_list.append(filename)
 
-                release_zip.writestr(
-                    "index.json",
-                    json.dumps(
-                        self._get_index_data(
-                            {
-                                env_description: [
-                                    accessor.get_id(schema) + ".json"
-                                    for schema in accessor.schemas
-                                ]
-                                for env_description, accessor in env_with_accessor
-                            },
-                        ),
-                    ),
-                )
+            env_to_filename_list[env_description.key] = filename_list
+
+        with ZipFile(
+            file=RELEASE_DATA / f"{hub_description.key}.zip",
+            mode="w",
+            compression=ZIP_BZIP2,
+            compresslevel=9,
+        ) as release_zip:
+            release_zip.writestr(
+                "index.json",
+                json.dumps({"env_files": env_to_filename_list}),
+            )
+            for filename, content in file_to_content.items():
+                release_zip.writestr(filename, json.dumps(content))
 
 
 class ListGetter(Foundation):
@@ -995,6 +935,7 @@ COMMAND_TO_CLS = {
     "release": Releaser,
     "list": ListGetter,
 }
+SKIP_STORAGE_FACTORY = ["list"]
 
 
 def main():
@@ -1005,10 +946,15 @@ def main():
         command_parser = subparsers.add_parser(command)
         command_parser.set_defaults(command=command)
         cls.add_arguments(command_parser)
+        if command not in SKIP_STORAGE_FACTORY:
+            BenchStorageFactory.add_arguments(command_parser)
 
     namespace = parser.parse_args()
     cls = COMMAND_TO_CLS[namespace.command]
-    instance = call_by_namespace(cls, namespace)
+    if namespace.command in SKIP_STORAGE_FACTORY:
+        instance = call_by_namespace(cls, namespace)
+    else:
+        instance = call_by_namespace(partial(cls, namespace=namespace), namespace)
     instance.start()
 
 

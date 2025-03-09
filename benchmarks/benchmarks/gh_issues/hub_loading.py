@@ -1,5 +1,4 @@
 import sys
-from pathlib import Path
 
 from adaptix import DebugTrail
 from benchmarks.gh_issues import (
@@ -11,18 +10,10 @@ from benchmarks.gh_issues import (
     bench_pydantic,
     bench_schematics,
 )
-from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams, PlotParams
-from benchmarks.pybench.persistence.common import BenchMeta
-from benchmarks.pybench.persistence.database import SQLite3BenchOperator, sqlite_operator_factory
+from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams
 
 director = BenchmarkDirector(
-    data_dir=Path(__file__).parent.parent.parent / "data" / "gh_issues" / "loading",
-    plot_params=PlotParams(
-        title="GitHub Issues (loading)",
-        fig_size=(9, 7.5),
-        label_padding=5,
-        trim_after=2000,
-    ),
+    benchmark="gh_issues/loading",
     env_spec={
         "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         "py_impl": sys.implementation.name,
@@ -30,7 +21,6 @@ director = BenchmarkDirector(
     check_params=lambda env_spec: CheckParams(
         stdev_rel_threshold=0.07 if env_spec["py_impl"] == "pypy" else 0.04,
     ),
-    meta=BenchMeta(benchmark_name="gh_issues", benchmark_subname="loading"),
 )
 
 director.add(
