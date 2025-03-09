@@ -53,9 +53,7 @@ class CustomBenchUsedDistributions(SphinxMacroDirective):
                 for file_list in index["env_files"].values():
                     for file in file_list:
                         distributions.update(
-                            pyperf_bench_to_measure(
-                                json.loads(release_zip.read(file)),
-                            ).distributions,
+                            pyperf_bench_to_measure(release_zip.read(file)).distributions,
                         )
         return directive(
             """

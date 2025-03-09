@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar
+from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar, Union
 from zipfile import ZIP_BZIP2, ZipFile
 
 import plotly
@@ -39,8 +39,8 @@ class BenchmarkMeasure:
     pyperf: pyperf.Benchmark
 
 
-def pyperf_bench_to_measure(data: Mapping[str, Any]) -> BenchmarkMeasure:
-    pybench_data = data["pybench_data"]
+def pyperf_bench_to_measure(data: Union[str, bytes]) -> BenchmarkMeasure:
+    pybench_data = json.loads(data)["pybench_data"]
     return BenchmarkMeasure(
         base=pybench_data["base"],
         tags=pybench_data["tags"],
@@ -58,6 +58,11 @@ class EnvDescription:
 
 
 BENCHMARK_ENVS: Iterable[EnvDescription] = [
+    EnvDescription(
+        title="CPython 3.8",
+        key="py38",
+        tox_env="py38-bench",
+    ),
     EnvDescription(
         title="CPython 3.9",
         key="py39",
@@ -77,6 +82,11 @@ BENCHMARK_ENVS: Iterable[EnvDescription] = [
         title="CPython 3.12",
         key="py312",
         tox_env="py312-bench",
+    ),
+    EnvDescription(
+        title="PyPy 3.8",
+        key="pypy38",
+        tox_env="pypy38-bench",
     ),
     EnvDescription(
         title="PyPy 3.9",
@@ -597,7 +607,7 @@ class Renderer(HubProcessor):
         for schema in accessor.schemas:
             measures.append(
                 pyperf_bench_to_measure(
-                    accessor.get_existing_case_result(schema),
+                    json.dumps(accessor.get_existing_case_result(schema)),
                 ),
             )
         measures.sort(key=lambda x: x.pyperf.mean())
@@ -616,7 +626,7 @@ class Renderer(HubProcessor):
             return {
                 env: sorted(
                     (
-                        pyperf_bench_to_measure(json.loads(release_zip.read(file)))
+                        pyperf_bench_to_measure(release_zip.read(file))
                         for file in files
                     ),
                     key=lambda x: x.pyperf.mean(),
