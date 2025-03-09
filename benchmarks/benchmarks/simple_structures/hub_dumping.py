@@ -1,8 +1,7 @@
 import sys
-from pathlib import Path
 
 from adaptix import DebugTrail
-from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams, PlotParams
+from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams
 from benchmarks.simple_structures import (
     bench_adaptix,
     bench_asdict,
@@ -17,13 +16,7 @@ from benchmarks.simple_structures import (
 REVIEWS_COUNT = 100
 
 director = BenchmarkDirector(
-    data_dir=Path(__file__).parent.parent.parent / "data" / "simple_structures" / "dumping",
-    plot_params=PlotParams(
-        title="Small Structures Benchmark (dumping)",
-        fig_size=(9, 6),
-        label_padding=5,
-        trim_after=200,
-    ),
+    benchmark="simple_structures/dumping",
     env_spec={
         "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         "py_impl": sys.implementation.name,
@@ -52,7 +45,7 @@ director.add(
         entry_point=bench_adaptix.bench_dumping,
         base="adaptix",
         tags=["dt_disable"],
-        kwargs={"debug_trail":  DebugTrail.DISABLE.value, "reviews_count": REVIEWS_COUNT},
+        kwargs={"debug_trail": DebugTrail.DISABLE.value, "reviews_count": REVIEWS_COUNT},
         used_distributions=["adaptix"],
     ),
 )

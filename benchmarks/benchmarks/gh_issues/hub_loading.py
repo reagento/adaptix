@@ -1,5 +1,4 @@
 import sys
-from pathlib import Path
 
 from adaptix import DebugTrail
 from benchmarks.gh_issues import (
@@ -11,16 +10,10 @@ from benchmarks.gh_issues import (
     bench_pydantic,
     bench_schematics,
 )
-from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams, PlotParams
+from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams
 
 director = BenchmarkDirector(
-    data_dir=Path(__file__).parent.parent.parent / "data" / "gh_issues" / "loading",
-    plot_params=PlotParams(
-        title="GitHub Issues (loading)",
-        fig_size=(9, 7.5),
-        label_padding=5,
-        trim_after=2000,
-    ),
+    benchmark="gh_issues/loading",
     env_spec={
         "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         "py_impl": sys.implementation.name,

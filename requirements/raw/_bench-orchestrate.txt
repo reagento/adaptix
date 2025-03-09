@@ -1,4 +1,3 @@
 -r bench.txt
 
-matplotlib==3.8.2
 plotly==5.24.1

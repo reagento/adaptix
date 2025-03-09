@@ -8,7 +8,7 @@ from argparse import ArgumentParser, Namespace
 from collections import defaultdict
 from concurrent.futures import Executor, ThreadPoolExecutor
 from dataclasses import dataclass
-from itertools import chain
+from functools import partial
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, Callable, DefaultDict, Dict, Iterable, List, Mapping, Optional, Sequence, Set, TypeVar, Union
@@ -19,7 +19,7 @@ import plotly.graph_objects as go
 import pyperf
 
 from adaptix._internal.utils import pairs
-from benchmarks.pybench.director_api import BenchAccessor, BenchChecker, BenchmarkDirector
+from benchmarks.pybench.director_api import BenchAccessor, BenchChecker, BenchmarkDirector, BenchStorageFactory
 
 T = TypeVar("T")
 
@@ -28,34 +28,6 @@ def call_by_namespace(func: Callable[..., T], namespace: Namespace) -> T:
     sig = inspect.signature(func)
     kwargs_for_func = (vars(namespace).keys() & sig.parameters.keys())
     return func(**{key: getattr(namespace, key) for key in kwargs_for_func})
-
-
-class Foundation(ABC):
-    def print(self, *args: str):
-        print(*args)
-
-    def run(self, command: str) -> None:
-        subprocess.run(command, shell=True, check=True)  # nosec  # noqa: DUO116
-
-    def call(self, command: str) -> str:
-        proc = subprocess.run(command, shell=True, capture_output=True, check=True)  # nosec  # noqa: DUO116
-        return proc.stdout.decode("utf-8")
-
-    @classmethod
-    @abstractmethod
-    def add_arguments(cls, parser: ArgumentParser) -> None:
-        ...
-
-    @abstractmethod
-    def start(self) -> None:
-        ...
-
-
-@dataclass(frozen=True)
-class EnvDescription:
-    key: str
-    title: str
-    tox_env: str
 
 
 @dataclass
@@ -67,46 +39,23 @@ class BenchmarkMeasure:
     pyperf: pyperf.Benchmark
 
 
-class AxisBounder(ABC):
-    @abstractmethod
-    def get_hub_x_bound(self, env_to_measures: Mapping[EnvDescription, Sequence[BenchmarkMeasure]]) -> float:
-        pass
-
-
-class ClusterAxisBounder(AxisBounder):
-    def __init__(self, last_cluster_idx: int, boundary_rate: float):
-        self.last_cluster_idx = last_cluster_idx
-        self.boundary_rate = boundary_rate
-
-    def _split_into_clusters(self, measures: Iterable[BenchmarkMeasure]) -> Sequence[Sequence[BenchmarkMeasure]]:
-        clusters: List[List[BenchmarkMeasure]] = []
-        current_cluster: List[BenchmarkMeasure] = []
-        for prev, current in pairs(measures):
-            if current.pyperf.mean() / prev.pyperf.mean() >= self.boundary_rate:
-                clusters.append(current_cluster)
-                current_cluster = [current]
-            else:
-                current_cluster.append(current)
-        clusters.append(current_cluster)
-        return clusters
-
-    def get_hub_x_bound(self, env_to_measures: Mapping[EnvDescription, Sequence[BenchmarkMeasure]]) -> float:
-        max_bound_value = max(
-            self._split_into_clusters(measures)[self.last_cluster_idx][-1].pyperf.mean()
-            for measures in env_to_measures.values()
-        )
-        return max_bound_value * 10 ** 6 * 1.08
+def pyperf_bench_to_measure(data: Union[str, bytes]) -> BenchmarkMeasure:
+    pybench_data = json.loads(data)["pybench_data"]
+    return BenchmarkMeasure(
+        base=pybench_data["base"],
+        tags=pybench_data["tags"],
+        kwargs=pybench_data["kwargs"],
+        distributions=pybench_data["distributions"],
+        pyperf=pyperf.Benchmark.loads(data),
+    )
 
 
 @dataclass(frozen=True)
-class HubDescription:
+class EnvDescription:
     key: str
-    module: str
     title: str
-    x_bounder: AxisBounder
+    tox_env: str
 
-
-RELEASE_DATA = Path(__file__).parent.parent / "release_data"
 
 BENCHMARK_ENVS: Iterable[EnvDescription] = [
     EnvDescription(
@@ -154,6 +103,69 @@ KEY_TO_ENV = {
     env_description.key: env_description
     for env_description in BENCHMARK_ENVS
 }
+
+
+class Foundation(ABC):
+    def print(self, *args: str):
+        print(*args)
+
+    def run(self, command: str) -> None:
+        subprocess.run(command, shell=True, check=True)  # nosec  # noqa: DUO116
+
+    def call(self, command: str) -> str:
+        proc = subprocess.run(command, shell=True, capture_output=True, check=True)  # nosec  # noqa: DUO116
+        return proc.stdout.decode("utf-8")
+
+    @classmethod
+    @abstractmethod
+    def add_arguments(cls, parser: ArgumentParser) -> None:
+        ...
+
+    @abstractmethod
+    def start(self) -> None:
+        ...
+
+
+class AxisBounder(ABC):
+    @abstractmethod
+    def get_hub_x_bound(self, env_to_measures: Mapping[EnvDescription, Sequence[BenchmarkMeasure]]) -> float:
+        pass
+
+
+class ClusterAxisBounder(AxisBounder):
+    def __init__(self, last_cluster_idx: int, boundary_rate: float):
+        self.last_cluster_idx = last_cluster_idx
+        self.boundary_rate = boundary_rate
+
+    def _split_into_clusters(self, measures: Iterable[BenchmarkMeasure]) -> Sequence[Sequence[BenchmarkMeasure]]:
+        clusters: List[List[BenchmarkMeasure]] = []
+        current_cluster: List[BenchmarkMeasure] = []
+        for prev, current in pairs(measures):
+            if current.pyperf.mean() / prev.pyperf.mean() >= self.boundary_rate:
+                clusters.append(current_cluster)
+                current_cluster = [current]
+            else:
+                current_cluster.append(current)
+        clusters.append(current_cluster)
+        return clusters
+
+    def get_hub_x_bound(self, env_to_measures: Mapping[EnvDescription, Sequence[BenchmarkMeasure]]) -> float:
+        max_bound_value = max(
+            self._split_into_clusters(measures)[self.last_cluster_idx][-1].pyperf.mean()
+            for measures in env_to_measures.values()
+        )
+        return max_bound_value * 10 ** 6 * 1.08
+
+
+@dataclass(frozen=True)
+class HubDescription:
+    key: str
+    module: str
+    title: str
+    x_bounder: AxisBounder
+
+
+RELEASE_DATA = Path(__file__).parent.parent / "release_data"
 
 BENCHMARK_HUBS: Iterable[HubDescription] = [
     HubDescription(
@@ -235,6 +247,7 @@ class HubProcessor(Foundation, ABC):
 
     def __init__(
         self,
+        namespace: Namespace,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         env_include: Optional[Sequence[str]] = None,
@@ -244,6 +257,7 @@ class HubProcessor(Foundation, ABC):
         self.exclude = exclude
         self.env_include = env_include
         self.env_exclude = env_exclude
+        self.namespace = namespace
 
     def filtered_hubs(self) -> Iterable[HubDescription]:
         if self.include:
@@ -324,14 +338,19 @@ class HubProcessor(Foundation, ABC):
             return {
                 hub_description: {
                     env_description: (
-                        importlib.import_module(hub_description.module).director.replace(
-                            env_spec=json.loads(future.result()),
+                        self._prepare_director(
+                            importlib.import_module(hub_description.module).director,
+                            json.loads(future.result()),
                         )
                     )
                     for env_description, future in env_to_future.items()
                 }
                 for hub_description, env_to_future in hub_to_env_to_future.items()
             }
+
+    def _prepare_director(self, director: BenchmarkDirector, env_spec: Mapping[str, str]) -> BenchmarkDirector:
+        storage = call_by_namespace(director.make_storage_factory().create, self.namespace)
+        return director.replace(env_spec=env_spec, storage=storage)
 
 
 @dataclass
@@ -373,6 +392,7 @@ class Orchestrator(HubProcessor):
 
     def __init__(
         self,
+        namespace: Namespace,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         env_include: Optional[Sequence[str]] = None,
@@ -381,6 +401,7 @@ class Orchestrator(HubProcessor):
         max_tries: Optional[int] = None,
     ):
         super().__init__(
+            namespace=namespace,
             include=include,
             exclude=exclude,
             env_include=env_include,
@@ -496,7 +517,6 @@ class Orchestrator(HubProcessor):
             case_state.tries_count += 1
             self.update_local_ids_with_warnings(case_state)
             if case_state.is_completed:
-                case_state.director.make_bench_plotter(case_state.accessor).draw_plot(output=None, dpi=100)
                 return
             self.print("Got unstable results for " + " ".join(case_state.local_ids_with_warnings))
             if case_state.is_out_of_tries:
@@ -505,17 +525,6 @@ class Orchestrator(HubProcessor):
                     f" restarting is stopped",
                 )
                 return
-
-
-def pyperf_bench_to_measure(data: Union[str, bytes]) -> BenchmarkMeasure:
-    pybench_data = json.loads(data)["pybench_data"]
-    return BenchmarkMeasure(
-        base=pybench_data["base"],
-        tags=pybench_data["tags"],
-        kwargs=pybench_data["kwargs"],
-        distributions=pybench_data["distributions"],
-        pyperf=pyperf.Benchmark.loads(data),
-    )
 
 
 @dataclass
@@ -546,6 +555,7 @@ class Renderer(HubProcessor):
 
     def __init__(
         self,
+        namespace: Namespace,
         include: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         env_include: Optional[Sequence[str]] = None,
@@ -553,6 +563,7 @@ class Renderer(HubProcessor):
         output: Optional[str] = None,
     ):
         super().__init__(
+            namespace=namespace,
             include=include,
             exclude=exclude,
             env_include=env_include,
@@ -594,9 +605,10 @@ class Renderer(HubProcessor):
         accessor = director.make_accessor()
         measures = []
         for schema in accessor.schemas:
-            path = accessor.bench_result_file(accessor.get_id(schema))
             measures.append(
-                pyperf_bench_to_measure(path.read_text()),
+                pyperf_bench_to_measure(
+                    json.dumps(accessor.get_existing_case_result(schema)),
+                ),
             )
         measures.sort(key=lambda x: x.pyperf.mean())
         return measures
@@ -860,9 +872,7 @@ class HubValidator(HubProcessor):
             for director in env_to_director.values():
                 accessor = director.make_accessor()
                 for schema in accessor.schemas:
-                    bench_report = json.loads(
-                        accessor.bench_result_file(accessor.get_id(schema)).read_text(),
-                    )
+                    bench_report = accessor.get_existing_case_result(schema)
                     for dist, version in bench_report["pybench_data"]["distributions"].items():
                         dist_to_versions[dist].add(version)
 
@@ -875,49 +885,44 @@ class HubValidator(HubProcessor):
 
 class Releaser(HubProcessor):
     def start(self) -> None:
-        validator = HubValidator()
+        validator = HubValidator(self.namespace)
         validator.validate(self.filtered_hubs())
         self._release()
 
     def _release(self):
         hub_to_director_to_env = self.load_directors(self.filtered_hubs())
         for hub_description, env_to_director in hub_to_director_to_env.items():
-            env_with_accessor = [
-                (env_description, director.make_accessor())
-                for env_description, director in env_to_director.items()
-            ]
-            env_to_files = {
-                env_description: [
-                    accessor.bench_result_file(accessor.get_id(schema))
-                    for schema in accessor.schemas
-                ]
-                for env_description, accessor in env_with_accessor
-            }
-            with ZipFile(
-                file=RELEASE_DATA / f"{hub_description.key}.zip",
-                mode="w",
-                compression=ZIP_BZIP2,
-                compresslevel=9,
-            ) as release_zip:
-                for file_path in chain.from_iterable(env_to_files.values()):
-                    release_zip.write(file_path, arcname=file_path.name)
+            self._make_release_for_hub(hub_description, env_to_director)
 
-                release_zip.writestr(
-                    "index.json",
-                    json.dumps(
-                        self._get_index_data(env_to_files),
-                    ),
-                )
+    def _make_release_for_hub(
+        self,
+        hub_description: HubDescription,
+        env_to_director: Mapping[EnvDescription, BenchmarkDirector],
+    ) -> None:
+        file_to_content = {}
+        env_to_filename_list = {}
+        for env_description, director in env_to_director.items():
+            accessor = director.make_accessor()
+            filename_list = []
+            for schema in accessor.schemas:
+                filename = accessor.get_id(schema) + ".json"
+                file_to_content[filename] = accessor.get_case_result(schema)
+                filename_list.append(filename)
 
-    def _get_index_data(self, env_to_files: Mapping[EnvDescription, Iterable[Path]]) -> Dict[str, Any]:
-        return {
-            "env_files": {
-                env_description.key: [
-                    file.name for file in files
-                ]
-                for env_description, files in env_to_files.items()
-            },
-        }
+            env_to_filename_list[env_description.key] = filename_list
+
+        with ZipFile(
+            file=RELEASE_DATA / f"{hub_description.key}.zip",
+            mode="w",
+            compression=ZIP_BZIP2,
+            compresslevel=9,
+        ) as release_zip:
+            release_zip.writestr(
+                "index.json",
+                json.dumps({"env_files": env_to_filename_list}),
+            )
+            for filename, content in file_to_content.items():
+                release_zip.writestr(filename, json.dumps(content))
 
 
 class ListGetter(Foundation):
@@ -940,6 +945,7 @@ COMMAND_TO_CLS = {
     "release": Releaser,
     "list": ListGetter,
 }
+SKIP_STORAGE_FACTORY = ["list"]
 
 
 def main():
@@ -950,10 +956,15 @@ def main():
         command_parser = subparsers.add_parser(command)
         command_parser.set_defaults(command=command)
         cls.add_arguments(command_parser)
+        if command not in SKIP_STORAGE_FACTORY:
+            BenchStorageFactory.add_arguments(command_parser)
 
     namespace = parser.parse_args()
     cls = COMMAND_TO_CLS[namespace.command]
-    instance = call_by_namespace(cls, namespace)
+    if namespace.command in SKIP_STORAGE_FACTORY:
+        instance = call_by_namespace(cls, namespace)
+    else:
+        instance = call_by_namespace(partial(cls, namespace=namespace), namespace)
     instance.start()
 
 
