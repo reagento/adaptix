@@ -21,12 +21,10 @@ It can create models from mapping (loading) and create mappings from the model (
 
 .. literalinclude:: /examples/loading-and-dumping/tutorial/tldr.py
 
-All typing information is retrieved from your annotations, so is not required from you to provide any additional schema
+All typing information is retrieved from your annotations, so you are not required to provide any additional schema
 or even change your dataclass decorators or class bases.
 
-In the provided example ``book.author == "Unknown author"`` because normal dataclass constructor is called.
-
-It is better to create a retort only once because all loaders are cached inside it after the first usage.
+It is recommended to create a retort only once because all loaders are cached inside it after the first usage.
 Otherwise, the structure of your classes will be analyzed again and again for every new instance of Retort.
 
 If you don't need any customization, you can use the predefined :func:`.load` and :func:`.dump` functions.
