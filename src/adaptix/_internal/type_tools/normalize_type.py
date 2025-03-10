@@ -727,7 +727,7 @@ class TypeNormalizer:
                 )
 
             if args[0] is Ellipsis:
-                call_args = ...
+                call_args: Any = ...
             elif isinstance(args[0], list):
                 call_args = self._norm_iter(args[0])
                 if HAS_TV_TUPLE:
