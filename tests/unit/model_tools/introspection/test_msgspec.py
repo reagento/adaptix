@@ -1,4 +1,4 @@
-from types import MappingProxyType, NoneType
+from types import MappingProxyType
 from typing import Annotated, ClassVar, Generic, Sequence, TypeVar, Union
 from unittest.mock import ANY
 
@@ -18,6 +18,7 @@ from adaptix._internal.model_tools.definitions import (
     create_attr_accessor,
 )
 from adaptix._internal.model_tools.introspection.msgspec import get_struct_shape
+from adaptix._internal.type_tools.normalize_type import NoneType
 
 
 def none_factory() -> None:
@@ -469,7 +470,7 @@ def test_generic():
                     Param(
                         field_id="a",
                         name="a",
-                        kind=ParamKind.KW_ONLY,
+                        kind=ParamKind.POS_OR_KW,
                     ),
                 ),
                 overriden_types=frozenset({"a"}),
@@ -486,6 +487,6 @@ def test_generic():
                     ),
                 ),
                 overriden_types=frozenset({"a"}),
-        ),
+            ),
+        )
     )
-)

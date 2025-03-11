@@ -69,8 +69,6 @@ gitdb==4.0.11
     # via gitpython
 gitpython==3.1.43
     # via -r requirements/raw/doc.txt
-greenlet==3.1.1 ; (python_full_version < '3.13' and platform_machine == 'AMD64') or (python_full_version < '3.13' and platform_machine == 'WIN32') or (python_full_version < '3.13' and platform_machine == 'aarch64') or (python_full_version < '3.13' and platform_machine == 'amd64') or (python_full_version < '3.13' and platform_machine == 'ppc64le') or (python_full_version < '3.13' and platform_machine == 'win32') or (python_full_version < '3.13' and platform_machine == 'x86_64')
-    # via sqlalchemy
 identify==2.6.3
     # via pre-commit
 idna==3.10
@@ -106,8 +104,10 @@ mdit-py-plugins==0.4.2
     # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
-msgspec==0.18.4 ; implementation_name != 'pypy'
-    # via -r requirements/raw/bench.txt
+msgspec==0.19.0 ; implementation_name != 'pypy'
+    # via
+    #   -r requirements/raw/bench.txt
+    #   -r requirements/raw/test_extra_new.txt
 mypy==1.14.0
     # via -r requirements/raw/lint.txt
 mypy-extensions==1.0.0
