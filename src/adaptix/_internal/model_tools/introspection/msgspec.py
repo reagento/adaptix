@@ -76,6 +76,7 @@ def get_struct_shape(tp) -> FullShape:
         if not is_class_var(normalize_type(type_hints[field_name]))
     )
     param_sig = inspect.signature(tp).parameters
+    annotations = getattr(tp, "__annotations__", {})
     return FullShape(
         InputShape(
             constructor=tp,
@@ -95,7 +96,7 @@ def get_struct_shape(tp) -> FullShape:
             kwargs=None,
             overriden_types=frozenset(
                 annotation
-                for annotation in tp.__annotations__
+                for annotation in annotations
                 if annotation in init_fields
             ),
         ),
@@ -111,7 +112,7 @@ def get_struct_shape(tp) -> FullShape:
                 ) for fi in fields_info),
             overriden_types=frozenset(
                 annotation
-                for annotation in tp.__annotations__
+                for annotation in annotations
                 if annotation in init_fields
             ),
         ),

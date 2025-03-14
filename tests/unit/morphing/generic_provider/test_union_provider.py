@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Callable, List, Literal, Optional, Union
+from typing import Callable, Literal, Optional, Union
 
 import pytest
 from tests_helpers import raises_exc, with_cause, with_notes
@@ -8,21 +8,25 @@ from tests_helpers import raises_exc, with_cause, with_notes
 from adaptix import CannotProvide, DebugTrail, ProviderNotFoundError, Retort, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
+from adaptix._internal.type_tools import normalize_type
 
 
-@dataclass
-class Book:
-    price: int
-    author: Union[str, List[str]]
+def _norm_union_tp(tp):
+    # Due to caching inside normalize_type,
+    # it can change the order of elements inside Union typehint
+    # when it fetched by `.source` attribute.
+    # It will fail string representation test, this function fixes this
+    return normalize_type(tp).source
 
 
 def test_loading(strict_coercion, debug_trail):
+    union_tp = _norm_union_tp(Union[int, str])
     retort = Retort()
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     ).get_loader(
-        Union[int, str],
+        union_tp,
     )
 
     assert loader_(1) == 1
@@ -39,7 +43,7 @@ def test_loading(strict_coercion, debug_trail):
     elif debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
         raises_exc(
             UnionLoadError(
-                f"while loading {Union[int, str]}",
+                f"while loading {union_tp}",
                 [
                     TypeLoadError(int, []),
                     TypeLoadError(str, []),
@@ -62,6 +66,7 @@ def bad_int_loader(data):
 
 
 def test_loading_unexpected_error(strict_coercion, debug_trail):
+    union_tp = _norm_union_tp(Union[int, str])
     retort = Retort()
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
@@ -72,7 +77,7 @@ def test_loading_unexpected_error(strict_coercion, debug_trail):
             loader(int, bad_int_loader),
         ],
     ).get_loader(
-        Union[int, str],
+        union_tp,
     )
 
     if debug_trail in (DebugTrail.DISABLE, DebugTrail.FIRST):
@@ -83,7 +88,7 @@ def test_loading_unexpected_error(strict_coercion, debug_trail):
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
-                f"while loading {Union[int, str]}",
+                f"while loading {union_tp}",
                 [
                     TypeError(),
                     TypeError(),

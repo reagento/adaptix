@@ -11,4 +11,4 @@ cattrs==23.1.2
 schematics==2.1.1
 dataclass-factory==2.16
 marshmallow==3.20.1
-msgspec==0.18.4; implementation_name != "pypy"
+msgspec==0.19.0; implementation_name != "pypy"

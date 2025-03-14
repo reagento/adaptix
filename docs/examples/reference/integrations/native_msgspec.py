@@ -18,7 +18,7 @@ data = {
 
 retort = Retort(
     recipe=[
-        native_msgspec(Music, to_builtins={"builtin_types":[datetime.date]}),
+        native_msgspec(Music, to_builtins={"builtin_types": [datetime.date]}),
     ],
 )
 

@@ -52,5 +52,5 @@ collect_ignore_glob = [
     *cond_list(not HAS_ATTRS_PKG, ["*_attrs.py", "*_attrs_*.py", "**/attrs/**"]),
     *cond_list(not HAS_PYDANTIC_PKG, ["*_pydantic.py", "*_pydantic_*.py", "**/pydantic/**"]),
     *cond_list(not HAS_SQLALCHEMY_PKG, ["*_sqlalchemy.py", "*_sqlalchemy_*.py", "**/sqlalchemy/**"]),
-    *cond_list(not HAS_MSGSPEC_PKG,["*_msgspec.py", "*_msgspec_*.py", "**/msgspec/**"]),
+    *cond_list(not HAS_MSGSPEC_PKG, ["*_msgspec.py", "*_msgspec_*.py", "**/msgspec/**"]),
 ]

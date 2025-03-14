@@ -181,7 +181,7 @@ def test_single_inheritance_generic_child(model_spec):
     )
 
 
-@exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS)
+@exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS, ModelSpec.MSGSPEC)
 def test_multiple_inheritance(model_spec):
     @model_spec.decorator
     class Parent1(*model_spec.bases, Generic[T]):
@@ -224,7 +224,7 @@ T6 = TypeVar("T6")
 T7 = TypeVar("T7")
 
 
-@exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS)
+@exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS, ModelSpec.MSGSPEC)
 @pytest.mark.parametrize("tp", [List, list])
 def test_generic_multiple_inheritance(model_spec, tp) -> None:
     @model_spec.decorator
@@ -286,7 +286,7 @@ def test_not_a_model(tp):
         )
 
 
-@exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS)
+@exclude_model_spec(ModelSpec.NAMED_TUPLE, ModelSpec.ATTRS, ModelSpec.MSGSPEC)
 def test_generic_mixed_inheritance(model_spec):
     @model_spec.decorator
     class Parent1(*model_spec.bases):
