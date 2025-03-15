@@ -87,7 +87,7 @@ class ExactOriginCombiner:
                 result.append((LocatedRequestChecker(ExactOriginLSC(origin)), handler))
             else:
                 result.append(self._combo)
-                self._combo = {}
+            self._combo = {}
 
         if checker_and_handler is not None:
             result.append(checker_and_handler)
