@@ -77,7 +77,7 @@ Compile dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Compile raw dependencies (``requirements/raw/*``)
-into file with locked versions via `uv pip compile <https://github.com/jazzband/pip-tools>`__.
+into file with locked versions via `uv pip compile <https://docs.astral.sh/uv/pip/compile/>`__.
 
 .. code-block:: bash
 
