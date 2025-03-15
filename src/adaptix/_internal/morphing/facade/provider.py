@@ -270,6 +270,18 @@ def with_property(
     access_error: Optional[Catchable] = None,
     metadata: Mapping[Any, Any] = MappingProxyType({}),
 ) -> Provider:
+    """Provider registering property for a model for dumping.
+    This property will be treated as a usual field, so it can be mapped or skipped.
+
+    :param pred: Predicate specifying class to add property. See :ref:`predicate-system` for details.
+    :param prop: A property to register. It can be a string representing attribute name or property object.
+        The property object will be converted to attribute name via ``prop.fget.__name__``
+    :param tp: Output type of property. By default, this type is inferred from a property object of concrete class.
+        If getter function has no specified return type, it will be supposed as ``Any``.
+    :param default: A default value for this field.
+    :param access_error: Omit field when such error is raised. This will mark the field as optional.
+    :param metadata: Additional metadata of the field.
+    """
     attr_name = _ensure_attr_name(prop)
 
     field = OutputField(
