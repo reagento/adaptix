@@ -5,7 +5,9 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from fractions import Fraction
 from io import BytesIO
+from os import PathLike
 from typing import Union
+from zoneinfo import ZoneInfo
 
 import pytest
 from tests_helpers import cond_list, raises_exc
@@ -512,5 +514,17 @@ def test_complex_loader_provider(strict_coercion, debug_trail):
     assert loader(complex("100")) == complex("100")
     raises_exc(TypeLoadError(Union[str, complex], None), lambda: loader(None))
     raises_exc(ValueLoadError("Bad string format", "foo"), lambda: loader("foo"))
-    raises_exc(TypeLoadError(Union[str, complex], None), lambda: loader(None))
     raises_exc(TypeLoadError(Union[str, complex], []), lambda: loader([]))
+
+
+def test_zone_info_loader_provider(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    )
+    loader = retort.get_loader(ZoneInfo)
+    assert loader("Pacific/Kwajalein") == ZoneInfo("Pacific/Kwajalein")
+    raises_exc(TypeLoadError(Union[str, bytes, PathLike], None), lambda: loader(None))
+    raises_exc(TypeLoadError(Union[str, bytes, PathLike], []), lambda: loader([]))
+    raises_exc(ValueLoadError("ZoneInfo with key is not found", "foo"), lambda: loader("foo"))
+

@@ -25,6 +25,7 @@ from ..concrete_provider import (
     FRACTION_PROVIDER,
     INT_PROVIDER,
     STR_PROVIDER,
+    ZONE_INFO_PROVIDER,
     BytearrayBase64Provider,
     BytesBase64Provider,
     BytesIOBase64Provider,
@@ -98,6 +99,7 @@ class FilledRetort(OperatingRetort, ABC):
         DECIMAL_PROVIDER,
         FRACTION_PROVIDER,
         COMPLEX_PROVIDER,
+        ZONE_INFO_PROVIDER,
 
         BytesBase64Provider(),
         BytesIOBase64Provider(),

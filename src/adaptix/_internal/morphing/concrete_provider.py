@@ -7,7 +7,9 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from io import BytesIO
+from os import PathLike
 from typing import Generic, Optional, TypeVar, Union
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
@@ -589,6 +591,33 @@ COMPLEX_PROVIDER = ScalarProvider(
     strict_coercion_loader=complex_strict_coercion_loader,
     lax_coercion_loader=complex_lax_coercion_loader,
     dumper=complex.__str__,
+    json_schema=JSONSchema(type=JSONSchemaType.STRING),
+)
+
+
+def zone_info_lax_coercion_loader(data):
+    try:
+        return ZoneInfo(data)
+    except ZoneInfoNotFoundError:
+        raise ValueLoadError("ZoneInfo with key is not found", data)
+    except TypeError:
+        raise TypeLoadError(Union[bytes, str, PathLike], data)
+
+
+def zone_info_strict_coercion_loader(data):
+    if type(data) in (bytes, str, PathLike):
+        try:
+            return ZoneInfo(data)
+        except ZoneInfoNotFoundError:
+            raise ValueLoadError("ZoneInfo with key is not found", data)
+    raise TypeLoadError(Union[bytes, str, PathLike], data)
+
+
+ZONE_INFO_PROVIDER = ScalarProvider(
+    target=ZoneInfo,
+    strict_coercion_loader=zone_info_strict_coercion_loader,
+    lax_coercion_loader=zone_info_lax_coercion_loader,
+    dumper=lambda zone_info: zone_info.key,
     json_schema=JSONSchema(type=JSONSchemaType.STRING),
 )
 
