@@ -595,7 +595,7 @@ COMPLEX_PROVIDER = ScalarProvider(
 )
 
 
-def zone_info_lax_coercion_loader(data):
+def zone_info_coercion_loader(data):
     try:
         return ZoneInfo(data)
     except ZoneInfoNotFoundError:
@@ -604,19 +604,10 @@ def zone_info_lax_coercion_loader(data):
         raise TypeLoadError(Union[bytes, str, PathLike], data)
 
 
-def zone_info_strict_coercion_loader(data):
-    if type(data) in (bytes, str, PathLike):
-        try:
-            return ZoneInfo(data)
-        except ZoneInfoNotFoundError:
-            raise ValueLoadError("ZoneInfo with key is not found", data)
-    raise TypeLoadError(Union[bytes, str, PathLike], data)
-
-
 ZONE_INFO_PROVIDER = ScalarProvider(
     target=ZoneInfo,
-    strict_coercion_loader=zone_info_strict_coercion_loader,
-    lax_coercion_loader=zone_info_lax_coercion_loader,
+    strict_coercion_loader=zone_info_coercion_loader,
+    lax_coercion_loader=zone_info_coercion_loader,
     dumper=lambda zone_info: zone_info.key,
     json_schema=JSONSchema(type=JSONSchemaType.STRING),
 )
