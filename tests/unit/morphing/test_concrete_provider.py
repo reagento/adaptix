@@ -6,6 +6,7 @@ from decimal import Decimal
 from fractions import Fraction
 from io import BytesIO
 from os import PathLike
+from pathlib import Path
 from typing import Union
 from zoneinfo import ZoneInfo
 
@@ -524,7 +525,8 @@ def test_zone_info_loader_provider(strict_coercion, debug_trail):
     )
     loader = retort.get_loader(ZoneInfo)
     assert loader("Pacific/Kwajalein") == ZoneInfo("Pacific/Kwajalein")
-    raises_exc(TypeLoadError(Union[str, bytes, PathLike], None), lambda: loader(None))
-    raises_exc(TypeLoadError(Union[str, bytes, PathLike], []), lambda: loader([]))
+    raises_exc(TypeLoadError(str, None), lambda: loader(None))
+    raises_exc(TypeLoadError(str, []), lambda: loader([]))
     raises_exc(ValueLoadError("ZoneInfo with key is not found", "foo"), lambda: loader("foo"))
-
+    raises_exc(TypeLoadError(str, b"bar"), lambda: loader(b"bar"))
+    raises_exc(TypeLoadError(str, Path(".")), lambda: loader(Path(".")))

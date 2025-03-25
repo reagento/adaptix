@@ -601,7 +601,7 @@ def zone_info_coercion_loader(data):
     except ZoneInfoNotFoundError:
         raise ValueLoadError("ZoneInfo with key is not found", data)
     except TypeError:
-        raise TypeLoadError(Union[bytes, str, PathLike], data)
+        raise TypeLoadError(str, data)
 
 
 ZONE_INFO_PROVIDER = ScalarProvider(
