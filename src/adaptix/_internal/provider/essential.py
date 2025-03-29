@@ -69,6 +69,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
             *,
             is_terminal: bool = False,
             is_demonstrative: bool = False,
+            parent_notes_gen: Optional[Callable[[], Sequence[str]]] = None,
         ):
             return super().__new__(cls, message, exceptions)
 
@@ -78,6 +79,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
             excs,
             is_terminal=self.is_terminal,
             is_demonstrative=self.is_demonstrative,
+            parent_notes_gen=self.parent_notes_gen,
         )
 
     def derive_upcasting(self, excs: Sequence[CannotProvide]) -> CannotProvide:
@@ -87,6 +89,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
             excs,
             is_terminal=self.is_terminal,
             is_demonstrative=self.is_demonstrative,
+            parent_notes_gen=self.parent_notes_gen,
         )
 
     @classmethod
@@ -97,6 +100,7 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         *,
         is_terminal: bool = False,
         is_demonstrative: bool = False,
+        parent_notes_gen: Optional[Callable[[], Sequence[str]]] = None,
     ) -> CannotProvide:
         if exceptions:
             return AggregateCannotProvide(
@@ -104,11 +108,13 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
                 exceptions,
                 is_terminal=is_terminal,
                 is_demonstrative=is_demonstrative,
+                parent_notes_gen=parent_notes_gen,
             )
         return CannotProvide(
             message,
             is_terminal=is_terminal,
             is_demonstrative=is_demonstrative,
+            parent_notes_gen=parent_notes_gen,
         )
 
 

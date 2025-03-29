@@ -58,7 +58,7 @@ def _get_kind_from_sig(param_kind):
     raise IntrospectionError
 
 
-def get_struct_shape(tp) -> FullShape:
+def get_msgspec_shape(tp) -> FullShape:
     if not HAS_SUPPORTED_MSGSPEC_PKG:
         if not HAS_MSGSPEC_PKG:
             raise NoTargetPackageError(HAS_MSGSPEC_PKG)

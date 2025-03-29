@@ -17,7 +17,7 @@ from adaptix._internal.model_tools.definitions import (
     Shape,
     create_attr_accessor,
 )
-from adaptix._internal.model_tools.introspection.msgspec import get_struct_shape
+from adaptix._internal.model_tools.introspection.msgspec import get_msgspec_shape
 from adaptix._internal.type_tools.normalize_type import NoneType
 
 
@@ -40,7 +40,7 @@ class BasicStruct(Struct):
 
 def test_basic():
     assert (
-        get_struct_shape(BasicStruct)
+        get_msgspec_shape(BasicStruct)
         ==
         Shape(
             input=InputShape(
@@ -178,7 +178,7 @@ class BarChild(BarParent):
 
 def test_inheritance():
     assert (
-        get_struct_shape(BarChild)
+        get_msgspec_shape(BarChild)
         ==
         Shape(
             InputShape(
@@ -272,7 +272,7 @@ class ForwardRefStructChild(ForwardRefStruct):
 
 def test_forward_ref():
     assert (
-        get_struct_shape(ForwardRefStruct)
+        get_msgspec_shape(ForwardRefStruct)
         ==
         Shape(
             input=InputShape(
@@ -320,7 +320,7 @@ class WithAnnotatedField(Struct):
 
 def test_annotated():
     assert (
-        get_struct_shape(WithAnnotatedField)
+        get_msgspec_shape(WithAnnotatedField)
         ==
         Shape(
             input=InputShape(
@@ -378,7 +378,7 @@ class UsingFeatures(
 
 def test_features():
     assert (
-        get_struct_shape(UsingFeatures)
+        get_msgspec_shape(UsingFeatures)
         ==
         Shape(
             InputShape(
@@ -450,7 +450,7 @@ class GenericStruct(Struct, Generic[T]):
 
 def test_generic():
     assert (
-        get_struct_shape(GenericStruct)
+        get_msgspec_shape(GenericStruct)
         ==
         Shape(
             InputShape(
