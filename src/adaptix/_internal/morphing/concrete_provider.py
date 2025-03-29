@@ -7,7 +7,6 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from io import BytesIO
-from os import PathLike
 from typing import Generic, Optional, TypeVar, Union
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 

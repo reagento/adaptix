@@ -5,7 +5,6 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from fractions import Fraction
 from io import BytesIO
-from os import PathLike
 from pathlib import Path
 from typing import Union
 from zoneinfo import ZoneInfo
@@ -518,7 +517,7 @@ def test_complex_loader_provider(strict_coercion, debug_trail):
     raises_exc(TypeLoadError(Union[str, complex], []), lambda: loader([]))
 
 
-def test_zone_info_loader_provider(strict_coercion, debug_trail):
+def test_zone_info_provider(strict_coercion, debug_trail):
     retort = Retort(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
@@ -530,3 +529,7 @@ def test_zone_info_loader_provider(strict_coercion, debug_trail):
     raises_exc(ValueLoadError("ZoneInfo with key is not found", "foo"), lambda: loader("foo"))
     raises_exc(TypeLoadError(str, b"bar"), lambda: loader(b"bar"))
     raises_exc(TypeLoadError(str, Path(".")), lambda: loader(Path(".")))
+
+    dumper = retort.get_dumper(ZoneInfo)
+    assert dumper(ZoneInfo("Pacific/Kwajalein")) == "Pacific/Kwajalein"
+
