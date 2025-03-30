@@ -5,7 +5,7 @@ from typing import Callable, Literal, Optional, Union
 import pytest
 from tests_helpers import raises_exc, with_cause, with_notes
 
-from adaptix import CannotProvide, DebugTrail, ProviderNotFoundError, Retort, loader
+from adaptix import CannotProvide, DebugTrail, ProviderNotFoundError, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 from adaptix._internal.type_tools import normalize_type
@@ -179,9 +179,13 @@ def test_bad_optional_dumping(debug_trail):
                 f"Location: `{str(Union[int, Callable[[int], str]]).replace('typing.', '', 1)}`",
             ),
         ),
-        func=lambda: (
+        lambda: (
             retort.replace(
                 debug_trail=debug_trail,
+            ).extend(
+                recipe=[
+                    dumper(Callable[[int], str], lambda x: str(x)),
+                ],
             ).get_dumper(
                 Union[int, Callable[[int], str]],
             )

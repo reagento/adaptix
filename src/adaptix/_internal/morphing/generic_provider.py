@@ -1,26 +1,22 @@
-import collections.abc
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from os import PathLike
 from pathlib import Path
-from typing import Any, ForwardRef, Literal, Optional, TypeVar, Union
+from typing import Any, ForwardRef, Literal, Optional, TypeVar
 
 from ..common import Dumper, Loader, TypeHint
-from ..compat import CompatExceptionGroup
-from ..datastructures import ClassDispatcher
-from ..definitions import DebugTrail
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStack
 from ..provider.located_request import LocatedRequestDelegatingProvider, LocatedRequestT, for_predicate
-from ..provider.location import GenericParamLoc, TypeHintLoc
+from ..provider.location import TypeHintLoc
 from ..special_cases_optimization import as_is_stub
-from ..type_tools import BaseNormType, NormTypeAlias, is_new_type, is_subclass_soft, strip_tags
+from ..type_tools import NormTypeAlias, is_new_type, strip_tags
 from ..type_tools.basic_utils import eval_forward_ref
 from ..utils import MappingHashWrapper
-from .load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
+from .load_error import BadVariantLoadError, LoadError
 from .provider_template import DumperProvider, LoaderProvider
-from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
+from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest
 from .utils import try_normalize_type
 
 ResponseT = TypeVar("ResponseT")
@@ -355,222 +351,6 @@ class LiteralProvider(LoaderProvider, DumperProvider):
             return data
 
         return literal_dumper_many
-
-
-@for_predicate(Union)
-class UnionProvider(LoaderProvider, DumperProvider):
-    def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        norm = try_normalize_type(request.last_loc.type)
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-
-        if self._is_single_optional(norm):
-            not_none = next(case for case in norm.args if case.origin is not None)
-            not_none_loader = mediator.mandatory_provide(
-                request.append_loc(
-                    GenericParamLoc(
-                        type=not_none.source,
-                        generic_pos=0,
-                    ),
-                ),
-                lambda x: "Cannot create loader for union. Loaders for some union cases cannot be created",
-            )
-            if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
-                return mediator.cached_call(self._single_optional_dt_loader, norm.source, not_none_loader)
-            if debug_trail == DebugTrail.DISABLE:
-                return mediator.cached_call(self._single_optional_dt_disable_loader, not_none_loader)
-            raise ValueError
-
-        loaders = mediator.mandatory_provide_by_iterable(
-            [
-                request.append_loc(
-                    GenericParamLoc(
-                        type=tp.source,
-                        generic_pos=i,
-                    ),
-                )
-                for i, tp in enumerate(norm.args)
-            ],
-            lambda: "Cannot create loader for union. Loaders for some union cases cannot be created",
-        )
-        if debug_trail == DebugTrail.DISABLE:
-            return mediator.cached_call(self._get_loader_dt_disable, tuple(loaders))
-        if debug_trail == DebugTrail.FIRST:
-            return mediator.cached_call(self._get_loader_dt_first, norm.source, tuple(loaders))
-        if debug_trail == DebugTrail.ALL:
-            return mediator.cached_call(self._get_loader_dt_all, norm.source, tuple(loaders))
-        raise ValueError
-
-    def _single_optional_dt_disable_loader(self, loader: Loader) -> Loader:
-        def optional_dt_disable_loader(data):
-            if data is None:
-                return None
-            return loader(data)
-
-        return optional_dt_disable_loader
-
-    def _single_optional_dt_loader(self, tp, loader: Loader) -> Loader:
-        def optional_dt_loader(data):
-            if data is None:
-                return None
-            try:
-                return loader(data)
-            except LoadError as e:
-                raise UnionLoadError(f"while loading {tp}", [TypeLoadError(None, data), e])
-
-        return optional_dt_loader
-
-    def _get_loader_dt_disable(self, loader_iter: Iterable[Loader]) -> Loader:
-        def union_loader(data):
-            for loader in loader_iter:
-                try:
-                    return loader(data)
-                except LoadError:
-                    pass
-            raise LoadError
-
-        return union_loader
-
-    def _get_loader_dt_first(self, tp, loader_iter: Iterable[Loader]) -> Loader:
-        def union_loader_dt_first(data):
-            errors = []
-            for loader in loader_iter:
-                try:
-                    return loader(data)
-                except LoadError as e:
-                    errors.append(e)
-
-            raise UnionLoadError(f"while loading {tp}", errors)
-
-        return union_loader_dt_first
-
-    def _get_loader_dt_all(self, tp, loader_iter: Iterable[Loader]) -> Loader:
-        def union_loader_dt_all(data):
-            errors = []
-            has_unexpected_error = False
-            for loader in loader_iter:
-                try:
-                    result = loader(data)
-                except LoadError as e:
-                    errors.append(e)
-                except Exception as e:
-                    errors.append(e)
-                    has_unexpected_error = True
-                else:
-                    if not has_unexpected_error:
-                        return result
-
-            if has_unexpected_error:
-                raise CompatExceptionGroup(f"while loading {tp}", errors)
-            raise UnionLoadError(f"while loading {tp}", errors)
-
-        return union_loader_dt_all
-
-    def _is_single_optional(self, norm: BaseNormType) -> bool:
-        return len(norm.args) == 2 and None in [case.origin for case in norm.args]  # noqa: PLR2004
-
-    def _is_class_origin(self, origin) -> bool:
-        return (origin is None or isinstance(origin, type)) and not is_subclass_soft(origin, collections.abc.Callable)
-
-    def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        request_type = request.last_loc.type
-        norm = try_normalize_type(request_type)
-
-        if self._is_single_optional(norm):
-            not_none = next(case for case in norm.args if case.origin is not None)
-            not_none_dumper = mediator.mandatory_provide(
-                request.append_loc(
-                    GenericParamLoc(
-                        type=not_none.source,
-                        generic_pos=0,
-                    ),
-                ),
-                lambda x: "Cannot create dumper for union. Dumpers for some union cases cannot be created",
-            )
-            if not_none_dumper == as_is_stub:
-                return as_is_stub
-            return mediator.cached_call(self._get_single_optional_dumper, not_none_dumper)
-
-        forbidden_origins = [
-            case.source for case in norm.args if not self._is_class_origin(case.origin) and case.origin != Literal
-        ]
-
-        if forbidden_origins:
-            raise CannotProvide(
-                f"All cases of union must be class or Literal, but found {forbidden_origins}",
-                is_terminal=True,
-                is_demonstrative=True,
-            )
-
-        dumpers = mediator.mandatory_provide_by_iterable(
-            [
-                request.append_loc(
-                    GenericParamLoc(
-                        type=tp.source,
-                        generic_pos=i,
-                    ),
-                )
-                for i, tp in enumerate(norm.args)
-            ],
-            lambda: "Cannot create dumper for union. Dumpers for some union cases cannot be created",
-        )
-        if all(dumper == as_is_stub for dumper in dumpers):
-            return as_is_stub
-
-        return mediator.cached_call(self._make_dumper, norm, tuple(dumpers))
-
-    def _make_dumper(self, norm: BaseNormType, dumpers: Iterable[Dumper]) -> Dumper:
-        dumper_type_dispatcher = ClassDispatcher(
-            {type(None) if case.origin is None else case.origin: dumper for case, dumper in zip(norm.args, dumpers)},
-        )
-
-        literal_dumper = self._get_dumper_for_literal(norm, dumpers, dumper_type_dispatcher)
-
-        if literal_dumper:
-            return literal_dumper
-
-        return self._produce_dumper(dumper_type_dispatcher)
-
-    def _produce_dumper(self, dumper_type_dispatcher: ClassDispatcher[Any, Dumper]) -> Dumper:
-        def union_dumper(data):
-            return dumper_type_dispatcher.dispatch(type(data))(data)
-
-        return union_dumper
-
-    def _produce_dumper_for_literal(
-        self,
-        dumper_type_dispatcher: ClassDispatcher[Any, Dumper],
-        literal_dumper: Dumper,
-        literal_cases: Sequence[Any],
-    ) -> Dumper:
-        def union_dumper_with_literal(data):
-            if data in literal_cases:
-                return literal_dumper(data)
-            return dumper_type_dispatcher.dispatch(type(data))(data)
-
-        return union_dumper_with_literal
-
-    def _get_dumper_for_literal(
-        self,
-        norm: BaseNormType,
-        dumpers: Iterable[Any],
-        dumper_type_dispatcher: ClassDispatcher[Any, Dumper],
-    ) -> Optional[Dumper]:
-        try:
-            literal_type, literal_dumper = next(
-                (union_case, dumper) for union_case, dumper in zip(norm.args, dumpers) if union_case.origin is Literal
-            )
-        except StopIteration:
-            return None
-
-        return self._produce_dumper_for_literal(dumper_type_dispatcher, literal_dumper, literal_type.args)
-
-    def _get_single_optional_dumper(self, dumper: Dumper) -> Dumper:
-        def optional_dumper(data):
-            if data is None:
-                return None
-            return dumper(data)
-
-        return optional_dumper
 
 
 def path_like_dumper(data):

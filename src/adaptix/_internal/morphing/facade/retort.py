@@ -17,6 +17,7 @@ from ...provider.value_provider import ValueProvider
 from ...retort.operating_retort import OperatingRetort
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
+from ...utils import Omitted
 from ..concrete_provider import (
     BOOL_PROVIDER,
     COMPLEX_PROVIDER,
@@ -45,7 +46,6 @@ from ..generic_provider import (
     PathLikeProvider,
     TypeAliasUnwrappingProvider,
     TypeHintTagsUnwrappingProvider,
-    UnionProvider,
 )
 from ..iterable_provider import IterableProvider
 from ..json_schema.definitions import JSONSchema
@@ -60,9 +60,11 @@ from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
 from ..provider_template import ABCProxy
 from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
+from ..union_provider import UnionProvider
 from .provider import (
     as_is_dumper,
     as_is_loader,
+    as_sentinel,
     bound,
     dumper,
     enum_by_exact_value,
@@ -82,6 +84,7 @@ class FilledRetort(OperatingRetort, ABC):
         as_is_dumper(Any),
         as_is_loader(object),
         as_is_dumper(object),
+        as_sentinel(Omitted),
 
         IsoFormatProvider(datetime),
         IsoFormatProvider(date),

@@ -48,6 +48,7 @@ from ..name_layout.name_mapping import (
     NameMap,
 )
 from ..request_cls import DumperRequest, LoaderRequest
+from ..sentinel_provider import SentinelProvider
 
 T = TypeVar("T")
 
@@ -486,4 +487,26 @@ def date_by_timestamp(pred: Pred = P.ANY) -> Provider:
         See :ref:`predicate-system` for details.
     """
     return bound(pred, DateTimestampProvider())
+
+
+def as_sentinel(pred: Pred) -> Provider:
+    """Mark the type as a sentinel.
+    Sentinels are not meant to be represented externally.
+    They serve to differentiate a missing field from one explicitly set to ``None`` (``null``).
+
+    If a field in the model is a union type that includes a sentinel, it must have a default value set to that sentinel.
+    Additionally, the :paramref:`.name_mapping.omit_default` option must be enabled.
+
+    When these conditions are met, if a field is missing during loading,
+    the class instance will receive the sentinel value.
+    This makes it possible to distinguish a missing field from one explicitly set to ``null``.
+    When dumping data, fields with sentinel values will be omitted.
+
+    Sentinel types only can be used within a union.
+    They do not have loaders or dumpers, as they are not intended to appear in external data.
+
+    :param pred: Predicate specifying where the provider should be used.
+        See :ref:`predicate-system` for details.
+    """
+    return bound(pred, SentinelProvider())
 

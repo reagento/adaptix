@@ -171,7 +171,7 @@ class DirectMediator(ABC):
         self,
         requests: Iterable[Request[T]],
         error_describer: Optional[Callable[[], str]] = None,
-    ) -> Iterable[T]:
+    ) -> Sequence[T]:
         results = []
         exceptions = []
         for request in requests:
