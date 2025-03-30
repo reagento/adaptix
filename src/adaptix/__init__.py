@@ -4,6 +4,7 @@ from ._internal.morphing.facade.func import dump, load
 from ._internal.morphing.facade.provider import (
     as_is_dumper,
     as_is_loader,
+    as_sentinel,
     constructor,
     date_by_timestamp,
     datetime_by_format,
@@ -76,6 +77,7 @@ __all__ = (
     "TypeHint",
     "as_is_dumper",
     "as_is_loader",
+    "as_sentinel",
     "bound",
     "constructor",
     "create_loc_stack_checker",

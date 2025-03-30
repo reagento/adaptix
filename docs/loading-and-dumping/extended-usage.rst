@@ -51,38 +51,68 @@ But it does not work with cyclic-referenced objects like
 Dealing with ``if TYPE_CHECKING``
 ===================================
 
-Sometimes you want to split interdependent models into several files.
-This results in some imports being visible only to type checkers.
-Analysis of such type hints is not available at runtime.
+.. include:: /common/dealing-with-if-type-checking.rst
 
 
-Let's imagine that we have two files:
-
-.. literalinclude:: /examples/loading-and-dumping/extended_usage/dealing_with_type_checking/chat.py
-   :caption: File ``chat.py``
-   :lines: 2-
-
-.. literalinclude:: /examples/loading-and-dumping/extended_usage/dealing_with_type_checking/message.py
-   :caption: File ``message.py``
+.. _detecting-absense-of-a-field:
 
 
-If you try to get type hints at runtime, you will fail:
+Detecting absence of a field
+=====================================
 
-.. literalinclude:: /examples/loading-and-dumping/extended_usage/dealing_with_type_checking/error_on_analysis.py
+Sometimes you need to detect that user does not pass any value to the field.
+You can use None for this, but that makes it impossible to distinguish from a user-provided value.
 
-At runtime, these imports are not executed, so the builtin analysis function can not resolve forward refs.
+To solve this, you can use special types called "sentinels".
+Since they cannot be represented in the outside world,
+they provide a reliable way to determine when a field value was not explicitly set by the user.
 
-Adaptix can overcome this via :func:`.type_tools.exec_type_checking`.
-It extracts code fragments defined under ``if TYPE_CHECKING`` and ``if typing.TYPE_CHECKING`` constructs
-and then executes them in the context of module.
-As a result, the module namespace is filled with missing names, and *any* introspection function can acquire types.
+``Omitted`` is the builtin sentinel type. Let's examine how it can be used:
 
-You should call ``exec_type_checking`` after all required modules can be imported.
-Usually, it must be at ``main`` module.
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/detecting_absense_of_a_field/omitted.py
+   :lines: 1-19
 
-.. literalinclude:: /examples/loading-and-dumping/extended_usage/dealing_with_type_checking/main.py
-   :caption: File ``main.py``
-   :lines: 2-
+Enabling ``omit_default`` policy is required here. It allow to skip this value at dumping.
+All missing fields are filled by default value (``Omitted``), and this fields are omitted at dumping.
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/detecting_absense_of_a_field/omitted.py
+   :lines: 21-28
+
+``None`` value is accepted as usual for None-able fields:
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/detecting_absense_of_a_field/omitted.py
+   :lines: 30-37
+
+But ``None`` value is forbidden for fields without ``None`` type:
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/detecting_absense_of_a_field/omitted.py
+   :lines: 39-46
+
+
+Also, you can create own sentinel types via :func:`.as_sentinel`.
+
+.. dropdown:: Custom sentinel type
+
+  .. literalinclude:: /examples/loading-and-dumping/extended_usage/detecting_absense_of_a_field/custom_sentinel.py
+
+
+If ``None`` is invalid value for every field, you can treat ``None`` as sentinel.
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/detecting_absense_of_a_field/none_as_sentinel.py
+   :lines: 1-20
+
+
+.. dropdown:: Test examples
+
+   .. literalinclude:: /examples/loading-and-dumping/extended_usage/detecting_absense_of_a_field/none_as_sentinel.py
+      :lines: 23-38
+
+
+You can also use ``NotRequired`` fields of ``TypedDict`` for this,
+but ``TypedDict`` itself is quite limited compared to other models.
+
+.. literalinclude:: /examples/loading-and-dumping/extended_usage/detecting_absense_of_a_field/typed_dict.py
+
 
 Name mapping
 ========================

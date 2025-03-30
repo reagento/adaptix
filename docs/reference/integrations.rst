@@ -112,7 +112,7 @@ You can override this behavior to use a native pydantic validation/serialization
 .. _msgspec:
 
 Working with msgspec
-=============
+=======================
 
 By default, any msgspec Struct is loaded, dumped and converted like any other model.
 If your code uses specific options for ``to_builtins`` or ``convert`` functions, you can specify

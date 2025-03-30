@@ -65,6 +65,8 @@ class UnionProvider(LoaderProvider, DumperProvider):
             ],
             lambda: "Cannot create loader for union. Loaders for some union cases cannot be created",
         )
+        if len(loaders) == 1:
+            return loaders[0]
 
         if (not_none_loader := self._parse_single_optional_loader(loaders)) is not None:
             if debug_trail in (DebugTrail.ALL, DebugTrail.FIRST):
@@ -180,6 +182,8 @@ class UnionProvider(LoaderProvider, DumperProvider):
         )
         if all(dumper == as_is_stub for dumper in dumpers):
             return as_is_stub
+        if len(dumpers) == 1:
+            return dumpers[0]
 
         if (not_none_dumper := self._parse_single_optional_dumper(norm, dumpers)) is not None:
             return self._produce_single_optional_dumper(not_none_dumper)

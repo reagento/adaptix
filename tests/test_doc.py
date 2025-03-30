@@ -12,6 +12,7 @@ from adaptix._internal.feature_requirement import (
     HAS_SUPPORTED_MSGSPEC_PKG,
     HAS_SUPPORTED_PYDANTIC_PKG,
     HAS_SUPPORTED_SQLALCHEMY_PKG,
+    HAS_TYPED_DICT_REQUIRED,
     Requirement,
 )
 
@@ -49,6 +50,7 @@ GLOB_REQUIREMENTS = {
     "loading-and-dumping/extended_usage/private_fields_including_no_rename_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
     "loading-and-dumping/extended_usage/private_fields_including_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
     "loading-and-dumping/extended_usage/private_fields_skipping_pydantic": HAS_SUPPORTED_PYDANTIC_PKG,
+    "loading-and-dumping/extended_usage/detecting_absense_of_a_field/typed_dict": HAS_TYPED_DICT_REQUIRED,
     "reference/integrations/sqlalchemy_json/*": HAS_SUPPORTED_SQLALCHEMY_PKG,
     "conversion/tutorial/tldr": HAS_SUPPORTED_SQLALCHEMY_PKG,
     "why_not_pydantic/instantiating_penalty*": AndRequirement(HAS_PY_312, HAS_SUPPORTED_PYDANTIC_PKG),
