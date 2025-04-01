@@ -1,0 +1,4 @@
+Now you can easily distinguish between a missing field and a None value.
+The new :func:`.as_sentinel` function allows you to mark types as sentinels,
+ensuring they remain hidden from the outside world.
+See :ref:`detecting-absense-of-a-field` for detail.

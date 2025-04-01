@@ -5,7 +5,7 @@ from typing import Callable, Literal, Optional, Union
 import pytest
 from tests_helpers import raises_exc, with_cause, with_notes
 
-from adaptix import CannotProvide, DebugTrail, ProviderNotFoundError, Retort, loader
+from adaptix import CannotProvide, DebugTrail, Omitted, ProviderNotFoundError, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 from adaptix._internal.type_tools import normalize_type
@@ -179,9 +179,13 @@ def test_bad_optional_dumping(debug_trail):
                 f"Location: `{str(Union[int, Callable[[int], str]]).replace('typing.', '', 1)}`",
             ),
         ),
-        func=lambda: (
+        lambda: (
             retort.replace(
                 debug_trail=debug_trail,
+            ).extend(
+                recipe=[
+                    dumper(Callable[[int], str], lambda x: str(x)),
+                ],
             ).get_dumper(
                 Union[int, Callable[[int], str]],
             )
@@ -260,3 +264,52 @@ def test_dump_literal_in_union(
 
     with pytest.raises(KeyError):
         dumper_(wrong_value)
+
+
+def test_sentinel_single_optional(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    )
+    loader_ = retort.get_loader(
+       Union[str, None, Omitted],
+    )
+    assert loader_("a") == "a"
+    assert loader_(None) is None
+    assert loader_("b") == "b"
+
+    dumper_ = retort.get_loader(
+       Union[str, None, Omitted],
+    )
+    assert dumper_("a") == "a"
+    assert dumper_(None) is None
+    assert dumper_("b") == "b"
+
+
+def test_sentinel_union(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    )
+    loader_ = retort.get_loader(
+       Union[str, int, Omitted],
+    )
+    assert loader_("a") == "a"
+    assert loader_(10) == 10
+
+    dumper_ = retort.get_loader(
+       Union[str, int, None, Omitted],
+    )
+    assert dumper_("a") == "a"
+    assert dumper_(10) == 10
+
+
+def test_sentinel_as_is_dumping(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    )
+    dumper_ = retort.get_loader(
+       Union[str, Omitted],
+    )
+    assert dumper_("a") == "a"
