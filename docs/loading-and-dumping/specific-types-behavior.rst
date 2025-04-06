@@ -50,6 +50,9 @@ the loader will pass only values of appropriate types listed at the ``Allowed st
    * - ``complex``
      - ``str``, ``complex``
      - ``str``
+   * - ``ZoneInfo``
+     - ``ZoneInfo``
+     - ``str``
 
 Any and object
 ''''''''''''''''''
