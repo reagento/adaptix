@@ -2,7 +2,7 @@ import collections.abc
 from collections.abc import Iterable, Sequence
 from typing import Any, Literal, Optional, Union
 
-from ..common import Dumper, Loader
+from ..common import Dumper, Loader, TypeHint
 from ..compat import CompatExceptionGroup
 from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
@@ -11,7 +11,8 @@ from ..provider.loc_stack_filtering import LocStack
 from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
 from ..special_cases_optimization import as_is_stub
-from ..type_tools import BaseNormType, is_subclass_soft
+from ..type_tools import BaseNormType, is_subclass_soft, strip_tags
+from ..type_tools.normalize_type import NoneType
 from .concrete_provider import none_loader
 from .load_error import LoadError, TypeLoadError, UnionLoadError
 from .provider_template import DumperProvider, LoaderProvider
@@ -29,7 +30,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
         norm: BaseNormType,
         target: str,
     ) -> Sequence[LocStack]:
-        loc_stacks = (
+        loc_stacks = [
             request.loc_stack.append_with(
                 GenericParamLoc(
                     type=norm_tp.source,
@@ -37,7 +38,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 ),
             )
             for i, norm_tp in enumerate(norm.args)
-        )
+        ]
         filtered_loc_stacks = [
             loc_stack for loc_stack in loc_stacks
             if not check_is_sentinel(mediator, loc_stack)
@@ -48,7 +49,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 is_terminal=True,
                 is_demonstrative=True,
             )
-        return filtered_loc_stacks
+        return tuple(filtered_loc_stacks)
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         norm = try_normalize_type(request.last_loc.type)
@@ -180,10 +181,10 @@ class UnionProvider(LoaderProvider, DumperProvider):
             ],
             lambda: "Cannot create dumper for union. Dumpers for some union cases cannot be created",
         )
-        if all(dumper == as_is_stub for dumper in dumpers):
-            return as_is_stub
         if len(dumpers) == 1:
             return dumpers[0]
+        if all(dumper == as_is_stub for dumper in dumpers):
+            return as_is_stub
 
         if (not_none_dumper := self._parse_single_optional_dumper(norm, dumpers)) is not None:
             return self._produce_single_optional_dumper(not_none_dumper)
@@ -198,13 +199,17 @@ class UnionProvider(LoaderProvider, DumperProvider):
                 is_terminal=True,
                 is_demonstrative=True,
             )
-        return mediator.cached_call(self._make_dumper, norm, tuple(dumpers))
+        return mediator.cached_call(
+            self._make_dumper,
+            tuple(loc_stack.last.type for loc_stack in loc_stacks),
+            tuple(dumpers),
+        )
 
-    def _make_dumper(self, norm: BaseNormType, dumpers: Iterable[Dumper]) -> Dumper:
-        non_literals, literal = self._extract_literal(norm, dumpers)
+    def _make_dumper(self, args: Iterable[TypeHint], dumpers: Iterable[Dumper]) -> Dumper:
+        non_literals, literal = self._extract_literal(args, dumpers)
         dumper_class_dispatcher = ClassDispatcher(
             {
-                type(None) if case.origin is None else case.origin: dumper
+                self._get_class_for_dumping(case): dumper
                 for case, dumper in non_literals
             },
         )
@@ -212,6 +217,11 @@ class UnionProvider(LoaderProvider, DumperProvider):
             return self._produce_dumper_with_literal(dumper_class_dispatcher, literal[0].args, literal[1])
 
         return self._produce_dumper(dumper_class_dispatcher)
+
+    def _get_class_for_dumping(self, norm: BaseNormType) -> type:
+        if norm.origin is None:
+            return NoneType
+        return strip_tags(norm).origin
 
     def _parse_single_optional_dumper(self, norm: BaseNormType, dumpers: Iterable[Dumper]) -> Optional[Dumper]:
         try:
@@ -224,14 +234,15 @@ class UnionProvider(LoaderProvider, DumperProvider):
             return first_dumper
         return None
 
-    def _extract_literal(self, norm: BaseNormType, dumpers: Iterable[Dumper]):
+    def _extract_literal(self, args: Iterable[TypeHint], dumpers: Iterable[Dumper]):
         non_literals: list[tuple[BaseNormType, Dumper]] = []
         literal: Optional[tuple[BaseNormType, Dumper]] = None
-        for norm_arg, dumper in zip(norm.args, dumpers):
-            if norm_arg.origin == Literal:
-                literal = (norm_arg, dumper)
+        for arg, dumper in zip(args, dumpers):
+            norm = try_normalize_type(arg)
+            if norm.origin == Literal:
+                literal = (norm, dumper)
             else:
-                non_literals.append((norm_arg, dumper))
+                non_literals.append((norm, dumper))
 
         return non_literals, literal
 

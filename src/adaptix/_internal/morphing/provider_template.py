@@ -4,10 +4,10 @@ from typing import final
 
 from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator
-from ..provider.loc_stack_filtering import ExactOriginLSC
+from ..provider.loc_stack_filtering import ExactOriginLSC, LocStack
 from ..provider.located_request import LocatedRequestMethodsProvider
 from ..provider.methods_provider import method_handler
-from ..type_tools import normalize_type
+from ..type_tools import get_generic_args, normalize_type
 from .json_schema.definitions import JSONSchema
 from .json_schema.request_cls import JSONSchemaRequest
 from .json_schema.schema_model import JSONSchemaDialect
@@ -66,7 +66,7 @@ class ABCProxy(LoaderProvider, DumperProvider):
 
         return mediator.mandatory_provide(
             LoaderRequest(
-                loc_stack=request.loc_stack.replace_last_type(self._impl),
+                loc_stack=self._convert_loc_stack(request.loc_stack),
             ),
             lambda x: f"Cannot create loader for {self._abstract}. Loader for {self._impl} cannot be created",
         )
@@ -77,7 +77,15 @@ class ABCProxy(LoaderProvider, DumperProvider):
 
         return mediator.mandatory_provide(
             DumperRequest(
-                loc_stack=request.loc_stack.replace_last_type(self._impl),
+                loc_stack=self._convert_loc_stack(request.loc_stack),
             ),
             lambda x: f"Cannot create dumper for {self._abstract}. Dumper for {self._impl} cannot be created",
         )
+
+    def _convert_loc_stack(self, loc_stack: LocStack) -> LocStack:
+        return loc_stack.replace_last_type(
+            self._replace_origin(loc_stack.last.type, self._impl),
+        )
+
+    def _replace_origin(self, source: TypeHint, target: TypeHint) -> TypeHint:
+        return target[get_generic_args(source)]

@@ -49,7 +49,7 @@ from ..generic_provider import (
     TypeHintTagsUnwrappingProvider,
 )
 from ..iterable_provider import IterableProvider
-from ..json_schema.definitions import JSONSchema
+from ..json_schema.definitions import JSONSchema, ResolvedJSONSchema
 from ..json_schema.providers import InlineJSONSchemaProvider, JSONSchemaRefProvider
 from ..json_schema.request_cls import JSONSchemaContext, JSONSchemaRequest
 from ..model.crown_definitions import ExtraSkip
@@ -148,6 +148,14 @@ class FilledRetort(OperatingRetort, ABC):
         ABCProxy(MutableMapping, dict),
         ABCProxy(ByteString, bytes),
 
+        name_mapping(
+            JSONSchema,
+            omit_default=True,
+        ),
+        name_mapping(
+            ResolvedJSONSchema,
+            omit_default=True,
+        ),
         name_mapping(
             chain=None,
             skip=(),

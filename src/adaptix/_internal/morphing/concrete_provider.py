@@ -487,7 +487,7 @@ STR_PROVIDER = ScalarProvider(
     strict_coercion_loader=str_strict_coercion_loader,
     lax_coercion_loader=str,
     dumper=as_is_stub,
-    json_schema=JSONSchema(type=JSONSchemaType.INTEGER),
+    json_schema=JSONSchema(type=JSONSchemaType.STRING),
 )
 
 
