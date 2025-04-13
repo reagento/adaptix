@@ -2,3 +2,4 @@
 attrs==21.3.0
 sqlalchemy==2.0.0
 pydantic==2.1.0
+msgspec==0.18.5; implementation_name != "pypy"

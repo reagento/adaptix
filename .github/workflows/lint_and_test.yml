@@ -24,6 +24,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -31,7 +33,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Just
-        uses: extractions/setup-just@dd310ad5a97d8e7b41793f8ef055398d51ad4de6
+        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff
         with:
           just-version: 1.14.0
 
@@ -67,6 +69,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.11
         uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3
@@ -74,7 +78,7 @@ jobs:
           python-version: ${{ matrix.python_version.setup }}
 
       - name: Install Just
-        uses: extractions/setup-just@dd310ad5a97d8e7b41793f8ef055398d51ad4de6
+        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff
         with:
           just-version: 1.14.0
 
@@ -92,7 +96,7 @@ jobs:
             --cov-output .coverage.${{ matrix.python_version.tox }}
 
       - name: Store coverage file
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}
         with:
           name: coverage-${{ matrix.python_version.tox }}
@@ -117,8 +121,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
 
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+      - uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e
         id: download
         with:
           pattern: coverage-*
@@ -126,14 +132,14 @@ jobs:
 
       - name: Coverage comment
         id: coverage_comment
-        uses: py-cov-action/python-coverage-comment-action@b2eb38dd175bf053189b35f738f9207278b00925
+        uses: py-cov-action/python-coverage-comment-action@d1ff8fbb5ff80feedb3faa0f6d7b424f417ad0e1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MERGE_COVERAGE_FILES: true
           MINIMUM_GREEN: 90
 
       - name: Store Pull Request comment to be posted (for external pr)
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
         with:
           name: python-coverage-comment-action

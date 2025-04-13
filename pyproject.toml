@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'adaptix'
-version = '3.0.0b9'
+version = '3.0.0b10'
 description = 'An extremely flexible and configurable data model conversion library'
 readme = 'README.md'
 requires-python = '>=3.9'
@@ -36,9 +36,11 @@ classifiers = [
 attrs = ['attrs >= 21.3.0']
 attrs-strict = ['attrs >= 21.3.0, <= 24.2.0']
 sqlalchemy = ['sqlalchemy >= 2.0.0']
-sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.36']
+sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.40']
 pydantic = ['pydantic >= 2.0.0']
-pydantic-strict = ['pydantic >= 2.0.0, <= 2.10.3']
+pydantic-strict = ['pydantic >= 2.0.0, <= 2.11.3']
+msgspec = ['msgspec >= 0.18.5']
+msgspec-strict = ['msgspec >= 0.18.5, <= 0.19.0']
 
 [project.urls]
 'Homepage' = 'https://github.com/reagento/adaptix'

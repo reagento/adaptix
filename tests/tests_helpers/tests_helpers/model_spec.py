@@ -10,6 +10,7 @@ from _pytest.python import Metafunc
 
 from adaptix._internal.feature_requirement import (
     HAS_ATTRS_PKG,
+    HAS_MSGSPEC_PKG,
     HAS_PY_311,
     HAS_PYDANTIC_PKG,
     HAS_SQLALCHEMY_PKG,
@@ -38,6 +39,7 @@ class ModelSpec(Enum):
     ATTRS = "attrs"
     SQLALCHEMY = "sqlalchemy"
     PYDANTIC = "pydantic"
+    MSGSPEC = "msgspec"
 
     @classmethod
     def default_requirements(cls):
@@ -45,6 +47,7 @@ class ModelSpec(Enum):
             cls.ATTRS: HAS_ATTRS_PKG,
             cls.SQLALCHEMY: HAS_SQLALCHEMY_PKG,
             cls.PYDANTIC: HAS_PYDANTIC_PKG,
+            cls.MSGSPEC: HAS_MSGSPEC_PKG,
         }
 
 
@@ -88,24 +91,39 @@ def create_sqlalchemy_decorator():
 
 def model_spec_to_schema(spec: ModelSpec):
     if spec == ModelSpec.DATACLASS:
-        return ModelSpecSchema(decorator=dataclass, bases=(), get_field=getattr, kind=spec)
-    if spec == ModelSpec.TYPED_DICT:
-        return ModelSpecSchema(decorator=lambda x: x, bases=(TypedDict,), get_field=getitem, kind=spec)
-    if spec == ModelSpec.NAMED_TUPLE:
-        return ModelSpecSchema(decorator=lambda x: x, bases=(NamedTuple,), get_field=getattr, kind=spec)
-    if spec == ModelSpec.ATTRS:
+        model_spec_schema = ModelSpecSchema(decorator=dataclass, bases=(), get_field=getattr, kind=spec)
+    elif spec == ModelSpec.TYPED_DICT:
+        model_spec_schema = ModelSpecSchema(decorator=lambda x: x, bases=(TypedDict,), get_field=getitem, kind=spec)
+    elif spec == ModelSpec.NAMED_TUPLE:
+        model_spec_schema = ModelSpecSchema(decorator=lambda x: x, bases=(NamedTuple,), get_field=getattr, kind=spec)
+    elif spec == ModelSpec.ATTRS:
         from attrs import define
-        return ModelSpecSchema(decorator=define, bases=(), get_field=getattr, kind=spec)
-    if spec == ModelSpec.SQLALCHEMY:
-        return ModelSpecSchema(decorator=create_sqlalchemy_decorator(), bases=(), get_field=getattr, kind=spec)
-    if spec == ModelSpec.PYDANTIC:
+        model_spec_schema = ModelSpecSchema(decorator=define, bases=(), get_field=getattr, kind=spec)
+    elif spec == ModelSpec.SQLALCHEMY:
+        model_spec_schema = ModelSpecSchema(
+            decorator=create_sqlalchemy_decorator(),
+            bases=(),
+            get_field=getattr,
+            kind=spec,
+        )
+    elif spec == ModelSpec.PYDANTIC:
         from pydantic import BaseModel, ConfigDict
 
         class CustomBaseModel(BaseModel):
             model_config = ConfigDict(arbitrary_types_allowed=True)
 
-        return ModelSpecSchema(decorator=lambda x: x, bases=(CustomBaseModel, ), get_field=getattr, kind=spec)
-    raise ValueError
+        model_spec_schema = ModelSpecSchema(
+            decorator=lambda x: x,
+            bases=(CustomBaseModel, ),
+            get_field=getattr,
+            kind=spec,
+        )
+    elif spec == ModelSpec.MSGSPEC:
+        from msgspec import Struct
+        model_spec_schema = ModelSpecSchema(decorator=lambda x: x, bases=(Struct,), get_field=getattr, kind=spec)
+    else:
+         raise ValueError
+    return model_spec_schema
 
 
 def exclude_model_spec(first_spec: ModelSpec, *other_specs: ModelSpec):

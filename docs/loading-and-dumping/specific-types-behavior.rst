@@ -50,6 +50,9 @@ the loader will pass only values of appropriate types listed at the ``Allowed st
    * - ``complex``
      - ``str``, ``complex``
      - ``str``
+   * - ``ZoneInfo``
+     - ``str``
+     - ``str``
 
 Any and object
 ''''''''''''''''''
@@ -204,6 +207,13 @@ Be careful if one model is a superset of another model.
 By default, all unknown fields are skipped, this does not allow distinct such models.
 
 .. literalinclude:: /examples/loading-and-dumping/specific_types_behavior/union_model_supersets.py
+
+Keep in mind that disabling ``strict_coercion`` can break union loading.
+Most constructors attempt to convert as much data as possible into the target type.
+For example, str can take any object as input.
+With ``strict_coercion`` disabled, the str loader will accept any object, which can lead to undefined behavior
+(depending on the order in which loaders are called).
+
 
 This can be avoided by inserting a type designator like in the example above.
 Processing of unknown fields could be customized via :paramref:`.name_mapping.extra_in`.

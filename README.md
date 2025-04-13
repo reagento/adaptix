@@ -25,7 +25,7 @@ An extremely flexible and configurable data model conversion library.
 
 Install
 ```bash
-pip install adaptix==3.0.0b9
+pip install adaptix==3.0.0b10
 ```
 
 Use for model loading and dumping.
@@ -114,7 +114,8 @@ assert (
 * Support [dozens](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/specific-types-behavior.html) of types,
   including different model kinds:
   ``@dataclass``, ``TypedDict``, ``NamedTuple``,
-  [``attrs``](https://www.attrs.org/en/stable/), [``sqlalchemy``](https://docs.sqlalchemy.org/en/20/) and [``pydantic``](https://docs.pydantic.dev/latest/).
+  [``attrs``](https://www.attrs.org/en/stable/), [``sqlalchemy``](https://docs.sqlalchemy.org/en/20/),
+  [``pydantic``](https://docs.pydantic.dev/latest/) and [``msgspec``](https://jcristharif.com/msgspec/).
 * Working with self-referenced data types (such as linked lists or trees).
 * Saving [path](https://adaptix.readthedocs.io/en/latest/loading-and-dumping/tutorial.html#error-handling)
   where an exception is raised (including unexpected errors).

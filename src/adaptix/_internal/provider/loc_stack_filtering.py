@@ -192,14 +192,6 @@ class LocStackEndChecker(LocStackChecker):
         return True
 
 
-@dataclass(frozen=True)
-class LocStackSizeChecker(LocStackChecker):
-    expected_size: int
-
-    def check_loc_stack(self, mediator: DirectMediator, loc_stack: LocStack) -> bool:
-        return len(loc_stack) == self.expected_size
-
-
 class AnyLocStackChecker(LocStackChecker):
     def check_loc_stack(self, mediator: DirectMediator, loc_stack: LocStack) -> bool:
         return True

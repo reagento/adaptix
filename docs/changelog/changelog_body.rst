@@ -1,6 +1,62 @@
 ----------------------------------------------------
 
 
+.. _v3.0.0b10:
+
+`3.0.0b10 <https://github.com/reagento/adaptix/tree/v3.0.0b10>`__ -- 2025-04-13
+===============================================================================
+
+.. _v3.0.0b10-Features:
+
+Features
+--------
+
+- Add support for msgspec models!
+
+  Now you can work with msgspec models like any other:
+  construct from a dict, serialize to a dict, and convert it into any other model.
+
+  Also, you can use ``integrations.msgspec.native_msgspec`` to delegate loading and dumping to msgspec itself.
+
+  This allows you to combine the flexibility of adaptix with the incredible speed of msgspec
+
+- A completely new algorithm for model dumper code generation has been implemented.
+
+  Dumping models with default values is now faster. For GitHub Issues models, which include only a few default fields, dump time has been reduced by 22%.
+- Now you can easily distinguish between a missing field and a None value.
+  The new :func:`.as_sentinel` function allows you to mark types as sentinels,
+  ensuring they remain hidden from the outside world.
+  See :ref:`detecting-absense-of-a-field` for detail. `#214 <https://github.com/reagento/adaptix/issues/214>`__
+- Add support for ``ZoneInfo``. `#375 <https://github.com/reagento/adaptix/issues/375>`__
+
+
+.. _v3.0.0b10-Breaking Changes:
+
+Breaking Changes
+----------------
+
+- Changed the signature of the :func:`.integrations.pydantic.native_pydantic` function.
+  Now, parameters for validator and serializer are grouped into dictionaries.
+
+.. _v3.0.0b10-Bug Fixes:
+
+Bug Fixes
+---------
+
+- Fix default values loading for types inherited from builtin types. `#363 <https://github.com/reagento/adaptix/issues/363>`__
+- Fix the error caused by using with_property when the function was used only once for a type.
+
+.. _v3.0.0b10-Other:
+
+Other
+-----
+
+- Internal benchmarking framework now can use SQLite to store result data `#370 <https://github.com/reagento/adaptix/issues/370>`__
+- Add Gurubase AI to documentation
+
+----------------------------------------------------
+
+
 .. _v3.0.0b9:
 
 `3.0.0b9 <https://github.com/reagento/adaptix/tree/v3.0.0b9>`__ -- 2024-12-15
@@ -147,7 +203,7 @@ Features
 - Add support for Pydantic models!
 
   Now you can work with pydantic models like any other:
-  construct from dict, serialize to dict, convert to any other model, and convert it to any other model.
+  construct from dict, serialize to dict, and convert it to any other model.
 
   Also, you can use :func:`.integrations.pydantic.native_pydantic` to delegate loading and dumping to pydantic itself.
 

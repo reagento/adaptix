@@ -1,28 +1,32 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Callable, List, Literal, Optional, Union
+from typing import Callable, Literal, Optional, Union
 
 import pytest
 from tests_helpers import raises_exc, with_cause, with_notes
 
-from adaptix import CannotProvide, DebugTrail, ProviderNotFoundError, Retort, loader
+from adaptix import CannotProvide, DebugTrail, Omitted, ProviderNotFoundError, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
+from adaptix._internal.type_tools import normalize_type
 
 
-@dataclass
-class Book:
-    price: int
-    author: Union[str, List[str]]
+def _norm_union_tp(tp):
+    # Due to caching inside normalize_type,
+    # it can change the order of elements inside Union typehint
+    # when it fetched by `.source` attribute.
+    # It will fail string representation test, this function fixes this
+    return normalize_type(tp).source
 
 
 def test_loading(strict_coercion, debug_trail):
+    union_tp = _norm_union_tp(Union[int, str])
     retort = Retort()
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=debug_trail,
     ).get_loader(
-        Union[int, str],
+        union_tp,
     )
 
     assert loader_(1) == 1
@@ -39,7 +43,7 @@ def test_loading(strict_coercion, debug_trail):
     elif debug_trail in (DebugTrail.FIRST, DebugTrail.ALL):
         raises_exc(
             UnionLoadError(
-                f"while loading {Union[int, str]}",
+                f"while loading {union_tp}",
                 [
                     TypeLoadError(int, []),
                     TypeLoadError(str, []),
@@ -62,6 +66,7 @@ def bad_int_loader(data):
 
 
 def test_loading_unexpected_error(strict_coercion, debug_trail):
+    union_tp = _norm_union_tp(Union[int, str])
     retort = Retort()
     loader_ = retort.replace(
         strict_coercion=strict_coercion,
@@ -72,7 +77,7 @@ def test_loading_unexpected_error(strict_coercion, debug_trail):
             loader(int, bad_int_loader),
         ],
     ).get_loader(
-        Union[int, str],
+        union_tp,
     )
 
     if debug_trail in (DebugTrail.DISABLE, DebugTrail.FIRST):
@@ -83,7 +88,7 @@ def test_loading_unexpected_error(strict_coercion, debug_trail):
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
-                f"while loading {Union[int, str]}",
+                f"while loading {union_tp}",
                 [
                     TypeError(),
                     TypeError(),
@@ -174,9 +179,13 @@ def test_bad_optional_dumping(debug_trail):
                 f"Location: `{str(Union[int, Callable[[int], str]]).replace('typing.', '', 1)}`",
             ),
         ),
-        func=lambda: (
+        lambda: (
             retort.replace(
                 debug_trail=debug_trail,
+            ).extend(
+                recipe=[
+                    dumper(Callable[[int], str], lambda x: str(x)),
+                ],
             ).get_dumper(
                 Union[int, Callable[[int], str]],
             )
@@ -226,7 +235,7 @@ def test_literal(strict_coercion, debug_trail):
     ["other_type", "value", "expected", "wrong_value"],
     [
         (
-         Decimal, Decimal(200.5), "200.5", [1, 2, 3],
+         Decimal, Decimal("200.5"), "200.5", [1, 2, 3],
         ),
         (
          Union[str, Decimal], "some string", "some string", [1, 2, 3],
@@ -255,3 +264,52 @@ def test_dump_literal_in_union(
 
     with pytest.raises(KeyError):
         dumper_(wrong_value)
+
+
+def test_sentinel_single_optional(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    )
+    loader_ = retort.get_loader(
+       Union[str, None, Omitted],
+    )
+    assert loader_("a") == "a"
+    assert loader_(None) is None
+    assert loader_("b") == "b"
+
+    dumper_ = retort.get_loader(
+       Union[str, None, Omitted],
+    )
+    assert dumper_("a") == "a"
+    assert dumper_(None) is None
+    assert dumper_("b") == "b"
+
+
+def test_sentinel_union(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    )
+    loader_ = retort.get_loader(
+       Union[str, int, Omitted],
+    )
+    assert loader_("a") == "a"
+    assert loader_(10) == 10
+
+    dumper_ = retort.get_loader(
+       Union[str, int, None, Omitted],
+    )
+    assert dumper_("a") == "a"
+    assert dumper_(10) == 10
+
+
+def test_sentinel_as_is_dumping(strict_coercion, debug_trail):
+    retort = Retort(
+        strict_coercion=strict_coercion,
+        debug_trail=debug_trail,
+    )
+    dumper_ = retort.get_loader(
+       Union[str, Omitted],
+    )
+    assert dumper_("a") == "a"

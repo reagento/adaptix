@@ -12,7 +12,7 @@ def create_stub_validation_error():
     return error
 
 
-def test_validation_without_params():
+def test_without_params():
     class MyModel(BaseModel):
         a: int
         b: str
@@ -27,6 +27,8 @@ def test_validation_without_params():
         with_cause(LoadError(), create_stub_validation_error()),
         lambda: loader_({"a": "abc", "b": "value"}),
     )
+    dumper_ = retort.get_dumper(MyModel)
+    assert dumper_(MyModel(a=1, b="value")) == {"a": 1, "b": "value"}
 
 
 def test_with_params():
@@ -35,7 +37,13 @@ def test_with_params():
         b: str
 
     retort = Retort(
-        recipe=[native_pydantic(MyModel, strict=True)],
+        recipe=[
+            native_pydantic(
+                MyModel,
+                validate_python={"strict": True},
+                to_python={"exclude": {"b"}},
+            ),
+        ],
     )
 
     loader_ = retort.get_loader(MyModel)
@@ -46,24 +54,4 @@ def test_with_params():
     )
 
     dumper_ = retort.get_dumper(MyModel)
-    assert dumper_(MyModel(a=1, b="value")) == {"a": 1, "b": "value"}
-
-
-def test_serialization_with_params():
-    class MyModel(BaseModel):
-        a: int
-        b: str
-
-    retort = Retort(
-        recipe=[native_pydantic(MyModel, strict=True)],
-    )
-
-    loader_ = retort.get_loader(MyModel)
-    assert loader_({"a": 1, "b": "value"}) == MyModel(a=1, b="value")
-    raises_exc(
-        with_cause(LoadError(), create_stub_validation_error()),
-        lambda: loader_({"a": "1", "b": "value"}),
-    )
-
-    dumper_ = retort.get_dumper(MyModel)
-    assert dumper_(MyModel(a=1, b="value")) == {"a": 1, "b": "value"}
+    assert dumper_(MyModel(a=1, b="value")) == {"a": 1}

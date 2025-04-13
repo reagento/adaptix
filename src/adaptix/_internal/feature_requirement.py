@@ -171,6 +171,9 @@ HAS_TV_DEFAULT = HAS_PY_313
 HAS_SUPPORTED_ATTRS_PKG = DistributionVersionRequirement("attrs", "21.3.0")
 HAS_ATTRS_PKG = DistributionRequirement("attrs")
 
+HAS_SUPPORTED_MSGSPEC_PKG = DistributionVersionRequirement("msgspec", "0.14.0")
+HAS_MSGSPEC_PKG = DistributionRequirement("msgspec")
+
 HAS_SUPPORTED_SQLALCHEMY_PKG = DistributionVersionRequirement("sqlalchemy", "2.0.0")
 HAS_SQLALCHEMY_PKG = DistributionRequirement("sqlalchemy")
 

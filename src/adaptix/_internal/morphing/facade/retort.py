@@ -17,6 +17,7 @@ from ...provider.value_provider import ValueProvider
 from ...retort.operating_retort import OperatingRetort
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
+from ...utils import Omitted
 from ..concrete_provider import (
     BOOL_PROVIDER,
     COMPLEX_PROVIDER,
@@ -25,6 +26,7 @@ from ..concrete_provider import (
     FRACTION_PROVIDER,
     INT_PROVIDER,
     STR_PROVIDER,
+    ZONE_INFO_PROVIDER,
     BytearrayBase64Provider,
     BytesBase64Provider,
     BytesIOBase64Provider,
@@ -45,10 +47,11 @@ from ..generic_provider import (
     PathLikeProvider,
     TypeAliasUnwrappingProvider,
     TypeHintTagsUnwrappingProvider,
-    UnionProvider,
 )
 from ..iterable_provider import IterableProvider
+from ..json_schema.definitions import JSONSchema, ResolvedJSONSchema
 from ..json_schema.providers import InlineJSONSchemaProvider, JSONSchemaRefProvider
+from ..json_schema.request_cls import JSONSchemaContext, JSONSchemaRequest
 from ..model.crown_definitions import ExtraSkip
 from ..model.dumper_provider import ModelDumperProvider
 from ..model.loader_provider import ModelLoaderProvider
@@ -58,9 +61,11 @@ from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
 from ..provider_template import ABCProxy
 from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
+from ..union_provider import UnionProvider
 from .provider import (
     as_is_dumper,
     as_is_loader,
+    as_sentinel,
     bound,
     dumper,
     enum_by_exact_value,
@@ -80,6 +85,7 @@ class FilledRetort(OperatingRetort, ABC):
         as_is_dumper(Any),
         as_is_loader(object),
         as_is_dumper(object),
+        as_sentinel(Omitted),
 
         IsoFormatProvider(datetime),
         IsoFormatProvider(date),
@@ -96,6 +102,7 @@ class FilledRetort(OperatingRetort, ABC):
         DECIMAL_PROVIDER,
         FRACTION_PROVIDER,
         COMPLEX_PROVIDER,
+        ZONE_INFO_PROVIDER,
 
         BytesBase64Provider(),
         BytesIOBase64Provider(),
@@ -141,6 +148,14 @@ class FilledRetort(OperatingRetort, ABC):
         ABCProxy(MutableMapping, dict),
         ABCProxy(ByteString, bytes),
 
+        name_mapping(
+            JSONSchema,
+            omit_default=True,
+        ),
+        name_mapping(
+            ResolvedJSONSchema,
+            omit_default=True,
+        ),
         name_mapping(
             chain=None,
             skip=(),
@@ -312,6 +327,12 @@ class AdornedRetort(OperatingRetort):
                     " you have to explicitly pass the type of object",
                 )
         return self.get_dumper(tp)(data)
+
+    def make_json_schema(self, tp: TypeHint, ctx: JSONSchemaContext) -> JSONSchema:
+        return self._facade_provide(
+            JSONSchemaRequest(loc_stack=LocStack(TypeHintLoc(type=tp)), ctx=ctx),
+            error_message=f"Cannot produce JSONSchema for type {tp!r}",
+        )
 
 
 class Retort(FilledRetort, AdornedRetort):

@@ -20,6 +20,7 @@ How to setup the repository
    * CPython 3.10
    * CPython 3.11
    * CPython 3.12
+   * CPython 3.13
    * PyPy 3.8
    * PyPy 3.9
    * PyPy 3.10
@@ -76,13 +77,13 @@ Compile dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Compile raw dependencies (``requirements/raw/*``)
-into file with locked versions via `pip-tools <https://github.com/jazzband/pip-tools>`__.
+into file with locked versions via `uv pip compile <https://docs.astral.sh/uv/pip/compile/>`__.
 
 .. code-block:: bash
 
     just deps-compile
 
-By default, ``pip-tools`` try keep previous locked version. To upgrade locked dependencies use:
+This command try keep previous locked version. To upgrade locked dependencies use:
 
 .. code-block:: bash
 

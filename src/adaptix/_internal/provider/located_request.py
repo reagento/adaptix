@@ -26,6 +26,9 @@ class LocatedRequest(Request[T]):
     def append_loc(self: LR, loc: AnyLoc) -> LR:
         return replace(self, loc_stack=self.loc_stack.append_with(loc))
 
+    def with_loc_stack(self: LR, loc_stack: LocStack) -> LR:
+        return replace(self, loc_stack=loc_stack)
+
 
 class LocatedRequestChecker(RequestChecker[LocatedRequest]):
     __slots__ = ("loc_stack_checker", )

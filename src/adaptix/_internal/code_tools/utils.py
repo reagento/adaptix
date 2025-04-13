@@ -5,11 +5,11 @@ from enum import Enum
 from typing import Any, Optional
 
 BUILTIN_TO_NAME = {
-    getattr(builtins, name): name
+    (getattr(builtins, name), type(getattr(builtins, name))): name
     for name in sorted(dir(builtins))
     if not name.startswith("__") and name != "_"
 }
-NAME_TO_BUILTIN = {name: obj for obj, name in BUILTIN_TO_NAME.items()}
+NAME_TO_BUILTIN = {name: obj for (obj, _), name in BUILTIN_TO_NAME.items()}
 
 
 class _CannotBeRenderedError(Exception):
@@ -25,7 +25,7 @@ def get_literal_expr(obj: object) -> Optional[str]:
         return repr(obj)
 
     try:
-        name = BUILTIN_TO_NAME[obj]
+        name = BUILTIN_TO_NAME[obj, type(obj)]
     except (KeyError, TypeError):
         try:
             return _get_complex_literal_expr(obj)
@@ -53,11 +53,13 @@ def _try_sort(iterable):
         return iterable
 
 
-def _get_complex_literal_expr(obj: object) -> Optional[str]:  # noqa: PLR0911
+def _get_complex_literal_expr(obj: object) -> Optional[str]:  # noqa: PLR0911, C901
     if type(obj) is list:
         return _parenthesize("[]", obj)
 
     if type(obj) is tuple:
+        if len(obj) == 1:
+            return f"({_provide_lit_expr(obj[0])}, )"
         return _parenthesize("()", obj)
 
     if type(obj) is set:

@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 from adaptix import DebugTrail
-from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams, PlotParams
+from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams
 from benchmarks.simple_structures import (
     bench_adaptix,
     bench_cattrs,
@@ -16,13 +16,7 @@ from benchmarks.simple_structures import (
 REVIEWS_COUNT = 100
 
 director = BenchmarkDirector(
-    data_dir=Path(__file__).parent.parent.parent / "data" / "simple_structures" / "loading",
-    plot_params=PlotParams(
-        title="Small Structures Benchmark (loading)",
-        fig_size=(9, 7.5),
-        label_padding=5,
-        trim_after=300,
-    ),
+    benchmark="simple_structures/loading",
     env_spec={
         "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         "py_impl": sys.implementation.name,

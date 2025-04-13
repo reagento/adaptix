@@ -4,6 +4,12 @@ Extended usage
 
 This section continues the tutorial to illuminate some more complex topics.
 
+Dealing with ``if TYPE_CHECKING``
+===================================
+
+.. include:: /common/dealing-with-if-type-checking.rst
+
+
 .. _link_function:
 
 Link function
@@ -74,7 +80,7 @@ even if field is not required (has a default value).
 .. hint::
 
    Such policy prevents bugs in converters.
-   If forget to link two same fields with different names, an error will occur.
+   If you forget to link two same fields with different names, an error will occur.
 
 
 You can control this policy
