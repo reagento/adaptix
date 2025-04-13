@@ -36,9 +36,9 @@ classifiers = [
 attrs = ['attrs >= 21.3.0']
 attrs-strict = ['attrs >= 21.3.0, <= 24.2.0']
 sqlalchemy = ['sqlalchemy >= 2.0.0']
-sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.36']
+sqlalchemy-strict = ['sqlalchemy >= 2.0.0, <= 2.0.40']
 pydantic = ['pydantic >= 2.0.0']
-pydantic-strict = ['pydantic >= 2.0.0, <= 2.10.3']
+pydantic-strict = ['pydantic >= 2.0.0, <= 2.11.3']
 msgspec = ['msgspec >= 0.18.5']
 msgspec-strict = ['msgspec >= 0.18.5, <= 0.19.0']
 

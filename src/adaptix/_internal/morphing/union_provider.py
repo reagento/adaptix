@@ -207,7 +207,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
     def _make_dumper(self, args: Iterable[TypeHint], dumpers: Iterable[Dumper]) -> Dumper:
         non_literals, literal = self._extract_literal(args, dumpers)
-        dumper_class_dispatcher = ClassDispatcher(
+        dumper_class_dispatcher = ClassDispatcher[Any, Dumper](
             {
                 self._get_class_for_dumping(case): dumper
                 for case, dumper in non_literals
