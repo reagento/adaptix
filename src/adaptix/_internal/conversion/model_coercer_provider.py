@@ -57,17 +57,17 @@ class ModelCoercerProvider(CoercerProvider):
         try:
             dst_shape = self._fetch_dst_shape(mediator, request.dst)
         except CannotProvide as e:
-            exception_and_type_list.append((e, request.dst.last.type))
+            exception_and_type_list.append((e, request.dst))
 
         try:
             src_shape = self._fetch_src_shape(mediator, request.src)
         except CannotProvide as e:
-            exception_and_type_list.append((e, request.src.last.type))
+            exception_and_type_list.append((e, request.src))
 
         if len(exception_and_type_list) == 1:
             raise CannotProvide(
                 parent_notes_gen=lambda: [
-                    f"Hint: Class `{exception_and_type_list[0][1].__name__}` is not recognized as model."
+                    f"Hint: Class `{self._loc_stack_to_view_string(exception_and_type_list[0][1])}` is not recognized as model."
                     " Did your forget `@dataclass` decorator? Check documentation what model kinds are supported",
                 ],
             )
@@ -104,8 +104,8 @@ class ModelCoercerProvider(CoercerProvider):
             file_name=self._get_file_name(request),
         )
 
-    def _loc_stack_to_view_string(self, lock_stack: LocStack[AnyLoc]) -> str:
-        tp = lock_stack.last.type
+    def _loc_stack_to_view_string(self, loc_stack: LocStack[AnyLoc]) -> str:
+        tp = loc_stack.last.type
         if isinstance(tp, type):
             return tp.__name__
         return str(tp)
