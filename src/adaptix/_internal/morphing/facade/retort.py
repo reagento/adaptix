@@ -14,10 +14,12 @@ from ...provider.loc_stack_filtering import LocStack, P
 from ...provider.location import TypeHintLoc
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...provider.value_provider import ValueProvider
+from ...retort.error_renderer import ErrorRenderer
 from ...retort.operating_retort import OperatingRetort
+from ...retort.searching_retort import default_error_renderer
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
-from ...utils import Omitted
+from ...utils import Omittable, Omitted
 from ..concrete_provider import (
     BOOL_PROVIDER,
     COMPLEX_PROVIDER,
@@ -206,11 +208,11 @@ class AdornedRetort(OperatingRetort):
         recipe: Iterable[Provider] = (),
         strict_coercion: bool = True,
         debug_trail: DebugTrail = DebugTrail.ALL,
-        hide_traceback: bool = True,
+        error_renderer: Optional[ErrorRenderer] = default_error_renderer,
     ):
         self._strict_coercion = strict_coercion
         self._debug_trail = debug_trail
-        super().__init__(recipe=recipe, hide_traceback=hide_traceback)
+        super().__init__(recipe=recipe, error_renderer=error_renderer)
 
     def _calculate_derived(self):
         super()._calculate_derived()
@@ -220,17 +222,17 @@ class AdornedRetort(OperatingRetort):
     def replace(
         self: AR,
         *,
-        strict_coercion: Optional[bool] = None,
-        debug_trail: Optional[DebugTrail] = None,
-        hide_traceback: Optional[bool] = None,
+        strict_coercion: Omittable[bool] = Omitted(),
+        debug_trail: Omittable[DebugTrail] = Omitted(),
+        error_renderer: Omittable[Optional[ErrorRenderer]] = Omitted(),
     ) -> AR:
         with self._clone() as clone:
-            if strict_coercion is not None:
+            if not isinstance(strict_coercion, Omitted):
                 clone._strict_coercion = strict_coercion
-            if debug_trail is not None:
+            if not isinstance(debug_trail, Omitted):
                 clone._debug_trail = debug_trail
-            if hide_traceback is not None:
-                clone._hide_traceback = hide_traceback
+            if not isinstance(error_renderer, Omitted):
+                clone._error_renderer = error_renderer
         return clone
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:

@@ -222,7 +222,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
                 loc_stack=request.loc_stack,
                 shape=shape,
             ),
-            lambda x: "Cannot create loader for model. Cannot fetch InputNameLayout",
+            lambda x: "Cannot create loader for model. Cannot fetch `InputNameLayout`",
         )
 
     def _fetch_field_loaders(

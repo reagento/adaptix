@@ -184,6 +184,10 @@ else:
             exc.__notes__ = [note]
 
 
+def get_notes(exc: BaseException) -> list[str]:
+    return getattr(exc, "__notes__", [])
+
+
 ClassT = TypeVar("ClassT", bound=type)
 
 

@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from typing import List
 
 import pytest
-from tests_helpers import raises_exc, with_cause, with_notes
+from tests_helpers.misc import raises_exc_text
 
-from adaptix import AggregateCannotProvide, CannotProvide, ProviderNotFoundError, Retort
+from adaptix import Retort
 from adaptix.conversion import get_converter
 
 
@@ -17,40 +17,21 @@ def test_cannot_produce_loader():
         f2: memoryview
         f3: memoryview
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce loader for type {Stub}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                AggregateCannotProvide(
-                    "Cannot create loader for model. Loaders for some fields cannot be created",
-                    [
-                        with_notes(
-                            CannotProvide(
-                                "Cannot find loader",
-                                is_terminal=False,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}.f2: memoryview`",
-                        ),
-                        with_notes(
-                            CannotProvide(
-                                "Cannot find loader",
-                                is_terminal=False,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}.f3: memoryview`",
-                        ),
-                    ],
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{Stub.__qualname__}`",
-            ),
-        ),
+    raises_exc_text(
         lambda: retort.get_loader(Stub),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce loader for type <class '__main__.Stub'>
+          × Cannot create loader for model. Loaders for some fields cannot be created
+          │ Location: ‹Stub›
+          ├──▷ Cannot find loader
+          │    Location: ‹Stub.f2: memoryview›
+          ╰──▷ Cannot find loader
+               Location: ‹Stub.f3: memoryview›
+        """,
+        {
+            "Stub": Stub.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 
@@ -63,40 +44,21 @@ def test_cannot_produce_dumper():
         f2: memoryview
         f3: memoryview
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce dumper for type {Stub}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                AggregateCannotProvide(
-                    "Cannot create dumper for model. Dumpers for some fields cannot be created",
-                    [
-                        with_notes(
-                            CannotProvide(
-                                "Cannot find dumper",
-                                is_terminal=False,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}.f2: memoryview`",
-                        ),
-                        with_notes(
-                            CannotProvide(
-                                "Cannot find dumper",
-                                is_terminal=False,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}.f3: memoryview`",
-                        ),
-                    ],
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{Stub.__qualname__}`",
-            ),
-        ),
+    raises_exc_text(
         lambda: retort.get_dumper(Stub),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce dumper for type <class '__main__.Stub'>
+          × Cannot create dumper for model. Dumpers for some fields cannot be created
+          │ Location: ‹Stub›
+          ├──▷ Cannot find dumper
+          │    Location: ‹Stub.f2: memoryview›
+          ╰──▷ Cannot find dumper
+               Location: ‹Stub.f3: memoryview›
+        """,
+        {
+            "Stub": Stub.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 
@@ -112,43 +74,21 @@ def test_cannot_produce_converter_no_linking_required():
         price: int
         author: str
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce converter for"
-                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            AggregateCannotProvide(
-                "Cannot create top-level coercer",
-                [
-                    with_notes(
-                        AggregateCannotProvide(
-                            "Cannot create coercer for models. Linkings for some fields are not found",
-                            [
-                                with_notes(
-                                    CannotProvide(
-                                        f"Cannot find paired field of `{BookDTO.__qualname__}.author: str` for linking",
-                                        is_terminal=False,
-                                        is_demonstrative=True,
-                                    ),
-                                    "Note: This is a required field, so it must take value",
-                                ),
-                            ],
-                            is_terminal=True,
-                            is_demonstrative=True,
-                        ),
-                        f"Linking: `{Book.__qualname__} => {BookDTO.__qualname__}`",
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
+    raises_exc_text(
         lambda: get_converter(Book, BookDTO),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce converter for <Signature (src: __main__.Book, /) -> __main__.BookDTO>
+          × Cannot create top-level coercer
+          ╰──▷ Cannot create coercer for models. Linkings for some fields are not found
+             │ Linking: ‹src: Book› ──▷ BookDTO
+             ╰──▷ Cannot find paired field of ‹BookDTO.author: str› for linking
+                  Note: This is a required field, so it must take value
+        """,
+        {
+            "Book": Book.__qualname__,
+            "BookDTO": BookDTO.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 
@@ -164,45 +104,21 @@ def test_cannot_produce_converter_no_linking_optional():
         price: int
         author: str = ""
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce converter for"
-                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            AggregateCannotProvide(
-                "Cannot create top-level coercer",
-                [
-                    with_notes(
-                        AggregateCannotProvide(
-                            "Cannot create coercer for models. Linkings for some fields are not found",
-                            [
-                                with_notes(
-                                    CannotProvide(
-                                        f"Cannot find paired field of `{BookDTO.__qualname__}.author: str` for linking",
-                                        is_terminal=False,
-                                        is_demonstrative=True,
-                                    ),
-                                    "Note: Current policy forbids unlinked optional fields,"
-                                    " so you need to link it to another field"
-                                    " or explicitly confirm the desire to skipping using `allow_unlinked_optional`",
-                                ),
-                            ],
-                            is_terminal=True,
-                            is_demonstrative=True,
-                        ),
-                        f"Linking: `{Book.__qualname__} => {BookDTO.__qualname__}`",
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
+    raises_exc_text(
         lambda: get_converter(Book, BookDTO),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce converter for <Signature (src: __main__.Book, /) -> __main__.BookDTO>
+          × Cannot create top-level coercer
+          ╰──▷ Cannot create coercer for models. Linkings for some fields are not found
+             │ Linking: ‹src: Book› ──▷ BookDTO
+             ╰──▷ Cannot find paired field of ‹BookDTO.author: str› for linking
+                  Note: Current policy forbids unlinked optional fields, so you need to link it to another field or explicitly confirm the desire to skipping using `allow_unlinked_optional`
+        """,
+        {
+            "Book": Book.__qualname__,
+            "BookDTO": BookDTO.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 
@@ -219,43 +135,21 @@ def test_cannot_produce_converter_no_coercer():
         price: int
         author: str
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce converter for"
-                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            AggregateCannotProvide(
-                "Cannot create top-level coercer",
-                [
-                    with_notes(
-                        AggregateCannotProvide(
-                            "Cannot create coercer for models. Coercers for some linkings are not found",
-                            [
-                                with_notes(
-                                    CannotProvide(
-                                        "Cannot find coercer",
-                                        is_terminal=False,
-                                        is_demonstrative=True,
-                                    ),
-                                    f"Linking: `{Book.__qualname__}.author: int => {BookDTO.__qualname__}.author: str`",
-                                ),
-                            ],
-                            is_terminal=True,
-                            is_demonstrative=True,
-                        ),
-                        f"Linking: `{Book.__qualname__} => {BookDTO.__qualname__}`",
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
+    raises_exc_text(
         lambda: get_converter(Book, BookDTO),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce converter for <Signature (src: __main__.Book, /) -> __main__.BookDTO>
+          × Cannot create top-level coercer
+          ╰──▷ Cannot create coercer for models. Coercers for some linkings are not found
+             │ Linking: ‹src: Book› ──▷ BookDTO
+             ╰──▷ Cannot find coercer
+                  Linking: ‹Book.author: int› ──▷ ‹BookDTO.author: str›
+        """,
+        {
+            "Book": Book.__qualname__,
+            "BookDTO": BookDTO.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 
@@ -279,53 +173,22 @@ def test_cannot_produce_converter_no_coercer_complex_type(list_tp, list_tp_name)
         price: int
         authors: list_tp[int]
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce converter for"
-                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            AggregateCannotProvide(
-                "Cannot create top-level coercer",
-                [
-                    with_notes(
-                        AggregateCannotProvide(
-                            "Cannot create coercer for models. Coercers for some linkings are not found",
-                            [
-                                with_notes(
-                                    AggregateCannotProvide(
-                                        "Cannot create coercer for iterables. Coercer for element cannot be created",
-                                        [
-                                            with_notes(
-                                                CannotProvide(
-                                                    "Cannot find coercer",
-                                                    is_terminal=False,
-                                                    is_demonstrative=True,
-                                                ),
-                                                "Linking: `str => int`",
-                                            ),
-                                        ],
-                                        is_terminal=True,
-                                        is_demonstrative=True,
-                                    ),
-                                    f"Linking:"
-                                    f" `{Book.__qualname__}.authors: {list_tp_name}[str]"
-                                    f" => {BookDTO.__qualname__}.authors: {list_tp_name}[int]`",
-                                ),
-                            ],
-                            is_terminal=True,
-                            is_demonstrative=True,
-                        ),
-                        f"Linking: `{Book.__qualname__} => {BookDTO.__qualname__}`",
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
+    raises_exc_text(
         lambda: get_converter(Book, BookDTO),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce converter for <Signature (src: __main__.Book, /) -> __main__.BookDTO>
+          × Cannot create top-level coercer
+          ╰──▷ Cannot create coercer for models. Coercers for some linkings are not found
+             │ Linking: ‹src: Book› ──▷ BookDTO
+             ╰──▷ Cannot create coercer for iterables. Coercer for element cannot be created
+                │ Linking: ‹Book.authors: list[str]› ──▷ ‹BookDTO.authors: list[int]›
+                ╰──▷ Cannot find coercer
+                     Linking: str ──▷ int
+        """,
+        {
+            "Book": Book.__qualname__,
+            "BookDTO": BookDTO.__qualname__,
+            "list": list_tp_name,
+            "__main__": __name__,
+        },
     )
