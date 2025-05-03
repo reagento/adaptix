@@ -15,7 +15,7 @@ from ...model_tools.definitions import (
     OutputField,
 )
 from ...name_style import NameStyle, convert_snake_style
-from ...provider.essential import CannotProvide, Mediator, Provider
+from ...provider.essential import AggregateCannotProvide, CannotProvide, Mediator, Provider
 from ...provider.fields import field_to_loc
 from ...provider.loc_stack_filtering import LocStackChecker
 from ...provider.located_request import LocatedRequest
@@ -175,42 +175,53 @@ class BuiltinStructureMaker(StructureMaker):
             if len(fields) > 1
         }
         if duplicates:
-            raise CannotProvide(
-                f"Paths {duplicates} pointed to several fields",
+            raise AggregateCannotProvide(
+                "Some fields point to the same path (have same alias)",
+                [
+                    CannotProvide(f"Fields {fields} point to the {path}", is_demonstrative=True)
+                    for path, fields in duplicates.items()
+                ],
                 is_terminal=True,
                 is_demonstrative=True,
             )
 
         prefix_groups = get_prefix_groups([path for field, path in fields_to_paths if path is not None])
         if prefix_groups:
-            details = ". ".join(
-                "Path {prefix} (field {prefix_field!r}) is prefix of {paths}".format(
-                    prefix=list(prefix),
-                    prefix_field=paths_to_fields[prefix][0].id,
-                    paths=", ".join(
-                        "{path} (field {path_field!r})".format(  # noqa: UP032
-                            path=list(path),
-                            path_field=paths_to_fields[path][0].id,
-                        )
-                        for path in paths
-                    ),
-                )
-                for prefix, paths in prefix_groups
-            )
-            raise CannotProvide(
-                "Path to the field must not be a prefix of another path. " + details,
+            raise AggregateCannotProvide(
+                "Path to the field must not be a prefix of another path",
+                [
+                    AggregateCannotProvide(
+                        f"Field {paths_to_fields[prefix][0].id!r} points to path {prefix} which is prefix of:",
+                        [
+                            CannotProvide(
+                                f"Field {paths_to_fields[path][0].id!r} points to {path}",
+                                is_demonstrative=True,
+                            )
+                            for path in paths
+                        ],
+                        is_demonstrative=True,
+                    )
+                    for prefix, paths in prefix_groups
+                ],
                 is_terminal=True,
                 is_demonstrative=True,
             )
 
         optional_fields_at_list = [
-            field.id
+            (field, path)
             for field, path in fields_to_paths
             if path is not None and field.is_optional and isinstance(path[-1], int)
         ]
         if optional_fields_at_list:
-            raise CannotProvide(
-                f"Optional fields {optional_fields_at_list} can not be mapped to list elements",
+            raise AggregateCannotProvide(
+                "Optional fields cannot be mapped to list elements",
+                [
+                    CannotProvide(
+                        f"Field {field.id!r} points to {path}",
+                        is_demonstrative=True,
+                    )
+                    for (field, path) in optional_fields_at_list
+                ],
                 is_terminal=True,
                 is_demonstrative=True,
             )
@@ -226,28 +237,30 @@ class BuiltinStructureMaker(StructureMaker):
                 yielded.add(result)
                 yield result
 
-    def _get_paths_to_list(self, request: LocatedRequest, paths: Iterable[KeyPath]) -> Mapping[KeyPath, set[int]]:
-        paths_to_lists: defaultdict[KeyPath, set[int]] = defaultdict(set)
-        paths_to_dicts: set[KeyPath] = set()
+    def _get_paths_to_list(self, request: LocatedRequest, paths: Iterable[KeyPath]) -> Mapping[KeyPath, Sequence[int]]:
+        paths_to_lists: defaultdict[KeyPath, list[int]] = defaultdict(list)
+        paths_to_dicts: defaultdict[KeyPath, list[str]] = defaultdict(list)
         for sub_path, key in self._iterate_sub_paths(paths):
             if isinstance(key, int):
                 if sub_path in paths_to_dicts:
                     raise CannotProvide(
-                        f"Inconsistent path elements at {sub_path}",
+                        f"Inconsistent path elements at {sub_path}"
+                        f" — got string (e.g. {paths_to_dicts[sub_path][-1]!r}) and integer (e.g. {key!r}) keys",
                         is_terminal=True,
                         is_demonstrative=True,
                     )
 
-                paths_to_lists[sub_path].add(key)
+                paths_to_lists[sub_path].append(key)
             else:
                 if sub_path in paths_to_lists:
                     raise CannotProvide(
-                        f"Inconsistent path elements at {sub_path}",
+                        f"Inconsistent path elements at {sub_path}"
+                        f" — got string (e.g. {key!r}) and integer (e.g. {paths_to_lists[sub_path][-1]!r}) keys",
                         is_terminal=True,
                         is_demonstrative=True,
                     )
 
-                paths_to_dicts.add(sub_path)
+                paths_to_dicts[sub_path].append(key)
 
         return paths_to_lists
 
@@ -443,7 +456,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         for path, key in _paths_to_branches(paths_to_leaves):
             if policy == ExtraCollect() and isinstance(key, int):
                 raise CannotProvide(
-                    "Can not use collecting extra_in with list mapping",
+                    f"Cannot use collecting extra_in={schema.extra_in!r} with mapping to list",
                     is_terminal=True,
                     is_demonstrative=True,
                 )

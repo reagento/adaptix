@@ -30,10 +30,10 @@ def _infer_request_cls(func) -> type[Request]:
     params = list(signature.parameters.values())
 
     if len(params) < 3:  # noqa: PLR2004
-        raise ValueError("Can not infer request class from callable")
+        raise ValueError("Cannot infer request class from callable")
 
     if params[2].annotation == signature.empty:
-        raise ValueError("Can not infer request class from callable")
+        raise ValueError("Cannot infer request class from callable")
 
     type_hints = get_all_type_hints(func)
     request_tp = strip_tags(normalize_type(type_hints[params[2].name]))

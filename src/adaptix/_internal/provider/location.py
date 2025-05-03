@@ -19,7 +19,7 @@ class _BaseLoc:
         raise exception_factory()
 
     def cast(self, tp: type[T]) -> T:
-        return self.cast_or_raise(tp, lambda: TypeError(f"Can not cast {self} to {tp}"))
+        return self.cast_or_raise(tp, lambda: TypeError(f"Cannot cast {self} to {tp}"))
 
     def is_castable(self, tp: type[T]) -> bool:
         return type(self) in _CAST_SOURCES[tp]

@@ -73,6 +73,9 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         ):
             return super().__new__(cls, message, exceptions)
 
+    if TYPE_CHECKING:
+        exceptions: VarTuple[CannotProvide]
+
     def derive(self, excs: Sequence[CannotProvide]) -> "AggregateCannotProvide":  # type: ignore[override]
         return AggregateCannotProvide(
             self.message,

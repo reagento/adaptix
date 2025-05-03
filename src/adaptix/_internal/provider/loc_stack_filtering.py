@@ -234,17 +234,17 @@ def create_loc_stack_checker(pred: Pred) -> LocStackChecker:
     except NotSubscribedError:
         return ExactOriginLSC(pred)
     except ValueError:
-        raise ValueError(f"Can not create LocStackChecker from {pred}")
+        raise ValueError(f"Cannot create LocStackChecker from {pred}")
 
     if isinstance(norm, NormTV):
-        raise ValueError(f"Can not create LocStackChecker from {pred} type var")  # noqa: TRY004
+        raise ValueError(f"Cannot create LocStackChecker from {pred} type var")  # noqa: TRY004
 
     if is_bare_generic(pred):
         return _create_loc_stack_checker_by_origin(norm.origin)
 
     if is_generic(pred):
         raise ValueError(
-            f"Can not create LocStackChecker from {pred} generic alias (parametrized generic)",
+            f"Cannot create LocStackChecker from {pred} generic alias (parametrized generic)",
         )
 
     if not is_generic(norm.origin) and not is_parametrized(pred):
@@ -335,7 +335,7 @@ class LocStackPattern:
     def _ensure_loc_stack_checker_from_pred(self, pred: Any) -> LocStackChecker:
         if isinstance(pred, LocStackPattern):
             raise TypeError(
-                "Can not use LocStackPattern as predicate inside LocStackPattern."
+                "Cannot use LocStackPattern as predicate inside LocStackPattern."
                 " If you want to combine several LocStackPattern, you can use `+` operator",
             )
 
@@ -349,7 +349,7 @@ class LocStackPattern:
     def build_loc_stack_checker(self) -> LocStackChecker:
         if len(self._stack) == 0:
             raise ValueError(
-                "Can not produce LocStackChecker from LocStackPattern without stack."
+                "Cannot produce LocStackChecker from LocStackPattern without stack."
                 " You need to parametrize P object with predicates.",
             )
         if len(self._stack) == 1:

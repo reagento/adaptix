@@ -40,7 +40,7 @@ def test_generic_class_inferring():
     with pytest.raises(
         ValueError,
         match=full_match(
-            "Can not infer the actual type of generic class instance (<class 'list'>),"
+            "Cannot infer the actual type of generic class instance (<class 'list'>),"
             " you have to explicitly pass the type of object",
         ),
     ):

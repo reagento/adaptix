@@ -64,7 +64,7 @@ def get_callable_shape(func, params_slice=slice(0, None)) -> Shape[InputShape, N
 
     if Parameter.VAR_POSITIONAL in kinds:
         raise IntrospectionError(
-            f"Can not create InputShape"
+            f"Cannot create InputShape"
             f" from the function that has {Parameter.VAR_POSITIONAL}"
             f" parameter",
         )

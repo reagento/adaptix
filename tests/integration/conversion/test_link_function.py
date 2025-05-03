@@ -1,6 +1,5 @@
-from tests_helpers import raises_exc, with_cause, with_notes
+from tests_helpers.misc import raises_exc_text
 
-from adaptix import AggregateCannotProvide, CannotProvide, ProviderNotFoundError
 from adaptix._internal.conversion.facade.func import get_converter
 from adaptix._internal.conversion.facade.provider import coercer
 from adaptix.conversion import impl_converter, link_function
@@ -113,62 +112,24 @@ def test_linking_error(model_spec):
     def my_function(model, p1: str, *, f1: str):
         return model
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce converter for"
-                    f" <Signature (src: {SourceModel.__module__}.{SourceModel.__qualname__}, /)"
-                    f" -> {DestModel.__module__}.{DestModel.__qualname__}>",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            AggregateCannotProvide(
-                "Cannot create top-level coercer",
-                [
-                    with_notes(
-                        AggregateCannotProvide(
-                            "Cannot create coercer for models. Linkings for some fields are not found",
-                            [
-                                with_notes(
-                                    AggregateCannotProvide(
-                                        "Cannot create linking for function."
-                                        " Linkings for some parameters are not found",
-                                        [
-                                            with_notes(
-                                                CannotProvide(
-                                                    f"Cannot match `{my_function.__qualname__}(p1: str)`"
-                                                    f" with converter parameter",
-                                                    is_terminal=True,
-                                                    is_demonstrative=True,
-                                                ),
-                                            ),
-                                            with_notes(
-                                                CannotProvide(
-                                                    f"Cannot match `{my_function.__qualname__}(f1: str)`"
-                                                    f" with model field",
-                                                    is_terminal=True,
-                                                    is_demonstrative=True,
-                                                ),
-                                            ),
-                                        ],
-                                        is_terminal=True,
-                                        is_demonstrative=True,
-                                    ),
-                                    f"Linking: `{SourceModel.__qualname__} => {DestModel.__qualname__}.field3: str`",
-                                ),
-                            ],
-                            is_terminal=True,
-                            is_demonstrative=True,
-                        ),
-                        f"Linking: `{SourceModel.__qualname__} => {DestModel.__qualname__}`",
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
+    raises_exc_text(
         lambda: get_converter(SourceModel, DestModel, recipe=[link_function(my_function, "field3")]),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce converter for <Signature (src: __main__.SourceModel, /) -> __main__.DestModel>
+          × Cannot create top-level coercer
+          ╰──▷ Cannot create coercer for models. Linkings for some fields are not found
+             │ Linking: ‹src: SourceModel› ──▷ DestModel
+             ╰──▷ Cannot create linking for function ‹my_function›. Linkings for some parameters are not found
+                │ Linking: ‹src: SourceModel› ──▷ ‹DestModel.field3: str›
+                ├──▷ Cannot match function parameter ‹p1› with any converter parameter
+                ╰──▷ Cannot match function parameter ‹f1› with any model field
+        """,
+        {
+            "SourceModel": SourceModel.__qualname__,
+            "DestModel": DestModel.__qualname__,
+            "my_function": my_function.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 
@@ -191,60 +152,24 @@ def test_cannot_find_coercer_error(model_spec):
         def convert(src: SourceModel, p1: int) -> DestModel:
             pass
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce converter for"
-                    f" <Signature (src: {SourceModel.__module__}.{SourceModel.__qualname__}, p1: int)"
-                    f" -> {DestModel.__module__}.{DestModel.__qualname__}>",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            AggregateCannotProvide(
-                "Cannot create top-level coercer",
-                [
-                    with_notes(
-                        AggregateCannotProvide(
-                            "Cannot create coercer for models. Coercers for some linkings are not found",
-                            [
-                                with_notes(
-                                    AggregateCannotProvide(
-                                        "Cannot create coercer for model and function."
-                                        " Coercers for some linkings are not found",
-                                        [
-                                            with_notes(
-                                                CannotProvide(
-                                                    "Cannot find coercer",
-                                                    is_terminal=False,
-                                                    is_demonstrative=True,
-                                                ),
-                                                f"Linking: `int => {my_function.__qualname__}(p1: str)`",
-                                            ),
-                                            with_notes(
-                                                CannotProvide(
-                                                    "Cannot find coercer",
-                                                    is_terminal=False,
-                                                    is_demonstrative=True,
-                                                ),
-                                                f"Linking: `{SourceModel.__qualname__}.field1: int"
-                                                f" => {my_function.__qualname__}(field1: str)`",
-                                            ),
-                                        ],
-                                        is_terminal=True,
-                                        is_demonstrative=True,
-                                    ),
-                                ),
-                            ],
-                            is_terminal=True,
-                            is_demonstrative=True,
-                        ),
-                        f"Linking: `{SourceModel.__qualname__} => {DestModel.__qualname__}`",
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
+    raises_exc_text(
         make_converter,
+        """
+        adaptix.ProviderNotFoundError: Cannot produce converter for <Signature (src: __main__.SourceModel, p1: int) -> __main__.DestModel>
+          × Cannot create top-level coercer
+          ╰──▷ Cannot create coercer for models. Coercers for some linkings are not found
+             │ Linking: ‹src: SourceModel› ──▷ DestModel
+             ╰──▷ Cannot create coercer for model and function ‹my_function›. Coercers for some linkings are not found
+                │ Linking: ‹src: SourceModel› ──▷ ‹DestModel.field3: str›
+                ├──▷ Cannot find coercer
+                │    Linking: ‹p1: int› ──▷ parameter ‹p1: str›
+                ╰──▷ Cannot find coercer
+                     Linking: ‹SourceModel.field1: int› ──▷ parameter ‹field1: str›
+        """,
+        {
+            "SourceModel": SourceModel.__qualname__,
+            "DestModel": DestModel.__qualname__,
+            "my_function": my_function.__qualname__,
+            "__main__": __name__,
+        },
     )

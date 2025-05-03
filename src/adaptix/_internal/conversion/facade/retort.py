@@ -64,12 +64,6 @@ class AdornedConversionRetort(OperatingRetort):
         super()._calculate_derived()
         self._simple_converter_cache: dict[tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
 
-    def replace(self: AR, *, hide_traceback: Optional[bool] = None) -> AR:
-        with self._clone() as clone:
-            if hide_traceback is not None:
-                clone._hide_traceback = hide_traceback
-        return clone
-
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         with self._clone() as clone:
             clone._instance_recipe = (
@@ -187,7 +181,7 @@ class AdornedConversionRetort(OperatingRetort):
         src = type(src_obj)
         if is_generic_class(src):
             raise ValueError(
-                f"Can not infer the actual type of generic class instance ({src!r}),"
+                f"Cannot infer the actual type of generic class instance ({src!r}),"
                 " you have to use `get_converter` explicitly passing the type of object",
             )
 

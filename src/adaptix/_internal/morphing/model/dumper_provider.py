@@ -131,7 +131,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
             return [self._dump_placeholder(element) for element in data]
         if isinstance(data, (str, int, float, bool)) or data is None:
             return data
-        raise TypeError(f"Can not dump placeholder {data}")
+        raise TypeError(f"Cannot dump placeholder {data}")
 
     def _get_field_json_schema(
         self,
@@ -207,7 +207,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
         return provide_generic_resolved_shape(mediator, OutputShapeRequest(loc_stack=request.loc_stack))
 
     def _fetch_name_layout(self, mediator: Mediator, request: LocatedRequest, shape: OutputShape) -> OutputNameLayout:
-        return mediator.delegating_provide(
+        return mediator.mandatory_provide(
             OutputNameLayoutRequest(
                 loc_stack=request.loc_stack,
                 shape=shape,

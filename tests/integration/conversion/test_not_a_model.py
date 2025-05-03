@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from tests_helpers import raises_exc, with_cause, with_notes
+from tests_helpers.misc import raises_exc_text, requires
 
-from adaptix import AggregateCannotProvide, CannotProvide, ProviderNotFoundError
+from adaptix._internal.feature_requirement import HAS_PY_310
 from adaptix.conversion import get_converter
 
 
@@ -18,35 +18,20 @@ def test_source_is_not_a_model():
         price: int
         author: int
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce converter for"
-                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            AggregateCannotProvide(
-                "Cannot create top-level coercer",
-                [
-                    with_notes(
-                        CannotProvide(
-                            "Cannot find coercer",
-                            is_terminal=False,
-                            is_demonstrative=True,
-                        ),
-                        f"Linking: `{Book.__qualname__} => {BookDTO.__qualname__}`",
-                        "Hint: Class `Book` is not recognized as model. Did your forget `@dataclass` decorator?"
-                        " Check documentation what model kinds are supported",
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
+    raises_exc_text(
         lambda: get_converter(Book, BookDTO),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce converter for <Signature (src: __main__.Book, /) -> __main__.BookDTO>
+          × Cannot create top-level coercer
+          ╰──▷ Cannot find coercer
+               Linking: ‹src: Book› ──▷ BookDTO
+               Hint: Type ‹Book› is not recognized as model. Did your forget `@dataclass` decorator? Check documentation what model kinds are supported
+        """,
+        {
+            "Book": Book.__qualname__,
+            "BookDTO": BookDTO.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 
@@ -62,38 +47,24 @@ def test_destination_is_not_a_model():
         price: int
         author: int
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce converter for"
-                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            AggregateCannotProvide(
-                "Cannot create top-level coercer",
-                [
-                    with_notes(
-                        CannotProvide(
-                            "Cannot find coercer",
-                            is_terminal=False,
-                            is_demonstrative=True,
-                        ),
-                        f"Linking: `{Book.__qualname__} => {BookDTO.__qualname__}`",
-                        "Hint: Class `BookDTO` is not recognized as model. Did your forget `@dataclass` decorator?"
-                        " Check documentation what model kinds are supported",
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
+    raises_exc_text(
         lambda: get_converter(Book, BookDTO),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce converter for <Signature (src: __main__.Book, /) -> __main__.BookDTO>
+          × Cannot create top-level coercer
+          ╰──▷ Cannot find coercer
+               Linking: ‹src: Book› ──▷ BookDTO
+               Hint: Type ‹BookDTO› is not recognized as model. Did your forget `@dataclass` decorator? Check documentation what model kinds are supported
+        """,
+        {
+            "Book": Book.__qualname__,
+            "BookDTO": BookDTO.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 
+@requires(HAS_PY_310)
 def test_both_are_not_a_model():
     class Book:
         title: str
@@ -105,31 +76,18 @@ def test_both_are_not_a_model():
         price: int
         author: int
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce converter for"
-                    f" <Signature (src: {Book.__module__}.{Book.__qualname__}, /)"
-                    f" -> {BookDTO.__module__}.{BookDTO.__qualname__}>",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            AggregateCannotProvide(
-                "Cannot create top-level coercer",
-                [
-                    with_notes(
-                        CannotProvide(
-                            "Cannot find coercer",
-                            is_terminal=False,
-                            is_demonstrative=True,
-                        ),
-                        f"Linking: `{Book.__qualname__} => {BookDTO.__qualname__}`",
-                    ),
-                ],
-                is_terminal=True,
-                is_demonstrative=True,
-            ),
-        ),
+    raises_exc_text(
         lambda: get_converter(Book, BookDTO),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce converter for <Signature (src: __main__.Book, /) -> __main__.BookDTO>
+          × Cannot create top-level coercer
+          ╰──▷ Cannot find coercer
+               Linking: ‹src: Book› ──▷ BookDTO
+               Hint: Types are not recognized as models. Did your forget `@dataclass` decorator? Check documentation what model kinds are supported
+        """,
+        {
+            "Book": Book.__qualname__,
+            "BookDTO": BookDTO.__qualname__,
+            "__main__": __name__,
+        },
     )

@@ -1,14 +1,13 @@
 import itertools
 from collections.abc import Iterable, Mapping
-from typing import Callable, NoReturn, Optional, TypeVar, Union
+from typing import Callable, Optional, TypeVar, Union
 
 from ..common import Coercer, OneArgCoercer, VarTuple
 from ..model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
 from ..model_tools.introspection.callable import get_callable_shape
 from ..provider.essential import CannotProvide, Mediator, mandatory_apply_by_iterable
-from ..provider.fields import input_field_to_loc
 from ..provider.loc_stack_filtering import LocStackChecker
-from ..provider.loc_stack_tools import format_loc_stack
+from ..provider.loc_stack_tools import format_loc_stack, get_callable_name
 from ..provider.location import FieldLoc
 from ..utils import add_note
 from .provider_template import LinkingProvider
@@ -99,7 +98,11 @@ class FunctionLinkingProvider(LinkingProvider):
             try:
                 source = name_to_field_source[param.name]
             except KeyError:
-                self._raise_link_error(request, input_field, "Cannot match `{}` with model field")
+                raise CannotProvide(
+                    f"Cannot match function parameter ‹{input_field.id}› with any model field",
+                    is_terminal=True,
+                    is_demonstrative=True,
+                )
         else:
             if idx == 0:
                 return LinkingResult(linking=ModelLinking())
@@ -107,17 +110,13 @@ class FunctionLinkingProvider(LinkingProvider):
             try:
                 source = name_to_context_source[param.name]
             except KeyError:
-                self._raise_link_error(request, input_field, "Cannot match `{}` with converter parameter")
+                raise CannotProvide(
+                    f"Cannot match function parameter ‹{input_field.id}› with any converter parameter",
+                    is_terminal=True,
+                    is_demonstrative=True,
+                )
 
         return LinkingResult(linking=FieldLinking(source=source, coercer=None))
-
-    def _raise_link_error(self, request: LinkingRequest, input_field: InputField, template: str) -> NoReturn:
-        dest = request.destination.append_with(input_field_to_loc(input_field).complement_with_func(self._func))
-        raise CannotProvide(
-            template.format(format_loc_stack(dest)),
-            is_terminal=True,
-            is_demonstrative=True,
-        ) from None
 
     def _create_param_specs(
         self,
@@ -161,13 +160,16 @@ class FunctionLinkingProvider(LinkingProvider):
             param_specs = self._create_param_specs(
                 mediator,
                 request,
-                lambda: "Cannot create linking for function. Linkings for some parameters are not found",
+                lambda: (
+                    f"Cannot create linking for function ‹{get_callable_name(self._func)}›."
+                    f" Linkings for some parameters are not found"
+                ),
             )
         except CannotProvide as e:
             if len(request.sources) > 0:
                 src_desc = format_loc_stack(request.sources[0].reversed_slice(1))
                 dst_desc = format_loc_stack(request.destination)
-                add_note(e, f"Linking: `{src_desc} => {dst_desc}`")
+                add_note(e, f"Linking: {src_desc} ──▷ {dst_desc}")
             raise
 
         return LinkingResult(

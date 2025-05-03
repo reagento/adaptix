@@ -6,8 +6,9 @@ from ..common import Dumper, Loader, TypeHint
 from ..compat import CompatExceptionGroup
 from ..datastructures import ClassDispatcher
 from ..definitions import DebugTrail
-from ..provider.essential import CannotProvide, Mediator
+from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStack
+from ..provider.loc_stack_tools import format_type
 from ..provider.located_request import LocatedRequest, for_predicate
 from ..provider.location import GenericParamLoc
 from ..special_cases_optimization import as_is_stub
@@ -194,8 +195,15 @@ class UnionProvider(LoaderProvider, DumperProvider):
             if not self._is_allowed_origin(case.origin)
         ]
         if types_with_forbidden_origins:
-            raise CannotProvide(
-                f"All cases of union must be class or Literal, but found {types_with_forbidden_origins}",
+            raise AggregateCannotProvide(
+                "All cases of union must be class or Literal",
+                [
+                    CannotProvide(
+                        f"Found {format_type(tp)}",
+                        is_demonstrative=True,
+                    )
+                    for tp in types_with_forbidden_origins
+                ],
                 is_terminal=True,
                 is_demonstrative=True,
             )
