@@ -208,13 +208,20 @@ class BuiltinStructureMaker(StructureMaker):
             )
 
         optional_fields_at_list = [
-            field.id
+            (field, path)
             for field, path in fields_to_paths
             if path is not None and field.is_optional and isinstance(path[-1], int)
         ]
         if optional_fields_at_list:
-            raise CannotProvide(
-                f"Optional fields {optional_fields_at_list} cannot be mapped to list elements",
+            raise AggregateCannotProvide(
+                "Optional fields cannot be mapped to list elements",
+                [
+                    CannotProvide(
+                        f"Field {field.id!r} points to {path}",
+                        is_demonstrative=True,
+                    )
+                    for (field, path) in optional_fields_at_list
+                ],
                 is_terminal=True,
                 is_demonstrative=True,
             )

@@ -23,7 +23,6 @@ Also, many error texts are improved.
     Note: The attached exception above contains verbose description of the problem
 
 
-
 .. code-block:: text
    :caption: New error example
 

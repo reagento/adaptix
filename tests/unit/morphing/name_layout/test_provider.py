@@ -1023,7 +1023,8 @@ def test_optional_field_at_list():
         adaptix.ProviderNotFoundError: Cannot produce loader for type <class 'tests.unit.morphing.name_layout.test_provider.Stub'>
           × Cannot create loader for model. Cannot fetch `InputNameLayout`
           │ Location: ‹Stub›
-          ╰──▷ Optional fields ['b'] cannot be mapped to list elements
+          ╰──▷ Optional fields cannot be mapped to list elements
+             ╰──▷ Field 'b' points to (1,)
         """,
         {
             "Stub": Stub.__qualname__,
