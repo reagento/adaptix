@@ -299,7 +299,7 @@ class InputShape(BaseShape, Generic[T]):
 
         for param in self.params:
             if param.kind == ParamKind.POS_ONLY and self.fields_dict[param.field_id].is_optional:
-                raise ValueError(f"Field {param.field_id!r} can not be positional only and optional")
+                raise ValueError(f"Field {param.field_id!r} cannot be positional only and optional")
 
 
 @dataclass(frozen=True)

@@ -181,7 +181,7 @@ class AdornedConversionRetort(OperatingRetort):
         src = type(src_obj)
         if is_generic_class(src):
             raise ValueError(
-                f"Can not infer the actual type of generic class instance ({src!r}),"
+                f"Cannot infer the actual type of generic class instance ({src!r}),"
                 " you have to use `get_converter` explicitly passing the type of object",
             )
 

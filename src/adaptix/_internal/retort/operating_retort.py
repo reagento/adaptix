@@ -136,7 +136,7 @@ class OperatingRetort(SearchingRetort):
         if issubclass(request_cls, LinkingRequest):
             return LinkingRequestErrorRepresentor()  # type: ignore[return-value]
 
-        return BaseRequestErrorRepresentor(f"Can not satisfy {request_cls}")
+        return BaseRequestErrorRepresentor(f"Cannot satisfy {request_cls}")
 
     def _create_recursion_resolver(self, request_cls: type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
         if issubclass(request_cls, (LoaderRequest, DumperRequest)):

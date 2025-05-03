@@ -187,7 +187,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
 
     def _create_no_request_bus_error_maker(self) -> Callable[[Request], CannotProvide]:
         def no_request_bus_error_maker(request: Request) -> CannotProvide:
-            return CannotProvide(f"Can not satisfy {type(request)}")
+            return CannotProvide(f"Cannot satisfy {type(request)}")
 
         return no_request_bus_error_maker
 

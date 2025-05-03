@@ -7,4 +7,4 @@ def try_normalize_type(tp: TypeHint) -> BaseNormType:
     try:
         return normalize_type(tp)
     except ValueError:
-        raise CannotProvide(f"{tp} can not be normalized")
+        raise CannotProvide(f"{tp} cannot be normalized")

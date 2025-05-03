@@ -214,7 +214,7 @@ class BuiltinStructureMaker(StructureMaker):
         ]
         if optional_fields_at_list:
             raise CannotProvide(
-                f"Optional fields {optional_fields_at_list} can not be mapped to list elements",
+                f"Optional fields {optional_fields_at_list} cannot be mapped to list elements",
                 is_terminal=True,
                 is_demonstrative=True,
             )
@@ -449,7 +449,7 @@ class BuiltinExtraMoveAndPoliciesMaker(ExtraMoveMaker, ExtraPoliciesMaker):
         for path, key in _paths_to_branches(paths_to_leaves):
             if policy == ExtraCollect() and isinstance(key, int):
                 raise CannotProvide(
-                    f"Can not use collecting extra_in={schema.extra_in!r} with mapping to list",
+                    f"Cannot use collecting extra_in={schema.extra_in!r} with mapping to list",
                     is_terminal=True,
                     is_demonstrative=True,
                 )

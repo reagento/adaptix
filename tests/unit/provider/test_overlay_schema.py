@@ -305,7 +305,7 @@ def test_typehint_location():
 def test_omitted_fields():
     with pytest.raises(
         ValueError,
-        match=full_match("Can not create schema because overlay contains omitted values at ['number']"),
+        match=full_match("Cannot create schema because overlay contains omitted values at ['number']"),
     ):
         provide_overlay_schema(
             recipe=[

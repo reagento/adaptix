@@ -552,7 +552,7 @@ class TypeNormalizer:
         elif self._namespace is not None:
             ns = self._namespace
         else:
-            raise ValueError(f"Can not normalize value {tp!r}, there are no namespace to evaluate types")
+            raise ValueError(f"Cannot normalize value {tp!r}, there are no namespace to evaluate types")
 
         return _replace_source(
             self.normalize(eval_forward_ref(ns, fwd_ref)),
@@ -862,7 +862,7 @@ class TypeNormalizer:
             or isinstance(origin, type)
             or origin in self.ALLOWED_ZERO_PARAMS_ORIGINS
         ):
-            raise ValueError(f"Can not normalize value {tp!r}")
+            raise ValueError(f"Cannot normalize value {tp!r}")
 
         return _NormType(
             origin,

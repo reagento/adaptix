@@ -65,7 +65,7 @@ class ForwardRefEvaluatingProvider(LocatedRequestDelegatingProvider):
             raise CannotProvide
 
         if tp.__forward_module__ is None:
-            raise CannotProvide("ForwardRef can not be evaluated", is_terminal=True, is_demonstrative=True)
+            raise CannotProvide("ForwardRef cannot be evaluated", is_terminal=True, is_demonstrative=True)
 
         return eval_forward_ref(tp.__forward_module__.__dict__, tp)
 

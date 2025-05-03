@@ -96,7 +96,7 @@ class BuiltinJSONSchemaResolver(JSONSchemaResolver):
         if len(pinned_sources) > 1:
             pinned = ", ".join(f"`{format_loc_stack(pinned.loc_stack)}`" for pinned in pinned_sources)
             raise ValueError(
-                f"Can not create consistent json schema,"
+                f"Cannot create consistent json schema,"
                 f" there are different sub schemas with pinned ref {common_ref!r}."
                 f" {pinned}",
             )
@@ -116,7 +116,7 @@ class BuiltinJSONSchemaResolver(JSONSchemaResolver):
                 for ref, sources in unmangled
             )
             raise ValueError(
-                f"Can not create consistent json schema,"
-                f" can not mangle some refs."
+                f"Cannot create consistent json schema,"
+                f" cannot mangle some refs."
                 f" {unmangled_desc}",
             )

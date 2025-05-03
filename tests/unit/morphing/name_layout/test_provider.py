@@ -888,7 +888,7 @@ def test_extra_at_list():
         adaptix.ProviderNotFoundError: Cannot produce loader for type <class '__main__.Stub'>
           × Cannot create loader for model. Cannot fetch `InputNameLayout`
           │ Location: ‹Stub›
-          ╰──▷ Can not use collecting extra_in='b' with mapping to list
+          ╰──▷ Cannot use collecting extra_in='b' with mapping to list
         """,
         {
             "Stub": Stub.__qualname__,
@@ -1023,7 +1023,7 @@ def test_optional_field_at_list():
         adaptix.ProviderNotFoundError: Cannot produce loader for type <class 'tests.unit.morphing.name_layout.test_provider.Stub'>
           × Cannot create loader for model. Cannot fetch `InputNameLayout`
           │ Location: ‹Stub›
-          ╰──▷ Optional fields ['b'] can not be mapped to list elements
+          ╰──▷ Optional fields ['b'] cannot be mapped to list elements
         """,
         {
             "Stub": Stub.__qualname__,
