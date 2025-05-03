@@ -96,16 +96,16 @@ def raises_exc(
 
 
 def _prepare_reference(reference: str, replaces: Mapping[str, Any]) -> str:
-    replaces_prepared = {
+    text_replaces = {
         src: format(target) for src, target in replaces.items()
     }
     pattern = re.compile(
         "|".join(
-            map(re.escape, sorted(replaces_prepared.keys(), key=len, reverse=True)),
+            map(re.escape, sorted(text_replaces.keys(), key=len, reverse=True)),
         ),
     )
     return pattern.sub(
-        lambda match: replaces_prepared[match.group()],
+        lambda match: text_replaces[match.group()],
         dedent(reference).lstrip(),
     )
 
