@@ -89,3 +89,11 @@ class ABCProxy(LoaderProvider, DumperProvider):
 
     def _replace_origin(self, source: TypeHint, target: TypeHint) -> TypeHint:
         return target[get_generic_args(source)]
+
+
+class ToVarTupleProxy(ABCProxy):
+    def __init__(self, abstract: TypeHint, *, for_loader: bool = True, for_dumper: bool = True):
+        super().__init__(abstract, tuple, for_loader=for_loader, for_dumper=for_dumper)
+
+    def _replace_origin(self, source: TypeHint, target: TypeHint) -> TypeHint:
+        return target[(get_generic_args(source)[0], ...)]

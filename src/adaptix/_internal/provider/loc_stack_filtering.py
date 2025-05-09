@@ -170,6 +170,15 @@ class ExactOriginLSC(LastLocChecker):
         return norm.origin == self.origin
 
 
+class VarTupleLSC(LastLocChecker):
+    def _check_location(self, mediator: DirectMediator, loc: TypeHintLoc) -> bool:
+        try:
+            norm = normalize_type(loc.type)
+        except ValueError:
+            return False
+        return norm.origin is tuple and len(norm.args) == 2 and norm.args[-1] == Ellipsis  # noqa: PLR2004
+
+
 @dataclass(frozen=True)
 class GenericParamLSC(LastLocChecker):
     pos: int
