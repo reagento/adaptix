@@ -6,7 +6,6 @@ from typing import (
     AbstractSet,
     Collection,
     Deque,
-    Dict,
     FrozenSet,
     List,
     MutableSequence,
@@ -20,9 +19,8 @@ from typing import (
 import pytest
 from tests_helpers import raises_exc, with_trail
 
-from adaptix import AdornedRetort, DebugTrail, ProviderNotFoundError, Retort, dumper, loader
+from adaptix import DebugTrail, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
-from adaptix._internal.morphing.iterable_provider import IterableProvider
 from adaptix._internal.morphing.load_error import AggregateLoadError
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
 
@@ -40,21 +38,6 @@ def retort():
             dumper(str, string_dumper),
         ],
     )
-
-
-@pytest.mark.parametrize("mapping_type", [dict, Dict, Mapping, collections.Counter])
-def test_mapping_providing(strict_coercion, debug_trail, mapping_type):
-    retort = AdornedRetort(
-        recipe=[
-            IterableProvider(),
-        ],
-    ).replace(
-        strict_coercion=strict_coercion,
-        debug_trail=debug_trail,
-    )
-
-    with pytest.raises(ProviderNotFoundError):
-        retort.get_loader(mapping_type)
 
 
 def test_loading(retort, strict_coercion, debug_trail):
@@ -184,17 +167,17 @@ def test_specific_type_loading(retort, tp, factory):
 
 
 @pytest.mark.parametrize(
-    ["tp", "factory", "compare_tuple"],
+    ["tp", "factory", "as_tuple"],
     [
-        (Deque[str], deque, True),
+        (Deque[str], deque, False),
         (Set[str], set, False),
         (FrozenSet[str], frozenset, False),
         (Tuple[str, ...], tuple, True),
     ],
 )
-def test_specific_type_dumping(retort, tp, factory, compare_tuple):
+def test_specific_type_dumping(retort, tp, factory, as_tuple):
     dumped = retort.dump(factory(["a", "b", "c"]), tp)
-    if compare_tuple:
+    if as_tuple:
         assert dumped == ("a", "b", "c")
     assert factory(dumped) == factory(["a", "b", "c"])
 
@@ -258,14 +241,14 @@ def test_dumping(retort, debug_trail):
     elif debug_trail == DebugTrail.ALL:
         raises_exc(
             CompatExceptionGroup(
-                "while dumping iterable <class 'collections.abc.Iterable'>",
+                "while dumping iterable <class 'tuple'>",
                 [with_trail(TypeError(), [0])],
             ),
             lambda: iterable_dumper([10, "20"]),
         )
         raises_exc(
             CompatExceptionGroup(
-                "while dumping iterable <class 'collections.abc.Iterable'>",
+                "while dumping iterable <class 'tuple'>",
                 [with_trail(TypeError(), [1])],
             ),
             lambda: iterable_dumper(["10", 20]),

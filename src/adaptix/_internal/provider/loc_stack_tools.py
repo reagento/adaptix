@@ -1,3 +1,4 @@
+from typing import Callable
 
 from ..common import TypeHint
 from ..type_tools import is_parametrized
@@ -15,25 +16,34 @@ def _format_type(tp: TypeHint) -> str:
     return str_tp
 
 
-def format_loc_stack(loc_stack: LocStack[AnyLoc]) -> str:
+def format_type(tp: TypeHint, *, brackets: bool = True) -> str:
+    if brackets:
+        return f"‹{_format_type(tp)}›"
+    return _format_type(tp)
+
+
+def get_callable_name(func: Callable) -> str:
+    return getattr(func, "__qualname__", None) or repr(func)
+
+
+def format_loc_stack(loc_stack: LocStack[AnyLoc], *, always_wrap_with_brackets: bool = False) -> str:
     fmt_tp = _format_type(loc_stack.last.type)
 
     try:
         field_loc = loc_stack.last.cast(FieldLoc)
     except TypeError:
-        return fmt_tp
+        return f"‹{fmt_tp}›" if always_wrap_with_brackets else fmt_tp
     else:
         fmt_field = f"{field_loc.field_id}: {fmt_tp}"
 
     if loc_stack.last.is_castable(InputFuncFieldLoc):
-        func_field_loc = loc_stack.last.cast(InputFuncFieldLoc)
-        func_name = getattr(func_field_loc.func, "__qualname__", None) or repr(func_field_loc.func)
-        return f"{func_name}({fmt_field})"
+        return f"parameter ‹{fmt_field}›"
 
     if len(loc_stack) >= 2:  # noqa: PLR2004
         src_owner = _format_type(loc_stack[-2].type)
-        return f"{src_owner}.{fmt_field}"
-    return fmt_tp
+        return f"‹{src_owner}.{fmt_field}›"
+
+    return f"‹{fmt_field}›"
 
 
 def find_owner_with_field(stack: LocStack) -> tuple[TypeHintLoc, FieldLoc]:

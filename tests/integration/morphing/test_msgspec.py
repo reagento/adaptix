@@ -14,7 +14,9 @@ def test_basic(accum):
     assert retort.load({"f1": 0, "f2": "a"}, MyModel) == MyModel(f1=0, f2="a")
     assert retort.dump(MyModel(f1=0, f2="a")) == {"f1": 0, "f2": "a"}
 
+
 T = TypeVar("T")
+
 
 def test_all_field_kinds(accum):
     class MyModel(Struct, Generic[T]):

@@ -4,18 +4,9 @@ from typing import Any, Dict, Optional, Union
 
 import pytest
 from dirty_equals import IsInstance
-from tests_helpers import raises_exc, with_cause, with_notes
+from tests_helpers.misc import raises_exc_text
 
-from adaptix import (
-    AggregateCannotProvide,
-    CannotProvide,
-    DebugTrail,
-    NameStyle,
-    Provider,
-    ProviderNotFoundError,
-    Retort,
-    name_mapping,
-)
+from adaptix import DebugTrail, NameStyle, Provider, Retort, name_mapping
 from adaptix._internal.model_tools.definitions import (
     BaseField,
     BaseShape,
@@ -880,31 +871,7 @@ def test_extra_at_list():
         ),
     )
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce loader for type {Stub}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                AggregateCannotProvide(
-                    "Cannot create loader for model. Cannot fetch InputNameLayout",
-                    [
-                        with_notes(
-                            CannotProvide(
-                                "Can not use collecting extra_in with list mapping",
-                                is_terminal=True,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}`",
-                        ),
-                    ],
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{Stub.__qualname__}`",
-            ),
-        ),
+    raises_exc_text(
         lambda: make_layouts(
             TestField("a"),
             TestField("b"),
@@ -917,35 +884,21 @@ def test_extra_at_list():
             ),
             DEFAULT_NAME_MAPPING,
         ),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce loader for type <class '__main__.Stub'>
+          × Cannot create loader for model. Cannot fetch `InputNameLayout`
+          │ Location: ‹Stub›
+          ╰──▷ Cannot use collecting extra_in='b' with mapping to list
+        """,
+        {
+            "Stub": Stub.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 
 def test_required_field_skip():
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce loader for type {Stub}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                AggregateCannotProvide(
-                    "Cannot create loader for model. Cannot fetch InputNameLayout",
-                    [
-                        with_notes(
-                            CannotProvide(
-                                "Required fields ['a'] are skipped",
-                                is_terminal=True,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}`",
-                        ),
-                    ],
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{Stub.__qualname__}`",
-            ),
-        ),
+    raises_exc_text(
         lambda: make_layouts(
             TestField("a", is_required=True),
             TestField("b", is_required=True),
@@ -954,35 +907,20 @@ def test_required_field_skip():
             ),
             DEFAULT_NAME_MAPPING,
         ),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce loader for type <class 'tests.unit.morphing.name_layout.test_provider.Stub'>
+          × Cannot create loader for model. Cannot fetch `InputNameLayout`
+          │ Location: ‹Stub›
+          ╰──▷ Required fields ['a'] are skipped
+        """,
+        {
+            "Stub": Stub.__qualname__,
+        },
     )
 
 
 def test_inconsistent_path_elements():
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce loader for type {Stub}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                AggregateCannotProvide(
-                    "Cannot create loader for model. Cannot fetch InputNameLayout",
-                    [
-                        with_notes(
-                            CannotProvide(
-                                "Inconsistent path elements at ('x',)",
-                                is_terminal=True,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}`",
-                        ),
-                    ],
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{Stub.__qualname__}`",
-            ),
-        ),
+    raises_exc_text(
         lambda: make_layouts(
             TestField("a", is_required=True),
             TestField("b", is_required=True),
@@ -994,35 +932,20 @@ def test_inconsistent_path_elements():
             ),
             DEFAULT_NAME_MAPPING,
         ),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce loader for type <class 'tests.unit.morphing.name_layout.test_provider.Stub'>
+          × Cannot create loader for model. Cannot fetch `InputNameLayout`
+          │ Location: ‹Stub›
+          ╰──▷ Inconsistent path elements at ('x',) — got string (e.g. 'y') and integer (e.g. 0) keys
+        """,
+        {
+            "Stub": Stub.__qualname__,
+        },
     )
 
 
-def test_duplicated_path():
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce loader for type {Stub}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                AggregateCannotProvide(
-                    "Cannot create loader for model. Cannot fetch InputNameLayout",
-                    [
-                        with_notes(
-                            CannotProvide(
-                                "Paths {('x',): ['a', 'b']} pointed to several fields",
-                                is_terminal=True,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}`",
-                        ),
-                    ],
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{Stub.__qualname__}`",
-            ),
-        ),
+def test_duplicated_path_one_group():
+    raises_exc_text(
         lambda: make_layouts(
             TestField("a"),
             TestField("b"),
@@ -1034,35 +957,57 @@ def test_duplicated_path():
             ),
             DEFAULT_NAME_MAPPING,
         ),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce loader for type <class 'tests.unit.morphing.name_layout.test_provider.Stub'>
+          × Cannot create loader for model. Cannot fetch `InputNameLayout`
+          │ Location: ‹Stub›
+          ╰──▷ Some fields point to the same path (have same alias)
+             ╰──▷ Fields ['a', 'b'] point to the ('x',)
+        """,
+        {
+            "Stub": Stub.__qualname__,
+        },
+    )
+
+
+def test_duplicated_path_three_groups():
+    raises_exc_text(
+        lambda: make_layouts(
+            TestField("a"),
+            TestField("b"),
+            TestField("c"),
+            TestField("d"),
+            TestField("e"),
+            TestField("f"),
+            name_mapping(
+                map={
+                    "a": "x",
+                    "b": "x",
+                    "c": "y",
+                    "d": "y",
+                    "e": "z",
+                    "f": "z",
+                },
+            ),
+            DEFAULT_NAME_MAPPING,
+        ),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce loader for type <class 'tests.unit.morphing.name_layout.test_provider.Stub'>
+          × Cannot create loader for model. Cannot fetch `InputNameLayout`
+          │ Location: ‹Stub›
+          ╰──▷ Some fields point to the same path (have same alias)
+             ├──▷ Fields ['a', 'b'] point to the ('x',)
+             ├──▷ Fields ['c', 'd'] point to the ('y',)
+             ╰──▷ Fields ['e', 'f'] point to the ('z',)
+        """,
+        {
+            "Stub": Stub.__qualname__,
+        },
     )
 
 
 def test_optional_field_at_list():
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce loader for type {Stub}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                AggregateCannotProvide(
-                    "Cannot create loader for model. Cannot fetch InputNameLayout",
-                    [
-                        with_notes(
-                            CannotProvide(
-                                "Optional fields ['b'] can not be mapped to list elements",
-                                is_terminal=True,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}`",
-                        ),
-                    ],
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{Stub.__qualname__}`",
-            ),
-        ),
+    raises_exc_text(
         lambda: make_layouts(
             TestField("a", is_required=True),
             TestField("b", is_required=False),
@@ -1074,36 +1019,21 @@ def test_optional_field_at_list():
             ),
             DEFAULT_NAME_MAPPING,
         ),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce loader for type <class 'tests.unit.morphing.name_layout.test_provider.Stub'>
+          × Cannot create loader for model. Cannot fetch `InputNameLayout`
+          │ Location: ‹Stub›
+          ╰──▷ Optional fields cannot be mapped to list elements
+             ╰──▷ Field 'b' points to (1,)
+        """,
+        {
+            "Stub": Stub.__qualname__,
+        },
     )
 
 
 def test_one_path_is_prefix_of_another():
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce loader for type {Stub}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                AggregateCannotProvide(
-                    "Cannot create loader for model. Cannot fetch InputNameLayout",
-                    [
-                        with_notes(
-                            CannotProvide(
-                                "Path to the field must not be a prefix of another path."
-                                " Path [0] (field 'a') is prefix of [0, 'b'] (field 'b'), [0, 'c'] (field 'c')",
-                                is_terminal=True,
-                                is_demonstrative=True,
-                            ),
-                            f"Location: `{Stub.__qualname__}`",
-                        ),
-                    ],
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{Stub.__qualname__}`",
-            ),
-        ),
+    raises_exc_text(
         lambda: make_layouts(
             TestField("a", is_required=True),
             TestField("b", is_required=True),
@@ -1117,6 +1047,18 @@ def test_one_path_is_prefix_of_another():
             ),
             DEFAULT_NAME_MAPPING,
         ),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce loader for type <class 'tests.unit.morphing.name_layout.test_provider.Stub'>
+          × Cannot create loader for model. Cannot fetch `InputNameLayout`
+          │ Location: ‹Stub›
+          ╰──▷ Path to the field must not be a prefix of another path
+             ╰──▷ Field 'a' points to path (0,) which is prefix of:
+                ├──▷ Field 'b' points to (0, 'b')
+                ╰──▷ Field 'c' points to (0, 'c')
+        """,
+        {
+            "Stub": Stub.__qualname__,
+        },
     )
 
 

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Generic, TypeVar
 
-from .essential import Provider, Request, RequestChecker, RequestHandler
+from .essential import Provider, Request, RequestHandlerRegisterRecord
 from .request_checkers import AlwaysTrueRequestChecker
 
 T = TypeVar("T")
@@ -12,7 +12,7 @@ class ValueProvider(Provider, Generic[T]):
         self._request_cls = request_cls
         self._value = value
 
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         return [
             (self._request_cls, AlwaysTrueRequestChecker(), lambda m, r: self._value),
         ]

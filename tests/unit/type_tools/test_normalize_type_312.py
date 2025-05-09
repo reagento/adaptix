@@ -1,9 +1,14 @@
-from typing import TypeAliasType, TypeVar
+from typing import TypeVar
 
+from adaptix._internal.common import VarTuple
 from adaptix._internal.type_tools import normalize_type
 from adaptix._internal.type_tools.normalize_type import AnyNormTypeVarLike, NormTypeAlias
 
 from .local_helpers import assert_strict_equal, nt_zero
+
+
+def _norm_type_vars(alias) -> VarTuple[AnyNormTypeVarLike]:
+    return tuple(normalize_type(type_var) for type_var in alias.__type_params__)
 
 
 def test_type_alias_syntax_simple():
@@ -11,7 +16,12 @@ def test_type_alias_syntax_simple():
 
     assert_strict_equal(
         normalize_type(MyAlias),
-        _make_type_alias(MyAlias, []),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias,
+        ),
     )
 
 
@@ -20,22 +30,12 @@ def test_type_alias_syntax_recursive():
 
     assert_strict_equal(
         normalize_type(MyAlias),
-        _make_type_alias(MyAlias, []),
-    )
-
-
-T2 = TypeVar("T2")
-
-
-def _norm_tp_param(alias: TypeAliasType, idx: int) -> AnyNormTypeVarLike:
-    return normalize_type(alias.__type_params__[idx])
-
-
-def _make_type_alias(alias, args):
-    return NormTypeAlias(
-        alias,
-        args=tuple(args),
-        type_vars=tuple(normalize_type(type_var) for type_var in alias.__type_params__),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias,
+        ),
     )
 
 
@@ -44,15 +44,32 @@ def test_type_alias_syntax_type_var():
 
     assert_strict_equal(
         normalize_type(MyAlias),
-        _make_type_alias(MyAlias, []),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias,
+        ),
     )
     assert_strict_equal(
         normalize_type(MyAlias[int]),
-        _make_type_alias(MyAlias, [nt_zero(int)]),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(nt_zero(int), ),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias[int],
+        ),
     )
+
+    T2 = TypeVar("T2")
     assert_strict_equal(
         normalize_type(MyAlias[T2]),
-        _make_type_alias(MyAlias, [normalize_type(T2)]),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(normalize_type(T2),),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias[T2],
+        ),
     )
 
 
@@ -61,15 +78,31 @@ def test_type_alias_syntax_type_var_bound():
 
     assert_strict_equal(
         normalize_type(MyAlias),
-        _make_type_alias(MyAlias, []),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias,
+        ),
     )
     assert_strict_equal(
         normalize_type(MyAlias[int]),
-        _make_type_alias(MyAlias, [nt_zero(int)]),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(nt_zero(int), ),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias[int],
+        ),
     )
+    T2 = TypeVar("T2")
     assert_strict_equal(
         normalize_type(MyAlias[T2]),
-        _make_type_alias(MyAlias, [normalize_type(T2)]),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(normalize_type(T2),),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias[T2],
+        ),
     )
 
 
@@ -78,13 +111,29 @@ def test_type_alias_syntax_type_var_constraints():
 
     assert_strict_equal(
         normalize_type(MyAlias),
-        _make_type_alias(MyAlias, []),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias,
+        ),
     )
     assert_strict_equal(
         normalize_type(MyAlias[int]),
-        _make_type_alias(MyAlias, [nt_zero(int)]),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(nt_zero(int), ),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias[int],
+        ),
     )
+    T2 = TypeVar("T2")
     assert_strict_equal(
         normalize_type(MyAlias[T2]),
-        _make_type_alias(MyAlias, [normalize_type(T2)]),
+        NormTypeAlias(
+            type_alias=MyAlias,
+            args=(normalize_type(T2),),
+            type_vars=_norm_type_vars(MyAlias),
+            source=MyAlias[T2],
+        ),
     )

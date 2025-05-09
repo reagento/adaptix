@@ -250,7 +250,7 @@ def test_param_name_duplicates():
 
 
 def test_optional_and_positional_only():
-    with pytest.raises(ValueError, match=full_match("Field 'a' can not be positional only and optional")):
+    with pytest.raises(ValueError, match=full_match("Field 'a' cannot be positional only and optional")):
         InputShape(
             constructor=stub_constructor,
             kwargs=None,

@@ -4,14 +4,14 @@ from functools import partial
 from inspect import Parameter, Signature
 from typing import Any, Callable, Optional, TypeVar, overload
 
-from adaptix import TypeHint
-
-from ...common import Converter
+from ...common import Converter, TypeHint
 from ...provider.essential import Provider
 from ...provider.loc_stack_filtering import P
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
+from ...retort.error_renderer import ErrorRenderer
 from ...retort.operating_retort import OperatingRetort
 from ...type_tools import is_generic_class
+from ...utils import Omittable, Omitted
 from ..coercer_provider import (
     DictCoercerProvider,
     DstAnyCoercerProvider,
@@ -64,10 +64,14 @@ class AdornedConversionRetort(OperatingRetort):
         super()._calculate_derived()
         self._simple_converter_cache: dict[tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
 
-    def replace(self: AR, *, hide_traceback: Optional[bool] = None) -> AR:
+    def replace(
+        self: AR,
+        *,
+        error_renderer: Omittable[Optional[ErrorRenderer]] = Omitted(),
+    ) -> AR:
         with self._clone() as clone:
-            if hide_traceback is not None:
-                clone._hide_traceback = hide_traceback
+            if not isinstance(error_renderer, Omitted):
+                clone._error_renderer = error_renderer
         return clone
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
@@ -187,7 +191,7 @@ class AdornedConversionRetort(OperatingRetort):
         src = type(src_obj)
         if is_generic_class(src):
             raise ValueError(
-                f"Can not infer the actual type of generic class instance ({src!r}),"
+                f"Cannot infer the actual type of generic class instance ({src!r}),"
                 " you have to use `get_converter` explicitly passing the type of object",
             )
 

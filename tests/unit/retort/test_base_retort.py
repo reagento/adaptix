@@ -66,24 +66,24 @@ def test_recipe_access():
             PlaceholderProvider(1),
         ]
 
-    with pytest.raises(AttributeError, match=full_match("Can not read 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Cannot read 'recipe' attribute")):
         RetortWithRecipe.recipe  # noqa: B018
 
-    with pytest.raises(AttributeError, match=full_match("Can not set 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Cannot set 'recipe' attribute")):
         RetortWithRecipe.recipe = []
 
-    with pytest.raises(AttributeError, match=full_match("Can not delete 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Cannot delete 'recipe' attribute")):
         del RetortWithRecipe.recipe
 
     with_recipe = RetortWithRecipe()
 
-    with pytest.raises(AttributeError, match=full_match("Can not read 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Cannot read 'recipe' attribute")):
         with_recipe.recipe  # noqa: B018
 
-    with pytest.raises(AttributeError, match=full_match("Can not set 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Cannot set 'recipe' attribute")):
         with_recipe.recipe = []
 
-    with pytest.raises(AttributeError, match=full_match("Can not delete 'recipe' attribute")):
+    with pytest.raises(AttributeError, match=full_match("Cannot delete 'recipe' attribute")):
         del with_recipe.recipe
 
 

@@ -3,9 +3,10 @@ from decimal import Decimal
 from typing import Callable, Literal, Optional, Union
 
 import pytest
-from tests_helpers import raises_exc, with_cause, with_notes
+from tests_helpers import raises_exc
+from tests_helpers.misc import raises_exc_text
 
-from adaptix import CannotProvide, DebugTrail, Omitted, ProviderNotFoundError, Retort, dumper, loader
+from adaptix import DebugTrail, Omitted, Retort, dumper, loader
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.load_error import BadVariantLoadError, LoadError, TypeLoadError, UnionLoadError
 from adaptix._internal.type_tools import normalize_type
@@ -161,24 +162,12 @@ def test_optional_dumping(debug_trail):
 
 
 def test_bad_optional_dumping(debug_trail):
+    @dataclass
+    class SomeClass:
+        field: Union[int, Callable[[int], str]]
+
     retort = Retort()
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(
-                    f"Cannot produce dumper for type {Union[int, Callable[[int], str]]}",
-                ),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                CannotProvide(
-                    message=f"All cases of union must be class or Literal, but found {[Callable[[int], str]]}",
-                    is_demonstrative=True,
-                    is_terminal=True,
-                ),
-                f"Location: `{str(Union[int, Callable[[int], str]]).replace('typing.', '', 1)}`",
-            ),
-        ),
+    raises_exc_text(
         lambda: (
             retort.replace(
                 debug_trail=debug_trail,
@@ -187,9 +176,21 @@ def test_bad_optional_dumping(debug_trail):
                     dumper(Callable[[int], str], lambda x: str(x)),
                 ],
             ).get_dumper(
-                Union[int, Callable[[int], str]],
+                SomeClass,
             )
         ),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce dumper for type <class '__main__.SomeClass'>
+          × Cannot create dumper for model. Dumpers for some fields cannot be created
+          │ Location: ‹SomeClass›
+          ╰──▷ All cases of union must be class or Literal
+             │ Location: ‹SomeClass.field: Union[int, typing.Callable[[int], str]]›
+             ╰──▷ Found ‹Callable[[int], str]›
+        """,
+        {
+            "SomeClass": SomeClass.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 

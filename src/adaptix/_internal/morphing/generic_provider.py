@@ -8,35 +8,33 @@ from typing import Any, ForwardRef, Literal, Optional, TypeVar
 from ..common import Dumper, Loader, TypeHint
 from ..provider.essential import CannotProvide, Mediator
 from ..provider.loc_stack_filtering import LocStack
-from ..provider.located_request import LocatedRequestDelegatingProvider, LocatedRequestT, for_predicate
+from ..provider.located_request import for_predicate
 from ..provider.location import TypeHintLoc
 from ..special_cases_optimization import as_is_stub
 from ..type_tools import NormTypeAlias, is_new_type, strip_tags
 from ..type_tools.basic_utils import eval_forward_ref
 from ..utils import MappingHashWrapper
 from .load_error import BadVariantLoadError, LoadError
-from .provider_template import DumperProvider, LoaderProvider
+from .provider_template import DelegatingProvider, DumperProvider, LoaderProvider
 from .request_cls import DumperRequest, LoaderRequest, StrictCoercionRequest
 from .utils import try_normalize_type
 
 ResponseT = TypeVar("ResponseT")
 
 
-class NewTypeUnwrappingProvider(LocatedRequestDelegatingProvider):
-    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
-
-    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
-        if not is_new_type(request.last_loc.type):
+class NewTypeUnwrappingProvider(DelegatingProvider):
+    def _get_proxy_target(self, tp: TypeHint) -> TypeHint:
+        if not is_new_type(tp):
             raise CannotProvide
 
-        return request.last_loc.type.__supertype__
+        return tp.__supertype__
+
+    def _get_error_text(self) -> str:
+        return "Try to unwrap NewType"
 
 
-class TypeHintTagsUnwrappingProvider(LocatedRequestDelegatingProvider):
-    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
-
-    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
-        tp = request.last_loc.type
+class TypeHintTagsUnwrappingProvider(DelegatingProvider):
+    def _get_proxy_target(self, tp: TypeHint) -> TypeHint:
         norm = try_normalize_type(tp)
         unwrapped = strip_tags(norm)
         if unwrapped.source == tp:  # type has not changed, continue search
@@ -44,30 +42,34 @@ class TypeHintTagsUnwrappingProvider(LocatedRequestDelegatingProvider):
 
         return unwrapped.source
 
+    def _get_error_text(self) -> str:
+        return "Try to unwrap type hints tag"
 
-class TypeAliasUnwrappingProvider(LocatedRequestDelegatingProvider):
-    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
 
-    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
-        norm = try_normalize_type(request.last_loc.type)
+class TypeAliasUnwrappingProvider(DelegatingProvider):
+    def _get_proxy_target(self, tp: TypeHint) -> TypeHint:
+        norm = try_normalize_type(tp)
         if not isinstance(norm, NormTypeAlias):
             raise CannotProvide
 
         return norm.value[tuple(arg.source for arg in norm.args)] if norm.args else norm.value
 
+    def _get_error_text(self) -> str:
+        return "Try to unwrap TypeAlias"
 
-class ForwardRefEvaluatingProvider(LocatedRequestDelegatingProvider):
-    REQUEST_CLASSES = (LoaderRequest, DumperRequest)
 
-    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
-        tp = request.last_loc.type
+class ForwardRefEvaluatingProvider(DelegatingProvider):
+    def _get_proxy_target(self, tp: TypeHint) -> TypeHint:
         if not isinstance(tp, ForwardRef):
             raise CannotProvide
 
         if tp.__forward_module__ is None:
-            raise CannotProvide("ForwardRef can not be evaluated", is_terminal=True, is_demonstrative=True)
+            raise CannotProvide("ForwardRef cannot be evaluated", is_terminal=True, is_demonstrative=True)
 
         return eval_forward_ref(tp.__forward_module__.__dict__, tp)
+
+    def _get_error_text(self) -> str:
+        return "Try to evaluate ForwardRef"
 
 
 def _is_exact_zero_or_one(arg):

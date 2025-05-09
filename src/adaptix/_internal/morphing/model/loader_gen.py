@@ -330,7 +330,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                     constructor_builder(f"{param.name}={value},")
                 elif param.kind == ParamKind.POS_ONLY and has_skipped_params:
                     raise ValueError(
-                        "Can not generate consistent constructor call,"
+                        "Cannot generate consistent constructor call,"
                         " positional-only parameter is skipped",
                     )
                 else:

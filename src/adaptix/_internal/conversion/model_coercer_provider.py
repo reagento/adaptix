@@ -1,10 +1,11 @@
-from collections.abc import Iterable, Mapping
+import sys
+from collections.abc import Iterable, Mapping, Sequence
 from inspect import Parameter, Signature
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 
 from ..code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ..code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
-from ..common import Coercer
+from ..common import Coercer, TypeHint
 from ..conversion.broaching.code_generator import BroachingCodeGenerator, BroachingPlan, BuiltinBroachingCodeGenerator
 from ..conversion.broaching.definitions import (
     AccessorElement,
@@ -27,12 +28,14 @@ from ..conversion.request_cls import (
     ModelLinking,
     UnlinkedOptionalPolicyRequest,
 )
+from ..feature_requirement import HAS_PY_310
 from ..model_tools.definitions import DefaultValue, InputField, InputShape, OutputShape, ParamKind, create_key_accessor
 from ..morphing.model.basic_gen import compile_closure_with_globals_capturing, fetch_code_gen_hook
 from ..provider.essential import AggregateCannotProvide, CannotProvide, Mediator, mandatory_apply_by_iterable
 from ..provider.fields import input_field_to_loc, output_field_to_loc
 from ..provider.loc_stack_filtering import LocStack
-from ..provider.location import AnyLoc, InputFieldLoc, InputFuncFieldLoc, OutputFieldLoc
+from ..provider.loc_stack_tools import format_loc_stack, format_type, get_callable_name
+from ..provider.location import AnyLoc, OutputFieldLoc
 from ..provider.shape_provider import InputShapeRequest, OutputShapeRequest, provide_generic_resolved_shape
 from ..utils import add_note
 from .provider_template import CoercerProvider
@@ -53,30 +56,44 @@ class ModelCoercerProvider(CoercerProvider):
         return self._make_coercer(mediator, request, broaching_plan)
 
     def _fetch_shapes(self, mediator: Mediator, request: CoercerRequest) -> tuple[InputShape, OutputShape]:
-        exception_and_type_list = []
+        exception_and_type_list: list[tuple[CannotProvide, LocStack]] = []
         try:
             dst_shape = self._fetch_dst_shape(mediator, request.dst)
         except CannotProvide as e:
-            exception_and_type_list.append((e, request.dst.last.type))
+            exception_and_type_list.append((e, request.dst))
 
         try:
             src_shape = self._fetch_src_shape(mediator, request.src)
         except CannotProvide as e:
-            exception_and_type_list.append((e, request.src.last.type))
+            exception_and_type_list.append((e, request.src))
 
         if len(exception_and_type_list) == 1:
             raise CannotProvide(
                 parent_notes_gen=lambda: [
-                    f"Hint: Class `{exception_and_type_list[0][1].__name__}` is not recognized as model."
+                    f"Hint: Type {format_type(exception_and_type_list[0][1].last.type)} is not recognized as model."
                     " Did your forget `@dataclass` decorator? Check documentation what model kinds are supported",
                 ],
             )
         if len(exception_and_type_list) == 2:  # noqa: PLR2004
             raise AggregateCannotProvide(
-                "Classes are not recognized as models",
+                "Types are not recognized as models",
                 [exc for exc, tp in exception_and_type_list],
+                parent_notes_gen=lambda: self._types_are_not_models_parent_notes_gen(
+                    loc_stack.last.type for exc, loc_stack in exception_and_type_list
+                ),
             )
         return dst_shape, src_shape
+
+    def _types_are_not_models_parent_notes_gen(self, types: Iterable[TypeHint]) -> Sequence[str]:
+        if (
+            HAS_PY_310
+            and all(getattr(tp, "__module__", None) not in sys.stdlib_module_names for tp in types)
+        ):
+            return [
+                "Hint: Types are not recognized as models."
+                " Did your forget `@dataclass` decorator? Check documentation what model kinds are supported",
+            ]
+        return []
 
     def _make_coercer(
         self,
@@ -104,8 +121,8 @@ class ModelCoercerProvider(CoercerProvider):
             file_name=self._get_file_name(request),
         )
 
-    def _loc_stack_to_view_string(self, lock_stack: LocStack[AnyLoc]) -> str:
-        tp = lock_stack.last.type
+    def _loc_stack_to_view_string(self, loc_stack: LocStack[AnyLoc]) -> str:
+        tp = loc_stack.last.type
         if isinstance(tp, type):
             return tp.__name__
         return str(tp)
@@ -190,7 +207,6 @@ class ModelCoercerProvider(CoercerProvider):
         self,
         mediator: Mediator,
         request: CoercerRequest,
-        loc: Union[InputFieldLoc, InputFuncFieldLoc],
         linking: FieldLinking,
     ) -> BroachingPlan:
         if linking.coercer is not None:
@@ -200,7 +216,7 @@ class ModelCoercerProvider(CoercerProvider):
                 CoercerRequest(
                     src=linking.source,
                     ctx=request.ctx,
-                    dst=request.dst.append_with(loc),
+                    dst=request.dst,
                 ),
             )
 
@@ -287,7 +303,9 @@ class ModelCoercerProvider(CoercerProvider):
             if isinstance(linking_result.linking, FunctionLinking):
                 return self._generate_function_linking_to_sub_plan(
                     mediator=mediator,
-                    request=request,
+                    request=request.append_dst_loc(
+                        input_field_to_loc(input_field),
+                    ),
                     linking=linking_result.linking,
                 )
             if isinstance(linking_result.linking, ModelLinking):
@@ -299,21 +317,31 @@ class ModelCoercerProvider(CoercerProvider):
                 field_loc = input_field_to_loc(input_field)
                 return self._generate_field_linking_to_sub_plan(
                     mediator=mediator,
-                    request=request,
-                    loc=field_loc.complement_with_func(parent_func) if parent_func is not None else field_loc,
+                    request=request.append_dst_loc(
+                        field_loc.complement_with_func(parent_func) if parent_func is not None else field_loc,
+                    ),
                     linking=linking_result.linking,
                 )
             raise TypeError
 
-        field_sub_plans = mandatory_apply_by_iterable(
-            generate_sub_plan,
-            field_linkings,
-            lambda: (
-                "Cannot create coercer for models. Coercers for some linkings are not found"
-                if parent_func is None else
-                "Cannot create coercer for model and function. Coercers for some linkings are not found"
-            ),
-        )
+        try:
+            field_sub_plans = mandatory_apply_by_iterable(
+                generate_sub_plan,
+                field_linkings,
+                lambda: (
+                    "Cannot create coercer for models. Coercers for some linkings are not found"
+                    if parent_func is None else
+                    f"Cannot create coercer for model and function ‹{get_callable_name(parent_func)}›."
+                    f" Coercers for some linkings are not found"
+                ),
+            )
+        except CannotProvide as e:
+            if parent_func is not None:
+                src_desc = format_loc_stack(request.src)
+                dst_desc = format_loc_stack(request.dst)
+                add_note(e, f"Linking: {src_desc} ──▷ {dst_desc}")
+            raise
+
         return {
             dst_field: sub_plan
             for (dst_field, linking), sub_plan in zip(field_linkings, field_sub_plans)
@@ -368,7 +396,7 @@ class ModelCoercerProvider(CoercerProvider):
                 args.append(KeywordArg(param.name, sub_plan))
             elif param.kind == ParamKind.POS_ONLY and has_skipped_params:
                 raise CannotProvide(
-                    "Can not generate consistent constructor call,"
+                    "Cannot generate consistent constructor call,"
                     " positional-only parameter is skipped",
                     is_demonstrative=True,
                 )

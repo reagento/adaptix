@@ -75,8 +75,8 @@ class BaseRequestErrorRepresentor(ErrorRepresentor[RequestT], Generic[RequestT])
 
 class LocatedRequestErrorRepresentor(BaseRequestErrorRepresentor[LocatedRequestT], Generic[LocatedRequestT]):
     def get_request_context_notes(self, request: LocatedRequestT) -> Iterable[str]:
-        loc_stack_desc = format_loc_stack(request.loc_stack)
-        yield f"Location: `{loc_stack_desc}`"
+        loc_stack_desc = format_loc_stack(request.loc_stack, always_wrap_with_brackets=True)
+        yield f"Location: {loc_stack_desc}"
 
 
 class LinkingRequestErrorRepresentor(ErrorRepresentor[LinkingRequest]):
@@ -85,14 +85,14 @@ class LinkingRequestErrorRepresentor(ErrorRepresentor[LinkingRequest]):
 
     def get_provider_not_found_description(self, request: LinkingRequest) -> str:
         dst_desc = format_loc_stack(request.destination)
-        return f"Cannot find paired field of `{dst_desc}` for linking"
+        return f"Cannot find paired field of {dst_desc} for linking"
 
 
 class CoercerRequestErrorRepresentor(BaseRequestErrorRepresentor[CoercerRequest]):
     def get_request_context_notes(self, request: CoercerRequest) -> Iterable[str]:
         src_desc = format_loc_stack(request.src)
         dst_desc = format_loc_stack(request.dst)
-        yield f"Linking: `{src_desc} => {dst_desc}`"
+        yield f"Linking: {src_desc} ──▷ {dst_desc}"
 
 
 class JSONSchemaMiddlewareProvider(LocatedRequestMethodsProvider):
@@ -130,15 +130,13 @@ class OperatingRetort(SearchingRetort):
             return LocatedRequestErrorRepresentor("Cannot find loader")
         if issubclass(request_cls, DumperRequest):
             return LocatedRequestErrorRepresentor("Cannot find dumper")
-        if issubclass(request_cls, LocatedRequest):
-            return LocatedRequestErrorRepresentor(f"Can not satisfy {request_cls}")
 
         if issubclass(request_cls, CoercerRequest):
             return CoercerRequestErrorRepresentor("Cannot find coercer")  # type: ignore[return-value]
         if issubclass(request_cls, LinkingRequest):
             return LinkingRequestErrorRepresentor()  # type: ignore[return-value]
 
-        return BaseRequestErrorRepresentor(f"Can not satisfy {request_cls}")
+        return BaseRequestErrorRepresentor(f"Cannot satisfy {request_cls}")
 
     def _create_recursion_resolver(self, request_cls: type[RequestT]) -> Optional[RecursionResolver[RequestT, Any]]:
         if issubclass(request_cls, (LoaderRequest, DumperRequest)):

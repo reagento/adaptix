@@ -3,7 +3,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, Callable, ClassVar, TypeVar, final
 
 from ..type_tools import get_all_type_hints, is_subclass_soft, normalize_type, strip_tags
-from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler
+from .essential import Mediator, Provider, Request, RequestChecker, RequestHandlerRegisterRecord
 from .request_checkers import AlwaysTrueRequestChecker
 
 __all__ = ("MethodsProvider", "method_handler")
@@ -30,10 +30,10 @@ def _infer_request_cls(func) -> type[Request]:
     params = list(signature.parameters.values())
 
     if len(params) < 3:  # noqa: PLR2004
-        raise ValueError("Can not infer request class from callable")
+        raise ValueError("Cannot infer request class from callable")
 
     if params[2].annotation == signature.empty:
-        raise ValueError("Can not infer request class from callable")
+        raise ValueError("Cannot infer request class from callable")
 
     type_hints = get_all_type_hints(func)
     request_tp = strip_tags(normalize_type(type_hints[params[2].name]))
@@ -67,7 +67,7 @@ class MethodsProvider(Provider):
         return AlwaysTrueRequestChecker()
 
     @final
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         request_checker = self._get_request_checker()
         return [
             (request_cls, request_checker, getattr(self, method_name))

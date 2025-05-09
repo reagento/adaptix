@@ -1,21 +1,13 @@
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from enum import Enum, Flag, IntEnum, auto
 from typing import Union
 
 import pytest
-from tests_helpers import parametrize_bool, raises_exc, with_cause, with_notes
+from tests_helpers import parametrize_bool, raises_exc
+from tests_helpers.misc import raises_exc_text
 
-from adaptix import (
-    CannotProvide,
-    DebugTrail,
-    NameStyle,
-    ProviderNotFoundError,
-    Retort,
-    dumper,
-    enum_by_name,
-    enum_by_value,
-    flag_by_member_names,
-)
+from adaptix import DebugTrail, NameStyle, Retort, dumper, enum_by_name, enum_by_value, flag_by_member_names
 from adaptix._internal.morphing.load_error import (
     DuplicatedValuesLoadError,
     ExcludedTypeLoadError,
@@ -248,39 +240,23 @@ def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
         debug_trail=debug_trail,
     )
 
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce loader for type {FlagEnumWithSkippedBit}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                CannotProvide(
-                    "Cannot create a loader for flag with skipped bits",
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{FlagEnumWithSkippedBit.__name__}`",
-            ),
-        ),
-        lambda: retort.get_loader(FlagEnumWithSkippedBit),
-    )
-    raises_exc(
-        with_cause(
-            with_notes(
-                ProviderNotFoundError(f"Cannot produce loader for type {FlagEnumWithNegativeValue}"),
-                "Note: The attached exception above contains verbose description of the problem",
-            ),
-            with_notes(
-                CannotProvide(
-                    "Cannot create a loader for flag with negative values",
-                    is_terminal=True,
-                    is_demonstrative=True,
-                ),
-                f"Location: `{FlagEnumWithNegativeValue.__name__}`",
-            ),
-        ),
-        lambda: retort.get_loader(FlagEnumWithNegativeValue),
+    @dataclass
+    class SomeClass:
+        field: FlagEnumWithNegativeValue
+
+    raises_exc_text(
+        lambda: retort.get_loader(SomeClass),
+        """
+        adaptix.ProviderNotFoundError: Cannot produce loader for type <class '__main__.SomeClass'>
+          × Cannot create loader for model. Loaders for some fields cannot be created
+          │ Location: ‹SomeClass›
+          ╰──▷ Cannot create a loader for flag with negative values
+               Location: ‹SomeClass.field: FlagEnumWithNegativeValue›
+        """,
+        {
+            "SomeClass": SomeClass.__qualname__,
+            "__main__": __name__,
+        },
     )
 
 

@@ -1,13 +1,6 @@
-  | adaptix.AggregateCannotProvide: Cannot create loader for model. Cannot fetch InputNameLayout (1 sub-exception)
-  | Location: `User`
-  +-+---------------- 1 ----------------
-    | adaptix.CannotProvide: Required fields ['password_hash'] are skipped
-    | Location: `User`
-    +------------------------------------
-
-The above exception was the direct cause of the following exception:
-
 Traceback (most recent call last):
   ...
-adaptix.NoSuitableProvider: Cannot produce loader for type <class 'docs.examples.extended_usage.fields_filtering_skip.User'>
-Note: The attached exception above contains verbose description of the problem
+adaptix.ProviderNotFoundError: Cannot produce loader for type <class '__main__.User'>
+  × Cannot create loader for model. Cannot fetch `InputNameLayout`
+  │ Location: ‹User›
+  ╰──▷ Required fields ['password_hash'] are skipped

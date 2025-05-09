@@ -358,12 +358,13 @@ AnyNormTypeVarLike = Union[NormTV, NormTVTuple, NormParamSpec]
 
 
 class NormTypeAlias(BaseNormType):
-    __slots__ = ("_args", "_norm_type_vars", "_type_alias")
+    __slots__ = ("_args", "_norm_type_vars", "_source", "_type_alias")
 
-    def __init__(self, type_alias, args: VarTuple[BaseNormType], type_vars: VarTuple[AnyNormTypeVarLike]):
+    def __init__(self, type_alias, args: VarTuple[BaseNormType], type_vars: VarTuple[AnyNormTypeVarLike], source):
         self._type_alias = type_alias
         self._args = args
         self._type_vars = type_vars
+        self._source = source
 
     @property
     def origin(self) -> Any:
@@ -375,7 +376,7 @@ class NormTypeAlias(BaseNormType):
 
     @property
     def source(self) -> TypeHint:
-        return self._type_alias
+        return self._source
 
     @property
     def value(self):
@@ -552,7 +553,7 @@ class TypeNormalizer:
         elif self._namespace is not None:
             ns = self._namespace
         else:
-            raise ValueError(f"Can not normalize value {tp!r}, there are no namespace to evaluate types")
+            raise ValueError(f"Cannot normalize value {tp!r}, there are no namespace to evaluate types")
 
         return _replace_source(
             self.normalize(eval_forward_ref(ns, fwd_ref)),
@@ -651,9 +652,10 @@ class TypeNormalizer:
     def _norm_type_alias_type(self, tp, origin, args):
         if isinstance(origin, typing.TypeAliasType):
             return NormTypeAlias(
-                origin,
-                self._norm_iter(args),
-                self._norm_iter(tp.__type_params__),
+                type_alias=origin,
+                args=self._norm_iter(args),
+                type_vars=self._norm_iter(tp.__type_params__),
+                source=tp,
             )
 
     @_aspect_storage.add
@@ -862,7 +864,7 @@ class TypeNormalizer:
             or isinstance(origin, type)
             or origin in self.ALLOWED_ZERO_PARAMS_ORIGINS
         ):
-            raise ValueError(f"Can not normalize value {tp!r}")
+            raise ValueError(f"Cannot normalize value {tp!r}")
 
         return _NormType(
             origin,

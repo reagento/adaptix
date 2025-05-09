@@ -152,7 +152,7 @@ def with_model_spec_requirement(requirements: Mapping[ModelSpec, Requirement]):
 GENERIC_MODELS_REQUIREMENTS: Mapping[ModelSpec, Requirement] = {
     ModelSpec.TYPED_DICT: HAS_PY_311,
     ModelSpec.NAMED_TUPLE: HAS_PY_311,
-    ModelSpec.SQLALCHEMY: FailedRequirement("SQLAlchemy models can not be generic"),
+    ModelSpec.SQLALCHEMY: FailedRequirement("SQLAlchemy models cannot be generic"),
 }
 
 

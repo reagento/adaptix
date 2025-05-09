@@ -59,4 +59,4 @@ def fill_implicit_params(tp: TypeHint) -> TypeHint:
     params = _getter.get_implicit_params(strip_alias(tp))
     if params:
         return tp[params]
-    raise ValueError(f"Can not derive implicit parameters for {tp}")
+    raise ValueError(f"Cannot derive implicit parameters for {tp}")

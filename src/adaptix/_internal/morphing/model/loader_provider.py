@@ -141,25 +141,6 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
     ) -> JSONSchema:
         return mediator.mandatory_provide(request.append_loc(input_field_to_loc(field)))
 
-    def _fetch_model_loader_gen(self, mediator: Mediator, request: LoaderRequest) -> ModelLoaderGen:
-        shape = self._fetch_shape(mediator, request)
-        name_layout = self._fetch_name_layout(mediator, request, shape)
-        skipped_fields = get_skipped_fields(shape, name_layout)
-        self._validate_params(shape, name_layout, skipped_fields)
-
-        field_loaders = self._fetch_field_loaders(mediator, request, shape)
-        strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
-        debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        return self._create_model_loader_gen(
-            debug_trail=debug_trail,
-            strict_coercion=strict_coercion,
-            shape=shape,
-            name_layout=name_layout,
-            field_loaders=field_loaders,
-            skipped_fields=skipped_fields,
-            model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
-        )
-
     def _fetch_model_identity(
         self,
         mediator: Mediator,
@@ -222,7 +203,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
                 loc_stack=request.loc_stack,
                 shape=shape,
             ),
-            lambda x: "Cannot create loader for model. Cannot fetch InputNameLayout",
+            lambda x: "Cannot create loader for model. Cannot fetch `InputNameLayout`",
         )
 
     def _fetch_field_loaders(

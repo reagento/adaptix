@@ -4,11 +4,13 @@ import inspect
 import re
 import runpy
 import sys
-from collections.abc import Generator, Reversible, Sequence
+from collections.abc import Generator, Mapping, Reversible, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, is_dataclass
 from functools import reduce
 from pathlib import Path
+from textwrap import dedent
+from traceback import format_exception
 from types import ModuleType, SimpleNamespace
 from typing import Any, Callable, Optional, TypeVar, Union
 from uuid import uuid4
@@ -19,7 +21,7 @@ from adaptix import CannotProvide, DebugTrail, Provider, ProviderNotFoundError, 
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
-from adaptix._internal.provider.essential import Mediator, RequestChecker, RequestHandler
+from adaptix._internal.provider.essential import Mediator, RequestHandlerRegisterRecord
 from adaptix._internal.retort.operating_retort import OperatingRetort
 from adaptix._internal.struct_trail import TrailElement, extend_trail, render_trail_as_note
 from adaptix._internal.type_tools import is_parametrized
@@ -65,6 +67,7 @@ def _repr_value(obj: Any) -> dict[str, Any]:
         result["is_demonstrative"] = obj.is_demonstrative
     if isinstance(obj, ProviderNotFoundError):
         result["message"] = obj.message
+        result["description"] = obj.description
     if not result:
         result["args"] = [_repr_value(arg) for arg in obj.args]
     return {
@@ -90,6 +93,37 @@ def raises_exc(
     assert _repr_value(exc_info.value) == _repr_value(exc)
 
     return exc_info.value
+
+
+def _prepare_reference(reference: str, replaces: Mapping[str, Any]) -> str:
+    text_replaces = {
+        src: format(target) for src, target in replaces.items()
+    }
+    pattern = re.compile(
+        "|".join(
+            map(re.escape, sorted(text_replaces.keys(), key=len, reverse=True)),
+        ),
+    )
+    return pattern.sub(
+        lambda match: text_replaces[match.group()],
+        dedent(reference).lstrip(),
+    )
+
+
+def raises_exc_text(
+    func: Callable[[], Any],
+    reference: str,
+    replaces: Optional[Mapping[str, Any]] = None,
+) -> None:
+    try:
+        func()
+    except Exception as e:
+        e.__traceback__ = None
+        current = "".join(format_exception(type(e), e, e.__traceback__))
+        final_reference = _prepare_reference(reference, replaces or {})
+        assert current == final_reference
+    else:
+        raise AssertionError("Error is not raised")
 
 
 def with_cause(exc: E, cause: BaseException) -> E:
@@ -134,7 +168,7 @@ class DebugCtx:
 class PlaceholderProvider(Provider):
     value: int
 
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         return []
 
 

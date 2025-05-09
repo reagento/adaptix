@@ -10,23 +10,27 @@ from ..provider.essential import (
     Mediator,
     Provider,
     Request,
-    RequestChecker,
-    RequestHandler,
+    RequestHandlerRegisterRecord,
 )
 from ..provider.request_checkers import AlwaysTrueRequestChecker
+from ..tree_renderer import TreeRendererConfig
 from ..utils import add_note, copy_exception_dunders, with_module
 from .base_retort import BaseRetort
 from .builtin_mediator import BuiltinMediator, RequestBus
+from .error_renderer import BuiltinErrorRenderer, ErrorRenderer
 from .request_bus import BasicRequestBus, ErrorRepresentor, RecursionResolver, RecursiveRequestBus, RequestRouter
 from .routers import CheckerAndHandler
 
 
 @with_module("adaptix")
 class ProviderNotFoundError(Exception):
-    def __init__(self, message: str):
+    def __init__(self, message: str, description: Optional[str] = None):
         self.message = message
+        self.description = description
 
     def __str__(self):
+        if self.description is not None:
+            return self.message + "\n" + self.description
         return self.message
 
 
@@ -34,17 +38,25 @@ T = TypeVar("T")
 RequestT = TypeVar("RequestT", bound=Request)
 
 
+default_error_renderer = BuiltinErrorRenderer(TreeRendererConfig())
+
+
 class SearchingRetort(BaseRetort, Provider, ABC):
     """A retort that can operate as Retort but have no predefined providers and no high-level user interface"""
 
-    def __init__(self, *, recipe: Iterable[Provider] = (), hide_traceback: bool = True):
-        self._hide_traceback = hide_traceback
+    def __init__(
+        self,
+        *,
+        recipe: Iterable[Provider] = (),
+        error_renderer: Optional[ErrorRenderer] = default_error_renderer,
+    ):
+        self._error_renderer = error_renderer
         super().__init__(recipe=recipe)
 
     def _provide_from_recipe(self, request: Request[T]) -> T:
         return self._create_mediator(request).provide(request)
 
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         def retort_request_handler(mediator, request):
             return self._provide_from_recipe(request)
 
@@ -72,15 +84,27 @@ class SearchingRetort(BaseRetort, Provider, ABC):
         try:
             return self._provide_from_recipe(request)
         except CannotProvide as e:
-            exception = ProviderNotFoundError(error_message)
+            raise self._get_facade_error(e, error_message)
 
-            cause = self._get_exception_cause(e)
-            if cause is not None:
-                if self._hide_traceback:
-                    for sub_exc in self._exception_walk(cause):
-                        sub_exc.__traceback__ = None
-                add_note(exception, "Note: The attached exception above contains verbose description of the problem")
-            raise exception from cause
+    def _get_facade_error(self, e: CannotProvide, error_message: str) -> Exception:
+        cause = self._get_exception_cause(e)
+
+        if self._error_renderer is not None:
+            exception = ProviderNotFoundError(
+                error_message,
+                self._error_renderer.render(cause) if cause is not None else None,
+            )
+            exception.__cause__ = None
+            return exception
+
+        exception = ProviderNotFoundError(error_message)
+        if cause is not None:
+            for sub_exc in self._exception_walk(cause):
+                sub_exc.__traceback__ = None
+            add_note(exception, "Note: The attached exception above contains verbose description of the problem")
+
+        exception.__cause__ = cause
+        return exception
 
     def _get_exception_cause(self, exc: CannotProvide) -> Optional[CannotProvide]:
         if isinstance(exc, AggregateCannotProvide):
@@ -94,8 +118,8 @@ class SearchingRetort(BaseRetort, Provider, ABC):
                 sub_exc = self._extract_demonstrative_exc(sub_exc)  # type: ignore[assignment]  # noqa: PLW2901
                 if sub_exc is not None:
                     demonstrative_exc_list.append(sub_exc)
-            elif sub_exc.is_demonstrative:  # type: ignore[union-attr]
-                demonstrative_exc_list.append(sub_exc)  # type: ignore[arg-type]
+            elif sub_exc.is_demonstrative:
+                demonstrative_exc_list.append(sub_exc)
 
         if not exc.is_demonstrative and not demonstrative_exc_list:
             return None
@@ -162,7 +186,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
 
     def _create_no_request_bus_error_maker(self) -> Callable[[Request], CannotProvide]:
         def no_request_bus_error_maker(request: Request) -> CannotProvide:
-            return CannotProvide(f"Can not satisfy {type(request)}")
+            return CannotProvide(f"Cannot satisfy {type(request)}")
 
         return no_request_bus_error_maker
 

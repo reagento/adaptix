@@ -78,6 +78,12 @@ html_theme_options = {
     "sidebar_hide_name": True,
     "light_logo": "adaptix-with-title-light.png",
     "dark_logo": "adaptix-with-title-dark.png",
+    "light_css_variables": {
+        "font-stack--monospace": 'Hack, SFMono-Regular, Menlo, Consolas, Monaco, "Liberation Mono", "Lucida Console", monospace',
+    },
+    "dark_css_variables": {
+        "font-stack--monospace": 'Hack, SFMono-Regular, Menlo, Consolas, Monaco, "Liberation Mono", "Lucida Console", monospace',
+    },
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

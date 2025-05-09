@@ -37,7 +37,7 @@ class UnrewritableDict(dict[K, V], Generic[K, V]):
         if key in self:
             old_value = self[key]
             if value is not old_value:
-                raise KeyError(f"Key {key!r} can not be overwritten")
+                raise KeyError(f"Key {key!r} cannot be overwritten")
         else:
             super().__setitem__(key, value)
 

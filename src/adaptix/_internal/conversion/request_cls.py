@@ -85,6 +85,9 @@ class CoercerRequest(Request[Coercer]):
     def append_loc(self: CR, *, src_loc: ConversionSourceItem, dst_loc: ConversionDestItem) -> CR:
         return replace(self, src=self.src.append_with(src_loc), dst=self.dst.append_with(dst_loc))
 
+    def append_dst_loc(self: CR, dst_loc: ConversionDestItem) -> CR:
+        return replace(self, dst=self.dst.append_with(dst_loc))
+
 
 @dataclass(frozen=True)
 class UnlinkedOptionalPolicy:

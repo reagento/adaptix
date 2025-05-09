@@ -900,12 +900,12 @@ def test_param_spec_args_and_kwargs():
 
 
 def test_bad_arg_types():
-    with pytest.raises(ValueError, match=full_match(f"Can not normalize value {100!r}")):
+    with pytest.raises(ValueError, match=full_match(f"Cannot normalize value {100!r}")):
         normalize_type(100)
 
     with pytest.raises(
         ValueError,
-        match=full_match("Can not normalize value 'string', there are no namespace to evaluate types"),
+        match=full_match("Cannot normalize value 'string', there are no namespace to evaluate types"),
     ):
         normalize_type("string")
 

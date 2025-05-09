@@ -73,7 +73,7 @@ class Overlay(Generic[Sc]):
         ]
         if omitted_fields:
             raise ValueError(
-                f"Can not create schema because overlay contains omitted values at {omitted_fields}",
+                f"Cannot create schema because overlay contains omitted values at {omitted_fields}",
             )
         # noinspection PyArgumentList
         return self._schema_cls(**vars(self))  # type: ignore[return-value]

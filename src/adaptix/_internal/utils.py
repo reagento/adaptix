@@ -35,13 +35,13 @@ class ForbiddingDescriptor:
         self._name = name
 
     def __get__(self, instance, owner):
-        raise AttributeError(f"Can not read {self._name!r} attribute")
+        raise AttributeError(f"Cannot read {self._name!r} attribute")
 
     def __set__(self, instance, value):
-        raise AttributeError(f"Can not set {self._name!r} attribute")
+        raise AttributeError(f"Cannot set {self._name!r} attribute")
 
     def __delete__(self, instance):
-        raise AttributeError(f"Can not delete {self._name!r} attribute")
+        raise AttributeError(f"Cannot delete {self._name!r} attribute")
 
 
 def _singleton_repr(self):
@@ -103,7 +103,7 @@ else:
 
 class Omitted(metaclass=SingletonMeta):
     def __bool__(self):
-        raise TypeError("Omitted() can not be used in boolean context")
+        raise TypeError("Omitted() cannot be used in boolean context")
 
 
 Omittable = Union[T, Omitted]
@@ -182,6 +182,10 @@ else:
             exc.__notes__.append(note)
         else:
             exc.__notes__ = [note]
+
+
+def get_notes(exc: BaseException) -> list[str]:
+    return getattr(exc, "__notes__", [])
 
 
 ClassT = TypeVar("ClassT", bound=type)

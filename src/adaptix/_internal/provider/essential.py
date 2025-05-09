@@ -73,6 +73,9 @@ class AggregateCannotProvide(CompatExceptionGroup[CannotProvide], CannotProvide)
         ):
             return super().__new__(cls, message, exceptions)
 
+    if TYPE_CHECKING:
+        exceptions: VarTuple[CannotProvide]
+
     def derive(self, excs: Sequence[CannotProvide]) -> "AggregateCannotProvide":  # type: ignore[override]
         return AggregateCannotProvide(
             self.message,
@@ -255,9 +258,12 @@ class RequestChecker(ABC, Generic[RequestT]):
         ...
 
 
+RequestHandlerRegisterRecord = tuple[type[Request], RequestChecker, RequestHandler]
+
+
 class Provider(ABC):
     """An object that can process Request instances"""
 
     @abstractmethod
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         ...

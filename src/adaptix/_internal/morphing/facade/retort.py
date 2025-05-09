@@ -1,3 +1,4 @@
+import collections.abc
 from abc import ABC
 from collections.abc import ByteString, Iterable, Mapping, MutableMapping  # noqa: PYI057
 from datetime import date, datetime, time
@@ -10,14 +11,16 @@ from uuid import UUID
 from ...common import Dumper, Loader, TypeHint, VarTuple
 from ...definitions import DebugTrail
 from ...provider.essential import Provider, Request
-from ...provider.loc_stack_filtering import LocStack, P
+from ...provider.loc_stack_filtering import LocStack, P, VarTupleLSC
 from ...provider.location import TypeHintLoc
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...provider.value_provider import ValueProvider
+from ...retort.error_renderer import ErrorRenderer
 from ...retort.operating_retort import OperatingRetort
+from ...retort.searching_retort import default_error_renderer
 from ...struct_trail import render_trail_as_note
 from ...type_tools.basic_utils import is_generic_class
-from ...utils import Omitted
+from ...utils import Omittable, Omitted
 from ..concrete_provider import (
     BOOL_PROVIDER,
     COMPLEX_PROVIDER,
@@ -59,7 +62,7 @@ from ..model.request_filtering import AnyModelLSC
 from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
 from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
-from ..provider_template import ABCProxy
+from ..provider_template import ABCProxy, ToVarTupleProxy
 from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from ..union_provider import UnionProvider
 from .provider import (
@@ -134,10 +137,15 @@ class FilledRetort(OperatingRetort, ABC):
         ),
         PathLikeProvider(),
 
+        bound(list, IterableProvider(dump_as=list)),
+        bound(VarTupleLSC(), IterableProvider(dump_as=tuple)),
+        bound(set, IterableProvider(dump_as=list, json_schema_unique_items=True)),
+        bound(frozenset, IterableProvider(dump_as=tuple, json_schema_unique_items=True)),
+        bound(collections.deque, IterableProvider(dump_as=list)),
+        ConstantLengthTupleProvider(),
+
         LiteralProvider(),
         UnionProvider(),
-        ConstantLengthTupleProvider(),
-        IterableProvider(),
         DictProvider(),
         DefaultDictProvider(),
         RegexPatternProvider(),
@@ -147,6 +155,14 @@ class FilledRetort(OperatingRetort, ABC):
         ABCProxy(Mapping, dict),
         ABCProxy(MutableMapping, dict),
         ABCProxy(ByteString, bytes),
+
+        ToVarTupleProxy(collections.abc.Iterable),
+        ToVarTupleProxy(collections.abc.Reversible),
+        ToVarTupleProxy(collections.abc.Collection),
+        ToVarTupleProxy(collections.abc.Sequence),
+        ABCProxy(collections.abc.MutableSequence, list),
+        ABCProxy(collections.abc.Set, frozenset),
+        ABCProxy(collections.abc.MutableSet, set),
 
         name_mapping(
             JSONSchema,
@@ -206,11 +222,11 @@ class AdornedRetort(OperatingRetort):
         recipe: Iterable[Provider] = (),
         strict_coercion: bool = True,
         debug_trail: DebugTrail = DebugTrail.ALL,
-        hide_traceback: bool = True,
+        error_renderer: Optional[ErrorRenderer] = default_error_renderer,
     ):
         self._strict_coercion = strict_coercion
         self._debug_trail = debug_trail
-        super().__init__(recipe=recipe, hide_traceback=hide_traceback)
+        super().__init__(recipe=recipe, error_renderer=error_renderer)
 
     def _calculate_derived(self):
         super()._calculate_derived()
@@ -220,17 +236,17 @@ class AdornedRetort(OperatingRetort):
     def replace(
         self: AR,
         *,
-        strict_coercion: Optional[bool] = None,
-        debug_trail: Optional[DebugTrail] = None,
-        hide_traceback: Optional[bool] = None,
+        strict_coercion: Omittable[bool] = Omitted(),
+        debug_trail: Omittable[DebugTrail] = Omitted(),
+        error_renderer: Omittable[Optional[ErrorRenderer]] = Omitted(),
     ) -> AR:
         with self._clone() as clone:
-            if strict_coercion is not None:
+            if not isinstance(strict_coercion, Omitted):
                 clone._strict_coercion = strict_coercion
-            if debug_trail is not None:
+            if not isinstance(debug_trail, Omitted):
                 clone._debug_trail = debug_trail
-            if hide_traceback is not None:
-                clone._hide_traceback = hide_traceback
+            if not isinstance(error_renderer, Omitted):
+                clone._error_renderer = error_renderer
         return clone
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
@@ -323,7 +339,7 @@ class AdornedRetort(OperatingRetort):
             tp = type(data)
             if is_generic_class(tp):
                 raise ValueError(
-                    f"Can not infer the actual type of generic class instance ({tp!r}),"
+                    f"Cannot infer the actual type of generic class instance ({tp!r}),"
                     " you have to explicitly pass the type of object",
                 )
         return self.get_dumper(tp)(data)

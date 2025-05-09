@@ -268,7 +268,7 @@ def test_generic_pattern_create_fail():
     with pytest.raises(
         TypeError,
         match=full_match(
-            "Can not use LocStackPattern as predicate inside LocStackPattern."
+            "Cannot use LocStackPattern as predicate inside LocStackPattern."
             " If you want to combine several LocStackPattern, you can use `+` operator",
         ),
     ):
@@ -332,7 +332,7 @@ class MyGeneric(Generic[T]):
         param_result(
             List[T],
             raises=ValueError,
-            exact_match="Can not create LocStackChecker from typing.List[~T] generic alias (parametrized generic)",
+            exact_match="Cannot create LocStackChecker from typing.List[~T] generic alias (parametrized generic)",
         ),
         param_result(
             Union,
@@ -354,7 +354,7 @@ class MyGeneric(Generic[T]):
             Annotated[list, "meta"],
             raises=ValueError,
             exact_match=(
-                "Can not create LocStackChecker from"
+                "Cannot create LocStackChecker from"
                 " typing.Annotated[list, 'meta'] generic alias (parametrized generic)"
             ),
         ),
@@ -362,7 +362,7 @@ class MyGeneric(Generic[T]):
             Annotated[List[T], "meta"],
             raises=ValueError,
             exact_match=(
-                "Can not create LocStackChecker from"
+                "Cannot create LocStackChecker from"
                 " typing.Annotated[typing.List[~T], 'meta'] generic alias (parametrized generic)"
             ),
         ),
@@ -370,7 +370,7 @@ class MyGeneric(Generic[T]):
             Annotated[Dict[int, T], "meta"],
             raises=ValueError,
             exact_match=(
-                "Can not create LocStackChecker from"
+                "Cannot create LocStackChecker from"
                 " typing.Annotated[typing.Dict[int, ~T], 'meta'] generic alias (parametrized generic)"
             ),
         ),
