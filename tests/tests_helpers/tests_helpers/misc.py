@@ -21,7 +21,7 @@ from adaptix import CannotProvide, DebugTrail, Provider, ProviderNotFoundError, 
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.feature_requirement import DistributionVersionRequirement, Requirement
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
-from adaptix._internal.provider.essential import Mediator, RequestChecker, RequestHandler
+from adaptix._internal.provider.essential import Mediator, RequestHandlerRegisterRecord
 from adaptix._internal.retort.operating_retort import OperatingRetort
 from adaptix._internal.struct_trail import TrailElement, extend_trail, render_trail_as_note
 from adaptix._internal.type_tools import is_parametrized
@@ -168,7 +168,7 @@ class DebugCtx:
 class PlaceholderProvider(Provider):
     value: int
 
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         return []
 
 

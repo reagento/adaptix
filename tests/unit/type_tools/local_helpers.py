@@ -68,6 +68,7 @@ def _norm_to_dict(obj):  # noqa: PLR0911
             "origin": obj.origin,
             "args": [_norm_to_dict(arg) for arg in obj.args],
             "type_params": [_norm_to_dict(el) for el in obj.type_params],
+            "source": obj.source,
         }
     if isinstance(obj, BaseNormType):
         result = {

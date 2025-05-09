@@ -10,15 +10,14 @@ from ..provider.essential import (
     Mediator,
     Provider,
     Request,
-    RequestChecker,
-    RequestHandler,
+    RequestHandlerRegisterRecord,
 )
 from ..provider.request_checkers import AlwaysTrueRequestChecker
 from ..tree_renderer import TreeRendererConfig
 from ..utils import add_note, copy_exception_dunders, with_module
 from .base_retort import BaseRetort
 from .builtin_mediator import BuiltinMediator, RequestBus
-from .error_renderer import ErrorRenderer
+from .error_renderer import BuiltinErrorRenderer, ErrorRenderer
 from .request_bus import BasicRequestBus, ErrorRepresentor, RecursionResolver, RecursiveRequestBus, RequestRouter
 from .routers import CheckerAndHandler
 
@@ -39,7 +38,7 @@ T = TypeVar("T")
 RequestT = TypeVar("RequestT", bound=Request)
 
 
-default_error_renderer = ErrorRenderer(TreeRendererConfig())
+default_error_renderer = BuiltinErrorRenderer(TreeRendererConfig())
 
 
 class SearchingRetort(BaseRetort, Provider, ABC):
@@ -57,7 +56,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
     def _provide_from_recipe(self, request: Request[T]) -> T:
         return self._create_mediator(request).provide(request)
 
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         def retort_request_handler(mediator, request):
             return self._provide_from_recipe(request)
 

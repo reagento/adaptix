@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import TypeVar
 
-from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler
+from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler, RequestHandlerRegisterRecord
 
 T = TypeVar("T")
 
@@ -12,7 +12,7 @@ class ConcatProvider(Provider):
     def __init__(self, *providers: Provider):
         self._providers = providers
 
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         return list(
             itertools.chain.from_iterable(
                 provider.get_request_handlers()

@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
 from ..provider.essential import AggregateCannotProvide, CannotProvide
@@ -5,7 +6,13 @@ from ..tree_renderer import TreeRenderer, TreeRendererConfig
 from ..utils import get_notes
 
 
-class ErrorRenderer:
+class ErrorRenderer(ABC):
+    @abstractmethod
+    def render(self, error: CannotProvide) -> str:
+        ...
+
+
+class BuiltinErrorRenderer(ErrorRenderer):
     def __init__(self, tree_renderer_config: TreeRendererConfig):
         self._tree_renderer = TreeRenderer(
             config=tree_renderer_config,
