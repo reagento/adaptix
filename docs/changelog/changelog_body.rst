@@ -1,6 +1,79 @@
 ----------------------------------------------------
 
 
+.. _v3.0.0b11:
+
+`3.0.0b11 <https://github.com/reagento/adaptix/tree/v3.0.0b11>`__ -- 2025-05-09
+===============================================================================
+
+.. _v3.0.0b11-Features:
+
+Features
+--------
+
+
+- Completely redesigned error rendering system.
+  All errors related to loader, dumper, and converter generation now utilize a new compact and intuitive display format.
+  Error messages have also been substantially improved for clarity.
+
+  .. code-block:: text
+     :caption: Old error example
+
+        | adaptix.AggregateCannotProvide: Cannot create loader for model. Loaders for some fields cannot be created (1 sub-exception)
+        | Location: `Book`
+        +-+---------------- 1 ----------------
+          | adaptix.AggregateCannotProvide: Cannot create loader for model. Cannot fetch InputNameLayout (1 sub-exception)
+          | Location: `Book.author: Person`
+          +-+---------------- 1 ----------------
+            | adaptix.CannotProvide: Required fields ['last_name'] are skipped
+            | Location: `Book.author: Person`
+            +------------------------------------
+
+      The above exception was the direct cause of the following exception:
+
+      Traceback (most recent call last):
+        ...
+      adaptix.ProviderNotFoundError: Cannot produce loader for type <class '__main__.Book'>
+      Note: The attached exception above contains verbose description of the problem
+
+
+  .. code-block:: text
+     :caption: New error example
+
+      Traceback (most recent call last):
+        ...
+      adaptix.ProviderNotFoundError: Cannot produce loader for type <class '__main__.Book'>
+        × Cannot create loader for model. Loaders for some fields cannot be created
+        │ Location: ‹Book›
+        ╰──▷ Cannot create loader for model. Cannot fetch `InputNameLayout`
+           │ Location: ‹Book.author: Person›
+           ╰──▷ Required fields ['last_name'] are skipped
+
+.. _v3.0.0b11-Breaking Changes:
+
+Breaking Changes
+----------------
+
+- Custom iterable subclasses are no longer supported.
+  To use them, register via the internal (temporary) API with IterableProvider.
+- The ``Retort.replace`` method now requires ``Omitted`` instead of ``None`` to skip parameter values.
+- Removed the ``hide_traceback`` parameter from ``Retort`` and ``Retort.replace``.
+  Error rendering is now controlled via the ``error_renderer`` parameter.
+  Pass ``None`` to display raw Python ``ExceptionGroup`` traces.
+
+.. _v3.0.0b11-Bug Fixes:
+
+Bug Fixes
+---------
+
+- Fixed incorrect classification of parametrized generic Pydantic models as iterables
+  (due to Pydantic model instances being inherently iterable).
+- Corrected hint generation errors during model conversion.
+- Fixed handling of parametrized TypeAlias.
+
+----------------------------------------------------
+
+
 .. _v3.0.0b10:
 
 `3.0.0b10 <https://github.com/reagento/adaptix/tree/v3.0.0b10>`__ -- 2025-04-13
