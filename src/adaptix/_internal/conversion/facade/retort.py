@@ -4,14 +4,14 @@ from functools import partial
 from inspect import Parameter, Signature
 from typing import Any, Callable, Optional, TypeVar, overload
 
-from adaptix import TypeHint
-
-from ...common import Converter
+from ...common import Converter, TypeHint
 from ...provider.essential import Provider
 from ...provider.loc_stack_filtering import P
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
+from ...retort.error_renderer import ErrorRenderer
 from ...retort.operating_retort import OperatingRetort
 from ...type_tools import is_generic_class
+from ...utils import Omittable, Omitted
 from ..coercer_provider import (
     DictCoercerProvider,
     DstAnyCoercerProvider,
@@ -63,6 +63,16 @@ class AdornedConversionRetort(OperatingRetort):
     def _calculate_derived(self) -> None:
         super()._calculate_derived()
         self._simple_converter_cache: dict[tuple[TypeHint, TypeHint, Optional[str]], Converter] = {}
+
+    def replace(
+        self: AR,
+        *,
+        error_renderer: Omittable[Optional[ErrorRenderer]] = Omitted(),
+    ) -> AR:
+        with self._clone() as clone:
+            if not isinstance(error_renderer, Omitted):
+                clone._error_renderer = error_renderer
+        return clone
 
     def extend(self: AR, *, recipe: Iterable[Provider]) -> AR:
         with self._clone() as clone:
