@@ -1,3 +1,4 @@
+import collections.abc
 from abc import ABC
 from collections.abc import ByteString, Iterable, Mapping, MutableMapping  # noqa: PYI057
 from datetime import date, datetime, time
@@ -10,7 +11,7 @@ from uuid import UUID
 from ...common import Dumper, Loader, TypeHint, VarTuple
 from ...definitions import DebugTrail
 from ...provider.essential import Provider, Request
-from ...provider.loc_stack_filtering import LocStack, P
+from ...provider.loc_stack_filtering import LocStack, P, VarTupleLSC
 from ...provider.location import TypeHintLoc
 from ...provider.shape_provider import BUILTIN_SHAPE_PROVIDER
 from ...provider.value_provider import ValueProvider
@@ -61,7 +62,7 @@ from ..model.request_filtering import AnyModelLSC
 from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
 from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
-from ..provider_template import ABCProxy
+from ..provider_template import ABCProxy, ToVarTupleProxy
 from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from ..union_provider import UnionProvider
 from .provider import (
@@ -136,10 +137,15 @@ class FilledRetort(OperatingRetort, ABC):
         ),
         PathLikeProvider(),
 
+        bound(list, IterableProvider(dump_as=list)),
+        bound(VarTupleLSC(), IterableProvider(dump_as=tuple)),
+        bound(set, IterableProvider(dump_as=list, json_schema_unique_items=True)),
+        bound(frozenset, IterableProvider(dump_as=tuple, json_schema_unique_items=True)),
+        bound(collections.deque, IterableProvider(dump_as=list)),
+        ConstantLengthTupleProvider(),
+
         LiteralProvider(),
         UnionProvider(),
-        ConstantLengthTupleProvider(),
-        IterableProvider(),
         DictProvider(),
         DefaultDictProvider(),
         RegexPatternProvider(),
@@ -149,6 +155,14 @@ class FilledRetort(OperatingRetort, ABC):
         ABCProxy(Mapping, dict),
         ABCProxy(MutableMapping, dict),
         ABCProxy(ByteString, bytes),
+
+        ToVarTupleProxy(collections.abc.Iterable),
+        ToVarTupleProxy(collections.abc.Reversible),
+        ToVarTupleProxy(collections.abc.Collection),
+        ToVarTupleProxy(collections.abc.Sequence),
+        ABCProxy(collections.abc.MutableSequence, list),
+        ABCProxy(collections.abc.Set, frozenset),
+        ABCProxy(collections.abc.MutableSet, set),
 
         name_mapping(
             JSONSchema,
