@@ -17,7 +17,7 @@ from ..tree_renderer import TreeRendererConfig
 from ..utils import add_note, copy_exception_dunders, with_module
 from .base_retort import BaseRetort
 from .builtin_mediator import BuiltinMediator, RequestBus
-from .error_renderer import ErrorRenderer
+from .error_renderer import BuiltinErrorRenderer, ErrorRenderer
 from .request_bus import BasicRequestBus, ErrorRepresentor, RecursionResolver, RecursiveRequestBus, RequestRouter
 from .routers import CheckerAndHandler
 
@@ -38,7 +38,7 @@ T = TypeVar("T")
 RequestT = TypeVar("RequestT", bound=Request)
 
 
-default_error_renderer = ErrorRenderer(TreeRendererConfig())
+default_error_renderer = BuiltinErrorRenderer(TreeRendererConfig())
 
 
 class SearchingRetort(BaseRetort, Provider, ABC):
