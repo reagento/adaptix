@@ -1,10 +1,8 @@
-from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from typing import TypeVar, final
+from typing import TypeVar
 
-from ..common import TypeHint, VarTuple
-from .essential import DirectMediator, Mediator, Provider, Request, RequestChecker, RequestHandler
+from .essential import DirectMediator, Provider, Request, RequestChecker, RequestHandler
 from .loc_stack_filtering import AnyLocStackChecker, LocStack, LocStackChecker, Pred, create_loc_stack_checker
 from .location import AnyLoc
 from .methods_provider import MethodsProvider
@@ -83,35 +81,3 @@ class LocStackBoundingProvider(Provider):
             if isinstance(checker, LocatedRequestChecker):
                 return LocatedRequestChecker(self._loc_stack_checker & checker.loc_stack_checker)
         return checker
-
-
-LocatedRequestT = TypeVar("LocatedRequestT", bound=LocatedRequest)
-
-
-class LocatedRequestDelegatingProvider(Provider, ABC):
-    REQUEST_CLASSES: VarTuple[type[LocatedRequest]] = ()
-
-    @final
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
-        request_checker = self.get_request_checker()
-
-        def delegating_request_handler(mediator, request):
-            tp = self.get_delegated_type(mediator, request)
-            return mediator.delegating_provide(
-                replace(
-                    request,
-                    loc_stack=request.loc_stack.replace_last_type(tp),
-                ),
-            )
-
-        return [
-            (request_cls, request_checker, delegating_request_handler)
-            for request_cls in self.REQUEST_CLASSES
-        ]
-
-    def get_request_checker(self) -> RequestChecker:
-        return AlwaysTrueRequestChecker()
-
-    @abstractmethod
-    def get_delegated_type(self, mediator: Mediator[LocatedRequestT], request: LocatedRequestT) -> TypeHint:
-        ...

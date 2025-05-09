@@ -258,9 +258,12 @@ class RequestChecker(ABC, Generic[RequestT]):
         ...
 
 
+RequestHandlerRegisterRecord = tuple[type[Request], RequestChecker, RequestHandler]
+
+
 class Provider(ABC):
     """An object that can process Request instances"""
 
     @abstractmethod
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         ...

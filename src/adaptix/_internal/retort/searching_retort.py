@@ -10,8 +10,7 @@ from ..provider.essential import (
     Mediator,
     Provider,
     Request,
-    RequestChecker,
-    RequestHandler,
+    RequestHandlerRegisterRecord,
 )
 from ..provider.request_checkers import AlwaysTrueRequestChecker
 from ..tree_renderer import TreeRendererConfig
@@ -57,7 +56,7 @@ class SearchingRetort(BaseRetort, Provider, ABC):
     def _provide_from_recipe(self, request: Request[T]) -> T:
         return self._create_mediator(request).provide(request)
 
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         def retort_request_handler(mediator, request):
             return self._provide_from_recipe(request)
 

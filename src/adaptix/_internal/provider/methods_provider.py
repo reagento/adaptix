@@ -3,7 +3,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, Callable, ClassVar, TypeVar, final
 
 from ..type_tools import get_all_type_hints, is_subclass_soft, normalize_type, strip_tags
-from .essential import Mediator, Provider, Request, RequestChecker, RequestHandler
+from .essential import Mediator, Provider, Request, RequestChecker, RequestHandlerRegisterRecord
 from .request_checkers import AlwaysTrueRequestChecker
 
 __all__ = ("MethodsProvider", "method_handler")
@@ -67,7 +67,7 @@ class MethodsProvider(Provider):
         return AlwaysTrueRequestChecker()
 
     @final
-    def get_request_handlers(self) -> Sequence[tuple[type[Request], RequestChecker, RequestHandler]]:
+    def get_request_handlers(self) -> Sequence[RequestHandlerRegisterRecord]:
         request_checker = self._get_request_checker()
         return [
             (request_cls, request_checker, getattr(self, method_name))
