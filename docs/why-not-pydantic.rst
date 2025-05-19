@@ -280,8 +280,8 @@ The only way to get around this problem is to try to use the ``context`` paramet
 and write dispatch logic inside the validators.
 
 
-Pydantic written in Rust, so Pydantic is fast?
---------------------------------------------------
+Pydantic is written in Rust, so Pydantic is fast?
+------------------------------------------------------
 
 As benchmarks show, this is far from true.
 

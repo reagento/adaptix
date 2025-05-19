@@ -11,7 +11,6 @@
 Features
 --------
 
-
 - Completely redesigned error rendering system.
   All errors related to loader, dumper, and converter generation now utilize a new compact and intuitive display format.
   Error messages have also been substantially improved for clarity.
