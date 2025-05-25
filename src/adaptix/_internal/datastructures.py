@@ -125,7 +125,7 @@ class ClassDispatcherKeysView(Generic[K_co]):
         """Creates a ClassDispatcher
          whose elements all point to the same value
         """
-        return ClassDispatcher({k: value for k in self._keys})
+        return ClassDispatcher(dict.fromkeys(self._keys, value))
 
     def __len__(self) -> int:
         return len(self._keys)

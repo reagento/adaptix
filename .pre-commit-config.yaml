@@ -29,35 +29,35 @@ repos:
         args: ['--maxkb=100']
 
   - repo: 'https://github.com/myint/eradicate'
-    rev: 2.3.0
+    rev: 3.0.0
     hooks:
       - id: eradicate
         args: ['-e']  # remove default --in-place argument and emit error
 
   - repo: 'https://github.com/astral-sh/ruff-pre-commit'
-    rev: v0.9.1
+    rev: v0.11.10
     hooks:
       - id: ruff
         args: [ --fix-only ]
 
   - repo: 'https://github.com/pycqa/isort'
-    rev: 5.13.2
+    rev: 6.0.0
     hooks:
       - id: isort
 
   - repo: 'https://github.com/python-jsonschema/check-jsonschema'
-    rev: 0.31.0
+    rev: 0.33.0
     hooks:
       - id: check-dependabot
       - id: check-github-workflows
 
   - repo: 'https://github.com/rhysd/actionlint'
-    rev: v1.7.3
+    rev: v1.7.7
     hooks:
       - id: actionlint
 
   - repo: 'https://github.com/woodruffw/zizmor-pre-commit'
-    rev: v1.1.1
+    rev: v1.8.0
     hooks:
       - id: zizmor
 

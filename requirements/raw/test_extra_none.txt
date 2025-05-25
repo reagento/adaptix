@@ -1,8 +1,8 @@
-pytest==8.3.4
+pytest==8.3.5
 -e ./tests/tests_helpers
 
-phonenumberslite==8.13.52
+phonenumberslite==9.0.5
 
-dirty-equals==0.8.0
+dirty-equals==0.9.0
 
-coverage==7.6.9
+coverage==7.8.1

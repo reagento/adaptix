@@ -1,5 +1,5 @@
 [build-system]
-requires = ['setuptools==75.6.0']
+requires = ['setuptools==80.8.0']
 build-backend = 'setuptools.build_meta'
 
 [project]
@@ -136,12 +136,14 @@ fixable = [
   'RUF022',
 ]
 ignore = [
-  # Rules that should be turned on in the near future
+  # Rules that should be turned on soon
   'D',
   'N818',
   'B904',
   'FIX002',
   'RUF012',
+
+  'PYI019',  # turn on after 3.11
 
   # Rules emitting false alerts
   'N804',
@@ -172,6 +174,8 @@ ignore = [
   'RSE102',
   'TC003',
   'PYI025',
+  'TC006',
+  'C420',
 
   # Rules conflictin with other tools
   'I001',

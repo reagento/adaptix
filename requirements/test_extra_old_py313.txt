@@ -6,27 +6,29 @@ annotated-types==0.7.0
     # via pydantic
 attrs==21.3.0
     # via -r requirements/raw/test_extra_old_py313.txt
-coverage==7.6.9
+coverage==7.8.1
     # via -r requirements/raw/test_extra_none.txt
-dirty-equals==0.8.0
+dirty-equals==0.9.0
     # via -r requirements/raw/test_extra_none.txt
-iniconfig==2.0.0
+greenlet==3.2.2 ; (python_full_version < '3.13' and platform_machine == 'AMD64') or (python_full_version < '3.13' and platform_machine == 'WIN32') or (python_full_version < '3.13' and platform_machine == 'aarch64') or (python_full_version < '3.13' and platform_machine == 'amd64') or (python_full_version < '3.13' and platform_machine == 'ppc64le') or (python_full_version < '3.13' and platform_machine == 'win32') or (python_full_version < '3.13' and platform_machine == 'x86_64')
+    # via sqlalchemy
+iniconfig==2.1.0
     # via pytest
-packaging==24.2
+packaging==25.0
     # via pytest
-phonenumberslite==8.13.52
+phonenumberslite==9.0.5
     # via -r requirements/raw/test_extra_none.txt
-pluggy==1.5.0
+pluggy==1.6.0
     # via pytest
 pydantic==2.8.2
     # via -r requirements/raw/test_extra_old_py313.txt
 pydantic-core==2.20.1
     # via pydantic
-pytest==8.3.4
+pytest==8.3.5
     # via -r requirements/raw/test_extra_none.txt
 sqlalchemy==2.0.31
     # via -r requirements/raw/test_extra_old_py313.txt
-typing-extensions==4.12.2
+typing-extensions==4.13.2
     # via
     #   pydantic
     #   pydantic-core
