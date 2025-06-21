@@ -1,0 +1,10 @@
+pytest==8.3.5
+-e ./tests/tests_helpers
+
+phonenumberslite==9.0.5
+
+dirty-equals==0.9.0
+
+coverage==7.8.1
+
+jsonschema-rs==0.30.0; implementation_name != "pypy"

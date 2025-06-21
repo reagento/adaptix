@@ -3,7 +3,7 @@ from itertools import count
 from typing import Optional
 
 from ...datastructures import OrderedUniqueGrouper
-from .definitions import RefSource
+from .definitions import LocalRefSource
 from .resolver import RefMangler
 
 
@@ -16,8 +16,8 @@ class IndexRefMangler(RefMangler):
         self,
         occupied_refs: Container[str],
         common_ref: str,
-        sources: Sequence[RefSource],
-    ) -> Mapping[RefSource, str]:
+        sources: Sequence[LocalRefSource],
+    ) -> Mapping[LocalRefSource, str]:
         result = {}
         counter = count(self._start)
         for source in sources:
@@ -39,11 +39,11 @@ class QualnameRefMangler(RefMangler):
         self,
         occupied_refs: Container[str],
         common_ref: str,
-        sources: Sequence[RefSource],
-    ) -> Mapping[RefSource, str]:
+        sources: Sequence[LocalRefSource],
+    ) -> Mapping[LocalRefSource, str]:
         return {source: self._generate_name(source) or common_ref for source in sources}
 
-    def _generate_name(self, source: RefSource) -> Optional[str]:
+    def _generate_name(self, source: LocalRefSource) -> Optional[str]:
         tp = source.loc_stack.last.type
         return getattr(tp, "__qualname__", None)
 
@@ -57,11 +57,11 @@ class CompoundRefMangler(RefMangler):
         self,
         occupied_refs: Container[str],
         common_ref: str,
-        sources: Sequence[RefSource],
-    ) -> Mapping[RefSource, str]:
+        sources: Sequence[LocalRefSource],
+    ) -> Mapping[LocalRefSource, str]:
         mangled = self._base.mangle_refs(occupied_refs, common_ref, sources)
 
-        grouper = OrderedUniqueGrouper[str, RefSource]()
+        grouper = OrderedUniqueGrouper[str, LocalRefSource]()
         for source, ref in mangled.items():
             grouper.add(ref, source)
 

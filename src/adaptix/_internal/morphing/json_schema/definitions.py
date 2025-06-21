@@ -11,21 +11,36 @@ JSONSchemaT = TypeVar("JSONSchemaT")
 
 
 @dataclass(frozen=True)
-class RefSource(Generic[JSONSchemaT]):
+class LocalRefSource(Generic[JSONSchemaT]):
     value: Optional[str]
     json_schema: JSONSchemaT = field(hash=False)
     loc_stack: LocStack = field(repr=False)
+
+
+@dataclass(frozen=True)
+class RemoteRef:
+    value: str
 
 
 Boolable = Union[T, bool]
 
 
 @dataclass(repr=False)
-class JSONSchema(BaseJSONSchema[RefSource[FwdRef["JSONSchema"]], Boolable[FwdRef["JSONSchema"]]]):
+class JSONSchema(
+    BaseJSONSchema[
+        Union[LocalRefSource[FwdRef["JSONSchema"]], RemoteRef],
+        Boolable[FwdRef["JSONSchema"]],
+    ],
+):
     pass
 
 
 @dataclass(repr=False)
-class ResolvedJSONSchema(BaseJSONSchema[str, Boolable[FwdRef["ResolvedJSONSchema"]]]):
+class ResolvedJSONSchema(
+    BaseJSONSchema[
+        str,
+        Boolable[FwdRef["ResolvedJSONSchema"]],
+    ],
+):
     pass
 

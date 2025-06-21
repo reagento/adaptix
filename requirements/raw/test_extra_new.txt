@@ -1,5 +1,7 @@
--r test_extra_none.txt
+-r _test_base.txt
 attrs==24.2.0
 sqlalchemy==2.0.36
 pydantic==2.10.3
 msgspec==0.19.0; implementation_name != "pypy"
+
+jsonschema==4.24.0

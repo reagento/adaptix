@@ -1,8 +1,3 @@
-pytest==8.3.5
--e ./tests/tests_helpers
+-r _test_base.txt
 
-phonenumberslite==9.0.5
-
-dirty-equals==0.9.0
-
-coverage==7.8.1
+jsonschema==4.24.0

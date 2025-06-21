@@ -1,6 +1,7 @@
 from collections.abc import Iterable, Sequence
 from typing import Any, Callable, Generic, Optional, TypeVar
 
+from ..common import TypeHint
 from ..conversion.request_cls import CoercerRequest, LinkingRequest
 from ..morphing.json_schema.definitions import JSONSchema
 from ..morphing.json_schema.request_cls import InlineJSONSchemaRequest, JSONSchemaRequest, RefSourceRequest
@@ -8,7 +9,6 @@ from ..morphing.request_cls import DumperRequest, LoaderRequest
 from ..provider.essential import Mediator, Provider, Request
 from ..provider.loc_stack_tools import format_loc_stack
 from ..provider.located_request import LocatedRequest, LocatedRequestMethodsProvider
-from ..provider.location import AnyLoc
 from ..provider.methods_provider import method_handler
 from .request_bus import ErrorRepresentor, RecursionResolver, RequestRouter
 from .routers import CheckerAndHandler, SimpleRouter, create_router_for_located_request
@@ -39,23 +39,23 @@ CallableT = TypeVar("CallableT", bound=Callable)
 
 class LocatedRequestCallableRecursionResolver(RecursionResolver[LocatedRequest, CallableT], Generic[CallableT]):
     def __init__(self) -> None:
-        self._loc_to_stub: dict[AnyLoc, FuncWrapper] = {}
+        self._tp_to_stub: dict[TypeHint, FuncWrapper] = {}
 
     def track_request(self, request: LocatedRequest) -> Optional[Any]:
-        last_loc = request.last_loc
-        if sum(loc == last_loc for loc in request.loc_stack) == 1:
+        last_loc_type = request.last_loc.type
+        if sum(loc.type == last_loc_type for loc in request.loc_stack) == 1:
             return None
 
-        if last_loc in self._loc_to_stub:
-            return self._loc_to_stub[last_loc]
-        stub = FuncWrapper(last_loc)
-        self._loc_to_stub[last_loc] = stub
+        if last_loc_type in self._tp_to_stub:
+            return self._tp_to_stub[last_loc_type]
+        stub = FuncWrapper(last_loc_type)
+        self._tp_to_stub[last_loc_type] = stub
         return stub
 
     def track_response(self, request: LocatedRequest, response: CallableT) -> None:
-        last_loc = request.last_loc
-        if last_loc in self._loc_to_stub:
-            self._loc_to_stub.pop(last_loc).set_func(response)
+        last_loc_type = request.last_loc.type
+        if last_loc_type in self._tp_to_stub:
+            self._tp_to_stub.pop(last_loc_type).set_func(response)
 
 
 RequestT = TypeVar("RequestT", bound=Request)

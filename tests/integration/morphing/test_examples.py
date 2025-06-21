@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from tests_helpers.morphing import JSONSchemaFork, assert_morphing
+
 from adaptix import Retort
 
 
@@ -11,13 +13,30 @@ class Book:
 
 
 def test_readme(accum):
-    data = {
-        "title": "Fahrenheit 451",
-        "price": 100,
-    }
-
     retort = Retort(recipe=[accum])
-    book = retort.load(data, Book)
-    assert book == Book(title="Fahrenheit 451", price=100)
-    dumped = retort.dump(book)
-    assert dumped == {**data, "author": "Unknown author"}
+
+    assert_morphing(
+        retort=retort,
+        tp=Book,
+        data={"title": "Fahrenheit 451", "price": 100},
+        loaded=Book(title="Fahrenheit 451", price=100),
+        dumped={"title": "Fahrenheit 451", "price": 100, "author": "Unknown author"},
+        json_schema={
+            "$defs": {
+                "Book": {
+                    "additionalProperties": JSONSchemaFork(input=True, output=False),
+                    "properties": {
+                        "author": {"type": "string", "default": "Unknown author"},
+                        "price": {"type": "integer"},
+                        "title": {"type": "string"},
+                    },
+                    "required": JSONSchemaFork(
+                        input=["title", "price"],
+                        output=["title", "price", "author"],
+                    ),
+                    "type": "object",
+                },
+            },
+            "$ref": "#/$defs/Book",
+        },
+    )

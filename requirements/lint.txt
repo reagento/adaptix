@@ -3,7 +3,7 @@
 -e ./benchmarks
     # via -r requirements/raw/bench.txt
 -e ./tests/tests_helpers
-    # via -r requirements/raw/test_extra_none.txt
+    # via -r requirements/raw/_test_base.txt
 alabaster==1.0.0
     # via sphinx
 annotated-types==0.7.0
@@ -14,6 +14,8 @@ attrs==24.2.0
     # via
     #   -r requirements/raw/test_extra_new.txt
     #   cattrs
+    #   jsonschema
+    #   referencing
 babel==2.17.0
     # via sphinx
 beautifulsoup4==4.13.4
@@ -29,11 +31,11 @@ charset-normalizer==3.4.2
 colorama==0.4.6
     # via radon
 coverage==7.8.1
-    # via -r requirements/raw/test_extra_none.txt
+    # via -r requirements/raw/_test_base.txt
 dataclass-factory==2.16
     # via -r requirements/raw/bench.txt
 dirty-equals==0.9.0
-    # via -r requirements/raw/test_extra_none.txt
+    # via -r requirements/raw/_test_base.txt
 distlib==0.3.9
     # via virtualenv
 dlint==0.14.1
@@ -71,6 +73,12 @@ jinja2==3.1.6
     # via
     #   myst-parser
     #   sphinx
+jsonschema==4.24.0
+    # via -r requirements/raw/test_extra_new.txt
+jsonschema-rs==0.30.0 ; implementation_name != 'pypy'
+    # via -r requirements/raw/_test_base.txt
+jsonschema-specifications==2025.4.1
+    # via jsonschema
 lxml==5.4.0
     # via astpath
 mando==0.7.1
@@ -116,7 +124,7 @@ packaging==25.0
 pbr==6.1.1
     # via sphinxcontrib-apidoc
 phonenumberslite==9.0.5
-    # via -r requirements/raw/test_extra_none.txt
+    # via -r requirements/raw/_test_base.txt
 platformdirs==4.3.8
     # via virtualenv
 plotly==6.1.1
@@ -149,18 +157,26 @@ pyperf==2.6.1
     # via -r requirements/raw/bench.txt
 pytest==8.3.5
     # via
+    #   -r requirements/raw/_test_base.txt
     #   -r requirements/raw/bench.txt
-    #   -r requirements/raw/test_extra_none.txt
 pyyaml==6.0.2
     # via
     #   myst-parser
     #   pre-commit
 radon==6.0.1
     # via -r requirements/raw/lint.txt
+referencing==0.36.2
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
 requests==2.32.3
     # via sphinx
 roman-numerals-py==3.1.0
     # via sphinx
+rpds-py==0.25.1
+    # via
+    #   jsonschema
+    #   referencing
 ruff==0.11.10
     # via -r requirements/raw/lint.txt
 schematics==2.1.1
@@ -226,6 +242,7 @@ typing-extensions==4.13.2
     #   mypy
     #   pydantic
     #   pydantic-core
+    #   referencing
     #   sqlalchemy
 urllib3==2.4.0
     # via requests

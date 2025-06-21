@@ -192,7 +192,7 @@ class UnionProvider(LoaderProvider, DumperProvider):
 
         types_with_forbidden_origins = [
             case.source for case in norm.args
-            if not self._is_allowed_origin(case.origin)
+            if not self._is_allowed_origin(strip_tags(case).origin)
         ]
         if types_with_forbidden_origins:
             raise AggregateCannotProvide(
