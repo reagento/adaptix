@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional, TypeVar, Union
 from adaptix import TypeHint
 
 from ...utils import Omittable, Omitted
-from .definitions import JSONSchema, RefSource, ResolvedJSONSchema
+from .definitions import JSONSchema, LocalRefSource, RemoteRef, ResolvedJSONSchema
 from .schema_model import JSONNumeric, JSONObject, JSONSchemaBuiltinFormat, JSONSchemaT, JSONSchemaType, JSONValue, RefT
 
 _non_generic_fields_types = [
@@ -110,14 +110,19 @@ traverse_resolved_json_schema = _generate_json_schema_traverser(
 _to_resolved_json_schema_templates = {
     **{tp: "__value__" for tp in _non_generic_fields_types},
     Omittable[Sequence[JSONSchemaT]]: (  # type: ignore[misc, valid-type]
-        "Omitted() if __value__ == Omitted() else [__replacer__(item, __ctx__) for item in __value__]"
+        "Omitted() if __value__ == Omitted() else [__replacer__(item, __prefix__, __ctx__) for item in __value__]"
     ),
-    Omittable[JSONSchemaT]: "Omitted() if __value__ == Omitted() else __replacer__(__value__, __ctx__)",  # type: ignore[misc, valid-type]
+    Omittable[JSONSchemaT]: (  # type: ignore[misc, valid-type]
+        "Omitted() if __value__ == Omitted() else __replacer__(__value__, __prefix__, __ctx__)"
+    ),
     Omittable[JSONObject[JSONSchemaT]]: (  # type: ignore[misc, valid-type]
         "Omitted() if __value__ == Omitted() else"
-        " {key: __replacer__(value, __ctx__) for key, value in __value__.items()}"
+        " {key: __replacer__(value, __prefix__, __ctx__) for key, value in __value__.items()}"
     ),
-    Omittable[RefT]: "Omitted() if __value__ == Omitted() else __ctx__[__value__]",  # type: ignore[misc, valid-type]
+    Omittable[RefT]: (  # type: ignore[misc, valid-type]
+        "Omitted() if __value__ == Omitted() else"
+        " (__value__.value if isinstance(__value__, RemoteRef) else __prefix__ + __ctx__[__value__])"
+    ),
 }
 
 
@@ -133,7 +138,7 @@ def _generate_json_schema_replacer(
     source_cls: type[JSONSchemaSourceT],
     target_cls: type[JSONSchemaTargetT],
     context: type[ContextT],
-) -> Callable[[JSONSchemaSourceT, ContextT], JSONSchemaTargetT]:
+) -> Callable[[JSONSchemaSourceT, str, ContextT], JSONSchemaTargetT]:
     result = []
     for fld in fields(target_cls):  # type: ignore[arg-type]
         template = templates[fld.type]
@@ -145,13 +150,14 @@ def _generate_json_schema_replacer(
             .replace("__value__", f"obj.{fld.name}")
             .replace("__replacer__", function_name)
             .replace("__ctx__", "ctx")
+            .replace("__prefix__", "prefix")
             + ",",
         )
 
     body = "\n".join(indent(item, " " * 8) for item in result)
     module_code = dedent(
         f"""
-        def {function_name}(obj, ctx, /):
+        def {function_name}(obj, prefix, ctx, /):
             if isinstance(obj, bool):
                 return obj
 
@@ -160,7 +166,7 @@ def _generate_json_schema_replacer(
             )
         """,
     )
-    namespace: dict[str, Any] = {target_cls.__name__: target_cls, "Omitted": Omitted}
+    namespace: dict[str, Any] = {target_cls.__name__: target_cls, "Omitted": Omitted, "RemoteRef": RemoteRef}
     exec(compile(module_code, file_name, "exec"), namespace, namespace)  # noqa: S102
     return namespace[function_name]
 
@@ -171,5 +177,5 @@ replace_json_schema_ref = _generate_json_schema_replacer(
     templates=_to_resolved_json_schema_templates,
     source_cls=JSONSchema,
     target_cls=ResolvedJSONSchema,
-    context=Mapping[RefSource[JSONSchema], str],  # type: ignore[type-abstract]
+    context=Mapping[LocalRefSource[JSONSchema], str],  # type: ignore[type-abstract]
 )

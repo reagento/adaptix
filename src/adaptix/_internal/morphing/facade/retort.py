@@ -1,6 +1,17 @@
 import collections.abc
 from abc import ABC
-from collections.abc import ByteString, Iterable, Mapping, MutableMapping  # noqa: PYI057
+from collections.abc import ByteString  # noqa: PYI057
+from collections.abc import (
+    Collection,
+    Iterable,
+    Mapping,
+    MutableMapping,
+    MutableSequence,
+    MutableSet,
+    Reversible,
+    Sequence,
+    Set,
+)
 from datetime import date, datetime, time
 from ipaddress import IPv4Address, IPv4Interface, IPv4Network, IPv6Address, IPv6Interface, IPv6Network
 from itertools import chain
@@ -52,7 +63,7 @@ from ..generic_provider import (
     TypeHintTagsUnwrappingProvider,
 )
 from ..iterable_provider import IterableProvider
-from ..json_schema.definitions import JSONSchema, ResolvedJSONSchema
+from ..json_schema.definitions import JSONSchema
 from ..json_schema.providers import InlineJSONSchemaProvider, JSONSchemaRefProvider
 from ..json_schema.request_cls import JSONSchemaContext, JSONSchemaRequest
 from ..model.crown_definitions import ExtraSkip
@@ -156,22 +167,14 @@ class FilledRetort(OperatingRetort, ABC):
         ABCProxy(MutableMapping, dict),
         ABCProxy(ByteString, bytes),
 
-        ToVarTupleProxy(collections.abc.Iterable),
-        ToVarTupleProxy(collections.abc.Reversible),
-        ToVarTupleProxy(collections.abc.Collection),
-        ToVarTupleProxy(collections.abc.Sequence),
-        ABCProxy(collections.abc.MutableSequence, list),
-        ABCProxy(collections.abc.Set, frozenset),
-        ABCProxy(collections.abc.MutableSet, set),
+        ToVarTupleProxy(Iterable),
+        ToVarTupleProxy(Reversible),
+        ToVarTupleProxy(Collection),
+        ToVarTupleProxy(Sequence),
+        ABCProxy(MutableSequence, list),
+        ABCProxy(Set, frozenset),
+        ABCProxy(MutableSet, set),
 
-        name_mapping(
-            JSONSchema,
-            omit_default=True,
-        ),
-        name_mapping(
-            ResolvedJSONSchema,
-            omit_default=True,
-        ),
         name_mapping(
             chain=None,
             skip=(),

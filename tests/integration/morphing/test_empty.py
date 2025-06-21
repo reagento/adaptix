@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from tests_helpers.morphing import JSONSchemaFork, assert_morphing
+
 from adaptix import Retort
 
 
@@ -11,8 +13,21 @@ class Empty:
 def test_simple(accum):
     retort = Retort(recipe=[accum])
 
-    loader = retort.get_loader(Empty)
-    assert loader({"some_field": 1}) == Empty()
-
-    dumper = retort.get_dumper(Empty)
-    assert dumper(Empty()) == {}
+    assert_morphing(
+        retort=retort,
+        tp=Empty,
+        data={"some_field": 1},
+        loaded=Empty(),
+        dumped={},
+        json_schema={
+            "$defs": {
+                "Empty": {
+                    "additionalProperties": JSONSchemaFork(input=True, output=False),
+                    "properties": {},
+                    "required": [],
+                    "type": "object",
+                },
+            },
+            "$ref": "#/$defs/Empty",
+        },
+    )

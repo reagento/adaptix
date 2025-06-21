@@ -1,4 +1,5 @@
 from attr import Factory, define, field
+from tests_helpers.morphing import JSONSchemaFork, assert_morphing
 
 from adaptix import Retort, name_mapping
 
@@ -12,11 +13,27 @@ class Coordinates:
 def test_coordinates(accum):
     retort = Retort(recipe=[accum])
 
-    loader = retort.get_loader(Coordinates)
-    assert loader({"x": 1, "y": 2}) == Coordinates(x=1, y=2)
-
-    dumper = retort.get_dumper(Coordinates)
-    assert dumper(Coordinates(x=1, y=2)) == {"x": 1, "y": 2}
+    assert_morphing(
+        retort=retort,
+        tp=Coordinates,
+        data={"x": 1, "y": 2},
+        loaded=Coordinates(x=1, y=2),
+        dumped={"x": 1, "y": 2},
+        json_schema={
+            "$defs": {
+                "Coordinates": {
+                    "additionalProperties": JSONSchemaFork(input=True, output=False),
+                    "properties": {
+                        "x": {"type": "integer"},
+                        "y": {"type": "integer"},
+                    },
+                    "required": ["x", "y"],
+                    "type": "object",
+                },
+            },
+            "$ref": "#/$defs/Coordinates",
+        },
+    )
 
 
 @define

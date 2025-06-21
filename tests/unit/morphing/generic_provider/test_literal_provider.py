@@ -245,10 +245,6 @@ def test_dumper_with_bytes_and_enums(strict_coercion, debug_trail):
         CASE1 = 1
         CASE2 = 2
 
-    class Enum2(Enum):
-        CASE1 = 1
-        CASE2 = 2
-
     retort = Retort()
 
     dumper = retort.replace(

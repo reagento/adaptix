@@ -15,6 +15,7 @@ from ...utils import Omittable, Omitted
 from ..coercer_provider import (
     DictCoercerProvider,
     DstAnyCoercerProvider,
+    ForwardRefEvaluatingProvider,
     IterableCoercerProvider,
     OptionalCoercerProvider,
     SameTypeCoercerProvider,
@@ -38,6 +39,7 @@ class FilledConversionRetort(OperatingRetort):
 
         DefaultLinkingProvider(),
 
+        ForwardRefEvaluatingProvider(),
         ModelCoercerProvider(),
         IterableCoercerProvider(),
         DictCoercerProvider(),

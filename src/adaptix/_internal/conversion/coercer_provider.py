@@ -2,7 +2,7 @@ import collections.abc
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import replace
-from typing import Any, Callable, Union, final
+from typing import Any, Callable, ForwardRef, Union, final
 
 from ..common import Coercer, OneArgCoercer, TypeHint
 from ..morphing.utils import try_normalize_type
@@ -11,6 +11,7 @@ from ..provider.loc_stack_filtering import LocStackChecker
 from ..provider.location import GenericParamLoc
 from ..special_cases_optimization import as_is_stub, as_is_stub_with_ctx
 from ..type_tools import BaseNormType, is_generic, is_parametrized, is_subclass_soft, normalize_type, strip_tags
+from ..type_tools.basic_utils import eval_forward_ref
 from .provider_template import CoercerProvider
 from .request_cls import CoercerRequest
 
@@ -175,6 +176,32 @@ class TypeHintTagsUnwrappingProvider(CoercerProvider):
                 request,
                 src=request.src.replace_last_type(unwrapped_src_tp),
                 dst=request.dst.replace_last_type(unwrapped_dst_tp),
+            ),
+        )
+
+
+class ForwardRefEvaluatingProvider(CoercerProvider):
+    def _replace_forward_ref(self, tp: TypeHint) -> TypeHint:
+        if not isinstance(tp, ForwardRef):
+            return tp
+
+        if tp.__forward_module__ is None:
+            raise CannotProvide(f"ForwardRef {tp!r} cannot be evaluated", is_terminal=True, is_demonstrative=True)
+
+        return eval_forward_ref(tp.__forward_module__.__dict__, tp)
+
+    def _provide_coercer(self, mediator: Mediator, request: CoercerRequest) -> Coercer:
+        src_tp = request.src.last.type
+        dst_tp = request.dst.last.type
+        replaced_src_tp = self._replace_forward_ref(src_tp)
+        replaced_dst_tp = self._replace_forward_ref(dst_tp)
+        if replaced_src_tp == src_tp and replaced_dst_tp == dst_tp:
+            raise CannotProvide
+        return mediator.delegating_provide(
+            replace(
+                request,
+                src=request.src.replace_last_type(replaced_src_tp),
+                dst=request.dst.replace_last_type(replaced_dst_tp),
             ),
         )
 
