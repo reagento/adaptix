@@ -38,7 +38,7 @@ jobs:
           just-version: 1.14.0
 
       - name: Setup environment to run tox
-        run:
+        run: |-
           just setup-runner
           echo ".venv/bin" >> $GITHUB_PATH
 
@@ -82,7 +82,7 @@ jobs:
           just-version: 1.14.0
 
       - name: Setup environment to run tox
-        run:
+        run: |-
           just setup-runner
           echo ".venv/bin" >> $GITHUB_PATH
 
