@@ -40,7 +40,6 @@ jobs:
       - name: Setup environment to run tox
         run: |-
           just setup-runner
-          echo ".venv/bin" >> $GITHUB_PATH
 
       - name: Run linters
         run:
@@ -84,7 +83,6 @@ jobs:
       - name: Setup environment to run tox
         run: |-
           just setup-runner
-          echo ".venv/bin" >> $GITHUB_PATH
 
       - name: Run tests with coverage
         if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}

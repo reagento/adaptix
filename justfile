@@ -76,6 +76,7 @@ doc_target := "docs-build"
 @setup-runner:
     {{ just }} install-initial
     {{ uv_sync_group }} runner
+    echo ".venv/bin" >> "$GITHUB_PATH"
 
 [private]
 @inv *ARGS:
