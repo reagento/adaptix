@@ -1,3 +1,0 @@
--r bench.txt
-
-plotly==6.1.1

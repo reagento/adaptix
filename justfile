@@ -1,21 +1,28 @@
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
+just := "just --justfile " + justfile()
+uv_sync_group := "uv sync --active --locked --group"
+
+[private]
+@install-initial:
+    pip install pip==25.1.1
+    pip install uv==0.9.8
+
+
 [private]
 @default:
-    just --list
+    {{ just }} --list
 
 # prepare venv and repo for developing
 @bootstrap:
-    pip install -r requirements/pre.txt
-    uv pip install -e .
-    uv pip install -r requirements/dev.txt
+    {{ just }} install-initial
+    {{ just }} venv-sync
     prek
     prek install
 
 # sync version of installed packages
 @venv-sync:
-    uv pip sync requirements/pre.txt requirements/dev.txt
-    uv pip install -e .
+    {{ uv_sync_group }} dev
 
 # run all linters
 @lint:
@@ -42,10 +49,10 @@ inv := "inv -r scripts -c invoke_tasks"
       --parallel
 
 @deps-compile:
-    {{ inv }} deps-compile
+    uv lock
 
 @deps-compile-upgrade:
-    {{ inv }} deps-compile --upgrade
+    uv lock --upgrade
 
 doc_source := "docs"
 doc_target := "docs-build"
@@ -67,8 +74,8 @@ doc_target := "docs-build"
 
 [private]
 @setup-runner:
-    pip install -r requirements/pre.txt
-    uv pip install -r requirements/runner.txt
+    {{ just }} install-initial
+    {{ uv_sync_group }} runner
 
 [private]
 @inv *ARGS:

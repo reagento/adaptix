@@ -36,27 +36,6 @@ def cov(c: Context, env_list, output="coverage.xml", parallel=False):
     else:
         c.run(f"cp .tox/cov-storage/.coverage {output}")
 
-
-@task
-def deps_compile(c: Context, upgrade=False):
-    promises = [
-        c.run(
-            f'uv pip compile {req} -o {Path("requirements") / req.name}'
-            ' -q --allow-unsafe --strip-extras --no-strip-markers'
-            + if_str(upgrade, " --upgrade"),
-            asynchronous=True,
-        )
-        for req in Path(".").glob("requirements/raw/*.txt")
-        if not req.name.startswith("_")
-    ]
-    for promise in promises:
-        promise.join()
-
-    for file in Path(".").glob("requirements/*.txt"):
-        c.run(fr'sed -i -E "s/-e file:.+\/tests\/tests_helpers/-e .\/tests\/tests_helpers/" {file}')
-        c.run(fr'sed -i -E "s/-e file:.+\/benchmarks/-e .\/benchmarks/" {file}')
-
-
 @task
 def test_on_ci(c: Context, py_target, cov_output=None):
     env_list = c.run(fr"tox list --no-desc | grep '^{py_target}' | sort -r | tr '\n' ','", hide=True).stdout
