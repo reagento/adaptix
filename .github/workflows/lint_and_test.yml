@@ -85,7 +85,7 @@ jobs:
       - name: Setup environment to run tox
         run:
           just setup-runner
-          source .venv/bin/activate
+          echo ".venv/bin" >> $GITHUB_PATH
 
       - name: Run tests with coverage
         if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}
