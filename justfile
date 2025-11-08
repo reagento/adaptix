@@ -1,7 +1,7 @@
 set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 just := "just --justfile " + justfile()
-uv_sync_group := "uv sync --active --locked --group"
+uv_sync_group := "uv sync --active --locked --only-group"
 
 [private]
 @install-initial:
