@@ -152,6 +152,12 @@ bench = [
     { name = "pytest" },
     { name = "schematics" },
 ]
+ci-runner = [
+    { name = "coverage" },
+    { name = "invoke" },
+    { name = "tox-uv" },
+    { name = "uv" },
+]
 dev = [
     { name = "adaptix" },
     { name = "astpath", extra = ["xpath"], marker = "extra == 'group-7-adaptix-dev' or (extra == 'group-7-adaptix-bench' and extra == 'group-7-adaptix-lint') or (extra == 'group-7-adaptix-bench' and extra == 'group-7-adaptix-test-extra-new') or (extra == 'group-7-adaptix-bench' and extra == 'group-7-adaptix-test-extra-old') or (extra == 'group-7-adaptix-bench' and extra == 'group-7-adaptix-test-extra-old-py313') or (extra == 'group-7-adaptix-doc' and extra == 'group-7-adaptix-lint') or (extra == 'group-7-adaptix-doc' and extra == 'group-7-adaptix-test-extra-new') or (extra == 'group-7-adaptix-doc' and extra == 'group-7-adaptix-test-extra-old') or (extra == 'group-7-adaptix-doc' and extra == 'group-7-adaptix-test-extra-old-py313') or (extra == 'group-7-adaptix-lint' and extra == 'group-7-adaptix-test-extra-new') or (extra == 'group-7-adaptix-lint' and extra == 'group-7-adaptix-test-extra-old') or (extra == 'group-7-adaptix-lint' and extra == 'group-7-adaptix-test-extra-old-py313') or (extra == 'group-7-adaptix-test-extra-new' and extra == 'group-7-adaptix-test-extra-old') or (extra == 'group-7-adaptix-test-extra-new' and extra == 'group-7-adaptix-test-extra-old-py313') or (extra == 'group-7-adaptix-test-extra-old' and extra == 'group-7-adaptix-test-extra-old-py313')" },
@@ -196,6 +202,7 @@ dev = [
     { name = "towncrier" },
     { name = "tox-uv" },
     { name = "typos" },
+    { name = "uv" },
     { name = "vulture" },
 ]
 doc = [
@@ -271,11 +278,6 @@ lint = [
 ]
 pytest = [
     { name = "pytest" },
-]
-runner = [
-    { name = "coverage" },
-    { name = "invoke" },
-    { name = "tox-uv" },
 ]
 test-extra-new = [
     { name = "adaptix" },
@@ -355,6 +357,12 @@ bench = [
     { name = "pytest", specifier = "==8.3.5" },
     { name = "schematics", specifier = "==2.1.1" },
 ]
+ci-runner = [
+    { name = "coverage", specifier = "==7.8.1" },
+    { name = "invoke", specifier = "==2.2.0" },
+    { name = "tox-uv", specifier = "==1.25.0" },
+    { name = "uv", specifier = "==0.9.8" },
+]
 dev = [
     { name = "adaptix", editable = "." },
     { name = "adaptix", marker = "python_full_version >= '3.11'", editable = "." },
@@ -403,6 +411,7 @@ dev = [
     { name = "towncrier", specifier = "==24.8.0" },
     { name = "tox-uv", specifier = "==1.25.0" },
     { name = "typos", specifier = "==1.39.0" },
+    { name = "uv", specifier = "==0.9.8" },
     { name = "vulture", specifier = "==2.10" },
 ]
 doc = [
@@ -481,11 +490,6 @@ lint = [
     { name = "vulture", specifier = "==2.10" },
 ]
 pytest = [{ name = "pytest", specifier = "==8.3.5" }]
-runner = [
-    { name = "coverage", specifier = "==7.8.1" },
-    { name = "invoke", specifier = "==2.2.0" },
-    { name = "tox-uv", specifier = "==1.25.0" },
-]
 test-extra-new = [
     { name = "adaptix", editable = "." },
     { name = "attrs", specifier = "==24.2.0" },

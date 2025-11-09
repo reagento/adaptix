@@ -171,6 +171,7 @@ doc = [
 ]
 
 ci-runner = [
+    "uv==0.9.8",
     "tox-uv==1.25.0",
     "invoke==2.2.0",
     "coverage==7.8.1",
@@ -196,7 +197,7 @@ lint = [
 ]
 
 dev = [
-    {include-group = "runner"},
+    {include-group = "ci-runner"},
     {include-group = "lint"},
     "towncrier==24.8.0",
 ]
