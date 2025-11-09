@@ -100,6 +100,7 @@ pytest = [
 
 test-extra-none = [
     {include-group = "pytest"},
+    "adaptix",  # local package
     "tests_helpers",  # local package
     "phonenumberslite==9.0.5",
     "dirty-equals==0.9.0",
@@ -133,6 +134,7 @@ test-extra-new = [
 
 bench = [
     {include-group = "pytest"},
+    "adaptix",  # local package
     "benchmarks",  # local package
 
     "pyperf==2.6.1",
@@ -217,6 +219,7 @@ conflicts = [
 [tool.uv.sources]
 benchmarks = { path = "./benchmarks", editable = true }
 tests_helpers = { path = "./tests/tests_helpers", editable = true }
+adaptix = { path = ".", editable = true }
 
 #   ┌             ┐
 #   │   LINTING   │
