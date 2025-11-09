@@ -170,7 +170,7 @@ doc = [
     "plotly==6.1.1",
 ]
 
-runner = [
+ci-runner = [
     "tox-uv==1.25.0",
     "invoke==2.2.0",
     "coverage==7.8.1",

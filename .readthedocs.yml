@@ -16,7 +16,7 @@ build:
     create_environment:
        - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
     install:
-       - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --locked --only-group doc
+       - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" just uv-sync-group doc
 
 
 sphinx:

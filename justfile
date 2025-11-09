@@ -75,8 +75,15 @@ doc_target := "docs-build"
 [private]
 @setup-ci-runner:
     {{ just }} install-initial
-    {{ uv_sync_group }} runner
+    {{ uv_sync_group }} ci-runner
     echo ".venv/bin" >> "$GITHUB_PATH"
+    echo "VIRTUAL_ENV=.venv" >> $GITHUB_ENV
+
+
+[private]
+@uv-sync-group group:
+    {{ uv_sync_group }} {{ group }}
+
 
 [private]
 @inv *ARGS:
