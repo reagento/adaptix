@@ -57,9 +57,11 @@ msgspec-strict = ['msgspec >= 0.18.5, <= 0.19.0']
 name = 'A. Tikhonov'
 email = '17@itishka.org'
 
+
 #   ┌             ┐
 #   │   TESTING   │
 #   └             ┘
+
 
 [tool.pytest.ini_options]
 python_classes = 'WeDoNotUseClassTestCase'
@@ -84,6 +86,141 @@ include = ["src/**"]
 exclude_also = [
     "^\\s*\\.\\.\\.\\s*(:?#.*)?$",
 ]
+
+
+#   ┌                     ┐
+#   │   CI DEPENDENCIES   │
+#   └                     ┘
+
+
+[dependency-groups]
+pytest = [
+    "pytest==8.3.5"
+]
+
+test-extra-none = [
+    {include-group = "pytest"},
+    "adaptix",  # local package
+    "tests_helpers",  # local package
+    "phonenumberslite==9.0.5",
+    "dirty-equals==0.9.0",
+    "coverage==7.8.1",
+    "jsonschema-rs==0.30.0; implementation_name != 'pypy' and python_version < '3.14'",
+]
+
+test-extra-old = [
+    {include-group = "test-extra-none"},
+    "attrs==21.3.0",
+    "sqlalchemy==2.0.0",
+    "pydantic==2.1.0",
+    "msgspec==0.18.5; implementation_name != 'pypy'",
+]
+
+test-extra-old-py313 = [
+    {include-group = "test-extra-none"},
+    "attrs==21.3.0",
+    "sqlalchemy==2.0.31",
+    "pydantic==2.8.2",
+    "msgspec==0.19.0; implementation_name != 'pypy'",
+]
+
+test-extra-new = [
+    {include-group = "test-extra-none"},
+    "attrs==24.2.0",
+    "sqlalchemy==2.0.36",
+    "pydantic==2.10.3",
+    "msgspec==0.19.0; implementation_name != 'pypy'",
+]
+
+bench = [
+    {include-group = "pytest"},
+    "adaptix",  # local package
+    "benchmarks",  # local package
+
+    "pyperf==2.6.1",
+    "psutil==5.9.5",
+
+    "mashumaro==3.10",
+    "pydantic==2.10.3",
+    "cattrs==23.1.2",
+    "schematics==2.1.1",
+    "dataclass-factory==2.16",
+    "marshmallow==3.20.1",
+    "msgspec==0.19.0; implementation_name != 'pypy'",
+]
+
+doc = [
+    {include-group = "bench"},
+
+    "sphinx==8.2.3",
+    "sphinx-copybutton==0.5.2",
+    "sphinx-design==0.6.1",
+    "sphinx-paramlinks==0.6.0",
+    "myst-parser==4.0.1",
+    "sphinxext-opengraph==0.10.0",
+    "sphinx-better-subsection==0.2",
+    "sphinx-reredirects==0.1.6",
+    "sphinxcontrib-globalsubs==0.1.2",
+    "sphinxcontrib-apidoc==0.6.0",
+    "furo==2024.8.6",
+
+    "docutils-stubs==0.0.22",
+
+    "gitpython==3.1.44",
+    "plotly==6.1.1",
+]
+
+ci-runner = [
+    "uv==0.9.8",
+    "tox-uv==1.25.0",
+    "invoke==2.2.0",
+    "coverage==7.8.1",
+]
+
+lint = [
+    {include-group = "test-extra-new"},
+    {include-group = "doc"},
+
+    "prek==0.2.5",
+
+    "mypy[faster-cache]==1.15.0",
+
+    "vulture==2.10",
+
+    "ruff==0.14.0",
+
+    "radon==6.0.1",
+    "dlint==0.14.1",
+    "typos==1.39.0",
+
+    "astpath[xpath]==0.9.1",
+]
+
+dev = [
+    {include-group = "ci-runner"},
+    {include-group = "lint"},
+    "towncrier==24.8.0",
+]
+
+[tool.uv.dependency-groups]
+test-extra-old-py313 = {requires-python = ">=3.13"}
+doc = {requires-python = ">=3.11"}
+
+
+[tool.uv]
+conflicts = [
+    [
+      { group = "test-extra-old" },
+      { group = "test-extra-old-py313" },
+      { group = "test-extra-new" },
+      { group = "bench" },
+    ],
+]
+
+[tool.uv.sources]
+benchmarks = { path = "./benchmarks", editable = true }
+tests_helpers = { path = "./tests/tests_helpers", editable = true }
+adaptix = { path = ".", editable = true }
 
 #   ┌             ┐
 #   │   LINTING   │

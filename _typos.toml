@@ -1,6 +1,8 @@
 [files]
 extend-exclude = [
   "docs/_static/",
+  "benchmarks/benchmarks/gh_issues/data.json",
+  "*.svg",
 ]
 
 [default.extend-words]

@@ -1,3 +1,0 @@
--r _test_base.txt
-
-jsonschema==4.24.0
