@@ -73,7 +73,7 @@ doc_target := "docs-build"
 # Continious integration
 
 [private]
-@setup-runner:
+@setup-ci-runner:
     {{ just }} install-initial
     {{ uv_sync_group }} runner
     echo ".venv/bin" >> "$GITHUB_PATH"

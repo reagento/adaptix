@@ -49,8 +49,7 @@ jobs:
 
       - name: Setup environment to run tox
         run: |-
-          just setup-runner
-          echo ".venv/bin" >> $GITHUB_PATH
+          just setup-ci-runner
 
       - name: Run tests
         run:

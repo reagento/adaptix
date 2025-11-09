@@ -39,7 +39,7 @@ jobs:
 
       - name: Setup environment to run tox
         run: |-
-          just setup-runner
+          just setup-ci-runner
 
       - name: Run linters
         run:
@@ -82,7 +82,7 @@ jobs:
 
       - name: Setup environment to run tox
         run: |-
-          just setup-runner
+          just setup-ci-runner
 
       - name: Run tests with coverage
         if: ${{  (matrix.python_version.cov && github.event_name == 'pull_request') }}
