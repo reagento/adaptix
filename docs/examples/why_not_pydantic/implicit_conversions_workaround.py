@@ -15,6 +15,8 @@ try:
     Product(id=1, amount=14.6)
 except ValidationError:
     pass
+else:
+    assert False, "ValidationError did not happen"
 
 assert (
     Product.model_validate({"id": 1, "amount": 14.6}, strict=False)
