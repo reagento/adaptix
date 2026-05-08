@@ -43,7 +43,7 @@ jobs:
           python-version: ${{ matrix.python_version.setup }}
 
       - name: Install Just
-        uses: extractions/setup-just@e33e0265a09d6d736e2ee1e0eb685ef1de4669ff
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3
         with:
           just-version: 1.14.0
 
