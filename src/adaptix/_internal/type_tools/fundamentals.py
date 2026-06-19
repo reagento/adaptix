@@ -1,3 +1,4 @@
+import sys
 import types
 from typing import TypeVar, get_args, get_origin, get_type_hints
 
@@ -41,5 +42,22 @@ def get_generic_args(tp: TypeHint) -> VarTuple[TypeHint]:
     return get_args(tp)
 
 
-def get_all_type_hints(obj, globalns=None, localns=None):
-    return get_type_hints(obj, globalns, localns, include_extras=True)
+if sys.version_info >= (3, 14):
+    import annotationlib
+
+    def get_all_type_hints(obj, globalns=None, localns=None):
+        return get_type_hints(
+            obj,
+            globalns,
+            localns,
+            include_extras=True,
+            format=annotationlib.Format.FORWARDREF,
+        )
+else:
+    def get_all_type_hints(obj, globalns=None, localns=None):
+        return get_type_hints(
+            obj,
+            globalns,
+            localns,
+            include_extras=True,
+        )
