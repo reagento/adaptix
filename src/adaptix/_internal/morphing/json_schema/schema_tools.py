@@ -52,7 +52,7 @@ _json_schema_templates = {
     **_base_json_schema_templates,
     Omittable[RefT]: dedent(  # type: ignore[misc, valid-type]
         """
-        if __value__ != Omitted():
+        if __value__ != Omitted() and isinstance(__value__, LocalRefSource):
             yield from __traverser__(__value__.json_schema)
         """,
     ),
@@ -88,7 +88,7 @@ def _generate_json_schema_traverser(
 
         """,
     ) + "\n\n".join(indent(item, " " * 4) for item in result)
-    namespace: dict[str, Any] = {"Omitted": Omitted}
+    namespace: dict[str, Any] = {"Omitted": Omitted, "LocalRefSource": LocalRefSource}
     exec(compile(module_code, file_name, "exec"), namespace, namespace)  # noqa: S102
     return namespace[function_name]
 

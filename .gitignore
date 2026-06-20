@@ -54,3 +54,4 @@ dmypy.json
 /docs/build
 
 .venv/
+uv.lock
