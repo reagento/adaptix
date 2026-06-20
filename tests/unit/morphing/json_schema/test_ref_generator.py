@@ -7,7 +7,6 @@ from adaptix._internal.morphing.json_schema.ref_generator import BuiltinRefGener
 from adaptix._internal.provider.loc_stack_filtering import LocStack
 from adaptix._internal.provider.location import TypeHintLoc
 
-
 generator = BuiltinRefGenerator()
 
 

@@ -1,5 +1,3 @@
-import pytest
-
 from adaptix import Chain
 from adaptix._internal.morphing.json_schema.definitions import JSONSchema
 from adaptix._internal.morphing.json_schema.patch import JSONSchemaPatch

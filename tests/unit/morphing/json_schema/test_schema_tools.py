@@ -44,7 +44,8 @@ def test_traverse_not_yields_root_and_subschema():
 
 
 def test_traverse_bool_schema_not_yielded():
-    result = list(traverse_json_schema(True))
+    bool_schema = True
+    result = list(traverse_json_schema(bool_schema))
 
     assert result == []
 

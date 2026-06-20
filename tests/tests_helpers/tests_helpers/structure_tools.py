@@ -16,6 +16,35 @@ EXISTS = Exists()
 NOT_EXISTS = NotExists()
 
 
+def _assert_list_structure(
+    actual: list,
+    expected: list,
+    *,
+    path: str,
+    strict: bool,
+) -> None:
+    assert isinstance(actual, list), (
+        f"At {path!r}: expected list, got {type(actual).__name__}"
+    )
+    if strict:
+        assert len(actual) == len(expected), (
+            f"At {path!r}: expected list of length {len(expected)}, got {len(actual)}"
+        )
+    else:
+        assert len(actual) >= len(expected), (
+            f"At {path!r}: expected at least {len(expected)} elements, got {len(actual)}"
+        )
+    for i, expected_item in enumerate(expected):
+        current_path = f"{path}[{i}]"
+        actual_item = actual[i]
+        if isinstance(expected_item, (dict, list)):
+            assert_structure(actual_item, expected_item, path=current_path, strict=strict)
+        else:
+            assert actual_item == expected_item, (
+                f"At {current_path}: expected {expected_item!r}, got {actual_item!r}"
+            )
+
+
 def assert_structure(
     actual: Union[Mapping[str, Any], list],
     expected: Union[Mapping[str, Any], list],
@@ -48,26 +77,7 @@ def assert_structure(
         assert_structure([{"a": 1}, {"b": 2}], [{"a": 1}, {"b": EXISTS}])
     """
     if isinstance(expected, list):
-        assert isinstance(actual, list), (
-            f"At {path!r}: expected list, got {type(actual).__name__}"
-        )
-        if strict:
-            assert len(actual) == len(expected), (
-                f"At {path!r}: expected list of length {len(expected)}, got {len(actual)}"
-            )
-        else:
-            assert len(actual) >= len(expected), (
-                f"At {path!r}: expected at least {len(expected)} elements, got {len(actual)}"
-            )
-        for i, expected_item in enumerate(expected):
-            current_path = f"{path}[{i}]"
-            actual_item = actual[i]
-            if isinstance(expected_item, (dict, list)):
-                assert_structure(actual_item, expected_item, path=current_path, strict=strict)
-            else:
-                assert actual_item == expected_item, (
-                    f"At {current_path}: expected {expected_item!r}, got {actual_item!r}"
-                )
+        _assert_list_structure(actual, expected, path=path, strict=strict)
         return
 
     # Check for extra keys in strict mode
@@ -77,7 +87,7 @@ def assert_structure(
         extra_keys = actual_keys - expected_keys
         if extra_keys:
             raise AssertionError(
-                f"At {path!r}: unexpected keys: {sorted(extra_keys)}"
+                f"At {path!r}: unexpected keys: {sorted(extra_keys)}",
             )
 
     for key, expected_value in expected.items():
