@@ -1,6 +1,5 @@
 from dataclasses import asdict, dataclass
 
-from adaptix import P, with_property
 from adaptix.conversion import get_converter
 
 from .forward_ref.product import Product
@@ -29,9 +28,6 @@ def test_cyclic_forward_ref():
     converter = get_converter(
         Product,
         ProductView,
-        recipe=[
-            with_property(P[ProductView]["tags"], "tags"),
-        ],
     )
     result = converter(product)
     assert asdict(result) == {
