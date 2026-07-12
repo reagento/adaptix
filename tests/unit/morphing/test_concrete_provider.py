@@ -135,7 +135,12 @@ def test_iso_format_provider_datetime(strict_coercion, debug_trail):
     assert loader("2011-11-04") == datetime(2011, 11, 4, 0, 0)
     assert loader("2011-11-04T00:05:23") == datetime(2011, 11, 4, 0, 5, 23)
     assert loader("2011-11-04T00:05:23+04:00") == datetime(
-        2011, 11, 4, 0, 5, 23,
+        2011,
+        11,
+        4,
+        0,
+        5,
+        23,
         tzinfo=timezone(timedelta(seconds=14400)),
     )
 
@@ -175,7 +180,9 @@ def test_iso_format_provider_time(strict_coercion, debug_trail):
     loader = retort.get_loader(time)
     assert loader("04:23:01") == time(4, 23, 1)
     assert loader("04:23:01+04:00") == time(
-        4, 23, 1,
+        4,
+        23,
+        1,
         tzinfo=timezone(timedelta(seconds=14400)),
     )
 
@@ -292,6 +299,11 @@ def test_seconds_timedelta_provider(strict_coercion, debug_trail):
     assert loader(600) == timedelta(minutes=10)
     assert loader(0.123) == timedelta(milliseconds=123)
     assert loader(Decimal("0.123")) == timedelta(milliseconds=123)
+    # Negative fractional seconds must be handled correctly
+    assert loader(-0.5) == timedelta(seconds=-0.5)
+    assert loader(-1.5) == timedelta(seconds=-1.5)
+    assert loader(Decimal("-0.5")) == timedelta(seconds=-0.5)
+    assert loader(Decimal("-1.5")) == timedelta(seconds=-1.5)
 
     dumper = retort.get_dumper(timedelta)
     assert dumper(timedelta(minutes=10)) == 600
@@ -349,8 +361,7 @@ def test_bytes_like_provider(
 
     raises_exc(
         ValueLoadError(
-            msg="Invalid base64-encoded string: number of data characters (5)"
-                " cannot be 1 more than a multiple of 4",
+            msg="Invalid base64-encoded string: number of data characters (5) cannot be 1 more than a multiple of 4",
             input_value="aaaaa=",
         ),
         lambda: loader("aaaaa="),
@@ -542,4 +553,3 @@ def test_zone_info_provider(strict_coercion, debug_trail):
 
     dumper = retort.get_dumper(ZoneInfo)
     assert dumper(ZoneInfo("Pacific/Kwajalein")) == "Pacific/Kwajalein"
-

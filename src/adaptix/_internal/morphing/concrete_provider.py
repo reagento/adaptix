@@ -1,4 +1,5 @@
 import binascii
+import math
 import re
 import typing
 from binascii import a2b_base64, b2a_base64
@@ -52,6 +53,7 @@ class IsoFormatProvider(MorphingProvider):
                 raise TypeLoadError(str, data)
             except ValueError:
                 raise ValueLoadError("Invalid isoformat string", data)
+
         return isoformat_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
@@ -135,6 +137,7 @@ class DatetimeTimestampProvider(MorphingProvider):
     def _make_dumper(self):
         def datetime_timestamp_dumper(data: datetime):
             return data.timestamp()
+
         return datetime_timestamp_dumper
 
     def provide_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -202,6 +205,7 @@ class DateTimestampProvider(MorphingProvider):
                 tzinfo=timezone.utc,
             )
             return dt.timestamp()
+
         return date_timestamp_dumper
 
     def provide_json_schema(self, mediator: Mediator, request: JSONSchemaRequest) -> JSONSchema:
@@ -221,7 +225,8 @@ class SecondsTimedeltaProvider(MorphingProvider):
         def timedelta_loader(data):
             if type(data) not in ok_types:
                 raise TypeLoadError(int | float | Decimal, data)
-            return timedelta(seconds=int(data), microseconds=int(data % 1 * 10 ** 6))
+            sec = math.floor(data)
+            return timedelta(seconds=int(sec), microseconds=round((data - sec) * 10**6))
 
         return timedelta_loader
 
@@ -260,6 +265,7 @@ class _Base64DumperMixin(DumperProvider):
     def _make_dumper(self):
         def bytes_base64_dumper(data):
             return b2a_base64(data, newline=False).decode("ascii")
+
         return bytes_base64_dumper
 
 
@@ -290,6 +296,7 @@ class BytesBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, MorphingPr
                 return a2b_base64(encoded)
             except binascii.Error as e:
                 raise ValueLoadError(str(e), data)
+
         return bytes_base64_loader
 
 
@@ -306,6 +313,7 @@ class BytesIOBase64Provider(_Base64JSONSchemaMixin, MorphingProvider):
     def _make_loader(self, loader: Loader):
         def bytes_io_base64_loader(data):
             return BytesIO(loader(data))
+
         return bytes_io_base64_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
@@ -314,6 +322,7 @@ class BytesIOBase64Provider(_Base64JSONSchemaMixin, MorphingProvider):
     def _make_dumper(self):
         def bytes_io_base64_dumper(data: BytesIO):
             return b2a_base64(data.getvalue(), newline=False).decode("ascii")
+
         return bytes_io_base64_dumper
 
 
@@ -328,6 +337,7 @@ class IOBytesBase64Provider(BytesIOBase64Provider, _Base64JSONSchemaMixin, Morph
                 data.seek(0)
 
             return b2a_base64(data.read(), newline=False).decode("ascii")
+
         return io_bytes_base64_dumper
 
 
@@ -349,6 +359,7 @@ class BytearrayBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, Morphi
     def _make_loader(self, loader: Loader):
         def bytearray_base64_loader(data):
             return bytearray(loader(data))
+
         return bytearray_base64_loader
 
 
