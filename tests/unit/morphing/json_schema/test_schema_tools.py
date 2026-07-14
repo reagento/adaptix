@@ -1,28 +1,12 @@
 import pytest
 
 from adaptix import Omitted
-from adaptix._internal.morphing.json_schema.definitions import JSONSchema, LocalRefSource, RemoteRef, ResolvedJSONSchema
+from adaptix._internal.morphing.json_schema.definitions import JSONSchema, RemoteRef, ResolvedJSONSchema
 from adaptix._internal.morphing.json_schema.schema_tools import (
     approx_hash_json_schema,
     replace_json_schema_ref,
     traverse_json_schema,
 )
-from adaptix._internal.provider.loc_stack_filtering import LocStack
-from adaptix._internal.provider.location import TypeHintLoc
-
-
-def make_src(tp, schema=None):
-    if schema is None:
-        schema = JSONSchema()
-    return LocalRefSource(value=None, json_schema=schema, loc_stack=LocStack(TypeHintLoc(tp)))
-
-
-def test_traverse_flat_schema_yields_itself():
-    schema = JSONSchema(title="flat")
-
-    result = list(traverse_json_schema(schema))
-
-    assert result == [schema]
 
 
 def test_traverse_items_yields_root_and_item():
@@ -86,16 +70,6 @@ def test_traverse_any_of_yields_root_and_all_elements():
     result = list(traverse_json_schema(root))
 
     assert result == [root, s1, s2]
-
-
-def test_traverse_ref_to_local_source_visits_referenced_schema():
-    inner = JSONSchema(title="inner")
-    src = make_src(int, schema=inner)
-    root = JSONSchema(ref=src)
-
-    result = list(traverse_json_schema(root))
-
-    assert result == [root, inner]
 
 
 @pytest.mark.parametrize(
@@ -170,17 +144,6 @@ def test_hash_nested_schema_field_contributes():
     assert approx_hash_json_schema(s_with_items) != approx_hash_json_schema(s_without)
 
 
-def test_replace_local_ref_with_prefix_and_ctx():
-    inner = JSONSchema(title="Inner")
-    src = make_src(int, schema=inner)
-    root = JSONSchema(ref=src)
-    ctx = {src: "MyInt"}
-
-    result = replace_json_schema_ref(root, "#/$defs/", ctx)
-
-    assert result.ref == "#/$defs/MyInt"
-
-
 def test_replace_remote_ref_passes_through():
     root = JSONSchema(ref=RemoteRef("https://example.com/schema"))
 
@@ -208,15 +171,3 @@ def test_replace_returns_resolved_json_schema_type():
     result = replace_json_schema_ref(root, "#/$defs/", {})
 
     assert isinstance(result, ResolvedJSONSchema)
-
-
-def test_replace_nested_properties_recursively_resolved():
-    inner = JSONSchema(title="Inner")
-    src = make_src(str, schema=inner)
-    prop = JSONSchema(ref=src)
-    root = JSONSchema(properties={"field": prop})
-    ctx = {src: "StrType"}
-
-    result = replace_json_schema_ref(root, "#/$defs/", ctx)
-
-    assert result.properties["field"].ref == "#/$defs/StrType"

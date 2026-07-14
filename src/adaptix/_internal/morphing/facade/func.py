@@ -61,7 +61,8 @@ def _format_loader(data):
     if isinstance(data, str):
         with suppress(ValueError):
             return JSONSchemaBuiltinFormat(data)
-    return data
+        return data
+    raise TypeLoadError(expected_type=str, input_value=data)
 
 
 _global_resolver = BuiltinJSONSchemaResolver(

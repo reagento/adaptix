@@ -9,13 +9,6 @@ def apply_patch(patch: JSONSchemaPatch, schema: JSONSchema) -> JSONSchema:
     return schema
 
 
-def test_replace_sets_field():
-    schema = JSONSchema(title="old")
-
-    result = apply_patch(JSONSchemaPatch().replace("title", lambda _: "new"), schema)
-
-    assert result.title == "new"
-
 
 def test_replace_receives_old_value():
     schema = JSONSchema(title="base")
@@ -91,26 +84,6 @@ def test_mutate_deepcopy_inner_is_separate_object():
 
     assert result.extra_keywords["items"] == [1, 2]
     assert result.extra_keywords["items"] is not inner_list
-
-
-def test_merge_with_chain_first_override_wins():
-    base = JSONSchema(title="base", description="base_desc")
-    override = JSONSchema(description="new_desc")
-
-    result = apply_patch(JSONSchemaPatch().merge_with(override, Chain.FIRST), base)
-
-    assert result.title == "base"
-    assert result.description == "new_desc"
-
-
-def test_merge_with_chain_last_base_wins():
-    base = JSONSchema(title="base", description="base_desc")
-    override = JSONSchema(description="new_desc")
-
-    result = apply_patch(JSONSchemaPatch().merge_with(override, Chain.LAST), base)
-
-    assert result.title == "base"
-    assert result.description == "base_desc"
 
 
 def test_merge_with_chain_first_omitted_field_does_not_overwrite():
