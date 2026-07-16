@@ -275,6 +275,7 @@ class _Base64JSONSchemaMixin(JSONSchemaProvider):
 
 
 B64_PATTERN = re.compile(b"[A-Za-z0-9+/]*={0,2}")
+BAD_BASE64_STRING = "Bad base64 string"
 
 
 @for_predicate(bytes)
@@ -289,17 +290,17 @@ class BytesBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, MorphingPr
             except AttributeError:
                 raise TypeLoadError(str, data)
             except UnicodeEncodeError:
-                raise ValueLoadError("Bad base64 string", data)
+                raise ValueLoadError(BAD_BASE64_STRING, data)
 
             if not B64_PATTERN.fullmatch(encoded):
-                raise ValueLoadError("Bad base64 string", data)
+                raise ValueLoadError(BAD_BASE64_STRING, data)
             if b"=" in encoded:
                 # a2b_base64 accepts leading and excess padding, so reject padding
                 # beyond the amount implied by the unpadded data length first.
                 unpadded = encoded.rstrip(b"=")
                 padding_length = len(encoded) - len(unpadded)
                 if not unpadded or padding_length > -len(unpadded) % 4:
-                    raise ValueLoadError("Bad base64 string", data)
+                    raise ValueLoadError(BAD_BASE64_STRING, data)
 
             try:
                 return a2b_base64(encoded)
