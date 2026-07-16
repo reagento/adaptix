@@ -353,10 +353,18 @@ def test_bytes_like_provider(
     b64_string = b"YWJjZA=="
 
     assert get_string(loader(b64_string.decode())) == string
+    assert get_string(loader("")) == ""
+    assert get_string(loader("YQ==")) == "a"
+    assert get_string(loader("YWI=")) == "ab"
 
     raises_exc(
         ValueLoadError("Bad base64 string", "Hello, world"),
         lambda: loader("Hello, world"),
+    )
+
+    raises_exc(
+        ValueLoadError("Bad base64 string", "🦄"),
+        lambda: loader("🦄"),
     )
 
     raises_exc(
@@ -371,6 +379,18 @@ def test_bytes_like_provider(
         ValueLoadError("Incorrect padding", "YWJjZA"),
         lambda: loader("YWJjZA"),
     )
+
+    for invalid_base64 in (
+        "=",
+        "==",
+        "AAA==",
+        "AAAA=",
+        "AAAA==",
+    ):
+        raises_exc(
+            ValueLoadError("Bad base64 string", invalid_base64),
+            lambda invalid_base64=invalid_base64: loader(invalid_base64),
+        )
 
     raises_exc(
         TypeLoadError(str, 108),
