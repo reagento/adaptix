@@ -10,7 +10,7 @@ from ...code_tools.utils import get_literal_expr, get_literal_from_factory
 from ...common import Loader
 from ...compat import CompatExceptionGroup
 from ...definitions import DebugTrail
-from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, Param, ParamKind
+from ...model_tools.definitions import DefaultFactory, DefaultValue, InputField, InputShape, NoDefault, Param, ParamKind
 from ...provider.loc_stack_filtering import LocStack
 from ...provider.loc_stack_tools import format_type
 from ...special_cases_optimization import as_is_stub
@@ -408,6 +408,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         *,
         assign_to: str,
         on_lookup_error: str | None = None,
+        required_default: bool | None = None,
     ):
         last_path_el = state.path[-1]
         if isinstance(last_path_el, str):
@@ -419,19 +420,31 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 f"{state.parent.v_required_keys} - set({state.parent.v_data}), {state.parent.v_data}"
                 ")"
             )
+            if required_default:
+                line_or_text = f"""
+                    try:
+                        {assign_to} = {state.parent.v_data}.get({last_path_el!r}, {{}})
+                    except {lookup_error}:
+                """
+            else:
+                line_or_text = f"""
+                    try:
+                        {assign_to} = {state.parent.v_data}[{last_path_el!r}]
+                    except {lookup_error}:
+                """
         else:
             lookup_error = "IndexError"
             bad_type_error = "(TypeError, KeyError)"
             bad_type_load_error = f"TypeLoadError(CollectionsSequence, {state.parent.v_data})"
             not_found_error = f"NoRequiredItemsLoadError({len(state.parent_crown.map)}, {state.parent.v_data})"
 
-        with state.builder(
-            f"""
+            line_or_text = f"""
                 try:
                     {assign_to} = {state.parent.v_data}[{last_path_el!r}]
                 except {lookup_error}:
-            """,
-        ):
+            """
+
+        with state.builder(line_or_text):
             if on_lookup_error is not None:
                 state.builder += on_lookup_error
             elif self._debug_trail != DebugTrail.ALL:
@@ -499,12 +512,42 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             if not (isinstance(value, InpFieldCrown) and self._id_to_field[value.id].is_optional)
         }
 
+    def _required_default_parent_data(self, state: GenState, crown: InpCrown) -> bool:
+        if isinstance(crown, InpDictCrown):
+            return self._required_default_parent_data_inp_dict(state, crown)
+        if isinstance(crown, InpListCrown):
+            return self._required_default_parent_data_inp_list(state, crown)
+        return False
+
+    def _required_default_parent_data_inp_dict(self, state: GenState, crown: InpDictCrown) -> bool:
+        for key, value in crown.map.items():
+            with state.add_key(value, key):
+                if isinstance(value, InpFieldCrown):
+                    field = state.get_field(value)
+                    return field.default != NoDefault()
+                return self._required_default_parent_data(state, value)
+        return False
+
+    def _required_default_parent_data_inp_list(self, state: GenState, crown: InpListCrown) -> bool:
+        for key, value in enumerate(crown.map):
+            with state.add_key(value, key):
+                if isinstance(value, InpFieldCrown):
+                    field = state.get_field(value)
+                    return field.default != NoDefault()
+                return self._required_default_parent_data(state, value)
+        return False
+
     def _gen_dict_crown(self, state: GenState, crown: InpDictCrown):
         state.namespace.add_constant(state.v_known_keys, set(crown.map.keys()))
         state.namespace.add_constant(state.v_required_keys, self._get_dict_crown_required_keys(crown))
 
         if state.path:
-            self._gen_assignment_from_parent_data(state, assign_to=state.v_data)
+            required_default = self._required_default_parent_data(state, crown)
+            self._gen_assignment_from_parent_data(
+                state,
+                assign_to=state.v_data,
+                required_default=required_default,
+            )
             state.builder.empty_line()
             ctx: AbstractContextManager[Any] = state.builder("else:")
         else:
