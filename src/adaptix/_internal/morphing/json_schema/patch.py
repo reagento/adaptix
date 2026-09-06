@@ -17,7 +17,7 @@ class JSONSchemaPatch:
 
     def _append_with_patcher(self: S, patcher: Callable[[JSONSchema], JSONSchema]) -> S:
         self_copy = copy(self)
-        self_copy._patchers.append(patcher)
+        self_copy._patchers = [*self._patchers, patcher]
         return self_copy
 
     def mutate_copy(
