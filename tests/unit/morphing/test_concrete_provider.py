@@ -360,6 +360,11 @@ def test_bytes_like_provider(
     )
 
     raises_exc(
+        ValueLoadError("Bad base64 string", "🦄"),
+        lambda: loader("🦄"),
+    )
+
+    raises_exc(
         ValueLoadError(
             msg="Invalid base64-encoded string: number of data characters (5) cannot be 1 more than a multiple of 4",
             input_value="aaaaa=",

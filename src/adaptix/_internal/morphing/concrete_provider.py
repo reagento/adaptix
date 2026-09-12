@@ -288,6 +288,8 @@ class BytesBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, MorphingPr
                 encoded = data.encode("ascii")
             except AttributeError:
                 raise TypeLoadError(str, data)
+            except UnicodeEncodeError:
+                raise ValueLoadError("Bad base64 string", data)
 
             if not B64_PATTERN.fullmatch(encoded):
                 raise ValueLoadError("Bad base64 string", data)
