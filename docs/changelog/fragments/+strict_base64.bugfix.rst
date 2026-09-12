@@ -1,1 +1,1 @@
-Reject leading and excess padding when loading Base64-encoded bytes-like values.
+Report non-ASCII Base64 input as a loader error for bytes-like values.
