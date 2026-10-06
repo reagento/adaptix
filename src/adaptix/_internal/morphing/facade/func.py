@@ -1,4 +1,5 @@
 from collections.abc import Container, Iterable, Mapping, Sequence
+from contextlib import suppress
 from dataclasses import fields
 from typing import Any, TypeVar, overload
 
@@ -12,7 +13,7 @@ from ..json_schema.mangling import CompoundRefMangler, IndexRefMangler, Qualname
 from ..json_schema.ref_generator import BuiltinRefGenerator
 from ..json_schema.request_cls import JSONSchemaContext
 from ..json_schema.resolver import BuiltinJSONSchemaResolver, JSONSchemaResolver
-from ..json_schema.schema_model import JSONObject, _JSONSchemaCore
+from ..json_schema.schema_model import JSONObject, JSONSchemaBuiltinFormat, _JSONSchemaCore
 from ..load_error import TypeLoadError
 from ..provider_template import ABCProxy
 from .provider import loader, name_mapping
@@ -56,6 +57,14 @@ def _ref_loader(data):
     raise TypeLoadError(expected_type=str, input_value=data)
 
 
+def _format_loader(data):
+    if isinstance(data, str):
+        with suppress(ValueError):
+            return JSONSchemaBuiltinFormat(data)
+        return data
+    raise TypeLoadError(expected_type=str, input_value=data)
+
+
 _global_resolver = BuiltinJSONSchemaResolver(
     ref_generator=BuiltinRefGenerator(),
     ref_mangler=CompoundRefMangler(QualnameRefMangler(), IndexRefMangler()),
@@ -74,6 +83,7 @@ _json_schema_retort = Retort(
             extra_out="extra_keywords",
         ),
         loader(P[JSONSchema].ref, _ref_loader),
+        loader(P[JSONSchema].format, _format_loader),
     ],
 )
 
