@@ -7,6 +7,7 @@ import pytest
 from tests_helpers import DebugCtx, full_match, parametrize_bool, raises_exc, with_trail
 
 from adaptix import DebugTrail, ExtraKwargs, Loader, Retort, bound
+from adaptix._internal.code_tools.utils import NAME_TO_BUILTIN
 from adaptix._internal.common import VarTuple
 from adaptix._internal.model_tools.definitions import (
     Default,
@@ -134,6 +135,22 @@ def make_loader_getter(
 @pytest.fixture(params=[ExtraSkip(), ExtraForbid(), ExtraCollect()])
 def extra_policy(request):
     return request.param
+
+
+def test_loader_with_sentinel_builtin(monkeypatch, debug_trail):
+    # Python 3.15 adds this builtin; reserve its name on earlier versions too.
+    monkeypatch.setitem(NAME_TO_BUILTIN, "sentinel", object)
+
+    @dataclass
+    class Model:
+        value: int
+        sentinel: Optional[int] = 7
+
+    loader = Retort(debug_trail=debug_trail).get_loader(Model)
+
+    assert loader({"value": 1}) == Model(1)
+    assert loader({"value": 1, "sentinel": None}) == Model(1, None)
+    assert loader({"value": 1, "sentinel": 9}) == Model(1, 9)
 
 
 def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
