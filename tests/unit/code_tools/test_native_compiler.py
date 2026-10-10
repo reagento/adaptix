@@ -882,15 +882,17 @@ def test_list_to_tuple_transfer_preserves_ownership_and_shared_lists(shared):
 
 
 @pytest.mark.parametrize("failure", [False, True])
-@pytest.mark.parametrize("inline", [False, True])
-def test_nested_native_loop_preserves_callee_saved_registers(failure, inline):
+@pytest.mark.parametrize("mode", ["inline", "direct", "limited"])
+def test_nested_native_loop_preserves_callee_saved_registers(monkeypatch, failure, mode):
+    if mode == "limited":
+        monkeypatch.setattr("adaptix._internal.code_tools.x86_64_compiler.MAX_INLINE_CODE_SIZE", 0)
     inner = Retort(codegen_backend=CodeGenBackend.X86_64).get_loader(list[list[int]])
     compiler = X86Compiler("native_preserved_loop_registers")
     assert compiler.reserve_loop_registers()
     seeds = (0xFEDCBA0987654321, 0x0123456789ABCDEF, 0x9988776655443322, 0x8899AABBCCDDEEFF)
     for register, seed in zip((12, 13, 14, 15), seeds, strict=True):
         compiler.asm.mov_imm(register, seed)
-    if inline:
+    if mode != "direct":
         result = compiler.inline_call(inner, compiler.data, (lambda error: ["failed"]) if failure else None)
     else:
         result = (

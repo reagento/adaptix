@@ -233,6 +233,10 @@ class UnionProvider(LoaderProvider, DumperProvider, JSONSchemaProvider):
             return as_is_stub
 
         if (not_none_dumper := self._parse_single_optional_dumper(norm, dumpers)) is not None:
+            try:
+                hash(not_none_dumper)
+            except TypeError:
+                return self._produce_single_optional_dumper(not_none_dumper)
             return mediator.cached_call(self._produce_single_optional_dumper, not_none_dumper)
 
         types_with_forbidden_origins = [

@@ -1,12 +1,14 @@
 import ctypes
 import sys
+import typing
 from dataclasses import dataclass, field
 from typing import Literal, Union
 
 import pytest
 
-from adaptix import CodeGenBackend, DebugTrail, P, Retort, bound, loader
+from adaptix import CodeGenBackend, DebugTrail, P, Retort, bound, dumper, loader
 from adaptix._internal.code_tools.x86_64_compiler import X86Compiler, check_native_platform
+from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
 from adaptix._internal.morphing.native.codegen import NativeCodeGenRequest
 from adaptix._internal.morphing.native.plan import (
     DictPlan,
@@ -185,6 +187,17 @@ def test_cached_scalar_generation_accepts_unhashable_callables(monkeypatch):
     assert retort.load(1, int) == 11
 
 
+@pytest.mark.parametrize("use_generator", [False, True])
+def test_cached_optional_dumper_accepts_unhashable_callables(monkeypatch, use_generator):
+    forbid_x86_compilation(monkeypatch)
+    recipe = [dumper(int, UnhashableLoader(10))]
+    if use_generator:
+        recipe.insert(0, ValueProvider(NativeCodeGenRequest, PortableGenerator()))
+    retort = Retort(recipe=recipe)
+    assert retort.dump(1, int | None) == 11
+    assert retort.dump(None, int | None) is None
+
+
 def test_native_plan_cache_is_owned_by_retort(monkeypatch):
     forbid_x86_compilation(monkeypatch)
     generator = PortableGenerator()
@@ -204,6 +217,27 @@ def test_repeated_optional_models_reuse_dumper_dependencies(monkeypatch):
     assert retort.dump(RepeatedOptional(item, None)) == data
     assert generator.calls.count("model_dumper") == 2
     assert generator.calls.count("list") == 1
+
+
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="typing.Self requires Python 3.11")
+def test_cached_optional_dumpers_preserve_recursive_placeholder_equality(monkeypatch):
+    forbid_x86_compilation(monkeypatch)
+
+    @dataclass
+    class RecursiveOptional:
+        count: int
+        child: typing.Self | None
+
+    @dataclass
+    class RepeatedRecursive:
+        left: RecursiveOptional
+        right: RecursiveOptional
+
+    accumulator = CodeGenAccumulator()
+    retort = Retort(recipe=[accumulator])
+    value = RepeatedRecursive(RecursiveOptional(1, None), RecursiveOptional(2, None))
+    assert retort.dump(value) == {"left": {"count": 1, "child": None}, "right": {"count": 2, "child": None}}
+    assert [tp for tp, _ in accumulator.code_pairs] == [RecursiveOptional, RepeatedRecursive]
 
 
 def test_x86_backend_passes_its_compiler_factory_to_every_emitter():
