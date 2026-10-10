@@ -3,6 +3,9 @@ import collections.abc
 import typing
 from collections.abc import Collection, Mapping
 
+from adaptix._internal.morphing.native.codegen import cached_compile_native, fetch_native_codegen
+from adaptix._internal.morphing.native.plan import TuplePlan
+
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
@@ -19,6 +22,7 @@ from .load_error import (
     NoRequiredItemsLoadError,
     TypeLoadError,
 )
+from .model.basic_gen import fetch_code_gen_hook
 from .provider_template import DumperProvider, LoaderProvider
 from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from .utils import try_normalize_type
@@ -40,20 +44,34 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
             )
 
         loaders = mediator.mandatory_provide_by_iterable(
-            [
-                request.append_loc(GenericParamLoc(type=tp.source, generic_pos=i))
-                for i, tp in enumerate(norm.args)
-            ],
+            [request.append_loc(GenericParamLoc(type=tp.source, generic_pos=i)) for i, tp in enumerate(norm.args)],
             lambda: "Cannot create loader for tuple. Loaders for some elements cannot be created",
         )
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        return mediator.cached_call(
+        result = mediator.cached_call(
             self._make_loader,
             loaders=tuple(loaders),
             strict_coercion=strict_coercion,
             debug_trail=debug_trail,
         )
+        native_codegen = fetch_native_codegen(mediator, request.loc_stack)
+        if native_codegen is not None and debug_trail != DebugTrail.DISABLE:
+            return cached_compile_native(
+                mediator, native_codegen,
+                TuplePlan(
+                    mappers=tuple(loaders),
+                    fallback=result,
+                    loading=True,
+                    strict_coercion=strict_coercion,
+                    snapshot_fallback=mediator.cached_call(
+                        self._make_loader, loaders=tuple(loaders), strict_coercion=False, debug_trail=debug_trail,
+                    ),
+                    debug_trail=debug_trail,
+                ),
+                hook=fetch_code_gen_hook(mediator, request.loc_stack),
+            )
+        return result
 
     def _make_loader(self, loaders: Collection[Loader], *, strict_coercion: bool, debug_trail: DebugTrail):
         if debug_trail == DebugTrail.DISABLE:
@@ -178,10 +196,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                 if loaders_len > data_len:
                     raise NoRequiredItemsLoadError(loaders_len, data)
 
-            return tuple(
-                loader(field)
-                for loader, field in zip(loaders, data, strict=True)
-            )
+            return tuple(loader(field) for loader, field in zip(loaders, data, strict=True))
 
         return dt_disable_non_sc_loader
 
@@ -205,10 +220,7 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                 if loaders_len > data_len:
                     raise NoRequiredItemsLoadError(loaders_len, data)
 
-            return tuple(
-                loader(field)
-                for loader, field in zip(loaders, data, strict=True)
-            )
+            return tuple(loader(field) for loader, field in zip(loaders, data, strict=True))
 
         return dt_disable_sc_loader
 
@@ -223,18 +235,30 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                 is_demonstrative=True,
             )
         dumpers = mediator.mandatory_provide_by_iterable(
-            [
-                request.append_loc(GenericParamLoc(type=tp.source, generic_pos=i))
-                for i, tp in enumerate(norm.args)
-            ],
+            [request.append_loc(GenericParamLoc(type=tp.source, generic_pos=i)) for i, tp in enumerate(norm.args)],
             lambda: "Cannot create dumper for tuple. Dumpers for some elements cannot be created",
         )
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        return mediator.cached_call(
+        result = mediator.cached_call(
             self._make_dumper,
             dumpers=tuple(dumpers),
             debug_trail=debug_trail,
         )
+        native_codegen = fetch_native_codegen(mediator, request.loc_stack)
+        if native_codegen is not None:
+            return cached_compile_native(
+                mediator, native_codegen,
+                TuplePlan(
+                    mappers=tuple(dumpers),
+                    fallback=result,
+                    snapshot_fallback=result,
+                    loading=False,
+                    strict_coercion=False,
+                    debug_trail=debug_trail,
+                ),
+                hook=fetch_code_gen_hook(mediator, request.loc_stack),
+            )
+        return result
 
     def _make_dumper(self, dumpers: Collection[Dumper], debug_trail: DebugTrail):
         if debug_trail == DebugTrail.DISABLE:
@@ -325,9 +349,6 @@ class ConstantLengthTupleProvider(LoaderProvider, DumperProvider):
                 if dumpers_len > data_len:
                     raise NoRequiredItemsLoadError(dumpers_len, data)
 
-            return tuple(
-                dumper(field)
-                for dumper, field in zip(dumpers, data, strict=True)
-            )
+            return tuple(dumper(field) for dumper, field in zip(dumpers, data, strict=True))
 
         return tuple_dumper

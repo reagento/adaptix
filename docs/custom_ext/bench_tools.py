@@ -53,7 +53,10 @@ class CustomBenchUsedDistributions(SphinxMacroDirective):
         distributions: dict[str, str] = {}
 
         for hub_description in BENCHMARK_HUBS:
-            with ZipFile(RELEASE_DATA / f"{hub_description.key}.zip") as release_zip:
+            release_path = RELEASE_DATA / f"{hub_description.key}.zip"
+            if not release_path.exists():
+                continue
+            with ZipFile(release_path) as release_zip:
                 index = json.loads(release_zip.read("index.json"))
                 for file_list in index["env_files"].values():
                     for file in file_list:

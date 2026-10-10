@@ -223,7 +223,9 @@ class EnumExactValueProvider(BaseEnumProvider):
             except TypeError:
                 raise BadVariantLoadError(variants, data)
 
-        return enum_exact_loader_v2m
+        from adaptix._internal.morphing.native.registry import describe_enum  # noqa: PLC0415
+
+        return describe_enum(enum_exact_loader_v2m, value_to_member, enum, loading=True)
 
     def _get_exact_value_to_member(self, enum: type[Enum]) -> Mapping[Any, Any] | None:
         try:
@@ -248,7 +250,9 @@ class EnumExactValueProvider(BaseEnumProvider):
         def enum_exact_value_dumper(data):
             return member_to_value[data]
 
-        return enum_exact_value_dumper
+        from adaptix._internal.morphing.native.registry import describe_enum  # noqa: PLC0415
+
+        return describe_enum(enum_exact_value_dumper, member_to_value, enum, loading=False)
 
 
 class FlagByExactValueProvider(BaseFlagProvider):

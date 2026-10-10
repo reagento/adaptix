@@ -10,6 +10,8 @@ from io import BytesIO
 from typing import Generic, TypeVar
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from adaptix._internal.morphing.native.codegen import compile_native_scalar
+
 from ..common import Dumper, Loader
 from ..feature_requirement import HAS_PY_311, HAS_SELF_TYPE
 from ..provider.essential import CannotProvide, Mediator
@@ -40,7 +42,7 @@ class IsoFormatProvider(MorphingProvider):
         return f"{type(self)}(cls={self._cls})"
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
-        return mediator.cached_call(self._make_loader)
+        return compile_native_scalar(mediator, request, mediator.cached_call(self._make_loader))
 
     def _make_loader(self):
         raw_loader = self._cls.fromisoformat
@@ -52,10 +54,15 @@ class IsoFormatProvider(MorphingProvider):
                 raise TypeLoadError(str, data)
             except ValueError:
                 raise ValueLoadError("Invalid isoformat string", data)
+        if self._cls in (date, time, datetime):
+            from adaptix._internal.morphing.native.descriptions import DateTimeProgram  # noqa: PLC0415
+            from adaptix._internal.morphing.native.registry import register_program  # noqa: PLC0415
+
+            register_program(isoformat_loader, DateTimeProgram(isoformat_loader, loading=True, cls=self._cls))
         return isoformat_loader
 
     def provide_dumper(self, mediator: Mediator, request: DumperRequest) -> Dumper:
-        return mediator.cached_call(self._make_dumper)
+        return compile_native_scalar(mediator, request, mediator.cached_call(self._make_dumper))
 
     def _make_dumper(self):
         return self._cls.isoformat
@@ -260,6 +267,10 @@ class _Base64DumperMixin(DumperProvider):
     def _make_dumper(self):
         def bytes_base64_dumper(data):
             return b2a_base64(data, newline=False).decode("ascii")
+        from adaptix._internal.morphing.native.descriptions import Base64Program  # noqa: PLC0415
+        from adaptix._internal.morphing.native.registry import register_program  # noqa: PLC0415
+
+        register_program(bytes_base64_dumper, Base64Program(bytes_base64_dumper, loading=False))
         return bytes_base64_dumper
 
 
@@ -290,6 +301,10 @@ class BytesBase64Provider(_Base64DumperMixin, _Base64JSONSchemaMixin, MorphingPr
                 return a2b_base64(encoded)
             except binascii.Error as e:
                 raise ValueLoadError(str(e), data)
+        from adaptix._internal.morphing.native.descriptions import Base64Program  # noqa: PLC0415
+        from adaptix._internal.morphing.native.registry import register_program  # noqa: PLC0415
+
+        register_program(bytes_base64_loader, Base64Program(bytes_base64_loader, loading=True))
         return bytes_base64_loader
 
 
@@ -407,10 +422,11 @@ class ScalarProvider(MorphingProvider, Generic[T]):
 
     def provide_loader(self, mediator: Mediator, request: LoaderRequest) -> Loader:
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
-        return mediator.cached_call(
+        result = mediator.cached_call(
             self._make_loader,
             strict_coercion=strict_coercion,
         )
+        return compile_native_scalar(mediator, request, result)
 
     def _make_loader(self, *, strict_coercion: bool):
         return self._strict_coercion_loader if strict_coercion else self._lax_coercion_loader

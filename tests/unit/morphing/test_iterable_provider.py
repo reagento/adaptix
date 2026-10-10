@@ -19,7 +19,8 @@ from typing import (
 import pytest
 from tests_helpers import raises_exc, with_trail
 
-from adaptix import DebugTrail, Retort, dumper, loader
+from adaptix import CodeGenBackend, DebugTrail, Retort, dumper, loader
+from adaptix._internal.code_tools.x86_64_compiler import check_native_platform
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.morphing.load_error import AggregateLoadError
 from adaptix.load_error import ExcludedTypeLoadError, TypeLoadError
@@ -31,9 +32,15 @@ def string_dumper(data):
     raise TypeError
 
 
-@pytest.fixture
-def retort():
+@pytest.fixture(params=list(CodeGenBackend))
+def retort(request):
+    if request.param == CodeGenBackend.X86_64:
+        try:
+            check_native_platform()
+        except RuntimeError as error:
+            pytest.skip(str(error))
     return Retort(
+        codegen_backend=request.param,
         recipe=[
             dumper(str, string_dumper),
         ],

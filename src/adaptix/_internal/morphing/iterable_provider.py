@@ -3,6 +3,9 @@ import collections.abc
 from collections.abc import Callable, Iterable, Mapping
 from typing import TypeVar
 
+from adaptix._internal.morphing.native.codegen import cached_compile_native, fetch_native_codegen
+from adaptix._internal.morphing.native.plan import IterablePlan
+
 from ..common import Dumper, Loader, TypeHint
 from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
@@ -14,6 +17,7 @@ from .json_schema.definitions import JSONSchema
 from .json_schema.request_cls import JSONSchemaRequest
 from .json_schema.schema_model import JSONSchemaType
 from .load_error import AggregateLoadError, ExcludedTypeLoadError, LoadError, TypeLoadError
+from .model.basic_gen import fetch_code_gen_hook
 from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from .utils import try_normalize_type
 
@@ -39,7 +43,7 @@ class IterableProvider(MorphingProvider):
         )
         strict_coercion = mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack))
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        return mediator.cached_call(
+        result = mediator.cached_call(
             self._make_loader,
             origin=origin,
             iter_factory=origin,
@@ -47,6 +51,21 @@ class IterableProvider(MorphingProvider):
             strict_coercion=strict_coercion,
             debug_trail=debug_trail,
         )
+        native_codegen = fetch_native_codegen(mediator, request.loc_stack)
+        if origin in (list, tuple, set, frozenset) and native_codegen is not None:
+            return cached_compile_native(
+                mediator, native_codegen,
+                IterablePlan(
+                    origin=origin,
+                    mapper=arg_loader,
+                    fallback=result,
+                    debug_trail=debug_trail,
+                    loading=True,
+                    strict_coercion=strict_coercion,
+                ),
+                hook=fetch_code_gen_hook(mediator, request.loc_stack),
+            )
+        return result
 
     def _create_dt_first_iter_loader(self, origin, loader):
         def iter_loader_dt_first(iterable):
@@ -171,13 +190,29 @@ class IterableProvider(MorphingProvider):
             lambda x: "Cannot create dumper for iterable. Dumper for element cannot be created",
         )
         debug_trail = mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack))
-        return mediator.cached_call(
+        result = mediator.cached_call(
             self._make_dumper,
             origin=origin,
             iter_factory=self._dump_as,
             arg_dumper=arg_dumper,
             debug_trail=debug_trail,
         )
+        native_codegen = fetch_native_codegen(mediator, request.loc_stack)
+        if self._dump_as in (list, tuple) and native_codegen is not None:
+            return cached_compile_native(
+                mediator, native_codegen,
+                IterablePlan(
+                    origin=origin,
+                    mapper=arg_dumper,
+                    fallback=result,
+                    debug_trail=debug_trail,
+                    loading=False,
+                    strict_coercion=False,
+                    dump_as=self._dump_as,
+                ),
+                hook=fetch_code_gen_hook(mediator, request.loc_stack),
+            )
+        return result
 
     def _make_dumper(self, *, origin, iter_factory, arg_dumper, debug_trail: DebugTrail):
         if debug_trail == DebugTrail.DISABLE:

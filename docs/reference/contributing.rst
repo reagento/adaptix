@@ -47,6 +47,65 @@ How to setup the repository
       just test-all
 
 
+Native code generation dependencies
+==================================
+
+Morphing providers request a ``NativeCodeGenerator`` through
+``NativeCodeGenRequest``. The request is located, so a recipe can replace the
+generator globally or for selected fields with ``bound``. A ``None`` response
+keeps Python generation. Model compilation caches distinguish generators by
+identity; injected implementations do not need to be hashable.
+
+The dependency has one entry point: ``compile(plan, hook=...)``. Providers
+assemble typed plans from shapes, name layouts, child converters and policies;
+they do not select instruction emitters. ``native/plan.py`` defines these
+plans, ``native/descriptions.py`` describes scalar conversions, and
+``native/registry.py`` attaches descriptions to converters without retaining
+recursive graphs. These modules also work with Python generation.
+
+``native/runtime.py`` contains shared container error handling. Model-specific
+runtime semantics remain in ``model/native_runtime.py``. Neither layer emits
+instructions. Architecture-specific lowering lives in ``native/x86_64/``.
+
+``Retort`` resolves ``CodeGenBackend`` at configuration time and supplies the
+built-in implementation as a default dependency. Currently only
+``X86CodeGenerator`` is implemented. It receives a ``compiler_factory`` and
+passes it to every x86 model and container emitter. ``X86Compiler`` in turn
+receives an ``assembler_factory`` for every code fragment, including recovery
+blocks, function entries and call context initialization.
+
+For example, the dependencies can be composed explicitly through a recipe::
+
+    from functools import partial
+
+    from adaptix import Retort
+    from adaptix._internal.code_tools.x86_64_assembler import X86Assembler
+    from adaptix._internal.code_tools.x86_64_compiler import X86Compiler
+    from adaptix._internal.morphing.native.codegen import NativeCodeGenRequest
+    from adaptix._internal.morphing.native.x86_64.generator import X86CodeGenerator
+    from adaptix._internal.provider.value_provider import ValueProvider
+
+    generator = X86CodeGenerator(
+        compiler_factory=partial(X86Compiler, assembler_factory=X86Assembler),
+    )
+    retort = Retort(recipe=[ValueProvider(NativeCodeGenRequest, generator)])
+
+These are internal extension points. ``code_tools/x86_64_assembler.py`` encodes
+instructions and tracks control flow; ``code_tools/x86_64_compiler.py`` lowers
+object operations and manages owned references. Neither imports morphing,
+providers or retorts. The x86 generator injects converter descriptions and the
+recursive callable wrapper through its compiler factory. The CPython callable,
+its constants and executable-memory lifetime live in
+``code_tools/native_callable.py``.
+
+An ARM implementation can consume the same plans and scalar descriptions
+through ``NativeCodeGenerator.compile``. It still needs its own lowering,
+stack layout, ABI and executable-memory support, including instruction-cache
+synchronization. The shared plans describe conversion configuration, not a
+portable instruction set; passing an ARM assembler to ``X86Compiler`` does
+not port the x86 instructions.
+
+
 Tools overview
 ================================
 

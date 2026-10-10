@@ -1,5 +1,5 @@
 from ._internal.common import Dumper, Loader, TypeHint
-from ._internal.definitions import DebugTrail
+from ._internal.definitions import CodeGenBackend, DebugTrail
 from ._internal.morphing.facade.func import dump, load
 from ._internal.morphing.facade.provider import (
     as_is_dumper,
@@ -53,6 +53,7 @@ __all__ = (
     "AggregateCannotProvide",
     "CannotProvide",
     "Chain",
+    "CodeGenBackend",
     "DebugTrail",
     "Dumper",
     "ExtraCollect",

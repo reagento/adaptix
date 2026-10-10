@@ -164,6 +164,36 @@ RELEASE_DATA = Path(__file__).parent.parent / "release_data"
 
 BENCHMARK_HUBS: Iterable[HubDescription] = [
     HubDescription(
+        key="backend-types",
+        title="Adaptix x86-64 and msgspec: type and container combinations",
+        module="benchmarks.hub_backend_types",
+        x_bounder=ClusterAxisBounder(last_cluster_idx=-1, boundary_rate=2),
+    ),
+    HubDescription(
+        key="backend-stress",
+        title="Adaptix x86-64 and msgspec: sizes, other types, errors, JSON, and startup",
+        module="benchmarks.hub_backend_stress",
+        x_bounder=ClusterAxisBounder(last_cluster_idx=-1, boundary_rate=2),
+    ),
+    HubDescription(
+        key="backend-matrix",
+        title="Adaptix x86-64 and msgspec across different workloads",
+        module="benchmarks.hub_backend_matrix",
+        x_bounder=ClusterAxisBounder(last_cluster_idx=-1, boundary_rate=2),
+    ),
+    HubDescription(
+        key="simple_structures-competitors",
+        title="Code generation backends and other libraries (loading and dumping)",
+        module="benchmarks.simple_structures.hub_competitors",
+        x_bounder=ClusterAxisBounder(last_cluster_idx=-1, boundary_rate=2),
+    ),
+    HubDescription(
+        key="simple_structures-codegen",
+        title="Code generation backends (loading and dumping)",
+        module="benchmarks.simple_structures.hub_codegen",
+        x_bounder=ClusterAxisBounder(last_cluster_idx=-1, boundary_rate=2),
+    ),
+    HubDescription(
         key="simple_structures-loading",
         title="Simple Structures (loading)",
         module="benchmarks.simple_structures.hub_loading",

@@ -271,15 +271,6 @@ def bench_loading(no_gc: bool, strict: bool):
 def bench_dumping(no_gc: bool):
     if no_gc:
         data = create_response(
-            GetRepoIssuesResponse,
-            Issue,
-            Reactions,
-            PullRequest,
-            Label,
-            SimpleUser,
-        )
-    else:
-        data = create_response(
             GetRepoIssuesResponseNoGC,
             IssueNoGC,
             ReactionsNoGC,
@@ -287,4 +278,22 @@ def bench_dumping(no_gc: bool):
             LabelNoGC,
             SimpleUserNoGC,
         )
+    else:
+        data = create_response(
+            GetRepoIssuesResponse,
+            Issue,
+            Reactions,
+            PullRequest,
+            Label,
+            SimpleUser,
+        )
     return benchmark_plan(msgspec.to_builtins, data)
+
+
+@pytest.mark.parametrize("no_gc", [False, True])
+def test_dumping_benchmark_gc_configuration(no_gc):
+    plan = bench_dumping(no_gc)
+    response = plan.args[0]
+    assert type(response).__struct_config__.gc is not no_gc
+    assert all(type(issue).__struct_config__.gc is not no_gc for issue in response.data)
+    assert plan.func(*plan.args) == create_dumped_response()
