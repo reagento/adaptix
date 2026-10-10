@@ -36,7 +36,7 @@ class X86Assembler:
 
     def __init__(self):
         self.code = bytearray()
-        self.lines: list[str] = []
+        self.listing = bytearray()
         self.labels: dict[str, int] = {}
         self.final_labels: dict[str, int] = {}
         self.fixups: list[tuple[int, str]] = []
@@ -44,13 +44,13 @@ class X86Assembler:
 
     def emit(self, code: bytes, text: str) -> None:
         self.code.extend(code)
-        self.lines.append(f"    {text}")
+        self.listing.extend(f"    {text}\n".encode())
 
     def label(self, name: str) -> None:
         if name in self.labels:
             raise ValueError(f"Duplicate assembly label {name}")
         self.labels[name] = len(self.code)
-        self.lines.append(f"{name}:")
+        self.listing.extend(f"{name}:\n".encode())
         self.flow.append(("label", name))
 
     def mov_imm(self, register: int, value: int) -> None:
@@ -120,6 +120,7 @@ class X86Assembler:
             None: b"\xe9", "z": b"\x0f\x84", "nz": b"\x0f\x85", "s": b"\x0f\x88", "ae": b"\x0f\x83",
             "ns": b"\x0f\x89",
             "be": b"\x0f\x86", "a": b"\x0f\x87", "b": b"\x0f\x82",
+            "o": b"\x0f\x80",
         }[condition]
         self.emit(opcode + b"\x00" * 4, f"j{condition or 'mp'} {label}")
         self.fixups.append((len(self.code) - 4, label))
@@ -196,7 +197,7 @@ class X86Assembler:
             raise ValueError("Duplicate assembly labels")
         offset = len(self.code)
         self.code.extend(other.code)
-        self.lines.extend(other.lines)
+        self.listing.extend(other.listing)
         self.labels.update({name: position + offset for name, position in other.labels.items()})
         self.fixups.extend((position + offset, label) for position, label in other.fixups)
         self.flow.extend(other.flow)

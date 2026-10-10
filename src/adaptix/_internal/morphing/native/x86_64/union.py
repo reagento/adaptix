@@ -1,13 +1,12 @@
-import ctypes
 import struct
 import sys
 from dataclasses import dataclass
-from functools import cache
 from types import BuiltinFunctionType
 from weakref import ReferenceType
 
 from adaptix._internal.code_tools.native_callable import NativeCode
 from adaptix._internal.code_tools.native_dictionary import guard_dictionary_value
+from adaptix._internal.code_tools.native_numbers import integer_layout_supported
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.definitions import DebugTrail
 from adaptix._internal.morphing.load_error import LoadError, UnionLoadError
@@ -49,20 +48,6 @@ class LiteralProgram(descriptions.LiteralProgram):
         c.transfer(value, result)
         c.asm.jump(done)
         return c.fallback_result(result, function, generic, done)
-
-
-@cache
-def integer_layout_supported():
-    if sys.version_info[:2] not in {(3, 13), (3, 14)} or sys.int_info.bits_per_digit != 30:  # noqa: PLR2004
-        return False
-    for value in (0, 1, -1, (1 << 30) - 1):
-        tag = ctypes.c_size_t.from_address(id(value) + 16).value & ~4
-        expected = 1 if value == 0 else 8 if value > 0 else 10
-        if tag != expected:
-            return False
-        if value and ctypes.c_uint32.from_address(id(value) + 24).value != abs(value):
-            return False
-    return True
 
 
 def match_integer(c, value, failed):

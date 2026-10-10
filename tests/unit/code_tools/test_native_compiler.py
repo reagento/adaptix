@@ -11,7 +11,7 @@ from threading import Barrier
 import pytest
 
 from adaptix import CodeGenBackend, Retort
-from adaptix._internal.code_tools.native_callable import ExecutableMemory
+from adaptix._internal.code_tools.native_callable import ExecutableMemory, NativeCode
 from adaptix._internal.code_tools.native_dictionary import DictionaryTemplate
 from adaptix._internal.code_tools.x86_64_assembler import Address, Immediate, Slot, X86Assembler
 from adaptix._internal.code_tools.x86_64_compiler import X86Compiler, check_native_platform
@@ -215,6 +215,56 @@ def test_callable_keeps_allocation_alive_and_releases_it():
     # Keeping the mmap itself alive is intentional here: no owner or builtin
     # holds it anymore, so it can now be closed without dangling function code.
     allocation.close()
+
+
+def test_native_diagnostics_preserve_unicode_and_executable_bytes():
+    compiler = X86Compiler("native_данные")
+    code = compiler.finish(compiler.call(str, compiler.data))
+    machine_code = code.machine_code
+    assembly = code.assembly
+
+    assert machine_code == code.memory.mapping[:code.machine_code_size]
+    assert assembly.startswith(".intel_syntax noprefix\nnative_данные:\n")
+    assert "native_unary_entry:" in assembly
+    assert "jmp native_body" in assembly
+    assert code.assembly == assembly
+    assert code.machine_code == machine_code
+    assert code.make_callable()(123) == "123"
+
+
+def test_native_constants_keep_distinct_equal_objects_by_identity():
+    first, second = [], []
+    compiler = X86Compiler("native_constants")
+    compiler.constant(first)
+    compiler.constant(first)
+    compiler.constant(second)
+    code = compiler.finish(compiler.copy_reference(compiler.data))
+    assert sum(value is first for value in code.constants) == 1
+    assert sum(value is second for value in code.constants) == 1
+    assert code.make_callable()(first) is first
+
+
+def test_finished_compiler_does_not_wait_for_cyclic_gc():
+    compiler = X86Compiler("native_temporary_compiler")
+    reference = weakref.ref(compiler)
+    result = compiler.guarded_call(int, (compiler.data,), lambda error: -1)
+    function = compiler.finish(result).make_callable()
+    del compiler
+
+    assert reference() is None
+    assert function("42") == 42
+    assert function("invalid") == -1
+
+
+def test_default_generation_does_not_materialize_diagnostics(monkeypatch):
+    def forbidden(self):
+        pytest.fail("Unused native diagnostics were materialized")
+
+    monkeypatch.setattr(NativeCode, "assembly", property(forbidden))
+    monkeypatch.setattr(NativeCode, "machine_code", property(forbidden))
+    retort = Retort(codegen_backend=CodeGenBackend.X86_64)
+    function = retort.get_loader(list[list[int]])
+    assert function([[1, 2], [3]]) == [[1, 2], [3]]
 
 
 def test_recursive_callable_cycle_releases_allocation():
@@ -972,3 +1022,14 @@ def test_private_tuple_builder_grows_shrinks_and_tracks_final_cycles(reserved):
         del value, result
         gc.collect()
         assert all(reference() is None for reference in references)
+
+
+def test_dynamic_c_function_address():
+    compiler = X86Compiler("dynamic_c_call")
+    address = compiler.slot()
+    compiler.asm.mov_imm(0, ctypes.cast(ctypes.pythonapi.PyObject_Str, ctypes.c_void_p).value)
+    compiler.asm.store(address)
+    result = compiler.call_c(address, compiler.data)
+    function = compiler.finish(result).make_callable()
+    assert function(123) == "123"
+    assert function(None) == "None"
