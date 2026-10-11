@@ -71,7 +71,7 @@ python_files = [
   'local_helpers.py',
 ]
 testpaths = ['tests', 'examples']
-
+addopts = "--tb=native"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
@@ -286,7 +286,9 @@ test-extra-new = [
     "pytest-asyncio==1.2.0",
     "httpx==0.28.1",
 
-    "jsonschema==4.26.0"
+    # `jsonschema` depends on `attrs`, so it cannot be used at `test-extra-none` and `test-extra-new`.
+    "jsonschema==4.26.0;  implementation_name != 'pypy'",
+    "jsonschema==4.26.0;  implementation_name == 'pypy' and python_version > '3.11'",
 ]
 
 bench = [
