@@ -1,6 +1,5 @@
 import ctypes
 import mmap
-import zlib
 from typing import Any, NamedTuple
 
 
@@ -31,8 +30,8 @@ class ExecutableMemory:
 
 
 class NativeCodeData(NamedTuple):
-    machine_code_size: int
-    assembly_source: bytes
+    machine_code: bytes
+    assembly: str
     constants: tuple[Any, ...]
     memory: ExecutableMemory
     method: MethodDef
@@ -52,8 +51,7 @@ class NativeCode(NativeCodeData):
     __slots__ = ()
 
     def __new__(
-        cls, *, name: str, code: bytes, assembly: str | bytes, constants: list[Any], raw_entry_offset: int,
-        program=None,
+        cls, *, name: str, code: bytes, assembly: str, constants: list[Any], raw_entry_offset: int, program=None,
     ):
         memory = ExecutableMemory(code)
         method = MethodDef(
@@ -62,31 +60,18 @@ class NativeCode(NativeCodeData):
             0x0080 | 0x0002,  # METH_FASTCALL | METH_KEYWORDS
             f"{name}($self, /, data)\n--\n\nGenerated native function.".encode(),
         )
-        source = assembly.encode("utf-8") if isinstance(assembly, str) else assembly
-        # Keep diagnostics compact without caching their decoded copies. The
-        # executable mapping owns the code; constants need one owner per identity.
-        return super().__new__(
-            cls, len(code), zlib.compress(source, level=1),
-            tuple({id(value): value for value in constants}.values()), memory, method, raw_entry_offset, program,
-        )
-
-    @property
-    def machine_code(self) -> bytes:
-        return self.memory.mapping[:self.machine_code_size]
-
-    @property
-    def assembly(self) -> str:
-        return zlib.decompress(self.assembly_source).decode("utf-8")
+        return super().__new__(cls, code, assembly, tuple(constants), memory, method, raw_entry_offset, program)
 
     @property
     def raw_address(self) -> int:
         return self.memory.address + self.raw_entry_offset
 
     def __repr__(self):
-        return f"<NativeCode ({self.machine_code_size} bytes)>"
+        return f"<NativeCode ({len(self.machine_code)} bytes)>"
 
     def make_callable(self):
         make_function = ctypes.pythonapi.PyCFunction_NewEx
         make_function.argtypes = (ctypes.POINTER(MethodDef), ctypes.py_object, ctypes.c_void_p)
         make_function.restype = ctypes.py_object
         return make_function(ctypes.byref(self.method), self, None)
+

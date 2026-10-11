@@ -14,7 +14,6 @@ Adaptix
    :caption: Loading & Dumping
 
    loading-and-dumping/tutorial
-   loading-and-dumping/json
    loading-and-dumping/extended-usage
    loading-and-dumping/specific-types-behavior
 

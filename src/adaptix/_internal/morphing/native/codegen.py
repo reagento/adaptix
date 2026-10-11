@@ -3,12 +3,7 @@ from typing import Protocol
 
 from adaptix._internal.common import Dumper, Loader
 from adaptix._internal.definitions import CodeGenBackend
-from adaptix._internal.morphing.model.basic_gen import (
-    CodeGenHook,
-    CodeGenHookData,
-    fetch_code_gen_hook,
-    stub_code_gen_hook,
-)
+from adaptix._internal.morphing.model.basic_gen import CodeGenHook, CodeGenHookData, fetch_code_gen_hook
 from adaptix._internal.morphing.native.plan import NativePlan, ScalarPlan
 from adaptix._internal.provider.essential import CannotProvide, Mediator
 from adaptix._internal.provider.loc_stack_filtering import LocStack
@@ -26,15 +21,14 @@ class NativeCodeGenRequest(LocatedRequest[NativeCodeGenerator | None]):
 
 
 def publish(code, hook: CodeGenHook, backend: CodeGenBackend):
-    if hook is not stub_code_gen_hook:
-        hook(
-            CodeGenHookData(
-                namespace={f"constant_{index}": value for index, value in enumerate(code.constants)},
-                source=code.assembly,
-                backend=backend,
-                machine_code=code.machine_code,
-            ),
-        )
+    hook(
+        CodeGenHookData(
+            namespace={f"constant_{index}": value for index, value in enumerate(code.constants)},
+            source=code.assembly,
+            backend=backend,
+            machine_code=code.machine_code,
+        ),
+    )
     return code.make_callable()
 
 

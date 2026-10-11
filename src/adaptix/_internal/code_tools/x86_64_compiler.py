@@ -24,13 +24,6 @@ MAX_INLINE_CODE_SIZE = 65536
 INLINE_FIELD_LIMIT = 30
 
 
-def c_function_address(name: str) -> Immediate:
-    address = ctypes.cast(getattr(ctypes.pythonapi, name), ctypes.c_void_p).value
-    if address is None:
-        raise RuntimeError(f"Missing CPython C API entry point: {name}")
-    return Immediate(address)
-
-
 def omitted_kwargs(parameters, omitted, *values):
     return {name: value for name, value in zip(parameters, values, strict=True) if value is not omitted}
 
@@ -257,24 +250,24 @@ class X86Compiler:
 
     @overload
     def call_c(
-        self, name: str | Immediate | Slot, *args: Slot | Immediate | Address,
+        self, name: str | Immediate, *args: Slot | Immediate | Address,
         result: Literal["object"] = "object", error_label: str = "error", destination: Slot | None = None,
     ) -> Slot: ...
 
     @overload
     def call_c(
-        self, name: str | Immediate | Slot, *args: Slot | Immediate | Address,
+        self, name: str | Immediate, *args: Slot | Immediate | Address,
         result: Literal["pointer"], error_label: str = "error",
     ) -> Slot: ...
 
     @overload
     def call_c(
-        self, name: str | Immediate | Slot, *args: Slot | Immediate | Address,
+        self, name: str | Immediate, *args: Slot | Immediate | Address,
         result: Literal["int", "bool", "void"], error_label: str = "error",
     ) -> None: ...
 
     def call_c(
-        self, name: str | Immediate | Slot, *args: Slot | Immediate | Address,
+        self, name: str | Immediate, *args: Slot | Immediate | Address,
         result: str = "object", error_label: str = "error", destination: Slot | None = None,
     ) -> Slot | None:
         if destination is not None and (result != "object" or not self.owns(destination)):
@@ -289,7 +282,12 @@ class X86Compiler:
             return None
         # Variadic C functions require al=number of vector-register arguments.
         self.asm.emit(b"\x31\xc0", "xor eax, eax")
-        self.load(11, c_function_address(name) if isinstance(name, str) else name)
+        address = name.value if isinstance(name, Immediate) else (
+            ctypes.cast(getattr(ctypes.pythonapi, name), ctypes.c_void_p).value
+        )
+        if address is None:
+            raise RuntimeError(f"Missing CPython C API entry point: {name}")
+        self.asm.mov_imm(11, address)
         self.asm.emit(b"\x41\xff\xd3", f"call r11  # {name}")
         if result == "object":
             # A supplied destination must be empty, just like a newly allocated slot.
@@ -1058,12 +1056,10 @@ class X86Compiler:
         return result
 
     def can_inline(self, native: NativeCode) -> bool:
+        code = native.machine_code
         # Keep small conversions fused, but call large generated children once
         # instead of regenerating their complete bodies in every parent.
-        if native.machine_code_size > MAX_INLINE_CODE_SIZE:
-            return False
-        code = native.memory.mapping[:15]
-        if code[8:11] != b"\x48\x81\xec":
+        if len(code) > MAX_INLINE_CODE_SIZE or code[8:11] != b"\x48\x81\xec":
             return False
         stack_size = struct.unpack_from("<I", code, 11)[0]
         return self.slot_count * 8 + stack_size <= MAX_INLINE_STACK_SIZE
@@ -1404,17 +1400,11 @@ class X86Compiler:
     def guarded_get_attr(self, data: Slot, name: str, handler: Any, *handler_args) -> Slot:
         return self.guarded(lambda label: self.get_attr(data, name, error_label=label), handler, handler_args)
 
-    def get_attrs(  # noqa: C901, PLR0915
+    def get_attrs(  # noqa: PLR0915
         self, data: Slot, names: tuple[str, ...], handlers: tuple[Any, ...] = (), *handler_args,
-        fallback_label: str | None = None,
     ) -> list[Slot]:
         """Read a run of plain attributes after one storage/type guard."""
         def read_individually():
-            if fallback_label is not None:
-                self.asm.jump(fallback_label)
-                for _ in names:
-                    yield self.slot(owned=True)
-                return
             for index, name in enumerate(names):
                 yield (
                     self.guarded_get_attr(data, name, handlers[index], *handler_args)
@@ -1714,9 +1704,9 @@ class X86Compiler:
         successful_exit = self.label("successful_exit")
         self.asm.label(successful_exit)
         flow = self.assembler_factory()
-        flow.flow.extend(main.flow)
-        flow.flow.append(("jump", self.label("flow_stop")))
-        flow.flow.extend(cold.flow)
+        flow.extend(main)
+        flow.jump(self.label("flow_stop"))
+        flow.extend(cold)
         cleared = flow.definitely_null_at(successful_exit, self.owned)
         live = [slot for slot in self.owned if slot != result and slot not in cleared]
         if live:
@@ -1734,11 +1724,7 @@ class X86Compiler:
         self.emit_return()
         self.asm.extend(cold)
 
-        code = self.make_code(program)
-        # Recovery callbacks capture this compiler and model generators. Drop
-        # them once emitted so temporary assemblers do not wait for cyclic GC.
-        self.cold_handlers.clear()
-        return code
+        return self.make_code(program)
 
     def return_with_cleanup(self, result: Slot, live: list[Slot]) -> None:
         returned = self.slot()
@@ -1773,7 +1759,7 @@ class X86Compiler:
         raw_entry_offset = len(code)
         unary = self.assembler_factory()
         unary.code.extend(prefix_code)
-        unary.listing.extend(prefix.listing)
+        unary.lines.extend(prefix.lines)
         unary.store(self.data, 7)
         displacement = len(prefix_code) + self.asm.final_labels[self.argument_ready] - (
             raw_entry_offset + len(unary.code) + 5
@@ -1781,9 +1767,9 @@ class X86Compiler:
         unary.emit(b"\xe9" + struct.pack("<i", displacement), "jmp native_body")
         code += unary.finish()
         assembly = (
-            b".intel_syntax noprefix\n" + self.name.encode("utf-8") + b":\n"
-            + prefix.listing + self.asm.listing
-            + b"native_unary_entry:\n" + unary.listing
+            ".intel_syntax noprefix\n" + self.name + ":\n"
+            + "\n".join(prefix.lines + self.asm.lines)
+            + "\nnative_unary_entry:\n" + "\n".join(unary.lines) + "\n"
         )
         return NativeCode(
             name=self.name, code=code, assembly=assembly, constants=self.constants, raw_entry_offset=raw_entry_offset,
@@ -1809,8 +1795,7 @@ class X86Compiler:
         }
         self.asm.fixups = [(position + size if position >= offset else position, label)
                             for position, label in self.asm.fixups]
-        label = (self.argument_ready + ":\n").encode("utf-8")
-        position = self.asm.listing.index(label) + len(label)
-        self.asm.listing[position:position] = context.listing
+        line = self.asm.lines.index(self.argument_ready + ":") + 1
+        self.asm.lines[line:line] = context.lines
         event = self.asm.flow.index(("label", self.argument_ready)) + 1
         self.asm.flow[event:event] = context.flow

@@ -27,7 +27,6 @@ from adaptix._internal.morphing.native.x86_64.set import build_set_program
 from adaptix._internal.morphing.native.x86_64.tuple import build_tuple_program
 from adaptix._internal.morphing.native.x86_64.union import build_union_program
 from adaptix._internal.retort.operating_retort import FuncWrapper
-from adaptix._internal.serialization.x86_64.codec import X86JsonCodec
 
 BUILDERS = {DictPlan: build_dict_program, TuplePlan: build_tuple_program, UnionPlan: build_union_program}
 
@@ -45,9 +44,6 @@ class X86CodeGenerator(NativeCodeGenerator):
         compiler.program_resolver = get_program
         compiler.callable_wrapper_type = FuncWrapper
         return compiler
-
-    def make_json_codec(self) -> X86JsonCodec:
-        return X86JsonCodec(compiler_factory=self.make_compiler)
 
     def compile(self, plan: NativePlan, *, hook: CodeGenHook) -> Loader | Dumper:  # noqa: PLR0911
         if isinstance(plan, ModelLoaderPlan):

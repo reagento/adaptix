@@ -70,12 +70,11 @@ class Case:
     retort: Retort
 
 
-def create_case(workload: str, implementation: str, *, codegen_backend: CodeGenBackend | None = None) -> Case:  # noqa: C901, PLR0911, PLR0912
+def create_case(workload: str, implementation: str) -> Case:  # noqa: C901, PLR0911, PLR0912
     native = implementation == "adaptix_x86_64"
     no_gc = implementation == "msgspec_no_gc"
-    backend = codegen_backend or (CodeGenBackend.X86_64 if native else CodeGenBackend.PYTHON)
     retort = Retort(
-        codegen_backend=backend,
+        codegen_backend=CodeGenBackend.X86_64 if native else CodeGenBackend.PYTHON,
         strict_coercion=True,
         debug_trail=DebugTrail.ALL,
     )
@@ -94,7 +93,7 @@ def create_case(workload: str, implementation: str, *, codegen_backend: CodeGenB
         count = 1 if workload == "flat_model" else int(workload.split("_")[1])
         if native:
             book_cls, review_cls = simple_adaptix.Book, simple_adaptix.Review
-            retort = simple_adaptix.retort.replace(codegen_backend=backend)
+            retort = simple_adaptix.retort.replace(codegen_backend=CodeGenBackend.X86_64)
         elif no_gc:
             book_cls, review_cls = simple_msgspec.BookNoGC, simple_msgspec.ReviewNoGC
         else:
@@ -113,7 +112,7 @@ def create_case(workload: str, implementation: str, *, codegen_backend: CodeGenB
         ]
         data = create_dumped_response()
         if native:
-            retort = gh_adaptix.retort.replace(codegen_backend=backend)
+            retort = gh_adaptix.retort.replace(codegen_backend=CodeGenBackend.X86_64)
         return Case(classes[0], data, create_response(*classes), data, retort)
     if workload == "list_int_1000":
         data = list(range(1000, 2000))

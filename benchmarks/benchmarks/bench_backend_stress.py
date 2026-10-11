@@ -119,10 +119,9 @@ def tree(cls, depth):
     return cls(value=1000 + depth, children=[child]), {"value": 1000 + depth, "children": [data]}
 
 
-def create_case(workload, implementation, *, codegen_backend=None):  # noqa: C901, PLR0911, PLR0912, PLR0915
+def create_case(workload, implementation):  # noqa: C901, PLR0911, PLR0912, PLR0915
     native = implementation == "adaptix_x86_64"
-    backend = codegen_backend or (CodeGenBackend.X86_64 if native else CodeGenBackend.PYTHON)
-    retort = create_retort(codegen_backend=backend)
+    retort = create_retort(codegen_backend=CodeGenBackend.X86_64 if native else CodeGenBackend.PYTHON)
 
     def simple(target, data, loaded=None, dumped=None):
         return matrix.Case(target, data, data if loaded is None else loaded, data if dumped is None else dumped, retort)
@@ -218,10 +217,10 @@ def create_case(workload, implementation, *, codegen_backend=None):  # noqa: C90
             (bench_adaptix.Book, bench_adaptix.Review) if native else (bench_msgspec.Book, bench_msgspec.Review)
         )
         if native:
-            retort = bench_adaptix.retort.replace(codegen_backend=codegen_backend or CodeGenBackend.X86_64)
+            retort = bench_adaptix.retort.replace(codegen_backend=CodeGenBackend.X86_64)
         return matrix.Case(book, data, create_book(book, review, reviews_count=100), data, retort)
     if workload == "book_1000":
-        return matrix.create_case(workload, implementation, codegen_backend=codegen_backend)
+        return matrix.create_case(workload, implementation)
     raise ValueError(workload)
 
 
