@@ -37,13 +37,19 @@ class TupleProgram(TuplePlan):
         c.asm.label(tuple_input)
         self.mapping_guard(c, tuple)
         c.asm.load(0, c.data)
-        c.asm.emit(b"\x48\x81\x78\x10" + len(self.specs).to_bytes(4, "little"), "check fixed tuple length")
+        c.asm.emit(
+            b"\x48\x81\x78" + bytes([c.layout.var_size]) + len(self.specs).to_bytes(4, "little"),
+            "check fixed tuple length",
+        )
         c.asm.jump(generic, "nz")
         copied = copy_identity_sequence(c, tuple, tuple)
         c.transfer(copied, result)
         c.asm.label(snapshotted)
         c.asm.load(0, result)
-        c.asm.emit(b"\x48\x81\x78\x10" + len(self.specs).to_bytes(4, "little"), "check snapshot length")
+        c.asm.emit(
+            b"\x48\x81\x78" + bytes([c.layout.var_size]) + len(self.specs).to_bytes(4, "little"),
+            "check snapshot length",
+        )
         c.asm.jump(invalid, "nz")
         validate_tuple_scalars(c, result, self.specs, self.offset, invalid)
         c.asm.jump(done)
@@ -77,7 +83,7 @@ def validate_tuple_scalars(c, source, specs, offset, invalid):
             c.asm.jump(accepted, "z")
         for cls in spec[0]:
             c.load(11, c.constant(cls))
-            c.asm.emit(b"\x4c\x39\x58\x08", "cmp tuple scalar type")
+            c.asm.emit(b"\x4c\x39\x58" + bytes([c.layout.object_type]), "cmp tuple scalar type")
             c.asm.jump(accepted, "z")
         c.asm.jump(invalid)
         c.asm.label(accepted)
@@ -110,7 +116,10 @@ class MappedTupleProgram(TuplePlan):
         c.asm.label(validated)
         snapshot = c.call_c("PySequence_Tuple", c.data)
         c.asm.load(0, snapshot)
-        c.asm.emit(b"\x48\x81\x78\x10" + len(self.mappers).to_bytes(4, "little"), "check fixed tuple length")
+        c.asm.emit(
+            b"\x48\x81\x78" + bytes([c.layout.var_size]) + len(self.mappers).to_bytes(4, "little"),
+            "check fixed tuple length",
+        )
         c.asm.jump(invalid, "nz")
         if self.identity_specs is not None:
             self.emit_identity_result(c, snapshot, result, done)
@@ -164,7 +173,7 @@ def build_tuple_program(plan: TuplePlan, c):
     if sys.version_info[:2] not in {(3, 13), (3, 14)}:
         return None
     specs = tuple(identity_spec(mapper) for mapper in plan.mappers)
-    offset = 32 if sys.version_info[:2] == (3, 14) else 24
+    offset = c.layout.tuple_items
     probe = (object(), object())
     if not c.has_validated_object_header or ctypes.c_void_p.from_address(id(probe) + offset).value != id(probe[0]):
         return None

@@ -2,6 +2,7 @@ import ctypes
 from dataclasses import dataclass
 from functools import cache, partial
 
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.definitions import DebugTrail
 from adaptix._internal.morphing.native.plan import DictPlan
 from adaptix._internal.morphing.native.registry import identity_spec
@@ -9,6 +10,7 @@ from adaptix._internal.morphing.native.runtime import ErrorState, dictionary_err
 from adaptix._internal.morphing.native.x86_64.iterable import tuple_item_offset
 from adaptix._internal.special_cases_optimization import as_is_stub
 
+LAYOUT = get_cpython_layout()
 
 class DictionarySubclassCache(ctypes.Structure):
     _fields_ = [("cls", ctypes.c_void_p), ("version", ctypes.c_uint32), ("enabled", ctypes.c_uint32)]
@@ -22,7 +24,6 @@ class DictionarySubclassCache(ctypes.Structure):
             GENERIC_GETTER,
             IS_SUBTYPE,
             LOOKUP,
-            TYPE_GETATTRO,
             get_type_version,
             pointer,
         )
@@ -30,7 +31,7 @@ class DictionarySubclassCache(ctypes.Structure):
         cls = type(data)
         enabled = (
             type(cls) is type and IS_SUBTYPE(cls, dict)
-            and pointer(id(cls) + TYPE_GETATTRO) == GENERIC_GETTER
+            and pointer(id(cls) + LAYOUT.type_getattro) == GENERIC_GETTER
             and LOOKUP(cls, "items") is dict.items
         )
         self.enabled = 0
@@ -49,7 +50,7 @@ def check_dictionary_type(c, generic):
     c.constants.append(cache)
     c.asm.label(guard)
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x8b\x40\x08", "load dictionary subclass")
+    c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.object_type]), "load dictionary subclass")
     c.asm.mov_imm(11, ctypes.addressof(cache))
     c.check_cached_type(learn)
     c.asm.emit(b"\x41\x83\x7b\x0c\x00", "check ordinary dictionary items lookup")
@@ -61,7 +62,10 @@ def check_dictionary_type(c, generic):
     c.asm.jump(accepted, "z")
     namespace = c.slot()
     c.asm.store(namespace)
-    c.asm.emit(b"\x48\x8b\x50\x20\x80\x7a\x0a\x00", "check exact Unicode attribute keys")
+    c.asm.emit(
+        b"\x48\x8b\x50" + bytes([c.layout.dict_keys]) + b"\x80\x7a" + bytes([c.layout.keys_kind]) + b"\x00",
+        "check exact Unicode attribute keys",
+    )
     c.asm.jump(generic, "z")
     c.call_c("PyDict_Contains", namespace, c.constant("items"), result="pointer")
     c.asm.test_jump(0, c.call_error_label, "s", bits=32)
@@ -79,16 +83,16 @@ def dictionary_iterator_supported():
     iterator = iter(data.items())
     address = id(iterator)
     if (
-        ctypes.c_void_p.from_address(address + 16).value != id(data)
-        or ctypes.c_ssize_t.from_address(address + 24).value != len(data)
-        or ctypes.c_ssize_t.from_address(address + 32).value != 0
-        or ctypes.c_ssize_t.from_address(address + 48).value != len(data)
+        ctypes.c_void_p.from_address(address + LAYOUT.dictiter_dict).value != id(data)
+        or ctypes.c_ssize_t.from_address(address + LAYOUT.dictiter_used).value != len(data)
+        or ctypes.c_ssize_t.from_address(address + LAYOUT.dictiter_position).value != 0
+        or ctypes.c_ssize_t.from_address(address + LAYOUT.dictiter_remaining).value != len(data)
     ):
         return False
     next(iterator)
     return (
-        ctypes.c_ssize_t.from_address(address + 32).value == 1
-        and ctypes.c_ssize_t.from_address(address + 48).value == 1
+        ctypes.c_ssize_t.from_address(address + LAYOUT.dictiter_position).value == 1
+        and ctypes.c_ssize_t.from_address(address + LAYOUT.dictiter_remaining).value == 1
     )
 
 
@@ -109,12 +113,14 @@ class DictProgram(DictPlan):
         check_dictionary_type(c, generic)
         size, position, remaining = (c.slot() for _ in range(3))
         c.asm.load(0, c.data)
-        c.asm.emit(b"\x48\x8b\x40\x10", "load expected output dictionary size")
+        c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.dict_used]), "load expected output dictionary size")
         c.asm.store(size)
         created = c.call_c("_PyDict_NewPresized", size)
         c.transfer(created, result)
         c.asm.load(0, c.data)
-        c.asm.emit(b"\x48\x8b\x40\x10\x48\x85\xc0", "capture current dictionary iterator size")
+        c.asm.emit(
+            b"\x48\x8b\x40" + bytes([c.layout.dict_used]) + b"\x48\x85\xc0", "capture current dictionary iterator size",
+        )
         c.asm.store(size)
         c.asm.store(remaining)
         c.asm.jump(done, "z")
@@ -206,28 +212,44 @@ class DictProgram(DictPlan):
         c.branch_if_null(iterator, slow, invert=True)
         c.asm.load(2, c.data)
         c.asm.load(1, size)
-        c.asm.emit(b"\x48\x3b\x4a\x10", "check dictionary size against iterator")
+        c.asm.emit(b"\x48\x3b\x4a" + bytes([c.layout.dict_used]), "check dictionary size against iterator")
         c.asm.jump(slow, "nz")
-        c.asm.emit(b"\x48\x83\x7a\x28\x00", "check combined dictionary")
+        c.asm.emit(b"\x48\x83\x7a" + bytes([c.layout.dict_values]) + b"\x00", "check combined dictionary")
         c.asm.jump(slow, "nz")
-        c.asm.emit(b"\x48\x8b\x52\x20", "load current dictionary keys")
+        c.asm.emit(b"\x48\x8b\x52" + bytes([c.layout.dict_keys]), "load current dictionary keys")
         c.asm.load(9, position)
-        c.asm.emit(b"\x4c\x3b\x4a\x18", "check iterator position against entries")
+        c.asm.emit(b"\x4c\x3b\x4a" + bytes([c.layout.keys_nentries]), "check iterator position against entries")
         c.asm.jump(ended, "ae")
-        c.asm.emit(b"\x0f\xb6\x4a\x09\x41\xba\x01\x00\x00\x00\x49\xd3\xe2", "index array size")
-        c.asm.emit(b"\x4a\x8d\x54\x12\x20", "dictionary entries pointer")
+        c.asm.emit(
+            b"\x0f\xb6\x4a" + bytes([c.layout.keys_index_bytes]) + b"\x41\xba\x01\x00\x00\x00\x49\xd3\xe2",
+            "index array size",
+        )
+        c.asm.emit(b"\x4a\x8d\x54\x12" + bytes([c.layout.keys_indices]), "dictionary entries pointer")
         unicode, loaded = c.label("mapped_dictionary_unicode"), c.label("mapped_dictionary_entry_loaded")
         c.asm.load(0, c.data)
-        c.asm.emit(b"\x48\x8b\x40\x20\x80\x78\x0a\x01", "check Unicode dictionary entries")
+        c.asm.emit(
+            b"\x48\x8b\x40" + bytes([c.layout.dict_keys]) + b"\x80\x78" + bytes([c.layout.keys_kind]) + b"\x01",
+            "check Unicode dictionary entries",
+        )
         c.asm.jump(unicode, "z")
-        c.asm.emit(b"\x80\x78\x0a\x00", "check general dictionary entries")
+        c.asm.emit(b"\x80\x78" + bytes([c.layout.keys_kind]) + b"\x00", "check general dictionary entries")
         c.asm.jump(slow, "nz")
         c.asm.emit(b"\x4f\x8d\x0c\x49\x49\xc1\xe1\x03", "general entry position * 24")
-        c.asm.emit(b"\x4e\x8b\x44\x0a\x10\x4e\x8b\x54\x0a\x08", "load general dictionary key and value")
+        c.asm.emit((
+                       b"\x4e\x8b\x44\x0a"
+                       + bytes([c.layout.general_entry_value])
+                       + b"\x4e\x8b\x54\x0a"
+                       + bytes([c.layout.general_entry_key])
+                   ), "load general dictionary key and value")
         c.asm.jump(loaded)
         c.asm.label(unicode)
-        c.asm.emit(b"\x49\xc1\xe1\x04", "Unicode entry position * 16")
-        c.asm.emit(b"\x4e\x8b\x44\x0a\x08\x4e\x8b\x14\x0a", "load Unicode dictionary key and value")
+        c.asm.emit(
+            b"\x49\xc1\xe1" + bytes([c.layout.unicode_entry_size.bit_length() - 1]), "scale Unicode entry position",
+        )
+        c.asm.emit(
+            b"\x4e\x8b\x44\x0a" + bytes([c.layout.unicode_entry_value]) + b"\x4e\x8b\x14\x0a",
+            "load Unicode dictionary key and value",
+        )
         c.asm.label(loaded)
         c.asm.emit(b"\x4d\x85\xc0", "check live dictionary entry")
         present = c.label("dict_entry_present")

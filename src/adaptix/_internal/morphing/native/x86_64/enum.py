@@ -30,14 +30,13 @@ class EnumHashCache(ctypes.Structure):
 
 
 def check_enum_hash(c, enum, generic):
-    from adaptix._internal.code_tools.native_access import TYPE_VERSION  # noqa: PLC0415
 
     cache = EnumHashCache(enum)
     c.constants.append(cache)
     guard, learn, checked = c.label("enum_hash_guard"), c.label("enum_hash_learn"), c.label("enum_hash_checked")
     c.asm.label(guard)
     c.load(0, c.constant(enum))
-    c.asm.emit(b"\x8b\x88" + struct.pack("<i", TYPE_VERSION), "load enum type version")
+    c.asm.emit(b"\x8b\x88" + struct.pack("<i", c.layout.type_version), "load enum type version")
     c.asm.mov_imm(11, ctypes.addressof(cache))
     c.asm.emit(b"\x41\x3b\x0b", "compare enum hash cache version")
     c.asm.jump(learn, "nz")

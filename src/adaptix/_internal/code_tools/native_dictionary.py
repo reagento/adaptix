@@ -5,6 +5,8 @@ import sys
 from dataclasses import dataclass
 from typing import Any
 
+from adaptix._internal.code_tools.cpython_layout.selection import require_cpython_layout
+
 
 @dataclass(frozen=True)
 class DictionaryTemplate:
@@ -21,6 +23,7 @@ class DictionaryTemplate:
 
 
 def create_dictionary_template(names: tuple[str, ...]) -> DictionaryTemplate:
+    layout = require_cpython_layout()
     from adaptix._internal.code_tools.native_access import (  # noqa: PLC0415
         inline_index,
         pointer,
@@ -40,59 +43,91 @@ def create_dictionary_template(names: tuple[str, ...]) -> DictionaryTemplate:
             data = vars(owner)
             for name in names:
                 data[name] = None
-        values = pointer(id(data) + 40)
+        values = pointer(id(data) + layout.dict_values)
         indices = tuple(inline_index(cls, name) for name in names)
         if values and all(index is not None for index in indices):
-            keys = pointer(id(data) + 32)
-            index_bytes = ctypes.c_uint8.from_address(keys + 9).value
+            keys = pointer(id(data) + layout.dict_keys)
+            index_bytes = ctypes.c_uint8.from_address(keys + layout.keys_index_bytes).value
             concrete = tuple(index for index in indices if index is not None)
-            if all(pointer(values + 8 + index * 8) == id(None) for index in concrete):
+            if all(
+                pointer(values + layout.values_items + index * ctypes.sizeof(ctypes.c_void_p)) == id(None)
+                for index in concrete
+            ):
                 return DictionaryTemplate(
-                    data=data, owner=owner, kind=2, index_bytes=index_bytes,
-                    key_offsets=tuple(32 + (1 << index_bytes) + index * 16 for index in concrete),
+                    data=data,
+                    owner=owner,
+                    kind=2,
+                    index_bytes=index_bytes,
+                    key_offsets=tuple(
+                        layout.keys_indices + (1 << index_bytes) + index * layout.unicode_entry_size
+                        for index in concrete
+                    ),
                     value_offsets=tuple(index * 8 for index in concrete),
                     tracked_copies=tracked_copies,
-                    capacity=ctypes.c_uint8.from_address(values).value,
+                    capacity=ctypes.c_uint8.from_address(values + layout.values_capacity).value,
                     keys_pointer=keys,
                     # Keep the original type even if the carrier's __class__
                     # changes. Its cached-key reference prevents address reuse.
                     keys_owner=cls,
                 )
     data = dict.fromkeys(names)
-    keys = pointer(id(data) + 32)
-    index_bytes = ctypes.c_uint8.from_address(keys + 9).value
-    key_offsets = tuple(32 + (1 << index_bytes) + index * 16 for index in range(len(names)))
+    keys = pointer(id(data) + layout.dict_keys)
+    index_bytes = ctypes.c_uint8.from_address(keys + layout.keys_index_bytes).value
+    key_offsets = tuple(
+        layout.keys_indices + (1 << index_bytes) + index * layout.unicode_entry_size for index in range(len(names))
+    )
     return DictionaryTemplate(
         data=data, owner=None, kind=1, index_bytes=index_bytes,
-        key_offsets=key_offsets, value_offsets=tuple(offset + 8 for offset in key_offsets),
+        key_offsets=key_offsets, value_offsets=tuple(offset + layout.unicode_entry_value for offset in key_offsets),
         tracked_copies=tracked_copies,
     )
 
 def guard_dictionary_value(c, namespace, key, expected, missing, generic):
+    layout = c.layout
     from adaptix._internal.code_tools.native_access import pointer, size  # noqa: PLC0415
 
     lookup, done = c.label("namespace_lookup"), c.label("namespace_checked")
-    keys = pointer(id(namespace) + 32)
-    if not pointer(id(namespace) + 40) and ctypes.c_uint8.from_address(keys + 10).value == 1:
-        entries = keys + 32 + (1 << ctypes.c_uint8.from_address(keys + 9).value)
-        for index in range(size(keys + 24)):
-            address = pointer(entries + index * 16)
+    keys = pointer(id(namespace) + layout.dict_keys)
+    if (
+        not pointer(id(namespace) + layout.dict_values)
+        and ctypes.c_uint8.from_address(keys + layout.keys_kind).value == 1
+    ):
+        entries = keys + layout.keys_indices + (1 << ctypes.c_uint8.from_address(keys + layout.keys_index_bytes).value)
+        for index in range(size(keys + layout.keys_nentries)):
+            address = pointer(entries + index * layout.unicode_entry_size)
             if address and ctypes.cast(address, ctypes.py_object).value == key:
                 stored_key = ctypes.cast(address, ctypes.py_object).value
                 c.load(0, c.constant(namespace))
-                c.asm.emit(b"\x48\x83\x78\x28\x00", "check combined constant dictionary")
+                c.asm.emit(
+                    b"\x48\x83\x78" + bytes([c.layout.dict_values]) + b"\x00", "check combined constant dictionary",
+                )
                 c.asm.jump(lookup, "nz")
-                c.asm.emit(b"\x48\x8b\x40\x20\x80\x78\x0a\x01", "check constant dictionary Unicode keys")
+                c.asm.emit(
+                    b"\x48\x8b\x40" + bytes([c.layout.dict_keys]) + b"\x80\x78" + bytes([c.layout.keys_kind]) + b"\x01",
+                    "check constant dictionary Unicode keys",
+                )
                 c.asm.jump(lookup, "nz")
-                c.asm.emit(b"\x48\x81\x78\x18" + struct.pack("<i", index), "check cached constant dictionary index")
+                c.asm.emit(
+                    b"\x48\x81\x78" + bytes([layout.keys_nentries]) + struct.pack("<i", index),
+                    "check cached constant dictionary index",
+                )
                 c.asm.jump(lookup, "be")
-                c.asm.emit(b"\x0f\xb6\x48\x09\xba\x01\x00\x00\x00\x48\xd3\xe2", "constant dictionary index bytes")
-                c.asm.emit(b"\x48\x8d\x44\x10\x20", "constant dictionary entries")
+                c.asm.emit(
+                    b"\x0f\xb6\x48" + bytes([c.layout.keys_index_bytes]) + b"\xba\x01\x00\x00\x00\x48\xd3\xe2",
+                    "constant dictionary index bytes",
+                )
+                c.asm.emit(b"\x48\x8d\x44\x10" + bytes([c.layout.keys_indices]), "constant dictionary entries")
                 c.load(11, c.constant(stored_key))
-                c.asm.emit(b"\x4c\x39\x98" + struct.pack("<i", index * 16), "check constant dictionary key")
+                c.asm.emit(
+                    b"\x4c\x39\x98" + struct.pack("<i", index * layout.unicode_entry_size),
+                    "check constant dictionary key",
+                )
                 c.asm.jump(lookup, "nz")
                 c.load(11, c.constant(expected))
-                c.asm.emit(b"\x4c\x39\x98" + struct.pack("<i", index * 16 + 8), "check constant dictionary value")
+                c.asm.emit(
+                    b"\x4c\x39\x98" + struct.pack("<i", index * layout.unicode_entry_size + layout.unicode_entry_value),
+                    "check constant dictionary value",
+                )
                 c.asm.jump(generic, "nz")
                 c.asm.jump(done)
                 break

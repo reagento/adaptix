@@ -28,6 +28,20 @@ Unsupported platforms raise ``RuntimeError`` when configuring the retort.
 ``CodeGenBackend.PYTHON`` is the default on every platform.
 Use ``retort.replace(codegen_backend=...)`` to switch backends while preserving the recipe.
 
+CPython structure offsets are described separately for each supported version in
+``adaptix._internal.code_tools.cpython_layout``. These files are generated from
+the interpreter's headers using ``offsetof`` and ``sizeof``. Runtime checks
+validate the layouts before enabling direct memory access. Unknown versions and
+incompatible builds keep the C API path.
+
+To regenerate a layout, run the development script with the matching interpreter::
+
+    python3.14 scripts/generate_cpython_layout.py \
+        --output src/adaptix/_internal/code_tools/cpython_layout/v3_14.py
+
+The script needs a C compiler and CPython development headers; they are only
+needed when updating the layout files.
+
 The native backend lowers model shapes and name layouts directly to machine code.
 It does not generate or compile Python source for the model functions.
 The generated code uses the

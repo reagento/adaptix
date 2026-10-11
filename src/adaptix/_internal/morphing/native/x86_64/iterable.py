@@ -4,6 +4,7 @@ import sys
 from dataclasses import dataclass
 from functools import cache, partial
 
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.code_tools.native_dictionary import guard_dictionary_value
 from adaptix._internal.code_tools.x86_64_assembler import Address, Immediate
 from adaptix._internal.definitions import DebugTrail
@@ -11,24 +12,30 @@ from adaptix._internal.morphing.native.plan import IterablePlan
 from adaptix._internal.morphing.native.runtime import ErrorState, check_list_input, finish_iterable, handle_error
 from adaptix._internal.special_cases_optimization import as_is_stub
 
+LAYOUT = get_cpython_layout()
+
 MISSING = object()
 
 
 @cache
 def list_layout_supported():
+    if LAYOUT is None:
+        return False
     probe = [object(), object()]
     if (
-        ctypes.c_ssize_t.from_address(id(probe) + 16).value != len(probe)
-        or ctypes.c_ssize_t.from_address(id(probe) + 32).value < 2  # noqa: PLR2004
+        ctypes.c_ssize_t.from_address(id(probe) + LAYOUT.var_size).value != len(probe)
+        or ctypes.c_ssize_t.from_address(id(probe) + LAYOUT.list_allocated).value < 2  # noqa: PLR2004
     ):
         return False
-    items = ctypes.c_void_p.from_address(id(probe) + 24).value
+    items = ctypes.c_void_p.from_address(id(probe) + LAYOUT.list_items).value
     return bool(items and ctypes.c_void_p.from_address(items).value == id(probe[0]))
 
 
 @cache
 def tuple_item_offset():
-    offset = 32 if sys.version_info[:2] == (3, 14) else 24
+    if LAYOUT is None:
+        return None
+    offset = LAYOUT.tuple_items
     probe = (object(), object())
     return offset if ctypes.c_void_p.from_address(id(probe) + offset).value == id(probe[0]) else None
 
@@ -74,7 +81,7 @@ def check_sequence_type(c, input_type, generic):
     c.constants.append(cache)
     c.asm.label(guard)
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x8b\x40\x08", "load sequence subclass")
+    c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.object_type]), "load sequence subclass")
     c.asm.mov_imm(11, ctypes.addressof(cache))
     c.check_cached_type(learn)
     c.asm.emit(b"\x41\x83\x7b\x0c\x00", "check unchanged sequence iterator")
@@ -101,7 +108,7 @@ def check_sequence_mapping(c, input_type):
 def load_sequence_items(c, register, source, sequence_type):
     prefix = 0x48 | ((register >> 3) << 2) | (source >> 3)
     operand = 0x40 | ((register & 7) << 3) | (source & 7)
-    opcode, offset = (0x8B, 24) if sequence_type is list else (0x8D, tuple_item_offset())
+    opcode, offset = (0x8B, c.layout.list_items) if sequence_type is list else (0x8D, tuple_item_offset())
     c.asm.emit(bytes([prefix, opcode, operand, offset]), "load sequence items pointer")
 
 
@@ -133,16 +140,20 @@ def check_list_mapping(c, *, input_type=list, check=check_list_input, module=Non
     state = get_state(abc_accelerator)
     implementation = mapping._abc_impl
     token = abc_accelerator.get_cache_token()
-    if not state or pointer(state) != id(type(implementation)) or size(state + 8) != token:
+    if (
+        not state
+        or pointer(state) != id(type(implementation))
+        or size(state + c.layout.abc_invalidation_counter) != token
+    ):
         c.release(c.call(check, c.data))
         return
-    negative = ctypes.cast(pointer(id(implementation) + 32), ctypes.py_object).value
+    negative = ctypes.cast(pointer(id(implementation) + c.layout.abc_negative_cache), ctypes.py_object).value
     key = next((reference for reference in negative if reference() is input_type), None)
     if key is None:
         c.release(c.call(check, c.data))
         return
-    mask, table = size(id(negative) + 32), pointer(id(negative) + 40)
-    indices = [index for index in range(mask + 1) if pointer(table + index * 16) == id(key)]
+    mask, table = size(id(negative) + c.layout.set_mask), pointer(id(negative) + c.layout.set_table)
+    indices = [index for index in range(mask + 1) if pointer(table + index * c.layout.set_entry_size) == id(key)]
     if not indices:
         c.release(c.call(check, c.data))
         return
@@ -152,20 +163,28 @@ def check_list_mapping(c, *, input_type=list, check=check_list_input, module=Non
     guard_dictionary_value(c, vars(module), attribute, mapping, None, generic)
     for cls in (mapping, type(mapping)):
         c.load(0, c.constant(cls))
-        c.asm.emit(b"\x81\xb8" + struct.pack("<iI", 384, get_type_version(cls)), "cmp Mapping class version")
+        c.asm.emit(
+            b"\x81\xb8" + struct.pack("<iI", c.layout.type_version, get_type_version(cls)), "cmp Mapping class version",
+        )
         c.asm.jump(generic, "nz")
     c.constants.extend((abc_accelerator, implementation, negative, key))
     c.asm.mov_imm(11, state)
     c.asm.mov_imm(0, token)
-    c.asm.emit(b"\x49\x3b\x43\x08", "cmp rax, [r11+8]  # ABC invalidation counter")
+    c.asm.emit(
+        b"\x49\x3b\x43" + bytes([c.layout.abc_invalidation_counter]), "cmp rax, [r11+8]  # ABC invalidation counter",
+    )
     c.asm.jump(generic, "nz")
     c.load(0, c.constant(negative))
     index = indices[0]
-    c.asm.emit(b"\x48\x81\x78\x20" + struct.pack("<i", index), "cmp negative cache mask, entry index")
+    c.asm.emit(
+        b"\x48\x81\x78" + bytes([c.layout.set_mask]) + struct.pack("<i", index), "cmp negative cache mask, entry index",
+    )
     c.asm.jump(generic, "b")
-    c.asm.emit(b"\x48\x8b\x40\x28", "mov rax, [rax+40]  # negative cache table")
+    c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.set_table]), "mov rax, [rax+40]  # negative cache table")
     c.load(11, c.constant(key))
-    c.asm.emit(b"\x4c\x39\x98" + struct.pack("<i", index * 16), "cmp cached weak reference to list")
+    c.asm.emit(
+        b"\x4c\x39\x98" + struct.pack("<i", index * c.layout.set_entry_size), "cmp cached weak reference to list",
+    )
     c.asm.jump(generic, "nz")
     c.asm.jump(done)
     c.asm.label(generic)
@@ -236,7 +255,7 @@ def map_list(  # noqa: PLR0915
         check_sequence_mapping(c, input_type)
     size = c.slot()
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x8b\x40\x10", "mov rax, [rax+16]  # initial list length")
+    c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.var_size]), "mov rax, [rax+16]  # initial list length")
     c.asm.store(size)
     reserved = c.call_c("PySet_New", Immediate(0)) if output_type in (set, frozenset) else c.reserve_list(size)
     c.transfer(reserved, result)
@@ -323,11 +342,11 @@ def capture_sequence_item(c, borrowed):
 
 def load_sequence_item(c, index, input_type, cached_loop, finished):
     if cached_loop:
-        c.asm.emit(b"\x4d\x3b\x65\x10", "cmp r12, [r13+16]  # current input length")
+        c.asm.emit(b"\x4d\x3b\x65" + bytes([c.layout.var_size]), "cmp r12, [r13+16]  # current input length")
     else:
         c.asm.load(0, index)
         c.asm.load(11, c.data)
-        c.asm.emit(b"\x49\x3b\x43\x10", "cmp rax, [r11+16]  # current input length")
+        c.asm.emit(b"\x49\x3b\x43" + bytes([c.layout.var_size]), "cmp rax, [r11+16]  # current input length")
     c.asm.jump(finished, "ae")
     load_sequence_items(c, 1, 13 if cached_loop else 11, input_type)
     if cached_loop:
@@ -369,7 +388,7 @@ def map_iterator(
         c.asm.label(checked)
     size = c.slot()
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x8b\x40\x18", "load builtin set length")
+    c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.set_used]), "load builtin set length")
     c.asm.store(size)
     direct_tuple = output_type is tuple and tuple_item_offset() is not None
     result, written = reserve_iterator_output(c, size, direct_tuple)
@@ -438,7 +457,7 @@ def append_tuple_item(c, target, value, written):
     grow, ready, done = c.label("grow_tuple"), c.label("tuple_capacity_ready"), c.label("tuple_item_written")
     c.asm.load(7, target)
     c.asm.load(0, written)
-    c.asm.emit(b"\x48\x3b\x47\x10", "check private tuple capacity")
+    c.asm.emit(b"\x48\x3b\x47" + bytes([c.layout.var_size]), "check private tuple capacity")
     c.asm.jump(grow, "ae")
     c.asm.label(ready)
     c.asm.load(11, value)
@@ -464,7 +483,7 @@ def finish_tuple_output(c, target, written):
     sized, empty = c.label("tuple_output_sized"), c.label("tuple_output_empty")
     c.asm.load(0, written)
     c.asm.load(7, target)
-    c.asm.emit(b"\x48\x3b\x47\x10", "check final private tuple length")
+    c.asm.emit(b"\x48\x3b\x47" + bytes([c.layout.var_size]), "check final private tuple length")
     c.asm.jump(sized, "z")
     c.call_c("_PyTuple_Resize", Address(target), written, result="int")
     c.call_c("PyObject_GC_UnTrack", target, result="void")
@@ -497,12 +516,12 @@ def copy_scalar_list(  # noqa: PLR0915
     if slow_mapper is not None:
         branch_if_initial_integer(c, input_type, generic)
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x8b\x40\x10", "mov rax, [rax+16]")
+    c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.var_size]), "mov rax, [rax+16]")
     c.asm.store(size)
     reserved = c.call_c("PyTuple_New", size) if output_type is tuple else c.reserve_list(size)
     c.transfer(reserved, result)
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x4c\x8b\x40\x10", "mov r8, [rax+16]")
+    c.asm.emit(b"\x4c\x8b\x40" + bytes([c.layout.var_size]), "mov r8, [rax+16]")
     load_sequence_items(c, 2, 0, input_type)
     c.asm.load(1, size)
     c.asm.emit(b"\x49\x39\xc8", "cmp r8, rcx  # allocation callback grew input")
@@ -528,12 +547,12 @@ def copy_scalar_list(  # noqa: PLR0915
     c.asm.label(finished)
     if output_type is list:
         c.asm.load(0, result)
-        c.asm.emit(b"\x48\x89\x48\x10", "mov [rax+16], rcx  # publish initialized elements")
+        c.asm.emit(b"\x48\x89\x48" + bytes([c.layout.var_size]), "mov [rax+16], rcx  # publish initialized elements")
     c.asm.jump(done)
     c.asm.label(failed)
     if output_type is list:
         c.asm.load(0, result)
-        c.asm.emit(b"\x48\x89\x48\x10", "mov [rax+16], rcx")
+        c.asm.emit(b"\x48\x89\x48" + bytes([c.layout.var_size]), "mov [rax+16], rcx")
     c.asm.label(generic)
     c.release(result)
     converted = (
@@ -554,7 +573,7 @@ def copy_identity_sequence(c, input_type, output_type, *, destination=None):
         return c.call_c("PySequence_List", c.data, destination=destination)
     size, items = c.slot(), c.slot()
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x8b\x48\x10", "load identity tuple length")
+    c.asm.emit(b"\x48\x8b\x48" + bytes([c.layout.var_size]), "load identity tuple length")
     c.asm.store(size, 1)
     load_sequence_items(c, 1, 0, tuple)
     c.asm.store(items, 1)
@@ -572,14 +591,14 @@ def copy_identity_sequence(c, input_type, output_type, *, destination=None):
 def branch_if_initial_integer(c, input_type, generic):
     empty = c.label("empty_scalar_sequence")
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x83\x78\x10\x00", "check for an initial coercion candidate")
+    c.asm.emit(b"\x48\x83\x78" + bytes([c.layout.var_size]) + b"\x00", "check for an initial coercion candidate")
     c.asm.jump(empty, "z")
     if input_type is list:
-        c.asm.emit(b"\x48\x8b\x40\x18\x48\x8b\x00", "load initial list member")
+        c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.list_items]) + b"\x48\x8b\x00", "load initial list member")
     else:
         c.asm.emit(b"\x48\x8b\x40" + bytes([tuple_item_offset()]), "load initial tuple member")
     c.load(11, c.constant(int))
-    c.asm.emit(b"\x4c\x39\x58\x08", "check whether the mapper must convert an integer")
+    c.asm.emit(b"\x4c\x39\x58" + bytes([c.layout.object_type]), "check whether the mapper must convert an integer")
     c.asm.jump(generic, "z")
     c.asm.label(empty)
 
@@ -597,7 +616,7 @@ def check_scalar_list_item(c, types, nullable, failed):
             c.asm.emit(b"\x4c\x39" + bytes([0x4F + index * 8, 8]), f"cmp [rdi+8], r{register}")
         else:
             c.load(0, c.constant(cls))
-            c.asm.emit(b"\x48\x39\x47\x08", "cmp [rdi+8], rax")
+            c.asm.emit(b"\x48\x39\x47" + bytes([c.layout.object_type]), "cmp [rdi+8], rax")
         if index == len(types) - 1:
             c.asm.jump(failed, "nz")
         else:

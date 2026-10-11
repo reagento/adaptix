@@ -48,9 +48,9 @@ def copy_scalar_set(c, spec, fallback, origin):
     c.asm.label(loop)
     c.asm.load(1, index)
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x3b\x48\x10", "compare set input index and current list size")
+    c.asm.emit(b"\x48\x3b\x48" + bytes([c.layout.var_size]), "compare set input index and current list size")
     c.asm.jump(finished, "ae")
-    c.asm.emit(b"\x48\x8b\x40\x18\x48\x8b\x3c\xc8", "load scalar set input item")
+    c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.list_items]) + b"\x48\x8b\x3c\xc8", "load scalar set input item")
     c.asm.store(item, 7)
     for register, cls in zip((9, 10), spec[0], strict=False):
         c.load(register, c.constant(cls))
@@ -89,9 +89,9 @@ class MappedSetProgram(IterablePlan):
 def validate_set_snapshot(c, result, spec, output_type, generic):
     loop, done = c.label("set_validate_loop"), c.label("set_validate_done")
     c.asm.load(0, result)
-    c.asm.emit(b"\x4c\x8b\x40\x10", "load snapshot length")
+    c.asm.emit(b"\x4c\x8b\x40" + bytes([c.layout.var_size]), "load snapshot length")
     if output_type is list:
-        c.asm.emit(b"\x48\x8b\x50\x18", "load snapshot items")
+        c.asm.emit(b"\x48\x8b\x50" + bytes([c.layout.list_items]), "load snapshot items")
     else:
         c.asm.emit(b"\x48\x8d\x50" + bytes([tuple_item_offset()]), "load tuple snapshot items")
     c.asm.emit(b"\x31\xc9", "zero snapshot index")

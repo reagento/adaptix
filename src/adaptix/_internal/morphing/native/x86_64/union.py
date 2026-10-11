@@ -6,6 +6,7 @@ from functools import cache
 from types import BuiltinFunctionType
 from weakref import ReferenceType
 
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.code_tools.native_callable import NativeCode
 from adaptix._internal.code_tools.native_dictionary import guard_dictionary_value
 from adaptix._internal.compat import CompatExceptionGroup
@@ -16,6 +17,7 @@ from adaptix._internal.morphing.native.plan import UnionPlan
 from adaptix._internal.morphing.native.registry import identity_spec
 from adaptix._internal.morphing.native.x86_64.scalar import get_program
 
+LAYOUT = get_cpython_layout()
 
 @dataclass(frozen=True)
 class LiteralProgram(descriptions.LiteralProgram):
@@ -56,23 +58,26 @@ def integer_layout_supported():
     if sys.version_info[:2] not in {(3, 13), (3, 14)} or sys.int_info.bits_per_digit != 30:  # noqa: PLR2004
         return False
     for value in (0, 1, -1, (1 << 30) - 1):
-        tag = ctypes.c_size_t.from_address(id(value) + 16).value & ~4
+        tag = ctypes.c_size_t.from_address(id(value) + LAYOUT.long_tag).value & ~4
         expected = 1 if value == 0 else 8 if value > 0 else 10
         if tag != expected:
             return False
-        if value and ctypes.c_uint32.from_address(id(value) + 24).value != abs(value):
+        if value and ctypes.c_uint32.from_address(id(value) + LAYOUT.long_digits).value != abs(value):
             return False
     return True
 
 
 def match_integer(c, value, failed):
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x8b\x48\x10\x48\x83\xe1\xfb", "load compact integer tag, excluding immortal flag")
+    c.asm.emit(
+        b"\x48\x8b\x48" + bytes([c.layout.long_tag]) + b"\x48\x83\xe1\xfb",
+        "load compact integer tag, excluding immortal flag",
+    )
     tag = 1 if value == 0 else 8 if value > 0 else 10
     c.asm.emit(b"\x48\x83\xf9" + bytes([tag]), "check integer sign and digit count")
     c.asm.jump(failed, "nz")
     if value:
-        c.asm.emit(b"\x81\x78\x18" + struct.pack("<I", abs(value)), "compare integer digit")
+        c.asm.emit(b"\x81\x78" + bytes([c.layout.long_digits]) + struct.pack("<I", abs(value)), "compare integer digit")
         c.asm.jump(failed, "nz")
 
 
@@ -114,7 +119,10 @@ class TaggedUnionProgram(UnionPlan):
         tag_value = c.slot(owned=True)
         c.branch_if_type(c.data, dict, generic, invert=True)
         c.asm.load(0, c.data)
-        c.asm.emit(b"\x48\x8b\x40\x20\x80\x78\x0a\x00", "check Unicode dictionary keys")
+        c.asm.emit(
+            b"\x48\x8b\x40" + bytes([c.layout.dict_keys]) + b"\x80\x78" + bytes([c.layout.keys_kind]) + b"\x00",
+            "check Unicode dictionary keys",
+        )
         c.asm.jump(generic, "z")
         missing = object()
         value = c.dict_lookup(c.data, self.tag, missing)
@@ -153,7 +161,7 @@ class UnionDumperProgram(descriptions.UnionDumperProgram):
         generic, done = c.label("union_dump_slow"), c.label("union_dump_done")
         result = c.data if consume else c.slot(owned=True)
         c.asm.load(0, c.data)
-        c.asm.emit(b"\x48\x8b\x50\x08", "load union value type once")
+        c.asm.emit(b"\x48\x8b\x50" + bytes([c.layout.object_type]), "load union value type once")
         for cls, function in self.variants:
             next_case = c.label("next_dump_case")
             c.load(11, c.constant(cls))
@@ -257,7 +265,7 @@ class ContainerUnionProgram(UnionPlan):
     def mapping_guard(self, c, generic):
         import collections.abc  # noqa: PLC0415
 
-        from adaptix._internal.code_tools.native_access import LOOKUP, TYPE_VERSION, get_type_version  # noqa: PLC0415
+        from adaptix._internal.code_tools.native_access import LOOKUP, get_type_version  # noqa: PLC0415
         from adaptix._internal.morphing import iterable_provider  # noqa: PLC0415
 
         mapping = collections.abc.Mapping
@@ -273,7 +281,8 @@ class ContainerUnionProgram(UnionPlan):
             LOOKUP(cls, method)
             c.load(0, c.constant(cls))
             c.asm.emit(
-                b"\x81\xb8" + struct.pack("<iI", TYPE_VERSION, get_type_version(cls)), "check Mapping method version",
+                b"\x81\xb8" + struct.pack("<iI", c.layout.type_version, get_type_version(cls)),
+                "check Mapping method version",
             )
             c.asm.jump(generic, "nz")
 

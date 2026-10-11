@@ -5,8 +5,11 @@ from dataclasses import dataclass
 from functools import cache
 from weakref import ReferenceType
 
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.code_tools.x86_64_assembler import Immediate
 from adaptix._internal.morphing.native import descriptions
+
+LAYOUT = get_cpython_layout()
 
 ALPHABET = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 ENCODE = ctypes.create_string_buffer(ALPHABET)
@@ -20,7 +23,7 @@ def supported():
     from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
 
     probe = bytes(bytearray(b"abc"))
-    return supports_dictionary_cache() and ctypes.string_at(id(probe) + 32, 4) == b"abc\0"
+    return supports_dictionary_cache() and ctypes.string_at(id(probe) + LAYOUT.bytes_data, 4) == b"abc\0"
 
 
 def decode_group(c, count, generic):
@@ -46,17 +49,20 @@ def load(c, function):  # noqa: PLR0915
     length, groups, padding = c.slot(), c.slot(), c.slot()
     c.branch_if_type(c.data, str, generic, invert=True)
     c.asm.load(8, c.data)
-    c.asm.emit(b"\x41\x8b\x40\x20\x83\xe0\x60\x83\xf8\x60", "check compact ASCII")
+    c.asm.emit(b"\x41\x8b\x40" + bytes([c.layout.unicode_state]) + b"\x83\xe0\x60\x83\xf8\x60", "check compact ASCII")
     c.asm.jump(generic, "nz")
-    c.asm.emit(b"\x49\x8b\x40\x10\x48\x85\xc0", "read encoded length")
+    c.asm.emit(b"\x49\x8b\x40" + bytes([c.layout.unicode_length]) + b"\x48\x85\xc0", "read encoded length")
     c.asm.jump(empty, "z")
     c.asm.emit(b"\xa8\x03", "check complete base64 groups")
     c.asm.jump(generic, "nz")
     c.asm.emit(b"\x31\xc9", "clear padding count")
     no_pad, one_pad = c.label("base64_no_padding"), c.label("base64_one_padding")
-    c.asm.emit(b"\x41\x80\x7c\x00\x27\x3d", "check final padding character")
+    c.asm.emit(b"\x41\x80\x7c\x00" + bytes([c.layout.unicode_ascii_data-1]) + b"\x3d", "check final padding character")
     c.asm.jump(no_pad, "nz")
-    c.asm.emit(b"\xff\xc1\x41\x80\x7c\x00\x26\x3d", "check second padding character")
+    c.asm.emit(
+        b"\xff\xc1\x41\x80\x7c\x00" + bytes([c.layout.unicode_ascii_data - 2]) + b"\x3d",
+        "check second padding character",
+    )
     c.asm.jump(one_pad, "nz")
     c.asm.emit(b"\xff\xc1", "increment padding count")
     c.asm.label(one_pad)
@@ -69,9 +75,9 @@ def load(c, function):  # noqa: PLR0915
     value = c.call_c("PyBytes_FromStringAndSize", Immediate(0), length)
     c.transfer(value, result)
     c.asm.load(8, c.data)
-    c.asm.emit(b"\x49\x83\xc0\x28", "point at ASCII payload")
+    c.asm.emit(b"\x49\x83\xc0" + bytes([c.layout.unicode_ascii_data]), "point at ASCII payload")
     c.asm.load(9, result)
-    c.asm.emit(b"\x49\x83\xc1\x20", "point at bytes payload")
+    c.asm.emit(b"\x49\x83\xc1" + bytes([c.layout.bytes_data]), "point at bytes payload")
     c.constants.append(DECODE)
     c.asm.mov_imm(11, ctypes.addressof(DECODE))
     c.asm.load(1, groups)
@@ -122,7 +128,7 @@ def dump(c, function):  # noqa: PLR0915
     result = c.slot(owned=True)
     c.branch_if_type(c.data, bytes, generic, invert=True)
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x48\x8b\x40\x10", "read bytes length")
+    c.asm.emit(b"\x48\x8b\x40" + bytes([c.layout.var_size]), "read bytes length")
     groups, remainder, length = c.slot(), c.slot(), c.slot()
     c.asm.emit(b"\x31\xd2\xb9\x03\x00\x00\x00\x48\xf7\xf1", "divide binary length by three")
     c.asm.store(groups)
@@ -134,30 +140,44 @@ def dump(c, function):  # noqa: PLR0915
     c.asm.label(full)
     # Python bytes cannot approach this limit without exhausting address space.
     # The arithmetic guard nevertheless retains the standard overflow behavior.
-    c.asm.mov_imm(11, ((1 << 63) - 42) // 4)
+    c.asm.mov_imm(11, ((1 << 63) - c.layout.unicode_ascii_data - 2) // 4)
     c.asm.emit(b"\x4c\x39\xd8", "check encoded allocation size")
     c.asm.jump(generic, "a")
     c.asm.emit(b"\x48\xc1\xe0\x02", "encoded length = groups * 4")
     c.asm.store(length)
-    c.asm.emit(b"\x48\x83\xc0\x29", "add compact ASCII header and terminator")
+    c.asm.emit(b"\x48\x83\xc0" + bytes([c.layout.unicode_ascii_data + 1]), "add compact ASCII header and terminator")
     allocation_size = c.slot()
     c.asm.store(allocation_size)
     allocation = c.call_c("PyObject_Malloc", allocation_size, result="pointer")
     no_memory = c.label("base64_no_memory")
     c.branch_if_null(allocation, no_memory)
     c.asm.load(9, allocation)
-    c.asm.emit(b"\x49\xc7\x01\x01\x00\x00\x00", "initialize string reference count")
+    c.asm.emit_memory(
+        b"\x49\xc7", 0x01, c.layout.object_refcount, "initialize string reference count", immediate=b"\x01\x00\x00\x00",
+    )
     c.load(0, c.constant(str))
-    c.asm.emit(b"\x49\x89\x41\x08", "initialize string type")
+    c.asm.emit(b"\x49\x89\x41" + bytes([c.layout.object_type]), "initialize string type")
     c.asm.load(0, length)
-    c.asm.emit(b"\x49\x89\x41\x10\x49\xc7\x41\x18\xff\xff\xff\xff", "initialize string length and hash")
+    c.asm.emit((
+                   b"\x49\x89\x41"
+                   + bytes([c.layout.unicode_length])
+                   + b"\x49\xc7\x41"
+                   + bytes([c.layout.unicode_hash])
+                   + b"\xff\xff\xff\xff"
+               ), "initialize string length and hash")
     c.asm.emit(
-        b"\x49\xc7\x41\x20\x64\x00\x00\x00\x41\xc6\x44\x01\x28\x00", "initialize compact ASCII flags and terminator",
+        (
+            b"\x49\xc7\x41"
+            + bytes([c.layout.unicode_state])
+            + b"\x64\x00\x00\x00\x41\xc6\x44\x01"
+            + bytes([c.layout.unicode_ascii_data])
+            + b"\x00"
+        ), "initialize compact ASCII flags and terminator",
     )
     c.asm.store(result, 9)
-    c.asm.emit(b"\x49\x83\xc1\x28", "point at ASCII output payload")
+    c.asm.emit(b"\x49\x83\xc1" + bytes([c.layout.unicode_ascii_data]), "point at ASCII output payload")
     c.asm.load(8, c.data)
-    c.asm.emit(b"\x49\x83\xc0\x20", "point at bytes input payload")
+    c.asm.emit(b"\x49\x83\xc0" + bytes([c.layout.bytes_data]), "point at bytes input payload")
     c.constants.append(ENCODE)
     c.asm.mov_imm(11, ctypes.addressof(ENCODE))
     c.asm.load(1, groups)

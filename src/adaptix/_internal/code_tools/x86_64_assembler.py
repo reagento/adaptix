@@ -46,6 +46,19 @@ class X86Assembler:
         self.code.extend(code)
         self.lines.append(f"    {text}")
 
+    def emit_memory(
+        self, opcode: bytes, operand: int, offset: int, text: str, *, immediate: bytes = b"",
+    ) -> None:
+        if operand & 7 == 4:  # noqa: PLR2004
+            raise ValueError("Indexed memory operands require a SIB encoding")
+        if offset == 0 and operand & 7 != 5:  # noqa: PLR2004
+            displacement, mode = b"", 0
+        elif -(1 << 7) <= offset < (1 << 7):
+            displacement, mode = struct.pack("<b", offset), 0x40
+        else:
+            displacement, mode = struct.pack("<i", offset), 0x80
+        self.emit(opcode + bytes([(operand & 0x3F) | mode]) + displacement + immediate, text)
+
     def label(self, name: str) -> None:
         if name in self.labels:
             raise ValueError(f"Duplicate assembly label {name}")

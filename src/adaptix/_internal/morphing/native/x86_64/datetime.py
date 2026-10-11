@@ -7,7 +7,10 @@ from functools import cache, partial
 from threading import RLock
 from weakref import ReferenceType
 
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.morphing.native import descriptions
+
+LAYOUT = get_cpython_layout()
 
 DIGITS = ctypes.create_string_buffer(b"".join(f"{value:02}".encode() for value in range(100)))
 MONTH_DAYS = ctypes.create_string_buffer(bytes((0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)))
@@ -19,21 +22,21 @@ def supported(cls=datetime):
         return False
     if cls is date:
         value = date(2025, 1, 2)
-        expected, size = b"\x00\x07\xe9\x01\x02", 32
+        expected, size = b"\x00\x07\xe9\x01\x02", LAYOUT.date_size
     elif cls is time:
         value = time(3, 4, 5, 123456)
-        expected, size = b"\x00\x03\x04\x05\x01\xe2\x40\x00", 40
+        expected, size = b"\x00\x03\x04\x05\x01\xe2\x40\x00", LAYOUT.time_size
     else:
         value = datetime(2025, 1, 2, 3, 4, 5, 123456, tzinfo=None)  # noqa: DTZ001
-        expected, size = b"\x00\x07\xe9\x01\x02\x03\x04\x05\x01\xe2\x40\x00", 48
+        expected, size = b"\x00\x07\xe9\x01\x02\x03\x04\x05\x01\xe2\x40\x00", LAYOUT.datetime_size
     text = bytearray(b"2025-01-02T03:04:05.123456").decode()
     return (
         not cls.__flags__ & (1 << 9)
         and cls.__basicsize__ == size
-        and ctypes.string_at(id(value) + 24, len(expected)) == expected
-        and ctypes.c_ssize_t.from_address(id(text) + 16).value == 26
-        and ctypes.c_uint32.from_address(id(text) + 32).value & 0xFF == 0x64
-        and ctypes.string_at(id(text) + 40, 27) == text.encode() + b"\x00"
+        and ctypes.string_at(id(value) + LAYOUT.datetime_has_tzinfo, len(expected)) == expected
+        and ctypes.c_ssize_t.from_address(id(text) + LAYOUT.unicode_length).value == 26
+        and ctypes.c_uint32.from_address(id(text) + LAYOUT.unicode_state).value & 0xFF == 0x64
+        and ctypes.string_at(id(text) + LAYOUT.unicode_ascii_data, 27) == text.encode() + b"\x00"
     )
 
 
@@ -44,14 +47,14 @@ def timezone_supported():
     value = datetime(2025, 1, 2, tzinfo=zone)
     clock = time(3, 4, tzinfo=zone)
     return (
-        timezone.__basicsize__ == 32
-        and timedelta.__basicsize__ == 40
-        and ctypes.c_void_p.from_address(id(zone) + 16).value == id(delta)
-        and ctypes.c_int.from_address(id(delta) + 24).value == delta.days
-        and ctypes.c_int.from_address(id(delta) + 28).value == delta.seconds
-        and ctypes.c_int.from_address(id(delta) + 32).value == 0
-        and ctypes.c_void_p.from_address(id(value) + 40).value == id(zone)
-        and ctypes.c_void_p.from_address(id(clock) + 32).value == id(zone)
+        timezone.__basicsize__ == LAYOUT.timezone_size
+        and timedelta.__basicsize__ == LAYOUT.timedelta_size
+        and ctypes.c_void_p.from_address(id(zone) + LAYOUT.timezone_offset).value == id(delta)
+        and ctypes.c_int.from_address(id(delta) + LAYOUT.timedelta_days).value == delta.days
+        and ctypes.c_int.from_address(id(delta) + LAYOUT.timedelta_seconds).value == delta.seconds
+        and ctypes.c_int.from_address(id(delta) + LAYOUT.timedelta_microseconds).value == 0
+        and ctypes.c_void_p.from_address(id(value) + LAYOUT.datetime_tzinfo).value == id(zone)
+        and ctypes.c_void_p.from_address(id(clock) + LAYOUT.time_tzinfo).value == id(zone)
     )
 
 
@@ -62,18 +65,37 @@ def dump_offset(c, cls, generic):
     c.asm.store(sign)
     naive, positive = c.label("no_offset"), c.label("positive_offset")
     c.asm.load(0, c.data)
-    c.asm.emit(b"\x80\x78\x18\x00", "check timezone flag")
+    c.asm.emit(b"\x80\x78" + bytes([c.layout.datetime_has_tzinfo]) + b"\x00", "check timezone flag")
     c.asm.jump(naive, "z")
     if cls is date or not timezone_supported():
         c.asm.jump(generic)
     else:
-        c.asm.emit(b"\x48\x8b\x40" + bytes([32 if cls is time else 40]), "load tzinfo")
+        c.asm.emit(
+            b"\x48\x8b\x40" + bytes([c.layout.time_tzinfo if cls is time else c.layout.datetime_tzinfo]), "load tzinfo",
+        )
         c.load(11, c.constant(timezone))
-        c.asm.emit(b"\x4c\x39\x58\x08", "check exact timezone")
+        c.asm.emit(b"\x4c\x39\x58" + bytes([c.layout.object_type]), "check exact timezone")
         c.asm.jump(generic, "nz")
-        c.asm.emit(b"\x48\x8b\x50\x10\x83\x7a\x20\x00", "read timedelta; check offset fraction")
+        c.asm.emit(
+            (
+                b"\x48\x8b\x50"
+                + bytes([c.layout.timezone_offset])
+                + b"\x83\x7a"
+                + bytes([c.layout.timedelta_microseconds])
+                + b"\x00"
+            ),
+            "read timedelta; check offset fraction",
+        )
         c.asm.jump(generic, "nz")
-        c.asm.emit(b"\x69\x42\x18\x80\x51\x01\x00\x03\x42\x1c", "offset seconds = days * 86400 + seconds")
+        c.asm.emit(
+            (
+                b"\x69\x42"
+                + bytes([c.layout.timedelta_days])
+                + b"\x80\x51\x01\x00\x03\x42"
+                + bytes([c.layout.timedelta_seconds])
+            ),
+            "offset seconds = days * 86400 + seconds",
+        )
         c.asm.emit(b"\x99\xb9\x3c\x00\x00\x00\xf7\xf9\x85\xd2", "divide offset seconds by 60")
         c.asm.jump(generic, "nz")
         c.asm.emit(b"\xb9\x2b\x00\x00\x00\x85\xc0", "positive offset sign")
@@ -90,12 +112,19 @@ def write_offset(c, sign, minutes, length, done):
     c.asm.load(0, sign)
     c.asm.test_jump(0, done, bits=32)
     c.asm.load(10, length)
-    c.asm.emit(b"\x43\x88\x44\x11\x28", "store timezone sign")
+    c.asm.emit(b"\x43\x88\x44\x11" + bytes([c.layout.unicode_ascii_data]), "store timezone sign")
     c.asm.load(0, minutes)
     c.asm.emit(b"\x31\xd2\xb9\x3c\x00\x00\x00\xf7\xf1", "divide absolute offset by 60")
     c.asm.emit(b"\x41\x0f\xb7\x0c\x43\x41\x0f\xb7\x04\x53", "read timezone hour/minute decimal pairs")
     c.asm.emit(
-        b"\x66\x43\x89\x4c\x11\x29\x43\xc6\x44\x11\x2b\x3a\x66\x43\x89\x44\x11\x2c", "store HH:MM timezone suffix",
+        (
+            b"\x66\x43\x89\x4c\x11"
+            + bytes([c.layout.unicode_ascii_data+1])
+            + b"\x43\xc6\x44\x11"
+            + bytes([c.layout.unicode_ascii_data+3])
+            + b"\x3a\x66\x43\x89\x44\x11"
+            + bytes([c.layout.unicode_ascii_data+4])
+        ), "store HH:MM timezone suffix",
     )
 
 
@@ -136,16 +165,16 @@ class TimezoneCache(ctypes.Structure):
 def load_offset(c, position, generic, cache, zone):
     positive, found = c.label("positive_iso_offset"), c.label("known_iso_offset")
     hours = c.slot()
-    c.asm.emit(b"\x41\x80\x78" + bytes([40 + position + 3, 58]), "check timezone colon")
+    c.asm.emit(b"\x41\x80\x78" + bytes([c.layout.unicode_ascii_data + position + 3, 58]), "check timezone colon")
     c.asm.jump(generic, "nz")
     parse_pair(c, position + 1, generic, limit=23)
     c.asm.store(hours)
     parse_pair(c, position + 4, generic, limit=59)
     c.asm.load(1, hours)
     c.asm.emit(b"\x6b\xc9\x3c\x01\xc8", "offset minutes = hours * 60 + minutes")
-    c.asm.emit(b"\x41\x80\x78" + bytes([40 + position, 43]), "check positive timezone sign")
+    c.asm.emit(b"\x41\x80\x78" + bytes([c.layout.unicode_ascii_data + position, 43]), "check positive timezone sign")
     c.asm.jump(positive, "z")
-    c.asm.emit(b"\x41\x80\x78" + bytes([40 + position, 45]), "check negative timezone sign")
+    c.asm.emit(b"\x41\x80\x78" + bytes([c.layout.unicode_ascii_data + position, 45]), "check negative timezone sign")
     c.asm.jump(generic, "nz")
     c.asm.emit(b"\xf7\xd8", "neg eax")
     c.asm.label(positive)
@@ -175,11 +204,16 @@ def divide_100(c):
 def write_pair(c, source_offset, output_offset):
     c.asm.emit(b"\x41\x0f\xb6\x40" + bytes([source_offset]), f"movzx eax, BYTE PTR [r8+{source_offset}]")
     c.asm.emit(b"\x41\x0f\xb7\x04\x43", "movzx eax, WORD PTR [r11+rax*2]")
-    c.asm.emit(b"\x66\x41\x89\x41" + bytes([40 + output_offset]), f"mov WORD PTR [r9+{40 + output_offset}], ax")
+    c.asm.emit(
+        b"\x66\x41\x89\x41" + bytes([c.layout.unicode_ascii_data + output_offset]),
+        f"mov WORD PTR [r9+{c.layout.unicode_ascii_data + output_offset}], ax",
+    )
 
 
 def parse_pair(c, offset, generic, *, limit=99, nonzero=False):
-    c.asm.emit(b"\x41\x0f\xb7\x40" + bytes([40 + offset]), "movzx eax, WORD PTR [r8+decimal_pair]")
+    c.asm.emit(
+        b"\x41\x0f\xb7\x40" + bytes([c.layout.unicode_ascii_data + offset]), "movzx eax, WORD PTR [r8+decimal_pair]",
+    )
     c.asm.emit(b"\x2d\x30\x30\x00\x00\x89\xc1\x81\xe1\xff\x00\x00\x00", "sub eax, 0x3030; mov ecx, eax; and ecx, 255")
     c.asm.emit(b"\x83\xf9\x09", "cmp first decimal digit, 9")
     c.asm.jump(generic, "a")
@@ -203,12 +237,14 @@ def load_datetime(c, function, cls):  # noqa: C901, PLR0912, PLR0915
         c.constants.append(timezone_cache)
     c.branch_if_type(c.data, str, generic, invert=True)
     c.asm.load(8, c.data)
-    c.asm.emit(b"\x41\x8b\x40\x20\x83\xe0\x60\x83\xf8\x60", "test compact ASCII string")
+    c.asm.emit(
+        b"\x41\x8b\x40" + bytes([c.layout.unicode_state]) + b"\x83\xe0\x60\x83\xf8\x60", "test compact ASCII string",
+    )
     c.asm.jump(generic, "nz")
     short_length = 10 if cls is date else 8 if cls is time else 19
     c.asm.mov_imm(0, short_length)
     c.asm.store(base_length)
-    c.asm.emit(b"\x49\x83\x78\x10" + bytes([short_length]), "check ISO string length")
+    c.asm.emit(b"\x49\x83\x78" + bytes([c.layout.unicode_length]) + bytes([short_length]), "check ISO string length")
     length_ok = c.label("iso_length_ok")
     c.asm.jump(length_ok, "z")
     if cls is date:
@@ -217,12 +253,21 @@ def load_datetime(c, function, cls):  # noqa: C901, PLR0912, PLR0915
         fraction, aware_short, aware_fraction = (
             c.label(prefix) for prefix in ("iso_fraction", "iso_offset", "iso_fraction_offset")
         )
-        c.asm.emit(b"\x49\x83\x78\x10" + bytes([short_length + 7]), "check fractional ISO length")
+        c.asm.emit(
+            b"\x49\x83\x78" + bytes([c.layout.unicode_length]) + bytes([short_length + 7]),
+            "check fractional ISO length",
+        )
         c.asm.jump(fraction, "z")
         if timezone_cache is not None:
-            c.asm.emit(b"\x49\x83\x78\x10" + bytes([short_length + 6]), "check timezone ISO length")
+            c.asm.emit(
+                b"\x49\x83\x78" + bytes([c.layout.unicode_length]) + bytes([short_length + 6]),
+                "check timezone ISO length",
+            )
             c.asm.jump(aware_short, "z")
-            c.asm.emit(b"\x49\x83\x78\x10" + bytes([short_length + 13]), "check fractional timezone ISO length")
+            c.asm.emit(
+                b"\x49\x83\x78" + bytes([c.layout.unicode_length]) + bytes([short_length + 13]),
+                "check fractional timezone ISO length",
+            )
             c.asm.jump(aware_fraction, "z")
         c.asm.jump(generic)
         if timezone_cache is not None:
@@ -234,7 +279,9 @@ def load_datetime(c, function, cls):  # noqa: C901, PLR0912, PLR0915
         c.asm.label(fraction)
         c.asm.mov_imm(0, short_length + 7)
         c.asm.store(base_length)
-        c.asm.emit(b"\x41\x80\x78" + bytes([40 + short_length, 46]), "check fractional separator")
+        c.asm.emit(
+            b"\x41\x80\x78" + bytes([c.layout.unicode_ascii_data + short_length, 46]), "check fractional separator",
+        )
         c.asm.jump(generic, "nz")
     c.asm.label(length_ok)
     separators = (
@@ -245,7 +292,7 @@ def load_datetime(c, function, cls):  # noqa: C901, PLR0912, PLR0915
         else ((4, 45), (7, 45), (10, 84), (13, 58), (16, 58))
     )
     for offset, value in separators:
-        c.asm.emit(b"\x41\x80\x78" + bytes([40 + offset, value]), "cmp ISO separator")
+        c.asm.emit(b"\x41\x80\x78" + bytes([c.layout.unicode_ascii_data + offset, value]), "cmp ISO separator")
         c.asm.jump(generic, "nz")
     fields = []
     if cls is not time:
@@ -307,7 +354,7 @@ def load_datetime(c, function, cls):  # noqa: C901, PLR0912, PLR0915
     c.asm.label(no_micros)
     size = c.slot()
     naive = c.label("iso_naive_allocation")
-    c.asm.mov_imm(0, 40 if cls is datetime else 32)
+    c.asm.mov_imm(0, c.layout.datetime_naive_size if cls is datetime else c.layout.time_naive_size)
     c.asm.load(1, zone)
     c.asm.test_jump(1, naive)
     c.asm.emit(b"\x83\xc0\x08", "add timezone pointer size")
@@ -316,29 +363,53 @@ def load_datetime(c, function, cls):  # noqa: C901, PLR0912, PLR0915
     allocation = c.call_c("PyObject_Malloc", size, result="pointer")
     c.branch_if_null(allocation, no_memory)
     c.asm.load(9, allocation)
-    c.asm.emit(b"\x49\xc7\x01\x01\x00\x00\x00", "mov reference count, 1")
+    c.asm.emit_memory(
+        b"\x49\xc7", 0x01, c.layout.object_refcount, "mov reference count, 1", immediate=b"\x01\x00\x00\x00",
+    )
     c.load(0, c.constant(cls))
-    c.asm.emit(b"\x49\x89\x41\x08\x49\xc7\x41\x10\xff\xff\xff\xff", "mov datetime type; mov hash, -1")
-    c.asm.emit(b"\x49\xc7\x41\x18\x00\x00\x00\x00", "clear date storage and timezone flag")
+    c.asm.emit((
+                   b"\x49\x89\x41"
+                   + bytes([c.layout.object_type])
+                   + b"\x49\xc7\x41"
+                   + bytes([c.layout.datetime_hash])
+                   + b"\xff\xff\xff\xff"
+               ), "mov datetime type; mov hash, -1")
+    c.asm.emit(
+        b"\x49\xc7\x41" + bytes([c.layout.datetime_has_tzinfo]) + b"\x00\x00\x00\x00",
+        "clear date storage and timezone flag",
+    )
     if cls is datetime:
-        c.asm.emit(b"\x49\xc7\x41\x20\x00\x00\x00\x00", "clear datetime fraction and fold")
+        c.asm.emit(
+            b"\x49\xc7\x41" + bytes([c.layout.datetime_data + 7]) + b"\x00\x00\x00\x00",
+            "clear datetime fraction and fold",
+        )
     if cls is not time:
         c.asm.load(0, year)
-        c.asm.emit(b"\x66\xc1\xc0\x08\x66\x41\x89\x41\x19", "rol ax, 8; mov big-endian year")
-    offsets = (27, 28) if cls is date else (25, 26, 27) if cls is time else (27, 28, 29, 30, 31)
+        c.asm.emit(
+            b"\x66\xc1\xc0\x08\x66\x41\x89\x41" + bytes([c.layout.datetime_data]), "rol ax, 8; mov big-endian year",
+        )
+    data_offset = c.layout.time_data if cls is time else c.layout.datetime_data
+    offsets = tuple(
+        data_offset + index for index in ((0, 1, 2) if cls is time else (2, 3) if cls is date else (2, 3, 4, 5, 6))
+    )
     for value, offset in zip(fields if cls is time else fields[1:], offsets, strict=True):
         c.asm.load(0, value)
         c.asm.emit(b"\x41\x88\x41" + bytes([offset]), "mov datetime component")
     if cls is not date:
         c.asm.load(0, micros)
         c.asm.emit(
-            b"\x0f\xc8\xc1\xe8\x08\x41\x89\x41" + bytes([28 if cls is time else 32]), "store microseconds and fold",
+            b"\x0f\xc8\xc1\xe8\x08\x41\x89\x41"
+            + bytes([c.layout.time_data + 3 if cls is time else c.layout.datetime_data + 7]),
+            "store microseconds and fold",
         )
         naive = c.label("iso_without_timezone")
         c.asm.load(0, zone)
         c.asm.test_jump(0, naive)
         c.asm.emit(
-            b"\x41\xc6\x41\x18\x01\x49\x89\x41" + bytes([32 if cls is time else 40]),
+            b"\x41\xc6\x41"
+            + bytes([c.layout.datetime_has_tzinfo])
+            + b"\x01\x49\x89\x41"
+            + bytes([c.layout.time_tzinfo if cls is time else c.layout.datetime_tzinfo]),
             "set timezone flag and steal reference",
         )
         c.asm.emit(b"\x31\xc0", "clear stolen timezone reference")
@@ -374,7 +445,7 @@ class DateTimeProgram(descriptions.DateTimeProgram):
         sign, minutes = dump_offset(c, cls, generic)
         c.asm.load(0, c.data)
         short_length = 10 if cls is date else 8 if cls is time else 19
-        micro_offset = 28 if cls is time else 32
+        micro_offset = c.layout.time_data + 3 if cls is time else c.layout.datetime_data + 7
         length = c.slot()
         if cls is date:
             c.asm.mov_imm(0, short_length)
@@ -395,35 +466,58 @@ class DateTimeProgram(descriptions.DateTimeProgram):
             c.asm.emit(b"\x83\xc0\x06", "add timezone suffix length")
             c.asm.label(naive)
         c.asm.store(length)
-        c.asm.emit(b"\x48\x83\xc0\x29", "add rax, 41  # ASCII header, payload and terminator")
+        c.asm.emit(
+            b"\x48\x83\xc0" + bytes([c.layout.unicode_ascii_data + 1]),
+            "add rax, 41  # ASCII header, payload and terminator",
+        )
         allocation_size = c.slot()
         c.asm.store(allocation_size)
         allocation = c.call_c("PyObject_Malloc", allocation_size, result="pointer")
         c.branch_if_null(allocation, no_memory)
         c.asm.load(9, allocation)
-        c.asm.emit(b"\x49\xc7\x01\x01\x00\x00\x00", "mov QWORD PTR [r9], 1")
+        c.asm.emit_memory(
+            b"\x49\xc7", 0x01, c.layout.object_refcount, "mov QWORD PTR [r9], 1", immediate=b"\x01\x00\x00\x00",
+        )
         c.load(0, c.constant(str))
-        c.asm.emit(b"\x49\x89\x41\x08", "mov [r9+8], rax")
+        c.asm.emit(b"\x49\x89\x41" + bytes([c.layout.object_type]), "mov [r9+8], rax")
         c.asm.load(0, length)
-        c.asm.emit(b"\x49\x89\x41\x10", "mov [r9+16], rax")
-        c.asm.emit(b"\x49\xc7\x41\x18\xff\xff\xff\xff", "mov QWORD PTR [r9+24], -1  # hash")
-        c.asm.emit(b"\x49\xc7\x41\x20\x64\x00\x00\x00", "mov QWORD PTR [r9+32], 0x64  # compact non-interned ASCII")
-        c.asm.emit(b"\x41\xc6\x44\x01\x28\x00", "mov BYTE PTR [r9+rax+40], 0")
+        c.asm.emit(b"\x49\x89\x41" + bytes([c.layout.unicode_length]), "mov [r9+16], rax")
+        c.asm.emit(
+            b"\x49\xc7\x41" + bytes([c.layout.unicode_hash]) + b"\xff\xff\xff\xff", "mov QWORD PTR [r9+24], -1  # hash",
+        )
+        c.asm.emit(
+            b"\x49\xc7\x41" + bytes([c.layout.unicode_state]) + b"\x64\x00\x00\x00",
+            "mov QWORD PTR [r9+32], 0x64  # compact non-interned ASCII",
+        )
+        c.asm.emit(b"\x41\xc6\x44\x01" + bytes([c.layout.unicode_ascii_data]) + b"\x00", "mov BYTE PTR [r9+rax+40], 0")
         c.asm.store(result, 9)
         c.asm.load(8, c.data)
         c.constants.append(DIGITS)
         c.asm.mov_imm(11, ctypes.addressof(DIGITS))
         if cls is not time:
-            c.asm.emit(b"\x41\x0f\xb7\x40\x19\x66\xc1\xc0\x08", "read big-endian year")
+            c.asm.emit(
+                b"\x41\x0f\xb7\x40" + bytes([c.layout.datetime_data]) + b"\x66\xc1\xc0\x08", "read big-endian year",
+            )
             divide_100(c)
             c.asm.emit(b"\x41\x0f\xb7\x0c\x4b\x41\x0f\xb7\x04\x43", "read year decimal pairs")
-            c.asm.emit(b"\x66\x41\x89\x49\x28\x66\x41\x89\x41\x2a", "store four-digit year")
+            c.asm.emit(
+                (
+                    b"\x66\x41\x89\x49"
+                    + bytes([c.layout.unicode_ascii_data])
+                    + b"\x66\x41\x89\x41"
+                    + bytes([c.layout.unicode_ascii_data + 2])
+                ),
+                "store four-digit year",
+            )
         pairs = (
-            ((27, 5), (28, 8))
+            ((c.layout.datetime_data + 2, 5), (c.layout.datetime_data + 3, 8))
             if cls is date
-            else ((25, 0), (26, 3), (27, 6))
+            else ((c.layout.time_data, 0), (c.layout.time_data + 1, 3), (c.layout.time_data + 2, 6))
             if cls is time
-            else ((27, 5), (28, 8), (29, 11), (30, 14), (31, 17))
+            else tuple(
+                (c.layout.datetime_data + index, target)
+                for index, target in ((2, 5), (3, 8), (4, 11), (5, 14), (6, 17))
+            )
         )
         for source, target in pairs:
             write_pair(c, source, target)
@@ -435,28 +529,29 @@ class DateTimeProgram(descriptions.DateTimeProgram):
             else ((4, 45), (7, 45), (10, 84), (13, 58), (16, 58))
         )
         for offset, value in separators:
-            c.asm.emit(b"\x41\xc6\x41" + bytes([40 + offset, value]), "store ISO separator")
+            c.asm.emit(b"\x41\xc6\x41" + bytes([c.layout.unicode_ascii_data + offset, value]), "store ISO separator")
         suffix = c.label("iso_timezone_suffix")
         if cls is not date:
             c.asm.load(0, base_length)
             c.asm.emit(b"\x83\xf8" + bytes([short_length]), "check for fractional seconds")
             c.asm.jump(suffix, "z")
-            c.asm.emit(b"\x41\xc6\x41" + bytes([40 + short_length, 46]), "store decimal point")
+            c.asm.emit(b"\x41\xc6\x41" + bytes([c.layout.unicode_ascii_data + short_length, 46]), "store decimal point")
             c.asm.emit(
                 b"\x41\x8b\x40" + bytes([micro_offset]) + b"\x0f\xc8\xc1\xe8\x08", "read big-endian microseconds",
             )
             divide_100(c)
             c.asm.emit(
-                b"\x41\x0f\xb7\x04\x43\x66\x41\x89\x41" + bytes([40 + short_length + 5]), "store last fraction digits",
+                b"\x41\x0f\xb7\x04\x43\x66\x41\x89\x41" + bytes([c.layout.unicode_ascii_data + short_length + 5]),
+                "store last fraction digits",
             )
             c.asm.emit(b"\x89\xc8", "mov eax, ecx")
             divide_100(c)
             c.asm.emit(b"\x41\x0f\xb7\x0c\x4b\x41\x0f\xb7\x04\x43", "read fraction decimal pairs")
             c.asm.emit(
                 b"\x66\x41\x89\x49"
-                + bytes([40 + short_length + 1])
+                + bytes([c.layout.unicode_ascii_data + short_length + 1])
                 + b"\x66\x41\x89\x41"
-                + bytes([40 + short_length + 3]),
+                + bytes([c.layout.unicode_ascii_data + short_length + 3]),
                 "store first fraction digits",
             )
         c.asm.label(suffix)

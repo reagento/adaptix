@@ -22,8 +22,6 @@ class UUIDProgram(descriptions.UUIDProgram):
         from adaptix._internal.code_tools.native_access import (  # noqa: PLC0415
             GENERIC_GETTER,
             LOOKUP,
-            TYPE_GETATTRO,
-            TYPE_VERSION,
             get_type_version,
             member_offset,
             pointer,
@@ -36,7 +34,7 @@ class UUIDProgram(descriptions.UUIDProgram):
         if (
             type(initializer) is not FunctionType
             or UUID.__new__ is not object.__new__ or initializer.__module__ != "uuid"
-            or pointer(id(UUID) + TYPE_GETATTRO) != GENERIC_GETTER
+            or pointer(id(UUID) + c.layout.type_getattro) != GENERIC_GETTER
             or initializer.__code__.co_filename != initializer.__globals__.get("__file__")
             or initializer.__defaults__ != (None,) * 6
             or type(initializer.__kwdefaults__) is not dict
@@ -52,7 +50,9 @@ class UUIDProgram(descriptions.UUIDProgram):
         generic, done = c.label("uuid_slow"), c.label("uuid_done")
         result = c.slot(owned=True)
         c.load(0, c.constant(UUID))
-        c.asm.emit(b"\x81\xb8" + struct.pack("<iI", TYPE_VERSION, get_type_version(UUID)), "check UUID class version")
+        c.asm.emit(
+            b"\x81\xb8" + struct.pack("<iI", c.layout.type_version, get_type_version(UUID)), "check UUID class version",
+        )
         c.asm.jump(generic, "nz")
         c.slot()
         last = c.slot()
@@ -61,12 +61,17 @@ class UUIDProgram(descriptions.UUIDProgram):
             self.constructor_guard(c, initializer, generic)
             c.branch_if_type(c.data, str, generic, invert=True)
             c.asm.load(8, c.data)
-            c.asm.emit(b"\x49\x83\x78\x10\x24", "check canonical UUID length")
+            c.asm.emit(b"\x49\x83\x78" + bytes([c.layout.unicode_length]) + b"\x24", "check canonical UUID length")
             c.asm.jump(generic, "nz")
-            c.asm.emit(b"\x41\x8b\x40\x20\x25\x60\x00\x00\x00\x83\xf8\x60", "check compact ASCII UUID")
+            c.asm.emit(
+                b"\x41\x8b\x40" + bytes([c.layout.unicode_state]) + b"\x25\x60\x00\x00\x00\x83\xf8\x60",
+                "check compact ASCII UUID",
+            )
             c.asm.jump(generic, "nz")
             for position in SEPARATORS:
-                c.asm.emit(b"\x41\x80\x78" + bytes([40 + position, 45]), "check UUID separator")
+                c.asm.emit(
+                    b"\x41\x80\x78" + bytes([c.layout.unicode_ascii_data + position, 45]), "check UUID separator",
+                )
                 c.asm.jump(generic, "nz")
             self.parse(c, buffer, generic)
             integer = c.call_c("_PyLong_FromByteArray", buffer, Immediate(16), Immediate(0), Immediate(0))
@@ -89,7 +94,9 @@ class UUIDProgram(descriptions.UUIDProgram):
     def constructor_guard(self, c, initializer, generic):
         c.load(0, c.constant(initializer))
         for offset, value in (
-            (48, initializer.__code__), (56, initializer.__defaults__), (64, initializer.__kwdefaults__),
+            (c.layout.function_code, initializer.__code__),
+            (c.layout.function_defaults, initializer.__defaults__),
+            (c.layout.function_kwdefaults, initializer.__kwdefaults__),
         ):
             c.load(11, c.constant(value))
             c.asm.emit(b"\x4c\x39\x58" + bytes([offset]), "check UUID initializer metadata")
@@ -111,7 +118,7 @@ class UUIDProgram(descriptions.UUIDProgram):
         for index in range(16):
             for register, position in ((0, positions[index * 2]), (1, positions[index * 2 + 1])):
                 c.asm.emit(
-                    b"\x41\x0f\xb6" + bytes([0x40 if register == 0 else 0x48, 40 + position]),
+                    b"\x41\x0f\xb6" + bytes([0x40 if register == 0 else 0x48, c.layout.unicode_ascii_data + position]),
                     "load UUID hex character",
                 )
                 c.asm.emit(
@@ -135,7 +142,7 @@ class UUIDProgram(descriptions.UUIDProgram):
                 return
             c.load(0, c.constant(function))
             c.load(11, c.constant(function.__code__))
-            c.asm.emit(b"\x4c\x39\x58\x30", "check UUID formatter code")
+            c.asm.emit(b"\x4c\x39\x58" + bytes([c.layout.function_code]), "check UUID formatter code")
             c.asm.jump(generic, "nz")
         c.branch_if_type(c.data, UUID, generic, invert=True)
         c.asm.load(0, c.data)
@@ -166,7 +173,13 @@ class UUIDProgram(descriptions.UUIDProgram):
             c.asm.emit(b"\x41\x0f\xb6\x40" + bytes([index]), "load UUID byte")
             c.asm.emit(b"\x89\xc1\xc1\xe9\x04\x83\xe0\x0f", "extract UUID nibbles")
             c.asm.emit(b"\x41\x0f\xb6\x0c\x0b\x41\x0f\xb6\x04\x03", "encode UUID hex characters")
-            c.asm.emit(b"\x41\x88\x49" + bytes([40 + positions[index * 2]]), "store first UUID hex digit")
-            c.asm.emit(b"\x41\x88\x41" + bytes([40 + positions[index * 2 + 1]]), "store second UUID hex digit")
+            c.asm.emit(
+                b"\x41\x88\x49" + bytes([c.layout.unicode_ascii_data + positions[index * 2]]),
+                "store first UUID hex digit",
+            )
+            c.asm.emit(
+                b"\x41\x88\x41" + bytes([c.layout.unicode_ascii_data + positions[index * 2 + 1]]),
+                "store second UUID hex digit",
+            )
         for position in SEPARATORS:
-            c.asm.emit(b"\x41\xc6\x41" + bytes([40 + position, 45]), "store UUID separator")
+            c.asm.emit(b"\x41\xc6\x41" + bytes([c.layout.unicode_ascii_data + position, 45]), "store UUID separator")

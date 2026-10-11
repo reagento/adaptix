@@ -8,6 +8,7 @@ from functools import partial
 from types import BuiltinFunctionType
 from typing import Any, Literal, cast, overload
 
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.code_tools.native_callable import NativeCode
 from adaptix._internal.code_tools.x86_64_assembler import (
     ARG_REGISTERS,
@@ -33,20 +34,16 @@ def construct_omitted(cls, parameters, omitted, *values):
 
 
 def inline_refcount_mode() -> str | None:
-    if (
-        sys.version_info[:2] not in {(3, 10), (3, 11), (3, 12), (3, 13), (3, 14)}
-        or any(sysconfig.get_config_var(flag) for flag in ("Py_DEBUG", "Py_TRACE_REFS", "Py_STATS"))
-        or hasattr(sys, "gettotalrefcount")
-        or hasattr(sys, "_stats_dump")
-    ):
+    layout = get_cpython_layout()
+    if layout is None:
         return None
     probe = object()
     # 3.14 can pass a borrowed argument to getrefcount, avoiding the temporary
     # reference added by earlier interpreters. The fresh object's count is one.
     if (
-        ctypes.c_ssize_t.from_address(id(probe)).value != 1
+        ctypes.c_ssize_t.from_address(id(probe) + layout.object_refcount).value != 1
         or sys.getrefcount(probe) not in (1, 2)
-        or ctypes.c_void_p.from_address(id(probe) + 8).value != id(object)
+        or ctypes.c_void_p.from_address(id(probe) + layout.object_type).value != id(object)
     ):
         return None
     if sys.version_info < (3, 12):
@@ -77,6 +74,7 @@ class X86Compiler:
 
     def __init__(self, name: str, *, assembler_factory: Callable[[], X86Assembler] = X86Assembler):
         check_native_platform()
+        self.layout = get_cpython_layout()
         self.name = name
         self.program_resolver: Callable[[Any], Any] | None = None
         self.callable_wrapper_type: type | None = None
@@ -274,6 +272,8 @@ class X86Compiler:
             raise ValueError("A C call destination must be an owned object slot")
         if error_label == "error":
             error_label = self.call_error_label
+        if name == "PyObject_CallOneArg" and result == "object" and not hasattr(ctypes.pythonapi, name):
+            return self.call_one_arg_compat(args, destination, error_label)
         if len(args) > len(ARG_REGISTERS):
             raise ValueError("Native C calls support at most six arguments")
         self.load_c_arguments(args)
@@ -282,12 +282,7 @@ class X86Compiler:
             return None
         # Variadic C functions require al=number of vector-register arguments.
         self.asm.emit(b"\x31\xc0", "xor eax, eax")
-        address = name.value if isinstance(name, Immediate) else (
-            ctypes.cast(getattr(ctypes.pythonapi, name), ctypes.c_void_p).value
-        )
-        if address is None:
-            raise RuntimeError(f"Missing CPython C API entry point: {name}")
-        self.asm.mov_imm(11, address)
+        self.asm.mov_imm(11, self.c_api_address(name))
         self.asm.emit(b"\x41\xff\xd3", f"call r11  # {name}")
         if result == "object":
             # A supplied destination must be empty, just like a newly allocated slot.
@@ -304,6 +299,22 @@ class X86Compiler:
         elif result != "void":
             raise ValueError(f"Unknown native C call result kind: {result}")
         return None
+
+    def call_one_arg_compat(self, args, destination, error_label) -> Slot:
+        converted = self.vectorcall_address(args[0], tuple(args[1:]), (), error_label=error_label)
+        if destination is not None:
+            self.transfer(converted, destination)
+            return destination
+        return converted
+
+    @staticmethod
+    def c_api_address(name: str | Immediate) -> int:
+        address = name.value if isinstance(name, Immediate) else (
+            ctypes.cast(getattr(ctypes.pythonapi, name), ctypes.c_void_p).value
+        )
+        if address is None:
+            raise RuntimeError(f"Missing CPython C API entry point: {name}")
+        return address
 
     def load_c_arguments(self, args: tuple[Slot | Immediate | Address, ...]) -> None:
         for register, value in zip(ARG_REGISTERS, args, strict=False):
@@ -324,11 +335,11 @@ class X86Compiler:
         return self.vectorcall_address(callable_ptr, args, (), error_label=error_label)
 
     def call_recursive_wrapper(self, function: Any, argument: Slot | Immediate, error_label: str) -> Slot:
+        if self.layout is None or self.layout.type_cached_keys is None:
+            return self.vectorcall_address(self.constant(function), (argument,), (), error_label=error_label)
         from adaptix._internal.code_tools.native_access import (  # noqa: PLC0415
             GENERIC_GETTER,
             LOOKUP,
-            TYPE_GETATTRO,
-            TYPE_VERSION,
             get_type_version,
             member_offset,
             pointer,
@@ -337,17 +348,22 @@ class X86Compiler:
 
         cls = type(function)
         offset = member_offset(LOOKUP(cls, "__call__"), cls.__basicsize__)
-        if not supports_attribute_cache() or offset is None or pointer(id(cls) + TYPE_GETATTRO) != GENERIC_GETTER:
+        if (
+            not supports_attribute_cache()
+            or offset is None
+            or pointer(id(cls) + self.layout.type_getattro) != GENERIC_GETTER
+        ):
             return self.call_c("PyObject_CallOneArg", self.constant(function), argument, error_label=error_label)
         generic, done = self.label("recursive_wrapper_slow"), self.label("recursive_wrapper_done")
         result = self.slot(owned=True)
         self.load(0, self.constant(function))
-        self.asm.emit(b"\x48\x8b\x50\x08", "load recursive wrapper class")
+        self.asm.emit(b"\x48\x8b\x50" + bytes([self.layout.object_type]), "load recursive wrapper class")
         self.load(11, self.constant(cls))
         self.asm.emit(b"\x4c\x39\xda", "check recursive wrapper class")
         self.asm.jump(generic, "nz")
         self.asm.emit(
-            b"\x81\xba" + struct.pack("<iI", TYPE_VERSION, get_type_version(cls)), "check recursive wrapper call slot",
+            b"\x81\xba" + struct.pack("<iI", self.layout.type_version, get_type_version(cls)),
+            "check recursive wrapper call slot",
         )
         self.asm.jump(generic, "nz")
         self.asm.emit(b"\x48\x8b\x80" + struct.pack("<i", offset), "load current recursive converter")
@@ -455,14 +471,23 @@ class X86Compiler:
         self.constructor_guard(cls, cache, initialize)
         tstate = self.function_context("PyThreadState_Get")
         self.asm.load(0, tstate)
-        self.asm.emit(b"\x48\x83\x78\x50\x00", "cmp QWORD PTR [rax+80], 0  # profile callback")
+        self.asm.emit(
+            b"\x48\x83\x78" + bytes([self.layout.thread_profile]) + b"\x00",
+            "cmp QWORD PTR [rax+80], 0  # profile callback",
+        )
         self.asm.jump(initialize, "nz")
-        self.asm.emit(b"\x48\x83\x78\x58\x00", "cmp QWORD PTR [rax+88], 0  # trace callback")
+        self.asm.emit(
+            b"\x48\x83\x78" + bytes([self.layout.thread_trace]) + b"\x00",
+            "cmp QWORD PTR [rax+88], 0  # trace callback",
+        )
         self.asm.jump(initialize, "nz")
-        self.asm.emit(b"\x48\x8b\x48\x10", "mov rcx, [rax+16]  # interpreter")
+        self.asm.emit(b"\x48\x8b\x48" + bytes([self.layout.thread_interpreter]), "mov rcx, [rax+16]  # interpreter")
         interpreter = self.slot()
         self.asm.store(interpreter, 1)
-        self.asm.emit(b"\x48\x8b\x40\x18\x48\x25\x00\xff\xff\xff", "mov rax, [rax+24]; and rax, -256")
+        self.asm.emit(
+            b"\x48\x8b\x40" + bytes([self.layout.thread_eval_breaker]) + b"\x48\x25\x00\xff\xff\xff",
+            "mov rax, [rax+24]; and rax, -256",
+        )
         self.asm.mov_imm(11, ctypes.addressof(cache))
         self.asm.emit(b"\x49\x3b\x43\x30", "cmp rax, [r11+48]  # instrumentation version")
         self.asm.jump(initialize, "nz")
@@ -498,7 +523,10 @@ class X86Compiler:
         self.asm.emit(
             b"\xc6\x44\x02\x01" + bytes([len(args)]), f"mov BYTE PTR [rdx+rax+1], {len(args)}  # field count",
         )
-        self.asm.emit(b"\x48\x8d\x54\x02\x08\x48\x8d\x14\xca", "lea rdx, [rdx+rax+8]; lea rdx, [rdx+rcx*8]")
+        self.asm.emit(
+            b"\x48\x8d\x54\x02" + bytes([self.layout.values_items]) + b"\x48\x8d\x14\xca",
+            "lea rdx, [rdx+rax+8]; lea rdx, [rdx+rcx*8]",
+        )
         self.asm.emit(b"\x49\x8b\x73\x40", "mov rsi, [r11+64]  # insertion order")
         for index in range(len(args)):
             self.asm.emit(b"\x8a\x46" + bytes([index]), f"mov al, [rsi+{index}]")
@@ -555,7 +583,10 @@ class X86Compiler:
             checked = self.label("constructor_argument_checked")
             self.asm.emit(b"\x48\x8b\x88" + struct.pack("<i", index * 8), "load argument sentinel cell")
             self.asm.test_jump(1, checked)
-            self.asm.emit(b"\x48\x8b\x49\x10\x48\x85\xc9", "load current initializer sentinel")
+            self.asm.emit(
+                b"\x48\x8b\x49" + bytes([self.layout.cell_contents]) + b"\x48\x85\xc9",
+                "load current initializer sentinel",
+            )
             self.asm.jump(initialize, "z")
             self.load(7, value)
             self.asm.emit(b"\x48\x39\xcf", "check explicit argument against factory sentinel")
@@ -567,7 +598,7 @@ class X86Compiler:
         defaults = self.slot()
         self.asm.mov_imm(11, ctypes.addressof(cache))
         self.asm.emit(
-            b"\x49\x8b\x43\x10\x48\x8b\x40\x38",
+            b"\x49\x8b\x43\x10\x48\x8b\x40" + bytes([self.layout.function_defaults]),
             "mov rax, [r11+16]; mov rax, [rax+56]  # current defaults",
         )
         self.asm.store(defaults)
@@ -578,15 +609,18 @@ class X86Compiler:
             self.asm.load(0, defaults)
             self.asm.test_jump(0, initialize)
             needed = len(args) - index
-            self.asm.emit(b"\x48\x81\x78\x10" + struct.pack("<i", needed), f"cmp default count, {needed}")
+            self.asm.emit(
+                b"\x48\x81\x78" + bytes([self.layout.var_size]) + struct.pack("<i", needed),
+                f"cmp default count, {needed}",
+            )
             self.asm.jump(initialize, "b")
             self.asm.label(present)
         for index, value in enumerate(args):
             present = self.label("bound_argument")
             self.branch_if(value, omitted, present, invert=True)
             self.asm.load(0, defaults)
-            self.asm.emit(b"\x48\x8b\x48\x10", "mov rcx, [rax+16]  # default count")
-            displacement = 32 - (len(args) - index) * 8
+            self.asm.emit(b"\x48\x8b\x48" + bytes([self.layout.var_size]), "mov rcx, [rax+16]  # default count")
+            displacement = self.layout.tuple_items - (len(args) - index) * 8
             self.asm.emit(
                 b"\x48\x8b\x84\xc8" + struct.pack("<i", displacement),
                 "mov rax, [rax+rcx*8+default_offset]",
@@ -601,19 +635,23 @@ class X86Compiler:
         self.asm.emit(b"\x41\x83\x7b\x0c\x00", "cmp DWORD PTR [r11+12], 0  # constructor cache")
         self.asm.jump(fallback, "z")
         self.load(0, self.constant(cls))
-        self.asm.emit(b"\x8b\x88\x80\x01\x00\x00", "mov ecx, [rax+384]  # constructor type version")
+        self.asm.emit(
+            b"\x8b\x88" + struct.pack("<i", self.layout.type_version), "mov ecx, [rax+384]  # constructor type version",
+        )
         self.asm.emit(b"\x41\x3b\x4b\x08", "cmp ecx, [r11+8]")
         self.asm.jump(fallback, "nz")
         if check_code:
             self.asm.emit(b"\x49\x8b\x43\x10", "mov rax, [r11+16]  # cached initializer")
-            self.asm.emit(b"\x48\x8b\x40\x30", "mov rax, [rax+48]  # current code object")
+            self.asm.emit(
+                b"\x48\x8b\x40" + bytes([self.layout.function_code]), "mov rax, [rax+48]  # current code object",
+            )
             self.asm.emit(b"\x49\x3b\x43\x18", "cmp rax, [r11+24]")
             self.asm.jump(fallback, "nz")
             plain = self.label("constructor_plain_assignment")
             self.asm.emit(b"\x49\x8b\x4b\x48\x48\x85\xc9", "load captured object setter cell")
             self.asm.jump(plain, "z")
             self.load(0, self.constant(object))
-            self.asm.emit(b"\x48\x39\x41\x10", "check captured object setter")
+            self.asm.emit(b"\x48\x39\x41" + bytes([self.layout.cell_contents]), "check captured object setter")
             self.asm.jump(fallback, "nz")
             self.asm.label(plain)
 
@@ -724,25 +762,33 @@ class X86Compiler:
         """Leave verified key/value arrays in rdx/rsi; do not call Python."""
         self.load(0, source)
         count_check = (
-            b"\x48\x83\x78\x10" + bytes([len(items)]) if len(items) < (1 << 7) else
-            b"\x48\x81\x78\x10" + struct.pack("<i", len(items))
+            b"\x48\x83\x78" + bytes([self.layout.dict_used]) + bytes([len(items)]) if len(items) < (1 << 7) else
+            b"\x48\x81\x78" + bytes([self.layout.var_size]) + struct.pack("<i", len(items))
         )
         self.asm.emit(count_check, f"cmp QWORD PTR [rax+16], {len(items)}")
         self.asm.jump(generic, "nz")
-        self.asm.emit(b"\x48\x8b\x50\x20", "mov rdx, [rax+32]  # copied keys")
-        self.asm.emit(b"\x80\x7a\x0a" + bytes([template.kind]), f"cmp BYTE PTR [rdx+10], {template.kind}  # key kind")
+        self.asm.emit(b"\x48\x8b\x50" + bytes([self.layout.dict_keys]), "mov rdx, [rax+32]  # copied keys")
+        self.asm.emit(
+            b"\x80\x7a" + bytes([self.layout.keys_kind]) + bytes([template.kind]),
+            f"cmp BYTE PTR [rdx+10], {template.kind}  # key kind",
+        )
         self.asm.jump(generic, "nz")
-        self.asm.emit(b"\x80\x7a\x09" + bytes([template.index_bytes]), f"cmp BYTE PTR [rdx+9], {template.index_bytes}")
+        self.asm.emit(
+            b"\x80\x7a" + bytes([self.layout.keys_index_bytes]) + bytes([template.index_bytes]),
+            f"cmp BYTE PTR [rdx+9], {template.index_bytes}",
+        )
         self.asm.jump(generic, "nz")
         if template.kind == 2:  # noqa: PLR2004
-            self.asm.emit(b"\x48\x8b\x70\x28", "mov rsi, [rax+40]  # shared-key value buffer")
+            self.asm.emit(
+                b"\x48\x8b\x70" + bytes([self.layout.dict_values]), "mov rsi, [rax+40]  # shared-key value buffer",
+            )
             self.asm.test_jump(6, generic)
             self.asm.emit(
                 b"\x80\x3e" + bytes([max(template.value_offsets) // 8]),
                 "cmp BYTE PTR [rsi], largest_value_index  # capacity",
             )
             self.asm.jump(generic, "be")
-            self.asm.emit(b"\x48\x83\xc6\x08", "add rsi, 8  # value entries")
+            self.asm.emit(b"\x48\x83\xc6" + bytes([self.layout.values_items]), "add rsi, 8  # value entries")
         else:
             self.asm.emit(b"\x48\x89\xd6", "mov rsi, rdx  # combined entries")
         self.load(8, self.constant(None))
@@ -765,8 +811,11 @@ class X86Compiler:
                 self.incref_rdi()
             self.asm.emit(b"\x48\x89\xbe" + struct.pack("<i", offset), f"mov [rsi+{offset}], rdi  # dictionary value")
             if not template.tracked_copies:
-                self.asm.emit(b"\x48\x8b\x47\x08", "mov rax, [rdi+8]  # value type")
-                self.asm.emit(b"\x4c\x0b\x90\xa8\x00\x00\x00", "or r10, [rax+168]  # value type flags")
+                self.asm.emit(b"\x48\x8b\x47" + bytes([self.layout.object_type]), "mov rax, [rdi+8]  # value type")
+                self.asm.emit(
+                    b"\x4c\x0b\x90" + struct.pack("<i", self.layout.type_flags),
+                    "or r10, [rax+168]  # value type flags",
+                )
             if transfer:
                 self.asm.clear(value)
         if not template.tracked_copies:
@@ -785,7 +834,7 @@ class X86Compiler:
         # only shrink. The template retains the original type's key table so
         # its address cannot be freed and reused after a source-dict mutation.
         self.load(0, self.constant(template.data))
-        self.asm.emit(b"\x48\x8b\x50\x20", "mov rdx, [rax+32]  # shared keys")
+        self.asm.emit(b"\x48\x8b\x50" + bytes([self.layout.dict_keys]), "mov rdx, [rax+32]  # shared keys")
         self.asm.mov_imm(9, template.keys_pointer)
         self.asm.emit(b"\x4c\x39\xca", "cmp rdx, r9  # original retained key table")
         self.asm.jump(generic, "nz")
@@ -799,7 +848,7 @@ class X86Compiler:
         """
         result = self.call_c("PyDict_New")
         capacity = template.capacity
-        size = (capacity + 1) * 8 + (capacity + 7) // 8 * 8
+        size = self.layout.values_items + capacity * 8 + (capacity + 7) // 8 * 8
         buffer = self.call_c("PyMem_Malloc", Immediate(size), result="pointer")
         no_memory, generic, done = (
             self.label(prefix) for prefix in ("dict_values_no_memory", "shared_dict_changed", "shared_dict_done")
@@ -815,25 +864,35 @@ class X86Compiler:
         used = set(template.value_offsets)
         for index in range(capacity):
             if index * 8 not in used:
-                offset = 8 + index * 8
+                offset = self.layout.values_items + index * 8
                 self.asm.emit(b"\x4c\x89\x96" + struct.pack("<i", offset), f"mov [rsi+{offset}], r10")
         transfer = consume and len(set(items.values())) == len(items)
         for value, offset in zip(items.values(), template.value_offsets, strict=True):
             self.load(7, value)
             if not transfer:
                 self.incref_rdi()
-            self.asm.emit(b"\x48\x89\xbe" + struct.pack("<i", offset + 8), f"mov [rsi+{offset + 8}], rdi")
+            self.asm.emit(
+                b"\x48\x89\xbe" + struct.pack("<i", offset + self.layout.values_items), f"mov [rsi+{offset + 8}], rdi",
+            )
             if transfer:
                 self.asm.store(value, 10, clear=True)
         order = bytes(offset // 8 for offset in template.value_offsets)
         for start in range(0, len(order), 8):
             self.asm.mov_imm(11, int.from_bytes(order[start:start + 8].ljust(8, b"\x00"), "little"))
-            offset = 8 + capacity * 8 + start
+            offset = self.layout.values_items + capacity * 8 + start
             self.asm.emit(b"\x4c\x89\x9e" + struct.pack("<i", offset), f"mov [rsi+{offset}], r11  # insertion order")
-        self.asm.emit(b"\x48\xff\x02", "inc QWORD PTR [rdx]  # own shared keys")
+        self.asm.emit_memory(b"\x48\xff", 0x02, self.layout.keys_refcount, "own shared keys")
         self.asm.load(0, result)
-        self.asm.emit(b"\x48\x89\x50\x20\x48\x89\x70\x28", "mov [rax+32], rdx; mov [rax+40], rsi")
-        self.asm.emit(b"\x48\xc7\x40\x10" + struct.pack("<I", len(items)), f"mov QWORD PTR [rax+16], {len(items)}")
+        self.asm.emit((
+                          b"\x48\x89\x50"
+                          + bytes([self.layout.dict_keys])
+                          + b"\x48\x89\x70"
+                          + bytes([self.layout.dict_values])
+                      ), "mov [rax+32], rdx; mov [rax+40], rsi")
+        self.asm.emit(
+            b"\x48\xc7\x40" + bytes([self.layout.dict_used]) + struct.pack("<I", len(items)),
+            f"mov QWORD PTR [rax+16], {len(items)}",
+        )
         if consume and not transfer:
             for value in dict.fromkeys(items.values()):
                 self.release(value, nonnull=True, retained=True)
@@ -874,13 +933,21 @@ class X86Compiler:
 
     def reserve_list(self, size: Slot) -> Slot:
         """Reserve exact-list capacity, publishing only initialized elements."""
+        if not self.has_validated_object_header:
+            return self.call_c("PyList_New", Immediate(0))
         result = self.call_c("PyList_New", size)
         self.asm.load(0, result)
-        self.asm.emit(b"\x48\xc7\x40\x10\x00\x00\x00\x00", "mov QWORD PTR [rax+16], 0  # empty reserved list")
+        self.asm.emit(
+            b"\x48\xc7\x40" + bytes([self.layout.var_size]) + b"\x00\x00\x00\x00",
+            "mov QWORD PTR [rax+16], 0  # empty reserved list",
+        )
         return result
 
     def copy_list(self, source: Slot, *, destination: Slot | None = None) -> Slot:
         """Call the builtin list.copy implementation for a checked list."""
+        if not self.has_validated_object_header:
+            size = self.call_c("PyList_Size", source, result="pointer")
+            return self.call_c("PyList_GetSlice", source, Immediate(0), size, destination=destination)
         method = [].copy
         flags = ctypes.pythonapi.PyCFunction_GetFlags
         flags.argtypes, flags.restype = (ctypes.py_object,), ctypes.c_int
@@ -891,7 +958,7 @@ class X86Compiler:
             return self.call_c(Immediate(address(method)), source, Immediate(0), destination=destination)
         size = self.slot()
         self.asm.load(0, source)
-        self.asm.emit(b"\x48\x8b\x40\x10", "load copied list length")
+        self.asm.emit(b"\x48\x8b\x40" + bytes([self.layout.var_size]), "load copied list length")
         self.asm.store(size)
         return self.call_c("PyList_GetSlice", source, Immediate(0), size, destination=destination)
 
@@ -904,18 +971,23 @@ class X86Compiler:
         generic, done = self.label("shared_list_to_tuple"), self.label("list_to_tuple_done")
         result = self.slot(owned=True)
         self.asm.load(0, source)
-        self.asm.emit(b"\x48\x83\x38\x01", "check private list ownership before transferring its array")
+        self.asm.emit_memory(
+            b"\x48\x83", 0x38, self.layout.object_refcount, "check private list ownership", immediate=b"\x01",
+        )
         self.asm.jump(generic, "nz")
         # Detach the private array before allocation. GC cannot observe this
         # temporary list; the tuple API owns all item references on failure too.
         self.call_c("PyObject_GC_UnTrack", source, result="void")
         size, items = self.slot(), self.slot()
         self.asm.load(0, source)
-        self.asm.emit(b"\x48\x8b\x48\x10", "load transferred list length")
+        self.asm.emit(b"\x48\x8b\x48" + bytes([self.layout.var_size]), "load transferred list length")
         self.asm.store(size, 1)
-        self.asm.emit(b"\x48\x8b\x48\x18", "load transferred list array")
+        self.asm.emit(b"\x48\x8b\x48" + bytes([self.layout.list_items]), "load transferred list array")
         self.asm.store(items, 1)
-        self.asm.emit(b"\x48\xc7\x40\x10\x00\x00\x00\x00", "clear list ownership of transferred references")
+        self.asm.emit(
+            b"\x48\xc7\x40" + bytes([self.layout.var_size]) + b"\x00\x00\x00\x00",
+            "clear list ownership of transferred references",
+        )
         converted = self.call_c("_PyTuple_FromArraySteal", items, size)
         self.transfer(converted, result)
         self.asm.jump(done)
@@ -927,24 +999,28 @@ class X86Compiler:
 
     def append_list(self, target: Slot, value: Slot, *, cached_target: bool = False) -> None:
         """Append an owned reference to an exact list, growing through the C API."""
+        if not self.has_validated_object_header:
+            self.call_c("PyList_Append", target, value, result="int")
+            self.release(value, nonnull=True, retained=True)
+            return
         grow, done = self.label("grow_list"), self.label("list_appended")
         if cached_target:
-            self.asm.emit(b"\x4d\x3b\x7e\x20", "cmp r15, [r14+32]  # capacity")
+            self.asm.emit(b"\x4d\x3b\x7e" + bytes([self.layout.list_allocated]), "cmp r15, [r14+32]  # capacity")
             self.asm.jump(grow, "ae")
-            self.asm.emit(b"\x49\x8b\x4e\x18", "mov rcx, [r14+24]  # output items")
+            self.asm.emit(b"\x49\x8b\x4e" + bytes([self.layout.list_items]), "mov rcx, [r14+24]  # output items")
             self.asm.load(11, value)
             self.asm.emit(b"\x4e\x89\x1c\xf9", "mov [rcx+r15*8], r11  # transfer element")
             self.asm.emit(b"\x49\xff\xc7", "inc r15  # written elements")
-            self.asm.emit(b"\x4d\x89\x7e\x10", "mov [r14+16], r15  # publish output length")
+            self.asm.emit(b"\x4d\x89\x7e" + bytes([self.layout.var_size]), "mov [r14+16], r15  # publish output length")
         else:
             self.asm.load(7, target)
-            self.asm.emit(b"\x48\x8b\x47\x10", "mov rax, [rdi+16]  # output length")
-            self.asm.emit(b"\x48\x3b\x47\x20", "cmp rax, [rdi+32]  # capacity")
+            self.asm.emit(b"\x48\x8b\x47" + bytes([self.layout.var_size]), "mov rax, [rdi+16]  # output length")
+            self.asm.emit(b"\x48\x3b\x47" + bytes([self.layout.list_allocated]), "cmp rax, [rdi+32]  # capacity")
             self.asm.jump(grow, "ae")
-            self.asm.emit(b"\x48\x8b\x4f\x18", "mov rcx, [rdi+24]  # output items")
+            self.asm.emit(b"\x48\x8b\x4f" + bytes([self.layout.list_items]), "mov rcx, [rdi+24]  # output items")
             self.asm.load(11, value)
             self.asm.emit(b"\x4c\x89\x1c\xc1", "mov [rcx+rax*8], r11  # transfer element")
-            self.asm.emit(b"\x48\xff\x47\x10", "inc QWORD PTR [rdi+16]")
+            self.asm.emit(b"\x48\xff\x47" + bytes([self.layout.var_size]), "inc QWORD PTR [rdi+16]")
         self.asm.clear(value)
         self.cold_handlers.append(
             partial(self.grow_list, target, value, grow, done, self.call_error_label, cached_target),
@@ -1089,7 +1165,7 @@ class X86Compiler:
             return None
         result = self.slot()
         self.asm.load(0, data)
-        self.asm.emit(b"\x48\x8b\x40\x08", "mov rax, [rax+8]  # object type")
+        self.asm.emit(b"\x48\x8b\x40" + bytes([self.layout.object_type]), "mov rax, [rax+8]  # object type")
         self.load(11, self.constant(dict))
         self.asm.emit(b"\x4c\x39\xd8", "cmp rax, r11")
         self.asm.emit(b"\x0f\x94\xc0\x0f\xb6\xc0", "sete al; movzx eax, al")
@@ -1121,25 +1197,35 @@ class X86Compiler:
         self.asm.label(check)
         self.branch_if_type(data, dict, generic, invert=True)
         self.asm.load(7, data)
-        self.asm.emit(b"\x48\x83\x7f\x28\x00", "cmp QWORD PTR [rdi+40], 0  # combined dictionary")
+        self.asm.emit(
+            b"\x48\x83\x7f" + bytes([self.layout.dict_values]) + b"\x00",
+            "cmp QWORD PTR [rdi+40], 0  # combined dictionary",
+        )
         self.asm.jump(generic, "nz")
-        self.asm.emit(b"\x48\x8b\x57\x20", "mov rdx, [rdi+32]  # keys table")
-        self.asm.emit(b"\x80\x7a\x0a\x01", "cmp BYTE PTR [rdx+10], 1  # unicode entries")
+        self.asm.emit(b"\x48\x8b\x57" + bytes([self.layout.dict_keys]), "mov rdx, [rdi+32]  # keys table")
+        self.asm.emit(
+            b"\x80\x7a" + bytes([self.layout.keys_kind]) + b"\x01", "cmp BYTE PTR [rdx+10], 1  # unicode entries",
+        )
         self.asm.jump(generic, "nz")
         self.ordered_dictionary_row(data, names, expected_types, results, done)
         self.asm.mov_imm(11, ctypes.addressof(batch))
         self.asm.emit(b"\x41\x83\x3b\x01", "cmp DWORD PTR [r11], 1  # published row cache")
         self.asm.jump(learn, "nz")
-        self.asm.emit(b"\x48\x8b\x42\x18", "mov rax, [rdx+24]  # entry count")
+        self.asm.emit(b"\x48\x8b\x42" + bytes([self.layout.keys_nentries]), "mov rax, [rdx+24]  # entry count")
         self.asm.emit(b"\x49\x3b\x43\x08", "cmp rax, [r11+8]  # largest learned index")
         self.asm.jump(generic, "be")
-        self.asm.emit(b"\x0f\xb6\x4a\x09", "movzx ecx, BYTE PTR [rdx+9]")
+        self.asm.emit(b"\x0f\xb6\x4a" + bytes([self.layout.keys_index_bytes]), "movzx ecx, BYTE PTR [rdx+9]")
         self.asm.emit(b"\xb8\x01\x00\x00\x00\x48\xd3\xe0", "mov eax, 1; shl rax, cl")
-        self.asm.emit(b"\x48\x8d\x54\x02\x20", "lea rdx, [rdx+rax+32]  # unicode entries")
+        self.asm.emit(
+            b"\x48\x8d\x54\x02" + bytes([self.layout.keys_indices]), "lea rdx, [rdx+rax+32]  # unicode entries",
+        )
         self.asm.emit(b"\x4d\x8b\x43\x10\x4d\x8b\x4b\x18", "mov r8, [r11+16]; mov r9, [r11+24]")
         for index, (name, expected) in enumerate(zip(names, expected_types, strict=True)):
             self.asm.emit(b"\x49\x8b\x88" + struct.pack("<i", index * 8), f"mov rcx, [r8+{index * 8}]")
-            self.asm.emit(b"\x48\xc1\xe1\x04\x48\x8d\x34\x0a", "shl rcx, 4; lea rsi, [rdx+rcx]")
+            self.asm.emit(
+                b"\x48\xc1\xe1" + bytes([self.layout.unicode_entry_size.bit_length() - 1]) + b"\x48\x8d\x34\x0a",
+                "scale Unicode entry index; lea rsi, [rdx+rcx]",
+            )
             self.asm.emit(b"\x48\x8b\x06", "mov rax, [rsi]  # field key")
             self.asm.test_jump(0, generic)
             matched = self.label("row_key_matched")
@@ -1147,12 +1233,14 @@ class X86Compiler:
             self.asm.jump(matched, "z")
             self.match_ascii_key(name, generic)
             self.asm.label(matched)
-            self.asm.emit(b"\x48\x8b\x46\x08", "mov rax, [rsi+8]  # field value")
+            self.asm.emit(b"\x48\x8b\x46" + bytes([self.layout.unicode_entry_value]), "mov rax, [rsi+8]  # field value")
             # A combined entry with a verified live key owns a non-NULL value.
             # No calls or GIL release occur between the key and value loads.
             if expected is not None:
                 self.load(11, self.constant(expected))
-                self.asm.emit(b"\x4c\x39\x58\x08", "cmp [rax+8], r11  # exact scalar type")
+                self.asm.emit(
+                    b"\x4c\x39\x58" + bytes([self.layout.object_type]), "cmp [rax+8], r11  # exact scalar type",
+                )
                 self.asm.jump(generic, "nz")
             self.asm.emit(b"\x48\x89\xc7", "mov rdi, rax  # retain checked field")
             self.incref_rdi(nonnull=True)
@@ -1180,22 +1268,32 @@ class X86Compiler:
         """
         failed = self.label("unordered_row")
         count = len(names)
-        self.asm.emit(b"\x48\x81\x7a\x18" + struct.pack("<i", count - 1), f"cmp QWORD PTR [rdx+24], {count - 1}")
+        self.asm.emit(
+            b"\x48\x81\x7a" + bytes([self.layout.keys_nentries]) + struct.pack("<i", count - 1),
+            f"cmp QWORD PTR [rdx+24], {count - 1}",
+        )
         self.asm.jump(failed, "be")
-        self.asm.emit(b"\x0f\xb6\x4a\x09", "movzx ecx, BYTE PTR [rdx+9]")
+        self.asm.emit(b"\x0f\xb6\x4a" + bytes([self.layout.keys_index_bytes]), "movzx ecx, BYTE PTR [rdx+9]")
         self.asm.emit(b"\xb8\x01\x00\x00\x00\x48\xd3\xe0", "mov eax, 1; shl rax, cl")
-        self.asm.emit(b"\x48\x8d\x54\x02\x20", "lea rdx, [rdx+rax+32]  # ordered unicode entries")
+        self.asm.emit(
+            b"\x48\x8d\x54\x02" + bytes([self.layout.keys_indices]), "lea rdx, [rdx+rax+32]  # ordered unicode entries",
+        )
         for index, (name, expected) in enumerate(zip(names, expected_types, strict=True)):
-            offset = index * 16
+            offset = index * self.layout.unicode_entry_size
             compare, matched = self.label("compare_ordered_key"), self.label("ordered_key_matched")
             self.load(11, self.constant(name))
             self.asm.emit(b"\x4c\x39\x9a" + struct.pack("<i", offset), f"cmp [rdx+{offset}], r11")
             self.asm.jump(compare, "nz")
             self.asm.label(matched)
-            self.asm.emit(b"\x48\x8b\x82" + struct.pack("<i", offset + 8), f"mov rax, [rdx+{offset + 8}]")
+            self.asm.emit(
+                b"\x48\x8b\x82" + struct.pack("<i", offset + self.layout.unicode_entry_value),
+                f"mov rax, [rdx+{offset + self.layout.unicode_entry_value}]",
+            )
             if expected is not None:
                 self.load(11, self.constant(expected))
-                self.asm.emit(b"\x4c\x39\x58\x08", "cmp [rax+8], r11  # exact scalar type")
+                self.asm.emit(
+                    b"\x4c\x39\x58" + bytes([self.layout.object_type]), "cmp [rax+8], r11  # exact scalar type",
+                )
                 self.asm.jump(failed, "nz")
             self.asm.emit(b"\x48\x89\xc7", "mov rdi, rax")
             self.incref_rdi(nonnull=True)
@@ -1208,7 +1306,9 @@ class X86Compiler:
         for value in results:
             self.release(value, retained=True)
         self.asm.load(7, data)
-        self.asm.emit(b"\x48\x8b\x57\x20", "mov rdx, [rdi+32]  # restore keys for learned row")
+        self.asm.emit(
+            b"\x48\x8b\x57" + bytes([self.layout.dict_keys]), "mov rdx, [rdi+32]  # restore keys for learned row",
+        )
 
     def ordered_key_compare(self, name, offset, compare, matched, failed):
         self.asm.label(compare)
@@ -1228,17 +1328,17 @@ class X86Compiler:
             self.asm.jump(failed)
             return
         self.asm.emit(
-            b"\x48\x83" + bytes([0x78 | source, 0x10, len(remaining)]),
+            b"\x48\x83" + bytes([0x78 | source, self.layout.unicode_length, len(remaining)]),
             f"cmp QWORD PTR [{REGISTERS[source]}+16], {len(remaining)}",
         )
         self.asm.jump(failed, "nz")
         flags = (
-            b"\x8b\x48\x20\x83\xe1\x60\x83\xf9\x60" if source == 0 else
-            b"\x8b\x41\x20\x83\xe0\x60\x83\xf8\x60"
+            b"\x8b\x48" + bytes([self.layout.unicode_state]) + b"\x83\xe1\x60\x83\xf9\x60" if source == 0 else
+            b"\x8b\x41" + bytes([self.layout.unicode_state]) + b"\x83\xe0\x60\x83\xf8\x60"
         )
         self.asm.emit(flags, "check compact ASCII flags")
         self.asm.jump(failed, "nz")
-        offset = 40
+        offset = self.layout.unicode_ascii_data
         scratch = 1 if source == 0 else 9
         for width in (8, 4, 2, 1):
             while len(remaining) >= width:
@@ -1274,25 +1374,39 @@ class X86Compiler:
         )
         self.branch_if_null(exact_dict, generic)
         self.asm.load(7, data)
-        self.asm.emit(b"\x48\x83\x7f\x28\x00", "cmp QWORD PTR [rdi+40], 0  # combined dictionary")
+        self.asm.emit(
+            b"\x48\x83\x7f" + bytes([self.layout.dict_values]) + b"\x00",
+            "cmp QWORD PTR [rdi+40], 0  # combined dictionary",
+        )
         self.asm.jump(generic, "nz")
-        self.asm.emit(b"\x48\x8b\x47\x20", "mov rax, [rdi+32]  # ma_keys")
-        self.asm.emit(b"\x80\x78\x0a\x01", "cmp BYTE PTR [rax+10], 1  # unicode keys")
+        self.asm.emit(b"\x48\x8b\x47" + bytes([self.layout.dict_keys]), "mov rax, [rdi+32]  # ma_keys")
+        self.asm.emit(
+            b"\x80\x78" + bytes([self.layout.keys_kind]) + b"\x01", "cmp BYTE PTR [rax+10], 1  # unicode keys",
+        )
         self.asm.jump(generic, "nz")
         self.asm.mov_imm(11, ctypes.addressof(item_cache))
         self.asm.emit(b"\x41\x83\x7b\x10\x01", "cmp DWORD PTR [r11+16], 1  # published cache")
         self.asm.jump(learn, "nz")
         self.asm.emit(b"\x4d\x8b\x43\x08", "mov r8, [r11+8]  # cached entry index")
-        self.asm.emit(b"\x4c\x3b\x40\x18", "cmp r8, [rax+24]  # dk_nentries")
+        self.asm.emit(b"\x4c\x3b\x40" + bytes([self.layout.keys_nentries]), "cmp r8, [rax+24]  # dk_nentries")
         self.asm.jump(learn, "ae")
-        self.asm.emit(b"\x0f\xb6\x48\x09", "movzx ecx, BYTE PTR [rax+9]  # index byte count exponent")
+        self.asm.emit(
+            b"\x0f\xb6\x48" + bytes([self.layout.keys_index_bytes]),
+            "movzx ecx, BYTE PTR [rax+9]  # index byte count exponent",
+        )
         self.asm.emit(b"\xba\x01\x00\x00\x00\x48\xd3\xe2", "mov edx, 1; shl rdx, cl")
-        self.asm.emit(b"\x48\x8d\x54\x10\x20", "lea rdx, [rax+rdx+32]  # entries")
-        self.asm.emit(b"\x49\xc1\xe0\x04\x4c\x01\xc2", "shl r8, 4; add rdx, r8")
+        self.asm.emit(b"\x48\x8d\x54\x10" + bytes([self.layout.keys_indices]), "lea rdx, [rax+rdx+32]  # entries")
+        self.asm.emit(
+            b"\x49\xc1\xe0" + bytes([self.layout.unicode_entry_size.bit_length() - 1]) + b"\x4c\x01\xc2",
+            "scale Unicode entry index; add rdx, r8",
+        )
         self.asm.emit(b"\x48\x8b\x0a\x49\x3b\x0b", "mov rcx, [rdx]; cmp rcx, [r11]  # cached key identity")
         self.asm.jump(compare, "nz")
         self.asm.label(direct)
-        self.asm.emit(b"\x48\x8b\x42\x08\x48\x85\xc0", "mov rax, [rdx+8]; test rax, rax")
+        self.asm.emit(
+            b"\x48\x8b\x42" + bytes([self.layout.unicode_entry_value]) + b"\x48\x85\xc0",
+            "mov rax, [rdx+8]; test rax, rax",
+        )
         self.asm.jump(learn, "z")
         self.asm.store(result)
         self.asm.emit(b"\x48\x89\xc7", "mov rdi, rax")
@@ -1351,7 +1465,7 @@ class X86Compiler:
         """Compare the class in rax with the type/version cache at r11."""
         self.asm.emit(b"\x49\x3b\x03", "cmp rax, [r11]  # cached type")
         self.asm.jump(miss, "nz")
-        self.asm.emit(b"\x8b\x88\x80\x01\x00\x00", "mov ecx, [rax+384]  # type version")
+        self.asm.emit(b"\x8b\x88" + struct.pack("<i", self.layout.type_version), "mov ecx, [rax+384]  # type version")
         self.asm.emit(b"\x41\x3b\x4b\x08", "cmp ecx, [r11+8]")
         self.asm.jump(miss, "nz")
 
@@ -1375,7 +1489,7 @@ class X86Compiler:
         )
         self.asm.load(7, data)
         self.asm.mov_imm(11, ctypes.addressof(attribute_cache))
-        self.asm.emit(b"\x48\x8b\x47\x08", "mov rax, [rdi+8]  # object type")
+        self.asm.emit(b"\x48\x8b\x47" + bytes([self.layout.object_type]), "mov rax, [rdi+8]  # object type")
         self.check_cached_type(learn)
         self.asm.emit(b"\x41\x83\x7b\x0c\x00", "cmp DWORD PTR [r11+12], 0")
         self.asm.jump(generic, "z")
@@ -1430,7 +1544,7 @@ class X86Compiler:
         results = [self.slot(owned=True) for _ in names]
         self.asm.label(check)
         self.asm.load(7, data)
-        self.asm.emit(b"\x48\x8b\x47\x08", "mov rax, [rdi+8]  # model type")
+        self.asm.emit(b"\x48\x8b\x47" + bytes([self.layout.object_type]), "mov rax, [rdi+8]  # model type")
         self.asm.mov_imm(11, ctypes.addressof(batch))
         self.check_cached_type(learn)
         self.asm.emit(b"\x41\x83\x7b\x0c\x00", "cmp DWORD PTR [r11+12], 0  # storage kind")
@@ -1562,7 +1676,7 @@ class X86Compiler:
         if self.refcount_mode is None:
             raise ValueError("The CPython object header has not been validated")
         self.asm.load(0, value)
-        self.asm.emit(b"\x48\x8b\x40\x08", "mov rax, [rax+8]  # ob_type")
+        self.asm.emit(b"\x48\x8b\x40" + bytes([self.layout.object_type]), "mov rax, [rax+8]  # ob_type")
         self.load(11, self.constant(expected))
         self.asm.emit(b"\x4c\x39\xd8", "cmp rax, r11")
         self.asm.jump(label, "nz" if invert else "z")
@@ -1648,14 +1762,27 @@ class X86Compiler:
         if self.refcount_mode is not None:
             done, destroy = self.label("decref_done"), self.label("destroy_object")
             if self.refcount_mode != "legacy":
-                self.asm.emit(b"\x8b\x07\x85\xc0", "mov eax, [rdi]; test eax, eax")
+                self.asm.emit_memory(b"\x8b", 0x07, self.layout.object_refcount, "load reference count")
+                self.asm.emit(b"\x85\xc0", "test eax, eax")
                 self.asm.jump(done, "s")
             prefix = b"" if self.refcount_mode == "immortal32" else b"\x48"
             width = "DWORD" if self.refcount_mode == "immortal32" else "QWORD"
             if not retained and self.dealloc_address is None:
-                self.asm.emit(prefix + b"\x83\x3f\x01", f"cmp {width} PTR [rdi], 1")
+                self.asm.emit_memory(
+                    prefix + b"\x83",
+                    0x3F,
+                    self.layout.object_refcount,
+                    f"cmp {width} reference count, 1",
+                    immediate=b"\x01",
+                )
                 self.asm.jump(destroy, "z")
-            self.asm.emit(prefix + b"\x83\x2f\x01", f"sub {width} PTR [rdi], 1")
+            self.asm.emit_memory(
+                prefix + b"\x83",
+                0x2F,
+                self.layout.object_refcount,
+                f"sub {width} reference count, 1",
+                immediate=b"\x01",
+            )
             if not retained:
                 if self.dealloc_address is None:
                     self.asm.jump(done)
@@ -1676,13 +1803,13 @@ class X86Compiler:
         if not nonnull:
             self.asm.test_jump(7, done)
         if self.refcount_mode == "legacy":
-            self.asm.emit(b"\x48\xff\x07", "inc QWORD PTR [rdi]")
+            self.asm.emit_memory(b"\x48\xff", 0x07, self.layout.object_refcount, "increment reference count")
         else:
-            self.asm.emit(b"\x8b\x07", "mov eax, [rdi]")
+            self.asm.emit_memory(b"\x8b", 0x07, self.layout.object_refcount, "load reference count")
             limit = 0xC0000000 if self.refcount_mode == "immortal32" else 0xFFFFFFFF
             self.asm.emit(b"\x3d" + struct.pack("<I", limit), f"cmp eax, 0x{limit:x}")
             self.asm.jump(done, "ae")
-            self.asm.emit(b"\xff\x07", "inc DWORD PTR [rdi]")
+            self.asm.emit_memory(b"\xff", 0x07, self.layout.object_refcount, "increment reference count")
         self.asm.label(done)
 
     def call_decref_rdi(self) -> None:

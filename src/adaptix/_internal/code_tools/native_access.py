@@ -5,11 +5,10 @@ from functools import cache
 from threading import RLock
 from types import MemberDescriptorType
 
-TYPE_BASIC_SIZE = 32
-TYPE_GETATTRO = 144
-TYPE_FLAGS = 168
-TYPE_VERSION = 384
-TYPE_CACHED_KEYS = 880
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
+
+LAYOUT = get_cpython_layout()
+
 
 INLINE_VALUES = 1 << 2
 MANAGED_DICT = 1 << 4
@@ -41,7 +40,7 @@ def size(address: int) -> int:
 
 
 def get_type_version(cls: type) -> int:
-    return ctypes.c_uint32.from_address(id(cls) + TYPE_VERSION).value
+    return ctypes.c_uint32.from_address(id(cls) + LAYOUT.type_version).value
 
 
 def api(name, result, *args):
@@ -61,17 +60,17 @@ GENERIC_GETTER = ctypes.cast(ctypes.pythonapi.PyObject_GenericGetAttr, ctypes.c_
 
 
 def inline_index(cls: type, name: str) -> int | None:
-    keys = pointer(id(cls) + TYPE_CACHED_KEYS)
+    keys = pointer(id(cls) + LAYOUT.type_cached_keys)
     if not keys:
         return None
-    kind = ctypes.c_uint8.from_address(keys + 10).value
-    index_bytes = ctypes.c_uint8.from_address(keys + 9).value
-    count = size(keys + 24)
+    kind = ctypes.c_uint8.from_address(keys + LAYOUT.keys_kind).value
+    index_bytes = ctypes.c_uint8.from_address(keys + LAYOUT.keys_index_bytes).value
+    count = size(keys + LAYOUT.keys_nentries)
     if kind != DICT_KEYS_SPLIT or index_bytes > 6 or not 0 <= count <= SHARED_KEYS_LIMIT:  # noqa: PLR2004
         return None
-    entries = keys + 32 + (1 << index_bytes)
+    entries = keys + LAYOUT.keys_indices + (1 << index_bytes)
     for index in range(count):
-        key = pointer(entries + 16 * index)
+        key = pointer(entries + LAYOUT.unicode_entry_size * index)
         if key and ctypes.cast(key, ctypes.py_object).value == name:
             return index
     return None
@@ -90,23 +89,25 @@ class SlotProbe:
 def member_offset(descriptor, basic_size: int) -> int | None:
     if type(descriptor) is not MemberDescriptorType:
         return None
-    member = pointer(id(descriptor) + 40)
+    member = pointer(id(descriptor) + LAYOUT.member_descriptor_member)
     if not member:
         return None
-    member_type = ctypes.c_int.from_address(member + 8).value
-    member_flags = ctypes.c_int.from_address(member + 24).value
-    offset = size(member + 16)
+    member_type = ctypes.c_int.from_address(member + LAYOUT.member_type).value
+    member_flags = ctypes.c_int.from_address(member + LAYOUT.member_flags).value
+    offset = size(member + LAYOUT.member_offset)
     # Audited members need their getter to emit object.__getattr__. Relative
     # offsets and other extension flags also require the ordinary descriptor.
     if member_flags & ~MEMBER_READONLY:
         return None
-    if member_type not in {T_OBJECT, T_OBJECT_EX} or not 16 <= offset <= basic_size - 8:  # noqa: PLR2004
+    if member_type not in {T_OBJECT, T_OBJECT_EX} or not LAYOUT.object_size <= offset <= basic_size - ctypes.sizeof(
+        ctypes.c_void_p,
+    ):
         return None
     return offset if offset % 8 == 0 else None
 
 
 def dictionary_attributes_supported(cls, names):
-    flags = ctypes.c_ulong.from_address(id(cls) + TYPE_FLAGS).value
+    flags = ctypes.c_ulong.from_address(id(cls) + LAYOUT.type_flags).value
     if flags & (MANAGED_DICT | HEAP_TYPE) != (MANAGED_DICT | HEAP_TYPE):
         return False
     for name in names:
@@ -115,7 +116,7 @@ def dictionary_attributes_supported(cls, names):
         except ValueError:
             descriptor = None
         if descriptor is not None:
-            descriptor_flags = ctypes.c_ulong.from_address(id(type(descriptor)) + TYPE_FLAGS).value
+            descriptor_flags = ctypes.c_ulong.from_address(id(type(descriptor)) + LAYOUT.type_flags).value
             if not descriptor_flags & IMMUTABLE_TYPE or GET_SLOT(type(descriptor), TP_DESCR_SET):
                 return False
     return True
@@ -124,23 +125,25 @@ def dictionary_attributes_supported(cls, names):
 @cache
 def supports_attribute_cache() -> bool:
     # Called only after the compiler validates the object header and build.
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if LAYOUT is None or LAYOUT.type_cached_keys is None:
         return False
     probe = Probe()
     probe.value = object()
-    basic_size = size(id(Probe) + TYPE_BASIC_SIZE)
-    flags = ctypes.c_ulong.from_address(id(Probe) + TYPE_FLAGS).value
+    basic_size = size(id(Probe) + LAYOUT.type_basic_size)
+    flags = ctypes.c_ulong.from_address(id(Probe) + LAYOUT.type_flags).value
     if (
         basic_size != Probe.__basicsize__
         or flags != Probe.__flags__
         or flags & (INLINE_VALUES | MANAGED_DICT) != (INLINE_VALUES | MANAGED_DICT)
-        or pointer(id(Probe) + TYPE_GETATTRO) != GET_SLOT(Probe, TP_GETATTRO)
-        or pointer(id(Probe) + TYPE_GETATTRO) != GENERIC_GETTER
-        or ctypes.c_uint8.from_address(id(probe) + basic_size + 3).value != 1
+        or pointer(id(Probe) + LAYOUT.type_getattro) != GET_SLOT(Probe, TP_GETATTRO)
+        or pointer(id(Probe) + LAYOUT.type_getattro) != GENERIC_GETTER
+        or ctypes.c_uint8.from_address(id(probe) + basic_size + LAYOUT.values_valid).value != 1
     ):
         return False
     index = inline_index(Probe, "value")
-    if index is None or pointer(id(probe) + basic_size + 8 + 8 * index) != id(probe.value):
+    if index is None or pointer(
+        id(probe) + basic_size + LAYOUT.values_items + ctypes.sizeof(ctypes.c_void_p) * index,
+    ) != id(probe.value):
         return False
     if not get_type_version(Probe):
         return False
@@ -154,15 +157,15 @@ def supports_attribute_cache() -> bool:
 
 
 def dictionary_entry(data: dict, name: str) -> tuple[int, str] | None:
-    if pointer(id(data) + 40):
+    if pointer(id(data) + LAYOUT.dict_values):
         return None
-    keys = pointer(id(data) + 32)
-    if ctypes.c_uint8.from_address(keys + 10).value != DICT_KEYS_UNICODE:
+    keys = pointer(id(data) + LAYOUT.dict_keys)
+    if ctypes.c_uint8.from_address(keys + LAYOUT.keys_kind).value != DICT_KEYS_UNICODE:
         return None
-    index_bytes = ctypes.c_uint8.from_address(keys + 9).value
-    entries = keys + 32 + (1 << index_bytes)
-    for index in range(size(keys + 24)):
-        key_pointer = pointer(entries + 16 * index)
+    index_bytes = ctypes.c_uint8.from_address(keys + LAYOUT.keys_index_bytes).value
+    entries = keys + LAYOUT.keys_indices + (1 << index_bytes)
+    for index in range(size(keys + LAYOUT.keys_nentries)):
+        key_pointer = pointer(entries + LAYOUT.unicode_entry_size * index)
         if key_pointer:
             key = ctypes.cast(key_pointer, ctypes.py_object).value
             if type(key) is str and key == name:
@@ -172,27 +175,30 @@ def dictionary_entry(data: dict, name: str) -> tuple[int, str] | None:
 
 @cache
 def supports_dictionary_cache() -> bool:
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if LAYOUT is None or LAYOUT.type_cached_keys is None:
         return False
     data = {"first": object(), "second": object()}
-    if size(id(data) + 16) != len(data) or pointer(id(data) + 40):
+    if size(id(data) + LAYOUT.dict_used) != len(data) or pointer(id(data) + LAYOUT.dict_values):
         return False
-    keys = pointer(id(data) + 32)
-    if not keys or ctypes.c_uint8.from_address(keys + 10).value != DICT_KEYS_UNICODE:
+    keys = pointer(id(data) + LAYOUT.dict_keys)
+    if not keys or ctypes.c_uint8.from_address(keys + LAYOUT.keys_kind).value != DICT_KEYS_UNICODE:
         return False
     for name, value in data.items():
         entry = dictionary_entry(data, name)
         if entry is None:
             return False
         index, key = entry
-        entries = keys + 32 + (1 << ctypes.c_uint8.from_address(keys + 9).value)
-        if key is not name or pointer(entries + 16 * index + 8) != id(value):
+        entries = keys + LAYOUT.keys_indices + (1 << ctypes.c_uint8.from_address(keys + LAYOUT.keys_index_bytes).value)
+        if key is not name or pointer(entries + LAYOUT.unicode_entry_size * index + LAYOUT.unicode_entry_value) != id(
+            value,
+        ):
             return False
     ascii_probe = bytearray(b"native_key").decode()
     return (
-        size(id(ascii_probe) + 16) == len(ascii_probe)
-        and ctypes.c_uint32.from_address(id(ascii_probe) + 32).value & COMPACT_ASCII == COMPACT_ASCII
-        and ctypes.string_at(id(ascii_probe) + 40, len(ascii_probe)) == ascii_probe.encode("ascii")
+        size(id(ascii_probe) + LAYOUT.unicode_length) == len(ascii_probe)
+        and ctypes.c_uint32.from_address(id(ascii_probe) + LAYOUT.unicode_state).value & COMPACT_ASCII == COMPACT_ASCII
+        and ctypes.string_at(id(ascii_probe) + LAYOUT.unicode_ascii_data, len(ascii_probe))
+        == ascii_probe.encode("ascii")
     )
 
 
@@ -247,7 +253,7 @@ class AttributeCache(ctypes.Structure):
         value = getattr(data, self.name)
         cls = type(data)
         version = get_type_version(cls)
-        state = self.specialize(cls, version) if pointer(id(cls) + TYPE_GETATTRO) == GENERIC_GETTER else None
+        state = self.specialize(cls, version) if pointer(id(cls) + LAYOUT.type_getattro) == GENERIC_GETTER else None
         # Keep the previous class alive until the update is complete. Its
         # finalizer can reenter the generated function and replace this cache.
         # Readers take no lock: GENERIC disables the fast path throughout
@@ -276,25 +282,30 @@ class AttributeCache(ctypes.Structure):
             descriptor = LOOKUP(cls, self.name)
         except ValueError:  # ctypes reports a NULL py_object for absent attributes.
             descriptor = None
-        basic_size = size(id(cls) + TYPE_BASIC_SIZE)
+        basic_size = size(id(cls) + LAYOUT.type_basic_size)
         offset = member_offset(descriptor, basic_size)
         if offset is not None and IS_SUBTYPE(cls, descriptor.__objclass__):
             return version, offset, 0, SLOT
         if descriptor is not None:
             # A mutable descriptor's type can become a data descriptor without
             # invalidating the model type. Never cache that instance lookup.
-            flags = ctypes.c_ulong.from_address(id(type(descriptor)) + TYPE_FLAGS).value
+            flags = ctypes.c_ulong.from_address(id(type(descriptor)) + LAYOUT.type_flags).value
             if not flags & IMMUTABLE_TYPE or GET_SLOT(type(descriptor), TP_DESCR_SET):
                 return None
-        flags = ctypes.c_ulong.from_address(id(cls) + TYPE_FLAGS).value
+        flags = ctypes.c_ulong.from_address(id(cls) + LAYOUT.type_flags).value
         if (
             flags & (INLINE_VALUES | MANAGED_DICT | HEAP_TYPE) != (INLINE_VALUES | MANAGED_DICT | HEAP_TYPE)
-            or (sys.version_info < (3, 14) and basic_size != 16)  # noqa: PLR2004
+            or (sys.version_info < (3, 14) and basic_size != LAYOUT.object_size)
         ):
             return None
         index = inline_index(cls, self.name)
         if index is not None:
-            return version, basic_size + 8 + 8 * index, basic_size + 3, INLINE
+            return (
+                version,
+                basic_size + LAYOUT.values_items + ctypes.sizeof(ctypes.c_void_p) * index,
+                basic_size + LAYOUT.values_valid,
+                INLINE,
+            )
         return None
 
 
@@ -324,11 +335,11 @@ class AttributeBatchCache(ctypes.Structure):
         version = get_type_version(cls)
         states = (
             [AttributeCache(name).specialize(cls, version) for name in self.names]
-            if pointer(id(cls) + TYPE_GETATTRO) == GENERIC_GETTER else []
+            if pointer(id(cls) + LAYOUT.type_getattro) == GENERIC_GETTER else []
         )
         supported = bool(states) and all(state is not None for state in states)
         dictionary = (
-            not supported and pointer(id(cls) + TYPE_GETATTRO) == GENERIC_GETTER
+            not supported and pointer(id(cls) + LAYOUT.type_getattro) == GENERIC_GETTER
             and dictionary_attributes_supported(cls, self.names)
         )
         with self.update_lock:

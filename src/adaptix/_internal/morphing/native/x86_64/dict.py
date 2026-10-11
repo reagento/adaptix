@@ -3,22 +3,24 @@ import sys
 from dataclasses import dataclass
 from functools import cache
 
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.morphing.native.plan import DictPlan
 from adaptix._internal.morphing.native.registry import identity_spec
 
+LAYOUT = get_cpython_layout()
 
 @cache
 def general_entries_supported():
     key, value = 1001, object()
     probe = {key: value}
-    keys = ctypes.c_void_p.from_address(id(probe) + 32).value
-    if not keys or ctypes.c_uint8.from_address(keys + 10).value != 0:
+    keys = ctypes.c_void_p.from_address(id(probe) + LAYOUT.dict_keys).value
+    if not keys or ctypes.c_uint8.from_address(keys + LAYOUT.keys_kind).value != 0:
         return False
-    entries = keys + 32 + (1 << ctypes.c_uint8.from_address(keys + 9).value)
+    entries = keys + LAYOUT.keys_indices + (1 << ctypes.c_uint8.from_address(keys + LAYOUT.keys_index_bytes).value)
     return (
-        ctypes.c_ssize_t.from_address(keys + 24).value == 1
-        and ctypes.c_void_p.from_address(entries + 8).value == id(key)
-        and ctypes.c_void_p.from_address(entries + 16).value == id(value)
+        ctypes.c_ssize_t.from_address(keys + LAYOUT.keys_nentries).value == 1
+        and ctypes.c_void_p.from_address(entries + LAYOUT.general_entry_key).value == id(key)
+        and ctypes.c_void_p.from_address(entries + LAYOUT.general_entry_value).value == id(value)
     )
 
 
@@ -54,10 +56,16 @@ def copy_dictionary(c, key_spec, value_spec, fallback, loading):
     if loading:
         copy = c.label("dict_copy_without_key_callbacks")
         c.asm.load(0, c.data)
-        c.asm.emit(b"\x48\x8b\x50\x20\x80\x7a\x0a\x00", "check general dictionary keys")
+        c.asm.emit(
+            b"\x48\x8b\x50" + bytes([c.layout.dict_keys]) + b"\x80\x7a" + bytes([c.layout.keys_kind]) + b"\x00",
+            "check general dictionary keys",
+        )
         c.asm.jump(copy, "nz")
-        c.asm.emit(b"\x48\x8b\x48\x10\x48\x8d\x0c\x49", "live entries * 3")
-        c.asm.emit(b"\x48\x8b\x42\x18\x48\x01\xc0\x48\x39\xc1", "compare with total entries * 2")
+        c.asm.emit(b"\x48\x8b\x48" + bytes([c.layout.dict_used]) + b"\x48\x8d\x0c\x49", "live entries * 3")
+        c.asm.emit(
+            b"\x48\x8b\x42" + bytes([c.layout.keys_nentries]) + b"\x48\x01\xc0\x48\x39\xc1",
+            "compare with total entries * 2",
+        )
         # PyDict_Copy reinserts sparse general keys, potentially calling their
         # equality methods before our type validation. Dense tables are cloned.
         c.asm.jump(generic, "be")
@@ -67,20 +75,27 @@ def copy_dictionary(c, key_spec, value_spec, fallback, loading):
     if loading:
         finished, unicode_table = c.label("dict_checked"), c.label("dict_unicode_table")
         c.asm.load(0, result)
-        c.asm.emit(b"\x48\x8b\x50\x20", "mov rdx, [rax+32]  # keys")
-        c.asm.emit(b"\x4c\x8b\x42\x18\x4d\x85\xc0", "mov r8, [rdx+24]; test r8, r8")
+        c.asm.emit(b"\x48\x8b\x50" + bytes([c.layout.dict_keys]), "mov rdx, [rax+32]  # keys")
+        c.asm.emit(b"\x4c\x8b\x42" + bytes([c.layout.keys_nentries]) + b"\x4d\x85\xc0", "mov r8, [rdx+24]; test r8, r8")
         c.asm.jump(finished, "z")
-        c.asm.emit(b"\x48\x83\x78\x28\x00", "cmp QWORD PTR [rax+40], 0  # combined dictionary")
+        c.asm.emit(
+            b"\x48\x83\x78" + bytes([c.layout.dict_values]) + b"\x00",
+            "cmp QWORD PTR [rax+40], 0  # combined dictionary",
+        )
         c.asm.jump(generic, "nz")
-        c.asm.emit(b"\x80\x7a\x0a\x01", "cmp BYTE PTR [rdx+10], 1  # exact Unicode keys")
+        c.asm.emit(
+            b"\x80\x7a" + bytes([c.layout.keys_kind]) + b"\x01", "cmp BYTE PTR [rdx+10], 1  # exact Unicode keys",
+        )
         c.asm.jump(unicode_table, "z")
-        c.asm.emit(b"\x80\x7a\x0a\x00", "cmp BYTE PTR [rdx+10], 0  # general keys")
+        c.asm.emit(b"\x80\x7a" + bytes([c.layout.keys_kind]) + b"\x00", "cmp BYTE PTR [rdx+10], 0  # general keys")
         c.asm.jump(generic, "nz")
-        validate_entries(c, key_spec, value_spec, stride=24, generic=generic, finished=finished)
+        validate_entries(
+            c, key_spec, value_spec, stride=c.layout.general_entry_size, generic=generic, finished=finished,
+        )
         c.asm.label(unicode_table)
         if key_spec[0] and str not in key_spec[0]:
             c.asm.jump(generic)
-        validate_entries(c, None, value_spec, stride=16, generic=generic, finished=finished)
+        validate_entries(c, None, value_spec, stride=c.layout.unicode_entry_size, generic=generic, finished=finished)
         c.asm.label(finished)
     c.asm.jump(done)
     return c.fallback_result(result, fallback, generic, done, cleanup=(result,))
@@ -96,8 +111,11 @@ class DictCopyProgram(DictPlan):
 
 def validate_entries(c, key_spec, value_spec, *, stride, generic, finished):
     loop, accepted = c.label("dict_check_entry"), c.label("dict_entry_ok")
-    c.asm.emit(b"\x0f\xb6\x4a\x09\xb8\x01\x00\x00\x00\x48\xd3\xe0", "load index array size")
-    c.asm.emit(b"\x48\x8d\x54\x02\x20", "lea rdx, [rdx+rax+32]  # entries")
+    c.asm.emit(
+        b"\x0f\xb6\x4a" + bytes([c.layout.keys_index_bytes]) + b"\xb8\x01\x00\x00\x00\x48\xd3\xe0",
+        "load index array size",
+    )
+    c.asm.emit(b"\x48\x8d\x54\x02" + bytes([c.layout.keys_indices]), "lea rdx, [rdx+rax+32]  # entries")
     if value_spec[0]:
         c.load(9, c.constant(value_spec[0][0]))
     if key_spec is not None and key_spec[0]:
@@ -105,10 +123,14 @@ def validate_entries(c, key_spec, value_spec, *, stride, generic, finished):
     if value_spec[1] or (key_spec is not None and key_spec[1]):
         c.load(11, c.constant(None))
     c.asm.label(loop)
-    value_offset = stride - 8
+    value_offset = (
+        c.layout.general_entry_value if stride == c.layout.general_entry_size else c.layout.unicode_entry_value
+    )
     c.asm.emit(b"\x48\x8b\x42" + bytes([value_offset]) + b"\x48\x85\xc0", "load entry value; test rax, rax")
     c.asm.jump(accepted, "z")
-    for spec, offset, register in ((value_spec, value_offset, 9), (key_spec, stride - 16, 10)):
+    key_offset = c.layout.general_entry_key if stride == c.layout.general_entry_size else c.layout.unicode_entry_key
+    value_register, key_register = 9, 10
+    for spec, offset, register in ((value_spec, value_offset, value_register), (key_spec, key_offset, key_register)):
         if spec is None or (not spec[0] and not spec[1]):
             continue
         valid = c.label("dict_scalar_ok")
@@ -119,10 +141,13 @@ def validate_entries(c, key_spec, value_spec, *, stride, generic, finished):
             c.asm.jump(valid, "z")
         for index, cls in enumerate(spec[0]):
             if index == 0:
-                c.asm.emit(b"\x4c\x39" + bytes([0x48 if register == 9 else 0x50, 8]), "check exact scalar type")  # noqa: PLR2004
+                c.asm.emit(
+                    b"\x4c\x39" + bytes([0x48 if register == value_register else 0x50, c.layout.object_type]),
+                    "check exact scalar type",
+                )
             else:
                 c.load(11, c.constant(cls))
-                c.asm.emit(b"\x4c\x39\x58\x08", "check exact scalar type")
+                c.asm.emit(b"\x4c\x39\x58" + bytes([c.layout.object_type]), "check exact scalar type")
             c.asm.jump(valid, "z")
         c.asm.jump(generic)
         c.asm.label(valid)

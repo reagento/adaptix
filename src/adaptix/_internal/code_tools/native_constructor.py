@@ -8,6 +8,7 @@ from functools import cache
 from threading import RLock
 from types import CellType, FunctionType, MemberDescriptorType
 
+from adaptix._internal.code_tools.cpython_layout.selection import require_cpython_layout
 from adaptix._internal.code_tools.native_access import (
     DICT,
     GENERIC_GETTER,
@@ -17,8 +18,6 @@ from adaptix._internal.code_tools.native_access import (
     LOOKUP,
     SHARED_KEYS_LIMIT,
     SLOT,
-    TYPE_BASIC_SIZE,
-    TYPE_GETATTRO,
     api,
     dictionary_attributes_supported,
     get_type_version,
@@ -38,34 +37,31 @@ DEFAULT_EVAL = ctypes.cast(ctypes.pythonapi._PyEval_EvalFrameDefault, ctypes.c_v
 if not DEFAULT_EVAL:
     raise RuntimeError("Could not locate CPython's default frame evaluator")
 GET_EVAL = api("_PyInterpreterState_GetEvalFrameFunc", ctypes.c_void_p, ctypes.c_void_p)
+
+LAYOUT = require_cpython_layout()
 EVAL_MASK = ~255
 
 
 @cache
 def interpreter_eval_offset() -> int | None:
-    """Recognize a complete simple getter before inlining its field load.
-
-    The displacement comes from the running CPython binary, so builds with a
-    different interpreter layout are not tied to one hardcoded offset. Unknown
-    instruction sequences keep the ordinary C API call.
-    """
-    address = ctypes.cast(GET_EVAL, ctypes.c_void_p).value
-    if address is None:
+    offset = LAYOUT.interpreter_eval_frame
+    if offset is None:
         return None
+    # A default evaluator may correspond to NULL in several nearby fields.
+    # Verify that the actual getter loads this field before bypassing the API.
+    address = ctypes.cast(GET_EVAL, ctypes.c_void_p).value
     code = ctypes.string_at(address, 32)
     if code.startswith(b"\xf3\x0f\x1e\xfa"):
         code = code[4:]
-    if not code.startswith(b"\x55\x48\x89\xe5\x48\x8b\x8f"):
-        return None
-    if code[11:15] != b"\x48\x85\xc9\xb8" or code[19:25] != b"\x48\x0f\x45\xc1\x5d\xc3":
-        return None
-    if struct.unpack("<I", code[15:19])[0] != DEFAULT_EVAL:
-        return None
-    offset = struct.unpack("<i", code[7:11])[0]
-    if not 0 < offset < (1 << 20):
+    if (
+        not code.startswith(b"\x55\x48\x89\xe5\x48\x8b\x8f")
+        or code[11:15] != b"\x48\x85\xc9\xb8" or code[19:25] != b"\x48\x0f\x45\xc1\x5d\xc3"
+        or struct.unpack("<i", code[7:11])[0] != offset
+        or struct.unpack("<I", code[15:19])[0] != DEFAULT_EVAL
+    ):
         return None
     tstate = GET_TSTATE()
-    interpreter = pointer(tstate + 16)
+    interpreter = pointer(tstate + LAYOUT.thread_interpreter)
     observed = pointer(interpreter + offset) or DEFAULT_EVAL
     return offset if observed == GET_EVAL(interpreter) else None
 
@@ -79,13 +75,16 @@ def initializer_fields(  # noqa: C901, PLR0911, PLR0912
     frozen = object_setter_cell(function, code) is not None
     tuple_probe = (object(), object())
     if (
-        code.co_cellvars or code.co_exceptiontable
+        code.co_cellvars
+        or code.co_exceptiontable
         or code.co_flags & (inspect.CO_VARARGS | inspect.CO_VARKEYWORDS | inspect.CO_GENERATOR | inspect.CO_COROUTINE)
         or code.co_argcount + code.co_kwonlyargcount != len(parameters) + 1
-        or code.co_varnames[1:len(parameters) + 1] != parameters
-        or pointer(id(function) + 48) != id(code)
-        or pointer(id(function) + 56) != (0 if function.__defaults__ is None else id(function.__defaults__))
-        or size(id(tuple_probe) + 16) != 2 or pointer(id(tuple_probe) + 32) != id(tuple_probe[0])  # noqa: PLR2004
+        or code.co_varnames[1 : len(parameters) + 1] != parameters
+        or pointer(id(function) + LAYOUT.function_code) != id(code)
+        or pointer(id(function) + LAYOUT.function_defaults)
+        != (0 if function.__defaults__ is None else id(function.__defaults__))
+        or size(id(tuple_probe) + LAYOUT.var_size) != len(tuple_probe)
+        or pointer(id(tuple_probe) + LAYOUT.tuple_items) != id(tuple_probe[0])
     ):
         return None
     path = explicit_initializer_path(function, parameters, code) if not frozen else None
@@ -136,7 +135,7 @@ def initializer_fields(  # noqa: C901, PLR0911, PLR0912
 
 
 def explicit_initializer_path(function, parameters, code):  # noqa: C901, PLR0911
-    if not code.co_freevars or not function.__closure__ or CellType.__basicsize__ != 24:  # noqa: PLR2004
+    if not code.co_freevars or not function.__closure__ or CellType.__basicsize__ != LAYOUT.cell_size:
         return None
     instructions = list(dis.get_instructions(code, adaptive=False))
     offsets = {instruction.offset: index for index, instruction in enumerate(instructions)}
@@ -182,15 +181,19 @@ def object_setter_cell(function, code):
     if not code.co_freevars or len(code.co_freevars) != 1 or not function.__closure__:
         return None
     cell = function.__closure__[0]
-    if type(cell) is not CellType or CellType.__basicsize__ != 24 or pointer(id(cell) + 16) != id(object):  # noqa: PLR2004
+    if (
+        type(cell) is not CellType
+        or CellType.__basicsize__ != LAYOUT.cell_size
+        or pointer(id(cell) + LAYOUT.cell_contents) != id(object)
+    ):
         return None
     return cell
 
 
 def monitoring_disabled(function, tstate: int) -> bool:
-    if pointer(tstate + 80) or pointer(tstate + 88):
+    if pointer(tstate + LAYOUT.thread_profile) or pointer(tstate + LAYOUT.thread_trace):
         return False
-    if GET_EVAL(pointer(tstate + 16)) != DEFAULT_EVAL:
+    if GET_EVAL(pointer(tstate + LAYOUT.thread_interpreter)) != DEFAULT_EVAL:
         return False
     for tool in range(6):
         if sys.monitoring.get_events(tool) or sys.monitoring.get_local_events(tool, function.__code__):
@@ -260,7 +263,7 @@ class SimpleConstructorCache(ctypes.Structure):
             type(model) is not cls or type(cls) is not type
             or GET_SLOT(cls, TP_NEW) != GET_SLOT(object, TP_NEW)
             or GET_SLOT(cls, TP_ALLOC) != GENERIC_ALLOCATOR
-            or pointer(id(cls) + TYPE_GETATTRO) != GENERIC_GETTER
+            or pointer(id(cls) + LAYOUT.type_getattro) != GENERIC_GETTER
         ):
             return None
         function = LOOKUP(cls, "__init__")
@@ -276,12 +279,12 @@ class SimpleConstructorCache(ctypes.Structure):
         path = explicit_initializer_path(function, self.parameters, code) if type(function) is FunctionType else None
         branches = path[1] if path is not None else {}
         tstate = GET_TSTATE()
-        eval_version = size(tstate + 24) & EVAL_MASK if tstate else 0
+        eval_version = size(tstate + LAYOUT.thread_eval_breaker) & EVAL_MASK if tstate else 0
         if names is None or not tstate or not monitoring_disabled(function, tstate):
             return None
         if branches and len(names) > SHARED_KEYS_LIMIT:
             return None
-        basic_size = size(id(cls) + TYPE_BASIC_SIZE)
+        basic_size = size(id(cls) + LAYOUT.type_basic_size)
         if (
             len(names) > SHARED_KEYS_LIMIT and names == getattr(self, "field_names", None)
             and dictionary_attributes_supported(cls, names)
@@ -295,10 +298,10 @@ class SimpleConstructorCache(ctypes.Structure):
                 descriptor = LOOKUP(cls, name)
             offset = member_offset(descriptor, basic_size)
             if offset is not None:
-                member = pointer(id(descriptor) + 40)
+                member = pointer(id(descriptor) + LAYOUT.member_descriptor_member)
                 if (
                     type(descriptor) is not MemberDescriptorType or not IS_SUBTYPE(cls, descriptor.__objclass__)
-                    or ctypes.c_int.from_address(member + 24).value
+                    or ctypes.c_int.from_address(member + LAYOUT.member_flags).value
                 ):
                     return None
             else:
