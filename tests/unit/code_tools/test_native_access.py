@@ -177,7 +177,7 @@ def test_slot_cache_handles_missing_values_replaced_descriptors_and_inheritance(
 
 def test_slot_cache_excludes_audited_and_relative_members():
     compiler = X86Compiler("native_member_flags")
-    if not compiler.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if not compiler.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
         pytest.skip("Member specialization is unavailable on this interpreter")
     from adaptix._internal.code_tools.native_access import member_offset
 

@@ -31,13 +31,13 @@ Use ``retort.replace(codegen_backend=...)`` to switch backends while preserving 
 CPython structure offsets are described separately for each supported version in
 ``adaptix._internal.code_tools.cpython_layout``. These files are generated from
 the interpreter's headers using ``offsetof`` and ``sizeof``. Runtime checks
-validate the layouts before enabling direct memory access. Unknown versions and
-incompatible builds keep the C API path.
+validate the layouts before enabling direct memory access. Unknown versions,
+prereleases and incompatible builds keep the C API path.
 
 To regenerate a layout, run the development script with the matching interpreter::
 
-    python3.14 scripts/generate_cpython_layout.py \
-        --output src/adaptix/_internal/code_tools/cpython_layout/v3_14.py
+    python3.15 scripts/generate_cpython_layout.py \
+        --output src/adaptix/_internal/code_tools/cpython_layout/v3_15.py
 
 The script needs a C compiler and CPython development headers; they are only
 needed when updating the layout files.
@@ -47,7 +47,7 @@ It does not generate or compile Python source for the model functions.
 The generated code uses the
 `CPython C API <https://docs.python.org/3/c-api/call.html>`_
 to call converters, build containers, and invoke constructors.
-Recognized CPython 3.13–3.14 release builds also use guarded caches to read
+Recognized CPython 3.13–3.15 release builds also use guarded caches to read
 instance attributes, object slots, and entries in ordinary string-key dictionaries
 directly. Type versions, storage validity, and key identities or short ASCII
 key contents are checked before each access. Cache training is bounded for
@@ -59,11 +59,11 @@ nullable, enum, datetime, nested-list and eligible model conversions can be emit
 inside their containing program. Lists of unchanged scalar values use a compact
 checking and copying loop. The loop preserves Python list iteration rules when a converter mutates
 the input, and collects diagnostic information only on failure.
-On recognized CPython 3.13–3.14 builds, scalar dictionaries can copy the existing
+On recognized CPython 3.13–3.15 builds, scalar dictionaries can copy the existing
 table and validate its values without calling a Python converter for each entry.
 Canonical naive ISO datetimes have native parsing and formatting paths; other ISO
 spellings, timezone handling and subclasses use the standard converter.
-On recognized CPython 3.14 release builds, plain initializers consisting entirely
+On recognized CPython 3.14–3.15 release builds, plain initializers consisting entirely
 of field assignments can also be replaced by guarded allocation and field stores.
 Custom constructors, setters, tracing, and changed initializer code use the ordinary
 constructor path. The guards are checked again after allocation, which can run GC.
@@ -79,9 +79,9 @@ This backend is experimental and is not a performance guarantee.
 Measure loading and dumping with your own models before choosing it for performance.
 The repository's ``simple_structures/codegen`` benchmark compares both backends
 on flat and nested models in every ``DebugTrail`` mode.
-Reference-count operations are inlined for recognized CPython 3.10–3.14 release builds;
+Reference-count operations are inlined for recognized CPython 3.10–3.15 release builds;
 other builds use the C API. Diagnostic state is allocated only when needed on the
-optimized paths. Recognized CPython 3.14 builds can create output dictionaries
+optimized paths. Recognized CPython 3.14–3.15 builds can create output dictionaries
 with a shared key table and a compact value buffer, transferring converted values
 directly into their final storage. CPython 3.13 and larger dictionaries copy a
 validated key template. Both paths preserve dictionary behavior and GC tracking;

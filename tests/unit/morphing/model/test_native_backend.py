@@ -180,11 +180,14 @@ def test_scalar_fast_path_keeps_custom_loader(debug_trail):
     assert convert.calls == [10]
 
 
-def test_unvalidated_object_header_uses_c_api(monkeypatch, debug_trail):
+@pytest.mark.parametrize("with_default", [False, True])
+def test_unvalidated_object_header_uses_c_api(monkeypatch, debug_trail, with_default):
     monkeypatch.setattr("adaptix._internal.code_tools.x86_64_compiler.inline_refcount_mode", lambda: None)
-    model = make_dataclass("Scalar", [("value", int)])
+    model = make_dataclass("Scalar", [("value", int, field(default=1000) if with_default else field())])
     retort = Retort(codegen_backend=CodeGenBackend.X86_64, debug_trail=debug_trail)
     assert retort.load({"value": 1000}, model) == model(1000)
+    if with_default:
+        assert retort.load({}, model) == model(1000)
 
 
 def test_dictionary_cache_observes_mutations_from_an_earlier_field_loader(debug_trail):

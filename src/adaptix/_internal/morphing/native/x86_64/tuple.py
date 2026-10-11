@@ -170,7 +170,7 @@ class MappedTupleProgram(TuplePlan):
 
 
 def build_tuple_program(plan: TuplePlan, c):
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
         return None
     specs = tuple(identity_spec(mapper) for mapper in plan.mappers)
     offset = c.layout.tuple_items

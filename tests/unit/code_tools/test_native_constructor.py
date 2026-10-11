@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from adaptix import CodeGenBackend, Retort
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.code_tools.native_callable import ExecutableMemory
 from adaptix._internal.code_tools.x86_64_assembler import X86Assembler
 from adaptix._internal.code_tools.x86_64_compiler import check_native_platform
@@ -19,6 +20,15 @@ def native_platform():
         check_native_platform()
     except RuntimeError as error:
         pytest.skip(str(error))
+
+
+def require_native_constructor(function):
+    if get_cpython_layout() is None:
+        pytest.skip("No layout for this interpreter build")
+    from adaptix._internal.code_tools.native_constructor import GET_TSTATE, monitoring_disabled
+
+    if not monitoring_disabled(function, GET_TSTATE()):
+        pytest.skip("Native construction is disabled while tracing or monitoring")
 
 
 @pytest.mark.parametrize("slots", [False, True])
@@ -41,6 +51,25 @@ def test_fresh_storage_and_reference_ownership(slots):
         del result
     gc.collect()
     assert (sys.getrefcount(first), sys.getrefcount(second)) == references
+
+
+@pytest.mark.skipif(sys.version_info[:2] not in {(3, 14), (3, 15)}, reason="Direct constructor requires CPython 3.14/3.15")
+@pytest.mark.parametrize("slots", [False, True])
+@pytest.mark.parametrize("frozen", [False, True])
+def test_plain_initializers_use_native_construction(slots, frozen):
+    @dataclass(slots=slots, frozen=frozen)
+    class Model:
+        value: int
+
+    require_native_constructor(Model.__init__)
+    from adaptix._internal.code_tools.native_constructor import SimpleConstructorCache
+
+    load = Retort(codegen_backend=CodeGenBackend.X86_64).get_loader(Model)
+    for _ in range(20):
+        assert load({"value": 1}) == Model(1)
+    caches = [item for item in load.__self__.constants if isinstance(item, SimpleConstructorCache)]
+    assert caches
+    assert any(cache.kind for cache in caches)
 
 
 @pytest.mark.parametrize("replace_code", [False, True])
@@ -128,18 +157,19 @@ def test_constructor_side_effects_are_never_skipped():
     assert seen == list(range(30))
 
 
-@pytest.mark.skipif(sys.version_info[:2] != (3, 14), reason="Direct constructor requires CPython 3.14")
+@pytest.mark.skipif(sys.version_info[:2] not in {(3, 14), (3, 15)}, reason="Direct constructor requires CPython 3.14/3.15")
 def test_custom_frame_evaluator_enabled_after_warming_executes_initializer():
-    from adaptix._internal.code_tools.native_constructor import DEFAULT_EVAL, GET_EVAL, GET_TSTATE, pointer
-
     @dataclass
     class Model:
         value: int
 
+    require_native_constructor(Model.__init__)
+    from adaptix._internal.code_tools.native_constructor import DEFAULT_EVAL, GET_EVAL, GET_TSTATE, LAYOUT, pointer
+
     function = Retort(codegen_backend=CodeGenBackend.X86_64).get_loader(Model)
     for _ in range(20):
         function({"value": 1})
-    interpreter = pointer(GET_TSTATE() + 16)
+    interpreter = pointer(GET_TSTATE() + LAYOUT.thread_interpreter)
     original = GET_EVAL(interpreter)
     address = ctypes.cast(ctypes.pythonapi._PyInterpreterState_SetEvalFrameFunc, ctypes.c_void_p).value
     assert address is not None
@@ -180,7 +210,7 @@ def test_initialized_models_participate_in_cyclic_gc():
     assert reference() is None
 
 
-@pytest.mark.skipif(sys.version_info[:2] != (3, 14), reason="Direct constructor requires CPython 3.14")
+@pytest.mark.skipif(sys.version_info[:2] not in {(3, 14), (3, 15)}, reason="Direct constructor requires CPython 3.14/3.15")
 def test_cache_publication_retains_the_code_that_was_validated(monkeypatch):
     from adaptix._internal.code_tools import native_constructor
 

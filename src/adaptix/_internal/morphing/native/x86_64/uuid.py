@@ -28,7 +28,7 @@ class UUIDProgram(descriptions.UUIDProgram):
             supports_dictionary_cache,
         )
 
-        if sys.version_info[:2] not in {(3, 13), (3, 14)} or not supports_dictionary_cache():
+        if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)} or not supports_dictionary_cache():
             return c.call(self.function, c.data)
         initializer = UUID.__init__
         if (

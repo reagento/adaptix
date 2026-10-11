@@ -471,7 +471,7 @@ def test_output_dictionary_keeps_shared_keys_alive_after_the_function_is_collect
     assert result == {}
 
 
-@pytest.mark.skipif(sys.version_info[:2] != (3, 14), reason="Shared dictionary allocator requires CPython 3.14")
+@pytest.mark.skipif(sys.version_info[:2] not in {(3, 14), (3, 15)}, reason="Shared dictionary allocator requires CPython 3.14/3.15")
 def test_dictionary_template_retains_its_original_type_after_carrier_class_changes():
     compiler = X86Compiler("native_dict_carrier_changed")
     values = {name: compiler.copy_reference(compiler.data) for name in ("first", "second")}
@@ -494,7 +494,7 @@ def test_dictionary_template_retains_its_original_type_after_carrier_class_chang
     assert original() is None
 
 
-@pytest.mark.skipif(sys.version_info[:2] != (3, 14), reason="Shared dictionary allocator requires CPython 3.14")
+@pytest.mark.skipif(sys.version_info[:2] not in {(3, 14), (3, 15)}, reason="Shared dictionary allocator requires CPython 3.14/3.15")
 def test_dictionary_value_allocation_failure_releases_all_references(monkeypatch):
     memory = ExecutableMemory(b"\xf3\x0f\x1e\xfa\x31\xc0\xc3")  # endbr64; xor eax, eax; ret
     stub = ctypes.PYFUNCTYPE(ctypes.c_void_p, ctypes.c_size_t)(memory.address)

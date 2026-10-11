@@ -7,6 +7,7 @@ import pytest
 from tests_helpers import DebugCtx, full_match, parametrize_bool, raises_exc, with_trail
 
 from adaptix import CodeGenBackend, DebugTrail, ExtraKwargs, Loader, Retort, bound
+from adaptix._internal.code_tools.utils import NAME_TO_BUILTIN
 from adaptix._internal.common import VarTuple
 from adaptix._internal.model_tools.definitions import (
     Default,
@@ -61,6 +62,21 @@ class Gauge:
 
 def gauge(*args, **kwargs):
     return Gauge(args, kwargs)
+
+
+def test_loader_sentinel_does_not_shadow_builtin(monkeypatch, debug_trail, codegen_backend):
+    # CPython 3.15 introduced the sentinel builtin. Simulate it on older versions too.
+    monkeypatch.setitem(NAME_TO_BUILTIN, "sentinel", object())
+
+    @dataclass
+    class Model:
+        required: int
+        optional: int = 7
+
+    retort = Retort(debug_trail=debug_trail, codegen_backend=codegen_backend)
+    load = retort.get_loader(Model)
+    assert load(MappingProxyType({"required": 1})) == Model(1)
+    assert load(MappingProxyType({"required": 1, "optional": 2})) == Model(1, 2)
 
 
 @dataclass

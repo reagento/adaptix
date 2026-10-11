@@ -23,7 +23,7 @@ LAYOUT = get_cpython_layout()
 class LiteralProgram(descriptions.LiteralProgram):
     def emit(self, c):
         function = self.function() if isinstance(self.function, ReferenceType) else self.function
-        if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+        if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
             return c.call(function, c.data)
         from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
 
@@ -55,7 +55,10 @@ class LiteralProgram(descriptions.LiteralProgram):
 
 @cache
 def integer_layout_supported():
-    if sys.version_info[:2] not in {(3, 13), (3, 14)} or sys.int_info.bits_per_digit != 30:  # noqa: PLR2004
+    if (
+        LAYOUT is None or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}
+        or sys.int_info.bits_per_digit != 30  # noqa: PLR2004
+    ):
         return False
     for value in (0, 1, -1, (1 << 30) - 1):
         tag = ctypes.c_size_t.from_address(id(value) + LAYOUT.long_tag).value & ~4
@@ -324,7 +327,7 @@ def build_union_program(plan: UnionPlan, c):  # noqa: C901, PLR0911, PLR0912
     if program is not None:
         c.name = "native_scalar_union_loader"
         return program if c.has_validated_object_header else None
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
         return None
     from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
     from adaptix._internal.morphing.model.crown_definitions import InpDictCrown, InpFieldCrown  # noqa: PLC0415

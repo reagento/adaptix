@@ -279,8 +279,8 @@ def test_fused_default_filters_release_every_row_reference(debug_trail):
 
 @pytest.mark.parametrize(["attribute", "value"], [("platform", "win32"), ("maxsize", 2**31 - 1)])
 def test_python_enum_provider_does_not_inspect_unsupported_object_layouts(monkeypatch, attribute, value):
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
-        pytest.skip("Private enum storage is enabled on 3.13/3.14")
+    if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
+        pytest.skip("Private enum storage is enabled on 3.13-3.15")
     from adaptix._internal.code_tools import native_access
 
     class State(str, Enum):

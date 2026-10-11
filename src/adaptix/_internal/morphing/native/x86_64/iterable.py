@@ -70,7 +70,7 @@ class SequenceSubclassCache(ctypes.Structure):
 
 
 def check_sequence_type(c, input_type, generic):
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
         c.branch_if_type(c.data, input_type, generic, invert=True)
         return
     accepted, guard, learn = (
@@ -122,7 +122,7 @@ def load_sequence_items(c, register, source, sequence_type):
 
 def check_list_mapping(c, *, input_type=list, check=check_list_input, module=None, attribute="Mapping"):
     """Use the ABC's negative cache while its class and registry remain valid."""
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
         c.release(c.call(check, c.data))
         return
     import _abc as abc_accelerator  # noqa: PLC0415
@@ -329,7 +329,10 @@ def borrows_sequence_item(mapper):
     # Exact builtin container copies execute no Python and keep the GIL;
     # their enclosing sequence owns the input until the copy finishes.
     # The union program retains inputs before any other converter or fallback.
-    return sys.version_info[:2] in {(3, 13), (3, 14)} and getattr(get_program(mapper), "supports_borrowing", False)
+    return (
+        sys.version_info[:2] in {(3, 13), (3, 14), (3, 15)}
+        and getattr(get_program(mapper), "supports_borrowing", False)
+    )
 
 
 def capture_sequence_item(c, borrowed):

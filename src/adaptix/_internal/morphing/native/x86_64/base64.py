@@ -18,7 +18,7 @@ DECODE = ctypes.create_string_buffer(bytes(ALPHABET.find(bytes([index])) & 255 f
 
 @cache
 def supported():
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if LAYOUT is None or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
         return False
     from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
 

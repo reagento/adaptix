@@ -18,7 +18,7 @@ MONTH_DAYS = ctypes.create_string_buffer(bytes((0, 31, 29, 31, 30, 31, 30, 31, 3
 
 @cache
 def supported(cls=datetime):
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if LAYOUT is None or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
         return False
     if cls is date:
         value = date(2025, 1, 2)
@@ -42,6 +42,8 @@ def supported(cls=datetime):
 
 @cache
 def timezone_supported():
+    if LAYOUT is None:
+        return False
     delta = timedelta(hours=-5, minutes=-30)
     zone = timezone(delta)
     value = datetime(2025, 1, 2, tzinfo=zone)

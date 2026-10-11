@@ -25,7 +25,7 @@ def general_entries_supported():
 
 
 def build_dict_program(plan: DictPlan, c):
-    if sys.version_info[:2] not in {(3, 13), (3, 14)}:
+    if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
         return None
     from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
     from adaptix._internal.morphing.native.x86_64.dict_mapper import (  # noqa: PLC0415

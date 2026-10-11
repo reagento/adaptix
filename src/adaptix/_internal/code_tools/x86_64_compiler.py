@@ -96,7 +96,7 @@ class X86Compiler:
             if self.refcount_mode is not None and hasattr(ctypes.pythonapi, "_Py_Dealloc") else None
         )
         self.dict_from_items = (
-            sys.version_info[:2] in {(3, 12), (3, 13), (3, 14)}
+            sys.version_info[:2] in {(3, 12), (3, 13), (3, 14), (3, 15)}
             and hasattr(ctypes.pythonapi, "_PyDict_FromItems")
         )
         self.slot_count = 0
@@ -431,7 +431,7 @@ class X86Compiler:
     ) -> Slot:
         """Allocate a proven plain Python model without executing its initializer frame."""
         if (
-            not self.has_validated_object_header or sys.version_info[:2] != (3, 14)
+            not self.has_validated_object_header or sys.version_info[:2] not in {(3, 14), (3, 15)}
             or type(cls) is not type or not args or len(args) > 255  # noqa: PLR2004
             or (omitted is not None and len(args) > INLINE_FIELD_LIMIT)
             or (len(args) > INLINE_FIELD_LIMIT and not all(isinstance(value, Slot) for value in args))
@@ -704,7 +704,7 @@ class X86Compiler:
         if consume and any(not self.owns(value) for value in items.values()):
             raise ValueError("Dictionary ownership transfer requires owned slots")
         if (
-            self.has_validated_object_header and sys.version_info[:2] in {(3, 13), (3, 14)}
+            self.has_validated_object_header and sys.version_info[:2] in {(3, 13), (3, 14), (3, 15)}
             and len(items) >= 2 and all(type(key) is str for key in items)  # noqa: PLR2004
         ):
             from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
@@ -713,7 +713,7 @@ class X86Compiler:
             if supports_dictionary_cache():
                 template = create_dictionary_template(tuple(items))
                 self.constants.append(template)
-                if template.kind == 2 and template.tracked_copies and sys.version_info[:2] == (3, 14):  # noqa: PLR2004
+                if template.kind == 2 and template.tracked_copies and sys.version_info[:2] in {(3, 14), (3, 15)}:  # noqa: PLR2004
                     return self.new_shared_dict(items, template, consume)
                 return self.copy_dict_template(items, template, consume)
         result = self.make_dict_from_items(items)
@@ -842,7 +842,7 @@ class X86Compiler:
     def new_shared_dict(self, items, template, consume):  # noqa: C901
         """Use CPython's dict freelist and allocate only the compact value buffer.
 
-        CPython 3.14 PyDict_New always tracks its empty result. No Python calls
+        CPython 3.14/3.15 PyDict_New always tracks its empty result. No Python calls
         occur between validating the template and publishing initialized values.
         Keys remain shared; the dict owns the PyMem buffer and transferred refs.
         """
@@ -964,7 +964,7 @@ class X86Compiler:
 
     def list_as_tuple(self, source: Slot) -> Slot:
         if (
-            not self.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14)}
+            not self.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}
             or not hasattr(ctypes.pythonapi, "_PyTuple_FromArraySteal")
         ):
             return self.call_c("PyList_AsTuple", source)
@@ -1157,7 +1157,7 @@ class X86Compiler:
         return self.guarded(lambda label: self.call_c(name, *args, error_label=label), handler, handler_args)
 
     def dictionary_guard(self, data: Slot) -> Slot | None:
-        if not self.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14)}:
+        if not self.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
             return None
         from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
 
@@ -1177,7 +1177,7 @@ class X86Compiler:
     ):
         """Validate a simple dict layout once and retain a complete scalar row."""
         if (
-            not self.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14)}
+            not self.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}
             or not all(type(name) is str for name in names)
         ):
             return None
@@ -1472,7 +1472,7 @@ class X86Compiler:
     def get_attr(self, data: Slot, name: str, *, error_label: str = "error") -> Slot:
         if (
             not self.has_validated_object_header
-            or sys.version_info[:2] not in {(3, 13), (3, 14)}
+            or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}
             or type(name) is not str
         ):
             return self.call_c("PyObject_GetAttr", data, self.constant(name), error_label=error_label)
@@ -1526,7 +1526,7 @@ class X86Compiler:
                 )
 
         supported = False
-        if self.has_validated_object_header and sys.version_info[:2] in {(3, 13), (3, 14)}:
+        if self.has_validated_object_header and sys.version_info[:2] in {(3, 13), (3, 14), (3, 15)}:
             from adaptix._internal.code_tools.native_access import (  # noqa: PLC0415
                 AttributeBatchCache,
                 supports_attribute_cache,

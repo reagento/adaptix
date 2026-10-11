@@ -92,7 +92,7 @@ RUNTIME_FIELDS = {
 }
 
 # Private structures from Objects/dictobject.c, Modules/_abc.c and
-# Modules/_datetimemodule.c in CPython 3.13/3.14. Runtime probes in the
+# Modules/_datetimemodule.c in CPython 3.13-3.15. Runtime probes in the
 # corresponding emitters verify these layouts before enabling direct access.
 SOURCE_TYPES = """
 typedef struct {
@@ -144,8 +144,10 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     version = sys.version_info[:2]
-    if sys.implementation.name != "cpython" or version not in {(3, 10), (3, 11), (3, 12), (3, 13), (3, 14)}:
-        parser.error("Use a supported CPython interpreter (3.10-3.14)")
+    if sys.implementation.name != "cpython" or version not in {(3, 10), (3, 11), (3, 12), (3, 13), (3, 14), (3, 15)}:
+        parser.error("Use a supported CPython interpreter (3.10-3.15)")
+    if sys.version_info.releaselevel != "final":
+        parser.error("Use a final CPython release; prerelease layouts may differ")
     if (
         sys.platform != "linux" or platform.machine().lower() not in {"x86_64", "amd64"}
         or sysconfig.get_config_var("SIZEOF_VOID_P") != 8  # noqa: PLR2004

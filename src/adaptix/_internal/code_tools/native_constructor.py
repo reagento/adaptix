@@ -99,9 +99,12 @@ def initializer_fields(  # noqa: C901, PLR0911, PLR0912
         if instruction.opname in {"LOAD_FAST_BORROW_LOAD_FAST_BORROW", "LOAD_FAST_LOAD_FAST"}:
             operations.extend(("LOAD_FAST", name) for name in instruction.argval)
         else:
-            operation = (
-                "LOAD_FAST" if instruction.opname in {"LOAD_FAST_BORROW", "LOAD_FAST_CHECK"} else instruction.opname
-            )
+            if instruction.opname in {"LOAD_FAST_BORROW", "LOAD_FAST_CHECK"}:
+                operation = "LOAD_FAST"
+            elif instruction.opname == "LOAD_COMMON_CONSTANT":
+                operation = "LOAD_CONST"
+            else:
+                operation = instruction.opname
             operations.append((operation, instruction.argval))
     if operations[-2:] == [("LOAD_CONST", None), ("RETURN_VALUE", None)]:
         operations = operations[:-2]

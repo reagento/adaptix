@@ -99,7 +99,7 @@ def can_inline_enum(description: descriptions.EnumProgram):
         sys.implementation.name != "cpython"
         or sys.platform != "linux"
         or sys.maxsize <= (1 << 32)
-        or sys.version_info[:2] not in {(3, 13), (3, 14)}
+        or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}
     ):
         return False
     if description.loading:

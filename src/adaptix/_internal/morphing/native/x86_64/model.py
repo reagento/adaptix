@@ -144,7 +144,8 @@ class NativeModelLoaderGen(NativeModelGen[ModelLoaderPlan]):
 
     def can_inline_optional(self):
         return (
-            self.has_flat_dict_fields()
+            self.compiler.has_validated_object_header
+            and self.has_flat_dict_fields()
             and all(param.kind == ParamKind.POS_OR_KW for param in self.plan.shape.params)
             and all(
                 field.is_required or isinstance(field.default, (DefaultValue, DefaultFactory))

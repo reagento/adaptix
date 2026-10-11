@@ -33,7 +33,9 @@ def create_dictionary_template(names: tuple[str, ...]) -> DictionaryTemplate:
     cls = type("_NativeDictTemplate", (), {"__module__": __name__})
     owner = None
     data = dict.fromkeys(names)
-    tracked_copies = sys.version_info[:2] == (3, 14) and gc.is_tracked(data.copy()) and gc.is_tracked({}.copy())
+    tracked_copies = (
+        sys.version_info[:2] in {(3, 14), (3, 15)} and gc.is_tracked(data.copy()) and gc.is_tracked({}.copy())
+    )
     if len(names) < 30 and supports_attribute_cache():  # noqa: PLR2004
         # CPython gradually reduces the inline capacity of a fresh class.
         # Warm this private class until only the required keys and one spare

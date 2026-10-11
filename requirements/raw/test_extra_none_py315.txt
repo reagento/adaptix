@@ -1,0 +1,2 @@
+# Resolve dependencies separately for CPython 3.15 compatibility.
+-r test_extra_none.txt
