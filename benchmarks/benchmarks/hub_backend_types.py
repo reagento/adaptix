@@ -1,10 +1,10 @@
 from benchmarks import bench_backend_types
+from benchmarks.native_backend import benchmark_env_spec, skip_native
 from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams
-from benchmarks.simple_structures.hub_codegen import director as codegen_director, skip_native
 
 director = BenchmarkDirector(
     benchmark="backend_types",
-    env_spec=codegen_director.env_spec,
+    env_spec=benchmark_env_spec(),
     check_params=lambda env_spec: CheckParams(stdev_rel_threshold=0.04),
 )
 

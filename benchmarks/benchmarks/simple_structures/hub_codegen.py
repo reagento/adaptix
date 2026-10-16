@@ -1,30 +1,11 @@
-import platform
-import sys
-import sysconfig
-
 from adaptix import CodeGenBackend, DebugTrail
+from benchmarks.native_backend import benchmark_env_spec, skip_native
 from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams
 from benchmarks.simple_structures import bench_codegen
 
-
-def skip_native(env_spec):
-    return (
-        env_spec["py_impl"] != "cpython"
-        or env_spec["os"] != "linux"
-        or env_spec["arch"] not in {"x86_64", "amd64"}
-        or env_spec["gil"] != "enabled"
-    )
-
-
 director = BenchmarkDirector(
     benchmark="simple_structures/codegen",
-    env_spec={
-        "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-        "py_impl": sys.implementation.name,
-        "os": sys.platform,
-        "arch": platform.machine().lower(),
-        "gil": "disabled" if sysconfig.get_config_var("Py_GIL_DISABLED") else "enabled",
-    },
+    env_spec=benchmark_env_spec(),
     check_params=lambda env_spec: CheckParams(stdev_rel_threshold=0.04),
 )
 

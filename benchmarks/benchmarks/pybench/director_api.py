@@ -261,6 +261,10 @@ class BenchRunner:
         self.checker = checker
 
     def add_arguments(self, parser: ArgumentParser) -> None:
+        parser.add_argument(
+            "--pyperf-arg", action="append", default=[],
+            help="pass a pyperf option; repeat for multiple options, e.g. --pyperf-arg=--affinity=2",
+        )
         selective_group = parser.add_mutually_exclusive_group()
         selective_group.add_argument("--include", "-i", action="extend", nargs="+", required=False)
         selective_group.add_argument("--exclude", "-e", action="extend", nargs="+", required=False)
@@ -282,12 +286,13 @@ class BenchRunner:
         exclude: Sequence[str] | None = None,
         missing: bool = False,
         unstable: bool = False,
+        pyperf_arg: Sequence[str] = (),
     ) -> None:
         schemas: Sequence[BenchSchema]
         if missing:
             schemas = [
                 schema for schema in self.accessor.schemas
-                if self.accessor.get_case_result(schema) is not None
+                if self.accessor.get_case_result(schema) is None
             ]
         elif unstable:
             schemas = [
@@ -322,9 +327,9 @@ class BenchRunner:
 
         print("Benchmarks to run: " + " ".join(benchmarks_to_run))
         for tag in benchmarks_to_run:
-            self.run_one_benchmark(local_id_to_schema[tag])
+            self.run_one_benchmark(local_id_to_schema[tag], pyperf_args=pyperf_arg)
 
-    def run_one_benchmark(self, schema: BenchSchema) -> None:
+    def run_one_benchmark(self, schema: BenchSchema, *, pyperf_args: Sequence[str] = ()) -> None:
         distributions = {
             dist: importlib.metadata.version(dist)
             for dist in schema.used_distributions
@@ -346,7 +351,7 @@ class BenchRunner:
                     get_function_object_ref(schema.entry_point)
                 ),
                 params=[schema.kwargs[param] for param in sig.parameters],
-                extra_args=["-o", str(temp_file)],
+                extra_args=[*pyperf_args, "-o", str(temp_file)],
             )
             case_result: BenchCaseResult = json.loads(temp_file.read_text())
             case_result["pybench_data"] = {

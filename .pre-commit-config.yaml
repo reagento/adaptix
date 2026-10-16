@@ -27,6 +27,8 @@ repos:
       - id: trailing-whitespace
       - id: check-added-large-files
         args: ['--maxkb=100']
+        # Raw pyperf archives are accompanied by their measurement metadata.
+        exclude: ^benchmarks/published_data/.*\.zip$
 
   - repo: 'https://github.com/myint/eradicate'
     rev: 3.0.0

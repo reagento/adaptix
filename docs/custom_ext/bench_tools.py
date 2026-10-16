@@ -38,6 +38,7 @@ class CustomBenchChart(SphinxDirective):
         return f'<div class="only-light">{light_html}</div><div class="only-dark">{dark_html}</div>'
 
     def run(self):
+        self.env.note_dependency(str(RELEASE_DATA / f"{self.arguments[0]}.zip"))
         plot_html = self.get_html(self.arguments[0])
         raw_node = nodes.raw("", plot_html, format="html")
         raw_node.source, raw_node.line = self.state_machine.get_source_and_line(self.lineno)
@@ -56,6 +57,7 @@ class CustomBenchUsedDistributions(SphinxMacroDirective):
             release_path = RELEASE_DATA / f"{hub_description.key}.zip"
             if not release_path.exists():
                 continue
+            self.env.note_dependency(str(release_path))
             with ZipFile(release_path) as release_zip:
                 index = json.loads(release_zip.read("index.json"))
                 for file_list in index["env_files"].values():

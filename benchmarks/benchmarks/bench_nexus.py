@@ -59,11 +59,6 @@ class EnvDescription:
 
 BENCHMARK_ENVS: Iterable[EnvDescription] = [
     EnvDescription(
-        title="CPython 3.9",
-        key="py39",
-        tox_env="py39-bench",
-    ),
-    EnvDescription(
         title="CPython 3.10",
         key="py310",
         tox_env="py310-bench",
@@ -84,19 +79,29 @@ BENCHMARK_ENVS: Iterable[EnvDescription] = [
         tox_env="py313-bench",
     ),
     EnvDescription(
-        title="PyPy 3.9",
-        key="pypy39",
-        tox_env="pypy39-bench",
+        title="CPython 3.14",
+        key="py314",
+        tox_env="py314-bench",
     ),
     EnvDescription(
         title="PyPy 3.10",
         key="pypy310",
         tox_env="pypy310-bench",
     ),
+    EnvDescription(
+        title="PyPy 3.11",
+        key="pypy311",
+        tox_env="pypy311-bench",
+    ),
 ]
 KEY_TO_ENV = {
     env_description.key: env_description
-    for env_description in BENCHMARK_ENVS
+    # Older release archives remain readable without selecting obsolete tox environments.
+    for env_description in [
+        *BENCHMARK_ENVS,
+        EnvDescription(key="py39", title="CPython 3.9", tox_env="py39-bench"),
+        EnvDescription(key="pypy39", title="PyPy 3.9", tox_env="pypy39-bench"),
+    ]
 }
 
 
@@ -160,7 +165,7 @@ class HubDescription:
     x_bounder: AxisBounder
 
 
-RELEASE_DATA = Path(__file__).parent.parent / "release_data"
+RELEASE_DATA = Path(__file__).parent.parent / "published_data"
 
 BENCHMARK_HUBS: Iterable[HubDescription] = [
     HubDescription(
@@ -306,8 +311,8 @@ class HubProcessor(Foundation, ABC):
         return BENCHMARK_HUBS
 
     def filtered_envs(self) -> Iterable[EnvDescription]:
-        if self.env_include and self.env_exclude:
-            wild_envs = set(self.env_exclude) - {env_description.key for env_description in BENCHMARK_ENVS}
+        if self.env_include:
+            wild_envs = set(self.env_include) - {env_description.key for env_description in BENCHMARK_ENVS}
             if wild_envs:
                 raise ValueError(f"Unknown envs {wild_envs}")
             return [
@@ -771,7 +776,7 @@ class Renderer(HubProcessor):
             ],
         )
 
-    DEFAULT_ENV_KEY = "py312"
+    DEFAULT_ENV_KEY = "py314"
 
     def create_hub_plot(
         self,
@@ -779,13 +784,14 @@ class Renderer(HubProcessor):
         env_to_measures: Mapping[EnvDescription, Sequence[BenchmarkMeasure]],
         color_scheme: ColorScheme,
     ) -> go.Figure:
+        envs = list(env_to_measures)
         bar_charts = [
             self._create_bar_chart(color_scheme, measures).update(visible=False)
             for measures in env_to_measures.values()
         ]
         visible_by_default = next(
-            idx for idx, env_description in enumerate(self.filtered_envs())
-            if env_description.key == self.DEFAULT_ENV_KEY
+            (idx for idx, env_description in enumerate(envs) if env_description.key == self.DEFAULT_ENV_KEY),
+            0,
         )
         bar_charts[visible_by_default].update(visible=True)
         buttons = [
@@ -797,7 +803,7 @@ class Renderer(HubProcessor):
                 "label": env_description.title,
                 "method": "update",
             }
-            for env_idx, env_description in enumerate(self.filtered_envs())
+            for env_idx, env_description in enumerate(envs)
         ]
         height = max(len(measures) for accessor, measures in env_to_measures.items()) * 40 + 185
         # pylint: disable=no-member
@@ -862,10 +868,7 @@ class Renderer(HubProcessor):
             yref="y domain",
             x=0.95,
             y=0.05,
-            text=next(
-                env_description.title for env_description in self.filtered_envs()
-                if env_description.key == self.DEFAULT_ENV_KEY
-            ),
+            text=envs[visible_by_default].title,
             xanchor="right",
             showarrow=False,
             font=dict(
@@ -910,8 +913,16 @@ class HubValidator(HubProcessor):
 
 class Releaser(HubProcessor):
     def start(self) -> None:
-        validator = HubValidator(self.namespace)
-        validator.validate(self.filtered_hubs())
+        validator = HubValidator(
+            self.namespace,
+            include=self.include,
+            exclude=self.exclude,
+            env_include=self.env_include,
+            env_exclude=self.env_exclude,
+        )
+        errors = validator.validate(self.filtered_hubs())
+        if errors:
+            raise ValueError("\n".join(errors))
         self._release()
 
     def _release(self):

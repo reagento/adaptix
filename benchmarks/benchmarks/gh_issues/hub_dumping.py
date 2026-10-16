@@ -1,6 +1,4 @@
-import sys
-
-from adaptix import DebugTrail
+from adaptix import CodeGenBackend, DebugTrail
 from benchmarks.gh_issues import (
     bench_adaptix,
     bench_asdict,
@@ -11,42 +9,32 @@ from benchmarks.gh_issues import (
     bench_pydantic,
     bench_schematics,
 )
+from benchmarks.native_backend import benchmark_env_spec, skip_native
 from benchmarks.pybench.director_api import BenchmarkDirector, BenchSchema, CheckParams
 
 director = BenchmarkDirector(
     benchmark="gh_issues/dumping",
-    env_spec={
-        "py": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-        "py_impl": sys.implementation.name,
-    },
+    env_spec=benchmark_env_spec(),
     check_params=lambda env_spec: CheckParams(
         stdev_rel_threshold=0.07 if env_spec["py_impl"] == "pypy" else 0.04,
     ),
 )
 
-director.add(
-    BenchSchema(
-        entry_point=bench_adaptix.bench_dumping,
-        base="adaptix",
-        tags=["dt_all"],
-        kwargs={"debug_trail": DebugTrail.ALL.value},
-        used_distributions=["adaptix"],
-    ),
-    BenchSchema(
-        entry_point=bench_adaptix.bench_dumping,
-        base="adaptix",
-        tags=["dt_first"],
-        kwargs={"debug_trail": DebugTrail.FIRST.value},
-        used_distributions=["adaptix"],
-    ),
-    BenchSchema(
-        entry_point=bench_adaptix.bench_dumping,
-        base="adaptix",
-        tags=["dt_disable"],
-        kwargs={"debug_trail": DebugTrail.DISABLE.value},
-        used_distributions=["adaptix"],
-    ),
-)
+for backend in CodeGenBackend:
+    for debug_trail in DebugTrail:
+        director.add(
+            BenchSchema(
+                entry_point=bench_adaptix.bench_dumping,
+                base="adaptix",
+                tags=[backend.value, f"dt_{debug_trail.value.lower()}"],
+                kwargs={
+                    "debug_trail": debug_trail.value,
+                    "codegen_backend": backend.value,
+                },
+                used_distributions=["adaptix"],
+                skip_if=skip_native if backend == CodeGenBackend.X86_64 else None,
+            ),
+        )
 
 director.add(
     BenchSchema(
@@ -123,6 +111,7 @@ director.add(
         tags=[],
         kwargs={},
         used_distributions=["dataclass_factory"],
+        skip_if=lambda env_spec: tuple(map(int, env_spec["py"].split(".")[:2])) >= (3, 14),
     ),
 )
 
