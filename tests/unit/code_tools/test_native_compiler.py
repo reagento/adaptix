@@ -9,6 +9,7 @@ from pathlib import Path
 from threading import Barrier
 
 import pytest
+from tests_helpers import reference_counts
 
 from adaptix import CodeGenBackend, Retort
 from adaptix._internal.code_tools.native_callable import ExecutableMemory
@@ -135,15 +136,13 @@ def test_c_call_reuses_empty_destination_and_cleans_up_on_errors():
         "PyObject_CallOneArg", compiler.constant(finish), compiler.data, destination=destination,
     ) == destination
     function = compiler.finish(destination).make_callable()
-    # Python tracing can materialize frame locals when an exception is raised.
-    locals()
-    references = sys.getrefcount(result)
+    references = reference_counts([result])
     for _ in range(100):
         assert function(0) is result
         with pytest.raises(ValueError, match="destination failure"):
             function(1)
     assert len(destroyed) == 200
-    assert sys.getrefcount(result) == references
+    assert reference_counts([result]) == references
 
 
 def test_c_call_destination_requires_owned_object_slot():
@@ -206,13 +205,11 @@ def test_reference_cleanup_on_success_and_failure():
     copied = compiler.call(lambda x: x, compiler.data)
     result = compiler.call(lambda x: x, copied)
     function = compiler.finish(result).make_callable()
-    # Include the frame's locals dictionary in both reference counts.
-    locals()
-    references = sys.getrefcount(value)
+    references = reference_counts([value])
 
     for _ in range(1000):
         assert function(value) is value
-    assert sys.getrefcount(value) == references
+    assert reference_counts([value]) == references
 
     def fail(data):
         raise ValueError("failure")
@@ -221,12 +218,11 @@ def test_reference_cleanup_on_success_and_failure():
     copied = compiler.call(lambda x: x, compiler.data)
     result = compiler.call(fail, copied)
     function = compiler.finish(result).make_callable()
-    references = sys.getrefcount(value)
+    references = reference_counts([value])
     for _ in range(1000):
         with pytest.raises(ValueError, match="failure"):
             function(value)
-    gc.collect()
-    assert sys.getrefcount(value) == references
+    assert reference_counts([value]) == references
 
 
 def test_guarded_call_preserves_traceback_and_base_exception():
@@ -669,14 +665,12 @@ def test_attribute_batch_releases_earlier_fields_when_a_later_field_is_missing()
     model.first, model.second = value, value
     for _ in range(20):
         assert function(model) == {"first": value, "second": value}
-    locals()
-    references = sys.getrefcount(value)
+    references = reference_counts([value])[0]
     del model.second
     for _ in range(20):
         with pytest.raises(AttributeError):
             function(model)
-    gc.collect()
-    assert sys.getrefcount(value) == references - 1
+    assert reference_counts([value])[0] == references - 1
     model.second = value
     assert function(model) == {"first": value, "second": value}
 
@@ -764,13 +758,11 @@ def test_failed_cold_handler_releases_local_and_global_references(failure):
     result = compiler.guarded_call(convert, (copied,), recover, state)
     function = compiler.finish(result).make_callable()
     value = object()
-    locals()
-    references = sys.getrefcount(value)
+    references = reference_counts([value])
     for _ in range(100):
         with pytest.raises(RuntimeError, match=f"{failure} failed"):
             function(value)
-    gc.collect()
-    assert sys.getrefcount(value) == references
+    assert reference_counts([value]) == references
     assert all(reference() is None for reference in allocations)
 
 

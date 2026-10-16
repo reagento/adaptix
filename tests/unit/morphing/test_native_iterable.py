@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import List
 
 import pytest
-from tests_helpers import raises_exc
+from tests_helpers import raises_exc, reference_counts
 
 from adaptix import CodeGenBackend, DebugTrail, Retort, dumper, loader
 from adaptix._internal.code_tools.x86_64_compiler import check_native_platform
@@ -74,15 +74,14 @@ def test_fused_model_errors_and_reference_cleanup(debug_trail, loading):
         bad = [good[0], broken, good[0]]
     for _ in range(20):
         assert functions[1](good) == functions[0](good)
-    references = [sys.getrefcount(value) for value in bad]
+    references = reference_counts(bad)
     with pytest.raises(Exception, match=r".+") as reference:
         functions[0](bad)
     for _ in range(20):
         raises_exc(reference.value, lambda: functions[1](bad))
         assert functions[1](good) == functions[0](good)
     del reference
-    gc.collect()
-    assert [sys.getrefcount(value) for value in bad] == references
+    assert reference_counts(bad) == references
 
 
 @pytest.mark.parametrize("debug_trail", list(DebugTrail))
@@ -95,12 +94,11 @@ def test_fused_constructor_base_exception_does_not_leak_arguments(debug_trail):
     function = retort.get_loader(List[Broken])
     value = object()
     data = [{"value": value}]
-    references = sys.getrefcount(value)
+    references = reference_counts([value])
     for _ in range(20):
         with pytest.raises(KeyboardInterrupt):
             function(data)
-    gc.collect()
-    assert sys.getrefcount(value) == references
+    assert reference_counts([value]) == references
 
 
 def test_reserved_list_never_exposes_uninitialized_elements_to_gc():
@@ -161,15 +159,13 @@ def test_scalar_union_list_failure_after_partial_copy(debug_trail, bad_index, nu
     data = [int("1000"), b"scalar union".decode(), int("1001")]
     data[bad_index] = object()
     functions = [retort.get_loader(tp) for retort in (python, native)]
-    gc.collect()
-    references = [sys.getrefcount(value) for value in data]
+    references = reference_counts(data)
     with pytest.raises(LoadError) as expected:
         functions[0](data)
     for _ in range(30):
         raises_exc(expected.value, lambda: functions[1](data))
     del expected
-    gc.collect()
-    assert [sys.getrefcount(value) for value in data] == references
+    assert reference_counts(data) == references
 
 
 @pytest.mark.parametrize("debug_trail", list(DebugTrail))

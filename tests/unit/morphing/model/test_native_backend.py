@@ -1,11 +1,10 @@
 import gc
-import sys
 from dataclasses import dataclass, field, make_dataclass
 from types import BuiltinFunctionType
 from typing import Any, List
 
 import pytest
-from tests_helpers import raises_exc
+from tests_helpers import raises_exc, reference_counts
 
 from adaptix import CodeGenBackend, Retort, loader, name_mapping
 from adaptix._internal.code_tools.x86_64_compiler import check_native_platform
@@ -393,7 +392,7 @@ def test_dictionary_rows_preserve_errors_and_references_after_partial_validation
         {**ordered, "last": "invalid"}, {**ordered, "last": 2},
         {key.encode().decode(): item for key, item in ordered.items()},
     ]
-    references = sys.getrefcount(value)
+    references = reference_counts([value])
     for _ in range(20):
         for data in cases:
             try:
@@ -403,8 +402,7 @@ def test_dictionary_rows_preserve_errors_and_references_after_partial_validation
             else:
                 assert native(data) == expected
                 del expected
-    gc.collect()
-    assert sys.getrefcount(value) == references
+    assert reference_counts([value]) == references
 
 
 @pytest.mark.parametrize("alias", ["x" * size for size in (1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33)] + ["ключ", "x\0key"])

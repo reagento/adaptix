@@ -12,7 +12,7 @@ from enum import Enum
 from typing import Any
 
 import pytest
-from tests_helpers import raises_exc
+from tests_helpers import raises_exc, reference_counts
 
 from adaptix import CodeGenBackend, DebugTrail, Retort, name_mapping
 from adaptix._internal.code_tools.x86_64_compiler import X86Compiler, check_native_platform
@@ -43,15 +43,13 @@ def test_scalar_container_failures_keep_python_trails_and_references(debug_trail
         value for value in (data.values() if isinstance(data, dict) else data)
         if type(value) is float or (type(value) is int and value > 256)
     ]
-    gc.collect()
-    references = [sys.getrefcount(value) for value in watched]
+    references = reference_counts(watched)
     with pytest.raises(Exception, match=r".+") as expected:
         functions[0](data)
     for _ in range(30):
         raises_exc(expected.value, lambda: functions[1](data))
     del expected
-    gc.collect()
-    assert [sys.getrefcount(value) for value in watched] == references
+    assert reference_counts(watched) == references
 
 
 def test_scalar_copy_handles_sparse_and_split_dictionaries():
