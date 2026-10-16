@@ -10,6 +10,8 @@ from adaptix._internal.feature_requirement import (
     HAS_SQLALCHEMY_PKG,
 )
 
+pytest_plugins = ["tests_helpers.github_actions"]
+
 
 @pytest.fixture(params=[False, True], ids=lambda x: f"strict_coercion={x}")
 def strict_coercion(request):
