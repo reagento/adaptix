@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from weakref import ReferenceType
 
 from adaptix._internal.morphing.native import descriptions
 from adaptix._internal.morphing.native.registry import get_program as get_description
@@ -72,7 +71,7 @@ class ScalarProgram(descriptions.ScalarProgram):
     def emit(self, c, *, consume=False):
         accepted, generic, done = (c.label(prefix) for prefix in ("scalar_ok", "scalar_slow", "scalar_done"))
         result = c.data if consume else c.slot(owned=True)
-        function = self.function() if isinstance(self.function, ReferenceType) else self.function
+        function = descriptions.resolve_function(self.function)
         integer = c.label("scalar_integer") if self.coerce_int else None
         c.asm.load(0, c.data)
         if self.nullable:

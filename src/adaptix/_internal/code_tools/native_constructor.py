@@ -8,7 +8,7 @@ from functools import cache
 from threading import RLock
 from types import CellType, FunctionType, MemberDescriptorType
 
-from adaptix._internal.code_tools.cpython_layout.selection import require_cpython_layout
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.code_tools.native_access import (
     DICT,
     GENERIC_GETTER,
@@ -19,6 +19,7 @@ from adaptix._internal.code_tools.native_access import (
     SHARED_KEYS_LIMIT,
     SLOT,
     api,
+    api_address,
     dictionary_attributes_supported,
     get_type_version,
     inline_index,
@@ -31,25 +32,27 @@ TP_ALLOC = 47
 TP_NEW = 65
 TP_SETATTRO = 69
 GET_TSTATE = api("PyThreadState_Get", ctypes.c_void_p)
-GENERIC_SETTER = ctypes.cast(ctypes.pythonapi.PyObject_GenericSetAttr, ctypes.c_void_p).value
-GENERIC_ALLOCATOR = ctypes.cast(ctypes.pythonapi.PyType_GenericAlloc, ctypes.c_void_p).value
-DEFAULT_EVAL = ctypes.cast(ctypes.pythonapi._PyEval_EvalFrameDefault, ctypes.c_void_p).value or 0
-if not DEFAULT_EVAL:
-    raise RuntimeError("Could not locate CPython's default frame evaluator")
+GENERIC_SETTER = api_address("PyObject_GenericSetAttr")
+GENERIC_ALLOCATOR = api_address("PyType_GenericAlloc")
+DEFAULT_EVAL = api_address("_PyEval_EvalFrameDefault") or 0
 GET_EVAL = api("_PyInterpreterState_GetEvalFrameFunc", ctypes.c_void_p, ctypes.c_void_p)
 
-LAYOUT = require_cpython_layout()
+LAYOUT = get_cpython_layout()
 EVAL_MASK = ~255
 
 
 @cache
 def interpreter_eval_offset() -> int | None:
+    if LAYOUT is None or not DEFAULT_EVAL or GET_EVAL is None or GET_TSTATE is None:
+        return None
     offset = LAYOUT.interpreter_eval_frame
     if offset is None:
         return None
     # A default evaluator may correspond to NULL in several nearby fields.
     # Verify that the actual getter loads this field before bypassing the API.
     address = ctypes.cast(GET_EVAL, ctypes.c_void_p).value
+    if address is None:
+        return None
     code = ctypes.string_at(address, 32)
     if code.startswith(b"\xf3\x0f\x1e\xfa"):
         code = code[4:]
@@ -69,7 +72,7 @@ def interpreter_eval_offset() -> int | None:
 def initializer_fields(  # noqa: C901, PLR0911, PLR0912
     function, parameters: tuple[str, ...], code=None,
 ) -> tuple[str, ...] | None:
-    if type(function) is not FunctionType:
+    if LAYOUT is None or type(function) is not FunctionType:
         return None
     code = function.__code__ if code is None else code
     frozen = object_setter_cell(function, code) is not None
@@ -80,8 +83,8 @@ def initializer_fields(  # noqa: C901, PLR0911, PLR0912
         or code.co_flags & (inspect.CO_VARARGS | inspect.CO_VARKEYWORDS | inspect.CO_GENERATOR | inspect.CO_COROUTINE)
         or code.co_argcount + code.co_kwonlyargcount != len(parameters) + 1
         or code.co_varnames[1 : len(parameters) + 1] != parameters
-        or pointer(id(function) + LAYOUT.function_code) != id(code)
-        or pointer(id(function) + LAYOUT.function_defaults)
+        or pointer(id(function) + LAYOUT.offset("function_code")) != id(code)
+        or pointer(id(function) + LAYOUT.offset("function_defaults"))
         != (0 if function.__defaults__ is None else id(function.__defaults__))
         or size(id(tuple_probe) + LAYOUT.var_size) != len(tuple_probe)
         or pointer(id(tuple_probe) + LAYOUT.tuple_items) != id(tuple_probe[0])
@@ -194,12 +197,15 @@ def object_setter_cell(function, code):
 
 
 def monitoring_disabled(function, tstate: int) -> bool:
-    if pointer(tstate + LAYOUT.thread_profile) or pointer(tstate + LAYOUT.thread_trace):
+    monitoring = getattr(sys, "monitoring", None)
+    if LAYOUT is None or monitoring is None or GET_EVAL is None or not DEFAULT_EVAL:
         return False
-    if GET_EVAL(pointer(tstate + LAYOUT.thread_interpreter)) != DEFAULT_EVAL:
+    if pointer(tstate + LAYOUT.offset("thread_profile")) or pointer(tstate + LAYOUT.offset("thread_trace")):
+        return False
+    if GET_EVAL(pointer(tstate + LAYOUT.offset("thread_interpreter"))) != DEFAULT_EVAL:
         return False
     for tool in range(6):
-        if sys.monitoring.get_events(tool) or sys.monitoring.get_local_events(tool, function.__code__):
+        if monitoring.get_events(tool) or monitoring.get_local_events(tool, function.__code__):
             return False
     return True
 
@@ -263,7 +269,8 @@ class SimpleConstructorCache(ctypes.Structure):
     def specialize(self, model):  # noqa: C901, PLR0911
         cls = self.cls
         if (
-            type(model) is not cls or type(cls) is not type
+            LAYOUT is None or GET_TSTATE is None or GET_SLOT is None or LOOKUP is None
+            or type(model) is not cls or type(cls) is not type
             or GET_SLOT(cls, TP_NEW) != GET_SLOT(object, TP_NEW)
             or GET_SLOT(cls, TP_ALLOC) != GENERIC_ALLOCATOR
             or pointer(id(cls) + LAYOUT.type_getattro) != GENERIC_GETTER

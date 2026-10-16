@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from functools import cache, partial
 from threading import RLock
-from weakref import ReferenceType
 
 from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.morphing.native import descriptions
@@ -433,7 +432,7 @@ def load_datetime(c, function, cls):  # noqa: C901, PLR0912, PLR0915
 @dataclass(frozen=True)
 class DateTimeProgram(descriptions.DateTimeProgram):
     def emit(self, c):  # noqa: PLR0915
-        function = self.function() if isinstance(self.function, ReferenceType) else self.function
+        function = descriptions.resolve_function(self.function)
         cls = self.cls
         if not c.has_validated_object_header or not supported(cls):
             return c.call(function, c.data)

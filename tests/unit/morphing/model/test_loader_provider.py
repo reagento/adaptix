@@ -176,9 +176,10 @@ def test_direct(codegen_backend, debug_ctx, debug_trail, extra_policy, trail_sel
     )
 
     if extra_policy == ExtraCollect():
-        pytest.raises(ValueError, loader_getter).match(
-            "Cannot create loader that collect extra data if InputShape does not take extra data",
-        )
+        with pytest.raises(
+            ValueError, match="Cannot create loader that collect extra data if InputShape does not take extra data",
+        ):
+            loader_getter()
         return
 
     loader = loader_getter()
@@ -260,9 +261,10 @@ def test_direct_all_optional_kw(codegen_backend, debug_ctx, debug_trail, extra_p
     )
 
     if extra_policy == ExtraCollect():
-        pytest.raises(ValueError, loader_getter).match(
-            "Cannot create loader that collect extra data if InputShape does not take extra data",
-        )
+        with pytest.raises(
+            ValueError, match="Cannot create loader that collect extra data if InputShape does not take extra data",
+        ):
+            loader_getter()
         return
 
     loader = loader_getter()
@@ -517,9 +519,8 @@ def test_wild_extra_targets(codegen_backend, debug_ctx, debug_trail):
         codegen_backend=codegen_backend,
     )
 
-    pytest.raises(ValueError, loader_getter).match(
-        full_match("ExtraTargets ['b'] are attached to non-existing fields"),
-    )
+    with pytest.raises(ValueError, match=full_match("ExtraTargets ['b'] are attached to non-existing fields")):
+        loader_getter()
 
 
 @parametrize_bool("is_required")
@@ -640,9 +641,8 @@ def test_mapping_and_extra_kwargs(codegen_backend, debug_ctx, debug_trail, trail
 
     assert loader({"m_a": 1, "b": "this value is not loaded"}) == gauge(1, b="this value is not loaded")
     assert loader({"m_a": 1, "m_b": 2}) == gauge(1, b=2)
-    pytest.raises(
-        TypeError, lambda: loader({"m_a": 1, "m_b": 2, "b": 3}),
-    ).match("got multiple values for keyword argument 'b'")
+    with pytest.raises(TypeError, match="got multiple values for keyword argument 'b'"):
+        loader({"m_a": 1, "m_b": 2, "b": 3})
 
 
 def test_skipped_required_field(codegen_backend, debug_ctx, debug_trail, extra_policy):
@@ -664,7 +664,8 @@ def test_skipped_required_field(codegen_backend, debug_ctx, debug_trail, extra_p
         debug_ctx=debug_ctx,
         codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, loader_getter).match(full_match("Required fields ['b'] are skipped"))
+    with pytest.raises(ValueError, match=full_match("Required fields ['b'] are skipped")):
+        loader_getter()
 
     loader_getter = make_loader_getter(
         shape=shape(
@@ -707,9 +708,8 @@ def test_extra_target_at_crown(codegen_backend, debug_ctx, debug_trail, extra_po
         debug_ctx=debug_ctx,
         codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, loader_getter).match(
-        full_match("Extra targets ['b'] are found at crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Extra targets ['b'] are found at crown")):
+        loader_getter()
 
     loader_getter = make_loader_getter(
         shape=shape(
@@ -730,9 +730,8 @@ def test_extra_target_at_crown(codegen_backend, debug_ctx, debug_trail, extra_po
         debug_ctx=debug_ctx,
         codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, loader_getter).match(
-        full_match("Extra targets ['b'] are found at crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Extra targets ['b'] are found at crown")):
+        loader_getter()
 
 
 def test_optional_fields_at_list(codegen_backend, debug_ctx, debug_trail, extra_policy):
@@ -755,9 +754,8 @@ def test_optional_fields_at_list(codegen_backend, debug_ctx, debug_trail, extra_
         debug_ctx=debug_ctx,
         codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, loader_getter).match(
-        full_match("Optional fields ['b'] are found at list crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Optional fields ['b'] are found at list crown")):
+        loader_getter()
 
 
 @parametrize_bool("is_required")
@@ -1204,9 +1202,10 @@ def test_empty_dict(codegen_backend, debug_ctx, debug_trail, extra_policy, trail
     )
 
     if extra_policy == ExtraCollect():
-        pytest.raises(ValueError, loader_getter).match(
-            "Cannot create loader that collect extra data if InputShape does not take extra data",
-        )
+        with pytest.raises(
+            ValueError, match="Cannot create loader that collect extra data if InputShape does not take extra data",
+        ):
+            loader_getter()
         return
 
     loader = loader_getter()

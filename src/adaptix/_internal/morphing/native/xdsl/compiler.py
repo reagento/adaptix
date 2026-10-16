@@ -64,17 +64,17 @@ class LLVMCode(NativeCode):
             method_name,
             documentation,
         )
-        return NativeCodeData.__new__(
-            cls,
-            artifact.text,
-            artifact.assembly,
-            tuple(constants),
-            LLVMMemory(artifact),
-            method,
-            0,
-            program,
-            ("data",),
+        payload = NativeCodeData(
+            machine_code=artifact.text,
+            assembly=artifact.assembly,
+            constants=tuple(constants),
+            memory=LLVMMemory(artifact),
+            method=method,
+            raw_entry_offset=0,
+            program=program,
+            parameters=("data",),
         )
+        return tuple.__new__(cls, payload)
 
     @property
     def raw_address(self) -> int:

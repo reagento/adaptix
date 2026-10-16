@@ -31,6 +31,27 @@ def test_unknown_version_has_no_layout(version):
     assert select(version) is None
 
 
+def test_required_offset_checks_availability():
+    layout = select((3, 10))
+    assert layout.offset("object_type") == layout.object_type
+    with pytest.raises(RuntimeError, match="type_version"):
+        layout.offset("type_version")
+    with pytest.raises(RuntimeError, match="unknown_offset"):
+        layout.offset("unknown_offset")
+    with pytest.raises(TypeError, match="version"):
+        layout.offset("version")
+
+
+def test_missing_native_api_is_unavailable(monkeypatch):
+    from adaptix._internal.code_tools.native_access import api, api_address
+
+    assert api_address("AdaptixMissingEntryPoint") is None
+    assert api("AdaptixMissingEntryPoint", ctypes.c_void_p) is None
+    monkeypatch.delattr(ctypes, "pythonapi", raising=False)
+    assert api_address("PyType_GetSlot") is None
+    assert api("PyType_GetSlot", ctypes.c_void_p) is None
+
+
 @pytest.mark.parametrize("changes", [
     {"implementation": "pypy"}, {"system": "win32"}, {"system": "darwin"},
     {"architecture": "aarch64"}, {"pointer_size": 4}, {"special_build": True},

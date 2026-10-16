@@ -4,7 +4,6 @@ import sys
 from dataclasses import dataclass
 from functools import cache
 from types import BuiltinFunctionType
-from weakref import ReferenceType
 
 from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.code_tools.native_callable import NativeCode
@@ -13,7 +12,7 @@ from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.definitions import DebugTrail
 from adaptix._internal.morphing.load_error import LoadError, UnionLoadError
 from adaptix._internal.morphing.native import descriptions
-from adaptix._internal.morphing.native.plan import UnionPlan
+from adaptix._internal.morphing.native.plan import ModelLoaderPlan, UnionPlan
 from adaptix._internal.morphing.native.registry import identity_spec
 from adaptix._internal.morphing.native.x86_64.scalar import get_program
 
@@ -22,7 +21,7 @@ LAYOUT = get_cpython_layout()
 @dataclass(frozen=True)
 class LiteralProgram(descriptions.LiteralProgram):
     def emit(self, c):
-        function = self.function() if isinstance(self.function, ReferenceType) else self.function
+        function = descriptions.resolve_function(self.function)
         if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
             return c.call(function, c.data)
         from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
@@ -181,7 +180,7 @@ class UnionDumperProgram(descriptions.UnionDumperProgram):
             c.asm.jump(done)
             c.asm.label(next_case)
         c.asm.label(generic)
-        function = self.function() if isinstance(self.function, ReferenceType) else self.function
+        function = descriptions.resolve_function(self.function)
         held = c.copy_reference(c.data) if borrowed else None
         value = c.call(function, held if held is not None else c.data)
         if held is not None:
@@ -343,6 +342,8 @@ def build_union_program(plan: UnionPlan, c):  # noqa: C901, PLR0911, PLR0912
         if not isinstance(program, ModelProgram):
             return None
         model = program.plan
+        if not isinstance(model, ModelLoaderPlan):
+            return None
         crown = model.name_layout.crown
         if not isinstance(crown, InpDictCrown) or not all(field.is_required for field in model.shape.fields):
             return None

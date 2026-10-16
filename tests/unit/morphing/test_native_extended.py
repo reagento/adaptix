@@ -105,6 +105,9 @@ def test_union_dumper_retains_input_across_custom_callbacks(monkeypatch, debug_t
 @pytest.mark.parametrize("debug_trail", [DebugTrail.FIRST, DebugTrail.ALL])
 @pytest.mark.parametrize("variable", [False, True])
 def test_partial_tuple_is_hidden_from_gc_callbacks(debug_trail, variable):
+    if not variable and sys.version_info < (3, 13):
+        pytest.skip("Fixed-tuple native generation requires CPython 3.13 or newer")
+
     def convert(value):
         gc.collect()
         for candidate in gc.get_objects():
@@ -186,8 +189,8 @@ def test_factory_constructor_observes_mutable_sentinel_cells():
         assert functions[1]({"id": 1000, "items": None}) == Model(1000, None)
         assert list(vars(functions[1]({"id": 1000}))) == ["id", "items"]
     cells = dict(zip(Model.__init__.__code__.co_freevars, Model.__init__.__closure__, strict=True))
-    sentinel_cell = cells["__dataclass_HAS_DEFAULT_FACTORY__"]
-    factory_cell = cells["__dataclass_dflt_items__"]
+    sentinel_cell = cells.get("__dataclass_HAS_DEFAULT_FACTORY__") or cells["_HAS_DEFAULT_FACTORY"]
+    factory_cell = cells.get("__dataclass_dflt_items__") or cells["_dflt_items"]
     sentinel = sentinel_cell.cell_contents
     for value in (sentinel, None, object()):
         sentinel_cell.cell_contents = value

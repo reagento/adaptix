@@ -82,3 +82,11 @@ class CPythonLayout:
     abc_invalidation_counter: int | None = None
     timezone_offset: int | None = None
     timezone_size: int | None = None
+
+    def offset(self, name: str) -> int:
+        value = getattr(self, name, None)
+        if value is None:
+            raise RuntimeError(f"No offset {name!r} in CPython {self.version} layout")
+        if not isinstance(value, int):
+            raise TypeError(f"CPython layout field {name!r} is not an offset")
+        return value

@@ -405,9 +405,8 @@ def test_wild_extra_targets(codegen_backend, debug_ctx, debug_trail, acc_schema)
         codegen_backend=codegen_backend,
     )
 
-    pytest.raises(ValueError, dumper_getter).match(
-        full_match("ExtraTargets ['b'] are attached to non-existing fields"),
-    )
+    with pytest.raises(ValueError, match=full_match("ExtraTargets ['b'] are attached to non-existing fields")):
+        dumper_getter()
 
 
 @parametrize_bool("is_required_a", "is_required_b")
@@ -840,9 +839,8 @@ def test_optional_fields_at_list(codegen_backend, debug_ctx, debug_trail, acc_sc
         codegen_backend=codegen_backend,
     )
 
-    pytest.raises(ValueError, dumper_getter).match(
-        full_match("Optional fields ['b'] are found at list crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Optional fields ['b'] are found at list crown")):
+        dumper_getter()
 
 
 @dataclass
@@ -1310,9 +1308,8 @@ def test_extra_target_at_crown(codegen_backend, debug_ctx, debug_trail, acc_sche
         debug_ctx=debug_ctx,
         codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, dumper_getter).match(
-        full_match("Extra targets ['b'] are found at crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Extra targets ['b'] are found at crown")):
+        dumper_getter()
 
     dumper_getter = make_dumper_getter(
         shape=shape(
@@ -1333,9 +1330,8 @@ def test_extra_target_at_crown(codegen_backend, debug_ctx, debug_trail, acc_sche
         debug_ctx=debug_ctx,
         codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, dumper_getter).match(
-        full_match("Extra targets ['b'] are found at crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Extra targets ['b'] are found at crown")):
+        dumper_getter()
 
 
 @dataclass

@@ -2,7 +2,6 @@ import ctypes
 import struct
 import sys
 from dataclasses import dataclass
-from weakref import ReferenceType
 
 from adaptix._internal.morphing.native import descriptions
 
@@ -58,7 +57,7 @@ class EnumProgram(descriptions.EnumProgram):
             match_integer,
         )
 
-        function = self.function() if isinstance(self.function, ReferenceType) else self.function
+        function = descriptions.resolve_function(self.function)
         if not supports_dictionary_cache():
             return c.call(function, c.data)
         generic, done = c.label("enum_slow"), c.label("enum_ready")

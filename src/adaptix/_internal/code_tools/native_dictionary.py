@@ -45,14 +45,14 @@ def create_dictionary_template(names: tuple[str, ...]) -> DictionaryTemplate:
             data = vars(owner)
             for name in names:
                 data[name] = None
-        values = pointer(id(data) + layout.dict_values)
+        values = pointer(id(data) + layout.offset("dict_values"))
         indices = tuple(inline_index(cls, name) for name in names)
         if values and all(index is not None for index in indices):
-            keys = pointer(id(data) + layout.dict_keys)
-            index_bytes = ctypes.c_uint8.from_address(keys + layout.keys_index_bytes).value
+            keys = pointer(id(data) + layout.offset("dict_keys"))
+            index_bytes = ctypes.c_uint8.from_address(keys + layout.offset("keys_index_bytes")).value
             concrete = tuple(index for index in indices if index is not None)
             if all(
-                pointer(values + layout.values_items + index * ctypes.sizeof(ctypes.c_void_p)) == id(None)
+                pointer(values + layout.offset("values_items") + index * ctypes.sizeof(ctypes.c_void_p)) == id(None)
                 for index in concrete
             ):
                 return DictionaryTemplate(
@@ -61,26 +61,28 @@ def create_dictionary_template(names: tuple[str, ...]) -> DictionaryTemplate:
                     kind=2,
                     index_bytes=index_bytes,
                     key_offsets=tuple(
-                        layout.keys_indices + (1 << index_bytes) + index * layout.unicode_entry_size
+                        layout.offset("keys_indices") + (1 << index_bytes) + index * layout.offset("unicode_entry_size")
                         for index in concrete
                     ),
                     value_offsets=tuple(index * 8 for index in concrete),
                     tracked_copies=tracked_copies,
-                    capacity=ctypes.c_uint8.from_address(values + layout.values_capacity).value,
+                    capacity=ctypes.c_uint8.from_address(values + layout.offset("values_capacity")).value,
                     keys_pointer=keys,
                     # Keep the original type even if the carrier's __class__
                     # changes. Its cached-key reference prevents address reuse.
                     keys_owner=cls,
                 )
     data = dict.fromkeys(names)
-    keys = pointer(id(data) + layout.dict_keys)
-    index_bytes = ctypes.c_uint8.from_address(keys + layout.keys_index_bytes).value
+    keys = pointer(id(data) + layout.offset("dict_keys"))
+    index_bytes = ctypes.c_uint8.from_address(keys + layout.offset("keys_index_bytes")).value
     key_offsets = tuple(
-        layout.keys_indices + (1 << index_bytes) + index * layout.unicode_entry_size for index in range(len(names))
+        layout.offset("keys_indices") + (1 << index_bytes) + index * layout.offset("unicode_entry_size")
+        for index in range(len(names))
     )
     return DictionaryTemplate(
         data=data, owner=None, kind=1, index_bytes=index_bytes,
-        key_offsets=key_offsets, value_offsets=tuple(offset + layout.unicode_entry_value for offset in key_offsets),
+        key_offsets=key_offsets,
+        value_offsets=tuple(offset + layout.offset("unicode_entry_value") for offset in key_offsets),
         tracked_copies=tracked_copies,
     )
 

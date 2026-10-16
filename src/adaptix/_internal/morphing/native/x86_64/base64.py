@@ -3,7 +3,6 @@ import ctypes
 import sys
 from dataclasses import dataclass
 from functools import cache
-from weakref import ReferenceType
 
 from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.code_tools.x86_64_assembler import Immediate
@@ -208,7 +207,7 @@ def dump(c, function):  # noqa: PLR0915
 @dataclass(frozen=True)
 class Base64Program(descriptions.Base64Program):
     def emit(self, c):
-        function = self.function() if isinstance(self.function, ReferenceType) else self.function
+        function = descriptions.resolve_function(self.function)
         if not c.has_validated_object_header or not supported():
             return c.call(function, c.data)
         return load(c, function) if self.loading else dump(c, function)

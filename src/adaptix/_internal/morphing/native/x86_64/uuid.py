@@ -19,6 +19,8 @@ SEPARATORS = (8, 13, 18, 23)
 @dataclass(frozen=True)
 class UUIDProgram(descriptions.UUIDProgram):
     def emit(self, c):
+        if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
+            return c.call(self.function, c.data)
         from adaptix._internal.code_tools.native_access import (  # noqa: PLC0415
             GENERIC_GETTER,
             LOOKUP,
@@ -28,7 +30,7 @@ class UUIDProgram(descriptions.UUIDProgram):
             supports_dictionary_cache,
         )
 
-        if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)} or not supports_dictionary_cache():
+        if not supports_dictionary_cache():
             return c.call(self.function, c.data)
         initializer = UUID.__init__
         if (

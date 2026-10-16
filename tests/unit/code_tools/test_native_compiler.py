@@ -788,10 +788,12 @@ def test_reference_operations_handle_mortal_and_immortal_objects(fallback, value
     function = compiler.finish(result).make_callable()
     for _ in range(3):
         assert function(None) is value
-    references = sys.getrefcount(value)
+    # Retaining a small integer's reference count as an int can itself add
+    # a reference to that integer when the count happens to equal its value.
+    references = float(sys.getrefcount(value))
     for _ in range(100):
         function(None)
-    after = sys.getrefcount(value)
+    after = float(sys.getrefcount(value))
     assert after == references
 
 
