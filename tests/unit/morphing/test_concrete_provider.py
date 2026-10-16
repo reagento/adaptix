@@ -14,7 +14,7 @@ from tests_helpers import cond_list, raises_exc
 from tests_helpers.morphing import assert_load_error, json_schema_error
 
 from adaptix import Retort
-from adaptix._internal.feature_requirement import HAS_PY_311, IS_PYPY
+from adaptix._internal.feature_requirement import HAS_PY_311
 from adaptix._internal.morphing.concrete_provider import (
     DatetimeFormatProvider,
     DateTimestampProvider,
@@ -487,15 +487,9 @@ def test_decimal_loader_provider(strict_coercion, debug_trail):
     if strict_coercion:
         raises_exc(TypeLoadError(Union[str, Decimal], []), lambda: loader([]))
     else:
-        if IS_PYPY:
-            description = (
-                "Invalid tuple size in creation of Decimal from list or tuple."
-                "  The list or tuple should have exactly three elements."
-            )
-        else:
-            description = "argument must be a sequence of length 3"
-
-        raises_exc(ValueLoadError(description, []), lambda: loader([]))
+        with pytest.raises(ValueError, match=r"sequence|tuple") as decimal_error:
+            Decimal([])
+        raises_exc(ValueLoadError(str(decimal_error.value), []), lambda: loader([]))
 
 
 def test_fraction_loader_provider(strict_coercion, debug_trail):
@@ -542,4 +536,3 @@ def test_zone_info_provider(strict_coercion, debug_trail):
 
     dumper = retort.get_dumper(ZoneInfo)
     assert dumper(ZoneInfo("Pacific/Kwajalein")) == "Pacific/Kwajalein"
-
