@@ -2,6 +2,7 @@ from collections.abc import Mapping, Sequence
 from functools import partial
 from typing import Any
 
+from adaptix._internal.morphing.native.codegen import NativeCodeGenerator, fetch_native_codegen
 from adaptix._internal.morphing.native.plan import ModelDumperPlan
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
@@ -17,7 +18,6 @@ from ...utils import AlwaysEqualHashWrapper, IdentityHashWrapper, Omittable, Omi
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.request_cls import JSONSchemaRequest
 from ..json_schema.schema_model import JSONValue
-from adaptix._internal.morphing.native.codegen import NativeCodeGenerator, fetch_native_codegen
 from ..provider_template import DumperProvider, JSONSchemaProvider
 from ..request_cls import DebugTrailRequest, DumperRequest
 from .basic_gen import (
@@ -52,6 +52,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
             model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
             closure_name=self._get_closure_name(request),
             file_name=self._get_file_name(request),
+            model_type=IdentityHashWrapper(request.last_loc.type),
         )
 
     def _make_dumper(
@@ -66,6 +67,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
         model_identity: str,
         closure_name: str,
         file_name: str,
+        model_type: IdentityHashWrapper[Any] | None = None,
     ) -> Dumper:
         self._validate_params(shape, name_layout)
         if native_codegen.value is not None:
@@ -77,6 +79,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
                     debug_trail=debug_trail,
                     fields_dumpers=fields_dumpers.mapping,
                     model_identity=model_identity,
+                    model_type=model_type.value if model_type is not None else None,
                 ),
                 hook=code_gen_hook.value,
             )

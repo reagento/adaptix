@@ -93,6 +93,7 @@ class ModelDumperPlan(ModelPlan):
     shape: OutputShape
     name_layout: OutputNameLayout
     fields_dumpers: Mapping[str, Dumper]
+    model_type: Any = None
 
 
 NativePlan = ScalarPlan | IterablePlan | TuplePlan | DictPlan | UnionPlan | ModelLoaderPlan | ModelDumperPlan

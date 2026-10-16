@@ -48,7 +48,7 @@ How to setup the repository
 
 
 Native code generation dependencies
-==================================
+===================================
 
 Morphing providers request a ``NativeCodeGenerator`` through
 ``NativeCodeGenRequest``. The request is located, so a recipe can replace the
@@ -68,8 +68,8 @@ runtime semantics remain in ``model/native_runtime.py``. Neither layer emits
 instructions. Architecture-specific lowering lives in ``native/x86_64/``.
 
 ``Retort`` resolves ``CodeGenBackend`` at configuration time and supplies the
-built-in implementation as a default dependency. Currently only
-``X86CodeGenerator`` is implemented. It receives a ``compiler_factory`` and
+built-in implementation as a default dependency. ``X86CodeGenerator`` is the
+production implementation. It receives a ``compiler_factory`` and
 passes it to every x86 model and container emitter. ``X86Compiler`` in turn
 receives an ``assembler_factory`` for every code fragment, including recovery
 blocks, function entries and call context initialization.
@@ -98,12 +98,64 @@ recursive callable wrapper through its compiler factory. The CPython callable,
 its constants and executable-memory lifetime live in
 ``code_tools/native_callable.py``.
 
+``code_tools/x86_64_dictionary.py`` emits dictionary hash probes, ordered field
+rows and ASCII key comparisons. It receives the compiler instance explicitly;
+``X86Compiler`` delegates these operations while retaining the shared assembler
+and reference ownership state.
+
 An ARM implementation can consume the same plans and scalar descriptions
 through ``NativeCodeGenerator.compile``. It still needs its own lowering,
 stack layout, ABI and executable-memory support, including instruction-cache
 synchronization. The shared plans describe conversion configuration, not a
 portable instruction set; passing an ARM assembler to ``X86Compiler`` does
 not port the x86 instructions.
+
+The optional :doc:`xdsl-experiment` injects an alternative generator which
+lowers a subset of these plans through xDSL and LLVM. It includes execution,
+creation-time and generated-code comparisons with the existing backend.
+
+
+Field IR and optimization
+-------------------------
+
+Flat native model loaders use a typed internal DSL defined in
+``morphing/native/bytecodes.py``. ``model_ir.py`` translates resolved model plans into
+field operations; ``optimizer.py`` rewrites them before the architecture
+backend emits instructions. These modules do not import instruction emitters.
+The current IR covers required field loading and the required prefix of models
+with optional fields. Defaults, model construction and dumping retain their
+existing lowering.
+
+``ReadField`` produces an owned reference in source order. ``CheckType`` keeps
+an exact-type value and preserves the original converter for other inputs.
+``ConvertField`` replaces the value and marks a boundary that can execute
+Python, mutate input or run finalizers when an input reference is released.
+Conversion operations retain their original error paths.
+
+``fuse_scalar_reads`` combines consecutive required reads and identity checks
+into ``ReadScalarFields``. Its fast path requires verified exact-dictionary
+keys and types. Failed guards execute the original operations in order, or the
+existing whole-model fallback. A final raw read can join the batch while its
+conversion remains after it; later reads never cross a conversion. Optional
+reads stop fusion. Architecture and CPython-layout checks remain in lowering.
+
+The compiled model program retains the optimized IR. Inlining reuses it while
+allocating fresh machine-code slots for each occurrence. Adding another
+architecture can reuse the same field operations and optimization rule;
+register allocation, guards and reference handling still need backend lowering.
+
+``bytecodes.py`` contains both instruction definitions and their bodies.
+The bodies use the ``FieldBackend`` protocol for dictionary access, conditional
+execution, converter calls and owned-reference replacement. ``FieldContext``
+binds symbolic targets and replays original instructions on guard failures.
+The x86 implementation in ``x86_64/fields.py`` emits branches and CPython calls;
+the portable executor in tests runs the same bodies with Python values. The
+operation semantics are shared, rather than reimplemented in a backend switch.
+For native code, these bodies run during compilation. Calling the generated
+loader executes machine code without interpreting field operations.
+Model field calls also impose an inlining budget on child converters, including
+containers. Reducing a child's code size below the compiler's general limit
+must not cause a large body to be duplicated throughout its parent models.
 
 
 Tools overview
