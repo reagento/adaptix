@@ -122,6 +122,15 @@ def test_list_operations_fall_back_without_layout(monkeypatch):
     assert sys.getrefcount(value) == references
 
 
+def test_native_platform_requires_a_supported_layout(monkeypatch):
+    native_layout()
+    from adaptix._internal.code_tools.cpython_layout import selection
+
+    monkeypatch.setattr(selection, "get_cpython_layout", lambda: None)
+    with pytest.raises(RuntimeError, match="No CPython layout"):
+        check_native_platform()
+
+
 def test_interpreter_evaluator_offset_matches_c_api():
     layout = native_layout()
     if layout.interpreter_eval_frame is None:

@@ -92,6 +92,7 @@ def check_native_platform() -> None:
         or sysconfig.get_config_var("Py_GIL_DISABLED")
     ):
         raise RuntimeError("The x86-64 backend requires a GIL-enabled CPython on Linux x86-64")
+    require_cpython_layout()
 
 
 class X86Compiler:
