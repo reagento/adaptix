@@ -1,10 +1,10 @@
 from collections.abc import Callable
-from dataclasses import dataclass
-from functools import partial
+from dataclasses import dataclass, field
+from functools import cached_property, partial
 from typing import Generic, TypeVar
 
 from adaptix._internal.code_tools.x86_64_assembler import Immediate, Slot
-from adaptix._internal.code_tools.x86_64_compiler import X86Compiler
+from adaptix._internal.code_tools.x86_64_compiler import MAX_INLINE_CODE_SIZE, X86Compiler
 from adaptix._internal.common import Loader
 from adaptix._internal.definitions import CodeGenBackend, DebugTrail
 from adaptix._internal.model_tools.definitions import (
@@ -36,10 +36,16 @@ from adaptix._internal.morphing.model.crown_definitions import (
     OutListCrown,
     OutNoneCrown,
 )
+from adaptix._internal.morphing.native.bytecodes import FieldBlock, Operation, ReadScalarFields, emit_field_block
 from adaptix._internal.morphing.native.codegen import publish
+from adaptix._internal.morphing.native.model_ir import build_model_fields
+from adaptix._internal.morphing.native.optimizer import fuse_scalar_reads
 from adaptix._internal.morphing.native.plan import ModelDumperPlan, ModelLoaderPlan
 from adaptix._internal.morphing.native.registry import IDENTITY_LOADERS
+from adaptix._internal.morphing.native.x86_64.fields import X86FieldBackend
 from adaptix._internal.special_cases_optimization import as_is_stub, get_default_clause
+
+MODEL_INLINE_CODE_SIZE = 32768
 
 
 @dataclass(frozen=True)
@@ -47,19 +53,28 @@ class ModelProgram:
     plan: ModelLoaderPlan | ModelDumperPlan
     compiler_factory: Callable[[str], X86Compiler]
     flat_fallback: Loader | None = None
+    loader_ir: FieldBlock | None = None
+
+    @property
+    def inline_budget(self) -> int | None:
+        # Bound duplicated model code in a parent while keeping scalar reads
+        # fused. Dumpers retain their existing inlining policy.
+        return MODEL_INLINE_CODE_SIZE if isinstance(self.plan, ModelLoaderPlan) else None
 
     def emit(self, compiler: X86Compiler) -> Slot:
         if isinstance(self.plan, ModelLoaderPlan):
-            generator = NativeModelLoaderGen(
+            loader_gen = NativeModelLoaderGen(
                 self.plan,
                 self.compiler_factory,
                 flat_fallback=self.flat_fallback,
             )
-            generator.compiler = compiler
-            return generator.optional_result() if self.flat_fallback is not None else generator.inline_result()
-        generator = NativeModelDumperGen(self.plan, self.compiler_factory)
-        generator.compiler = compiler
-        return generator.compile_result()
+            if self.loader_ir is not None:
+                loader_gen.field_ir = self.loader_ir
+            loader_gen.compiler = compiler
+            return loader_gen.optional_result() if self.flat_fallback is not None else loader_gen.inline_result()
+        dumper_gen = NativeModelDumperGen(self.plan, self.compiler_factory)
+        dumper_gen.compiler = compiler
+        return dumper_gen.compile_result()
 
 
 ModelPlanT = TypeVar("ModelPlanT", ModelLoaderPlan, ModelDumperPlan)
@@ -70,16 +85,27 @@ class NativeModelGen(Generic[ModelPlanT]):
     plan: ModelPlanT
     compiler_factory: Callable[[str], X86Compiler]
     flat_fallback: Loader | None = None
+    compiler: X86Compiler = field(init=False, repr=False)
 
     def discard(self, function, *args):
         self.compiler.release(self.compiler.call(function, *args))
 
     def finish(self, result: Slot, hook: CodeGenHook, *, inline=False):
-        program = ModelProgram(self.plan, self.compiler_factory, self.flat_fallback) if inline else None
+        program = self.make_program() if inline else None
         return publish(self.compiler.finish(result, program=program), hook, CodeGenBackend.X86_64)
+
+    def make_program(self) -> ModelProgram:
+        return ModelProgram(self.plan, self.compiler_factory, self.flat_fallback)
 
 
 class NativeModelLoaderGen(NativeModelGen[ModelLoaderPlan]):
+    @cached_property
+    def field_ir(self) -> FieldBlock:
+        return fuse_scalar_reads(build_model_fields(self.plan), defer_last=self.flat_fallback is None)
+
+    def make_program(self) -> ModelProgram:
+        return ModelProgram(self.plan, self.compiler_factory, self.flat_fallback, self.field_ir)
+
     def compile(self, hook: CodeGenHook):  # noqa: C901
         self.compiler = self.compiler_factory(self.plan.name)
         if self.can_inline():
@@ -177,8 +203,11 @@ class NativeModelLoaderGen(NativeModelGen[ModelLoaderPlan]):
             key for key, child in crown.map.items() if self.plan.shape.fields_dict[child.id].is_required
         )
         exact_dict = c.dictionary_guard(c.data)
-        fields = {}
-        for index, (key, child) in enumerate(crown.map.items()):
+        first = self.field_ir.operations[0]
+        fields = (
+            self.emit_fields((first,), state, fallback_label=generic) if isinstance(first, ReadScalarFields) else {}
+        )
+        for index, (key, child) in enumerate(list(crown.map.items())[len(fields):], start=len(fields)):
             field = self.plan.shape.fields_dict[child.id]
             raw = (
                 c.guarded_get_item(
@@ -236,39 +265,7 @@ class NativeModelLoaderGen(NativeModelGen[ModelLoaderPlan]):
             c.constant(None) if self.plan.debug_trail == DebugTrail.DISABLE else
             c.lazy_call(partial(runtime.LoadState, self.plan.debug_trail, self.plan.model_identity))
         )
-        items = list(crown.map.items())
-        if not all(isinstance(child, InpFieldCrown) for _, child in items):
-            raise TypeError
-        scalar_types = tuple(
-            next((target for function, target in IDENTITY_LOADERS
-                  if self.plan.field_loaders[child.id] is function), None)
-            for _, child in items
-        )
-        fusible = all(
-            self.plan.field_loaders[child.id] is as_is_stub or expected is not None
-            for (_, child), expected in zip(items, scalar_types, strict=True)
-        )
-        defer_last = (
-            not fusible and all(
-                self.plan.field_loaders[child.id] is as_is_stub or expected is not None
-                for (_, child), expected in zip(items[:-1], scalar_types[:-1], strict=True)
-            )
-        )
-        values = c.get_items(
-            c.data, tuple(crown.map), scalar_types,
-            lambda: list(self.inline_fields(crown, state, defer_last=defer_last).values()),
-        ) if fusible or defer_last else None
-        fields = (
-            {child.id: value for (_, child), value in zip(items, values, strict=True)}
-            if values is not None else self.inline_fields(crown, state)
-        )
-        if values is not None and defer_last:
-            key, child = items[-1]
-            raw = fields[child.id]
-            skip = c.label("absent_last_field")
-            c.branch_if(raw, runtime.MISSING, skip)
-            self.convert_in_place(self.plan.field_loaders[child.id], raw, (key,), state)
-            c.asm.label(skip)
+        fields = self.emit_fields(self.field_ir.operations, state)
         if self.plan.debug_trail != DebugTrail.DISABLE:
             c.finish_lazy_state(state, runtime.finish_load, "no_load_errors")
         args = tuple(fields[param.field_id] for param in self.plan.shape.params)
@@ -283,29 +280,16 @@ class NativeModelLoaderGen(NativeModelGen[ModelLoaderPlan]):
             c.release(state)
         return result
 
-    def inline_fields(self, crown, state, *, defer_last=False):
-        c = self.compiler
-        fields: dict[str, Slot] = {}
-        required_keys = frozenset(crown.map)
-        exact_dict = c.dictionary_guard(c.data)
-        for index, (key, child) in enumerate(crown.map.items()):
-            if not isinstance(child, InpFieldCrown):
-                raise TypeError
-            raw = c.guarded_get_item(
-                c.data, key, exact_dict,
-                partial(runtime.handle_flat_load_access_error, required_keys, key, first=index == 0),
-                state, c.data,
-            )
-            loader = self.plan.field_loaders[child.id]
-            if loader is as_is_stub or (defer_last and index == len(crown.map) - 1):
-                fields[child.id] = raw
-                continue
-            skip = c.label("missing_inline_field")
-            c.branch_if(raw, runtime.MISSING, skip)
-            self.convert_in_place(loader, raw, (key,), state)
-            c.asm.label(skip)
-            fields[child.id] = raw
-        return fields
+    def emit_fields(
+        self, operations: tuple[Operation, ...], state: Slot | Immediate, *, fallback_label: str | None = None,
+    ) -> dict[str, Slot]:
+        return emit_field_block(
+            operations, self.field_ir.required_keys,
+            partial(
+                X86FieldBackend, self.compiler, state, self.plan.debug_trail, inline_budget=MAX_INLINE_CODE_SIZE,
+            ),
+            (lambda: self.compiler.asm.jump(fallback_label)) if fallback_label is not None else None,
+        )
 
     def node(self, crown: InpDictCrown | InpListCrown, path: CrownPath, data: Slot) -> Slot:
         c = self.compiler
@@ -412,8 +396,10 @@ class NativeModelLoaderGen(NativeModelGen[ModelLoaderPlan]):
     def call_loader(self, loader: Loader, raw: Slot, path: CrownPath, state: Slot | Immediate) -> Slot:
         c = self.compiler
         if self.plan.debug_trail == DebugTrail.DISABLE:
-            return c.inline_call(loader, raw)
-        return c.inline_call(loader, raw, partial(runtime.handle_load_error, path), state)
+            return c.inline_call(loader, raw, code_budget=MAX_INLINE_CODE_SIZE)
+        return c.inline_call(
+            loader, raw, partial(runtime.handle_load_error, path), state, code_budget=MAX_INLINE_CODE_SIZE,
+        )
 
 
 def merge_constructor_extra(kwargs: dict, extra: dict) -> None:

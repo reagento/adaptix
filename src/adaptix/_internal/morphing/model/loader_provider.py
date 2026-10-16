@@ -1,6 +1,7 @@
 from collections.abc import Mapping, Set
 from typing import Any
 
+from adaptix._internal.morphing.native.codegen import NativeCodeGenerator, fetch_native_codegen
 from adaptix._internal.morphing.native.plan import ModelLoaderPlan
 
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
@@ -17,7 +18,6 @@ from ..json_schema.definitions import JSONSchema
 from ..json_schema.request_cls import JSONSchemaRequest
 from ..json_schema.schema_model import JSONValue
 from ..model.loader_gen import BuiltinModelLoaderGen, ModelInputJSONSchemaGen, ModelLoaderProps
-from adaptix._internal.morphing.native.codegen import NativeCodeGenerator, fetch_native_codegen
 from ..provider_template import JSONSchemaProvider, LoaderProvider
 from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from .basic_gen import (

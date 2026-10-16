@@ -45,6 +45,73 @@ def test_call_protocol_and_vectorcall():
             function(*args, **kwargs)
 
 
+@pytest.mark.parametrize("arity", [0, 1, 2, 6, 8])
+def test_native_positional_and_keyword_signatures(arity):
+    names = tuple(f"value{index}" for index in range(arity))
+    compiler = X86Compiler("native_signature", parameters=names)
+    result = compiler.call(lambda *values: values, *compiler.arguments)
+    function = compiler.finish(result).make_callable()
+    values = tuple(object() for _ in names)
+    assert function(*values) == values
+    assert function(**dict(zip(names, values, strict=True))) == values
+    assert str(inspect.signature(function)) == "(" + ", ".join(names) + ")"
+    outer = X86Compiler("native_outer")
+    returned = outer.call(function, *(outer.constant(value) for value in values))
+    assert outer.finish(returned).make_callable()(None) == values
+    for args, kwargs in [((*values, None), {}), (values, {"unknown": None})]:
+        with pytest.raises(TypeError):
+            function(*args, **kwargs)
+    if values:
+        with pytest.raises(TypeError):
+            function(*values[:-1])
+        with pytest.raises(TypeError):
+            function(*values, **{names[0]: None})
+
+
+def test_native_closures_share_code_and_own_their_context():
+    class Context:
+        pass
+
+    compiler = X86Compiler("native_closure", parameters=("value",), bound_context=True)
+    assert compiler.bound_context is not None
+    result = compiler.call(lambda context, value: (context, value), compiler.bound_context, compiler.arguments[0])
+    template = compiler.finish(result)
+    first_context, second_context = Context(), Context()
+    first, second = template.bind(first_context), template.bind(second_context)
+    assert first.memory is second.memory is template.memory
+    first_callable, second_callable = first.make_callable(), second.make_callable()
+    assert first_callable(1) == (first_context, 1)
+    assert second_callable(value=2) == (second_context, 2)
+    caller = X86Compiler("call_closure")
+    result = caller.call(first_callable, caller.data)
+    assert caller.finish(result).make_callable()(3) == (first_context, 3)
+    reference = weakref.ref(first_context)
+    del first_context, first
+    gc.collect()
+    assert reference() is not None
+    assert first_callable(4) == (reference(), 4)
+    del first_callable, caller
+    gc.collect()
+    assert reference() is None
+    with pytest.raises(ValueError, match="closure"):
+        _ = second.raw_address
+
+
+def test_native_default_arguments_and_keyword_lifetimes():
+    default = object()
+    compiler = X86Compiler("native_defaults", parameters=("value", "optional"), defaults=(default,))
+    result = compiler.call(lambda *values: values, *compiler.arguments)
+    function = compiler.finish(result).make_callable()
+    assert function(1) == (1, default)
+    assert function(value=2) == (2, default)
+    assert function(optional=3, value=4) == (4, 3)
+    assert function(5, optional=6) == (5, 6)
+    references = sys.getrefcount(default)
+    for _ in range(100):
+        function(value=object())
+    assert sys.getrefcount(default) == references
+
+
 def test_c_call_reuses_empty_destination_and_cleans_up_on_errors():
     destroyed = []
     result = object()
@@ -216,6 +283,45 @@ def test_callable_keeps_allocation_alive_and_releases_it():
     # holds it anymore, so it can now be closed without dangling function code.
     allocation.close()
 
+
+def test_method_metadata_survives_gc_clearing_its_ctypes_storage():
+    compiler = X86Compiler("method_metadata")
+    function = compiler.finish(compiler.call(str, compiler.data)).make_callable()
+    method = function.__self__.method
+    if isinstance(method, ctypes.Structure):
+        # GC can clear reachable storage inside an unreachable callable cycle
+        # before dropping the builtin's last reference. Simulate that ordering.
+        get_slot = ctypes.pythonapi.PyType_GetSlot
+        get_slot.argtypes = (ctypes.py_object, ctypes.c_int)
+        get_slot.restype = ctypes.c_void_p
+        clear = ctypes.PYFUNCTYPE(ctypes.c_int, ctypes.py_object)(get_slot(type(method), 51))  # Py_tp_clear
+        assert clear(method) == 0
+    get_flags = ctypes.pythonapi.PyCFunction_GetFlags
+    get_flags.argtypes = (ctypes.py_object,)
+    get_flags.restype = ctypes.c_int
+    assert get_flags(function) == 0x0080 | 0x0002  # METH_FASTCALL | METH_KEYWORDS
+
+
+def test_cyclic_callables_keep_method_metadata_alive_until_deallocation():
+    memory_references = []
+    callbacks = []
+    enabled = gc.isenabled()
+    gc.disable()
+    try:
+        for index in range(256):
+            compiler = X86Compiler(f"cyclic_callback_{index}")
+            function = compiler.finish(compiler.call(str, compiler.data)).make_callable()
+            assert function(index) == str(index)
+            function.__module__ = {"callback": function}
+            callbacks.append(function)
+            memory_references.append(weakref.ref(function.__self__.memory))
+        del compiler, function
+        callbacks.clear()
+        gc.collect()
+        assert all(reference() is None for reference in memory_references)
+    finally:
+        if enabled:
+            gc.enable()
 
 def test_recursive_callable_cycle_releases_allocation():
     holder = []
@@ -882,7 +988,7 @@ def test_list_to_tuple_transfer_preserves_ownership_and_shared_lists(shared):
 
 
 @pytest.mark.parametrize("failure", [False, True])
-@pytest.mark.parametrize("mode", ["inline", "direct", "limited"])
+@pytest.mark.parametrize("mode", ["inline", "direct", "limited", "budget"])
 def test_nested_native_loop_preserves_callee_saved_registers(monkeypatch, failure, mode):
     if mode == "limited":
         monkeypatch.setattr("adaptix._internal.code_tools.x86_64_compiler.MAX_INLINE_CODE_SIZE", 0)
@@ -893,7 +999,10 @@ def test_nested_native_loop_preserves_callee_saved_registers(monkeypatch, failur
     for register, seed in zip((12, 13, 14, 15), seeds, strict=True):
         compiler.asm.mov_imm(register, seed)
     if mode != "direct":
-        result = compiler.inline_call(inner, compiler.data, (lambda error: ["failed"]) if failure else None)
+        result = compiler.inline_call(
+            inner, compiler.data, (lambda error: ["failed"]) if failure else None,
+            code_budget=0 if mode == "budget" else None,
+        )
     else:
         result = (
             compiler.guarded_call(inner, (compiler.data,), lambda error: ["failed"])

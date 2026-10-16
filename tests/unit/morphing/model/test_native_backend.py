@@ -12,6 +12,7 @@ from adaptix._internal.code_tools.x86_64_compiler import check_native_platform
 from adaptix._internal.morphing.model.basic_gen import CodeGenAccumulator
 from adaptix._internal.morphing.model.dumper_gen import BuiltinModelDumperGen
 from adaptix._internal.morphing.model.loader_gen import BuiltinModelLoaderGen
+from adaptix._internal.morphing.native.x86_64 import model as native_model
 
 
 @pytest.fixture(autouse=True)
@@ -89,6 +90,85 @@ def test_generated_functions_outlive_retort():
     gc.collect()
     for _ in range(100):
         assert dump(load({"value": 1})) == {"value": 1, "children": []}
+
+
+def test_inlining_reuses_model_ir(monkeypatch):
+    @dataclass
+    class Child:
+        value: int
+
+    @dataclass
+    class Parent:
+        left: Child
+        right: Child
+
+    builds = []
+    build = native_model.build_model_fields
+
+    def record(plan):
+        builds.append(plan.shape.constructor)
+        return build(plan)
+
+    monkeypatch.setattr(native_model, "build_model_fields", record)
+    retort = Retort(codegen_backend=CodeGenBackend.X86_64)
+    load = retort.get_loader(Parent)
+    assert builds.count(Child) == 1
+    assert builds.count(Parent) == 1
+    child_ir = retort.get_loader(Child).__self__.program.loader_ir
+    assert child_ir is not None
+    for _ in range(10):
+        assert load({"left": {"value": 1}, "right": {"value": 2}}) == Parent(Child(1), Child(2))
+    assert builds == [Child, Parent]
+
+
+@pytest.mark.parametrize("with_default", [False, True])
+def test_model_inlining_budget_keeps_container_calls_and_errors(monkeypatch, debug_trail, with_default):
+    monkeypatch.setattr(native_model, "MAX_INLINE_CODE_SIZE", 0)
+    model = make_dataclass("Model", [
+        ("values", list[int], field(default_factory=list) if with_default else field()),
+    ])
+    python = Retort(debug_trail=debug_trail).get_loader(model)
+    native = Retort(codegen_backend=CodeGenBackend.X86_64, debug_trail=debug_trail).get_loader(model)
+    if isinstance(native, BuiltinFunctionType):
+        child = native.__self__.program.plan.field_loaders["values"]
+        assert any(constant is child for constant in native.__self__.constants)
+    for data in [{"values": [1000, 2000]}, {"values": []}]:
+        assert native(data) == python(data)
+    if with_default:
+        assert native({}) == python({})
+    for data in [{"values": [1000, "bad"]}, {"values": None}]:
+        with pytest.raises(Exception, match=r".*") as expected:
+            python(data)
+        raises_exc(expected.value, lambda data=data: native(data))
+
+
+def test_field_ir_keeps_reads_after_input_finalizers(debug_trail):
+    @dataclass
+    class Model:
+        head: int
+        first: object
+        second: int
+
+    events = []
+    data = {"head": 1, "second": 2}
+
+    class Value:
+        def __del__(self):
+            events.append("finalize")
+            data["second"] = 20
+
+    data["first"] = Value()
+
+    def convert(value):
+        events.append("convert")
+        del data["first"]
+        return 0
+
+    retort = Retort(
+        codegen_backend=CodeGenBackend.X86_64, debug_trail=debug_trail, recipe=[loader("first", convert)],
+    )
+    assert retort.load(data, Model) == Model(1, 0, 20)
+    assert events == ["convert", "finalize"]
 
 
 def test_base_exceptions_are_not_aggregated(debug_trail):
@@ -212,6 +292,85 @@ def test_dictionary_cache_observes_mutations_from_an_earlier_field_loader(debug_
     data.clear()
     data.update(first=2, second=0)
     assert load(data) == Model(2, 12)
+
+
+def test_scalar_prefix_keeps_later_reads_after_custom_loaders(debug_trail):
+    @dataclass
+    class Model:
+        first: int | str
+        second: str | None
+        third: int
+        last: str = "default"
+
+    data = {"first": 1, "second": None, "third": 3, "last": "old"}
+    seen = []
+
+    def mutate(value):
+        seen.append(value)
+        data.clear()
+        data.update(third=value, first=1, second=None, last="new")
+        return value
+
+    load = Retort(
+        codegen_backend=CodeGenBackend.X86_64, debug_trail=debug_trail,
+        recipe=[loader("third", mutate)],
+    ).get_loader(Model)
+    for _ in range(20):
+        assert load(data) == Model(1, None, 3, "new")
+    assert seen == [3] * 20
+
+
+@pytest.mark.parametrize("validated_header", [False, True])
+def test_union_check_after_custom_loader_preserves_identity_and_errors(monkeypatch, debug_trail, validated_header):
+    if not validated_header:
+        monkeypatch.setattr("adaptix._internal.code_tools.x86_64_compiler.inline_refcount_mode", lambda: None)
+
+    @dataclass
+    class Model:
+        first: object
+        second: int | str | None
+
+    data = {}
+    value = None
+
+    def mutate(first):
+        data["second"] = value
+        return first
+
+    python = Retort(debug_trail=debug_trail, recipe=[loader("first", mutate)]).get_loader(Model)
+    native = Retort(
+        debug_trail=debug_trail, recipe=[loader("first", mutate)], codegen_backend=CodeGenBackend.X86_64,
+    ).get_loader(Model)
+    for value in [1000, "value", None]:
+        data.update(first="first", second=object())
+        result = native(data)
+        assert result == python(data)
+        assert result.second is value
+    for value in [True, [], IntSubclass(1), StrSubclass("a")]:
+        data.update(first="first", second=object())
+        with pytest.raises(Exception, match=r".*") as expected:
+            python(data)
+        raises_exc(expected.value, lambda: native(data))
+        assert data["second"] is value
+
+
+def test_scalar_prefix_fallback_preserves_full_model_errors(debug_trail):
+    @dataclass
+    class Model:
+        first: int | str
+        second: str | None
+        third: int
+        last: str = "default"
+
+    python = Retort(debug_trail=debug_trail).get_loader(Model)
+    native = Retort(codegen_backend=CodeGenBackend.X86_64, debug_trail=debug_trail).get_loader(Model)
+    for _ in range(20):
+        for data in [{}, {"first": [], "second": object()}, {"first": 1, "second": None, "third": "bad"}]:
+            with pytest.raises(Exception, match=r".*") as expected:
+                python(data)
+            raises_exc(expected.value, lambda data=data: native(data))
+        for data in [{"first": 1, "second": None, "third": 3}, {"first": "a", "second": "b", "third": 3}]:
+            assert native(data) == python(data)
 
 
 def test_dictionary_rows_preserve_errors_and_references_after_partial_validation(debug_trail):

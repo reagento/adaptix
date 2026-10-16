@@ -47,6 +47,64 @@ def row_function(names):
     return compiler.finish(result).make_callable()
 
 
+@pytest.mark.parametrize("count", [0, 1, 5, 32, 85, 86, 255, 1024])
+@pytest.mark.parametrize("key", ["value", "a\0b", "a" * 32, "a" * 33, "ключ"])
+def test_dictionary_lookup_handles_resizes_deletions_and_reference_ownership(count, key):
+    missing, value = object(), object()
+    compiler = X86Compiler("dictionary_lookup")
+    get = compiler.finish(compiler.dict_lookup(compiler.data, key, missing)).make_callable()
+    data = {f"extra_{index}": index for index in range(count)}
+    references = sys.getrefcount(missing), sys.getrefcount(value)
+    for _ in range(10):
+        assert get(data) is missing
+        data[key.encode().decode()] = value
+        assert get(data) is value
+        assert get(dict(reversed(list(data.items())))) is value
+        del data[key]
+        assert get(data) is missing
+        data.clear()
+        data.update({f"extra_{index}": index for index in range(count)})
+    assert (sys.getrefcount(missing), sys.getrefcount(value)) == references
+
+
+def test_dictionary_lookup_probes_colliding_and_deleted_buckets():
+    key = "lookup_key"
+    colliding = [f"key_{index}" for index in range(10000) if hash(f"key_{index}") & 127 == hash(key) & 127][:40]
+    assert len(colliding) == 40
+    compiler = X86Compiler("colliding_dictionary_lookup")
+    get = compiler.finish(compiler.dict_lookup(compiler.data, key, None)).make_callable()
+    data = dict.fromkeys(colliding, "other")
+    assert get(data) is None
+    data[key.encode().decode()] = "found"
+    assert get(data) == "found"
+    for name in colliding:
+        del data[name]
+        assert get(data) == "found"
+    del data[key]
+    assert get(data) is None
+
+
+def test_dictionary_lookup_falls_back_for_split_and_general_tables():
+    class Model:
+        pass
+
+    model = Model()
+    model.value = object()
+    compiler = X86Compiler("fallback_dictionary_lookup")
+    get = compiler.finish(compiler.dict_lookup(compiler.data, "value", None)).make_callable()
+    assert get(vars(model)) is model.value
+
+    class Key:
+        def __hash__(self):
+            return hash("value")
+
+        def __eq__(self, other):
+            raise ValueError("key comparison failed")
+
+    with pytest.raises(ValueError, match="key comparison failed"):
+        get({Key(): 1})
+
+
 @pytest.mark.parametrize("names", [("first", "second"), ("a\0b", "second"), ("первое", "second"), ("a" * 40, "second")])
 def test_dictionary_row_checks_keys_and_handles_deleted_entries(names):
     get_row = row_function(names)

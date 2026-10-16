@@ -71,3 +71,13 @@ def test_instruction_tools_do_not_depend_on_morphing_or_providers():
                 assert not node.module.startswith((
                     "adaptix._internal.morphing", "adaptix._internal.provider", "adaptix._internal.retort",
                 )), (path.name, node.module)
+
+
+def test_field_ir_does_not_depend_on_instruction_emitters():
+    directory = Path(adaptix.__file__).parent / "_internal" / "morphing" / "native"
+    for name in ("bytecodes.py", "model_ir.py", "optimizer.py"):
+        for node in ast.walk(ast.parse((directory / name).read_text())):
+            if isinstance(node, ast.ImportFrom) and node.module is not None:
+                assert not node.module.startswith((
+                    "adaptix._internal.code_tools", "adaptix._internal.morphing.native.x86_64",
+                )), (name, node.module)

@@ -18,6 +18,7 @@ from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, W
 from typing import Any, TypeVar, overload
 from uuid import UUID
 
+from adaptix._internal.morphing.native.codegen import NativeCodeGenRequest, resolve_native_codegen
 from adaptix._internal.morphing.native.provider import NativeScalarProvider
 
 from ...common import Dumper, Loader, TypeHint, VarTuple
@@ -75,7 +76,6 @@ from ..model.loader_provider import ModelLoaderProvider
 from ..name_layout.component import BuiltinExtraMoveAndPoliciesMaker, BuiltinSievesMaker, BuiltinStructureMaker
 from ..name_layout.name_mapping import SkipPrivateFieldsNameMappingProvider
 from ..name_layout.provider import BuiltinNameLayoutProvider
-from adaptix._internal.morphing.native.codegen import NativeCodeGenRequest, resolve_native_codegen
 from ..provider_template import ABCProxy, ToVarTupleProxy
 from ..request_cls import DebugTrailRequest, DumperRequest, LoaderRequest, StrictCoercionRequest
 from ..union_provider import UnionProvider

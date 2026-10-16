@@ -2,7 +2,7 @@ import ctypes
 import gc
 import sys
 import weakref
-from dataclasses import dataclass
+from dataclasses import dataclass, make_dataclass
 from typing import Any
 
 import pytest
@@ -32,11 +32,12 @@ def require_native_constructor(function):
 
 
 @pytest.mark.parametrize("slots", [False, True])
-def test_fresh_storage_and_reference_ownership(slots):
-    @dataclass(slots=slots)
-    class Model:
-        first: Any
-        second: Any
+@pytest.mark.parametrize("count", [2, 32])
+def test_fresh_storage_and_reference_ownership(slots, count):
+    Model = make_dataclass(
+        "Model", [("first", Any), ("second", Any), *[(f"field_{index}", Any, None) for index in range(count - 2)]],
+        slots=slots,
+    )
 
     function = Retort(codegen_backend=CodeGenBackend.X86_64).get_loader(Model)
     first, second = object(), object()
@@ -47,13 +48,13 @@ def test_fresh_storage_and_reference_ownership(slots):
         assert result.first is first
         assert result.second is second
         if not slots:
-            assert list(vars(result)) == ["first", "second"]
+            assert list(vars(result)) == ["first", "second", *[f"field_{index}" for index in range(count - 2)]]
         del result
     gc.collect()
     assert (sys.getrefcount(first), sys.getrefcount(second)) == references
 
 
-@pytest.mark.skipif(sys.version_info[:2] not in {(3, 14), (3, 15)}, reason="Direct constructor requires CPython 3.14/3.15")
+@pytest.mark.skipif(sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}, reason="Direct constructor requires CPython 3.13+")
 @pytest.mark.parametrize("slots", [False, True])
 @pytest.mark.parametrize("frozen", [False, True])
 def test_plain_initializers_use_native_construction(slots, frozen):
@@ -157,7 +158,7 @@ def test_constructor_side_effects_are_never_skipped():
     assert seen == list(range(30))
 
 
-@pytest.mark.skipif(sys.version_info[:2] not in {(3, 14), (3, 15)}, reason="Direct constructor requires CPython 3.14/3.15")
+@pytest.mark.skipif(sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}, reason="Direct constructor requires CPython 3.13+")
 def test_custom_frame_evaluator_enabled_after_warming_executes_initializer():
     @dataclass
     class Model:
@@ -193,10 +194,9 @@ def test_custom_frame_evaluator_enabled_after_warming_executes_initializer():
     assert after - before == 1
 
 
-def test_initialized_models_participate_in_cyclic_gc():
-    @dataclass
-    class Model:
-        value: Any
+@pytest.mark.parametrize("count", [1, 32])
+def test_initialized_models_participate_in_cyclic_gc(count):
+    Model = make_dataclass("Model", [("value", Any), *[(f"field_{index}", Any, None) for index in range(count - 1)]])
 
     function = Retort(codegen_backend=CodeGenBackend.X86_64).get_loader(Model)
     for _ in range(20):
@@ -210,7 +210,7 @@ def test_initialized_models_participate_in_cyclic_gc():
     assert reference() is None
 
 
-@pytest.mark.skipif(sys.version_info[:2] not in {(3, 14), (3, 15)}, reason="Direct constructor requires CPython 3.14/3.15")
+@pytest.mark.skipif(sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}, reason="Direct constructor requires CPython 3.13+")
 def test_cache_publication_retains_the_code_that_was_validated(monkeypatch):
     from adaptix._internal.code_tools import native_constructor
 
@@ -266,15 +266,15 @@ def test_monitoring_enabled_after_warming_observes_initializer():
     assert seen == [Model.__init__.__code__]
 
 
-@pytest.mark.parametrize("count", [128, 255])
+@pytest.mark.parametrize("count", [30, 31, 32, 128, 255])
 def test_wide_initializer_bytecode_and_code_mutation(count):
-    from dataclasses import make_dataclass
-
     cls = make_dataclass("Wide", [(f"field_{index}", int) for index in range(count)])
     data = {f"field_{index}": 1000 + index for index in range(count)}
     function = Retort(codegen_backend=CodeGenBackend.X86_64).get_loader(cls)
     for _ in range(20):
-        assert vars(function(data)) == data
+        value = function(data)
+        assert vars(value) == data
+        assert [getattr(value, name) for name in data] == list(data.values())
     seen = []
 
     def changed(self, *args):

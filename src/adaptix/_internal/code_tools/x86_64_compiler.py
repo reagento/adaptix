@@ -5,11 +5,12 @@ import sys
 import sysconfig
 from collections.abc import Callable
 from functools import partial
+from keyword import iskeyword
 from types import BuiltinFunctionType
 from typing import Any, Literal, cast, overload
 
-from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
-from adaptix._internal.code_tools.native_callable import NativeCode
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout, require_cpython_layout
+from adaptix._internal.code_tools.native_callable import NativeClosure, NativeCode
 from adaptix._internal.code_tools.x86_64_assembler import (
     ARG_REGISTERS,
     REGISTERS,
@@ -18,11 +19,39 @@ from adaptix._internal.code_tools.x86_64_assembler import (
     Slot,
     X86Assembler,
 )
+from adaptix._internal.code_tools.x86_64_dictionary import (
+    emit_match_ascii_key,
+    emit_ordered_dictionary_row,
+    emit_ordered_key_compare,
+    emit_probe_dictionary,
+)
 
 MAX_STACK_SIZE = 65536
 MAX_INLINE_STACK_SIZE = 16384
 MAX_INLINE_CODE_SIZE = 65536
 INLINE_FIELD_LIMIT = 30
+
+
+def bind_native_arguments(parameters, defaults, /, *args, **kwargs):
+    if len(args) > len(parameters):
+        raise TypeError(f"Expected at most {len(parameters)} positional arguments")
+    missing = object()
+    required = len(parameters) - len(defaults)
+    values = [*args, *([missing] * (len(parameters) - len(args)))]
+    for name, value in kwargs.items():
+        try:
+            index = parameters.index(name)
+        except ValueError:
+            raise TypeError(f"Unexpected keyword argument {name!r}") from None
+        if index < len(args):
+            raise TypeError(f"Multiple values for argument {name!r}")
+        values[index] = value
+    for index, value in enumerate(values):
+        if value is missing:
+            if index < required:
+                raise TypeError(f"Missing required argument {parameters[index]!r}")
+            values[index] = defaults[index - required]
+    return tuple(values)
 
 
 def omitted_kwargs(parameters, omitted, *values):
@@ -72,8 +101,18 @@ class X86Compiler:
     other architectures supply a complete NativeCodeGenerator implementation.
     """
 
-    def __init__(self, name: str, *, assembler_factory: Callable[[], X86Assembler] = X86Assembler):
+    def __init__(
+        self, name: str, *, assembler_factory: Callable[[], X86Assembler] = X86Assembler,
+        parameters: tuple[str, ...] = ("data",), defaults: tuple[Any, ...] = (),
+        bound_context: bool = False,
+    ):
         check_native_platform()
+        if len(defaults) > len(parameters) or len(set(parameters)) != len(parameters):
+            raise ValueError("Invalid native function parameters")
+        if any(not parameter.isidentifier() or iskeyword(parameter) for parameter in parameters):
+            raise ValueError("Native parameter names must be identifiers")
+        self.parameters = parameters
+        self.defaults = defaults
         self.layout = get_cpython_layout()
         self.name = name
         self.program_resolver: Callable[[Any], Any] | None = None
@@ -102,8 +141,90 @@ class X86Compiler:
         self.slot_count = 0
         self.label_count = 0
         self.data = self.slot()
-        self.parse_argument()
+        self.bound_context = self.slot() if bound_context else None
+        if self.bound_context is not None:
+            offset = require_cpython_layout().tuple_items + NativeClosure._fields.index("bound_context") * 8
+            self.asm.emit_memory(b"\x48\x8b", 0x07, offset, "load native closure context from owner")
+            self.asm.store(self.bound_context)
+        self.arguments = (self.data, *(self.slot() for _ in parameters[1:])) if parameters else ()
+        if parameters == ("data",) and not defaults:
+            self.parse_argument()
+        else:
+            self.parse_arguments()
         self.body_offset = len(self.asm.code)
+
+    def parse_arguments(self) -> None:
+        slow, ready = self.label("bind_arguments"), self.label("arguments_ready")
+        self.asm.test_jump(1, slow, "nz")
+        required = len(self.parameters) - len(self.defaults)
+        self.asm.emit(b"\x48\x81\xfa" + struct.pack("<I", required), f"cmp rdx, {required}")
+        self.asm.jump(slow, "b")
+        self.asm.emit(b"\x48\x81\xfa" + struct.pack("<I", len(self.parameters)), f"cmp rdx, {len(self.parameters)}")
+        self.asm.jump(slow, "a")
+        for index, target in enumerate(self.arguments):
+            if index >= required:
+                self.load(0, self.constant(self.defaults[index - required]))
+                self.asm.store(target)
+                absent = self.label("default_argument")
+                self.asm.emit(b"\x48\x81\xfa" + struct.pack("<I", index + 1), f"cmp rdx, {index + 1}")
+                self.asm.jump(absent, "b")
+            self.asm.emit(b"\x48\x8b\x86" + struct.pack("<i", index * 8), f"load argument {index}")
+            self.asm.store(target)
+            if index >= required:
+                self.asm.label(absent)
+        self.asm.label(ready)
+        self.argument_ready = ready
+        self.cold_handlers.append(lambda: self.bind_arguments(slow, ready))
+
+    def bind_arguments(self, entry: str, ready: str) -> None:
+        args, nargs, keywords = self.slot(), self.slot(), self.slot()
+        self.asm.label(entry)
+        self.asm.store(args, 6)
+        self.asm.store(nargs, 2)
+        self.asm.store(keywords, 1)
+        binder = self.constant(partial(bind_native_arguments, self.parameters, self.defaults))
+        if hasattr(ctypes.pythonapi, "PyObject_Vectorcall"):
+            bound = self.call_c("PyObject_Vectorcall", binder, args, nargs, keywords)
+        else:
+            kwargs = self.vectorcall_keywords(args, nargs, keywords)
+            bound = self.call_c("PyObject_VectorcallDict", binder, args, nargs, kwargs)
+            self.release(kwargs, nonnull=True)
+        for index, target in enumerate(self.arguments):
+            value = self.call_c("PyTuple_GetItem", bound, Immediate(index), result="pointer")
+            self.asm.load(0, value)
+            self.asm.store(target)
+        self.release(bound, nonnull=True)
+        self.asm.jump(ready)
+
+    def vectorcall_keywords(self, args: Slot, nargs: Slot, keywords: Slot) -> Slot:
+        """Build a keyword dictionary for CPython 3.10's exported call API."""
+        kwargs = self.call_c("PyDict_New")
+        done, loop = self.label("keywords_ready"), self.label("copy_keyword")
+        self.branch_if_null(keywords, done)
+        count = self.call_c("PyTuple_Size", keywords, result="pointer")
+        index = self.slot()
+        self.load(0, Immediate(0))
+        self.asm.store(index)
+        self.asm.label(loop)
+        self.asm.load(0, index)
+        self.asm.load(11, count)
+        self.asm.emit(b"\x4c\x39\xd8", "cmp rax, r11  # keyword count")
+        self.asm.jump(done, "ae")
+        key = self.call_c("PyTuple_GetItem", keywords, index, result="pointer")
+        self.asm.load(0, nargs)
+        self.asm.load(11, index)
+        self.asm.emit(b"\x4c\x01\xd8", "add rax, r11  # keyword argument index")
+        self.asm.load(11, args)
+        self.asm.emit(b"\x49\x8b\x04\xc3", "mov rax, [r11+rax*8]  # keyword value")
+        value = self.slot()
+        self.asm.store(value)
+        self.call_c("PyDict_SetItem", kwargs, key, value, result="int")
+        self.asm.load(0, index)
+        self.asm.emit(b"\x48\xff\xc0", "inc rax")
+        self.asm.store(index)
+        self.asm.jump(loop)
+        self.asm.label(done)
+        return kwargs
 
     def parse_argument(self) -> None:
         keywords, invalid, ready = (
@@ -323,8 +444,12 @@ class X86Compiler:
                 self.asm.mark_write(value.slot)
 
     def call(self, function: Any, *args: Slot | Immediate, error_label: str = "error") -> Slot:
-        if len(args) == 1 and type(function) is BuiltinFunctionType and isinstance(function.__self__, NativeCode):
-            return self.call_native(function, args[0], error_label)
+        if (
+            type(function) is BuiltinFunctionType and isinstance(function.__self__, NativeCode)
+            and function.__self__.raw_entry_offset >= 0
+            and len(args) == len(function.__self__.parameters) <= len(ARG_REGISTERS)
+        ):
+            return self.call_native_arguments(function, args, error_label)
         if len(args) == 1 and self.has_validated_object_header and type(function) is self.callable_wrapper_type:
             return self.call_recursive_wrapper(function, args[0], error_label)
         callable_ptr = self.constant(function)
@@ -381,6 +506,10 @@ class X86Compiler:
 
     def call_native(self, function: Any, argument: Slot | Immediate, error_label: str) -> Slot:
         """Enter a generated unary function directly, retaining CPython's recursion guard."""
+        return self.call_native_arguments(function, (argument,), error_label)
+
+    def call_native_arguments(self, function: Any, args: tuple[Slot | Immediate, ...], error_label: str) -> Slot:
+        """Enter a generated function directly with its complete positional signature."""
         if error_label == "error":
             error_label = self.call_error_label
         self.constants.append(function)
@@ -391,9 +520,9 @@ class X86Compiler:
         )
         # The C API returns nonzero, including positive 1, on failure.
         self.asm.test_jump(0, error_label, "nz", bits=32)
-        self.load(7, argument)
+        self.load_c_arguments(args)
         self.asm.mov_imm(11, function.__self__.raw_address)
-        self.asm.emit(b"\x41\xff\xd3", "call r11  # native unary entry")
+        self.asm.emit(b"\x41\xff\xd3", "call r11  # native object entry")
         result = self.slot(owned=True)
         self.asm.store(result)
         # Leave on NULL too, before the ordinary error handler normalizes the exception.
@@ -431,7 +560,7 @@ class X86Compiler:
     ) -> Slot:
         """Allocate a proven plain Python model without executing its initializer frame."""
         if (
-            not self.has_validated_object_header or sys.version_info[:2] not in {(3, 14), (3, 15)}
+            not self.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}
             or type(cls) is not type or not args or len(args) > 255  # noqa: PLR2004
             or (omitted is not None and len(args) > INLINE_FIELD_LIMIT)
             or (len(args) > INLINE_FIELD_LIMIT and not all(isinstance(value, Slot) for value in args))
@@ -551,7 +680,12 @@ class X86Compiler:
         self.asm.jump(done)
         self.asm.label(dictionary_init)
         if storage is not None:
-            self.call_c("PyObject_GenericSetDict", result, storage, Immediate(0), result="int")
+            if sys.version_info[:2] == (3, 13):
+                # GenericSetDict in 3.13 leaves inline values valid. The managed
+                # setter invalidates them so attribute lookup uses the new dict.
+                self.call_c("_PyObject_SetManagedDict", result, storage, result="int")
+            else:
+                self.call_c("PyObject_GenericSetDict", result, storage, Immediate(0), result="int")
             self.asm.jump(done)
         self.asm.label(initialize)
         if omitted is not None:
@@ -1037,7 +1171,7 @@ class X86Compiler:
         self.asm.jump(done)
 
     def vectorcall_address(
-        self, callable_ptr: Immediate, args: tuple[Slot | Immediate, ...], keyword_names: tuple[str, ...],
+        self, callable_ptr: Slot | Immediate, args: tuple[Slot | Immediate, ...], keyword_names: tuple[str, ...],
         *, error_label: str = "error",
     ) -> Slot:
         if len(keyword_names) > len(args):
@@ -1089,6 +1223,7 @@ class X86Compiler:
 
     def inline_call(
         self, function: Any, data: Slot, handler=None, *handler_args, consume_data=False, borrow_data=False,
+        code_budget: int | None = None,
     ) -> Slot:
         """Fuse a simple model program into its container's loop."""
         native = (
@@ -1098,7 +1233,7 @@ class X86Compiler:
         program = native.program if native is not None else None
         if program is None and self.has_validated_object_header and self.program_resolver is not None:
             program = self.program_resolver(function)
-        if native is not None and not self.can_inline(native):
+        if native is not None and not self.can_inline(native, code_budget=code_budget):
             program = None
         if program is None:
             return self.call_mapper(function, data, handler, handler_args, borrow_data=borrow_data)
@@ -1131,11 +1266,16 @@ class X86Compiler:
             )
         return result
 
-    def can_inline(self, native: NativeCode) -> bool:
+    def can_inline(self, native: NativeCode, *, code_budget: int | None = None) -> bool:
         code = native.machine_code
         # Keep small conversions fused, but call large generated children once
         # instead of regenerating their complete bodies in every parent.
         if len(code) > MAX_INLINE_CODE_SIZE or code[8:11] != b"\x48\x81\xec":
+            return False
+        budget = getattr(native.program, "inline_budget", None)
+        if code_budget is not None:
+            budget = code_budget if budget is None else min(budget, code_budget)
+        if budget is not None and len(self.asm.code) + len(code) > budget:
             return False
         stack_size = struct.unpack_from("<I", code, 11)[0]
         return self.slot_count * 8 + stack_size <= MAX_INLINE_STACK_SIZE
@@ -1173,9 +1313,12 @@ class X86Compiler:
         return result
 
     def get_items(  # noqa: PLR0915
-        self, data: Slot, names: tuple[str, ...], expected_types: tuple[type | None, ...], fallback,
+        self, data: Slot, names: tuple[str, ...], expected_types: tuple[type | tuple[type, ...] | None, ...], fallback,
     ):
-        """Validate a simple dict layout once and retain a complete scalar row."""
+        """Validate a simple dict layout once and retain a complete scalar row.
+
+        The fallback returns owned fields or jumps to an existing model converter.
+        """
         if (
             not self.has_validated_object_header or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}
             or not all(type(name) is str for name in names)
@@ -1237,11 +1380,7 @@ class X86Compiler:
             # A combined entry with a verified live key owns a non-NULL value.
             # No calls or GIL release occur between the key and value loads.
             if expected is not None:
-                self.load(11, self.constant(expected))
-                self.asm.emit(
-                    b"\x4c\x39\x58" + bytes([self.layout.object_type]), "cmp [rax+8], r11  # exact scalar type",
-                )
-                self.asm.jump(generic, "nz")
+                self.check_dictionary_scalar(expected, generic)
             self.asm.emit(b"\x48\x89\xc7", "mov rdi, rax  # retain checked field")
             self.incref_rdi(nonnull=True)
             self.asm.store(results[index], 7)
@@ -1255,110 +1394,30 @@ class X86Compiler:
         # source dict still owns them: validation and retention call no Python.
         for value in results:
             self.release(value, retained=True)
-        for value, target in zip(fallback(), results, strict=True):
-            self.transfer(value, target)
+        values = fallback()
+        if values is not None:
+            for value, target in zip(values, results, strict=True):
+                self.transfer(value, target)
         self.asm.label(done)
         return results
 
     def ordered_dictionary_row(self, data, names, expected_types, results, done):
-        """Use fixed entry offsets when input field order matches the schema.
-
-        Check every key and scalar type. Reordered/deleted entries continue to
-        the learned-index path; fresh equal ASCII keys compare in a cold block.
-        """
-        failed = self.label("unordered_row")
-        count = len(names)
-        self.asm.emit(
-            b"\x48\x81\x7a" + bytes([self.layout.keys_nentries]) + struct.pack("<i", count - 1),
-            f"cmp QWORD PTR [rdx+24], {count - 1}",
-        )
-        self.asm.jump(failed, "be")
-        self.asm.emit(b"\x0f\xb6\x4a" + bytes([self.layout.keys_index_bytes]), "movzx ecx, BYTE PTR [rdx+9]")
-        self.asm.emit(b"\xb8\x01\x00\x00\x00\x48\xd3\xe0", "mov eax, 1; shl rax, cl")
-        self.asm.emit(
-            b"\x48\x8d\x54\x02" + bytes([self.layout.keys_indices]), "lea rdx, [rdx+rax+32]  # ordered unicode entries",
-        )
-        for index, (name, expected) in enumerate(zip(names, expected_types, strict=True)):
-            offset = index * self.layout.unicode_entry_size
-            compare, matched = self.label("compare_ordered_key"), self.label("ordered_key_matched")
-            self.load(11, self.constant(name))
-            self.asm.emit(b"\x4c\x39\x9a" + struct.pack("<i", offset), f"cmp [rdx+{offset}], r11")
-            self.asm.jump(compare, "nz")
-            self.asm.label(matched)
-            self.asm.emit(
-                b"\x48\x8b\x82" + struct.pack("<i", offset + self.layout.unicode_entry_value),
-                f"mov rax, [rdx+{offset + self.layout.unicode_entry_value}]",
-            )
-            if expected is not None:
-                self.load(11, self.constant(expected))
-                self.asm.emit(
-                    b"\x4c\x39\x58" + bytes([self.layout.object_type]), "cmp [rax+8], r11  # exact scalar type",
-                )
-                self.asm.jump(failed, "nz")
-            self.asm.emit(b"\x48\x89\xc7", "mov rdi, rax")
-            self.incref_rdi(nonnull=True)
-            self.asm.store(results[index], 7)
-            self.cold_handlers.append(
-                partial(self.ordered_key_compare, name, offset, compare, matched, failed),
-            )
-        self.asm.jump(done)
-        self.asm.label(failed)
-        for value in results:
-            self.release(value, retained=True)
-        self.asm.load(7, data)
-        self.asm.emit(
-            b"\x48\x8b\x57" + bytes([self.layout.dict_keys]), "mov rdx, [rdi+32]  # restore keys for learned row",
-        )
+        return emit_ordered_dictionary_row(self, data, names, expected_types, results, done)
 
     def ordered_key_compare(self, name, offset, compare, matched, failed):
-        self.asm.label(compare)
-        self.asm.emit(b"\x48\x8b\x82" + struct.pack("<i", offset), f"mov rax, [rdx+{offset}]")
-        self.asm.test_jump(0, failed)
-        self.match_ascii_key(name, failed)
-        self.asm.jump(matched)
+        return emit_ordered_key_compare(self, name, offset, compare, matched, failed)
+
+    def check_dictionary_scalar(self, expected: type | tuple[type, ...], failed: str) -> None:
+        types = expected if isinstance(expected, tuple) else (expected,)
+        matched = self.label("row_scalar_matched")
+        for index, cls in enumerate(types):
+            self.load(11, self.constant(cls))
+            self.asm.emit_memory(b"\x4c\x39", 0x58, self.layout.object_type, "check exact scalar type")
+            self.asm.jump(failed if index == len(types) - 1 else matched, "nz" if index == len(types) - 1 else "z")
+        self.asm.label(matched)
 
     def match_ascii_key(self, name: str, failed: str, *, source: Literal[0, 1] = 0):
-        """Compare a short compact ASCII string in rax or rcx without calls."""
-        try:
-            remaining = name.encode("ascii")
-        except UnicodeEncodeError:
-            self.asm.jump(failed)
-            return
-        if len(remaining) > 32:  # noqa: PLR2004
-            self.asm.jump(failed)
-            return
-        self.asm.emit(
-            b"\x48\x83" + bytes([0x78 | source, self.layout.unicode_length, len(remaining)]),
-            f"cmp QWORD PTR [{REGISTERS[source]}+16], {len(remaining)}",
-        )
-        self.asm.jump(failed, "nz")
-        flags = (
-            b"\x8b\x48" + bytes([self.layout.unicode_state]) + b"\x83\xe1\x60\x83\xf9\x60" if source == 0 else
-            b"\x8b\x41" + bytes([self.layout.unicode_state]) + b"\x83\xe0\x60\x83\xf8\x60"
-        )
-        self.asm.emit(flags, "check compact ASCII flags")
-        self.asm.jump(failed, "nz")
-        offset = self.layout.unicode_ascii_data
-        scratch = 1 if source == 0 else 9
-        for width in (8, 4, 2, 1):
-            while len(remaining) >= width:
-                value = int.from_bytes(remaining[:width], "little")
-                if width == 8:  # noqa: PLR2004
-                    self.asm.mov_imm(scratch, value)
-                    self.asm.emit(
-                        bytes([0x48 | ((scratch >> 3) << 2), 0x39, 0x48 | source, offset]),
-                        f"cmp QWORD PTR [{REGISTERS[source]}+{offset}], {REGISTERS[scratch]}",
-                    )
-                else:
-                    prefix = b"\x66" if width == 2 else b""  # noqa: PLR2004
-                    opcode = b"\x80" if width == 1 else b"\x81"
-                    self.asm.emit(
-                        prefix + opcode + bytes([0x78 | source, offset]) + value.to_bytes(width, "little"),
-                        f"cmp key bytes at [{REGISTERS[source]}+{offset}], 0x{value:x}",
-                    )
-                self.asm.jump(failed, "nz")
-                remaining = remaining[width:]
-                offset += width
+        return emit_match_ascii_key(self, name, failed, source=source)
 
     def get_item(self, data: Slot, key: Any, exact_dict: Slot | None, *, error_label: str = "error") -> Slot:
         if exact_dict is None or type(key) is not str:
@@ -1469,7 +1528,7 @@ class X86Compiler:
         self.asm.emit(b"\x41\x3b\x4b\x08", "cmp ecx, [r11+8]")
         self.asm.jump(miss, "nz")
 
-    def get_attr(self, data: Slot, name: str, *, error_label: str = "error") -> Slot:
+    def get_attr(self, data: Slot | Immediate, name: str, *, error_label: str = "error") -> Slot:
         if (
             not self.has_validated_object_header
             or sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}
@@ -1487,7 +1546,7 @@ class X86Compiler:
             self.label("generic_attribute"), self.label("learn_attribute"),
             self.label("direct_attribute"), self.label("attribute_ready"),
         )
-        self.asm.load(7, data)
+        self.load(7, data)
         self.asm.mov_imm(11, ctypes.addressof(attribute_cache))
         self.asm.emit(b"\x48\x8b\x47" + bytes([self.layout.object_type]), "mov rax, [rdi+8]  # object type")
         self.check_cached_type(learn)
@@ -1666,10 +1725,28 @@ class X86Compiler:
         self.call_error_label = "error"
 
     def branch_if(self, value: Slot, constant: Any, label: str, *, invert: bool = False) -> None:
+        self.branch_if_same(value, self.constant(constant), label, invert=invert)
+
+    def branch_if_same(self, value: Slot, expected: Slot | Immediate, label: str, *, invert: bool = False) -> None:
         self.asm.load(0, value)
-        self.load(11, self.constant(constant))
+        self.load(11, expected)
         self.asm.emit(b"\x4c\x39\xd8", "cmp rax, r11")
         self.asm.jump(label, "nz" if invert else "z")
+
+    def known_list_item(self, data: Slot, index: int) -> Slot:
+        """Borrow an item from a proven exact list containing the given index."""
+        if index < 0:
+            raise ValueError("A known list index must be nonnegative")
+        if self.layout is None:
+            result = self.call_c("PyList_GetItem", data, Immediate(index), result="pointer")
+            self.branch_if_null(result, self.call_error_label)
+            return result
+        self.load(0, data)
+        self.asm.emit_memory(b"\x48\x8b", 0x00, self.layout.list_items, "load list item array")
+        self.asm.emit_memory(b"\x48\x8b", 0x00, index * 8, f"load known list item {index}")
+        result = self.slot()
+        self.asm.store(result)
+        return result
 
     def branch_if_type(self, value: Slot, expected: type, label: str, *, invert: bool = False) -> None:
         """Compare an exact type using the validated CPython object header."""
@@ -1719,6 +1796,36 @@ class X86Compiler:
 
     def dict_lookup(self, mapping: Slot, key: Any, default: Any) -> Slot:
         """Get a new reference from an exact dict, distinguishing absence from errors."""
+        if (
+            self.has_validated_object_header and sys.version_info[:2] in {(3, 13), (3, 14), (3, 15)}
+            and type(key) is str and key.isascii() and len(key) <= 32  # noqa: PLR2004
+        ):
+            from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
+
+            if supports_dictionary_cache():
+                result = self.slot(owned=True)
+                generic, missing, done = (
+                    self.label(prefix) for prefix in ("generic_lookup", "absent_lookup", "lookup_ready")
+                )
+                self.probe_dictionary(mapping, key, missing, generic)
+                self.incref_rdi(nonnull=True)
+                self.asm.store(result, 7)
+                self.asm.jump(done)
+                self.asm.label(missing)
+                self.load(7, self.constant(default))
+                self.incref_rdi(nonnull=True)
+                self.asm.store(result, 7)
+                self.asm.jump(done)
+                self.asm.label(generic)
+                self.transfer(self.generic_dict_lookup(mapping, key, default), result)
+                self.asm.label(done)
+                return result
+        return self.generic_dict_lookup(mapping, key, default)
+
+    def probe_dictionary(self, mapping: Slot, key: str, missing: str, generic: str) -> None:
+        return emit_probe_dictionary(self, mapping, key, missing, generic)
+
+    def generic_dict_lookup(self, mapping: Slot, key: Any, default: Any) -> Slot:
         value = self.call_c("PyDict_GetItemWithError", mapping, self.constant(key), result="pointer")
         result = self.slot(owned=True)
         missing, done = self.label("missing_key"), self.label("lookup_done")
@@ -1883,24 +1990,27 @@ class X86Compiler:
             prefix.store(slot, clear=True)
         prefix_code = prefix.finish()
         code = prefix_code + self.asm.finish()
-        raw_entry_offset = len(code)
+        raw_entry_offset = len(code) if self.bound_context is None else -1
         unary = self.assembler_factory()
         unary.code.extend(prefix_code)
         unary.lines.extend(prefix.lines)
-        unary.store(self.data, 7)
+        for argument, register in zip(self.arguments, ARG_REGISTERS, strict=False):
+            unary.store(argument, register)
         displacement = len(prefix_code) + self.asm.final_labels[self.argument_ready] - (
-            raw_entry_offset + len(unary.code) + 5
+            len(code) + len(unary.code) + 5
         )
         unary.emit(b"\xe9" + struct.pack("<i", displacement), "jmp native_body")
         code += unary.finish()
         assembly = (
             ".intel_syntax noprefix\n" + self.name + ":\n"
             + "\n".join(prefix.lines + self.asm.lines)
-            + "\nnative_unary_entry:\n" + "\n".join(unary.lines) + "\n"
+            + ("\nnative_unary_entry:\n" if len(self.arguments) == 1 else "\nnative_arguments_entry:\n")
+            + "\n".join(unary.lines) + "\n"
         )
         return NativeCode(
             name=self.name, code=code, assembly=assembly, constants=self.constants, raw_entry_offset=raw_entry_offset,
             program=program,
+            parameters=self.parameters, defaults=self.defaults,
         )
 
     def insert_function_context(self) -> None:
