@@ -63,12 +63,12 @@ class PostInitStruct(msgspec.Struct):
 @dataclass
 class TreeDataclass:
     value: int
-    children: list["TreeDataclass"]
+    children: "list[TreeDataclass]"
 
 
 class TreeStruct(msgspec.Struct):
     value: int
-    children: list["TreeStruct"]
+    children: "list[TreeStruct]"
 
 
 @dataclass

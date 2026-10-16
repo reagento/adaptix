@@ -314,6 +314,7 @@ def container_union_program(plan: UnionPlan):
 
 
 def build_union_program(plan: UnionPlan, c):  # noqa: C901, PLR0911, PLR0912
+    from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
     from adaptix._internal.morphing.native.x86_64.optional import OptionalProgram  # noqa: PLC0415
     from adaptix._internal.morphing.native.x86_64.scalar import ScalarProgram  # noqa: PLC0415
 
@@ -323,12 +324,13 @@ def build_union_program(plan: UnionPlan, c):  # noqa: C901, PLR0911, PLR0912
         if isinstance(scalar, (ScalarProgram, OptionalProgram))
         else container_union_program(plan)
     )
+    if isinstance(program, ContainerUnionProgram) and not supports_dictionary_cache():
+        return None
     if program is not None:
         c.name = "native_scalar_union_loader"
         return program if c.has_validated_object_header else None
     if sys.version_info[:2] not in {(3, 13), (3, 14), (3, 15)}:
         return None
-    from adaptix._internal.code_tools.native_access import supports_dictionary_cache  # noqa: PLC0415
     from adaptix._internal.morphing.model.crown_definitions import InpDictCrown, InpFieldCrown  # noqa: PLC0415
     from adaptix._internal.morphing.native.x86_64.model import ModelProgram  # noqa: PLC0415
 

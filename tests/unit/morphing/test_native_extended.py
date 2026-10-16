@@ -41,6 +41,19 @@ def compare(functions, data):
         assert type(actual) is type(expected)
 
 
+@pytest.mark.parametrize(
+    ["tp", "data"], [(list[int] | str, [1000, 2000]), (dict[str, int] | str, {"value": 1000})],
+)
+def test_container_union_without_dictionary_layout(monkeypatch, debug_trail, tp, data):
+    from adaptix._internal.code_tools import native_access
+
+    monkeypatch.setattr(native_access, "supports_dictionary_cache", lambda: False)
+    retort = Retort(codegen_backend=CodeGenBackend.X86_64, debug_trail=debug_trail)
+    function = retort.get_loader(tp)
+    assert function(data) == data
+    assert function("text") == "text"
+
+
 @pytest.mark.parametrize("tp", [list[int], list[float], tuple[int, ...], set[int], frozenset[int]])
 @pytest.mark.parametrize("input_type", [list, tuple, set, frozenset])
 def test_iterable_mapping_alias_changes_after_warming(monkeypatch, tp, input_type):
