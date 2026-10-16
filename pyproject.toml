@@ -63,6 +63,7 @@ email = '17@itishka.org'
 #   └             ┘
 
 [tool.pytest.ini_options]
+addopts = ['-p', 'tests_helpers.github_actions']
 python_classes = 'WeDoNotUseClassTestCase'
 python_files = [
   'test_*.py',
