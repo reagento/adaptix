@@ -1,0 +1,26 @@
+# Setup from the repository root:
+#   uv venv --python 3.13 .venv
+#   uv pip install --python .venv/bin/python -e . -r requirements/helix.txt
+# Helix starts servers in the LSP workspace root, including when opened from a
+# subdirectory. The shell resolves the project-local executables there.
+
+[[language]]
+name = "python"
+roots = [".git"]
+language-servers = ["basedpyright", { name = "ruff", except-features = ["hover"] }]
+auto-format = false
+
+[language-server.basedpyright]
+command = "sh"
+args = ["-c", "exec .venv/bin/basedpyright-langserver --stdio"]
+
+[language-server.basedpyright.config]
+python.pythonPath = ".venv/bin/python"
+basedpyright.disableOrganizeImports = true
+basedpyright.analysis.diagnosticMode = "openFilesOnly"
+basedpyright.analysis.typeCheckingMode = "basic"
+basedpyright.analysis.extraPaths = ["src", "tests/tests_helpers", "benchmarks"]
+
+[language-server.ruff]
+command = "sh"
+args = ["-c", "exec .venv/bin/ruff server"]

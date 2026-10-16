@@ -1,0 +1,4 @@
+# Helix language servers with the project's pinned development dependencies.
+# Install into a CPython 3.13 virtual environment from the repository root.
+-r dev.txt
+basedpyright==1.40.2
