@@ -135,6 +135,8 @@ def test_c_call_reuses_empty_destination_and_cleans_up_on_errors():
         "PyObject_CallOneArg", compiler.constant(finish), compiler.data, destination=destination,
     ) == destination
     function = compiler.finish(destination).make_callable()
+    # Python tracing can materialize frame locals when an exception is raised.
+    locals()
     references = sys.getrefcount(result)
     for _ in range(100):
         assert function(0) is result
@@ -204,6 +206,8 @@ def test_reference_cleanup_on_success_and_failure():
     copied = compiler.call(lambda x: x, compiler.data)
     result = compiler.call(lambda x: x, copied)
     function = compiler.finish(result).make_callable()
+    # Include the frame's locals dictionary in both reference counts.
+    locals()
     references = sys.getrefcount(value)
 
     for _ in range(1000):
@@ -455,8 +459,14 @@ def test_direct_native_calls_restore_recursion_state_after_failure():
     compiler = X86Compiler("native_outer")
     function = compiler.finish(compiler.call(inner, compiler.data)).make_callable()
     del inner
-    with pytest.raises(RecursionError):
-        function(sys.getrecursionlimit() * 2)
+    previous = sys.gettrace()
+    try:
+        with pytest.raises(RecursionError):
+            function(sys.getrecursionlimit() * 2)
+    finally:
+        # A recursion error inside a Python trace hook disables tracing.
+        if sys.gettrace() is not previous:
+            sys.settrace(previous)
     for _ in range(20):
         assert function(10) == 10
 
@@ -659,6 +669,7 @@ def test_attribute_batch_releases_earlier_fields_when_a_later_field_is_missing()
     model.first, model.second = value, value
     for _ in range(20):
         assert function(model) == {"first": value, "second": value}
+    locals()
     references = sys.getrefcount(value)
     del model.second
     for _ in range(20):
@@ -753,6 +764,7 @@ def test_failed_cold_handler_releases_local_and_global_references(failure):
     result = compiler.guarded_call(convert, (copied,), recover, state)
     function = compiler.finish(result).make_callable()
     value = object()
+    locals()
     references = sys.getrefcount(value)
     for _ in range(100):
         with pytest.raises(RuntimeError, match=f"{failure} failed"):

@@ -131,6 +131,23 @@ def test_native_platform_requires_a_supported_layout(monkeypatch):
         check_native_platform()
 
 
+def test_object_header_validation_with_materialized_frame_locals():
+    native_layout()
+    from adaptix._internal.code_tools.x86_64_compiler import inline_refcount_mode
+
+    def observe(frame, event, arg):
+        if frame.f_code is inline_refcount_mode.__code__:
+            frame.f_locals.get("probe")
+        return observe
+
+    previous = sys.gettrace()
+    sys.settrace(observe)
+    try:
+        assert inline_refcount_mode() is not None
+    finally:
+        sys.settrace(previous)
+
+
 def test_interpreter_evaluator_offset_matches_c_api():
     layout = native_layout()
     if layout.interpreter_eval_frame is None:

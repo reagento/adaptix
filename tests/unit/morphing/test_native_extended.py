@@ -10,6 +10,7 @@ import weakref
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from decimal import Decimal, InvalidOperation, localcontext
+from inspect import getclosurevars
 from typing import Literal
 from uuid import UUID
 
@@ -18,6 +19,7 @@ from tests_helpers import raises_exc
 
 from adaptix import CodeGenBackend, DebugTrail, Retort, dumper, loader
 from adaptix._internal.code_tools import x86_64_compiler
+from adaptix._internal.code_tools.native_callable import NativeCode
 from adaptix._internal.code_tools.x86_64_compiler import check_native_platform
 from adaptix._internal.morphing import iterable_provider
 
@@ -130,7 +132,10 @@ def test_partial_tuple_is_hidden_from_gc_callbacks(debug_trail, variable):
 
     retort = Retort(codegen_backend=CodeGenBackend.X86_64, debug_trail=debug_trail, recipe=[loader(int, convert)])
     data = {1000, 2000, 3000} if variable else [1000, 2000, 3000]
-    result = retort.load(data, tuple[int, ...] if variable else tuple[int, int, int])
+    function = retort.get_loader(tuple[int, ...] if variable else tuple[int, int, int])
+    native = getclosurevars(function).nonlocals["loader_"] if debug_trail == DebugTrail.FIRST else function
+    assert isinstance(getattr(native, "__self__", None), NativeCode)
+    result = function(data)
     assert result == tuple(data)
 
 

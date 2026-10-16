@@ -67,11 +67,12 @@ def inline_refcount_mode() -> str | None:
     if layout is None:
         return None
     probe = object()
+    # Python tracing can retain another reference in the frame's locals dict.
+    references = ctypes.c_ssize_t.from_address(id(probe) + layout.object_refcount).value
     # 3.14 can pass a borrowed argument to getrefcount, avoiding the temporary
-    # reference added by earlier interpreters. The fresh object's count is one.
+    # reference added by earlier interpreters.
     if (
-        ctypes.c_ssize_t.from_address(id(probe) + layout.object_refcount).value != 1
-        or sys.getrefcount(probe) not in (1, 2)
+        references < 1 or sys.getrefcount(probe) not in (references, references + 1)
         or ctypes.c_void_p.from_address(id(probe) + layout.object_type).value != id(object)
     ):
         return None
