@@ -22,6 +22,7 @@ classifiers = [
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',
     'Programming Language :: Python :: 3.14',
+    'Programming Language :: Python :: 3.15',
     'Programming Language :: Python :: Implementation :: CPython',
     'Programming Language :: Python :: Implementation :: PyPy',
     'Operating System :: OS Independent',
@@ -62,6 +63,7 @@ email = '17@itishka.org'
 #   └             ┘
 
 [tool.pytest.ini_options]
+addopts = ['-p', 'tests_helpers.github_actions']
 python_classes = 'WeDoNotUseClassTestCase'
 python_files = [
   'test_*.py',

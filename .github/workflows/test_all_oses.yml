@@ -26,6 +26,7 @@ jobs:
           - { setup: '3.10',     tox: 'py310'   }
           - { setup: '3.11',     tox: 'py311'   }
           - { setup: '3.12',     tox: 'py312'   }
+          - { setup: '3.15',     tox: 'py315'   }
           - { setup: 'pypy3.8',  tox: 'pypy38'  }
           - { setup: 'pypy3.9',  tox: 'pypy39'  }
           - { setup: 'pypy3.10', tox: 'pypy310' }
