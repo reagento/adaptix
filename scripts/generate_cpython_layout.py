@@ -28,28 +28,11 @@ RUNTIME_FIELDS = {
     "dict_used": "offsetof(PyDictObject, ma_used)",
     "dict_keys": "offsetof(PyDictObject, ma_keys)",
     "dict_values": "offsetof(PyDictObject, ma_values)",
-    "keys_refcount": "offsetof(PyDictKeysObject, dk_refcnt)",
-    "keys_index_bytes": "offsetof(PyDictKeysObject, dk_log2_index_bytes)",
-    "keys_kind": "offsetof(PyDictKeysObject, dk_kind)",
-    "keys_nentries": "offsetof(PyDictKeysObject, dk_nentries)",
-    "keys_indices": "offsetof(PyDictKeysObject, dk_indices)",
-    "unicode_entry_size": "sizeof(PyDictUnicodeEntry)",
-    "unicode_entry_key": "offsetof(PyDictUnicodeEntry, me_key)",
-    "unicode_entry_value": "offsetof(PyDictUnicodeEntry, me_value)",
-    "general_entry_size": "sizeof(PyDictKeyEntry)",
-    "general_entry_key": "offsetof(PyDictKeyEntry, me_key)",
-    "general_entry_value": "offsetof(PyDictKeyEntry, me_value)",
-    "values_capacity": "offsetof(PyDictValues, capacity)",
-    "values_size": "offsetof(PyDictValues, size)",
-    "values_valid": "offsetof(PyDictValues, valid)",
-    "values_items": "offsetof(PyDictValues, values)",
     "unicode_length": "offsetof(PyASCIIObject, length)",
     "unicode_hash": "offsetof(PyASCIIObject, hash)",
     "unicode_state": "offsetof(PyASCIIObject, state)",
     "unicode_ascii_data": "sizeof(PyASCIIObject)",
     "bytes_data": "offsetof(PyBytesObject, ob_sval)",
-    "long_tag": "offsetof(PyLongObject, long_value.lv_tag)",
-    "long_digits": "offsetof(PyLongObject, long_value.ob_digit)",
     "set_mask": "offsetof(PySetObject, mask)",
     "set_table": "offsetof(PySetObject, table)",
     "set_entry_size": "sizeof(setentry)",
@@ -90,6 +73,32 @@ RUNTIME_FIELDS = {
     "abc_invalidation_counter": "offsetof(LayoutABCState, invalidation_counter)",
     "timezone_offset": "offsetof(LayoutTimezone, offset)",
     "timezone_size": "sizeof(LayoutTimezone)",
+}
+
+GROUPED_FIELDS = {
+    "dict_keys_layout": ("DictKeysLayout", {
+        "refcount": "offsetof(PyDictKeysObject, dk_refcnt)",
+        "index_bytes": "offsetof(PyDictKeysObject, dk_log2_index_bytes)",
+        "kind": "offsetof(PyDictKeysObject, dk_kind)",
+        "nentries": "offsetof(PyDictKeysObject, dk_nentries)",
+        "indices": "offsetof(PyDictKeysObject, dk_indices)",
+        "unicode_entry_size": "sizeof(PyDictUnicodeEntry)",
+        "unicode_entry_key": "offsetof(PyDictUnicodeEntry, me_key)",
+        "unicode_entry_value": "offsetof(PyDictUnicodeEntry, me_value)",
+        "general_entry_size": "sizeof(PyDictKeyEntry)",
+        "general_entry_key": "offsetof(PyDictKeyEntry, me_key)",
+        "general_entry_value": "offsetof(PyDictKeyEntry, me_value)",
+    }),
+    "inline_values": ("InlineValuesLayout", {
+        "items": "offsetof(PyDictValues, values)",
+        "capacity": "offsetof(PyDictValues, capacity)",
+        "size": "offsetof(PyDictValues, size)",
+        "valid": "offsetof(PyDictValues, valid)",
+    }),
+    "long_layout": ("LongLayout", {
+        "tag": "offsetof(PyLongObject, long_value.lv_tag)",
+        "digits": "offsetof(PyLongObject, long_value.ob_digit)",
+    }),
 }
 
 # Private structures copied from Objects/dictobject.c, Modules/_abc.c and
@@ -169,16 +178,54 @@ def available_fields(compiler: str, includes: str, directory: Path) -> dict[str,
     return usable
 
 
-def collect_offsets(compiler: str) -> dict[str, int]:
+def available_groups(compiler: str, includes: str, directory: Path) -> dict[str, dict[str, str]]:
+    # A group is emitted only when every member compiles: a partially available
+    # structure cannot be read safely, so the whole capability stays absent.
+    usable = {}
+    for attribute, (_, fields) in GROUPED_FIELDS.items():
+        probe = {f"{attribute}.{member}": expression for member, expression in fields.items()}
+        if build(compiler, program(includes, probe), directory) is not None:
+            usable[attribute] = probe
+    return usable
+
+
+def collect_offsets(compiler: str) -> tuple[dict[str, int], dict[str, dict[str, int]]]:
     with tempfile.TemporaryDirectory(prefix="adaptix-layout-") as name:
         directory = Path(name)
         includes = available_includes(compiler, directory)
         fields = available_fields(compiler, includes, directory)
-        executable = build(compiler, program(includes, fields), directory)
+        groups = available_groups(compiler, includes, directory)
+        probe = dict(fields)
+        for members in groups.values():
+            probe.update(members)
+        executable = build(compiler, program(includes, probe), directory)
         if executable is None:
             raise RuntimeError("Cannot compile the offset probe for this interpreter")
         result = subprocess.run([str(executable)], check=True, capture_output=True, text=True)  # noqa: S603
-    return {name: int(value) for name, value in (line.split("=") for line in result.stdout.splitlines())}
+    values = {name: int(value) for name, value in (line.split("=") for line in result.stdout.splitlines())}
+    flat = {name: value for name, value in values.items() if "." not in name}
+    grouped = {
+        attribute: {member.split(".", 1)[1]: values[member] for member in members}
+        for attribute, members in groups.items()
+    }
+    return flat, grouped
+
+
+def render(version: tuple[int, int], flat: dict[str, int], grouped: dict[str, dict[str, int]]) -> str:
+    imported = ["CPythonLayout", *(GROUPED_FIELDS[attribute][0] for attribute in grouped)]
+    text = (
+        f"# Generated from CPython {sys.version.split()[0]} headers by scripts/generate_cpython_layout.py.\n"
+        "from adaptix._internal.code_tools.cpython_layout.definitions import (\n"
+        + "".join(f"    {name},\n" for name in sorted(imported))
+        + ")\n\n"
+        f"LAYOUT = CPythonLayout(\n    version={version!r},\n"
+        + "".join(f"    {name}={value},\n" for name, value in flat.items())
+    )
+    for attribute, members in grouped.items():
+        text += f"    {attribute}={GROUPED_FIELDS[attribute][0]}(\n"
+        text += "".join(f"        {member}={value},\n" for member, value in members.items())
+        text += "    ),\n"
+    return text + ")\n"
 
 
 def main() -> None:
@@ -198,14 +245,8 @@ def main() -> None:
         parser.error("These layouts target Linux x86-64")
     if any(sysconfig.get_config_var(flag) for flag in ("Py_DEBUG", "Py_TRACE_REFS", "Py_GIL_DISABLED", "Py_STATS")):
         parser.error("Use a release build with the GIL enabled")
-    offsets = collect_offsets(args.compiler)
-    text = (
-        f"# Generated from CPython {sys.version.split()[0]} headers by scripts/generate_cpython_layout.py.\n"
-        "from adaptix._internal.code_tools.cpython_layout.definitions import CPythonLayout\n\n"
-        f"LAYOUT = CPythonLayout(\n    version={version!r},\n"
-        + "".join(f"    {name}={value},\n" for name, value in offsets.items())
-        + ")\n"
-    )
+    flat, grouped = collect_offsets(args.compiler)
+    text = render(version, flat, grouped)
     if args.output is None:
         sys.stdout.write(text)
     else:

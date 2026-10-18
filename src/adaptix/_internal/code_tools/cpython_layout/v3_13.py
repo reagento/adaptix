@@ -1,5 +1,10 @@
 # Generated from CPython 3.13.15 headers by scripts/generate_cpython_layout.py.
-from adaptix._internal.code_tools.cpython_layout.definitions import CPythonLayout
+from adaptix._internal.code_tools.cpython_layout.definitions import (
+    CPythonLayout,
+    DictKeysLayout,
+    InlineValuesLayout,
+    LongLayout,
+)
 
 LAYOUT = CPythonLayout(
     version=(3, 13),
@@ -19,28 +24,11 @@ LAYOUT = CPythonLayout(
     dict_used=16,
     dict_keys=32,
     dict_values=40,
-    keys_refcount=0,
-    keys_index_bytes=9,
-    keys_kind=10,
-    keys_nentries=24,
-    keys_indices=32,
-    unicode_entry_size=16,
-    unicode_entry_key=0,
-    unicode_entry_value=8,
-    general_entry_size=24,
-    general_entry_key=8,
-    general_entry_value=16,
-    values_capacity=0,
-    values_size=1,
-    values_valid=3,
-    values_items=8,
     unicode_length=16,
     unicode_hash=24,
     unicode_state=32,
     unicode_ascii_data=40,
     bytes_data=32,
-    long_tag=16,
-    long_digits=24,
     set_mask=32,
     set_table=40,
     set_entry_size=16,
@@ -81,4 +69,27 @@ LAYOUT = CPythonLayout(
     abc_invalidation_counter=8,
     timezone_offset=16,
     timezone_size=32,
+    dict_keys_layout=DictKeysLayout(
+        refcount=0,
+        index_bytes=9,
+        kind=10,
+        nentries=24,
+        indices=32,
+        unicode_entry_size=16,
+        unicode_entry_key=0,
+        unicode_entry_value=8,
+        general_entry_size=24,
+        general_entry_key=8,
+        general_entry_value=16,
+    ),
+    inline_values=InlineValuesLayout(
+        items=8,
+        capacity=0,
+        size=1,
+        valid=3,
+    ),
+    long_layout=LongLayout(
+        tag=16,
+        digits=24,
+    ),
 )

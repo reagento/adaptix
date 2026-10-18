@@ -2,6 +2,35 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class DictKeysLayout:
+    refcount: int
+    index_bytes: int
+    kind: int
+    nentries: int
+    indices: int
+    unicode_entry_size: int
+    unicode_entry_key: int
+    unicode_entry_value: int
+    general_entry_size: int
+    general_entry_key: int
+    general_entry_value: int
+
+
+@dataclass(frozen=True)
+class InlineValuesLayout:
+    items: int
+    capacity: int
+    size: int
+    valid: int
+
+
+@dataclass(frozen=True)
+class LongLayout:
+    tag: int
+    digits: int
+
+
+@dataclass(frozen=True)
 class CPythonLayout:
     version: tuple[int, int]
     object_refcount: int
@@ -64,29 +93,22 @@ class CPythonLayout:
     abc_invalidation_counter: int
     timezone_offset: int
     timezone_size: int
-    keys_refcount: int | None = None
-    keys_index_bytes: int | None = None
-    keys_kind: int | None = None
-    keys_nentries: int | None = None
-    keys_indices: int | None = None
-    unicode_entry_size: int | None = None
-    unicode_entry_key: int | None = None
-    unicode_entry_value: int | None = None
-    general_entry_size: int | None = None
-    general_entry_key: int | None = None
-    general_entry_value: int | None = None
-    values_capacity: int | None = None
-    values_size: int | None = None
-    values_valid: int | None = None
-    values_items: int | None = None
-    long_tag: int | None = None
-    long_digits: int | None = None
+    dict_keys_layout: DictKeysLayout | None = None
+    inline_values: InlineValuesLayout | None = None
+    long_layout: LongLayout | None = None
     thread_eval_breaker: int | None = None
 
-    def offset(self, name: str) -> int:
-        value = getattr(self, name, None)
-        if value is None:
-            raise RuntimeError(f"No offset {name!r} in CPython {self.version} layout")
-        if not isinstance(value, int):
-            raise TypeError(f"CPython layout field {name!r} is not an offset")
-        return value
+    def require_dict_keys(self) -> DictKeysLayout:
+        if self.dict_keys_layout is None:
+            raise RuntimeError(f"CPython {self.version} exposes no dictionary keys layout")
+        return self.dict_keys_layout
+
+    def require_inline_values(self) -> InlineValuesLayout:
+        if self.inline_values is None:
+            raise RuntimeError(f"CPython {self.version} exposes no inline values layout")
+        return self.inline_values
+
+    def require_long(self) -> LongLayout:
+        if self.long_layout is None:
+            raise RuntimeError(f"CPython {self.version} exposes no integer layout")
+        return self.long_layout
