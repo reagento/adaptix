@@ -529,9 +529,9 @@ def check_abc(layout: CPythonLayout) -> CheckResult:
     class Unrelated:
         pass
 
-    issubclass(Unrelated, Probe)
+    registered = issubclass(Unrelated, Probe)
     cache = read_pointer(id(Probe.__dict__["_abc_impl"]) + layout.abc_negative_cache)
-    if not has_type(layout, cache, set):
+    if registered or not has_type(layout, cache, set):
         return {"abc_negative_cache": False}
     referents = {reference() for reference in cast("set[Any]", unwrap(cache))}
     return {"abc_negative_cache": Unrelated in referents}
