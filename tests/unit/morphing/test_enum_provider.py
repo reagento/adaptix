@@ -234,6 +234,10 @@ def test_flag_by_exact_value_loader_with_bad_types(strict_coercion, debug_trail,
     raises_exc(TypeLoadError(int, data), lambda: loader(data))
 
 
+@pytest.mark.skipif(
+    FlagEnumWithNegativeValue.CASE_ONE.value >= 0,
+    reason="CPython normalizes negative Flag members at class creation since 3.15",
+)
 def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
     retort = Retort(
         strict_coercion=strict_coercion,
@@ -258,6 +262,17 @@ def test_flag_by_exact_value_loader_creation_fail(strict_coercion, debug_trail):
             "__main__": __name__,
         },
     )
+
+
+@pytest.mark.skipif(
+    FlagEnumWithNegativeValue.CASE_ONE.value < 0,
+    reason="Requires negative Flag normalization introduced in CPython 3.15",
+)
+def test_flag_by_exact_value_with_normalized_negative_member(strict_coercion, debug_trail):
+    retort = Retort(strict_coercion=strict_coercion, debug_trail=debug_trail)
+    assert FlagEnumWithNegativeValue.CASE_ONE.value == 0
+    assert retort.load(0, FlagEnumWithNegativeValue) is FlagEnumWithNegativeValue.CASE_ONE
+    assert retort.dump(FlagEnumWithNegativeValue.CASE_ONE) == 0
 
 
 @parametrize_bool("allow_single_value", "allow_duplicates", "allow_compound")
