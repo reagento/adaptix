@@ -1,13 +1,21 @@
+import sys
 from dataclasses import MISSING, FrozenInstanceError, fields, replace
 
 import pytest
 
 from adaptix._internal.code_tools.cpython_layout.definitions import CPythonLayout
-from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout, select_cpython_layout
+from adaptix._internal.code_tools.cpython_layout.selection import (
+    LAYOUTS,
+    PRERELEASE_LAYOUT_ENV_VAR,
+    get_cpython_layout,
+    prerelease_layout_allowed,
+    select_cpython_layout,
+)
 from adaptix._internal.code_tools.cpython_layout.validation import (
     CHECKS,
     COVERED_OFFSETS,
     available_offset_names,
+    layout_matches_interpreter,
     layout_mismatches,
     validate_layout,
 )
@@ -207,3 +215,64 @@ def test_capability_groups_have_no_optional_members():
     for name in ("dict_keys_layout", "inline_values", "long_layout"):
         group = getattr(select((3, 13)), name)
         assert [field for field in fields(group) if field.default is not MISSING] == []
+
+
+@pytest.mark.parametrize("level", ["alpha", "beta", "candidate"])
+def test_prerelease_needs_the_opt_in(level):
+    assert select((3, 15), release_level=level) is None
+    assert select((3, 15), release_level=level, allow_prerelease=True) is not None
+    assert select((3, 16), release_level=level, allow_prerelease=True) is None
+
+
+@pytest.mark.parametrize(
+    ["value", "allowed"],
+    [("1", True), ("0", False), ("", False), ("true", False), ("yes", False), (None, False)],
+)
+def test_prerelease_env_var_accepts_only_one(monkeypatch, value, allowed):
+    if value is None:
+        monkeypatch.delenv(PRERELEASE_LAYOUT_ENV_VAR, raising=False)
+    else:
+        monkeypatch.setenv(PRERELEASE_LAYOUT_ENV_VAR, value)
+    assert prerelease_layout_allowed() is allowed
+
+
+def test_matching_interpreter_is_recognised():
+    layout = get_cpython_layout()
+    if layout is None:
+        pytest.skip("No CPython layout is available for this interpreter build")
+    assert layout_matches_interpreter(layout)
+    assert not layout_matches_interpreter(with_offset(layout, "timezone_offset", layout.timezone_size))
+
+
+class FakeVersionInfo(tuple):
+    __slots__ = ()
+
+    def __new__(cls, version, release_level):
+        return super().__new__(cls, (*version, 0, release_level, 0))
+
+    @property
+    def releaselevel(self):
+        return self[3]
+
+
+@pytest.fixture
+def uncached_layout():
+    get_cpython_layout.cache_clear()
+    yield
+    get_cpython_layout.cache_clear()
+
+
+def test_prerelease_opt_in_is_refused_when_offsets_moved(monkeypatch, uncached_layout):
+    layout = get_cpython_layout()
+    if layout is None:
+        pytest.skip("No CPython layout is available for this interpreter build")
+    monkeypatch.setenv(PRERELEASE_LAYOUT_ENV_VAR, "1")
+    monkeypatch.setattr(sys, "version_info", FakeVersionInfo(layout.version, "candidate"))
+
+    get_cpython_layout.cache_clear()
+    monkeypatch.setitem(LAYOUTS, layout.version, layout)
+    assert get_cpython_layout() is layout
+
+    get_cpython_layout.cache_clear()
+    monkeypatch.setitem(LAYOUTS, layout.version, with_offset(layout, "timezone_offset", layout.timezone_size))
+    assert get_cpython_layout() is None
