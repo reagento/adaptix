@@ -83,10 +83,10 @@ LAYOUT = CPythonLayout(
         general_entry_value=16,
     ),
     inline_values=InlineValuesLayout(
+        items=8,
         capacity=0,
         size=1,
         valid=3,
-        items=8,
     ),
     long_layout=LongLayout(
         tag=16,
