@@ -5,6 +5,7 @@ import subprocess
 import sys
 import sysconfig
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
 
 CORE_FIELDS = {
@@ -120,22 +121,62 @@ typedef struct {
 """
 
 
-def collect_offsets(compiler: str) -> dict[str, int]:
-    fields = CORE_FIELDS | (RUNTIME_FIELDS if sys.version_info >= (3, 13) else {})
-    includes = '#include "Python.h"\n#include <stddef.h>\n#include <stdio.h>\n'
-    if sys.version_info >= (3, 13):
-        includes += '#include "structmember.h"\n#include "datetime.h"\n#include "internal/pycore_dict.h"\n'
-        includes += '#include "internal/pycore_interp.h"\n'
-        includes += SOURCE_TYPES
+BASE_INCLUDES = '#include "Python.h"\n#include <stddef.h>\n#include <stdio.h>\n'
+OPTIONAL_INCLUDES = (
+    '#include "structmember.h"\n',
+    '#include "datetime.h"\n',
+    '#include "internal/pycore_dict.h"\n',
+    '#include "internal/pycore_interp.h"\n',
+)
+
+
+def build(compiler: str, source_text: str, directory: Path) -> Path | None:
+    source, executable = directory / "layout.c", directory / "layout"
+    source.write_text(source_text)
+    completed = subprocess.run(  # noqa: S603
+        [*shlex.split(compiler), "-DPy_BUILD_CORE", "-I" + sysconfig.get_path("include"),
+         str(source), "-o", str(executable)],
+        capture_output=True,
+        check=False,
+    )
+    return executable if completed.returncode == 0 else None
+
+
+def program(includes: str, fields: Mapping[str, str]) -> str:
     body = "\n".join(f'printf("{name}=%zu\\n", (size_t)({expression}));' for name, expression in fields.items())
-    with tempfile.TemporaryDirectory(prefix="adaptix-layout-") as directory:
-        source, executable = Path(directory) / "layout.c", Path(directory) / "layout"
-        source.write_text(includes + "int main(void) {\n" + body + "\nreturn 0;\n}\n")
-        subprocess.run(  # noqa: S603
-            [*shlex.split(compiler), "-DPy_BUILD_CORE", "-I" + sysconfig.get_path("include"),
-             str(source), "-o", str(executable)],
-            check=True,
-        )
+    return includes + SOURCE_TYPES + "int main(void) {\n" + body + "\nreturn 0;\n}\n"
+
+
+def available_includes(compiler: str, directory: Path) -> str:
+    includes = BASE_INCLUDES
+    for candidate in OPTIONAL_INCLUDES:
+        if build(compiler, program(includes + candidate, {}), directory) is not None:
+            includes += candidate
+    return includes
+
+
+def available_fields(compiler: str, includes: str, directory: Path) -> dict[str, str]:
+    fields = CORE_FIELDS | RUNTIME_FIELDS
+    if build(compiler, program(includes, fields), directory) is not None:
+        return fields
+    # Each structure appeared in a different release, so availability is per
+    # field rather than per interpreter version. Probe them one by one.
+    usable = {name: expression for name, expression in fields.items()
+              if build(compiler, program(includes, {name: expression}), directory) is not None}
+    unavailable = set(CORE_FIELDS) - set(usable)
+    if unavailable:
+        raise RuntimeError(f"This interpreter lacks the mandatory offsets {sorted(unavailable)}")
+    return usable
+
+
+def collect_offsets(compiler: str) -> dict[str, int]:
+    with tempfile.TemporaryDirectory(prefix="adaptix-layout-") as name:
+        directory = Path(name)
+        includes = available_includes(compiler, directory)
+        fields = available_fields(compiler, includes, directory)
+        executable = build(compiler, program(includes, fields), directory)
+        if executable is None:
+            raise RuntimeError("Cannot compile the offset probe for this interpreter")
         result = subprocess.run([str(executable)], check=True, capture_output=True, text=True)  # noqa: S603
     return {name: int(value) for name, value in (line.split("=") for line in result.stdout.splitlines())}
 
