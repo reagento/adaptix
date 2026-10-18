@@ -91,9 +91,11 @@ RUNTIME_FIELDS = {
     "timezone_size": "sizeof(LayoutTimezone)",
 }
 
-# Private structures from Objects/dictobject.c, Modules/_abc.c and
-# Modules/_datetimemodule.c in CPython 3.13-3.15. Runtime probes in the
-# corresponding emitters verify these layouts before enabling direct access.
+# Private structures copied from Objects/dictobject.c, Modules/_abc.c and
+# Modules/_datetimemodule.c in CPython 3.13-3.15, which no header exposes.
+# Reordering them upstream leaves these offsets stale while offsetof still
+# succeeds here, so cpython_layout/validation.py checks the generated values
+# against the running interpreter. Only abc_invalidation_counter is unchecked.
 SOURCE_TYPES = """
 typedef struct {
     PyObject_HEAD
