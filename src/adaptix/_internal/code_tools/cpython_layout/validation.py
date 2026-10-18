@@ -382,18 +382,24 @@ def check_thread_state(layout: CPythonLayout) -> CheckResult:
     def hook(*args):
         return None
 
+    profile_offset = layout.offset("thread_profile")
+    trace_offset = layout.offset("thread_trace")
     previous_profile = sys.getprofile()
+    sys.setprofile(None)
+    profile_cleared = read_pointer(state + profile_offset)
     sys.setprofile(hook)
-    profile_set = read_pointer(state + layout.offset("thread_profile"))
+    profile_set = read_pointer(state + profile_offset)
     sys.setprofile(previous_profile)
     previous_trace = sys.gettrace()
+    sys.settrace(None)
+    trace_cleared = read_pointer(state + trace_offset)
     sys.settrace(hook)
-    trace_set = read_pointer(state + layout.offset("thread_trace"))
+    trace_set = read_pointer(state + trace_offset)
     sys.settrace(previous_trace)
     return {
         "thread_interpreter": read_pointer(state + layout.offset("thread_interpreter")) == interpreter,
-        "thread_profile": bool(profile_set) and not read_pointer(state + layout.offset("thread_profile")),
-        "thread_trace": bool(trace_set) and not read_pointer(state + layout.offset("thread_trace")),
+        "thread_profile": not profile_cleared and bool(profile_set),
+        "thread_trace": not trace_cleared and bool(trace_set),
     }
 
 
