@@ -14,6 +14,7 @@ from adaptix._internal.code_tools.cpython_layout.selection import (
 from adaptix._internal.code_tools.cpython_layout.validation import (
     CHECKS,
     COVERED_OFFSETS,
+    UNVERIFIABLE_OFFSETS,
     available_offset_names,
     layout_matches_interpreter,
     layout_mismatches,
@@ -276,3 +277,12 @@ def test_prerelease_opt_in_is_refused_when_offsets_moved(monkeypatch, uncached_l
     get_cpython_layout.cache_clear()
     monkeypatch.setitem(LAYOUTS, layout.version, with_offset(layout, "timezone_offset", layout.timezone_size))
     assert get_cpython_layout() is None
+
+
+def test_every_available_offset_is_probed_on_this_interpreter():
+    layout = get_cpython_layout()
+    if layout is None:
+        pytest.skip("No CPython layout is available for this interpreter build")
+    probed = set(validate_layout(layout))
+    expected = available_offset_names(layout) - UNVERIFIABLE_OFFSETS
+    assert sorted(expected - probed) == []
