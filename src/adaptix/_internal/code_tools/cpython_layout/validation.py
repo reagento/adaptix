@@ -2,6 +2,7 @@ import ctypes
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping
+from dataclasses import fields, is_dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, cast
 
@@ -29,6 +30,11 @@ MAX_SHARED_KEYS = 64
 WIDE_DICT_KEYS = 200
 WIDE_SET_MEMBERS = 37
 INLINE_PROBE_ATTRIBUTES = 3
+
+INLINE_VALUE_NAMES = (
+    "type_cached_keys", "inline_values.valid", "inline_values.items",
+    "inline_values.size", "inline_values.capacity",
+)
 
 CheckResult = Mapping[str, bool]
 Check = Callable[[CPythonLayout], CheckResult]
@@ -115,50 +121,52 @@ def check_type_object(layout: CPythonLayout) -> CheckResult:
         extra: bool
 
     Probe().field = object()
-    version_before = read_uint32(id(Probe) + layout.offset("type_version"))
+    version_before = read_uint32(id(Probe) + layout.type_version)
     Probe.extra = True
-    version_after = read_uint32(id(Probe) + layout.offset("type_version"))
+    version_after = read_uint32(id(Probe) + layout.type_version)
     return {
-        "type_basic_size": read_ssize(id(Probe) + layout.offset("type_basic_size")) == Probe.__basicsize__,
-        "type_flags": read_ulong(id(Probe) + layout.offset("type_flags")) == Probe.__flags__,
+        "type_basic_size": read_ssize(id(Probe) + layout.type_basic_size) == Probe.__basicsize__,
+        "type_flags": read_ulong(id(Probe) + layout.type_flags) == Probe.__flags__,
         "type_getattro": (
-            read_pointer(id(Probe) + layout.offset("type_getattro")) == type_slot_address(Probe, TP_GETATTRO)
+            read_pointer(id(Probe) + layout.type_getattro) == type_slot_address(Probe, TP_GETATTRO)
         ),
         "type_version": bool(version_before) and not version_after,
     }
 
 
 def check_dict_core(layout: CPythonLayout) -> CheckResult:
+    dict_keys = layout.require_dict_keys()
     sample = {"alpha": object(), "beta": object()}
-    keys = read_pointer(id(sample) + layout.offset("dict_keys"))
+    keys = read_pointer(id(sample) + layout.dict_keys)
     usable = plausible_address(keys)
-    index_bytes = read_uint8(keys + layout.offset("keys_index_bytes")) if usable else -1
+    index_bytes = read_uint8(keys + dict_keys.index_bytes) if usable else -1
     return {
-        "dict_used": read_ssize(id(sample) + layout.offset("dict_used")) == len(sample),
+        "dict_used": read_ssize(id(sample) + layout.dict_used) == len(sample),
         "dict_keys": usable,
-        "dict_values": read_pointer(id(sample) + layout.offset("dict_values")) == 0,
-        "keys_kind": usable and read_uint8(keys + layout.offset("keys_kind")) == DICT_KEYS_UNICODE,
-        "keys_nentries": usable and read_ssize(keys + layout.offset("keys_nentries")) == len(sample),
-        "keys_refcount": usable and read_ssize(keys + layout.offset("keys_refcount")) == 1,
-        "keys_index_bytes": MIN_INDEX_BYTES_LOG2 <= index_bytes <= MAX_INDEX_BYTES_LOG2,
+        "dict_values": read_pointer(id(sample) + layout.dict_values) == 0,
+        "dict_keys_layout.kind": usable and read_uint8(keys + dict_keys.kind) == DICT_KEYS_UNICODE,
+        "dict_keys_layout.nentries": usable and read_ssize(keys + dict_keys.nentries) == len(sample),
+        "dict_keys_layout.refcount": usable and read_ssize(keys + dict_keys.refcount) == 1,
+        "dict_keys_layout.index_bytes": MIN_INDEX_BYTES_LOG2 <= index_bytes <= MAX_INDEX_BYTES_LOG2,
     }
 
 
 def walk_dict_entries(
-    layout: CPythonLayout, data: dict, kind: int, entry_size: str, entry_key: str, entry_value: str,
+    layout: CPythonLayout, data: dict, kind: int, entry_size: int, entry_key: int, entry_value: int,
 ) -> dict[object, int] | None:
-    keys = read_pointer(id(data) + layout.offset("dict_keys"))
-    if not plausible_address(keys) or read_uint8(keys + layout.offset("keys_kind")) != kind:
+    keys = read_pointer(id(data) + layout.dict_keys)
+    dict_keys = layout.require_dict_keys()
+    if not plausible_address(keys) or read_uint8(keys + dict_keys.kind) != kind:
         return None
-    count = read_ssize(keys + layout.offset("keys_nentries"))
-    index_bytes = read_uint8(keys + layout.offset("keys_index_bytes"))
-    size = layout.offset(entry_size)
-    indices = layout.offset("keys_indices")
+    count = read_ssize(keys + dict_keys.nentries)
+    index_bytes = read_uint8(keys + dict_keys.index_bytes)
+    size = entry_size
+    indices = dict_keys.indices
     usable = (
         count == len(data)
         and MIN_INDEX_BYTES_LOG2 <= index_bytes <= MAX_INDEX_BYTES_LOG2
-        and 0 <= layout.offset(entry_key) < size
-        and 0 <= layout.offset(entry_value) < size
+        and 0 <= entry_key < size
+        and 0 <= entry_value < size
         and 0 < indices <= MAX_STRUCT_OFFSET
         and size <= MAX_STRUCT_OFFSET
     )
@@ -168,17 +176,18 @@ def walk_dict_entries(
     found = {}
     for index in range(count):
         entry = entries + size * index
-        key = read_pointer(entry + layout.offset(entry_key))
+        key = read_pointer(entry + entry_key)
         if not plausible_address(key):
             return None
         key_type = read_pointer(key + layout.object_type)
         if key_type not in {id(str), id(int)}:
             return None
-        found[unwrap(key)] = read_pointer(entry + layout.offset(entry_value))
+        found[unwrap(key)] = read_pointer(entry + entry_value)
     return found
 
 
 def check_dict_entries(layout: CPythonLayout) -> CheckResult:
+    dict_keys = layout.require_dict_keys()
     first, second = object(), object()
     unicode_keyed = {"alpha": first, "beta": second}
     general_keyed = {1: first, "beta": second}
@@ -186,15 +195,15 @@ def check_dict_entries(layout: CPythonLayout) -> CheckResult:
     wide_keyed = dict.fromkeys(wide_keys, first)
     unicode_found = walk_dict_entries(
         layout, unicode_keyed, DICT_KEYS_UNICODE,
-        "unicode_entry_size", "unicode_entry_key", "unicode_entry_value",
+        dict_keys.unicode_entry_size, dict_keys.unicode_entry_key, dict_keys.unicode_entry_value,
     )
     wide_found = walk_dict_entries(
         layout, wide_keyed, DICT_KEYS_UNICODE,
-        "unicode_entry_size", "unicode_entry_key", "unicode_entry_value",
+        dict_keys.unicode_entry_size, dict_keys.unicode_entry_key, dict_keys.unicode_entry_value,
     )
     general_found = walk_dict_entries(
         layout, general_keyed, DICT_KEYS_GENERAL,
-        "general_entry_size", "general_entry_key", "general_entry_value",
+        dict_keys.general_entry_size, dict_keys.general_entry_key, dict_keys.general_entry_value,
     )
     unicode_ok = (
         unicode_found == {"alpha": id(first), "beta": id(second)}
@@ -202,17 +211,20 @@ def check_dict_entries(layout: CPythonLayout) -> CheckResult:
     )
     general_ok = general_found == {1: id(first), "beta": id(second)}
     return {
-        "keys_indices": unicode_ok,
-        "unicode_entry_size": unicode_ok,
-        "unicode_entry_key": unicode_ok,
-        "unicode_entry_value": unicode_ok,
-        "general_entry_size": general_ok,
-        "general_entry_key": general_ok,
-        "general_entry_value": general_ok,
+        "dict_keys_layout.indices": unicode_ok,
+        "dict_keys_layout.unicode_entry_size": unicode_ok,
+        "dict_keys_layout.unicode_entry_key": unicode_ok,
+        "dict_keys_layout.unicode_entry_value": unicode_ok,
+        "dict_keys_layout.general_entry_size": general_ok,
+        "dict_keys_layout.general_entry_key": general_ok,
+        "dict_keys_layout.general_entry_value": general_ok,
     }
 
 
 def check_inline_values(layout: CPythonLayout) -> CheckResult:
+    dict_keys = layout.require_dict_keys()
+    inline = layout.require_inline_values()
+
     class Probe:
         leading: object
         field: object
@@ -223,34 +235,34 @@ def check_inline_values(layout: CPythonLayout) -> CheckResult:
     probe.leading = object()
     probe.field = value
     probe.trailing = object()
-    basic_size = read_ssize(id(Probe) + layout.offset("type_basic_size"))
-    cached_keys = read_pointer(id(Probe) + layout.offset("type_cached_keys"))
+    basic_size = read_ssize(id(Probe) + layout.type_basic_size)
+    cached_keys = read_pointer(id(Probe) + layout.type_cached_keys)
     if not plausible_address(cached_keys) or basic_size != Probe.__basicsize__:
         return dict.fromkeys(
-            ("type_cached_keys", "values_valid", "values_items", "values_size", "values_capacity"), False,
+            INLINE_VALUE_NAMES, False,
         )
-    index_bytes = read_uint8(cached_keys + layout.offset("keys_index_bytes"))
-    count = read_ssize(cached_keys + layout.offset("keys_nentries"))
+    index_bytes = read_uint8(cached_keys + dict_keys.index_bytes)
+    count = read_ssize(cached_keys + dict_keys.nentries)
     if not MIN_INDEX_BYTES_LOG2 <= index_bytes <= MAX_INDEX_BYTES_LOG2 or not 0 < count <= MAX_SHARED_KEYS:
         return dict.fromkeys(
-            ("type_cached_keys", "values_valid", "values_items", "values_size", "values_capacity"), False,
+            INLINE_VALUE_NAMES, False,
         )
-    entries = cached_keys + layout.offset("keys_indices") + (1 << index_bytes)
+    entries = cached_keys + dict_keys.indices + (1 << index_bytes)
     index = None
     for position in range(count):
-        key = read_pointer(entries + layout.offset("unicode_entry_size") * position)
+        key = read_pointer(entries + dict_keys.unicode_entry_size * position)
         if has_type(layout, key, str) and unwrap(key) == "field":
             index = position
     values = id(probe) + basic_size
-    size = read_uint8(values + layout.offset("values_size"))
+    size = read_uint8(values + inline.size)
     return {
         "type_cached_keys": index is not None,
-        "values_valid": read_uint8(values + layout.offset("values_valid")) == 1,
-        "values_items": index is not None and read_pointer(
-            values + layout.offset("values_items") + ctypes.sizeof(ctypes.c_void_p) * index,
+        "inline_values.valid": read_uint8(values + inline.valid) == 1,
+        "inline_values.items": index is not None and read_pointer(
+            values + inline.items + ctypes.sizeof(ctypes.c_void_p) * index,
         ) == id(value),
-        "values_size": size == INLINE_PROBE_ATTRIBUTES,
-        "values_capacity": size <= read_uint8(values + layout.offset("values_capacity")),
+        "inline_values.size": size == INLINE_PROBE_ATTRIBUTES,
+        "inline_values.capacity": size <= read_uint8(values + inline.capacity),
     }
 
 
@@ -259,26 +271,27 @@ def check_unicode(layout: CPythonLayout) -> CheckResult:
     wide = bytearray(b"\xd0\xba\xd0\xbb\xd1\x8e\xd1\x87").decode("utf-8")
     digest = hash(probe)
     return {
-        "unicode_length": read_ssize(id(probe) + layout.offset("unicode_length")) == len(probe),
-        "unicode_hash": read_ssize(id(probe) + layout.offset("unicode_hash")) == digest,
+        "unicode_length": read_ssize(id(probe) + layout.unicode_length) == len(probe),
+        "unicode_hash": read_ssize(id(probe) + layout.unicode_hash) == digest,
         "unicode_state": (
-            read_uint32(id(probe) + layout.offset("unicode_state")) & COMPACT_ASCII == COMPACT_ASCII
-            and read_uint32(id(wide) + layout.offset("unicode_state")) & COMPACT_ASCII != COMPACT_ASCII
+            read_uint32(id(probe) + layout.unicode_state) & COMPACT_ASCII == COMPACT_ASCII
+            and read_uint32(id(wide) + layout.unicode_state) & COMPACT_ASCII != COMPACT_ASCII
         ),
         "unicode_ascii_data": (
-            ctypes.string_at(id(probe) + layout.offset("unicode_ascii_data"), len(probe)) == probe.encode("ascii")
+            ctypes.string_at(id(probe) + layout.unicode_ascii_data, len(probe)) == probe.encode("ascii")
         ),
     }
 
 
 def check_bytes(layout: CPythonLayout) -> CheckResult:
     probe = bytes(bytearray(b"native-payload"))
-    return {"bytes_data": ctypes.string_at(id(probe) + layout.offset("bytes_data"), len(probe)) == probe}
+    return {"bytes_data": ctypes.string_at(id(probe) + layout.bytes_data, len(probe)) == probe}
 
 
 def rebuild_long(layout: CPythonLayout, value: int) -> int | None:
-    digits_offset = layout.offset("long_digits")
-    tag = read_ssize(id(value) + layout.offset("long_tag"))
+    long_layout = layout.require_long()
+    digits_offset = long_layout.digits
+    tag = read_ssize(id(value) + long_layout.tag)
     count, sign = tag >> LONG_SIZE_SHIFT, tag & ((1 << LONG_SIZE_SHIFT) - 1)
     allocated = (value.__sizeof__() - digits_offset) // ctypes.sizeof(ctypes.c_uint32)
     if not 0 <= count <= allocated:
@@ -296,19 +309,19 @@ def check_long(layout: CPythonLayout) -> CheckResult:
         2 ** 300, -(2 ** 300), 10 ** 100,
     )
     correct = all(rebuild_long(layout, int(str(value))) == value for value in samples)
-    return {"long_tag": correct, "long_digits": correct}
+    return {"long_layout.tag": correct, "long_layout.digits": correct}
 
 
 def check_set_table(layout: CPythonLayout) -> CheckResult:
     members = (object(), object(), object())
     probe = set(members)
-    table = read_pointer(id(probe) + layout.offset("set_table"))
-    mask = read_ssize(id(probe) + layout.offset("set_mask"))
+    table = read_pointer(id(probe) + layout.set_table)
+    mask = read_ssize(id(probe) + layout.set_mask)
     if not plausible_address(table) or not 0 < mask + 1 <= MAX_SET_TABLE_ENTRIES or (mask + 1) & mask:
         return dict.fromkeys(("set_mask", "set_table", "set_entry_size"), False)
     occupied = set()
     for index in range(mask + 1):
-        key = read_pointer(table + layout.offset("set_entry_size") * index)
+        key = read_pointer(table + layout.set_entry_size * index)
         if key:
             occupied.add(key)
     correct = occupied == {id(member) for member in members}
@@ -326,19 +339,19 @@ def check_member_descriptor(layout: CPythonLayout) -> CheckResult:
     probe.alpha = object()
     probe.target = value
     descriptor = Probe.__dict__["target"]
-    member = read_pointer(id(descriptor) + layout.offset("member_descriptor_member"))
+    member = read_pointer(id(descriptor) + layout.member_descriptor_member)
     if not plausible_address(member):
         return dict.fromkeys(
             ("member_descriptor_member", "member_type", "member_offset", "member_flags"), False,
         )
-    offset = read_ssize(member + layout.offset("member_offset"))
+    offset = read_ssize(member + layout.member_offset)
     return {
         "member_descriptor_member": True,
-        "member_type": read_int(member + layout.offset("member_type")) == T_OBJECT_EX,
+        "member_type": read_int(member + layout.member_type) == T_OBJECT_EX,
         "member_offset": (
             layout.object_size <= offset < Probe.__basicsize__ and read_pointer(id(probe) + offset) == id(value)
         ),
-        "member_flags": read_int(member + layout.offset("member_flags")) == 0,
+        "member_flags": read_int(member + layout.member_flags) == 0,
     }
 
 
@@ -347,10 +360,10 @@ def check_function(layout: CPythonLayout) -> CheckResult:
         return first, second, third
 
     return {
-        "function_code": read_pointer(id(probe) + layout.offset("function_code")) == id(probe.__code__),
-        "function_defaults": read_pointer(id(probe) + layout.offset("function_defaults")) == id(probe.__defaults__),
+        "function_code": read_pointer(id(probe) + layout.function_code) == id(probe.__code__),
+        "function_defaults": read_pointer(id(probe) + layout.function_defaults) == id(probe.__defaults__),
         "function_kwdefaults": (
-            read_pointer(id(probe) + layout.offset("function_kwdefaults")) == id(probe.__kwdefaults__)
+            read_pointer(id(probe) + layout.function_kwdefaults) == id(probe.__kwdefaults__)
         ),
     }
 
@@ -368,8 +381,8 @@ def check_cell(layout: CPythonLayout) -> CheckResult:
 
     cell = outer()
     return {
-        "cell_contents": read_pointer(id(cell) + layout.offset("cell_contents")) == id(cell.cell_contents),
-        "cell_size": layout.offset("cell_size") == cell.__sizeof__(),
+        "cell_contents": read_pointer(id(cell) + layout.cell_contents) == id(cell.cell_contents),
+        "cell_size": layout.cell_size == cell.__sizeof__(),
     }
 
 
@@ -382,8 +395,8 @@ def check_thread_state(layout: CPythonLayout) -> CheckResult:
     def hook(*args):
         return None
 
-    profile_offset = layout.offset("thread_profile")
-    trace_offset = layout.offset("thread_trace")
+    profile_offset = layout.thread_profile
+    trace_offset = layout.thread_trace
     previous_profile = sys.getprofile()
     sys.setprofile(None)
     profile_cleared = read_pointer(state + profile_offset)
@@ -397,14 +410,14 @@ def check_thread_state(layout: CPythonLayout) -> CheckResult:
     trace_set = read_pointer(state + trace_offset)
     sys.settrace(previous_trace)
     return {
-        "thread_interpreter": read_pointer(state + layout.offset("thread_interpreter")) == interpreter,
+        "thread_interpreter": read_pointer(state + layout.thread_interpreter) == interpreter,
         "thread_profile": not profile_cleared and bool(profile_set),
         "thread_trace": not trace_cleared and bool(trace_set),
     }
 
 
 def unpack_datetime_data(layout: CPythonLayout, value: datetime) -> tuple[int, ...]:
-    data = ctypes.string_at(id(value) + layout.offset("datetime_data"), 10)
+    data = ctypes.string_at(id(value) + layout.datetime_data, 10)
     return (
         (data[0] << 8) | data[1], data[2], data[3], data[4], data[5], data[6],
         (data[7] << 16) | (data[8] << 8) | data[9],
@@ -421,64 +434,64 @@ def check_datetime(layout: CPythonLayout) -> CheckResult:
     )
     return {
         "datetime_data": unpack_datetime_data(layout, aware) == expected,
-        "datetime_hash": read_ssize(id(aware) + layout.offset("datetime_hash")) == digest,
+        "datetime_hash": read_ssize(id(aware) + layout.datetime_hash) == digest,
         "datetime_has_tzinfo": (
-            read_uint8(id(aware) + layout.offset("datetime_has_tzinfo")) == 1
-            and read_uint8(id(naive) + layout.offset("datetime_has_tzinfo")) == 0
+            read_uint8(id(aware) + layout.datetime_has_tzinfo) == 1
+            and read_uint8(id(naive) + layout.datetime_has_tzinfo) == 0
         ),
-        "datetime_tzinfo": read_pointer(id(aware) + layout.offset("datetime_tzinfo")) == id(zone),
-        "datetime_size": layout.offset("datetime_size") == aware.__sizeof__(),
-        "datetime_naive_size": layout.offset("datetime_naive_size") == layout.offset("datetime_tzinfo"),
-        "date_size": layout.offset("date_size") == date(2026, 10, 18).__sizeof__(),
+        "datetime_tzinfo": read_pointer(id(aware) + layout.datetime_tzinfo) == id(zone),
+        "datetime_size": layout.datetime_size == aware.__sizeof__(),
+        "datetime_naive_size": layout.datetime_naive_size == layout.datetime_tzinfo,
+        "date_size": layout.date_size == date(2026, 10, 18).__sizeof__(),
     }
 
 
 def check_time(layout: CPythonLayout) -> CheckResult:
     zone = timezone(timedelta(hours=-5))
     aware = time(14, 30, 5, 123456, tzinfo=zone)
-    data = ctypes.string_at(id(aware) + layout.offset("time_data"), 6)
+    data = ctypes.string_at(id(aware) + layout.time_data, 6)
     unpacked = (data[0], data[1], data[2], (data[3] << 16) | (data[4] << 8) | data[5])
     return {
         "time_data": unpacked == (aware.hour, aware.minute, aware.second, aware.microsecond),
-        "time_tzinfo": read_pointer(id(aware) + layout.offset("time_tzinfo")) == id(zone),
-        "time_size": layout.offset("time_size") == aware.__sizeof__(),
-        "time_naive_size": layout.offset("time_naive_size") == layout.offset("time_tzinfo"),
+        "time_tzinfo": read_pointer(id(aware) + layout.time_tzinfo) == id(zone),
+        "time_size": layout.time_size == aware.__sizeof__(),
+        "time_naive_size": layout.time_naive_size == layout.time_tzinfo,
     }
 
 
 def check_timedelta(layout: CPythonLayout) -> CheckResult:
     probe = timedelta(days=5, seconds=7, microseconds=9)
     return {
-        "timedelta_days": read_int(id(probe) + layout.offset("timedelta_days")) == probe.days,
-        "timedelta_seconds": read_int(id(probe) + layout.offset("timedelta_seconds")) == probe.seconds,
+        "timedelta_days": read_int(id(probe) + layout.timedelta_days) == probe.days,
+        "timedelta_seconds": read_int(id(probe) + layout.timedelta_seconds) == probe.seconds,
         "timedelta_microseconds": (
-            read_int(id(probe) + layout.offset("timedelta_microseconds")) == probe.microseconds
+            read_int(id(probe) + layout.timedelta_microseconds) == probe.microseconds
         ),
-        "timedelta_size": layout.offset("timedelta_size") == probe.__sizeof__(),
+        "timedelta_size": layout.timedelta_size == probe.__sizeof__(),
     }
 
 
 def check_timezone(layout: CPythonLayout) -> CheckResult:
     offset = timedelta(hours=3, minutes=30)
     zone = timezone(offset)
-    stored = read_pointer(id(zone) + layout.offset("timezone_offset"))
+    stored = read_pointer(id(zone) + layout.timezone_offset)
     return {
         "timezone_offset": has_type(layout, stored, timedelta) and unwrap(stored) == offset,
-        "timezone_size": layout.offset("timezone_size") == zone.__sizeof__(),
+        "timezone_size": layout.timezone_size == zone.__sizeof__(),
     }
 
 
 def check_dict_iterator(layout: CPythonLayout) -> CheckResult:
     source = {"alpha": object(), "beta": object()}
     iterator = iter(source)
-    start = read_ssize(id(iterator) + layout.offset("dictiter_position"))
-    remaining_before = read_ssize(id(iterator) + layout.offset("dictiter_remaining"))
+    start = read_ssize(id(iterator) + layout.dictiter_position)
+    remaining_before = read_ssize(id(iterator) + layout.dictiter_remaining)
     next(iterator)
-    advanced = read_ssize(id(iterator) + layout.offset("dictiter_position"))
-    remaining_after = read_ssize(id(iterator) + layout.offset("dictiter_remaining"))
+    advanced = read_ssize(id(iterator) + layout.dictiter_position)
+    remaining_after = read_ssize(id(iterator) + layout.dictiter_remaining)
     return {
-        "dictiter_dict": read_pointer(id(iterator) + layout.offset("dictiter_dict")) == id(source),
-        "dictiter_used": read_ssize(id(iterator) + layout.offset("dictiter_used")) == len(source),
+        "dictiter_dict": read_pointer(id(iterator) + layout.dictiter_dict) == id(source),
+        "dictiter_used": read_ssize(id(iterator) + layout.dictiter_used) == len(source),
         "dictiter_position": start == 0 and advanced == 1,
         "dictiter_remaining": remaining_before == len(source) and remaining_after == len(source) - 1,
     }
@@ -494,7 +507,7 @@ def check_abc(layout: CPythonLayout) -> CheckResult:
         pass
 
     issubclass(Unrelated, Probe)
-    cache = read_pointer(id(Probe.__dict__["_abc_impl"]) + layout.offset("abc_negative_cache"))
+    cache = read_pointer(id(Probe.__dict__["_abc_impl"]) + layout.abc_negative_cache)
     if not has_type(layout, cache, set):
         return {"abc_negative_cache": False}
     referents = {reference() for reference in cast("set[Any]", unwrap(cache))}
@@ -506,18 +519,18 @@ CHECKS: tuple[tuple[tuple[str, ...], Check], ...] = (
     (("tuple_items", "list_items", "list_allocated", "set_used"), check_sequences),
     (("type_basic_size", "type_flags", "type_getattro", "type_version"), check_type_object),
     ((
-        "dict_used", "dict_keys", "dict_values", "keys_kind", "keys_nentries", "keys_refcount", "keys_index_bytes",
+        "dict_used", "dict_keys", "dict_values", "dict_keys_layout.kind", "dict_keys_layout.nentries",
+        "dict_keys_layout.refcount", "dict_keys_layout.index_bytes",
     ), check_dict_core),
     ((
-        "keys_indices", "unicode_entry_size", "unicode_entry_key", "unicode_entry_value",
-        "general_entry_size", "general_entry_key", "general_entry_value",
+        "dict_keys_layout.indices", "dict_keys_layout.unicode_entry_size", "dict_keys_layout.unicode_entry_key",
+        "dict_keys_layout.unicode_entry_value", "dict_keys_layout.general_entry_size",
+        "dict_keys_layout.general_entry_key", "dict_keys_layout.general_entry_value",
     ), check_dict_entries),
-    ((
-        "type_cached_keys", "values_valid", "values_items", "values_size", "values_capacity",
-    ), check_inline_values),
+    (INLINE_VALUE_NAMES, check_inline_values),
     (("unicode_length", "unicode_hash", "unicode_state", "unicode_ascii_data"), check_unicode),
     (("bytes_data",), check_bytes),
-    (("long_tag", "long_digits"), check_long),
+    (("long_layout.tag", "long_layout.digits"), check_long),
     (("set_mask", "set_table", "set_entry_size"), check_set_table),
     ((
         "member_descriptor_member", "member_type", "member_offset", "member_flags",
@@ -544,10 +557,18 @@ COVERED_OFFSETS = frozenset(name for names, _ in CHECKS for name in names) | UNV
 
 
 def available_offset_names(layout: CPythonLayout) -> frozenset[str]:
-    return frozenset(
-        field for field in type(layout).__dataclass_fields__
-        if field != "version" and getattr(layout, field) is not None
-    )
+    names: set[str] = set()
+    for field in fields(layout):
+        if field.name == "version":
+            continue
+        value = getattr(layout, field.name)
+        if value is None:
+            continue
+        if is_dataclass(value):
+            names.update(f"{field.name}.{member.name}" for member in fields(value))
+        else:
+            names.add(field.name)
+    return frozenset(names)
 
 
 def validate_layout(layout: CPythonLayout) -> dict[str, bool]:

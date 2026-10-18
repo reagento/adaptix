@@ -1,5 +1,8 @@
 # Generated from CPython 3.11.16 headers by scripts/generate_cpython_layout.py.
-from adaptix._internal.code_tools.cpython_layout.definitions import CPythonLayout
+from adaptix._internal.code_tools.cpython_layout.definitions import (
+    CPythonLayout,
+    DictKeysLayout,
+)
 
 LAYOUT = CPythonLayout(
     version=(3, 11),
@@ -19,18 +22,6 @@ LAYOUT = CPythonLayout(
     dict_used=16,
     dict_keys=32,
     dict_values=40,
-    keys_refcount=0,
-    keys_index_bytes=9,
-    keys_kind=10,
-    keys_nentries=24,
-    keys_indices=32,
-    unicode_entry_size=16,
-    unicode_entry_key=0,
-    unicode_entry_value=8,
-    general_entry_size=24,
-    general_entry_key=8,
-    general_entry_value=16,
-    values_items=0,
     unicode_length=16,
     unicode_hash=24,
     unicode_state=32,
@@ -75,4 +66,17 @@ LAYOUT = CPythonLayout(
     abc_invalidation_counter=8,
     timezone_offset=16,
     timezone_size=32,
+    dict_keys_layout=DictKeysLayout(
+        refcount=0,
+        index_bytes=9,
+        kind=10,
+        nentries=24,
+        indices=32,
+        unicode_entry_size=16,
+        unicode_entry_key=0,
+        unicode_entry_value=8,
+        general_entry_size=24,
+        general_entry_key=8,
+        general_entry_value=16,
+    ),
 )

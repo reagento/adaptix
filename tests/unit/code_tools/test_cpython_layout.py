@@ -1,4 +1,4 @@
-from dataclasses import FrozenInstanceError, replace
+from dataclasses import MISSING, FrozenInstanceError, fields, replace
 
 import pytest
 
@@ -38,15 +38,19 @@ def test_unknown_version_has_no_layout(version):
     assert select(version) is None
 
 
-def test_required_offset_checks_availability():
-    layout = select((3, 10))
-    assert layout.offset("object_type") == layout.object_type
-    with pytest.raises(RuntimeError, match="values_valid"):
-        layout.offset("values_valid")
-    with pytest.raises(RuntimeError, match="unknown_offset"):
-        layout.offset("unknown_offset")
-    with pytest.raises(TypeError, match="version"):
-        layout.offset("version")
+def test_absent_capability_groups_raise_on_request():
+    oldest = select((3, 10))
+    with pytest.raises(RuntimeError, match="dictionary keys"):
+        oldest.require_dict_keys()
+    with pytest.raises(RuntimeError, match="inline values"):
+        oldest.require_inline_values()
+    with pytest.raises(RuntimeError, match="integer"):
+        oldest.require_long()
+
+    newest = select((3, 13))
+    assert newest.require_dict_keys() is newest.dict_keys_layout
+    assert newest.require_inline_values() is newest.inline_values
+    assert newest.require_long() is newest.long_layout
 
 
 @pytest.mark.parametrize(
@@ -56,21 +60,26 @@ def test_required_offset_checks_availability():
         ("type_version", (3, 10)),
         ("datetime_data", (3, 10)),
         ("timezone_offset", (3, 10)),
-        ("keys_kind", (3, 11)),
-        ("unicode_entry_value", (3, 11)),
-        ("general_entry_value", (3, 11)),
-        ("long_tag", (3, 12)),
-        ("long_digits", (3, 12)),
-        ("values_items", (3, 11)),
-        ("values_valid", (3, 13)),
-        ("values_size", (3, 13)),
-        ("values_capacity", (3, 13)),
         ("thread_eval_breaker", (3, 13)),
     ],
 )
 @pytest.mark.parametrize("version", SUPPORTED_VERSIONS)
 def test_offset_availability_follows_the_structure_history(field, first_version, version):
     present = getattr(select(version), field) is not None
+    assert present == (version >= first_version)
+
+
+@pytest.mark.parametrize(
+    ["group", "first_version"],
+    [
+        ("dict_keys_layout", (3, 11)),
+        ("long_layout", (3, 12)),
+        ("inline_values", (3, 13)),
+    ],
+)
+@pytest.mark.parametrize("version", SUPPORTED_VERSIONS)
+def test_capability_groups_follow_the_structure_history(group, first_version, version):
+    present = getattr(select(version), group) is not None
     assert present == (version >= first_version)
 
 
@@ -137,13 +146,28 @@ def test_declared_offsets_are_covered_for_every_version(version):
     assert sorted(available_offset_names(layout) - COVERED_OFFSETS) == []
 
 
+def read_offset(layout, name):
+    if "." not in name:
+        return getattr(layout, name)
+    group, member = name.split(".", 1)
+    container = getattr(layout, group)
+    return None if container is None else getattr(container, member)
+
+
+def with_offset(layout, name, value):
+    if "." not in name:
+        return replace(layout, **{name: value})
+    group, member = name.split(".", 1)
+    return replace(layout, **{group: replace(getattr(layout, group), **{member: value})})
+
+
 @pytest.mark.parametrize(
     "field",
     [
         "object_type", "tuple_items", "list_items", "set_used", "type_flags", "dict_used",
-        "unicode_entry_value", "values_items", "unicode_hash", "bytes_data", "long_digits",
-        "set_table", "member_offset", "function_code", "cell_contents", "thread_interpreter",
-        "datetime_tzinfo", "time_tzinfo", "timedelta_seconds", "timezone_offset",
+        "dict_keys_layout.unicode_entry_value", "inline_values.items", "unicode_hash", "bytes_data",
+        "long_layout.digits", "set_table", "member_offset", "function_code", "cell_contents",
+        "thread_interpreter", "datetime_tzinfo", "time_tzinfo", "timedelta_seconds", "timezone_offset",
         "dictiter_dict", "abc_negative_cache",
     ],
 )
@@ -151,16 +175,17 @@ def test_corrupted_offset_is_reported(field):
     layout = get_cpython_layout()
     if layout is None:
         pytest.skip("No CPython layout is available for this interpreter build")
-    if getattr(layout, field) is None:
+    if read_offset(layout, field) is None:
         pytest.skip(f"CPython {layout.version} has no {field} offset")
+    original = read_offset(layout, field)
     siblings = [
-        getattr(layout, other)
+        read_offset(layout, other)
         for names, _ in CHECKS if field in names
         for other in names
-        if other != field and getattr(layout, other) is not None
-        and getattr(layout, other) != getattr(layout, field)
+        if other != field and read_offset(layout, other) is not None
+        and read_offset(layout, other) != original
     ]
-    corrupted = replace(layout, **{field: siblings[0] if siblings else getattr(layout, field) + 8})
+    corrupted = with_offset(layout, field, siblings[0] if siblings else original + 8)
     assert field in layout_mismatches(corrupted)
 
 
@@ -174,3 +199,11 @@ def test_offsets_available_everywhere_are_not_optional():
         if all(getattr(select(version), name) is not None for version in SUPPORTED_VERSIONS)
     ]
     assert always_available == []
+
+
+def test_capability_groups_have_no_optional_members():
+    groups = [CPythonLayout.__dataclass_fields__[name].type for name in ("dict_keys_layout", "inline_values", "long_layout")]
+    assert [group for group in groups if "None" not in str(group)] == []
+    for name in ("dict_keys_layout", "inline_values", "long_layout"):
+        group = getattr(select((3, 13)), name)
+        assert [field for field in fields(group) if field.default is not MISSING] == []
