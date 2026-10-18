@@ -2,6 +2,7 @@ from dataclasses import FrozenInstanceError, replace
 
 import pytest
 
+from adaptix._internal.code_tools.cpython_layout.definitions import CPythonLayout
 from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout, select_cpython_layout
 from adaptix._internal.code_tools.cpython_layout.validation import (
     CHECKS,
@@ -10,6 +11,8 @@ from adaptix._internal.code_tools.cpython_layout.validation import (
     layout_mismatches,
     validate_layout,
 )
+
+SUPPORTED_VERSIONS = [(3, 10), (3, 11), (3, 12), (3, 13), (3, 14), (3, 15)]
 
 
 def select(version, **changes):
@@ -21,7 +24,7 @@ def select(version, **changes):
     return select_cpython_layout(version, **options)
 
 
-@pytest.mark.parametrize("version", [(3, 10), (3, 11), (3, 12), (3, 13), (3, 14), (3, 15)])
+@pytest.mark.parametrize("version", SUPPORTED_VERSIONS)
 def test_layout_selection(version):
     layout = select(version)
     assert layout.version == version
@@ -65,7 +68,7 @@ def test_required_offset_checks_availability():
         ("thread_eval_breaker", (3, 13)),
     ],
 )
-@pytest.mark.parametrize("version", [(3, 10), (3, 11), (3, 12), (3, 13), (3, 14), (3, 15)])
+@pytest.mark.parametrize("version", SUPPORTED_VERSIONS)
 def test_offset_availability_follows_the_structure_history(field, first_version, version):
     present = getattr(select(version), field) is not None
     assert present == (version >= first_version)
@@ -128,7 +131,7 @@ def test_validation_runs_every_applicable_check():
     assert set(validate_layout(layout)) == expected
 
 
-@pytest.mark.parametrize("version", [(3, 10), (3, 11), (3, 12), (3, 13), (3, 14), (3, 15)])
+@pytest.mark.parametrize("version", SUPPORTED_VERSIONS)
 def test_declared_offsets_are_covered_for_every_version(version):
     layout = select(version)
     assert sorted(available_offset_names(layout) - COVERED_OFFSETS) == []
@@ -159,3 +162,15 @@ def test_corrupted_offset_is_reported(field):
     ]
     corrupted = replace(layout, **{field: siblings[0] if siblings else getattr(layout, field) + 8})
     assert field in layout_mismatches(corrupted)
+
+
+def test_offsets_available_everywhere_are_not_optional():
+    optional = [
+        name for name, field in CPythonLayout.__dataclass_fields__.items()
+        if field.default is None
+    ]
+    always_available = [
+        name for name in optional
+        if all(getattr(select(version), name) is not None for version in SUPPORTED_VERSIONS)
+    ]
+    assert always_available == []
