@@ -25,9 +25,10 @@ def test_retort_extend():
     recipe_before_extend = tuple(retort._get_full_recipe())
     to_extend = (PlaceholderProvider(2), PlaceholderProvider(3))
     extended_retort = retort.extend(recipe=to_extend)
+    head_length = len(retort._get_recipe_head())
 
     assert retort._get_full_recipe() == recipe_before_extend
-    assert extended_retort._get_full_recipe()[1:len(to_extend)+1] == to_extend
+    assert extended_retort._get_full_recipe()[head_length:head_length + len(to_extend)] == to_extend
     assert not extended_retort._loader_cache
     assert not extended_retort._dumper_cache
 

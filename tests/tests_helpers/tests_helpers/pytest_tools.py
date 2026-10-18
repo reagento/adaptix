@@ -1,5 +1,8 @@
 import dataclasses
+import gc
 import re
+import sys
+from collections.abc import Iterable
 from dataclasses import is_dataclass
 from textwrap import dedent
 from traceback import format_exception
@@ -13,6 +16,15 @@ from adaptix._internal.struct_trail import get_trail
 from adaptix._internal.type_tools import is_parametrized
 
 E = TypeVar("E", bound=Exception)
+
+
+def reference_counts(values: Iterable[Any]) -> list[int]:
+    # On Python 3.10, tracing can keep deleted locals and their tracebacks alive
+    # until the caller's locals dictionary is synchronized with its fast locals.
+    frame_locals = sys._getframe(1).f_locals
+    del frame_locals
+    gc.collect()
+    return [sys.getrefcount(value) for value in values]
 
 
 def _repr_value(obj: Any) -> dict[str, Any]:

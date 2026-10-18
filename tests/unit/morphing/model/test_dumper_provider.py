@@ -7,7 +7,7 @@ from unittest.mock import ANY
 import pytest
 from tests_helpers import DebugCtx, full_match, parametrize_bool, raises_exc, with_trail
 
-from adaptix import DebugTrail, Dumper, Retort, bound
+from adaptix import CodeGenBackend, DebugTrail, Dumper, Retort, bound
 from adaptix._internal.common import Catchable
 from adaptix._internal.compat import CompatExceptionGroup
 from adaptix._internal.model_tools.definitions import (
@@ -90,9 +90,11 @@ def make_dumper_getter(
     name_layout: OutputNameLayout,
     debug_trail: DebugTrail,
     debug_ctx: DebugCtx,
+    codegen_backend: CodeGenBackend,
 ) -> Callable[[], Dumper]:
     def getter():
         retort = Retort(
+            codegen_backend=codegen_backend,
             recipe=[
                 ValueProvider(OutputShapeRequest, shape),
                 ValueProvider(OutputNameLayoutRequest, name_layout),
@@ -206,7 +208,7 @@ def acc_schema(request):
 
 
 @parametrize_bool("is_required_a", "is_required_b")
-def test_flat(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b, acc_schema):
+def test_flat(codegen_backend, debug_ctx, debug_trail, trail_select, is_required_a, is_required_b, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", is_required_a)),
@@ -226,6 +228,7 @@ def test_flat(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
     dumper = dumper_getter()
@@ -383,7 +386,7 @@ def test_flat(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b
     )
 
 
-def test_wild_extra_targets(debug_ctx, debug_trail, acc_schema):
+def test_wild_extra_targets(codegen_backend, debug_ctx, debug_trail, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", is_required=True)),
@@ -399,15 +402,15 @@ def test_wild_extra_targets(debug_ctx, debug_trail, acc_schema):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
-    pytest.raises(ValueError, dumper_getter).match(
-        full_match("ExtraTargets ['b'] are attached to non-existing fields"),
-    )
+    with pytest.raises(ValueError, match=full_match("ExtraTargets ['b'] are attached to non-existing fields")):
+        dumper_getter()
 
 
 @parametrize_bool("is_required_a", "is_required_b")
-def test_one_extra_target(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b, acc_schema):
+def test_one_extra_target(codegen_backend, debug_ctx, debug_trail, trail_select, is_required_a, is_required_b, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", is_required=is_required_a)),
@@ -424,6 +427,7 @@ def test_one_extra_target(debug_ctx, debug_trail, trail_select, is_required_a, i
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     dumper = dumper_getter()
 
@@ -573,6 +577,7 @@ def test_one_extra_target(debug_ctx, debug_trail, trail_select, is_required_a, i
 
 @parametrize_bool("is_required_a", "is_required_b", "is_required_c", "is_required_d")
 def test_several_extra_target(
+    codegen_backend,
     debug_ctx, debug_trail, trail_select, is_required_a, is_required_b, is_required_c, is_required_d, acc_schema,
 ):
     dumper_getter = make_dumper_getter(
@@ -593,6 +598,7 @@ def test_several_extra_target(
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     dumper = dumper_getter()
 
@@ -709,7 +715,7 @@ def my_extractor(obj):
 
 
 @parametrize_bool("is_required_a")
-def test_extra_extract(debug_ctx, debug_trail, trail_select, is_required_a, acc_schema):
+def test_extra_extract(codegen_backend, debug_ctx, debug_trail, trail_select, is_required_a, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", is_required=is_required_a)),
@@ -726,6 +732,7 @@ def test_extra_extract(debug_ctx, debug_trail, trail_select, is_required_a, acc_
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     dumper = dumper_getter()
 
@@ -812,7 +819,7 @@ def test_extra_extract(debug_ctx, debug_trail, trail_select, is_required_a, acc_
     )
 
 
-def test_optional_fields_at_list(debug_ctx, debug_trail, acc_schema):
+def test_optional_fields_at_list(codegen_backend, debug_ctx, debug_trail, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", is_required=True)),
@@ -829,11 +836,11 @@ def test_optional_fields_at_list(debug_ctx, debug_trail, acc_schema):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
-    pytest.raises(ValueError, dumper_getter).match(
-        full_match("Optional fields ['b'] are found at list crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Optional fields ['b'] are found at list crown")):
+        dumper_getter()
 
 
 @dataclass
@@ -850,7 +857,7 @@ class FlatMap:
     ],
     ids=["as_is", "diff"],
 )
-def test_flat_mapping(debug_ctx, debug_trail, trail_select, is_required_a, is_required_b, acc_schema, mp):
+def test_flat_mapping(codegen_backend, debug_ctx, debug_trail, trail_select, is_required_a, is_required_b, acc_schema, mp):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField(mp.a.field, acc_schema.accessor_maker("a", is_required_a)),
@@ -870,6 +877,7 @@ def test_flat_mapping(debug_ctx, debug_trail, trail_select, is_required_a, is_re
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
     dumper = dumper_getter()
@@ -985,7 +993,7 @@ def test_flat_mapping(debug_ctx, debug_trail, trail_select, is_required_a, is_re
     )
 
 
-def test_direct_list(debug_ctx, debug_trail, trail_select, acc_schema):
+def test_direct_list(codegen_backend, debug_ctx, debug_trail, trail_select, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", True)),
@@ -1002,6 +1010,7 @@ def test_direct_list(debug_ctx, debug_trail, trail_select, acc_schema):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
     dumper = dumper_getter()
@@ -1059,7 +1068,7 @@ def list_skipper(data):
     return Skip() not in data
 
 
-def test_structure_flattening(debug_ctx, debug_trail, trail_select, acc_schema):
+def test_structure_flattening(codegen_backend, debug_ctx, debug_trail, trail_select, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", True)),
@@ -1120,6 +1129,7 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select, acc_schema):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     dumper = dumper_getter()
 
@@ -1278,7 +1288,7 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select, acc_schema):
 
 
 @parametrize_bool("is_required_a", "is_required_b")
-def test_extra_target_at_crown(debug_ctx, debug_trail, acc_schema, is_required_a, is_required_b):
+def test_extra_target_at_crown(codegen_backend, debug_ctx, debug_trail, acc_schema, is_required_a, is_required_b):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", is_required_a)),
@@ -1296,10 +1306,10 @@ def test_extra_target_at_crown(debug_ctx, debug_trail, acc_schema, is_required_a
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, dumper_getter).match(
-        full_match("Extra targets ['b'] are found at crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Extra targets ['b'] are found at crown")):
+        dumper_getter()
 
     dumper_getter = make_dumper_getter(
         shape=shape(
@@ -1318,10 +1328,10 @@ def test_extra_target_at_crown(debug_ctx, debug_trail, acc_schema, is_required_a
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, dumper_getter).match(
-        full_match("Extra targets ['b'] are found at crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Extra targets ['b'] are found at crown")):
+        dumper_getter()
 
 
 @dataclass
@@ -1330,7 +1340,7 @@ class SomeClass:
 
 
 @parametrize_bool("is_required_a")
-def test_none_crown_at_dict_crown(debug_ctx, debug_trail, acc_schema, is_required_a):
+def test_none_crown_at_dict_crown(codegen_backend, debug_ctx, debug_trail, acc_schema, is_required_a):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", is_required_a)),
@@ -1349,13 +1359,14 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_trail, acc_schema, is_require
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     dumper = dumper_getter()
 
     assert dumper(acc_schema.dummy(a=1)) == {"w": None, "x": SomeClass(2), "y": 1, "z": []}
 
 
-def test_none_crown_at_list_crown(debug_ctx, debug_trail, acc_schema):
+def test_none_crown_at_list_crown(codegen_backend, debug_ctx, debug_trail, acc_schema):
     dumper_getter = make_dumper_getter(
         shape=shape(
             TestField("a", acc_schema.accessor_maker("a", True)),
@@ -1374,7 +1385,38 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, acc_schema):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     dumper = dumper_getter()
 
     assert dumper(acc_schema.dummy(a=1)) == [None, SomeClass(2), 1, [], SomeClass(4)]
+
+
+def test_placeholder_factory_after_failed_field(codegen_backend, debug_ctx):
+    calls = []
+
+    def placeholder():
+        calls.append(None)
+        raise ValueError("placeholder should not be evaluated after a field fails")
+
+    dumper = make_dumper_getter(
+        shape=shape(TestField("a", create_attr_accessor("a", is_required=True))),
+        name_layout=OutputNameLayout(
+            crown=OutDictCrown(
+                {"a": OutFieldCrown("a"), "placeholder": OutNoneCrown(DefaultFactory(placeholder))},
+                sieves={},
+            ),
+            extra_move=None,
+        ),
+        debug_trail=DebugTrail.ALL,
+        debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
+    )()
+    raises_exc(
+        CompatExceptionGroup(
+            f"while dumping model {Dummy}",
+            [with_trail(SomeError(), [Attr("a")])],
+        ),
+        lambda: dumper(Dummy(a=SomeError())),
+    )
+    assert calls == []

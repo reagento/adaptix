@@ -247,6 +247,23 @@ class MappingHashWrapper(Generic[MappingT]):
         return f"MappingHashWrapper({self.mapping})"
 
 
+class IdentityHashWrapper(Generic[T]):
+    """Keep a dependency alive and key cached calls by its identity."""
+
+    __slots__ = ("value", )
+
+    def __init__(self, value: T):
+        self.value = value
+
+    def __hash__(self):
+        return id(self.value)
+
+    def __eq__(self, other):
+        if isinstance(other, IdentityHashWrapper):
+            return self.value is other.value
+        return NotImplemented
+
+
 class AlwaysEqualHashWrapper(Generic[T]):
     __slots__ = ("value", )
 

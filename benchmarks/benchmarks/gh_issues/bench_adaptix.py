@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List
 
-from adaptix import DebugTrail, Retort, name_mapping
+import pytest
+
+from adaptix import CodeGenBackend, DebugTrail, Retort, name_mapping
 from benchmarks.gh_issues.common import (
     AuthorAssociation,
     IssueState,
@@ -10,6 +12,7 @@ from benchmarks.gh_issues.common import (
     create_dumped_response,
     create_response,
 )
+from benchmarks.native_backend import benchmark_env_spec, skip_native
 from benchmarks.pybench.bench_api import benchmark_plan
 
 
@@ -126,35 +129,45 @@ retort = Retort(
 )
 
 
-def test_loading():
+@pytest.mark.parametrize("codegen_backend", list(CodeGenBackend))
+def test_loading(codegen_backend):
+    if codegen_backend == CodeGenBackend.X86_64 and skip_native(benchmark_env_spec()):
+        pytest.skip("Native code generation is unsupported on this platform")
     assert (
-        retort.load(create_dumped_response(), GetRepoIssuesResponse)
+        retort.replace(codegen_backend=codegen_backend).load(create_dumped_response(), GetRepoIssuesResponse)
         ==
         create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)
     )
 
 
-def test_dumping():
+@pytest.mark.parametrize("codegen_backend", list(CodeGenBackend))
+def test_dumping(codegen_backend):
+    if codegen_backend == CodeGenBackend.X86_64 and skip_native(benchmark_env_spec()):
+        pytest.skip("Native code generation is unsupported on this platform")
     assert (
-        retort.dump(create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser))
+        retort.replace(codegen_backend=codegen_backend).dump(
+            create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser),
+        )
         ==
         create_dumped_response()
     )
 
 
-def bench_loading(strict_coercion: bool, debug_trail: str):
+def bench_loading(strict_coercion: bool, debug_trail: str, codegen_backend: str):
     loader = retort.replace(
         strict_coercion=strict_coercion,
         debug_trail=DebugTrail(debug_trail),
+        codegen_backend=CodeGenBackend(codegen_backend),
     ).get_loader(GetRepoIssuesResponse)
 
     data = create_dumped_response()
     return benchmark_plan(loader, data)
 
 
-def bench_dumping(debug_trail: str):
+def bench_dumping(debug_trail: str, codegen_backend: str):
     dumper = retort.replace(
         debug_trail=DebugTrail(debug_trail),
+        codegen_backend=CodeGenBackend(codegen_backend),
     ).get_dumper(GetRepoIssuesResponse)
 
     data = create_response(GetRepoIssuesResponse, Issue, Reactions, PullRequest, Label, SimpleUser)

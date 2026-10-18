@@ -1,6 +1,9 @@
 from collections.abc import Mapping, Set
 from typing import Any
 
+from adaptix._internal.morphing.native.codegen import NativeCodeGenerator, fetch_native_codegen
+from adaptix._internal.morphing.native.plan import ModelLoaderPlan
+
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
 from ...common import Loader
@@ -10,7 +13,7 @@ from ...provider.essential import CannotProvide, Mediator
 from ...provider.fields import input_field_to_loc
 from ...provider.located_request import LocatedRequest
 from ...provider.shape_provider import InputShapeRequest, provide_generic_resolved_shape
-from ...utils import AlwaysEqualHashWrapper, Omittable, Omitted, OrderedMappingHashWrapper
+from ...utils import AlwaysEqualHashWrapper, IdentityHashWrapper, Omittable, Omitted, OrderedMappingHashWrapper
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.request_cls import JSONSchemaRequest
 from ..json_schema.schema_model import JSONValue
@@ -52,6 +55,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
             field_loaders=OrderedMappingHashWrapper(field_loaders),
             strict_coercion=mediator.mandatory_provide(StrictCoercionRequest(loc_stack=request.loc_stack)),
             debug_trail=mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack)),
+            native_codegen=IdentityHashWrapper(fetch_native_codegen(mediator, request.loc_stack)),
             code_gen_hook=AlwaysEqualHashWrapper(fetch_code_gen_hook(mediator, request.loc_stack)),
             model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
             closure_name=self._get_closure_name(request),
@@ -66,6 +70,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
         field_loaders: OrderedMappingHashWrapper[Mapping[str, Loader]],
         strict_coercion: bool,
         debug_trail: DebugTrail,
+        native_codegen: IdentityHashWrapper[NativeCodeGenerator | None],
         code_gen_hook: AlwaysEqualHashWrapper[CodeGenHook],
         model_identity: str,
         closure_name: str,
@@ -73,6 +78,21 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
     ) -> Loader:
         skipped_fields = get_skipped_fields(shape, name_layout)
         self._validate_params(shape, name_layout, skipped_fields)
+        if native_codegen.value is not None:
+            return native_codegen.value.compile(
+                ModelLoaderPlan(
+                    name=closure_name,
+                    shape=shape,
+                    name_layout=name_layout,
+                    debug_trail=debug_trail,
+                    strict_coercion=strict_coercion,
+                    field_loaders=field_loaders.mapping,
+                    skipped_fields=skipped_fields,
+                    model_identity=model_identity,
+                    props=self._props,
+                ),
+                hook=code_gen_hook.value,
+            )
         loader_gen = self._create_model_loader_gen(
             debug_trail=debug_trail,
             strict_coercion=strict_coercion,
@@ -148,10 +168,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
         shape: InputShape,
     ) -> Mapping[str, JSONSchema]:
         json_schemas = mediator.mandatory_provide_by_iterable(
-            [
-                request.append_loc(input_field_to_loc(field))
-                for field in shape.fields
-            ],
+            [request.append_loc(input_field_to_loc(field)) for field in shape.fields],
             lambda: "Cannot create JSON Schema for model. JSON Schemas for some fields cannot be created",
         )
         return {field.id: json_schema for field, json_schema in zip(shape.fields, json_schemas, strict=True)}
@@ -181,8 +198,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
             lambda: "Cannot create JSON Schema for model. Dumpers for some field defaults cannot be created",
         )
         return {
-            field.id: dumper(default)
-            for (field, default), dumper in zip(fields_and_defaults, dumpers, strict=True)
+            field.id: dumper(default) for (field, default), dumper in zip(fields_and_defaults, dumpers, strict=True)
         }
 
     def _fetch_model_identity(
@@ -227,12 +243,14 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
 
     def _get_file_name(self, request: LoaderRequest) -> str:
         return self._merge_view_string(
-            "model_loader", self._request_to_view_string(request),
+            "model_loader",
+            self._request_to_view_string(request),
         )
 
     def _get_closure_name(self, request: LoaderRequest) -> str:
         return self._merge_view_string(
-            "model_loader", self._name_sanitizer.sanitize(self._request_to_view_string(request)),
+            "model_loader",
+            self._name_sanitizer.sanitize(self._request_to_view_string(request)),
         )
 
     def _get_compiler(self) -> ClosureCompiler:
@@ -257,10 +275,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
         shape: InputShape,
     ) -> Mapping[str, Loader]:
         loaders = mediator.mandatory_provide_by_iterable(
-            [
-                request.append_loc(input_field_to_loc(field))
-                for field in shape.fields
-            ],
+            [request.append_loc(input_field_to_loc(field)) for field in shape.fields],
             lambda: "Cannot create loader for model. Loaders for some fields cannot be created",
         )
         return {field.id: loader for field, loader in zip(shape.fields, loaders, strict=True)}
@@ -272,9 +287,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
         skipped_fields: Set[str],
     ) -> None:
         skipped_required_fields = [
-            field.id
-            for field in shape.fields
-            if field.is_required and field.id in skipped_fields
+            field.id for field in shape.fields if field.is_required and field.id in skipped_fields
         ]
         if skipped_required_fields:
             raise ValueError(
@@ -283,8 +296,7 @@ class ModelLoaderProvider(LoaderProvider, JSONSchemaProvider):
 
         if name_layout.extra_move is None and has_collect_policy(name_layout.crown):
             raise ValueError(
-                "Cannot create loader that collect extra data"
-                " if InputShape does not take extra data",
+                "Cannot create loader that collect extra data if InputShape does not take extra data",
             )
 
         extra_targets_at_crown = get_extra_targets_at_crown(name_layout)

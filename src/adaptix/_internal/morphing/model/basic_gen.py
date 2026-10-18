@@ -7,6 +7,7 @@ from typing import Any, TypeVar
 from ...code_tools.code_builder import CodeBuilder
 from ...code_tools.compiler import ClosureCompiler
 from ...code_tools.utils import get_literal_expr
+from ...definitions import CodeGenBackend
 from ...model_tools.definitions import InputField, OutputField
 from ...provider.essential import CannotProvide, Mediator
 from ...provider.loc_stack_filtering import LocStack
@@ -36,6 +37,8 @@ from .crown_definitions import (
 class CodeGenHookData:
     namespace: dict[str, Any]
     source: str
+    backend: CodeGenBackend = CodeGenBackend.PYTHON
+    machine_code: bytes | None = None
 
 
 CodeGenHook = Callable[[CodeGenHookData], None]

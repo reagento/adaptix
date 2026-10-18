@@ -6,7 +6,8 @@ from typing import Any, Callable, Dict, Optional
 import pytest
 from tests_helpers import DebugCtx, full_match, parametrize_bool, raises_exc, with_trail
 
-from adaptix import DebugTrail, ExtraKwargs, Loader, Retort, bound
+from adaptix import CodeGenBackend, DebugTrail, ExtraKwargs, Loader, Retort, bound
+from adaptix._internal.code_tools.utils import NAME_TO_BUILTIN
 from adaptix._internal.common import VarTuple
 from adaptix._internal.model_tools.definitions import (
     Default,
@@ -63,6 +64,21 @@ def gauge(*args, **kwargs):
     return Gauge(args, kwargs)
 
 
+def test_loader_sentinel_does_not_shadow_builtin(monkeypatch, debug_trail, codegen_backend):
+    # CPython 3.15 introduced the sentinel builtin. Simulate it on older versions too.
+    monkeypatch.setitem(NAME_TO_BUILTIN, "sentinel", object())
+
+    @dataclass
+    class Model:
+        required: int
+        optional: int = 7
+
+    retort = Retort(debug_trail=debug_trail, codegen_backend=codegen_backend)
+    load = retort.get_loader(Model)
+    assert load(MappingProxyType({"required": 1})) == Model(1)
+    assert load(MappingProxyType({"required": 1, "optional": 2})) == Model(1, 2)
+
+
 @dataclass
 class TestField:
     id: str
@@ -111,9 +127,11 @@ def make_loader_getter(
     debug_trail: DebugTrail,
     strict_coercion: bool = True,
     debug_ctx: DebugCtx,
+    codegen_backend: CodeGenBackend,
 ) -> Callable[[], Loader]:
     def getter():
         retort = Retort(
+            codegen_backend=codegen_backend,
             recipe=[
                 ValueProvider(InputShapeRequest, shape),
                 ValueProvider(InputNameLayoutRequest, name_layout),
@@ -136,7 +154,7 @@ def extra_policy(request):
     return request.param
 
 
-def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
+def test_direct(codegen_backend, debug_ctx, debug_trail, extra_policy, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -154,12 +172,14 @@ def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
     if extra_policy == ExtraCollect():
-        pytest.raises(ValueError, loader_getter).match(
-            "Cannot create loader that collect extra data if InputShape does not take extra data",
-        )
+        with pytest.raises(
+            ValueError, match="Cannot create loader that collect extra data if InputShape does not take extra data",
+        ):
+            loader_getter()
         return
 
     loader = loader_getter()
@@ -219,7 +239,7 @@ def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
     )
 
 
-def test_direct_all_optional_kw(debug_ctx, debug_trail, extra_policy, trail_select):
+def test_direct_all_optional_kw(codegen_backend, debug_ctx, debug_trail, extra_policy, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.KW_ONLY, is_required=False, default=DefaultValue(0)),
@@ -237,12 +257,14 @@ def test_direct_all_optional_kw(debug_ctx, debug_trail, extra_policy, trail_sele
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
     if extra_policy == ExtraCollect():
-        pytest.raises(ValueError, loader_getter).match(
-            "Cannot create loader that collect extra data if InputShape does not take extra data",
-        )
+        with pytest.raises(
+            ValueError, match="Cannot create loader that collect extra data if InputShape does not take extra data",
+        ):
+            loader_getter()
         return
 
     loader = loader_getter()
@@ -290,7 +312,7 @@ def test_direct_all_optional_kw(debug_ctx, debug_trail, extra_policy, trail_sele
 
 
 @pytest.mark.parametrize("extra_policy", [ExtraSkip(), ExtraForbid()])
-def test_direct_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_coercion):
+def test_direct_list(codegen_backend, debug_ctx, debug_trail, extra_policy, trail_select, strict_coercion):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -309,6 +331,7 @@ def test_direct_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_
         debug_trail=debug_trail,
         strict_coercion=strict_coercion,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
     loader = loader_getter()
@@ -372,7 +395,7 @@ def test_direct_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_
     )
 
 
-def test_extra_forbid(debug_ctx, debug_trail, trail_select):
+def test_extra_forbid(codegen_backend, debug_ctx, debug_trail, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -390,6 +413,7 @@ def test_extra_forbid(debug_ctx, debug_trail, trail_select):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
     loader = loader_getter()
@@ -420,7 +444,7 @@ def test_extra_forbid(debug_ctx, debug_trail, trail_select):
     )
 
 
-def test_creation(debug_ctx, debug_trail, extra_policy):
+def test_creation(codegen_backend, debug_ctx, debug_trail, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_ONLY, is_required=True),
@@ -444,13 +468,14 @@ def test_creation(debug_ctx, debug_trail, extra_policy):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
     assert loader({"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}) == gauge(1, 2, c=3, d=4, e=5)
 
 
-def test_extra_kwargs(debug_ctx, debug_trail):
+def test_extra_kwargs(codegen_backend, debug_ctx, debug_trail):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_ONLY, is_required=True),
@@ -467,6 +492,7 @@ def test_extra_kwargs(debug_ctx, debug_trail):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -474,7 +500,7 @@ def test_extra_kwargs(debug_ctx, debug_trail):
     assert loader({"a": 1, "b": 2}) == gauge(1, b=2)
 
 
-def test_wild_extra_targets(debug_ctx, debug_trail):
+def test_wild_extra_targets(codegen_backend, debug_ctx, debug_trail):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -490,15 +516,15 @@ def test_wild_extra_targets(debug_ctx, debug_trail):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
-    pytest.raises(ValueError, loader_getter).match(
-        full_match("ExtraTargets ['b'] are attached to non-existing fields"),
-    )
+    with pytest.raises(ValueError, match=full_match("ExtraTargets ['b'] are attached to non-existing fields")):
+        loader_getter()
 
 
 @parametrize_bool("is_required")
-def test_extra_targets_one(debug_ctx, debug_trail, is_required):
+def test_extra_targets_one(codegen_backend, debug_ctx, debug_trail, is_required):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -515,6 +541,7 @@ def test_extra_targets_one(debug_ctx, debug_trail, is_required):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -525,7 +552,7 @@ def test_extra_targets_one(debug_ctx, debug_trail, is_required):
 
 
 @parametrize_bool("is_required_first", "is_required_second")
-def test_extra_targets_two(debug_ctx, debug_trail, is_required_first, is_required_second):
+def test_extra_targets_two(codegen_backend, debug_ctx, debug_trail, is_required_first, is_required_second):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -543,6 +570,7 @@ def test_extra_targets_two(debug_ctx, debug_trail, is_required_first, is_require
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -554,7 +582,7 @@ def test_extra_targets_two(debug_ctx, debug_trail, is_required_first, is_require
     assert loader({"a": 1, "b": 2, "c": 3, "d": 4}) == gauge(1, {"b": 2, "c": 3, "d": 4}, c={"b": 2, "c": 3, "d": 4})
 
 
-def test_extra_saturate(debug_ctx, debug_trail):
+def test_extra_saturate(codegen_backend, debug_ctx, debug_trail):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_ONLY, is_required=True),
@@ -570,6 +598,7 @@ def test_extra_saturate(debug_ctx, debug_trail):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -577,7 +606,7 @@ def test_extra_saturate(debug_ctx, debug_trail):
     assert loader({"a": 1, "b": 2}) == gauge(1).with_extra({"b": 2})
 
 
-def test_mapping_and_extra_kwargs(debug_ctx, debug_trail, trail_select):
+def test_mapping_and_extra_kwargs(codegen_backend, debug_ctx, debug_trail, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -596,6 +625,7 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_trail, trail_select):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -611,12 +641,11 @@ def test_mapping_and_extra_kwargs(debug_ctx, debug_trail, trail_select):
 
     assert loader({"m_a": 1, "b": "this value is not loaded"}) == gauge(1, b="this value is not loaded")
     assert loader({"m_a": 1, "m_b": 2}) == gauge(1, b=2)
-    pytest.raises(
-        TypeError, lambda: loader({"m_a": 1, "m_b": 2, "b": 3}),
-    ).match("got multiple values for keyword argument 'b'")
+    with pytest.raises(TypeError, match="got multiple values for keyword argument 'b'"):
+        loader({"m_a": 1, "m_b": 2, "b": 3})
 
 
-def test_skipped_required_field(debug_ctx, debug_trail, extra_policy):
+def test_skipped_required_field(codegen_backend, debug_ctx, debug_trail, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -633,8 +662,10 @@ def test_skipped_required_field(debug_ctx, debug_trail, extra_policy):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, loader_getter).match(full_match("Required fields ['b'] are skipped"))
+    with pytest.raises(ValueError, match=full_match("Required fields ['b'] are skipped")):
+        loader_getter()
 
     loader_getter = make_loader_getter(
         shape=shape(
@@ -652,11 +683,12 @@ def test_skipped_required_field(debug_ctx, debug_trail, extra_policy):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader_getter()
 
 
-def test_extra_target_at_crown(debug_ctx, debug_trail, extra_policy):
+def test_extra_target_at_crown(codegen_backend, debug_ctx, debug_trail, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -674,10 +706,10 @@ def test_extra_target_at_crown(debug_ctx, debug_trail, extra_policy):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, loader_getter).match(
-        full_match("Extra targets ['b'] are found at crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Extra targets ['b'] are found at crown")):
+        loader_getter()
 
     loader_getter = make_loader_getter(
         shape=shape(
@@ -696,13 +728,13 @@ def test_extra_target_at_crown(debug_ctx, debug_trail, extra_policy):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, loader_getter).match(
-        full_match("Extra targets ['b'] are found at crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Extra targets ['b'] are found at crown")):
+        loader_getter()
 
 
-def test_optional_fields_at_list(debug_ctx, debug_trail, extra_policy):
+def test_optional_fields_at_list(codegen_backend, debug_ctx, debug_trail, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -720,14 +752,14 @@ def test_optional_fields_at_list(debug_ctx, debug_trail, extra_policy):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
-    pytest.raises(ValueError, loader_getter).match(
-        full_match("Optional fields ['b'] are found at list crown"),
-    )
+    with pytest.raises(ValueError, match=full_match("Optional fields ['b'] are found at list crown")):
+        loader_getter()
 
 
 @parametrize_bool("is_required")
-def test_flat_mapping(debug_ctx, debug_trail, is_required, trail_select):
+def test_flat_mapping(codegen_backend, debug_ctx, debug_trail, is_required, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -746,6 +778,7 @@ def test_flat_mapping(debug_ctx, debug_trail, is_required, trail_select):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -807,7 +840,7 @@ COMPLEX_STRUCTURE_CROWN = InpDictCrown(
 )
 
 
-def test_structure_flattening(debug_ctx, debug_trail, trail_select):
+def test_structure_flattening(codegen_backend, debug_ctx, debug_trail, trail_select):
     loader_getter = make_loader_getter(
         shape=COMPLEX_STRUCTURE_SHAPE,
         name_layout=InputNameLayout(
@@ -816,6 +849,7 @@ def test_structure_flattening(debug_ctx, debug_trail, trail_select):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -962,7 +996,7 @@ def _replace_value_by_path(data, path, new_value):
         ["v", 2, 0],
     ],
 )
-def test_error_path_at_complex_structure(debug_ctx, debug_trail, error_path, trail_select):
+def test_error_path_at_complex_structure(codegen_backend, debug_ctx, debug_trail, error_path, trail_select):
     loader_getter = make_loader_getter(
         shape=COMPLEX_STRUCTURE_SHAPE,
         name_layout=InputNameLayout(
@@ -971,6 +1005,7 @@ def test_error_path_at_complex_structure(debug_ctx, debug_trail, error_path, tra
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -999,7 +1034,7 @@ def test_error_path_at_complex_structure(debug_ctx, debug_trail, error_path, tra
     )
 
 
-def test_none_crown_at_dict_crown(debug_ctx, debug_trail, extra_policy, trail_select):
+def test_none_crown_at_dict_crown(codegen_backend, debug_ctx, debug_trail, extra_policy, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -1017,6 +1052,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_trail, extra_policy, trail_se
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -1042,7 +1078,7 @@ def test_none_crown_at_dict_crown(debug_ctx, debug_trail, extra_policy, trail_se
 
 
 @pytest.mark.parametrize("extra_policy", [ExtraSkip(), ExtraForbid()])
-def test_none_crown_at_list_crown(debug_ctx, debug_trail, extra_policy, trail_select):
+def test_none_crown_at_list_crown(codegen_backend, debug_ctx, debug_trail, extra_policy, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -1060,6 +1096,7 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, extra_policy, trail_se
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -1090,7 +1127,7 @@ def test_none_crown_at_list_crown(debug_ctx, debug_trail, extra_policy, trail_se
         )
 
 
-def test_exception_collection(debug_ctx):
+def test_exception_collection(codegen_backend, debug_ctx):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -1108,6 +1145,7 @@ def test_exception_collection(debug_ctx):
         ),
         debug_trail=DebugTrail.ALL,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 
@@ -1148,7 +1186,7 @@ def test_exception_collection(debug_ctx):
     )
 
 
-def test_empty_dict(debug_ctx, debug_trail, extra_policy, trail_select):
+def test_empty_dict(codegen_backend, debug_ctx, debug_trail, extra_policy, trail_select):
     loader_getter = make_loader_getter(
         shape=shape(),
         name_layout=InputNameLayout(
@@ -1160,12 +1198,14 @@ def test_empty_dict(debug_ctx, debug_trail, extra_policy, trail_select):
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
 
     if extra_policy == ExtraCollect():
-        pytest.raises(ValueError, loader_getter).match(
-            "Cannot create loader that collect extra data if InputShape does not take extra data",
-        )
+        with pytest.raises(
+            ValueError, match="Cannot create loader that collect extra data if InputShape does not take extra data",
+        ):
+            loader_getter()
         return
 
     loader = loader_getter()
@@ -1191,7 +1231,7 @@ def test_empty_dict(debug_ctx, debug_trail, extra_policy, trail_select):
 
 
 @pytest.mark.parametrize("extra_policy", [ExtraSkip(), ExtraForbid()])
-def test_empty_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_coercion):
+def test_empty_list(codegen_backend, debug_ctx, debug_trail, extra_policy, trail_select, strict_coercion):
     loader_getter = make_loader_getter(
         shape=shape(),
         name_layout=InputNameLayout(
@@ -1203,6 +1243,7 @@ def test_empty_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_c
         ),
         debug_trail=debug_trail,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
         strict_coercion=strict_coercion,
     )
 
@@ -1255,7 +1296,7 @@ def test_empty_list(debug_ctx, debug_trail, extra_policy, trail_select, strict_c
             )
 
 
-def test_skipped_pos_optional_pos_field(debug_ctx, extra_policy):
+def test_skipped_pos_optional_pos_field(codegen_backend, debug_ctx, extra_policy):
     loader_getter = make_loader_getter(
         shape=shape(
             TestField("a", ParamKind.POS_OR_KW, is_required=True),
@@ -1274,6 +1315,7 @@ def test_skipped_pos_optional_pos_field(debug_ctx, extra_policy):
         ),
         debug_trail=DebugTrail.ALL,
         debug_ctx=debug_ctx,
+        codegen_backend=codegen_backend,
     )
     loader = loader_getter()
 

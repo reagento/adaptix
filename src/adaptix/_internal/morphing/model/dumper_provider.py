@@ -2,6 +2,9 @@ from collections.abc import Mapping, Sequence
 from functools import partial
 from typing import Any
 
+from adaptix._internal.morphing.native.codegen import NativeCodeGenerator, fetch_native_codegen
+from adaptix._internal.morphing.native.plan import ModelDumperPlan
+
 from ...code_tools.compiler import BasicClosureCompiler, ClosureCompiler
 from ...code_tools.name_sanitizer import BuiltinNameSanitizer, NameSanitizer
 from ...common import Dumper
@@ -11,7 +14,7 @@ from ...provider.essential import CannotProvide, Mediator
 from ...provider.fields import output_field_to_loc
 from ...provider.located_request import LocatedRequest
 from ...provider.shape_provider import OutputShapeRequest, provide_generic_resolved_shape
-from ...utils import AlwaysEqualHashWrapper, Omittable, Omitted, OrderedMappingHashWrapper
+from ...utils import AlwaysEqualHashWrapper, IdentityHashWrapper, Omittable, Omitted, OrderedMappingHashWrapper
 from ..json_schema.definitions import JSONSchema
 from ..json_schema.request_cls import JSONSchemaRequest
 from ..json_schema.schema_model import JSONValue
@@ -44,6 +47,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
             name_layout=name_layout,
             fields_dumpers=OrderedMappingHashWrapper(fields_dumpers),
             debug_trail=mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack)),
+            native_codegen=IdentityHashWrapper(fetch_native_codegen(mediator, request.loc_stack)),
             code_gen_hook=AlwaysEqualHashWrapper(fetch_code_gen_hook(mediator, request.loc_stack)),
             model_identity=self._fetch_model_identity(mediator, request, shape, name_layout),
             closure_name=self._get_closure_name(request),
@@ -57,12 +61,25 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
         name_layout: OutputNameLayout,
         fields_dumpers: OrderedMappingHashWrapper[Mapping[str, Dumper]],
         debug_trail: DebugTrail,
+        native_codegen: IdentityHashWrapper[NativeCodeGenerator | None],
         code_gen_hook: AlwaysEqualHashWrapper[CodeGenHook],
         model_identity: str,
         closure_name: str,
         file_name: str,
     ) -> Dumper:
         self._validate_params(shape, name_layout)
+        if native_codegen.value is not None:
+            return native_codegen.value.compile(
+                ModelDumperPlan(
+                    name=closure_name,
+                    shape=shape,
+                    name_layout=name_layout,
+                    debug_trail=debug_trail,
+                    fields_dumpers=fields_dumpers.mapping,
+                    model_identity=model_identity,
+                ),
+                hook=code_gen_hook.value,
+            )
         dumper_gen = self._create_model_dumper_gen(
             debug_trail=debug_trail,
             shape=shape,
@@ -191,12 +208,14 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
 
     def _get_file_name(self, request: DumperRequest) -> str:
         return self._merge_view_string(
-            "model_dumper", self._request_to_view_string(request),
+            "model_dumper",
+            self._request_to_view_string(request),
         )
 
     def _get_closure_name(self, request: DumperRequest) -> str:
         return self._merge_view_string(
-            "model_dumper", self._name_sanitizer.sanitize(self._request_to_view_string(request)),
+            "model_dumper",
+            self._name_sanitizer.sanitize(self._request_to_view_string(request)),
         )
 
     def _get_compiler(self) -> ClosureCompiler:
@@ -220,10 +239,7 @@ class ModelDumperProvider(DumperProvider, JSONSchemaProvider):
         shape: OutputShape,
     ) -> Mapping[str, Dumper]:
         dumpers = mediator.mandatory_provide_by_iterable(
-            [
-                request.append_loc(output_field_to_loc(field))
-                for field in shape.fields
-            ],
+            [request.append_loc(output_field_to_loc(field)) for field in shape.fields],
             lambda: "Cannot create dumper for model. Dumpers for some fields cannot be created",
         )
         return {field.id: dumper for field, dumper in zip(shape.fields, dumpers, strict=True)}

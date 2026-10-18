@@ -285,6 +285,15 @@ class LiteralProvider(LoaderProvider, DumperProvider):
                 return data
             raise BadVariantLoadError(allowed_values_repr, data)
 
+        if cases and (
+            all(type(case) is str and case.isascii() and len(case) <= 32 for case in cases)  # noqa: PLR2004
+            or all(type(case) is int and abs(case) < (1 << 30) for case in cases)
+        ):
+            from adaptix._internal.morphing.native.descriptions import LiteralProgram  # noqa: PLC0415
+            from adaptix._internal.morphing.native.registry import register_program  # noqa: PLC0415
+
+            register_program(literal_loader, LiteralProgram(literal_loader, tuple(cases)))
+
         if bytes_cases and not enum_loaders:
             return self._get_literal_loader_with_bytes(literal_loader, allowed_values, bytes_loader)
 

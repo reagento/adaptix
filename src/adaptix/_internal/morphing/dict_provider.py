@@ -3,6 +3,9 @@ from collections import defaultdict
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 
+from adaptix._internal.morphing.native.codegen import cached_compile_native, fetch_native_codegen
+from adaptix._internal.morphing.native.plan import DictPlan
+
 from ..common import Dumper, Loader
 from ..compat import CompatExceptionGroup
 from ..definitions import DebugTrail
@@ -13,6 +16,7 @@ from ..provider.location import GenericParamLoc
 from ..struct_trail import ItemKey, append_trail, render_trail_as_note
 from ..type_tools import BaseNormType
 from .load_error import AggregateLoadError, LoadError, TypeLoadError
+from .model.basic_gen import fetch_code_gen_hook
 from .request_cls import DebugTrailRequest, DumperRequest, LoaderRequest
 from .utils import try_normalize_type
 
@@ -44,11 +48,28 @@ class DictProvider(LoaderProvider, DumperProvider):
         debug_trail = mediator.mandatory_provide(
             DebugTrailRequest(loc_stack=request.loc_stack),
         )
-        return mediator.cached_call(
+        result = mediator.cached_call(
             self._make_loader,
             key_loader=key_loader,
             value_loader=value_loader,
             debug_trail=debug_trail,
+        )
+        return self.native(mediator, request, key_loader, value_loader, result, loading=True)
+
+    def native(self, mediator, request, key_mapper, value_mapper, fallback, *, loading):
+        native_codegen = fetch_native_codegen(mediator, request.loc_stack)
+        if native_codegen is None:
+            return fallback
+        return cached_compile_native(
+            mediator, native_codegen,
+            DictPlan(
+                key_mapper=key_mapper,
+                value_mapper=value_mapper,
+                fallback=fallback,
+                loading=loading,
+                debug_trail=mediator.mandatory_provide(DebugTrailRequest(loc_stack=request.loc_stack)),
+            ),
+            hook=fetch_code_gen_hook(mediator, request.loc_stack),
         )
 
     def _make_loader(self, key_loader: Loader, value_loader: Loader, debug_trail: DebugTrail):
@@ -160,12 +181,13 @@ class DictProvider(LoaderProvider, DumperProvider):
         debug_trail = mediator.mandatory_provide(
             DebugTrailRequest(loc_stack=request.loc_stack),
         )
-        return mediator.cached_call(
+        result = mediator.cached_call(
             self._make_dumper,
             key_dumper=key_dumper,
             value_dumper=value_dumper,
             debug_trail=debug_trail,
         )
+        return self.native(mediator, request, key_dumper, value_dumper, result, loading=False)
 
     def _make_dumper(self, key_dumper: Dumper, value_dumper: Dumper, debug_trail: DebugTrail):
         if debug_trail == DebugTrail.DISABLE:

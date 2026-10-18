@@ -294,7 +294,8 @@ def test_type(make_union):
     ],
 )
 def test_var_tag(tp):
-    pytest.raises(NotSubscribedError, lambda: normalize_type(tp))
+    with pytest.raises(NotSubscribedError):
+        normalize_type(tp)
 
     assert_normalize(
         tp[int],
@@ -316,7 +317,8 @@ def n_lit(*args):
 
 
 def test_literal(make_union):
-    pytest.raises(NotSubscribedError, lambda: normalize_type(Literal))
+    with pytest.raises(NotSubscribedError):
+        normalize_type(Literal)
 
     assert_normalize(Literal["a"], Literal, ["a"])
     assert_normalize(Literal["a", "b"], Literal, ["a", "b"])
@@ -366,7 +368,7 @@ def test_literal(make_union):
     assert (
         make_norm_type(Literal, (0, 1, False, True), source=...)
         ==
-        make_norm_type(Literal, (0, 1, False, True), source=...)
+        make_norm_type(Literal, (True, False, 1, 0), source=...)
     )
 
 
@@ -394,7 +396,8 @@ def test_literal_order(make_union):
 
 
 def test_final():
-    pytest.raises(NotSubscribedError, lambda: normalize_type(Final))
+    with pytest.raises(NotSubscribedError):
+        normalize_type(Final)
 
     assert_normalize(
         Final[int],
@@ -403,7 +406,8 @@ def test_final():
 
 
 def test_annotated():
-    pytest.raises(NotSubscribedError, lambda: normalize_type(Annotated))
+    with pytest.raises(NotSubscribedError):
+        normalize_type(Annotated)
 
     assert_normalize(
         Annotated[int, "metadata"],
@@ -423,12 +427,14 @@ def test_annotated():
     class UnHashableMetadata:
         __hash__ = None
 
-    pytest.raises(TypeError, lambda: hash(UnHashableMetadata()))
+    with pytest.raises(TypeError):
+        hash(UnHashableMetadata())
     hash(normalize_type(Annotated[int, UnHashableMetadata()]))
 
 
 def test_union(make_union):
-    pytest.raises(NotSubscribedError, lambda: normalize_type(Union))
+    with pytest.raises(NotSubscribedError):
+        normalize_type(Union)
 
     assert_normalize(
         make_union[int, str],
@@ -472,7 +478,8 @@ def test_union_order(make_union):
 
 
 def test_optional():
-    pytest.raises(NotSubscribedError, lambda: normalize_type(Optional))
+    with pytest.raises(NotSubscribedError):
+        normalize_type(Optional)
 
     assert_normalize(
         Optional[int],
@@ -838,7 +845,7 @@ def test_forward_ref_at_type_var_limit():
         P_FR1,
         NormParamSpec(
             P_FR1,
-            limit=Bound(nt_zero(int, source=ForwardRef("int"))),
+            limit=Bound(nt_zero(int, source=P_FR1.__bound__)),
             source=P_FR1,
             default=None,
         ),
@@ -847,7 +854,7 @@ def test_forward_ref_at_type_var_limit():
         P_FR2,
         NormParamSpec(
             P_FR2,
-            limit=Bound(nt_zero(MyForwardClass, source=ForwardRef("MyForwardClass"))),
+            limit=Bound(nt_zero(MyForwardClass, source=P_FR2.__bound__)),
             source=P_FR2,
             default=None,
         ),

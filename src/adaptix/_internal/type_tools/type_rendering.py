@@ -3,8 +3,8 @@ import types
 import typing
 from typing import Any, ParamSpec, Union
 
-from ..feature_requirement import HAS_TYPE_ALIAS_SYNTAX, HAS_UNPACK
-from .fundamentals import get_generic_args, strip_alias
+from adaptix._internal.feature_requirement import HAS_TV_TUPLE, HAS_TYPE_ALIAS_SYNTAX, HAS_UNPACK
+from adaptix._internal.type_tools.fundamentals import get_generic_args, strip_alias
 
 NoneType = type(None)
 
@@ -70,7 +70,7 @@ class TypeHintRenderer:
             return self._render_union_op(obj, origin, args)
         if origin == Union:  # this branch is inactive at PY_314
             return self._render_union(obj, origin, args)
-        if isinstance(obj, ParamSpec):
+        if isinstance(obj, ParamSpec) or (HAS_TV_TUPLE and isinstance(obj, typing.TypeVarTuple)):
             return obj.__name__
         if HAS_UNPACK and origin == typing.Unpack:
             return self._render_unpack(obj, origin, args)

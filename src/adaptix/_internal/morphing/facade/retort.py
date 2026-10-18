@@ -18,8 +18,11 @@ from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, W
 from typing import Any, TypeVar, overload
 from uuid import UUID
 
+from adaptix._internal.morphing.native.codegen import NativeCodeGenRequest, resolve_native_codegen
+from adaptix._internal.morphing.native.provider import NativeScalarProvider
+
 from ...common import Dumper, Loader, TypeHint, VarTuple
-from ...definitions import DebugTrail
+from ...definitions import CodeGenBackend, DebugTrail
 from ...feature_requirement import HAS_BYTE_STRING
 from ...provider.essential import Provider, Request
 from ...provider.loc_stack_filtering import LocStack, P, VarTupleLSC
@@ -230,8 +233,11 @@ class AdornedRetort(OperatingRetort):
         recipe: Iterable[Provider] = (),
         strict_coercion: bool = True,
         debug_trail: DebugTrail = DebugTrail.ALL,
+        codegen_backend: CodeGenBackend = CodeGenBackend.PYTHON,
         error_renderer: ErrorRenderer | None = default_error_renderer,
     ):
+        self.native_codegen = resolve_native_codegen(codegen_backend)
+        self.codegen_backend = codegen_backend
         self._strict_coercion = strict_coercion
         self._debug_trail = debug_trail
         super().__init__(recipe=recipe, error_renderer=error_renderer)
@@ -246,6 +252,7 @@ class AdornedRetort(OperatingRetort):
         *,
         strict_coercion: Omittable[bool] = Omitted(),
         debug_trail: Omittable[DebugTrail] = Omitted(),
+        codegen_backend: Omittable[CodeGenBackend] = Omitted(),
         error_renderer: Omittable[ErrorRenderer | None] = Omitted(),
     ) -> AR:
         with self._clone() as clone:
@@ -253,6 +260,9 @@ class AdornedRetort(OperatingRetort):
                 clone._strict_coercion = strict_coercion
             if not isinstance(debug_trail, Omitted):
                 clone._debug_trail = debug_trail
+            if not isinstance(codegen_backend, Omitted):
+                clone.native_codegen = resolve_native_codegen(codegen_backend)
+                clone.codegen_backend = codegen_backend
             if not isinstance(error_renderer, Omitted):
                 clone._error_renderer = error_renderer
         return clone
@@ -269,7 +279,11 @@ class AdornedRetort(OperatingRetort):
         return (
             ValueProvider(StrictCoercionRequest, self._strict_coercion),
             ValueProvider(DebugTrailRequest, self._debug_trail),
+            ValueProvider(NativeCodeGenRequest, self.native_codegen),
         )
+
+    def _get_recipe_head(self) -> VarTuple[Provider]:
+        return (*super()._get_recipe_head(), NativeScalarProvider())
 
     def get_loader(self, tp: type[T]) -> Loader[T]:
         try:
