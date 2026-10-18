@@ -32,7 +32,7 @@ WIDE_SET_MEMBERS = 37
 INLINE_PROBE_ATTRIBUTES = 3
 
 INLINE_VALUE_NAMES = (
-    "type_cached_keys", "inline_values.valid", "inline_values.items",
+    "inline_values.valid", "inline_values.items",
     "inline_values.size", "inline_values.capacity",
 )
 
@@ -134,21 +134,60 @@ def check_type_object(layout: CPythonLayout) -> CheckResult:
     }
 
 
-def check_dict_core(layout: CPythonLayout) -> CheckResult:
+def check_dict_object(layout: CPythonLayout) -> CheckResult:
+    sample = {"alpha": object(), "beta": object()}
+    wide = dict.fromkeys((str(index) for index in range(WIDE_DICT_KEYS)), object())
+    return {
+        "dict_used": (
+            read_ssize(id(sample) + layout.dict_used) == len(sample)
+            and read_ssize(id(wide) + layout.dict_used) == len(wide)
+        ),
+        "dict_keys": plausible_address(read_pointer(id(sample) + layout.dict_keys)),
+        "dict_values": read_pointer(id(sample) + layout.dict_values) == 0,
+    }
+
+
+def check_dict_keys_table(layout: CPythonLayout) -> CheckResult:
     dict_keys = layout.require_dict_keys()
     sample = {"alpha": object(), "beta": object()}
     keys = read_pointer(id(sample) + layout.dict_keys)
     usable = plausible_address(keys)
     index_bytes = read_uint8(keys + dict_keys.index_bytes) if usable else -1
     return {
-        "dict_used": read_ssize(id(sample) + layout.dict_used) == len(sample),
-        "dict_keys": usable,
-        "dict_values": read_pointer(id(sample) + layout.dict_values) == 0,
         "dict_keys_layout.kind": usable and read_uint8(keys + dict_keys.kind) == DICT_KEYS_UNICODE,
         "dict_keys_layout.nentries": usable and read_ssize(keys + dict_keys.nentries) == len(sample),
         "dict_keys_layout.refcount": usable and read_ssize(keys + dict_keys.refcount) == 1,
         "dict_keys_layout.index_bytes": MIN_INDEX_BYTES_LOG2 <= index_bytes <= MAX_INDEX_BYTES_LOG2,
     }
+
+
+def shared_keys_index(layout: CPythonLayout, cls: type, name: str) -> int | None:
+    cached_keys = read_pointer(id(cls) + layout.type_cached_keys)
+    dict_keys = layout.dict_keys_layout
+    if not plausible_address(cached_keys) or dict_keys is None:
+        return None
+    index_bytes = read_uint8(cached_keys + dict_keys.index_bytes)
+    count = read_ssize(cached_keys + dict_keys.nentries)
+    if not MIN_INDEX_BYTES_LOG2 <= index_bytes <= MAX_INDEX_BYTES_LOG2 or not 0 < count <= MAX_SHARED_KEYS:
+        return None
+    entries = cached_keys + dict_keys.indices + (1 << index_bytes)
+    for position in range(count):
+        key = read_pointer(entries + dict_keys.unicode_entry_size * position)
+        if has_type(layout, key, str) and unwrap(key) == name:
+            return position
+    return None
+
+
+def check_type_cached_keys(layout: CPythonLayout) -> CheckResult:
+    class Probe:
+        field: object
+
+    Probe().field = object()
+    cached_keys = read_pointer(id(Probe) + layout.type_cached_keys)
+    if layout.dict_keys_layout is None:
+        # Without the keys table the pointer can only be checked for sanity.
+        return {"type_cached_keys": plausible_address(cached_keys)}
+    return {"type_cached_keys": shared_keys_index(layout, Probe, "field") is not None}
 
 
 def walk_dict_entries(
@@ -222,7 +261,6 @@ def check_dict_entries(layout: CPythonLayout) -> CheckResult:
 
 
 def check_inline_values(layout: CPythonLayout) -> CheckResult:
-    dict_keys = layout.require_dict_keys()
     inline = layout.require_inline_values()
 
     class Probe:
@@ -236,29 +274,14 @@ def check_inline_values(layout: CPythonLayout) -> CheckResult:
     probe.field = value
     probe.trailing = object()
     basic_size = read_ssize(id(Probe) + layout.type_basic_size)
-    cached_keys = read_pointer(id(Probe) + layout.type_cached_keys)
-    if not plausible_address(cached_keys) or basic_size != Probe.__basicsize__:
-        return dict.fromkeys(
-            INLINE_VALUE_NAMES, False,
-        )
-    index_bytes = read_uint8(cached_keys + dict_keys.index_bytes)
-    count = read_ssize(cached_keys + dict_keys.nentries)
-    if not MIN_INDEX_BYTES_LOG2 <= index_bytes <= MAX_INDEX_BYTES_LOG2 or not 0 < count <= MAX_SHARED_KEYS:
-        return dict.fromkeys(
-            INLINE_VALUE_NAMES, False,
-        )
-    entries = cached_keys + dict_keys.indices + (1 << index_bytes)
-    index = None
-    for position in range(count):
-        key = read_pointer(entries + dict_keys.unicode_entry_size * position)
-        if has_type(layout, key, str) and unwrap(key) == "field":
-            index = position
+    index = shared_keys_index(layout, Probe, "field")
+    if index is None or basic_size != Probe.__basicsize__:
+        return dict.fromkeys(INLINE_VALUE_NAMES, False)
     values = id(probe) + basic_size
     size = read_uint8(values + inline.size)
     return {
-        "type_cached_keys": index is not None,
         "inline_values.valid": read_uint8(values + inline.valid) == 1,
-        "inline_values.items": index is not None and read_pointer(
+        "inline_values.items": read_pointer(
             values + inline.items + ctypes.sizeof(ctypes.c_void_p) * index,
         ) == id(value),
         "inline_values.size": size == INLINE_PROBE_ATTRIBUTES,
@@ -518,10 +541,12 @@ CHECKS: tuple[tuple[tuple[str, ...], Check], ...] = (
     (("object_refcount", "object_type", "object_size", "var_size"), check_object_header),
     (("tuple_items", "list_items", "list_allocated", "set_used"), check_sequences),
     (("type_basic_size", "type_flags", "type_getattro", "type_version"), check_type_object),
+    (("dict_used", "dict_keys", "dict_values"), check_dict_object),
+    (("type_cached_keys",), check_type_cached_keys),
     ((
-        "dict_used", "dict_keys", "dict_values", "dict_keys_layout.kind", "dict_keys_layout.nentries",
+        "dict_keys_layout.kind", "dict_keys_layout.nentries",
         "dict_keys_layout.refcount", "dict_keys_layout.index_bytes",
-    ), check_dict_core),
+    ), check_dict_keys_table),
     ((
         "dict_keys_layout.indices", "dict_keys_layout.unicode_entry_size", "dict_keys_layout.unicode_entry_key",
         "dict_keys_layout.unicode_entry_value", "dict_keys_layout.general_entry_size",
