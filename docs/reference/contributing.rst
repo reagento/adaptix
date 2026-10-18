@@ -110,11 +110,6 @@ synchronization. The shared plans describe conversion configuration, not a
 portable instruction set; passing an ARM assembler to ``X86Compiler`` does
 not port the x86 instructions.
 
-The optional :doc:`xdsl-experiment` injects an alternative generator which
-lowers a subset of these plans through xDSL and LLVM. It includes execution,
-creation-time and generated-code comparisons with the existing backend.
-
-
 Field IR and optimization
 -------------------------
 

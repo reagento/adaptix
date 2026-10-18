@@ -1,6 +1,0 @@
-# Optional compiler experiment; not part of Adaptix's runtime dependencies.
-xdsl[llvm]==0.73.0
-llvmlite==0.50.0
-
-# Disassembly analysis of the benchmark artifacts.
-capstone==5.0.9

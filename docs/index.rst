@@ -36,7 +36,6 @@ Adaptix
    API <reference/api/modules>
    reference/changelog
    reference/contributing
-   reference/xdsl-experiment
 
 .. toctree::
    :maxdepth: 2
