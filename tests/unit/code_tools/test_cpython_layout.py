@@ -38,12 +38,37 @@ def test_unknown_version_has_no_layout(version):
 def test_required_offset_checks_availability():
     layout = select((3, 10))
     assert layout.offset("object_type") == layout.object_type
-    with pytest.raises(RuntimeError, match="type_version"):
-        layout.offset("type_version")
+    with pytest.raises(RuntimeError, match="values_valid"):
+        layout.offset("values_valid")
     with pytest.raises(RuntimeError, match="unknown_offset"):
         layout.offset("unknown_offset")
     with pytest.raises(TypeError, match="version"):
         layout.offset("version")
+
+
+@pytest.mark.parametrize(
+    ["field", "first_version"],
+    [
+        ("object_type", (3, 10)),
+        ("type_version", (3, 10)),
+        ("datetime_data", (3, 10)),
+        ("timezone_offset", (3, 10)),
+        ("keys_kind", (3, 11)),
+        ("unicode_entry_value", (3, 11)),
+        ("general_entry_value", (3, 11)),
+        ("long_tag", (3, 12)),
+        ("long_digits", (3, 12)),
+        ("values_items", (3, 11)),
+        ("values_valid", (3, 13)),
+        ("values_size", (3, 13)),
+        ("values_capacity", (3, 13)),
+        ("thread_eval_breaker", (3, 13)),
+    ],
+)
+@pytest.mark.parametrize("version", [(3, 10), (3, 11), (3, 12), (3, 13), (3, 14), (3, 15)])
+def test_offset_availability_follows_the_structure_history(field, first_version, version):
+    present = getattr(select(version), field) is not None
+    assert present == (version >= first_version)
 
 
 
