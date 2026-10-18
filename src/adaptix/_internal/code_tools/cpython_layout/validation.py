@@ -582,3 +582,12 @@ def validate_layout(layout: CPythonLayout) -> dict[str, bool]:
 
 def layout_mismatches(layout: CPythonLayout) -> frozenset[str]:
     return frozenset(name for name, correct in validate_layout(layout).items() if not correct)
+
+
+def layout_matches_interpreter(layout: CPythonLayout) -> bool:
+    # A probe reads raw memory, so an unknown build can fail in any way.
+    # Every failure means the layout must not be used.
+    try:
+        return not layout_mismatches(layout)
+    except Exception:
+        return False
