@@ -92,8 +92,6 @@ def test_capability_groups_follow_the_structure_history(group, first_version, ve
     assert present == (version >= first_version)
 
 
-
-
 @pytest.mark.parametrize("changes", [
     {"implementation": "pypy"}, {"system": "win32"}, {"system": "darwin"},
     {"architecture": "aarch64"}, {"pointer_size": 4}, {"special_build": True},
@@ -103,22 +101,8 @@ def test_incompatible_build_has_no_layout(changes):
     assert select((3, 14), **changes) is None
 
 
-
-
-
-
 def test_tuple_offset_changes_with_version():
     assert select((3, 13)).tuple_items != select((3, 14)).tuple_items
-
-
-
-
-
-
-
-
-
-
 
 
 def test_running_interpreter_matches_its_layout():
