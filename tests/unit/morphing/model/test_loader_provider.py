@@ -5,10 +5,11 @@ from typing import Any, Callable, Dict, Optional
 
 import pytest
 from tests_helpers import DebugCtx, full_match, parametrize_bool, raises_exc, with_trail
+from tests_helpers.requirements import requires
 
 from adaptix import DebugTrail, ExtraKwargs, Loader, Retort, bound
-from adaptix._internal.code_tools.utils import NAME_TO_BUILTIN
 from adaptix._internal.common import VarTuple
+from adaptix._internal.feature_requirement import PythonVersionRequirement
 from adaptix._internal.model_tools.definitions import (
     Default,
     DefaultValue,
@@ -137,10 +138,8 @@ def extra_policy(request):
     return request.param
 
 
-def test_loader_with_sentinel_builtin(monkeypatch, debug_trail):
-    # Python 3.15 adds this builtin; reserve its name on earlier versions too.
-    monkeypatch.setitem(NAME_TO_BUILTIN, "sentinel", object)
-
+@requires(PythonVersionRequirement((3, 15)))
+def test_loader_with_sentinel_builtin(debug_trail):
     @dataclass
     class Model:
         value: int
