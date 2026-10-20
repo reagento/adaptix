@@ -5,12 +5,14 @@ import random
 import sys
 import weakref
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
 from threading import Barrier
 
 import pytest
 from tests_helpers import reference_counts
 
+from adaptix._internal.code_tools.cpython_layout.selection import get_cpython_layout
 from adaptix._internal.code_tools.native_callable import ExecutableMemory
 from adaptix._internal.code_tools.native_dictionary import DictionaryTemplate
 from adaptix._internal.code_tools.x86_64_assembler import Address, Immediate, Slot, X86Assembler
@@ -1006,3 +1008,77 @@ def test_reference_replacement_publishes_result_before_destructor_reentry():
     assert destroyed == [["replacement"]] * 100
 
 
+
+
+def require_layout():
+    layout = get_cpython_layout()
+    if layout is None:
+        pytest.skip("No CPython layout is available for this interpreter build")
+    return layout
+
+
+def test_compiler_uses_selected_layout(monkeypatch):
+    layout = require_layout()
+    from adaptix._internal.code_tools import x86_64_compiler
+
+    altered = replace(layout, object_type=layout.object_type + 8)
+    monkeypatch.setattr(x86_64_compiler, "get_cpython_layout", lambda: altered)
+    compiler = X86Compiler("layout_selection")
+    assert not compiler.has_validated_object_header
+    assert compiler.layout is altered
+    result = compiler.call(lambda value: value, compiler.data)
+    convert = compiler.finish(result).make_callable()
+    value = object()
+    assert convert(value) is value
+
+
+def test_list_operations_fall_back_without_layout(monkeypatch):
+    require_layout()
+    from adaptix._internal.code_tools import x86_64_compiler
+
+    monkeypatch.setattr(x86_64_compiler, "get_cpython_layout", lambda: None)
+    compiler = X86Compiler("layout_fallback")
+    result = compiler.reserve_list(compiler.constant(2))
+    element = compiler.copy_reference(compiler.data)
+    compiler.append_list(result, element)
+    copied = compiler.copy_list(result)
+    convert = compiler.finish(copied).make_callable()
+    value = object()
+    references = sys.getrefcount(value)
+    for _ in range(100):
+        assert convert(value) == [value]
+    assert sys.getrefcount(value) == references
+
+
+def test_native_platform_requires_a_supported_layout(monkeypatch):
+    require_layout()
+    from adaptix._internal.code_tools.cpython_layout import selection
+
+    monkeypatch.setattr(selection, "get_cpython_layout", lambda: None)
+    with pytest.raises(RuntimeError, match="No CPython layout"):
+        check_native_platform()
+
+
+def test_object_header_validation_with_materialized_frame_locals():
+    require_layout()
+    from adaptix._internal.code_tools.x86_64_compiler import inline_refcount_mode
+
+    def observe(frame, event, arg):
+        if frame.f_code is inline_refcount_mode.__code__:
+            frame.f_locals.get("probe")
+        return observe
+
+    previous = sys.gettrace()
+    sys.settrace(observe)
+    try:
+        assert inline_refcount_mode() is not None
+    finally:
+        sys.settrace(previous)
+
+
+def test_interpreter_evaluator_offset_matches_c_api():
+    layout = require_layout()
+    from adaptix._internal.code_tools.native_constructor import interpreter_eval_offset
+
+    offset = interpreter_eval_offset()
+    assert offset is None or offset == layout.interpreter_eval_frame

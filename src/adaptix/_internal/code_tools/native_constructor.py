@@ -46,8 +46,6 @@ def interpreter_eval_offset() -> int | None:
     if LAYOUT is None or not DEFAULT_EVAL or GET_EVAL is None or GET_TSTATE is None:
         return None
     offset = LAYOUT.interpreter_eval_frame
-    if offset is None:
-        return None
     # A default evaluator may correspond to NULL in several nearby fields.
     # Verify that the actual getter loads this field before bypassing the API.
     address = ctypes.cast(GET_EVAL, ctypes.c_void_p).value
@@ -83,8 +81,8 @@ def initializer_fields(  # noqa: C901, PLR0911, PLR0912
         or code.co_flags & (inspect.CO_VARARGS | inspect.CO_VARKEYWORDS | inspect.CO_GENERATOR | inspect.CO_COROUTINE)
         or code.co_argcount + code.co_kwonlyargcount != len(parameters) + 1
         or code.co_varnames[1 : len(parameters) + 1] != parameters
-        or pointer(id(function) + LAYOUT.offset("function_code")) != id(code)
-        or pointer(id(function) + LAYOUT.offset("function_defaults"))
+        or pointer(id(function) + LAYOUT.function_code) != id(code)
+        or pointer(id(function) + LAYOUT.function_defaults)
         != (0 if function.__defaults__ is None else id(function.__defaults__))
         or size(id(tuple_probe) + LAYOUT.var_size) != len(tuple_probe)
         or pointer(id(tuple_probe) + LAYOUT.tuple_items) != id(tuple_probe[0])
@@ -200,9 +198,9 @@ def monitoring_disabled(function, tstate: int) -> bool:
     monitoring = getattr(sys, "monitoring", None)
     if LAYOUT is None or monitoring is None or GET_EVAL is None or not DEFAULT_EVAL:
         return False
-    if pointer(tstate + LAYOUT.offset("thread_profile")) or pointer(tstate + LAYOUT.offset("thread_trace")):
+    if pointer(tstate + LAYOUT.thread_profile) or pointer(tstate + LAYOUT.thread_trace):
         return False
-    if GET_EVAL(pointer(tstate + LAYOUT.offset("thread_interpreter"))) != DEFAULT_EVAL:
+    if GET_EVAL(pointer(tstate + LAYOUT.thread_interpreter)) != DEFAULT_EVAL:
         return False
     for tool in range(6):
         if monitoring.get_events(tool) or monitoring.get_local_events(tool, function.__code__):

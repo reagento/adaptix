@@ -11,28 +11,30 @@ def emit_ordered_dictionary_row(compiler, data, names, expected_types, results, 
     Check every key and scalar type. Reordered/deleted entries continue to
     the learned-index path; fresh equal ASCII keys compare in a cold block.
     """
+    layout = compiler.require_layout()
+    dict_keys = layout.require_dict_keys()
     failed = compiler.label("unordered_row")
     count = len(names)
     compiler.asm.emit(
-        b"\x48\x81\x7a" + bytes([compiler.layout.keys_nentries]) + struct.pack("<i", count - 1),
+        b"\x48\x81\x7a" + bytes([dict_keys.nentries]) + struct.pack("<i", count - 1),
         f"cmp QWORD PTR [rdx+24], {count - 1}",
     )
     compiler.asm.jump(failed, "be")
-    compiler.asm.emit(b"\x0f\xb6\x4a" + bytes([compiler.layout.keys_index_bytes]), "movzx ecx, BYTE PTR [rdx+9]")
+    compiler.asm.emit(b"\x0f\xb6\x4a" + bytes([dict_keys.index_bytes]), "movzx ecx, BYTE PTR [rdx+9]")
     compiler.asm.emit(b"\xb8\x01\x00\x00\x00\x48\xd3\xe0", "mov eax, 1; shl rax, cl")
     compiler.asm.emit(
-        b"\x48\x8d\x54\x02" + bytes([compiler.layout.keys_indices]), "lea rdx, [rdx+rax+32]  # ordered unicode entries",
+        b"\x48\x8d\x54\x02" + bytes([dict_keys.indices]), "lea rdx, [rdx+rax+32]  # ordered unicode entries",
     )
     for index, (name, expected) in enumerate(zip(names, expected_types, strict=True)):
-        offset = index * compiler.layout.unicode_entry_size
+        offset = index * dict_keys.unicode_entry_size
         compare, matched = compiler.label("compare_ordered_key"), compiler.label("ordered_key_matched")
         compiler.load(11, compiler.constant(name))
         compiler.asm.emit(b"\x4c\x39\x9a" + struct.pack("<i", offset), f"cmp [rdx+{offset}], r11")
         compiler.asm.jump(compare, "nz")
         compiler.asm.label(matched)
         compiler.asm.emit(
-            b"\x48\x8b\x82" + struct.pack("<i", offset + compiler.layout.unicode_entry_value),
-            f"mov rax, [rdx+{offset + compiler.layout.unicode_entry_value}]",
+            b"\x48\x8b\x82" + struct.pack("<i", offset + dict_keys.unicode_entry_value),
+            f"mov rax, [rdx+{offset + dict_keys.unicode_entry_value}]",
         )
         if expected is not None:
             compiler.check_dictionary_scalar(expected, failed)
@@ -48,7 +50,7 @@ def emit_ordered_dictionary_row(compiler, data, names, expected_types, results, 
         compiler.release(value, retained=True)
     compiler.asm.load(7, data)
     compiler.asm.emit(
-        b"\x48\x8b\x57" + bytes([compiler.layout.dict_keys]), "mov rdx, [rdi+32]  # restore keys for learned row",
+        b"\x48\x8b\x57" + bytes([layout.dict_keys]), "mov rdx, [rdi+32]  # restore keys for learned row",
     )
 
 
@@ -112,26 +114,23 @@ def emit_probe_dictionary(compiler, mapping: Slot, key: str, missing: str, gener
     every other layout uses the ordinary C API. All reads stay under the GIL.
     """
     layout = compiler.layout
-    if (
-        layout is None or layout.dict_values is None or layout.dict_keys is None
-        or layout.keys_kind is None or layout.keys_index_bytes is None or layout.keys_indices is None
-        or layout.unicode_entry_size is None or layout.unicode_entry_value is None
-    ):
+    if layout is None or layout.dict_keys_layout is None:
         raise RuntimeError("Dictionary probing requires a complete CPython dictionary layout")
+    dict_keys = layout.dict_keys_layout
     compiler.branch_if_type(mapping, dict, generic, invert=True)
     compiler.asm.load(7, mapping)
     compiler.asm.emit_memory(b"\x48\x83", 0x3F, layout.dict_values, "check combined dictionary", immediate=b"\x00")
     compiler.asm.jump(generic, "nz")
     compiler.asm.emit_memory(b"\x48\x8b", 0x57, layout.dict_keys, "mov rdx, dictionary keys")
-    compiler.asm.emit_memory(b"\x80", 0x3A, layout.keys_kind, "check Unicode entries", immediate=b"\x01")
+    compiler.asm.emit_memory(b"\x80", 0x3A, dict_keys.kind, "check Unicode entries", immediate=b"\x01")
     compiler.asm.jump(generic, "nz")
-    compiler.asm.emit_memory(b"\x0f\xb6", 0x4A, layout.keys_index_bytes, "movzx ecx, index byte exponent")
+    compiler.asm.emit_memory(b"\x0f\xb6", 0x4A, dict_keys.index_bytes, "movzx ecx, index byte exponent")
     compiler.asm.emit(b"\x83\xf9\x07", "cmp ecx, 7  # signed byte indices")
     compiler.asm.jump(generic, "a")
     compiler.asm.emit(b"\x41\xba\x01\x00\x00\x00\x49\xd3\xe2", "mov r10d, 1; shl r10, cl")
-    compiler.asm.emit_memory(b"\x48\x8d", 0x72, layout.keys_indices, "lea rsi, dictionary indices")
+    compiler.asm.emit_memory(b"\x48\x8d", 0x72, dict_keys.indices, "lea rsi, dictionary indices")
     compiler.asm.emit(
-        b"\x4c\x01\xd2\x48\x83\xc2" + bytes([layout.keys_indices]),
+        b"\x4c\x01\xd2\x48\x83\xc2" + bytes([dict_keys.indices]),
         "add rdx, index byte count and header",
     )
     compiler.asm.emit(b"\x49\xff\xca", "dec r10  # bucket mask")
@@ -146,7 +145,7 @@ def emit_probe_dictionary(compiler, mapping: Slot, key: str, missing: str, gener
     compiler.asm.emit(b"\x83\xf8\xfe", "cmp eax, -2  # deleted bucket")
     compiler.asm.jump(advance, "z")
     compiler.asm.emit(
-        b"\x48\xc1\xe0" + bytes([layout.unicode_entry_size.bit_length() - 1]), "scale Unicode entry index",
+        b"\x48\xc1\xe0" + bytes([dict_keys.unicode_entry_size.bit_length() - 1]), "scale Unicode entry index",
     )
     compiler.asm.emit(
         b"\x48\x8d\x3c\x02\x48\x8b\x07\x4c\x39\xd8", "lea rdi, [rdx+rax]; mov rax, [rdi]; cmp rax, r11",
@@ -154,7 +153,7 @@ def emit_probe_dictionary(compiler, mapping: Slot, key: str, missing: str, gener
     compiler.asm.jump(matched, "z")
     compiler.match_ascii_key(key, advance)
     compiler.asm.label(matched)
-    compiler.asm.emit_memory(b"\x48\x8b", 0x7F, layout.unicode_entry_value, "mov rdi, borrowed field value")
+    compiler.asm.emit_memory(b"\x48\x8b", 0x7F, dict_keys.unicode_entry_value, "mov rdi, borrowed field value")
     ready = compiler.label("probe_ready")
     compiler.asm.jump(ready)
     compiler.asm.label(advance)

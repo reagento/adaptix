@@ -489,3 +489,13 @@ def test_item_cache_training_survives_concurrent_dictionary_resize():
             future.result(timeout=5)
     finally:
         sys.setswitchinterval(previous_interval)
+
+
+def test_missing_native_api_is_unavailable(monkeypatch):
+    from adaptix._internal.code_tools.native_access import api, api_address
+
+    assert api_address("AdaptixMissingEntryPoint") is None
+    assert api("AdaptixMissingEntryPoint", ctypes.c_void_p) is None
+    monkeypatch.delattr(ctypes, "pythonapi", raising=False)
+    assert api_address("PyType_GetSlot") is None
+    assert api("PyType_GetSlot", ctypes.c_void_p) is None
