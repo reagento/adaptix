@@ -16,5 +16,5 @@ from .model_spec import (
     parametrize_model_spec,
     sqlalchemy_equals,
 )
-from .pytest_tools import cond_list, full_match, parametrize_bool, pretty_typehint_test_id, raises_exc
+from .pytest_tools import cond_list, full_match, parametrize_bool, pretty_typehint_test_id, raises_exc, reference_counts
 from .requirements import ATTRS_WITH_ALIAS, FailedRequirement, requires
