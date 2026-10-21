@@ -244,13 +244,14 @@ parametrize-names-type = "list"
 
 [dependency-groups]
 pytest = [
-    "pytest==8.3.5"
+    "pytest==8.3.5",
+    "adaptix",  # local package
+    "tests_helpers",  # local package
 ]
 
 test-extra-none = [
     {include-group = "pytest"},
-    "adaptix",  # local package
-    "tests_helpers",  # local package
+
     "phonenumberslite==9.0.5",
     "dirty-equals==0.9.0",
     "coverage==7.8.1",
@@ -270,7 +271,8 @@ test-extra-old = [
     "pydantic==2.8.2;     python_version == '3.13'",
     "pydantic==2.12.0;    python_version >  '3.13'",
 
-    "msgspec==0.18.5;  implementation_name != 'pypy'",
+    "msgspec==0.18.5;  python_version <  '3.13' and implementation_name != 'pypy'",
+    "msgspec==0.20.0;  python_version >= '3.13' and implementation_name != 'pypy'",
 ]
 
 test-extra-new = [
@@ -293,11 +295,10 @@ test-extra-new = [
 
 bench = [
     {include-group = "pytest"},
-    "adaptix",  # local package
+
     "benchmarks",  # local package
 
     "pyperf==2.6.1",
-    "psutil==5.9.5",
 
     "mashumaro==3.17",
     "pydantic==2.12.5",
@@ -372,6 +373,10 @@ conflicts = [
         { group = "bench" },
     ],
 ]
+
+[tool.uv.extra-build-dependencies]
+# Fixes psutils build at pypy310
+psutil = ["setuptools<75; implementation_name == 'pypy'"]
 
 [tool.uv.sources]
 benchmarks = { path = "./benchmarks", editable = true }
