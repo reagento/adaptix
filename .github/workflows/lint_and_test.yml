@@ -38,9 +38,8 @@ jobs:
           just-version: 1.14.0
 
       - name: Setup environment to run tox
-        env:
-          UV_SYSTEM_PYTHON: 1
         run:
+          export UV_PROJECT_ENVIRONMENT=$(python3 -c "import sys; print(sys.prefix)")
           just setup-runner
 
       - name: Run linters
@@ -83,9 +82,8 @@ jobs:
           just-version: 1.14.0
 
       - name: Setup environment to run tox
-        env:
-          UV_SYSTEM_PYTHON: 1
         run:
+          export UV_PROJECT_ENVIRONMENT=$(python3 -c "import sys; print(sys.prefix)")
           just setup-runner
 
       - name: Run tests with coverage

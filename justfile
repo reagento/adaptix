@@ -67,8 +67,8 @@ doc_target := "docs-build"
 
 [private]
 @setup-runner:
-    pip install -r requirements/pre.txt
-    uv pip install -r requirements/runner.txt
+    pip install uv==0.12.23
+    uv sync --locked --no-default-groups --group ci-runner
 
 [private]
 @inv *ARGS:
