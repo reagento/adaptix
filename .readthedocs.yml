@@ -11,9 +11,10 @@ build:
 
 python:
    install:
-     - requirements: requirements/doc.txt
-     - method: pip
-       path: .
+      - method: uv
+        command: sync
+        groups:
+          - doc
 
 sphinx:
   configuration: docs/conf.py

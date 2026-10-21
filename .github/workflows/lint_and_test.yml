@@ -39,7 +39,8 @@ jobs:
 
       - name: Setup environment to run tox
         run: |
-          export UV_PROJECT_ENVIRONMENT=$(python3 -c "import sys; print(sys.prefix)")
+          UV_PROJECT_ENVIRONMENT=$(python3 -c "import sys; print(sys.prefix)")
+          export UV_PROJECT_ENVIRONMENT
           just setup-runner
 
       - name: Run linters
@@ -83,7 +84,8 @@ jobs:
 
       - name: Setup environment to run tox
         run: |
-          export UV_PROJECT_ENVIRONMENT=$(python3 -c "import sys; print(sys.prefix)")
+          UV_PROJECT_ENVIRONMENT=$(python3 -c "import sys; print(sys.prefix)")
+          export UV_PROJECT_ENVIRONMENT
           just setup-runner
 
       - name: Run tests with coverage
