@@ -10,7 +10,7 @@ build:
     python: "3.11"
   jobs:
     install:
-      - python -m pip uv==0.12.23
+      - python -m pip install uv==0.12.23
       - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --locked --no-default-groups --group doc
 
 sphinx:
