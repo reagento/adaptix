@@ -38,7 +38,7 @@ jobs:
           just-version: 1.14.0
 
       - name: Setup environment to run tox
-        run:
+        run: |
           export UV_PROJECT_ENVIRONMENT=$(python3 -c "import sys; print(sys.prefix)")
           just setup-runner
 
@@ -82,7 +82,7 @@ jobs:
           just-version: 1.14.0
 
       - name: Setup environment to run tox
-        run:
+        run: |
           export UV_PROJECT_ENVIRONMENT=$(python3 -c "import sys; print(sys.prefix)")
           just setup-runner
 
