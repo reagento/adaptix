@@ -71,7 +71,7 @@ python_files = [
   'local_helpers.py',
 ]
 testpaths = ['tests', 'examples']
-
+addopts = "--tb=native"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
@@ -236,6 +236,152 @@ keep-runtime-typing = true
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-names-type = "list"
 
+
+#   ┌                     ┐
+#   │   CI DEPENDENCIES   │
+#   └                     ┘
+
+
+[dependency-groups]
+pytest = [
+    "pytest==8.3.5",
+    "adaptix",  # local package
+    "tests_helpers",  # local package
+]
+
+test-extra-none = [
+    {include-group = "pytest"},
+
+    "phonenumberslite==9.0.5",
+    "dirty-equals==0.9.0",
+    "coverage==7.8.1",
+
+    "jsonschema-rs==0.40.0;  implementation_name != 'pypy'",
+]
+
+test-extra-old = [
+    {include-group = "test-extra-none"},
+    "attrs==21.3.0",
+
+    "sqlalchemy==2.0.0;   python_version <  '3.13'",
+    "sqlalchemy==2.0.31;  python_version == '3.13'",
+    "sqlalchemy==2.0.41;  python_version >  '3.14'",
+
+    "pydantic==2.1.0;     python_version <  '3.13'",
+    "pydantic==2.8.2;     python_version == '3.13'",
+    "pydantic==2.12.0;    python_version >  '3.13'",
+
+    "msgspec==0.18.5;     python_version <  '3.13' and implementation_name != 'pypy'",
+    "msgspec==0.20.0;     python_version >= '3.13' and implementation_name != 'pypy'",
+]
+
+test-extra-new = [
+    {include-group = "test-extra-none"},
+    "attrs==24.2.0",
+    "sqlalchemy==2.0.46",
+    "pydantic==2.12.5",
+    "msgspec==0.20.0;  implementation_name != 'pypy'",
+
+    # for real_world_app example
+    "aiosqlite==0.21.0",
+    "fastapi==0.119.1",
+    "pytest-asyncio==1.2.0",
+    "httpx==0.28.1",
+
+    # `jsonschema` depends on `attrs`, so it cannot be used at `test-extra-none` and `test-extra-new`.
+    "jsonschema==4.26.0;  implementation_name != 'pypy'",
+    "jsonschema==4.26.0;  implementation_name == 'pypy' and python_version > '3.11'",
+]
+
+bench = [
+    {include-group = "pytest"},
+
+    "benchmarks",  # local package
+
+    "pyperf==2.6.1",
+
+    "mashumaro==3.17",
+    "pydantic==2.12.5",
+    "cattrs==23.1.2",
+    "schematics==2.1.1",
+    "dataclass-factory==2.16",
+    "marshmallow==3.20.1",
+    "msgspec==0.20.0;  implementation_name != 'pypy'",
+]
+
+doc = [
+    {include-group = "bench"},
+
+    "sphinx==8.2.3",
+    "sphinx-copybutton==0.5.2",
+    "sphinx-design==0.6.1",
+    "sphinx-paramlinks==0.6.0",
+    "myst-parser==4.0.1",
+    "sphinxext-opengraph==0.10.0",
+    "sphinx-better-subsection==0.2",
+    "sphinx-reredirects==0.1.6",
+    "sphinxcontrib-globalsubs==0.1.2",
+    "sphinxcontrib-apidoc==0.6.0",
+    "furo==2024.8.6",
+
+    "docutils-stubs==0.0.22",
+
+    "gitpython==3.1.44",
+    "plotly==6.1.1",
+]
+
+ci-runner = [
+    "uv==0.12.23",
+    "tox-uv==1.36.1",
+    "invoke==2.2.0",
+    "coverage==7.8.1",
+]
+
+lint = [
+    {include-group = "test-extra-new"},
+    {include-group = "doc"},
+
+    "prek==0.2.5",
+
+    "mypy[faster-cache]==1.19.1",
+
+    "vulture==2.10",
+
+    "ruff==0.14.14",
+
+    "radon==6.0.1",
+    "dlint==0.14.1",
+    "typos==1.42.3",
+
+    "astpath[xpath]==0.9.1",
+]
+
+dev = [
+    {include-group = "ci-runner"},
+    {include-group = "lint"},
+    "towncrier==24.8.0",
+]
+
+[tool.uv.dependency-groups]
+doc = {requires-python = ">=3.11"}
+
+[tool.uv]
+conflicts = [
+    [
+        { group = "test-extra-old" },
+        { group = "test-extra-new" },
+        { group = "bench" },
+    ],
+]
+
+[tool.uv.extra-build-dependencies]
+# Fixes psutils build at pypy310
+psutil = ["setuptools<75; implementation_name == 'pypy'"]
+
+[tool.uv.sources]
+benchmarks = { path = "./benchmarks", editable = true }
+tests_helpers = { path = "./tests/tests_helpers", editable = true }
+adaptix = { path = ".", editable = true }
 
 #   ┌             ┐
 #   │    OTHER    │

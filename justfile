@@ -6,16 +6,16 @@ set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
 
 # prepare venv and repo for developing
 @bootstrap:
-    pip install -r requirements/pre.txt
-    uv pip install -e .
-    uv pip install -r requirements/dev.txt
+    pip install uv==0.12.23
+    uv sync --locked
     prek
     prek install
 
-# sync version of installed packages
 @venv-sync:
-    uv pip sync requirements/pre.txt requirements/dev.txt
-    uv pip install -e .
+    uv sync
+
+@venv-sync-upgrade:
+    uv sync --upgrade
 
 # run all linters
 @lint:
@@ -41,12 +41,6 @@ inv := "inv -r scripts -c invoke_tasks"
       --output {{ output }} \
       --parallel
 
-@deps-compile:
-    {{ inv }} deps-compile
-
-@deps-compile-upgrade:
-    {{ inv }} deps-compile --upgrade
-
 doc_source := "docs"
 doc_target := "docs-build"
 
@@ -67,8 +61,8 @@ doc_target := "docs-build"
 
 [private]
 @setup-runner:
-    pip install -r requirements/pre.txt
-    uv pip install -r requirements/runner.txt
+    pip install uv==0.12.23
+    uv sync --locked --no-default-groups --group ci-runner
 
 [private]
 @inv *ARGS:

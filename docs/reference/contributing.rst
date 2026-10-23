@@ -20,6 +20,7 @@ How to setup the repository
    * CPython 3.11
    * CPython 3.12
    * CPython 3.13
+   * CPython 3.14
    * PyPy 3.10
    * PyPy 3.11
 
@@ -71,22 +72,11 @@ Sync all dependencies. Need to run if committed dependencies are changed.
 
     just venv-sync
 
-Compile dependencies
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Compile raw dependencies (``requirements/raw/*``)
-into file with locked versions via `uv pip compile <https://docs.astral.sh/uv/pip/compile/>`__.
-
-.. code-block:: bash
-
-    just deps-compile
-
 This command try keep previous locked version. To upgrade locked dependencies use:
 
 .. code-block:: bash
 
-    just deps-compile-upgrade
-
+    just venv-sync-upgrade
 
 Linting
 ----------------

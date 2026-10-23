@@ -1,4 +1,0 @@
--r _test_base.txt
-attrs==21.3.0
-sqlalchemy==2.0.41
-pydantic==2.12.0

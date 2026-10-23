@@ -1,7 +1,0 @@
-setuptools==80.8.0
-towncrier==24.8.0
-
--r runner.txt
--r lint.txt
--r _bench-orchestrate.txt
--r pre.txt
