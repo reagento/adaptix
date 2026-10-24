@@ -15,7 +15,6 @@ from typing import (
     DefaultDict,
     Dict,
     Final,
-    ForwardRef,
     FrozenSet,
     Generic,
     List,
@@ -44,7 +43,6 @@ from tests_helpers import cond_list, full_match, requires
 
 from adaptix._internal.feature_requirement import (
     HAS_PY_311,
-    HAS_PY_312,
     HAS_PY_313,
     HAS_TV_DEFAULT,
     HAS_TV_TUPLE,
@@ -784,13 +782,11 @@ P_FR3 = ParamSpec("P_FR3", bound=List["MyForwardClass"])  # type: ignore[misc]
 
 
 def test_forward_ref_at_type_var_limit():
-    constraint_source = str if HAS_PY_312 else ForwardRef
-
     assert_norm_tv(
         T_FR1,
         NormTV(
             T_FR1,
-            limit=Bound(nt_zero(int, source=ForwardRef("int"))),
+            limit=Bound(nt_zero(int, source=T_FR1.__bound__)),
             source=T_FR1,
             default=None,
         ),
@@ -799,7 +795,7 @@ def test_forward_ref_at_type_var_limit():
         T_FR2,
         NormTV(
             T_FR2,
-            limit=Bound(nt_zero(MyForwardClass, source=ForwardRef("MyForwardClass"))),
+            limit=Bound(nt_zero(MyForwardClass, source=T_FR2.__bound__)),
             source=T_FR2,
             default=None,
         ),
@@ -811,8 +807,8 @@ def test_forward_ref_at_type_var_limit():
             limit=Bound(
                 make_norm_type(
                     list,
-                    (nt_zero(MyForwardClass, source=ForwardRef("MyForwardClass")),),
-                    source=List[ForwardRef("MyForwardClass")],
+                    (nt_zero(MyForwardClass, source=T_FR3.__bound__.__args__[0]),),
+                    source=P_FR3.__bound__,
                 ),
             ),
             source=T_FR3,
@@ -825,8 +821,8 @@ def test_forward_ref_at_type_var_limit():
             T_FR4,
             limit=Constraints(
                 (
-                    make_norm_type(MyForwardClass, (), source=constraint_source("MyForwardClass")),
-                    make_norm_type(MyAnotherForwardClass, (), source=constraint_source("MyAnotherForwardClass")),
+                    make_norm_type(MyForwardClass, (), source=T_FR4.__constraints__[0]),
+                    make_norm_type(MyAnotherForwardClass, (), source=T_FR4.__constraints__[1]),
                 ),
             ),
             source=T_FR4,
@@ -838,7 +834,7 @@ def test_forward_ref_at_type_var_limit():
         P_FR1,
         NormParamSpec(
             P_FR1,
-            limit=Bound(nt_zero(int, source=ForwardRef("int"))),
+            limit=Bound(nt_zero(int, source=P_FR1.__bound__)),
             source=P_FR1,
             default=None,
         ),
@@ -847,7 +843,7 @@ def test_forward_ref_at_type_var_limit():
         P_FR2,
         NormParamSpec(
             P_FR2,
-            limit=Bound(nt_zero(MyForwardClass, source=ForwardRef("MyForwardClass"))),
+            limit=Bound(nt_zero(MyForwardClass, source=P_FR2.__bound__)),
             source=P_FR2,
             default=None,
         ),
@@ -859,8 +855,8 @@ def test_forward_ref_at_type_var_limit():
             limit=Bound(
                 make_norm_type(
                     list,
-                    (nt_zero(MyForwardClass, source=ForwardRef("MyForwardClass")),),
-                    source=List[ForwardRef("MyForwardClass")],
+                    (nt_zero(MyForwardClass, source=T_FR3.__bound__.__args__[0]),),
+                    source=P_FR3.__bound__,
                 ),
             ),
             source=P_FR3,
