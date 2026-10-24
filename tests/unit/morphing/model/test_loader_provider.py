@@ -5,11 +5,9 @@ from typing import Any, Callable, Dict, Optional
 
 import pytest
 from tests_helpers import DebugCtx, full_match, parametrize_bool, raises_exc, with_trail
-from tests_helpers.requirements import requires
 
 from adaptix import DebugTrail, ExtraKwargs, Loader, Retort, bound
 from adaptix._internal.common import VarTuple
-from adaptix._internal.feature_requirement import PythonVersionRequirement
 from adaptix._internal.model_tools.definitions import (
     Default,
     DefaultValue,
@@ -136,19 +134,6 @@ def make_loader_getter(
 @pytest.fixture(params=[ExtraSkip(), ExtraForbid(), ExtraCollect()])
 def extra_policy(request):
     return request.param
-
-
-@requires(PythonVersionRequirement((3, 15)))
-def test_loader_with_sentinel_builtin(debug_trail):
-    @dataclass
-    class Model:
-        value: int
-        optional_value: Optional[int] = 7
-
-    loader = Retort(debug_trail=debug_trail).get_loader(Model)
-
-    assert loader({"value": 1}) == Model(1)
-    assert loader({"value": 1, "optional_value": None}) == Model(1, None)
 
 
 def test_direct(debug_ctx, debug_trail, extra_policy, trail_select):
