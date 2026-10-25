@@ -254,7 +254,7 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
         state.namespace.add_constant("CompatExceptionGroup", CompatExceptionGroup)
         state.namespace.add_constant("CollectionsMapping", collections.abc.Mapping)
         state.namespace.add_constant("CollectionsSequence", collections.abc.Sequence)
-        state.namespace.add_constant("sentinel", object())
+        state.namespace.add_constant("missing_sentinel", object())
 
         if self._debug_trail == DebugTrail.ALL:
             state.builder += "errors = []"
@@ -698,8 +698,8 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
             if self._debug_trail == DebugTrail.DISABLE:
                 with state.builder(
                     f"""
-                    value = getter({state.path[-1]!r}, sentinel)
-                    if value is sentinel:
+                    value = getter({state.path[-1]!r}, missing_sentinel)
+                    if value is missing_sentinel:
                         {on_lookup_error}
                     else:
                     """,
@@ -714,14 +714,14 @@ class BuiltinModelLoaderGen(ModelLoaderGen):
                 state.builder(
                     f"""
                     try:
-                        value = getter({state.path[-1]!r}, sentinel)
+                        value = getter({state.path[-1]!r}, missing_sentinel)
                     """,
                 )
                 self._gen_unexpected_exc_catching(state)
                 with state.builder("else:"):  # noqa: SIM117
                     with state.builder(
                         f"""
-                        if value is sentinel:
+                        if value is missing_sentinel:
                             {on_lookup_error}
                         else:
                         """,

@@ -341,7 +341,7 @@ lint = [
     {include-group = "test-extra-new"},
     {include-group = "doc"},
 
-    "prek==0.2.5",
+    "prek==0.5.7",
 
     "mypy[faster-cache]==1.19.1",
 
