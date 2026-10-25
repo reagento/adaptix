@@ -830,6 +830,7 @@ def test_forward_ref_at_type_var_limit():
         ),
     )
 
+    # ParamSpec keeps a string bound as is or wraps it into ForwardRef depending on the Python version
     assert_norm_tv(
         P_FR1,
         NormParamSpec(
