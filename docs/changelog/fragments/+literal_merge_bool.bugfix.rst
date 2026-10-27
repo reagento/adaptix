@@ -1,0 +1,1 @@
+Keep ``True``/``1``, ``False``/``0`` and enum members equal to plain values as separate cases when ``Literal`` is merged inside a union or combined with ``None``, e.g. ``Literal[0, False, None]`` or ``Literal[1] | Literal[True]``.

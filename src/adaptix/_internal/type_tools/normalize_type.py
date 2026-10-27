@@ -446,7 +446,7 @@ def _dedup(inp: Iterable[T]) -> Iterable[T]:
 
 
 def _create_norm_literal(args: Iterable):
-    dedup_args = tuple(_dedup(args))
+    dedup_args = tuple(arg for _, arg in _dedup(_type_and_value_iter(args)))
     return _LiteralNormType(
         dedup_args,
         source=Literal[dedup_args],
