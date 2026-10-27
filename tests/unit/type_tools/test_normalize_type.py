@@ -360,6 +360,28 @@ def test_literal(make_union):
         ],
     )
 
+    assert_normalize(
+        make_union[Literal["a"], Literal["a", "b"]],
+        Literal, ["a", "b"],
+    )
+
+    assert_normalize(
+        make_union[Literal[0], Literal[False]],
+        Literal, [0, False],
+    )
+
+    assert_strict_equal(
+        normalize_type(Literal[1, True, None]),
+        make_norm_type(
+            Union,
+            (
+                nt_zero(None, source=Literal[None]),
+                make_norm_type(Literal, (1, True), source=Literal[1, True]),
+            ),
+            source=Literal[1, True, None],
+        ),
+    )
+
     assert make_norm_type(Literal, (0, 1), source=...) != make_norm_type(Literal, (False, True), source=...)
     assert (
         make_norm_type(Literal, (0, 1, False, True), source=...)

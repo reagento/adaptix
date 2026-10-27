@@ -86,6 +86,21 @@ def test_strict_coercion(debug_trail):
     )
 
 
+def test_strict_coercion_with_none(debug_trail):
+    loader = Retort().replace(
+        strict_coercion=True,
+        debug_trail=debug_trail,
+    ).get_loader(
+        Literal[0, 1, False, True, None],
+    )
+
+    assert _is_exact_zero(loader(0))
+    assert _is_exact_one(loader(1))
+    assert loader(False) is False
+    assert loader(True) is True
+    assert loader(None) is None
+
+
 def test_loader_with_enums(strict_coercion, debug_trail):
     retort = Retort()
 
