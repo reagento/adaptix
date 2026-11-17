@@ -11,6 +11,7 @@
   [![downloads](https://img.shields.io/pypi/dm/adaptix.svg)](https://pypistats.org/packages/adaptix)
   [![versions](https://img.shields.io/pypi/pyversions/adaptix.svg)](https://github.com/reagento/adaptix)
   [![license](https://img.shields.io/github/license/reagento/dataclass_factory.svg)](https://github.com/reagento/adaptix/blob/master/LICENSE)
+  [![Halal: self-certified](https://img.shields.io/badge/halal-self--certified-008000)](#halal-certification)
 </div>
 
 An extremely flexible and configurable data model conversion library.
@@ -127,3 +128,9 @@ assert (
   that allows to concisely and precisely override some behavior.
 * Disabling additional checks to speed up data loading from trusted sources.
 * No auto casting by default. The loader does not try to guess value from plenty of input formats.
+
+## Halal certification
+
+<img src="docs/halal.svg" alt="Halal" width="120">
+
+All recipes are pork-free. Alhamdulillah.
